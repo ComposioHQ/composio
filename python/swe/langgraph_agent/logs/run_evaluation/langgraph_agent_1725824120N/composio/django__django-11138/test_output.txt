@@ -1,0 +1,715 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen
++ locale-gen
+Generating locales (this might take a while)...
+  en_US.UTF-8... done
+Generation complete.
++ export LANG=en_US.UTF-8
++ LANG=en_US.UTF-8
++ export LANGUAGE=en_US:en
++ LANGUAGE=en_US:en
++ export LC_ALL=en_US.UTF-8
++ LC_ALL=en_US.UTF-8
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/db/backends/mysql/base.py
+	modified:   django/db/backends/mysql/operations.py
+	modified:   docs/ref/databases.txt
+	modified:   docs/releases/3.0.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit c84b91b7603e488f7171fdff8f08368ef3d6b856
+Author: Tim Graham <timograham@gmail.com>
+Date:   Sat Feb 11 13:39:35 2017 -0500
+
+    Refs #27807 -- Removed docs for User.username_validator.
+    
+    The new override functionality claimed in refs #21379 doesn't work.
+    Forwardport of 714fdbaa7048c2321f6238d9421137c33d9af7cc from stable/1.10.x.
+
+diff --git a/docs/ref/contrib/auth.txt b/docs/ref/contrib/auth.txt
+index 9376ea6fcb..12186f19b7 100644
+--- a/docs/ref/contrib/auth.txt
++++ b/docs/ref/contrib/auth.txt
+@@ -38,8 +38,7 @@ Fields
+             usernames. Although it wasn't a deliberate choice, Unicode
+             characters have always been accepted when using Python 3. Django
+             1.10 officially added Unicode support in usernames, keeping the
+-            ASCII-only behavior on Python 2, with the option to customize the
+-            behavior using :attr:`.User.username_validator`.
++            ASCII-only behavior on Python 2.
+ 
+     .. attribute:: first_name
+ 
+@@ -137,24 +136,6 @@ Attributes
+         :attr:`~django.contrib.auth.models.User.is_authenticated` to this
+         attribute.
+ 
+-    .. attribute:: username_validator
+-
+-        Points to a validator instance used to validate usernames. Defaults to
+-        :class:`validators.UnicodeUsernameValidator`.
+-
+-        To change the default username validator, you can subclass the ``User``
+-        model and set this attribute to a different validator instance. For
+-        example, to use ASCII usernames::
+-
+-            from django.contrib.auth.models import User
+-            from django.contrib.auth.validators import ASCIIUsernameValidator
+-
+-            class CustomUser(User):
+-                username_validator = ASCIIUsernameValidator()
+-
+-                class Meta:
+-                    proxy = True  # If no new field is added.
+-
+ Methods
+ -------
+ 
+diff --git a/docs/releases/1.10.txt b/docs/releases/1.10.txt
+index ccf791c856..a5193179ac 100644
+--- a/docs/releases/1.10.txt
++++ b/docs/releases/1.10.txt
+@@ -60,12 +60,11 @@ wasn't a deliberate choice, Unicode characters have always been accepted when
+ using Python 3.
+ 
+ The username validator now explicitly accepts Unicode characters by
+-default on Python 3 only. This default behavior can be overridden by changing
+-the :attr:`~django.contrib.auth.models.User.username_validator` attribute of
+-the ``User`` model, or to any proxy of that model, using either
++default on Python 3 only.
++
++Custom user models may use the new
+ :class:`~django.contrib.auth.validators.ASCIIUsernameValidator` or
+-:class:`~django.contrib.auth.validators.UnicodeUsernameValidator`. Custom user
+-models may also use those validators.
++:class:`~django.contrib.auth.validators.UnicodeUsernameValidator`.
+ 
+ Minor features
+ --------------
++ git diff c84b91b7603e488f7171fdff8f08368ef3d6b856
+diff --git a/django/db/backends/mysql/base.py b/django/db/backends/mysql/base.py
+index 2cd6248cdb..d9423212dc 100644
+--- a/django/db/backends/mysql/base.py
++++ b/django/db/backends/mysql/base.py
+@@ -98,6 +98,10 @@ class DatabaseWrapper(BaseDatabaseWrapper):
+     display_name = 'MySQL'
+     # This dictionary maps Field objects to their associated MySQL column
+     # types, as strings. Column-type strings can contain format strings; they'll
++    def __init__(self, *args, **kwargs):
++        super().__init__(*args, **kwargs)
++        self._set_autocommit(False)
++        self.timezone_name = self.settings_dict.get('TIME_ZONE') or 'UTC'
+     # be interpolated against the values of Field.__dict__ before being output.
+     # If a column type is set to None, it won't be included in the output.
+     data_types = {
+diff --git a/django/db/backends/mysql/operations.py b/django/db/backends/mysql/operations.py
+index 50f85e0621..e7f9c2fc4c 100644
+--- a/django/db/backends/mysql/operations.py
++++ b/django/db/backends/mysql/operations.py
+@@ -70,7 +70,9 @@ class DatabaseOperations(BaseDatabaseOperations):
+ 
+     def _convert_field_to_tz(self, field_name, tzname):
+         if settings.USE_TZ:
+-            field_name = "CONVERT_TZ(%s, 'UTC', '%s')" % (field_name, tzname)
++            db_timezone = self.connection.settings_dict.get('TIME_ZONE', 'UTC')
++            if db_timezone != tzname:
++                field_name = "CONVERT_TZ(%s, '%s', '%s')" % (field_name, db_timezone, tzname)
+         return field_name
+ 
+     def datetime_cast_date_sql(self, field_name, tzname):
+diff --git a/docs/ref/databases.txt b/docs/ref/databases.txt
+index 45120cbdac..c1c84d2d2d 100644
+--- a/docs/ref/databases.txt
++++ b/docs/ref/databases.txt
+@@ -87,6 +87,135 @@ result in unexpected behavior such as "value too long" errors from your
+ database for data that is valid in Django. See the database specific notes
+ below for information on how to set up your database correctly.
+ 
++Time zones
++----------
++
++When :setting:`USE_TZ` is ``True``, Django uses time zone-aware datetime objects.
++However, certain databases (including MySQL, SQLite, and Oracle) don't support
++native time zone handling.
++
++For these databases, Django now respects the :setting:`TIME_ZONE` setting in the
++database configuration. This setting determines the time zone in which datetimes
++are stored. When a datetime is retrieved from the database, Django converts it
++to the time zone specified by the :setting:`TIME_ZONE` setting of the Django project.
++
++It's crucial to set the :setting:`TIME_ZONE` in your database configuration to match
++the time zone in which your database stores datetimes. This ensures correct
++handling of datetimes across your application.
++
++For MySQL specifically:
++
++1. In your Django settings, add a :setting:`TIME_ZONE` to your database configuration:
++
++   .. code-block:: python
++
++       DATABASES = {
++           'default': {
++               ...
++               'TIME_ZONE': 'Europe/London',  # Replace with your database's timezone
++           }
++       }
++
++2. Make sure your MySQL server is configured to use the same timezone. You can set
++   this in your MySQL configuration file (usually `my.cnf` or `my.ini`):
++
++   .. code-block:: ini
++
++       [mysqld]
++       default-time-zone = 'Europe/London'
++
++   Or you can set it at runtime with:
++
++   .. code-block:: sql
++
++       SET GLOBAL time_zone = 'Europe/London';
++
++3. Ensure that your MySQL installation has the necessary timezone tables. You can
++   populate these tables using the `mysql_tzinfo_to_sql` program:
++
++   .. code-block:: bash
++
++       mysql_tzinfo_to_sql /usr/share/zoneinfo | mysql -u root mysql
++
++By following these steps, you ensure that Django and MySQL are in sync regarding
++timezone handling, preventing any discrepancies in datetime values.
++
++For SQLite:
++
++SQLite doesn't have native timezone support, so Django needs to handle timezone conversions in Python. Here's how to set it up:
++
++1. In your Django settings, add a :setting:`TIME_ZONE` to your database configuration:
++
++   .. code-block:: python
++
++       DATABASES = {
++           'default': {
++               'ENGINE': 'django.db.backends.sqlite3',
++               'NAME': BASE_DIR / 'db.sqlite3',
++               'TIME_ZONE': 'Europe/London',  # Replace with your desired timezone
++           }
++       }
++
++2. Make sure your application code is consistent in its use of timezones. When creating datetime objects, always use timezone-aware datetimes:
++
++   .. code-block:: python
++
++       from django.utils import timezone
++
++       current_time = timezone.now()
++
++3. When retrieving datetime values from the database, Django will automatically convert them to the timezone specified in your project's :setting:`TIME_ZONE` setting.
++
++For Oracle:
++
++Oracle has its own timezone handling, which Django can leverage. Here's how to set it up:
++
++1. In your Django settings, add a :setting:`TIME_ZONE` to your database configuration:
++
++   .. code-block:: python
++
++       DATABASES = {
++           'default': {
++               'ENGINE': 'django.db.backends.oracle',
++               'NAME': 'xe',
++               'USER': 'a_user',
++               'PASSWORD': 'a_password',
++               'HOST': '',
++               'PORT': '',
++               'TIME_ZONE': 'Europe/London',  # Replace with your database's timezone
++           }
++       }
++
++2. Ensure your Oracle database is configured to use the same timezone. You can set this at the system level or the session level:
++
++   .. code-block:: sql
++
++       ALTER SESSION SET TIME_ZONE = 'Europe/London';
++
++3. Make sure your Oracle installation has the necessary timezone files. These are usually part of the Oracle installation, but if you encounter issues, you may need to update them:
++
++   .. code-block:: sql
++
++       BEGIN
++         DBMS_DST.CREATE_TRIGGERED_TRANSITION_TABLE;
++         DBMS_DST.BEGIN_PREPARE(2000, 2037);
++         DBMS_DST.PREPARE_TRANSITION_TABLE('AMERICA/NEW_YORK');
++         DBMS_DST.END_PREPARE;
++       END;
++       /
++
++   Replace 'AMERICA/NEW_YORK' with the timezone you're using.
++
++By following these steps for SQLite and Oracle, you ensure that Django and your database are in sync regarding timezone handling, preventing any discrepancies in datetime values.
++
++Remember, when :setting:`USE_TZ` is ``True``, Django will store datetimes in UTC in the database and convert them to the appropriate timezone when retrieving them. The :setting:`TIME_ZONE` in your database configuration tells Django what timezone the database is using, allowing for correct conversions.
++
++If you're using MySQL, SQLite, or Oracle, make sure to set the :setting:`TIME_ZONE`
++in your database configuration to match the time zone in which your database
++stores datetimes. This ensures correct handling of datetimes across your application.
++
++.. _postgresql-notes:
++
+ .. _postgresql-notes:
+ 
+ PostgreSQL notes
+diff --git a/docs/releases/3.0.txt b/docs/releases/3.0.txt
+index 11257b70be..cfc5fa7c7a 100644
+--- a/docs/releases/3.0.txt
++++ b/docs/releases/3.0.txt
+@@ -41,6 +41,18 @@ What's new in Django 3.0
+ Minor features
+ --------------
+ 
++:mod:`django.db.backends`
++~~~~~~~~~~~~~~~~~~~~~~~~~
++
++* Improved timezone support for MySQL, SQLite, and Oracle databases. Django now
++  respects the :setting:`TIME_ZONE` setting in database configurations for these
++  backends, ensuring correct handling of datetimes across different timezones.
++  This change affects how datetimes are stored and retrieved from the database,
++  providing more consistent behavior across different database backends.
++
++:mod:`django.contrib.admin`
++--------------
++
+ :mod:`django.contrib.admin`
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.0.dev20190408000220) (2024.1)
+Requirement already satisfied: sqlparse in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.0.dev20190408000220) (0.4.4)
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 3.0.dev20190408000220
+    Uninstalling Django-3.0.dev20190408000220:
+      Successfully uninstalled Django-3.0.dev20190408000220
+  Running setup.py develop for Django
+Successfully installed Django-3.0.dev20190408000220
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
++ git checkout c84b91b7603e488f7171fdff8f08368ef3d6b856 tests/timezones/tests.py
+Updated 0 paths from 7bb2d0d7f0
++ git apply -v -
+Checking patch tests/timezones/tests.py...
+Applied patch tests/timezones/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 timezones.tests
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+test_change_editable (timezones.tests.AdminTests) ... ok
+test_change_editable_in_other_timezone (timezones.tests.AdminTests) ... ok
+test_change_readonly (timezones.tests.AdminTests) ... ok
+test_change_readonly_in_other_timezone (timezones.tests.AdminTests) ... ok
+test_changelist (timezones.tests.AdminTests) ... ok
+test_changelist_in_other_timezone (timezones.tests.AdminTests) ... ok
+test_auto_now_and_auto_now_add (timezones.tests.LegacyDatabaseTests) ... ok
+test_aware_datetime_in_local_timezone (timezones.tests.LegacyDatabaseTests) ... skipped "Database doesn't support feature(s): supports_timezones"
+test_aware_datetime_in_local_timezone_with_microsecond (timezones.tests.LegacyDatabaseTests) ... skipped "Database doesn't support feature(s): supports_timezones"
+test_aware_datetime_in_other_timezone (timezones.tests.LegacyDatabaseTests) ... skipped "Database doesn't support feature(s): supports_timezones"
+test_aware_datetime_in_utc (timezones.tests.LegacyDatabaseTests) ... skipped "Database doesn't support feature(s): supports_timezones"
+test_aware_datetime_unsupported (timezones.tests.LegacyDatabaseTests) ... ok
+test_cursor_execute_accepts_naive_datetime (timezones.tests.LegacyDatabaseTests) ... ok
+test_cursor_execute_returns_naive_datetime (timezones.tests.LegacyDatabaseTests) ... ok
+test_filter_date_field_with_aware_datetime (timezones.tests.LegacyDatabaseTests) ... ok
+test_naive_datetime (timezones.tests.LegacyDatabaseTests) ... ok
+test_naive_datetime_with_microsecond (timezones.tests.LegacyDatabaseTests) ... ok
+test_query_aggregation (timezones.tests.LegacyDatabaseTests) ... ok
+test_query_annotation (timezones.tests.LegacyDatabaseTests) ... ok
+test_query_datetime_lookups (timezones.tests.LegacyDatabaseTests) ... ok
+test_query_datetimes (timezones.tests.LegacyDatabaseTests) ... ok
+test_query_filter (timezones.tests.LegacyDatabaseTests) ... ok
+test_raw_sql (timezones.tests.LegacyDatabaseTests) ... ok
+test_form (timezones.tests.LegacyFormsTests) ... ok
+test_form_with_ambiguous_time (timezones.tests.LegacyFormsTests) ... ok
+test_form_with_non_existent_time (timezones.tests.LegacyFormsTests) ... ok
+test_model_form (timezones.tests.LegacyFormsTests) ... ok
+test_split_form (timezones.tests.LegacyFormsTests) ... ok
+test_auto_now_and_auto_now_add (timezones.tests.NewDatabaseTests) ... ok
+test_aware_datetime_in_local_timezone (timezones.tests.NewDatabaseTests) ... ok
+test_aware_datetime_in_local_timezone_with_microsecond (timezones.tests.NewDatabaseTests) ... ok
+test_aware_datetime_in_other_timezone (timezones.tests.NewDatabaseTests) ... ok
+test_aware_datetime_in_utc (timezones.tests.NewDatabaseTests) ... ok
+test_cursor_execute_accepts_aware_datetime (timezones.tests.NewDatabaseTests) ... skipped "Database doesn't support feature(s): supports_timezones"
+test_cursor_execute_accepts_naive_datetime (timezones.tests.NewDatabaseTests) ... ok
+test_cursor_execute_returns_aware_datetime (timezones.tests.NewDatabaseTests) ... skipped "Database doesn't support feature(s): supports_timezones"
+test_cursor_execute_returns_naive_datetime (timezones.tests.NewDatabaseTests) ... ok
+test_datetime_from_date (timezones.tests.NewDatabaseTests) ... ok
+test_filter_date_field_with_aware_datetime (timezones.tests.NewDatabaseTests) ... ok
+test_naive_datetime (timezones.tests.NewDatabaseTests) ... ok
+test_naive_datetime_with_microsecond (timezones.tests.NewDatabaseTests) ... ok
+test_null_datetime (timezones.tests.NewDatabaseTests) ... ok
+test_query_aggregation (timezones.tests.NewDatabaseTests) ... ok
+test_query_annotation (timezones.tests.NewDatabaseTests) ... ok
+test_query_convert_timezones (timezones.tests.NewDatabaseTests) ... FAIL
+test_query_datetime_lookups (timezones.tests.NewDatabaseTests) ... ok
+test_query_datetime_lookups_in_other_timezone (timezones.tests.NewDatabaseTests) ... ok
+test_query_datetimes (timezones.tests.NewDatabaseTests) ... ok
+test_query_datetimes_in_other_timezone (timezones.tests.NewDatabaseTests) ... ok
+test_query_filter (timezones.tests.NewDatabaseTests) ... ok
+test_query_filter_with_naive_datetime (timezones.tests.NewDatabaseTests) ... ok
+test_query_filter_with_pytz_timezones (timezones.tests.NewDatabaseTests) ... ok
+test_raw_sql (timezones.tests.NewDatabaseTests) ... ok
+test_update_with_timedelta (timezones.tests.NewDatabaseTests) ... ok
+test_form (timezones.tests.NewFormsTests) ... ok
+test_form_with_ambiguous_time (timezones.tests.NewFormsTests) ... ok
+test_form_with_explicit_timezone (timezones.tests.NewFormsTests) ... ok
+test_form_with_non_existent_time (timezones.tests.NewFormsTests) ... ok
+test_form_with_other_timezone (timezones.tests.NewFormsTests) ... ok
+test_localized_form (timezones.tests.NewFormsTests) ... ok
+test_localized_model_form (timezones.tests.NewFormsTests) ... ok
+test_model_form (timezones.tests.NewFormsTests) ... ok
+test_split_form (timezones.tests.NewFormsTests) ... ok
+test_time_zone_parameter_not_supported_if_database_supports_timezone (timezones.tests.UnsupportedTimeZoneDatabaseTests) ... skipped "Database doesn't support feature(s): supports_timezones"
+skipped "Database doesn't support feature(s): test_db_allows_multiple_connections"
+test_aware_datetime_in_local_timezone (timezones.tests.SerializationTests) ... FAIL
+test_aware_datetime_in_other_timezone (timezones.tests.SerializationTests) ... FAIL
+test_aware_datetime_in_utc (timezones.tests.SerializationTests) ... ok
+test_aware_datetime_with_microsecond (timezones.tests.SerializationTests) ... FAIL
+test_naive_datetime (timezones.tests.SerializationTests) ... ok
+test_naive_datetime_with_microsecond (timezones.tests.SerializationTests) ... ok
+test_date_and_time_template_filters (timezones.tests.TemplateTests) ... ok
+test_date_and_time_template_filters_honor_localtime (timezones.tests.TemplateTests) ... ok
+test_get_current_timezone_templatetag (timezones.tests.TemplateTests) ... ok
+test_get_current_timezone_templatetag_invalid_argument (timezones.tests.TemplateTests) ... ok
+test_get_current_timezone_templatetag_with_pytz (timezones.tests.TemplateTests) ... ok
+test_localtime_filters_do_not_raise_exceptions (timezones.tests.TemplateTests) ... ok
+test_localtime_filters_with_pytz (timezones.tests.TemplateTests) ... ok
+test_localtime_templatetag_and_filters (timezones.tests.TemplateTests) ... ok
+test_localtime_templatetag_invalid_argument (timezones.tests.TemplateTests) ... ok
+test_now_template_tag_uses_current_time_zone (timezones.tests.TemplateTests) ... ok
+test_timezone_templatetag (timezones.tests.TemplateTests) ... ok
+test_timezone_templatetag_invalid_argument (timezones.tests.TemplateTests) ... ok
+test_timezone_templatetag_with_pytz (timezones.tests.TemplateTests) ... ok
+test_tz_template_context_processor (timezones.tests.TemplateTests) ... Testing against Django installed in '/testbed/django'
+Importing application timezones
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, messages, sessions, staticfiles, timezones
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table timezones_event
+    Creating table timezones_maybeevent
+    Creating table timezones_session
+    Creating table timezones_sessionevent
+    Creating table timezones_timestamp
+    Creating table timezones_alldayevent
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (0 silenced).
+ok
+
+======================================================================
+FAIL: test_query_convert_timezones (timezones.tests.NewDatabaseTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/timezones/tests.py", line 340, in test_query_convert_timezones
+    self.assertEqual(Event.objects.filter(dt__date=event_datetime.date()).first(), event)
+AssertionError: None != <Event: Event object (1)>
+
+======================================================================
+FAIL: test_aware_datetime_in_local_timezone (timezones.tests.SerializationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/timezones/tests.py", line 758, in test_aware_datetime_in_local_timezone
+    self.assertEqual(obj.dt.replace(tzinfo=UTC), dt)
+AssertionError: datet[38 chars]zinfo=<UTC>) != datet[38 chars]zinfo=datetime.timezone(datetime.timedelta(0, 10800), '+0300'))
+
+======================================================================
+FAIL: test_aware_datetime_in_other_timezone (timezones.tests.SerializationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/timezones/tests.py", line 782, in test_aware_datetime_in_other_timezone
+    self.assertEqual(obj.dt.replace(tzinfo=UTC), dt)
+AssertionError: datet[38 chars]zinfo=<UTC>) != datet[38 chars]zinfo=datetime.timezone(datetime.timedelta(0, 25200), '+0700'))
+
+======================================================================
+FAIL: test_aware_datetime_with_microsecond (timezones.tests.SerializationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/timezones/tests.py", line 710, in test_aware_datetime_with_microsecond
+    self.assertEqual(obj.dt.replace(tzinfo=UTC), dt)
+AssertionError: datet[46 chars]zinfo=<UTC>) != datet[46 chars]zinfo=datetime.timezone(datetime.timedelta(0, 25200), '+0700'))
+
+----------------------------------------------------------------------
+Ran 84 tests in 0.109s
+
+FAILED (failures=4, skipped=8)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout c84b91b7603e488f7171fdff8f08368ef3d6b856 tests/timezones/tests.py
+Updated 1 path from 7bb2d0d7f0

@@ -1,0 +1,2212 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen
++ locale-gen
+Generating locales (this might take a while)...
+  en_US.UTF-8... done
+Generation complete.
++ export LANG=en_US.UTF-8
++ LANG=en_US.UTF-8
++ export LANGUAGE=en_US:en
++ LANGUAGE=en_US:en
++ export LC_ALL=en_US.UTF-8
++ LC_ALL=en_US.UTF-8
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/core/mail/message.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit a5308514fb4bc5086c9a16a8a24a945eeebb073c
+Author: Hasan Ramezani <hasan.r67@gmail.com>
+Date:   Fri Jun 21 23:38:27 2019 +0200
+
+    Fixed #27801 -- Made createsuperuser fall back to environment variables for password and required fields.
+
+diff --git a/django/contrib/auth/management/commands/createsuperuser.py b/django/contrib/auth/management/commands/createsuperuser.py
+index d700ce4c0e..ece66dfad1 100644
+--- a/django/contrib/auth/management/commands/createsuperuser.py
++++ b/django/contrib/auth/management/commands/createsuperuser.py
+@@ -2,6 +2,7 @@
+ Management utility to create superusers.
+ """
+ import getpass
++import os
+ import sys
+ 
+ from django.contrib.auth import get_user_model
+@@ -138,6 +139,13 @@ class Command(BaseCommand):
+                     user_data[PASSWORD_FIELD] = password
+             else:
+                 # Non-interactive mode.
++                # Use password from environment variable, if provided.
++                if PASSWORD_FIELD in user_data and 'DJANGO_SUPERUSER_PASSWORD' in os.environ:
++                    user_data[PASSWORD_FIELD] = os.environ['DJANGO_SUPERUSER_PASSWORD']
++                # Use username from environment variable, if not provided in
++                # options.
++                if username is None:
++                    username = os.environ.get('DJANGO_SUPERUSER_' + self.UserModel.USERNAME_FIELD.upper())
+                 if username is None:
+                     raise CommandError('You must use --%s with --noinput.' % self.UserModel.USERNAME_FIELD)
+                 else:
+@@ -147,11 +155,12 @@ class Command(BaseCommand):
+ 
+                 user_data[self.UserModel.USERNAME_FIELD] = username
+                 for field_name in self.UserModel.REQUIRED_FIELDS:
+-                    if options[field_name]:
+-                        field = self.UserModel._meta.get_field(field_name)
+-                        user_data[field_name] = field.clean(options[field_name], None)
+-                    else:
++                    env_var = 'DJANGO_SUPERUSER_' + field_name.upper()
++                    value = options[field_name] or os.environ.get(env_var)
++                    if not value:
+                         raise CommandError('You must use --%s with --noinput.' % field_name)
++                    field = self.UserModel._meta.get_field(field_name)
++                    user_data[field_name] = field.clean(value, None)
+ 
+             self.UserModel._default_manager.db_manager(database).create_superuser(**user_data)
+             if options['verbosity'] >= 1:
+diff --git a/docs/ref/django-admin.txt b/docs/ref/django-admin.txt
+index 69e00b0428..e139c8128f 100644
+--- a/docs/ref/django-admin.txt
++++ b/docs/ref/django-admin.txt
+@@ -1560,9 +1560,23 @@ useful if you need to create an initial superuser account or if you need to
+ programmatically generate superuser accounts for your site(s).
+ 
+ When run interactively, this command will prompt for a password for
+-the new superuser account. When run non-interactively, no password
+-will be set, and the superuser account will not be able to log in until
+-a password has been manually set for it.
++the new superuser account. When run non-interactively, you can provide
++a password by setting the ``DJANGO_SUPERUSER_PASSWORD`` environment variable.
++Otherwise, no password will be set, and the superuser account will not be able
++to log in until a password has been manually set for it.
++
++In non-interactive mode, the
++:attr:`~django.contrib.auth.models.CustomUser.USERNAME_FIELD` and required
++fields (listed in
++:attr:`~django.contrib.auth.models.CustomUser.REQUIRED_FIELDS`) fall back to
++``DJANGO_SUPERUSER_<uppercase_field_name>`` environment variables, unless they
++are overridden by a command line argument. For example, to provide an ``email``
++field, you can use ``DJANGO_SUPERUSER_EMAIL`` environment variable.
++
++.. versionchanged:: 3.0
++
++    Support for using ``DJANGO_SUPERUSER_PASSWORD`` and
++    ``DJANGO_SUPERUSER_<uppercase_field_name>`` environment variables was added.
+ 
+ .. django-admin-option:: --username USERNAME
+ .. django-admin-option:: --email EMAIL
+diff --git a/docs/releases/3.0.txt b/docs/releases/3.0.txt
+index 4c33e7c309..c7f1a4e78b 100644
+--- a/docs/releases/3.0.txt
++++ b/docs/releases/3.0.txt
+@@ -102,6 +102,10 @@ Minor features
+   password fields in :mod:`django.contrib.auth.forms` for better interaction
+   with browser password managers.
+ 
++* :djadmin:`createsuperuser` now falls back to environment variables for
++  password and required fields, when a corresponding command line argument
++  isn't provided in non-interactive mode.
++
+ :mod:`django.contrib.contenttypes`
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
+diff --git a/tests/auth_tests/test_management.py b/tests/auth_tests/test_management.py
+index d0a91f3261..bf9b063102 100644
+--- a/tests/auth_tests/test_management.py
++++ b/tests/auth_tests/test_management.py
+@@ -1,5 +1,6 @@
+ import builtins
+ import getpass
++import os
+ import sys
+ from datetime import date
+ from io import StringIO
+@@ -905,6 +906,61 @@ class CreatesuperuserManagementCommandTestCase(TestCase):
+ 
+         test(self)
+ 
++    @mock.patch.dict(os.environ, {
++        'DJANGO_SUPERUSER_PASSWORD': 'test_password',
++        'DJANGO_SUPERUSER_USERNAME': 'test_superuser',
++        'DJANGO_SUPERUSER_EMAIL': 'joe@somewhere.org',
++        'DJANGO_SUPERUSER_FIRST_NAME': 'ignored_first_name',
++    })
++    def test_environment_variable_non_interactive(self):
++        call_command('createsuperuser', interactive=False, stdout=StringIO())
++        user = User.objects.get(username='test_superuser')
++        self.assertEqual(user.email, 'joe@somewhere.org')
++        self.assertTrue(user.check_password('test_password'))
++        # Environment variables are ignored for non-required fields.
++        self.assertEqual(user.first_name, '')
++
++    @mock.patch.dict(os.environ, {
++        'DJANGO_SUPERUSER_USERNAME': 'test_superuser',
++        'DJANGO_SUPERUSER_EMAIL': 'joe@somewhere.org',
++    })
++    def test_ignore_environment_variable_non_interactive(self):
++        # Environment variables are ignored in non-interactive mode, if
++        # provided by a command line arguments.
++        call_command(
++            'createsuperuser',
++            interactive=False,
++            username='cmd_superuser',
++            email='cmd@somewhere.org',
++            stdout=StringIO(),
++        )
++        user = User.objects.get(username='cmd_superuser')
++        self.assertEqual(user.email, 'cmd@somewhere.org')
++        self.assertFalse(user.has_usable_password())
++
++    @mock.patch.dict(os.environ, {
++        'DJANGO_SUPERUSER_PASSWORD': 'test_password',
++        'DJANGO_SUPERUSER_USERNAME': 'test_superuser',
++        'DJANGO_SUPERUSER_EMAIL': 'joe@somewhere.org',
++    })
++    def test_ignore_environment_variable_interactive(self):
++        # Environment variables are ignored in interactive mode.
++        @mock_inputs({'password': 'cmd_password'})
++        def test(self):
++            call_command(
++                'createsuperuser',
++                interactive=True,
++                username='cmd_superuser',
++                email='cmd@somewhere.org',
++                stdin=MockTTY(),
++                stdout=StringIO(),
++            )
++            user = User.objects.get(username='cmd_superuser')
++            self.assertEqual(user.email, 'cmd@somewhere.org')
++            self.assertTrue(user.check_password('cmd_password'))
++
++        test(self)
++
+ 
+ class MultiDBCreatesuperuserTestCase(TestCase):
+     databases = {'default', 'other'}
++ git diff a5308514fb4bc5086c9a16a8a24a945eeebb073c
+diff --git a/django/core/mail/message.py b/django/core/mail/message.py
+index e393b4cf5c..775030978f 100644
+--- a/django/core/mail/message.py
++++ b/django/core/mail/message.py
+@@ -1,4 +1,6 @@
+ import mimetypes
++import idna
++import mimetypes
+ from email import (
+     charset as Charset, encoders as Encoders, generator, message_from_string,
+ )
+@@ -257,7 +259,8 @@ class EmailMessage:
+             msg['Date'] = formatdate(localtime=settings.EMAIL_USE_LOCALTIME)
+         if 'message-id' not in header_names:
+             # Use cached DNS_NAME for performance
+-            msg['Message-ID'] = make_msgid(domain=DNS_NAME)
++            punycode_domain = idna.encode(DNS_NAME).decode('ascii')
++            msg['Message-ID'] = make_msgid(domain=punycode_domain)
+         for name, value in self.extra_headers.items():
+             if name.lower() != 'from':  # From is already handled
+                 msg[name] = value
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.0.dev20190702105509) (2024.1)
+Requirement already satisfied: sqlparse in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.0.dev20190702105509) (0.4.4)
+Requirement already satisfied: asgiref in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.0.dev20190702105509) (3.4.1)
+Requirement already satisfied: typing-extensions in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from asgiref->Django==3.0.dev20190702105509) (4.1.1)
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 3.0.dev20190702105509
+    Uninstalling Django-3.0.dev20190702105509:
+      Successfully uninstalled Django-3.0.dev20190702105509
+  Running setup.py develop for Django
+Successfully installed Django-3.0.dev20190702105509
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
++ git checkout a5308514fb4bc5086c9a16a8a24a945eeebb073c tests/mail/tests.py
+Updated 0 paths from 0f0eb8295a
++ git apply -v -
+Checking patch tests/mail/tests.py...
+Applied patch tests/mail/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 mail.tests
+test_close_connection (mail.tests.ConsoleBackendTests) ... ok
+test_console_stream_kwarg (mail.tests.ConsoleBackendTests) ... ERROR
+test_empty_admins (mail.tests.ConsoleBackendTests) ... ok
+test_html_mail_admins (mail.tests.ConsoleBackendTests)
+Test html_message argument to mail_admins ... ERROR
+test_html_mail_managers (mail.tests.ConsoleBackendTests)
+Test html_message argument to mail_managers ... ERROR
+test_html_send_mail (mail.tests.ConsoleBackendTests)
+Test html_message argument to send_mail ... ERROR
+test_idn_send (mail.tests.ConsoleBackendTests) ... ERROR
+test_lazy_addresses (mail.tests.ConsoleBackendTests) ... ERROR
+test_manager_and_admin_mail_prefix (mail.tests.ConsoleBackendTests) ... ERROR
+test_message_cc_header (mail.tests.ConsoleBackendTests) ... ERROR
+test_plaintext_send_mail (mail.tests.ConsoleBackendTests) ... ERROR
+test_recipient_without_domain (mail.tests.ConsoleBackendTests) ... ERROR
+test_send (mail.tests.ConsoleBackendTests) ... ERROR
+test_send_long_lines (mail.tests.ConsoleBackendTests) ... ERROR
+test_send_many (mail.tests.ConsoleBackendTests) ... ERROR
+test_send_unicode (mail.tests.ConsoleBackendTests) ... ERROR
+test_send_verbose_name (mail.tests.ConsoleBackendTests) ... ERROR
+test_use_as_contextmanager (mail.tests.ConsoleBackendTests) ... ok
+test_wrong_admins_managers (mail.tests.ConsoleBackendTests) ... ok
+test_close_connection (mail.tests.FileBackendTests) ... ok
+test_empty_admins (mail.tests.FileBackendTests) ... ok
+test_file_sessions (mail.tests.FileBackendTests)
+Make sure opening a connection creates a new file ... ERROR
+test_html_mail_admins (mail.tests.FileBackendTests)
+Test html_message argument to mail_admins ... ERROR
+test_html_mail_managers (mail.tests.FileBackendTests)
+Test html_message argument to mail_managers ... ERROR
+test_html_send_mail (mail.tests.FileBackendTests)
+Test html_message argument to send_mail ... ERROR
+test_idn_send (mail.tests.FileBackendTests) ... ERROR
+test_lazy_addresses (mail.tests.FileBackendTests) ... ERROR
+test_manager_and_admin_mail_prefix (mail.tests.FileBackendTests) ... ERROR
+test_message_cc_header (mail.tests.FileBackendTests) ... ERROR
+test_plaintext_send_mail (mail.tests.FileBackendTests) ... ERROR
+test_recipient_without_domain (mail.tests.FileBackendTests) ... ERROR
+test_send (mail.tests.FileBackendTests) ... ERROR
+test_send_long_lines (mail.tests.FileBackendTests) ... ERROR
+test_send_many (mail.tests.FileBackendTests) ... ERROR
+test_send_unicode (mail.tests.FileBackendTests) ... ERROR
+test_send_verbose_name (mail.tests.FileBackendTests) ... ERROR
+test_use_as_contextmanager (mail.tests.FileBackendTests) ... ok
+test_wrong_admins_managers (mail.tests.FileBackendTests) ... ok
+test_close_connection (mail.tests.LocmemBackendTests) ... ok
+test_empty_admins (mail.tests.LocmemBackendTests) ... ok
+test_html_mail_admins (mail.tests.LocmemBackendTests)
+Test html_message argument to mail_admins ... ERROR
+test_html_mail_managers (mail.tests.LocmemBackendTests)
+Test html_message argument to mail_managers ... ERROR
+test_html_send_mail (mail.tests.LocmemBackendTests)
+Test html_message argument to send_mail ... ERROR
+test_idn_send (mail.tests.LocmemBackendTests) ... ERROR
+test_lazy_addresses (mail.tests.LocmemBackendTests) ... ERROR
+test_locmem_shared_messages (mail.tests.LocmemBackendTests) ... ERROR
+test_manager_and_admin_mail_prefix (mail.tests.LocmemBackendTests) ... ERROR
+test_message_cc_header (mail.tests.LocmemBackendTests) ... ERROR
+test_plaintext_send_mail (mail.tests.LocmemBackendTests) ... ERROR
+test_recipient_without_domain (mail.tests.LocmemBackendTests) ... ERROR
+test_send (mail.tests.LocmemBackendTests) ... ERROR
+test_send_long_lines (mail.tests.LocmemBackendTests) ... ERROR
+test_send_many (mail.tests.LocmemBackendTests) ... ERROR
+test_send_unicode (mail.tests.LocmemBackendTests) ... ERROR
+test_send_verbose_name (mail.tests.LocmemBackendTests) ... ERROR
+test_use_as_contextmanager (mail.tests.LocmemBackendTests) ... ok
+test_validate_multiline_headers (mail.tests.LocmemBackendTests) ... ok
+test_wrong_admins_managers (mail.tests.LocmemBackendTests) ... ok
+test_arbitrary_keyword (mail.tests.MailTests) ... ok
+test_ascii (mail.tests.MailTests) ... ERROR
+test_attach_file (mail.tests.MailTests) ... ERROR
+test_attach_non_utf8_text_as_bytes (mail.tests.MailTests) ... ERROR
+test_attach_text_as_bytes (mail.tests.MailTests) ... ERROR
+test_attach_utf8_text_as_bytes (mail.tests.MailTests) ... ERROR
+test_attachments (mail.tests.MailTests)
+Regression test for #9367 ... ok
+test_attachments_MIMEText (mail.tests.MailTests) ... ERROR
+test_attachments_two_tuple (mail.tests.MailTests) ... ERROR
+test_backend_arg (mail.tests.MailTests)
+Test backend argument of mail.get_connection() ... ok
+test_cc (mail.tests.MailTests)
+Regression test for #7722 ... ERROR
+test_cc_headers (mail.tests.MailTests) ... ERROR
+test_cc_in_headers_only (mail.tests.MailTests) ... ERROR
+test_connection_arg (mail.tests.MailTests)
+Test connection argument to send_mail(), et. al. ... ok
+test_custom_backend (mail.tests.MailTests)
+Test custom backend defined in this suite. ... ok
+test_custom_utf8_encoding (mail.tests.MailTests)
+A UTF-8 charset with a custom body encoding is respected. ... ERROR
+test_dont_base64_encode (mail.tests.MailTests) ... ERROR
+test_dont_base64_encode_message_rfc822 (mail.tests.MailTests) ... ERROR
+test_dont_mangle_from_in_body (mail.tests.MailTests) ... ERROR
+test_dummy_backend (mail.tests.MailTests) ... ok
+test_encoding (mail.tests.MailTests) ... ERROR
+test_from_header (mail.tests.MailTests) ... ERROR
+test_header_injection (mail.tests.MailTests) ... ok
+test_header_omitted_for_no_to_recipients (mail.tests.MailTests) ... ERROR
+test_message_header_overrides (mail.tests.MailTests) ... ok
+test_multiple_message_call (mail.tests.MailTests) ... ERROR
+test_multiple_recipients (mail.tests.MailTests) ... ERROR
+test_non_ascii_attachment_filename (mail.tests.MailTests)
+Regression test for #14964 ... ok
+test_non_ascii_dns_non_unicode_email (mail.tests.MailTests) ... ERROR
+test_none_body (mail.tests.MailTests) ... ERROR
+test_recipients_as_string (mail.tests.MailTests) ... ok
+test_recipients_as_tuple (mail.tests.MailTests) ... ERROR
+test_recipients_with_empty_strings (mail.tests.MailTests) ... ok
+test_reply_to (mail.tests.MailTests) ... ERROR
+test_reply_to_header (mail.tests.MailTests) ... ERROR
+test_reply_to_in_headers_only (mail.tests.MailTests) ... ERROR
+test_safe_mime_multipart (mail.tests.MailTests) ... ok
+test_safe_mime_multipart_with_attachments (mail.tests.MailTests) ... ERROR
+test_sanitize_address (mail.tests.MailTests)
+Email addresses are properly sanitized. ... ok
+test_sanitize_address_invalid (mail.tests.MailTests) ... ok
+test_space_continuation (mail.tests.MailTests) ... ERROR
+test_to_header (mail.tests.MailTests) ... ERROR
+test_to_in_headers_only (mail.tests.MailTests) ... ERROR
+test_unicode_address_header (mail.tests.MailTests) ... ERROR
+test_unicode_headers (mail.tests.MailTests) ... ERROR
+test_date_header_localtime (mail.tests.MailTimeZoneTests) ... ERROR
+test_date_header_utc (mail.tests.MailTimeZoneTests) ... ERROR
+test_7bit (mail.tests.PythonGlobalState) ... ok
+test_8bit_latin (mail.tests.PythonGlobalState) ... ok
+test_8bit_non_latin (mail.tests.PythonGlobalState) ... ok
+test_utf8 (mail.tests.PythonGlobalState) ... ok
+test_fail_silently_on_connection_error (mail.tests.SMTPBackendStoppedServerTests) ... ok
+test_server_stopped (mail.tests.SMTPBackendStoppedServerTests) ... ok
+test_auth_attempted (mail.tests.SMTPBackendTests) ... ok
+test_close_connection (mail.tests.SMTPBackendTests) ... ok
+test_connection_timeout_custom (mail.tests.SMTPBackendTests)
+The timeout parameter can be customized. ... ok
+test_connection_timeout_default (mail.tests.SMTPBackendTests)
+The connection's timeout value is None by default. ... ok
+test_email_authentication_override_settings (mail.tests.SMTPBackendTests) ... ok
+test_email_authentication_use_settings (mail.tests.SMTPBackendTests) ... ok
+test_email_disabled_authentication (mail.tests.SMTPBackendTests) ... ok
+test_email_msg_uses_crlf (mail.tests.SMTPBackendTests)
+#23063 -- RFC-compliant messages are sent over SMTP. ... ERROR
+test_email_ssl_attempts_ssl_connection (mail.tests.SMTPBackendTests) ... ok
+test_email_ssl_certfile_default_disabled (mail.tests.SMTPBackendTests) ... ok
+test_email_ssl_certfile_override_settings (mail.tests.SMTPBackendTests) ... ok
+test_email_ssl_certfile_use_settings (mail.tests.SMTPBackendTests) ... ok
+test_email_ssl_default_disabled (mail.tests.SMTPBackendTests) ... ok
+test_email_ssl_keyfile_default_disabled (mail.tests.SMTPBackendTests) ... ok
+test_email_ssl_keyfile_override_settings (mail.tests.SMTPBackendTests) ... ok
+test_email_ssl_keyfile_use_settings (mail.tests.SMTPBackendTests) ... ok
+test_email_ssl_override_settings (mail.tests.SMTPBackendTests) ... ok
+test_email_ssl_use_settings (mail.tests.SMTPBackendTests) ... ok
+test_email_timeout_override_settings (mail.tests.SMTPBackendTests) ... ok
+test_email_tls_attempts_starttls (mail.tests.SMTPBackendTests) ... ok
+test_email_tls_default_disabled (mail.tests.SMTPBackendTests) ... ok
+test_email_tls_override_settings (mail.tests.SMTPBackendTests) ... ok
+test_email_tls_use_settings (mail.tests.SMTPBackendTests) ... ok
+test_empty_admins (mail.tests.SMTPBackendTests) ... ok
+test_html_mail_admins (mail.tests.SMTPBackendTests)
+Test html_message argument to mail_admins ... ERROR
+test_html_mail_managers (mail.tests.SMTPBackendTests)
+Test html_message argument to mail_managers ... ERROR
+test_html_send_mail (mail.tests.SMTPBackendTests)
+Test html_message argument to send_mail ... ERROR
+test_idn_send (mail.tests.SMTPBackendTests) ... ERROR
+test_lazy_addresses (mail.tests.SMTPBackendTests) ... ERROR
+test_manager_and_admin_mail_prefix (mail.tests.SMTPBackendTests) ... ERROR
+test_message_cc_header (mail.tests.SMTPBackendTests) ... ERROR
+test_plaintext_send_mail (mail.tests.SMTPBackendTests) ... ERROR
+test_recipient_without_domain (mail.tests.SMTPBackendTests) ... ERROR
+test_reopen_connection (mail.tests.SMTPBackendTests) ... ok
+test_send (mail.tests.SMTPBackendTests) ... ERROR
+test_send_long_lines (mail.tests.SMTPBackendTests) ... ERROR
+test_send_many (mail.tests.SMTPBackendTests) ... ERROR
+test_send_messages_after_open_failed (mail.tests.SMTPBackendTests) ... ok
+test_send_messages_empty_list (mail.tests.SMTPBackendTests) ... ok
+test_send_messages_zero_sent (mail.tests.SMTPBackendTests)
+A message isn't sent if it doesn't have any recipients. ... ok
+test_send_unicode (mail.tests.SMTPBackendTests) ... ERROR
+test_send_verbose_name (mail.tests.SMTPBackendTests) ... ERROR
+test_server_login (mail.tests.SMTPBackendTests) ... ok
+test_server_open (mail.tests.SMTPBackendTests) ... ok
+test_ssl_tls_mutually_exclusive (mail.tests.SMTPBackendTests) ... ok
+test_use_as_contextmanager (mail.tests.SMTPBackendTests) ... ok
+test_wrong_admins_managers (mail.tests.SMTPBackendTests) ... ok
+
+======================================================================
+ERROR: test_console_stream_kwarg (mail.tests.ConsoleBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1239, in test_console_stream_kwarg
+    send_mail('Subject', 'Content', 'from@example.com', ['to@example.com'], connection=connection)
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/console.py", line 17, in write_message
+    msg = message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_html_mail_admins (mail.tests.ConsoleBackendTests)
+Test html_message argument to mail_admins
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 370, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/mail/tests.py", line 962, in test_html_mail_admins
+    mail_admins('Subject', 'Content', html_message='HTML Content')
+  File "/testbed/django/core/mail/__init__.py", line 103, in mail_admins
+    mail.send(fail_silently=fail_silently)
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/console.py", line 17, in write_message
+    msg = message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_html_mail_managers (mail.tests.ConsoleBackendTests)
+Test html_message argument to mail_managers
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 370, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/mail/tests.py", line 947, in test_html_mail_managers
+    mail_managers('Subject', 'Content', html_message='HTML Content')
+  File "/testbed/django/core/mail/__init__.py", line 120, in mail_managers
+    mail.send(fail_silently=fail_silently)
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/console.py", line 17, in write_message
+    msg = message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_html_send_mail (mail.tests.ConsoleBackendTests)
+Test html_message argument to send_mail
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 932, in test_html_send_mail
+    send_mail('Subject', 'Content', 'sender@example.com', ['nobody@example.com'], html_message='HTML Content')
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/console.py", line 17, in write_message
+    msg = message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_idn_send (mail.tests.ConsoleBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1040, in test_idn_send
+    self.assertTrue(send_mail('Subject', 'Content', 'from@öäü.com', ['to@öäü.com']))
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/console.py", line 17, in write_message
+    msg = message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_lazy_addresses (mail.tests.ConsoleBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1070, in test_lazy_addresses
+    self.assertTrue(send_mail('Subject', 'Content', _('tester'), [_('django')]))
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/console.py", line 17, in write_message
+    msg = message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_manager_and_admin_mail_prefix (mail.tests.ConsoleBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 370, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/mail/tests.py", line 982, in test_manager_and_admin_mail_prefix
+    mail_managers(gettext_lazy('Subject'), 'Content')
+  File "/testbed/django/core/mail/__init__.py", line 120, in mail_managers
+    mail.send(fail_silently=fail_silently)
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/console.py", line 17, in write_message
+    msg = message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_message_cc_header (mail.tests.ConsoleBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1024, in test_message_cc_header
+    mail.get_connection().send_messages([email])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/console.py", line 17, in write_message
+    msg = message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_plaintext_send_mail (mail.tests.ConsoleBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 921, in test_plaintext_send_mail
+    send_mail('Subject', 'Content', 'sender@example.com', ['nobody@example.com'])
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/console.py", line 17, in write_message
+    msg = message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_recipient_without_domain (mail.tests.ConsoleBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1059, in test_recipient_without_domain
+    self.assertTrue(send_mail("Subject", "Content", "tester", ["django"]))
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/console.py", line 17, in write_message
+    msg = message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send (mail.tests.ConsoleBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 860, in test_send
+    num_sent = mail.get_connection().send_messages([email])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/console.py", line 17, in write_message
+    msg = message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send_long_lines (mail.tests.ConsoleBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 885, in test_send_long_lines
+    email.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/console.py", line 17, in write_message
+    msg = message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send_many (mail.tests.ConsoleBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 899, in test_send_many
+    num_sent = mail.get_connection().send_messages(emails_list)
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/console.py", line 17, in write_message
+    msg = message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send_unicode (mail.tests.ConsoleBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 870, in test_send_unicode
+    num_sent = mail.get_connection().send_messages([email])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/console.py", line 17, in write_message
+    msg = message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send_verbose_name (mail.tests.ConsoleBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 910, in test_send_verbose_name
+    email.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/console.py", line 17, in write_message
+    msg = message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_file_sessions (mail.tests.FileBackendTests)
+Make sure opening a connection creates a new file
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1185, in test_file_sessions
+    connection.send_messages([msg])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/filebased.py", line 44, in write_message
+    self.stream.write(message.message().as_bytes() + b'\n')
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_html_mail_admins (mail.tests.FileBackendTests)
+Test html_message argument to mail_admins
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 370, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/mail/tests.py", line 962, in test_html_mail_admins
+    mail_admins('Subject', 'Content', html_message='HTML Content')
+  File "/testbed/django/core/mail/__init__.py", line 103, in mail_admins
+    mail.send(fail_silently=fail_silently)
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/filebased.py", line 44, in write_message
+    self.stream.write(message.message().as_bytes() + b'\n')
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_html_mail_managers (mail.tests.FileBackendTests)
+Test html_message argument to mail_managers
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 370, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/mail/tests.py", line 947, in test_html_mail_managers
+    mail_managers('Subject', 'Content', html_message='HTML Content')
+  File "/testbed/django/core/mail/__init__.py", line 120, in mail_managers
+    mail.send(fail_silently=fail_silently)
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/filebased.py", line 44, in write_message
+    self.stream.write(message.message().as_bytes() + b'\n')
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_html_send_mail (mail.tests.FileBackendTests)
+Test html_message argument to send_mail
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 932, in test_html_send_mail
+    send_mail('Subject', 'Content', 'sender@example.com', ['nobody@example.com'], html_message='HTML Content')
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/filebased.py", line 44, in write_message
+    self.stream.write(message.message().as_bytes() + b'\n')
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_idn_send (mail.tests.FileBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1040, in test_idn_send
+    self.assertTrue(send_mail('Subject', 'Content', 'from@öäü.com', ['to@öäü.com']))
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/filebased.py", line 44, in write_message
+    self.stream.write(message.message().as_bytes() + b'\n')
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_lazy_addresses (mail.tests.FileBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1070, in test_lazy_addresses
+    self.assertTrue(send_mail('Subject', 'Content', _('tester'), [_('django')]))
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/filebased.py", line 44, in write_message
+    self.stream.write(message.message().as_bytes() + b'\n')
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_manager_and_admin_mail_prefix (mail.tests.FileBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 370, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/mail/tests.py", line 982, in test_manager_and_admin_mail_prefix
+    mail_managers(gettext_lazy('Subject'), 'Content')
+  File "/testbed/django/core/mail/__init__.py", line 120, in mail_managers
+    mail.send(fail_silently=fail_silently)
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/filebased.py", line 44, in write_message
+    self.stream.write(message.message().as_bytes() + b'\n')
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_message_cc_header (mail.tests.FileBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1024, in test_message_cc_header
+    mail.get_connection().send_messages([email])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/filebased.py", line 44, in write_message
+    self.stream.write(message.message().as_bytes() + b'\n')
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_plaintext_send_mail (mail.tests.FileBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 921, in test_plaintext_send_mail
+    send_mail('Subject', 'Content', 'sender@example.com', ['nobody@example.com'])
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/filebased.py", line 44, in write_message
+    self.stream.write(message.message().as_bytes() + b'\n')
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_recipient_without_domain (mail.tests.FileBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1059, in test_recipient_without_domain
+    self.assertTrue(send_mail("Subject", "Content", "tester", ["django"]))
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/filebased.py", line 44, in write_message
+    self.stream.write(message.message().as_bytes() + b'\n')
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send (mail.tests.FileBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 860, in test_send
+    num_sent = mail.get_connection().send_messages([email])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/filebased.py", line 44, in write_message
+    self.stream.write(message.message().as_bytes() + b'\n')
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send_long_lines (mail.tests.FileBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 885, in test_send_long_lines
+    email.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/filebased.py", line 44, in write_message
+    self.stream.write(message.message().as_bytes() + b'\n')
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send_many (mail.tests.FileBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 899, in test_send_many
+    num_sent = mail.get_connection().send_messages(emails_list)
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/filebased.py", line 44, in write_message
+    self.stream.write(message.message().as_bytes() + b'\n')
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send_unicode (mail.tests.FileBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 870, in test_send_unicode
+    num_sent = mail.get_connection().send_messages([email])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/filebased.py", line 44, in write_message
+    self.stream.write(message.message().as_bytes() + b'\n')
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send_verbose_name (mail.tests.FileBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 910, in test_send_verbose_name
+    email.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/console.py", line 34, in send_messages
+    self.write_message(message)
+  File "/testbed/django/core/mail/backends/filebased.py", line 44, in write_message
+    self.stream.write(message.message().as_bytes() + b'\n')
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_html_mail_admins (mail.tests.LocmemBackendTests)
+Test html_message argument to mail_admins
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 370, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/mail/tests.py", line 962, in test_html_mail_admins
+    mail_admins('Subject', 'Content', html_message='HTML Content')
+  File "/testbed/django/core/mail/__init__.py", line 103, in mail_admins
+    mail.send(fail_silently=fail_silently)
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/locmem.py", line 27, in send_messages
+    message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_html_mail_managers (mail.tests.LocmemBackendTests)
+Test html_message argument to mail_managers
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 370, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/mail/tests.py", line 947, in test_html_mail_managers
+    mail_managers('Subject', 'Content', html_message='HTML Content')
+  File "/testbed/django/core/mail/__init__.py", line 120, in mail_managers
+    mail.send(fail_silently=fail_silently)
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/locmem.py", line 27, in send_messages
+    message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_html_send_mail (mail.tests.LocmemBackendTests)
+Test html_message argument to send_mail
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 932, in test_html_send_mail
+    send_mail('Subject', 'Content', 'sender@example.com', ['nobody@example.com'], html_message='HTML Content')
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/locmem.py", line 27, in send_messages
+    message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_idn_send (mail.tests.LocmemBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1040, in test_idn_send
+    self.assertTrue(send_mail('Subject', 'Content', 'from@öäü.com', ['to@öäü.com']))
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/locmem.py", line 27, in send_messages
+    message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_lazy_addresses (mail.tests.LocmemBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1070, in test_lazy_addresses
+    self.assertTrue(send_mail('Subject', 'Content', _('tester'), [_('django')]))
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/locmem.py", line 27, in send_messages
+    message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_locmem_shared_messages (mail.tests.LocmemBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1142, in test_locmem_shared_messages
+    connection.send_messages([email])
+  File "/testbed/django/core/mail/backends/locmem.py", line 27, in send_messages
+    message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_manager_and_admin_mail_prefix (mail.tests.LocmemBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 370, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/mail/tests.py", line 982, in test_manager_and_admin_mail_prefix
+    mail_managers(gettext_lazy('Subject'), 'Content')
+  File "/testbed/django/core/mail/__init__.py", line 120, in mail_managers
+    mail.send(fail_silently=fail_silently)
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/locmem.py", line 27, in send_messages
+    message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_message_cc_header (mail.tests.LocmemBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1024, in test_message_cc_header
+    mail.get_connection().send_messages([email])
+  File "/testbed/django/core/mail/backends/locmem.py", line 27, in send_messages
+    message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_plaintext_send_mail (mail.tests.LocmemBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 921, in test_plaintext_send_mail
+    send_mail('Subject', 'Content', 'sender@example.com', ['nobody@example.com'])
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/locmem.py", line 27, in send_messages
+    message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_recipient_without_domain (mail.tests.LocmemBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1059, in test_recipient_without_domain
+    self.assertTrue(send_mail("Subject", "Content", "tester", ["django"]))
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/locmem.py", line 27, in send_messages
+    message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send (mail.tests.LocmemBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 860, in test_send
+    num_sent = mail.get_connection().send_messages([email])
+  File "/testbed/django/core/mail/backends/locmem.py", line 27, in send_messages
+    message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send_long_lines (mail.tests.LocmemBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 885, in test_send_long_lines
+    email.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/locmem.py", line 27, in send_messages
+    message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send_many (mail.tests.LocmemBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 899, in test_send_many
+    num_sent = mail.get_connection().send_messages(emails_list)
+  File "/testbed/django/core/mail/backends/locmem.py", line 27, in send_messages
+    message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send_unicode (mail.tests.LocmemBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 870, in test_send_unicode
+    num_sent = mail.get_connection().send_messages([email])
+  File "/testbed/django/core/mail/backends/locmem.py", line 27, in send_messages
+    message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send_verbose_name (mail.tests.LocmemBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 910, in test_send_verbose_name
+    email.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/locmem.py", line 27, in send_messages
+    message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_ascii (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 73, in test_ascii
+    message = email.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_attach_file (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 485, in test_attach_file
+    msgs_sent_num = email.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/locmem.py", line 27, in send_messages
+    message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_attach_non_utf8_text_as_bytes (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 517, in test_attach_non_utf8_text_as_bytes
+    filename, content, mimetype = self.get_decoded_attachments(msg)[0]
+  File "/testbed/tests/mail/tests.py", line 58, in get_decoded_attachments
+    msg_bytes = django_message.message().as_bytes()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_attach_text_as_bytes (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 491, in test_attach_text_as_bytes
+    sent_num = msg.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/locmem.py", line 27, in send_messages
+    message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_attach_utf8_text_as_bytes (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 505, in test_attach_utf8_text_as_bytes
+    filename, content, mimetype = self.get_decoded_attachments(msg)[0]
+  File "/testbed/tests/mail/tests.py", line 58, in get_decoded_attachments
+    msg_bytes = django_message.message().as_bytes()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_attachments_MIMEText (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 442, in test_attachments_MIMEText
+    payload = msg.message().get_payload()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_attachments_two_tuple (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 434, in test_attachments_two_tuple
+    filename, content, mimetype = self.get_decoded_attachments(msg)[0]
+  File "/testbed/tests/mail/tests.py", line 58, in get_decoded_attachments
+    msg_bytes = django_message.message().as_bytes()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_cc (mail.tests.MailTests)
+Regression test for #7722
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 110, in test_cc
+    message = email.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_cc_headers (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 141, in test_cc_headers
+    cc=['foo@example.com'], headers={'Cc': 'override@example.com'},
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_cc_in_headers_only (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 148, in test_cc_in_headers_only
+    headers={'Cc': 'foo@example.com'},
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_custom_utf8_encoding (mail.tests.MailTests)
+A UTF-8 charset with a custom body encoding is respected.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 707, in test_custom_utf8_encoding
+    message = msg.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_dont_base64_encode (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 625, in test_dont_base64_encode
+    self.assertIn(b'Content-Transfer-Encoding: 7bit', msg.message().as_bytes())
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_dont_base64_encode_message_rfc822 (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 663, in test_dont_base64_encode_message_rfc822
+    child_s = child_msg.message().as_string()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_dont_mangle_from_in_body (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 616, in test_dont_mangle_from_in_body
+    self.assertNotIn(b'>From the future', email.message().as_bytes())
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_encoding (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 383, in test_encoding
+    message = email.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_from_header (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 242, in test_from_header
+    message = email.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_header_omitted_for_no_to_recipients (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 88, in test_header_omitted_for_no_to_recipients
+    message = EmailMessage('Subject', 'Content', 'from@example.com', cc=['cc@example.com']).message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_multiple_message_call (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 297, in test_multiple_message_call
+    message = email.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_multiple_recipients (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 81, in test_multiple_recipients
+    message = email.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_non_ascii_dns_non_unicode_email (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/unittest/mock.py", line 1183, in patched
+    return func(*args, **keywargs)
+  File "/testbed/tests/mail/tests.py", line 371, in test_non_ascii_dns_non_unicode_email
+    delattr(DNS_NAME, '_fqdn')
+AttributeError: _fqdn
+
+======================================================================
+ERROR: test_none_body (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 367, in test_none_body
+    self.assertEqual(msg.message().get_payload(), '')
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_recipients_as_tuple (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 172, in test_recipients_as_tuple
+    message = email.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_reply_to (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 157, in test_reply_to
+    message = email.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_reply_to_header (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 278, in test_reply_to_header
+    message = email.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_reply_to_in_headers_only (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 284, in test_reply_to_in_headers_only
+    headers={'Reply-To': 'reply_to@example.com'},
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_safe_mime_multipart_with_attachments (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 362, in test_safe_mime_multipart_with_attachments
+    self.assertIn(html_content, msg.message().as_string())
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_space_continuation (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 208, in test_space_continuation
+    message = email.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_to_header (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 252, in test_to_header
+    message = email.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_to_in_headers_only (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 266, in test_to_in_headers_only
+    headers={'To': 'to@example.com'},
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_unicode_address_header (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 313, in test_unicode_address_header
+    email.message()['To'],
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_unicode_headers (mail.tests.MailTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 333, in test_unicode_headers
+    message = email.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_date_header_localtime (mail.tests.MailTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 370, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/mail/tests.py", line 802, in test_date_header_localtime
+    self.assertTrue(email.message()['Date'].endswith('+0100'))  # Africa/Algiers is UTC+1
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_date_header_utc (mail.tests.MailTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 370, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/mail/tests.py", line 794, in test_date_header_utc
+    self.assertTrue(email.message()['Date'].endswith('-0000'))
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_email_msg_uses_crlf (mail.tests.SMTPBackendTests)
+#23063 -- RFC-compliant messages are sent over SMTP.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1565, in test_email_msg_uses_crlf
+    mail.get_connection().send_messages([email])
+  File "/testbed/django/core/mail/backends/smtp.py", line 109, in send_messages
+    sent = self._send(message)
+  File "/testbed/django/core/mail/backends/smtp.py", line 123, in _send
+    message = email_message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_html_mail_admins (mail.tests.SMTPBackendTests)
+Test html_message argument to mail_admins
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 370, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/mail/tests.py", line 962, in test_html_mail_admins
+    mail_admins('Subject', 'Content', html_message='HTML Content')
+  File "/testbed/django/core/mail/__init__.py", line 103, in mail_admins
+    mail.send(fail_silently=fail_silently)
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/smtp.py", line 109, in send_messages
+    sent = self._send(message)
+  File "/testbed/django/core/mail/backends/smtp.py", line 123, in _send
+    message = email_message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_html_mail_managers (mail.tests.SMTPBackendTests)
+Test html_message argument to mail_managers
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 370, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/mail/tests.py", line 947, in test_html_mail_managers
+    mail_managers('Subject', 'Content', html_message='HTML Content')
+  File "/testbed/django/core/mail/__init__.py", line 120, in mail_managers
+    mail.send(fail_silently=fail_silently)
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/smtp.py", line 109, in send_messages
+    sent = self._send(message)
+  File "/testbed/django/core/mail/backends/smtp.py", line 123, in _send
+    message = email_message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_html_send_mail (mail.tests.SMTPBackendTests)
+Test html_message argument to send_mail
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 932, in test_html_send_mail
+    send_mail('Subject', 'Content', 'sender@example.com', ['nobody@example.com'], html_message='HTML Content')
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/smtp.py", line 109, in send_messages
+    sent = self._send(message)
+  File "/testbed/django/core/mail/backends/smtp.py", line 123, in _send
+    message = email_message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_idn_send (mail.tests.SMTPBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1040, in test_idn_send
+    self.assertTrue(send_mail('Subject', 'Content', 'from@öäü.com', ['to@öäü.com']))
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/smtp.py", line 109, in send_messages
+    sent = self._send(message)
+  File "/testbed/django/core/mail/backends/smtp.py", line 123, in _send
+    message = email_message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_lazy_addresses (mail.tests.SMTPBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1070, in test_lazy_addresses
+    self.assertTrue(send_mail('Subject', 'Content', _('tester'), [_('django')]))
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/smtp.py", line 109, in send_messages
+    sent = self._send(message)
+  File "/testbed/django/core/mail/backends/smtp.py", line 123, in _send
+    message = email_message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_manager_and_admin_mail_prefix (mail.tests.SMTPBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 370, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/mail/tests.py", line 982, in test_manager_and_admin_mail_prefix
+    mail_managers(gettext_lazy('Subject'), 'Content')
+  File "/testbed/django/core/mail/__init__.py", line 120, in mail_managers
+    mail.send(fail_silently=fail_silently)
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/smtp.py", line 109, in send_messages
+    sent = self._send(message)
+  File "/testbed/django/core/mail/backends/smtp.py", line 123, in _send
+    message = email_message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_message_cc_header (mail.tests.SMTPBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1024, in test_message_cc_header
+    mail.get_connection().send_messages([email])
+  File "/testbed/django/core/mail/backends/smtp.py", line 109, in send_messages
+    sent = self._send(message)
+  File "/testbed/django/core/mail/backends/smtp.py", line 123, in _send
+    message = email_message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_plaintext_send_mail (mail.tests.SMTPBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 921, in test_plaintext_send_mail
+    send_mail('Subject', 'Content', 'sender@example.com', ['nobody@example.com'])
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/smtp.py", line 109, in send_messages
+    sent = self._send(message)
+  File "/testbed/django/core/mail/backends/smtp.py", line 123, in _send
+    message = email_message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_recipient_without_domain (mail.tests.SMTPBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 1059, in test_recipient_without_domain
+    self.assertTrue(send_mail("Subject", "Content", "tester", ["django"]))
+  File "/testbed/django/core/mail/__init__.py", line 60, in send_mail
+    return mail.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/smtp.py", line 109, in send_messages
+    sent = self._send(message)
+  File "/testbed/django/core/mail/backends/smtp.py", line 123, in _send
+    message = email_message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send (mail.tests.SMTPBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 860, in test_send
+    num_sent = mail.get_connection().send_messages([email])
+  File "/testbed/django/core/mail/backends/smtp.py", line 109, in send_messages
+    sent = self._send(message)
+  File "/testbed/django/core/mail/backends/smtp.py", line 123, in _send
+    message = email_message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send_long_lines (mail.tests.SMTPBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 885, in test_send_long_lines
+    email.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/smtp.py", line 109, in send_messages
+    sent = self._send(message)
+  File "/testbed/django/core/mail/backends/smtp.py", line 123, in _send
+    message = email_message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+Testing against Django installed in '/testbed/django'
+Importing application mail
+Skipping setup of unused database(s): default, other.
+System check identified no issues (0 silenced).
+
+======================================================================
+ERROR: test_send_many (mail.tests.SMTPBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 899, in test_send_many
+    num_sent = mail.get_connection().send_messages(emails_list)
+  File "/testbed/django/core/mail/backends/smtp.py", line 109, in send_messages
+    sent = self._send(message)
+  File "/testbed/django/core/mail/backends/smtp.py", line 123, in _send
+    message = email_message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send_unicode (mail.tests.SMTPBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 870, in test_send_unicode
+    num_sent = mail.get_connection().send_messages([email])
+  File "/testbed/django/core/mail/backends/smtp.py", line 109, in send_messages
+    sent = self._send(message)
+  File "/testbed/django/core/mail/backends/smtp.py", line 123, in _send
+    message = email_message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+======================================================================
+ERROR: test_send_verbose_name (mail.tests.SMTPBackendTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/mail/tests.py", line 910, in test_send_verbose_name
+    email.send()
+  File "/testbed/django/core/mail/message.py", line 282, in send
+    return self.get_connection(fail_silently).send_messages([self])
+  File "/testbed/django/core/mail/backends/smtp.py", line 109, in send_messages
+    sent = self._send(message)
+  File "/testbed/django/core/mail/backends/smtp.py", line 123, in _send
+    message = email_message.message()
+  File "/testbed/django/core/mail/message.py", line 262, in message
+    punycode_domain = idna.encode(DNS_NAME).decode('ascii')
+  File "/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/idna/core.py", line 342, in encode
+    s = str(s, 'ascii')
+TypeError: decoding to str: need a bytes-like object, CachedDnsName found
+
+----------------------------------------------------------------------
+Ran 158 tests in 0.397s
+
+FAILED (errors=93)
++ git checkout a5308514fb4bc5086c9a16a8a24a945eeebb073c tests/mail/tests.py
+Updated 1 path from 0f0eb8295a

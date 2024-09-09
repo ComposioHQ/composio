@@ -1,0 +1,41 @@
+{
+    "django__django-16631": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "test_get_user_fallback_secret (auth_tests.test_basic.TestGetUser.test_get_user_fallback_secret)"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "test_get_user (auth_tests.test_basic.TestGetUser.test_get_user)",
+                    "test_get_user_anonymous (auth_tests.test_basic.TestGetUser.test_get_user_anonymous)",
+                    "The current user model can be retrieved",
+                    "Check the creation and properties of a superuser",
+                    "test_superuser_no_email_or_password (auth_tests.test_basic.BasicTestCase.test_superuser_no_email_or_password)",
+                    "The current user model can be swapped out for another",
+                    "The alternate user setting must point to something in the format app.model",
+                    "The current user model must point to an installed model",
+                    "test_unicode_username (auth_tests.test_basic.BasicTestCase.test_unicode_username)",
+                    "Users can be created and can set their password",
+                    "Users can be created without an email",
+                    "Default User model verbose names are translatable (#19945)"
+                ]
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

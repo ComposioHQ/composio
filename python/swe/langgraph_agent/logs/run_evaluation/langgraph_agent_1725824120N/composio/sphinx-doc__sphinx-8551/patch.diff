@@ -1,0 +1,52 @@
+diff --git a/sphinx/domains/python.py b/sphinx/domains/python.py
+index 79d7e4f..c2eac99 100644
+--- a/sphinx/domains/python.py
++++ b/sphinx/domains/python.py
+@@ -1255,6 +1255,18 @@ class PythonDomain(Domain):
+             else:
+                 objtypes = self.objtypes_for_role(type)
+             if objtypes is not None:
++                # Prioritize matches in the current module context
++                if modname:
++                    fullname = modname + '.' + name
++                    if fullname in self.objects and self.objects[fullname].objtype in objtypes:
++                        return [(fullname, self.objects[fullname])]
++                    
++                    if classname:
++                        fullname = modname + '.' + classname + '.' + name
++                        if fullname in self.objects and self.objects[fullname].objtype in objtypes:
++                            return [(fullname, self.objects[fullname])]
++
++                # If no match found in the current context, proceed with the existing search logic
+                 if modname and classname:
+                     fullname = modname + '.' + classname + '.' + name
+                     if fullname in self.objects and self.objects[fullname].objtype in objtypes:
+@@ -1283,7 +1295,7 @@ class PythonDomain(Domain):
+             elif modname and modname + '.' + name in self.objects:
+                 newname = modname + '.' + name
+             elif modname and classname and \
+-                    modname + '.' + classname + '.' + name in self.objects:
++                modname + '.' + classname + '.' + name in self.objects:
+                 newname = modname + '.' + classname + '.' + name
+         if newname is not None:
+             matches.append((newname, self.objects[newname]))
+@@ -1295,13 +1307,15 @@ class PythonDomain(Domain):
+         modname = node.get('py:module')
+         clsname = node.get('py:class')
+         searchmode = 1 if node.hasattr('refspecific') else 0
+-        matches = self.find_obj(env, modname, clsname, target,
+-                                type, searchmode)
++        
++        # Pass the current module context
++        current_module = env.temp_data.get('py:module')
++        
++        matches = self.find_obj(env, current_module, clsname, target, type, searchmode)
+ 
+         if not matches and type == 'attr':
+             # fallback to meth (for property)
+-            matches = self.find_obj(env, modname, clsname, target, 'meth', searchmode)
+-
++            matches = self.find_obj(env, current_module, clsname, target, 'meth', searchmode)
+         if not matches:
+             return None
+         elif len(matches) > 1:

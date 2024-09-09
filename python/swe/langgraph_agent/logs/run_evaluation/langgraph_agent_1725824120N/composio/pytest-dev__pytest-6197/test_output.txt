@@ -1,0 +1,2123 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   tox.ini
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit e856638ba086fcf5bebf1bebea32d5cf78de87b4
+Merge: d4e4ab5b3 dd9a27cf5
+Author: Bruno Oliveira <nicoddemus@gmail.com>
+Date:   Thu Nov 14 18:17:28 2019 -0300
+
+    Preparing release version 5.2.3 (#6190)
+    
+    Preparing release version 5.2.3
+
++ git diff e856638ba086fcf5bebf1bebea32d5cf78de87b4
+diff --git a/tox.ini b/tox.ini
+index b03941657..b8b0673e4 100644
+--- a/tox.ini
++++ b/tox.ini
+@@ -1,181 +1,9 @@
+ [tox]
+-isolated_build = True
+-minversion = 3.5.3
+-distshare = {homedir}/.tox/distshare
+-# make sure to update environment list in travis.yml and appveyor.yml
+-envlist =
+-    linting
+-    py35
+-    py36
+-    py37
+-    py38
+-    pypy
+-    pypy3
+-    py37-{pexpect,xdist,twisted,numpy,pluggymaster}
+-    doctesting
+-    py37-freeze
+-    docs
++envlist = py37-pytest{522,523}
++skipsdist = true
+ 
+ [testenv]
+-commands =
+-    {env:_PYTEST_TOX_COVERAGE_RUN:} pytest {posargs:{env:_PYTEST_TOX_DEFAULT_POSARGS:}}
+-    coverage: coverage combine
+-    coverage: coverage report -m
+-passenv = USER USERNAME COVERAGE_* TRAVIS PYTEST_ADDOPTS
+-setenv =
+-    _PYTEST_TOX_DEFAULT_POSARGS={env:_PYTEST_TOX_POSARGS_LSOF:} {env:_PYTEST_TOX_POSARGS_XDIST:}
+-
+-    # Configuration to run with coverage similar to Travis/Appveyor, e.g.
+-    # "tox -e py37-coverage".
+-    coverage: _PYTEST_TOX_COVERAGE_RUN=coverage run -m
+-    coverage: _PYTEST_TOX_EXTRA_DEP=coverage-enable-subprocess
+-    coverage: COVERAGE_FILE={toxinidir}/.coverage
+-    coverage: COVERAGE_PROCESS_START={toxinidir}/.coveragerc
+-
+-    nobyte: PYTHONDONTWRITEBYTECODE=1
+-
+-    lsof: _PYTEST_TOX_POSARGS_LSOF=--lsof
+-
+-    pexpect: _PYTEST_TOX_PLATFORM=linux|darwin
+-
+-    xdist: _PYTEST_TOX_POSARGS_XDIST=-n auto
+-extras = testing
+-deps =
+-    oldattrs: attrs==17.4.0
+-    oldattrs: hypothesis<=4.38.1
+-    numpy: numpy
+-    pexpect: pexpect
+-    pluggymaster: git+https://github.com/pytest-dev/pluggy.git@master
+-    twisted: twisted
+-    xdist: pytest-xdist>=1.13
+-    {env:_PYTEST_TOX_EXTRA_DEP:}
+-platform = {env:_PYTEST_TOX_PLATFORM:.*}
+-
+-[testenv:linting]
+-skip_install = True
+-basepython = python3
+-deps = pre-commit>=1.11.0
+-commands = pre-commit run --all-files --show-diff-on-failure
+-
+-[testenv:docs]
+-basepython = python3
+-usedevelop = True
+-changedir = doc/en
+-deps = -r{toxinidir}/doc/en/requirements.txt
+-
+-commands =
+-    sphinx-build -W -b html . _build
+-
+-[testenv:doctesting]
+-basepython = python3
+-skipsdist = True
+-deps =
+-    {[testenv]deps}
+-    PyYAML
+-commands =
+-    {env:_PYTEST_TOX_COVERAGE_RUN:} pytest doc/en
+-    {env:_PYTEST_TOX_COVERAGE_RUN:} pytest --doctest-modules --pyargs _pytest
+-
+-[testenv:regen]
+-changedir = doc/en
+-skipsdist = True
+-basepython = python3
+-deps =
+-    sphinx
+-    PyYAML
+-    regendoc>=0.6.1
+-    dataclasses
+-whitelist_externals =
+-    rm
+-    make
+-commands =
+-    # don't show hypothesis plugin info in docs, see #4602
+-    pip uninstall hypothesis -y
+-    rm -rf /tmp/doc-exec*
+-    rm -rf {envdir}/.pytest_cache
+-    make regen
+-
+-[testenv:py37-freeze]
+-changedir = testing/freeze
+ deps =
+-    pyinstaller
+-commands =
+-    {envpython} create_executable.py
+-    {envpython} tox_run.py
+-
+-[testenv:release]
+-decription = do a release, required posarg of the version number
+-basepython = python3
+-usedevelop = True
+-passenv = *
+-deps =
+-    colorama
+-    gitpython
+-    pre-commit>=1.11.0
+-    towncrier
+-    wheel
+-commands = python scripts/release.py {posargs}
+-
+-[testenv:publish_gh_release_notes]
+-description = create GitHub release after deployment
+-basepython = python3
+-usedevelop = True
+-passenv = GH_RELEASE_NOTES_TOKEN TRAVIS_TAG TRAVIS_REPO_SLUG
+-deps =
+-    github3.py
+-    pypandoc
+-commands = python scripts/publish_gh_release_notes.py
+-
+-
+-[pytest]
+-minversion = 2.0
+-addopts = -ra -p pytester --strict-markers
+-rsyncdirs = tox.ini doc src testing
+-python_files = test_*.py *_test.py testing/*/*.py
+-python_classes = Test Acceptance
+-python_functions = test
+-# NOTE: "doc" is not included here, but gets tested explicitly via "doctesting".
+-testpaths = testing
+-norecursedirs = testing/example_scripts
+-xfail_strict=true
+-filterwarnings =
+-    error
+-    default:Using or importing the ABCs:DeprecationWarning:unittest2.*
+-    ignore:Module already imported so cannot be rewritten:pytest.PytestWarning
+-    # https://github.com/pytest-dev/pytest/issues/5974
+-    default:\(rm_rf\) error removing.*:pytest.PytestWarning
+-    # produced by python3.6/site.py itself (3.6.7 on Travis, could not trigger it with 3.6.8).
+-    ignore:.*U.*mode is deprecated:DeprecationWarning:(?!(pytest|_pytest))
+-    # produced by pytest-xdist
+-    ignore:.*type argument to addoption.*:DeprecationWarning
+-    # produced by python >=3.5 on execnet (pytest-xdist)
+-    ignore:.*inspect.getargspec.*deprecated, use inspect.signature.*:DeprecationWarning
+-    # pytest's own futurewarnings
+-    ignore::pytest.PytestExperimentalApiWarning
+-    # Do not cause SyntaxError for invalid escape sequences in py37.
+-    # Those are caught/handled by pyupgrade, and not easy to filter with the
+-    # module being the filename (with .py removed).
+-    default:invalid escape sequence:DeprecationWarning
+-    # ignore use of unregistered marks, because we use many to test the implementation
+-    ignore::_pytest.warning_types.PytestUnknownMarkWarning
+-pytester_example_dir = testing/example_scripts
+-markers =
+-    # dummy markers for testing
+-    foo
+-    bar
+-    baz
+-    # conftest.py reorders tests moving slow ones to the end of the list
+-    slow
+-    # experimental mark for all tests using pexpect
+-    uses_pexpect
+-
+-[flake8]
+-max-line-length = 120
+-extend-ignore = E203
+-
+-[isort]
+-; This config mimics what reorder-python-imports does.
+-force_single_line = 1
+-known_localfolder = pytest,_pytest
+-known_third_party = test_source,test_excinfo
+-force_alphabetical_sort_within_sections = 1
++    pytest522: pytest==5.2.2
++    pytest523: pytest==5.2.3
++commands = pytest
+\ No newline at end of file
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: py>=1.5.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest==5.2.4.dev6+ge856638ba.d20240909) (1.11.0)
+Requirement already satisfied: packaging in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest==5.2.4.dev6+ge856638ba.d20240909) (23.1)
+Requirement already satisfied: attrs>=17.4.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest==5.2.4.dev6+ge856638ba.d20240909) (23.1.0)
+Requirement already satisfied: more-itertools>=4.0.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest==5.2.4.dev6+ge856638ba.d20240909) (10.1.0)
+Requirement already satisfied: atomicwrites>=1.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest==5.2.4.dev6+ge856638ba.d20240909) (1.4.1)
+Requirement already satisfied: pluggy<1.0,>=0.12 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest==5.2.4.dev6+ge856638ba.d20240909) (0.13.1)
+Requirement already satisfied: wcwidth in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest==5.2.4.dev6+ge856638ba.d20240909) (0.2.6)
+Building wheels for collected packages: pytest
+  Building editable for pytest (pyproject.toml): started
+  Building editable for pytest (pyproject.toml): finished with status 'done'
+  Created wheel for pytest: filename=pytest-5.2.4.dev6+ge856638ba.d20240909-0.editable-py3-none-any.whl size=5132 sha256=a872b693368207af34c4b6b48a4378530d3c760e23af3366272a7b36f8b2b396
+  Stored in directory: /tmp/pip-ephem-wheel-cache-lhnfcoin/wheels/7d/66/67/70d1ee2124ccf21d601c352e25cdca10f611f7c8b3f9ffb9e4
+Successfully built pytest
+Installing collected packages: pytest
+  Attempting uninstall: pytest
+    Found existing installation: pytest 5.2.4.dev6+ge856638ba
+    Uninstalling pytest-5.2.4.dev6+ge856638ba:
+      Successfully uninstalled pytest-5.2.4.dev6+ge856638ba
+Successfully installed pytest-5.2.4.dev6+ge856638ba.d20240909
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout e856638ba086fcf5bebf1bebea32d5cf78de87b4 testing/test_collection.py testing/test_skipping.py
+Updated 0 paths from 4024da694
++ git apply -v -
+Checking patch testing/test_collection.py...
+Checking patch testing/test_skipping.py...
+Applied patch testing/test_collection.py cleanly.
+Applied patch testing/test_skipping.py cleanly.
++ pytest -rA testing/test_collection.py testing/test_skipping.py
+============================= test session starts ==============================
+platform linux -- Python 3.9.19, pytest-5.2.4.dev6+ge856638ba.d20240909, py-1.11.0, pluggy-0.13.1
+rootdir: /testbed
+collected 149 items
+
+testing/test_collection.py .                                             [  0%]
+testing/test_skipping.py .                                               [  1%]
+testing/test_collection.py EEEEEEEEEEEEEEEEEEEEEEEEEEEExEEEEEEEEEEEEEEEE [ 31%]
+EEEEEEEEEEEEEEEEEEEEEEEEEEEE                                             [ 50%]
+testing/test_skipping.py EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE [ 81%]
+EEEEEEEEEEEEEEEEEEEEEEEEEEE                                              [100%]
+
+==================================== ERRORS ====================================
+_____________ ERROR at setup of TestCollector.test_check_equality ______________
+file /testbed/testing/test_collection.py, line 21
+      def test_check_equality(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:21
+________________ ERROR at setup of TestCollector.test_getparent ________________
+file /testbed/testing/test_collection.py, line 49
+      def test_getparent(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:49
+_________ ERROR at setup of TestCollector.test_getcustomfile_roundtrip _________
+file /testbed/testing/test_collection.py, line 69
+      def test_getcustomfile_roundtrip(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:69
+______ ERROR at setup of TestCollector.test_can_skip_class_with_test_attr ______
+file /testbed/testing/test_collection.py, line 88
+      def test_can_skip_class_with_test_attr(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:88
+_______ ERROR at setup of TestCollectFS.test_ignored_certain_directories _______
+file /testbed/testing/test_collection.py, line 105
+      def test_ignored_certain_directories(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:105
+______ ERROR at setup of TestCollectFS.test_ignored_virtualenvs[activate] ______
+file /testbed/testing/test_collection.py, line 123
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test_ignored_virtualenvs(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:123
+____ ERROR at setup of TestCollectFS.test_ignored_virtualenvs[activate.csh] ____
+file /testbed/testing/test_collection.py, line 123
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test_ignored_virtualenvs(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:123
+___ ERROR at setup of TestCollectFS.test_ignored_virtualenvs[activate.fish] ____
+file /testbed/testing/test_collection.py, line 123
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test_ignored_virtualenvs(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:123
+______ ERROR at setup of TestCollectFS.test_ignored_virtualenvs[Activate] ______
+file /testbed/testing/test_collection.py, line 123
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test_ignored_virtualenvs(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:123
+____ ERROR at setup of TestCollectFS.test_ignored_virtualenvs[Activate.bat] ____
+file /testbed/testing/test_collection.py, line 123
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test_ignored_virtualenvs(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:123
+____ ERROR at setup of TestCollectFS.test_ignored_virtualenvs[Activate.ps1] ____
+file /testbed/testing/test_collection.py, line 123
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test_ignored_virtualenvs(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:123
+_ ERROR at setup of TestCollectFS.test_ignored_virtualenvs_norecursedirs_precedence[activate] _
+file /testbed/testing/test_collection.py, line 150
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test_ignored_virtualenvs_norecursedirs_precedence(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:150
+_ ERROR at setup of TestCollectFS.test_ignored_virtualenvs_norecursedirs_precedence[activate.csh] _
+file /testbed/testing/test_collection.py, line 150
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test_ignored_virtualenvs_norecursedirs_precedence(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:150
+_ ERROR at setup of TestCollectFS.test_ignored_virtualenvs_norecursedirs_precedence[activate.fish] _
+file /testbed/testing/test_collection.py, line 150
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test_ignored_virtualenvs_norecursedirs_precedence(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:150
+_ ERROR at setup of TestCollectFS.test_ignored_virtualenvs_norecursedirs_precedence[Activate] _
+file /testbed/testing/test_collection.py, line 150
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test_ignored_virtualenvs_norecursedirs_precedence(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:150
+_ ERROR at setup of TestCollectFS.test_ignored_virtualenvs_norecursedirs_precedence[Activate.bat] _
+file /testbed/testing/test_collection.py, line 150
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test_ignored_virtualenvs_norecursedirs_precedence(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:150
+_ ERROR at setup of TestCollectFS.test_ignored_virtualenvs_norecursedirs_precedence[Activate.ps1] _
+file /testbed/testing/test_collection.py, line 150
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test_ignored_virtualenvs_norecursedirs_precedence(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:150
+___________ ERROR at setup of TestCollectFS.test__in_venv[activate] ____________
+file /testbed/testing/test_collection.py, line 173
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test__in_venv(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:173
+_________ ERROR at setup of TestCollectFS.test__in_venv[activate.csh] __________
+file /testbed/testing/test_collection.py, line 173
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test__in_venv(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:173
+_________ ERROR at setup of TestCollectFS.test__in_venv[activate.fish] _________
+file /testbed/testing/test_collection.py, line 173
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test__in_venv(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:173
+___________ ERROR at setup of TestCollectFS.test__in_venv[Activate] ____________
+file /testbed/testing/test_collection.py, line 173
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test__in_venv(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:173
+_________ ERROR at setup of TestCollectFS.test__in_venv[Activate.bat] __________
+file /testbed/testing/test_collection.py, line 173
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test__in_venv(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:173
+_________ ERROR at setup of TestCollectFS.test__in_venv[Activate.ps1] __________
+file /testbed/testing/test_collection.py, line 173
+      @pytest.mark.parametrize(
+          "fname",
+          (
+              "activate",
+              "activate.csh",
+              "activate.fish",
+              "Activate",
+              "Activate.bat",
+              "Activate.ps1",
+          ),
+      )
+      def test__in_venv(self, testdir, fname):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:173
+__________ ERROR at setup of TestCollectFS.test_custom_norecursedirs ___________
+file /testbed/testing/test_collection.py, line 194
+      def test_custom_norecursedirs(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:194
+______________ ERROR at setup of TestCollectFS.test_testpaths_ini ______________
+file /testbed/testing/test_collection.py, line 210
+      def test_testpaths_ini(self, testdir, monkeypatch):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:210
+____ ERROR at setup of TestCollectPluginHookRelay.test_pytest_collect_file _____
+file /testbed/testing/test_collection.py, line 242
+      def test_pytest_collect_file(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:242
+__ ERROR at setup of TestCollectPluginHookRelay.test_pytest_collect_directory __
+file /testbed/testing/test_collection.py, line 256
+      def test_pytest_collect_directory(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:256
+________ ERROR at setup of TestPrunetraceback.test_custom_repr_failure _________
+file /testbed/testing/test_collection.py, line 271
+      def test_custom_repr_failure(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:271
+________ ERROR at setup of TestCustomConftests.test_ignore_collect_path ________
+file /testbed/testing/test_collection.py, line 320
+      def test_ignore_collect_path(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:320
+_ ERROR at setup of TestCustomConftests.test_ignore_collect_not_called_on_argument _
+file /testbed/testing/test_collection.py, line 337
+      def test_ignore_collect_not_called_on_argument(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:337
+__ ERROR at setup of TestCustomConftests.test_collectignore_exclude_on_option __
+file /testbed/testing/test_collection.py, line 352
+      def test_collectignore_exclude_on_option(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:352
+_ ERROR at setup of TestCustomConftests.test_collectignoreglob_exclude_on_option _
+file /testbed/testing/test_collection.py, line 372
+      def test_collectignoreglob_exclude_on_option(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:372
+_ ERROR at setup of TestCustomConftests.test_pytest_fs_collect_hooks_are_seen __
+file /testbed/testing/test_collection.py, line 392
+      def test_pytest_fs_collect_hooks_are_seen(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:392
+_ ERROR at setup of TestCustomConftests.test_pytest_collect_file_from_sister_dir _
+file /testbed/testing/test_collection.py, line 408
+      def test_pytest_collect_file_from_sister_dir(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:408
+_________________ ERROR at setup of TestSession.test_parsearg __________________
+file /testbed/testing/test_collection.py, line 441
+      def test_parsearg(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:441
+______________ ERROR at setup of TestSession.test_collect_topdir _______________
+file /testbed/testing/test_collection.py, line 460
+      def test_collect_topdir(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:460
+_____ ERROR at setup of TestSession.test_collect_protocol_single_function ______
+file /testbed/testing/test_collection.py, line 485
+      def test_collect_protocol_single_function(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:485
+__________ ERROR at setup of TestSession.test_collect_protocol_method __________
+file /testbed/testing/test_collection.py, line 508
+      def test_collect_protocol_method(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:508
+_______ ERROR at setup of TestSession.test_collect_custom_nodes_multi_id _______
+file /testbed/testing/test_collection.py, line 526
+      def test_collect_custom_nodes_multi_id(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:526
+_______ ERROR at setup of TestSession.test_collect_subdir_event_ordering _______
+file /testbed/testing/test_collection.py, line 562
+      def test_collect_subdir_event_ordering(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:562
+_______ ERROR at setup of TestSession.test_collect_two_commandline_args ________
+file /testbed/testing/test_collection.py, line 579
+      def test_collect_two_commandline_args(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:579
+____________ ERROR at setup of TestSession.test_serialization_byid _____________
+file /testbed/testing/test_collection.py, line 604
+      def test_serialization_byid(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:604
+____ ERROR at setup of TestSession.test_find_byid_without_instance_parents _____
+file /testbed/testing/test_collection.py, line 614
+      def test_find_byid_without_instance_parents(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:614
+___________ ERROR at setup of Test_getinitialnodes.test_global_file ____________
+file /testbed/testing/test_collection.py, line 632
+      def test_global_file(self, testdir, tmpdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:632
+_____________ ERROR at setup of Test_getinitialnodes.test_pkgfile ______________
+file /testbed/testing/test_collection.py, line 643
+      def test_pkgfile(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:643
+__________ ERROR at setup of Test_genitems.test_check_collect_hashes ___________
+file /testbed/testing/test_collection.py, line 666
+      def test_check_collect_hashes(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:666
+_____________ ERROR at setup of Test_genitems.test_example_items1 ______________
+file /testbed/testing/test_collection.py, line 685
+      def test_example_items1(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:685
+_ ERROR at setup of Test_genitems.test_class_and_functions_discovery_using_glob _
+file /testbed/testing/test_collection.py, line 714
+      def test_class_and_functions_discovery_using_glob(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:714
+_________ ERROR at setup of test_matchnodes_two_collections_same_file __________
+file /testbed/testing/test_collection.py, line 742
+  def test_matchnodes_two_collections_same_file(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:742
+_______________ ERROR at setup of TestNodekeywords.test_no_under _______________
+file /testbed/testing/test_collection.py, line 779
+      def test_no_under(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:779
+_______________ ERROR at setup of TestNodekeywords.test_issue345 _______________
+file /testbed/testing/test_collection.py, line 792
+      def test_issue345(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:792
+_______________ ERROR at setup of test_exit_on_collection_error ________________
+file /testbed/testing/test_collection.py, line 828
+  def test_exit_on_collection_error(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:828
+_ ERROR at setup of test_exit_on_collection_with_maxfail_smaller_than_n_errors _
+file /testbed/testing/test_collection.py, line 846
+  def test_exit_on_collection_with_maxfail_smaller_than_n_errors(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:846
+_ ERROR at setup of test_exit_on_collection_with_maxfail_bigger_than_n_errors __
+file /testbed/testing/test_collection.py, line 863
+  def test_exit_on_collection_with_maxfail_bigger_than_n_errors(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:863
+_____________ ERROR at setup of test_continue_on_collection_errors _____________
+file /testbed/testing/test_collection.py, line 884
+  def test_continue_on_collection_errors(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:884
+_________ ERROR at setup of test_continue_on_collection_errors_maxfail _________
+file /testbed/testing/test_collection.py, line 899
+  def test_continue_on_collection_errors_maxfail(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:899
+____________ ERROR at setup of test_fixture_scope_sibling_conftests ____________
+file /testbed/testing/test_collection.py, line 915
+  def test_fixture_scope_sibling_conftests(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:915
+__________________ ERROR at setup of test_collect_init_tests ___________________
+file /testbed/testing/test_collection.py, line 946
+  def test_collect_init_tests(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:946
+___________ ERROR at setup of test_collect_invalid_signature_message ___________
+file /testbed/testing/test_collection.py, line 1007
+  def test_collect_invalid_signature_message(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:1007
+________ ERROR at setup of test_collect_handles_raising_on_dunder_class ________
+file /testbed/testing/test_collection.py, line 1027
+  def test_collect_handles_raising_on_dunder_class(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:1027
+___________ ERROR at setup of test_collect_with_chdir_during_import ____________
+file /testbed/testing/test_collection.py, line 1054
+  def test_collect_with_chdir_during_import(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:1054
+_____________ ERROR at setup of test_collect_pyargs_with_testpaths _____________
+file /testbed/testing/test_collection.py, line 1090
+  def test_collect_pyargs_with_testpaths(testdir, monkeypatch):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:1090
+_______________ ERROR at setup of test_collect_symlink_file_arg ________________
+file /testbed/testing/test_collection.py, line 1112
+  @pytest.mark.skipif(
+      not hasattr(py.path.local, "mksymlinkto"),
+      reason="symlink not available on this platform",
+  )
+  def test_collect_symlink_file_arg(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:1112
+______________ ERROR at setup of test_collect_symlink_out_of_tree ______________
+file /testbed/testing/test_collection.py, line 1131
+  @pytest.mark.skipif(
+      not hasattr(py.path.local, "mksymlinkto"),
+      reason="symlink not available on this platform",
+  )
+  def test_collect_symlink_out_of_tree(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:1131
+______________ ERROR at setup of test_collectignore_via_conftest _______________
+file /testbed/testing/test_collection.py, line 1164
+  def test_collectignore_via_conftest(testdir, monkeypatch):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:1164
+___________ ERROR at setup of test_collect_pkg_init_and_file_in_args ___________
+file /testbed/testing/test_collection.py, line 1177
+  def test_collect_pkg_init_and_file_in_args(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:1177
+_________________ ERROR at setup of test_collect_pkg_init_only _________________
+file /testbed/testing/test_collection.py, line 1206
+  def test_collect_pkg_init_only(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:1206
+____________ ERROR at setup of test_collect_sub_with_symlinks[True] ____________
+file /testbed/testing/test_collection.py, line 1218
+  @pytest.mark.skipif(
+      not hasattr(py.path.local, "mksymlinkto"),
+      reason="symlink not available on this platform",
+  )
+  @pytest.mark.parametrize("use_pkg", (True, False))
+  def test_collect_sub_with_symlinks(use_pkg, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:1218
+___________ ERROR at setup of test_collect_sub_with_symlinks[False] ____________
+file /testbed/testing/test_collection.py, line 1218
+  @pytest.mark.skipif(
+      not hasattr(py.path.local, "mksymlinkto"),
+      reason="symlink not available on this platform",
+  )
+  @pytest.mark.parametrize("use_pkg", (True, False))
+  def test_collect_sub_with_symlinks(use_pkg, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:1218
+______________ ERROR at setup of test_collector_respects_tbstyle _______________
+file /testbed/testing/test_collection.py, line 1245
+  def test_collector_respects_tbstyle(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:1245
+___________ ERROR at setup of test_does_not_eagerly_collect_packages ___________
+file /testbed/testing/test_collection.py, line 1262
+  def test_does_not_eagerly_collect_packages(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:1262
+_______________ ERROR at setup of test_does_not_put_src_on_path ________________
+file /testbed/testing/test_collection.py, line 1270
+  def test_does_not_put_src_on_path(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_collection.py:1270
+________________ ERROR at setup of TestEvaluator.test_no_marker ________________
+file /testbed/testing/test_skipping.py, line 10
+      def test_no_marker(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:10
+_____________ ERROR at setup of TestEvaluator.test_marked_no_args ______________
+file /testbed/testing/test_skipping.py, line 16
+      def test_marked_no_args(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:16
+_____________ ERROR at setup of TestEvaluator.test_marked_one_arg ______________
+file /testbed/testing/test_skipping.py, line 32
+      def test_marked_one_arg(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:32
+_______ ERROR at setup of TestEvaluator.test_marked_one_arg_with_reason ________
+file /testbed/testing/test_skipping.py, line 47
+      def test_marked_one_arg_with_reason(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:47
+__________ ERROR at setup of TestEvaluator.test_marked_one_arg_twice ___________
+file /testbed/testing/test_skipping.py, line 63
+      def test_marked_one_arg_twice(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:63
+__________ ERROR at setup of TestEvaluator.test_marked_one_arg_twice2 __________
+file /testbed/testing/test_skipping.py, line 85
+      def test_marked_one_arg_twice2(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:85
+_______ ERROR at setup of TestEvaluator.test_marked_skip_with_not_string _______
+file /testbed/testing/test_skipping.py, line 101
+      def test_marked_skip_with_not_string(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:101
+______________ ERROR at setup of TestEvaluator.test_skipif_class _______________
+file /testbed/testing/test_skipping.py, line 117
+      def test_skipif_class(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:117
+_____________ ERROR at setup of TestXFail.test_xfail_simple[True] ______________
+file /testbed/testing/test_skipping.py, line 135
+      @pytest.mark.parametrize("strict", [True, False])
+      def test_xfail_simple(self, testdir, strict):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:135
+_____________ ERROR at setup of TestXFail.test_xfail_simple[False] _____________
+file /testbed/testing/test_skipping.py, line 135
+      @pytest.mark.parametrize("strict", [True, False])
+      def test_xfail_simple(self, testdir, strict):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:135
+________________ ERROR at setup of TestXFail.test_xfail_xpassed ________________
+file /testbed/testing/test_skipping.py, line 152
+      def test_xfail_xpassed(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:152
+____________ ERROR at setup of TestXFail.test_xfail_using_platform _____________
+file /testbed/testing/test_skipping.py, line 167
+      def test_xfail_using_platform(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:167
+____________ ERROR at setup of TestXFail.test_xfail_xpassed_strict _____________
+file /testbed/testing/test_skipping.py, line 184
+      def test_xfail_xpassed_strict(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:184
+______________ ERROR at setup of TestXFail.test_xfail_run_anyway _______________
+file /testbed/testing/test_skipping.py, line 200
+      def test_xfail_run_anyway(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:200
+__________ ERROR at setup of TestXFail.test_xfail_evalfalse_but_fails __________
+file /testbed/testing/test_skipping.py, line 216
+      def test_xfail_evalfalse_but_fails(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:216
+__________ ERROR at setup of TestXFail.test_xfail_not_report_default ___________
+file /testbed/testing/test_skipping.py, line 231
+      def test_xfail_not_report_default(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:231
+________ ERROR at setup of TestXFail.test_xfail_not_run_xfail_reporting ________
+file /testbed/testing/test_skipping.py, line 245
+      def test_xfail_not_run_xfail_reporting(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:245
+_________ ERROR at setup of TestXFail.test_xfail_not_run_no_setup_run __________
+file /testbed/testing/test_skipping.py, line 271
+      def test_xfail_not_run_no_setup_run(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:271
+_________________ ERROR at setup of TestXFail.test_xfail_xpass _________________
+file /testbed/testing/test_skipping.py, line 287
+      def test_xfail_xpass(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:287
+______________ ERROR at setup of TestXFail.test_xfail_imperative _______________
+file /testbed/testing/test_skipping.py, line 300
+      def test_xfail_imperative(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:300
+_____ ERROR at setup of TestXFail.test_xfail_imperative_in_setup_function ______
+file /testbed/testing/test_skipping.py, line 315
+      def test_xfail_imperative_in_setup_function(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:315
+____________ ERROR at setup of TestXFail.test_dynamic_xfail_no_run _____________
+file /testbed/testing/test_skipping.py, line 353
+      def test_dynamic_xfail_no_run(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:353
+___ ERROR at setup of TestXFail.test_dynamic_xfail_set_during_funcarg_setup ____
+file /testbed/testing/test_skipping.py, line 367
+      def test_dynamic_xfail_set_during_funcarg_setup(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:367
+_ ERROR at setup of TestXFail.test_xfail_raises[TypeError-TypeError-*1 xfailed*] _
+file /testbed/testing/test_skipping.py, line 381
+      @pytest.mark.parametrize(
+          "expected, actual, matchline",
+          [
+              ("TypeError", "TypeError", "*1 xfailed*"),
+              ("(AttributeError, TypeError)", "TypeError", "*1 xfailed*"),
+              ("TypeError", "IndexError", "*1 failed*"),
+              ("(AttributeError, TypeError)", "IndexError", "*1 failed*"),
+          ],
+      )
+      def test_xfail_raises(self, expected, actual, matchline, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:381
+_ ERROR at setup of TestXFail.test_xfail_raises[(AttributeError, TypeError)-TypeError-*1 xfailed*] _
+file /testbed/testing/test_skipping.py, line 381
+      @pytest.mark.parametrize(
+          "expected, actual, matchline",
+          [
+              ("TypeError", "TypeError", "*1 xfailed*"),
+              ("(AttributeError, TypeError)", "TypeError", "*1 xfailed*"),
+              ("TypeError", "IndexError", "*1 failed*"),
+              ("(AttributeError, TypeError)", "IndexError", "*1 failed*"),
+          ],
+      )
+      def test_xfail_raises(self, expected, actual, matchline, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:381
+_ ERROR at setup of TestXFail.test_xfail_raises[TypeError-IndexError-*1 failed*] _
+file /testbed/testing/test_skipping.py, line 381
+      @pytest.mark.parametrize(
+          "expected, actual, matchline",
+          [
+              ("TypeError", "TypeError", "*1 xfailed*"),
+              ("(AttributeError, TypeError)", "TypeError", "*1 xfailed*"),
+              ("TypeError", "IndexError", "*1 failed*"),
+              ("(AttributeError, TypeError)", "IndexError", "*1 failed*"),
+          ],
+      )
+      def test_xfail_raises(self, expected, actual, matchline, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:381
+_ ERROR at setup of TestXFail.test_xfail_raises[(AttributeError, TypeError)-IndexError-*1 failed*] _
+file /testbed/testing/test_skipping.py, line 381
+      @pytest.mark.parametrize(
+          "expected, actual, matchline",
+          [
+              ("TypeError", "TypeError", "*1 xfailed*"),
+              ("(AttributeError, TypeError)", "TypeError", "*1 xfailed*"),
+              ("TypeError", "IndexError", "*1 failed*"),
+              ("(AttributeError, TypeError)", "IndexError", "*1 failed*"),
+          ],
+      )
+      def test_xfail_raises(self, expected, actual, matchline, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:381
+________________ ERROR at setup of TestXFail.test_strict_sanity ________________
+file /testbed/testing/test_skipping.py, line 403
+      def test_strict_sanity(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:403
+_____________ ERROR at setup of TestXFail.test_strict_xfail[True] ______________
+file /testbed/testing/test_skipping.py, line 419
+      @pytest.mark.parametrize("strict", [True, False])
+      def test_strict_xfail(self, testdir, strict):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:419
+_____________ ERROR at setup of TestXFail.test_strict_xfail[False] _____________
+file /testbed/testing/test_skipping.py, line 419
+      @pytest.mark.parametrize("strict", [True, False])
+      def test_strict_xfail(self, testdir, strict):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:419
+________ ERROR at setup of TestXFail.test_strict_xfail_condition[True] _________
+file /testbed/testing/test_skipping.py, line 446
+      @pytest.mark.parametrize("strict", [True, False])
+      def test_strict_xfail_condition(self, testdir, strict):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:446
+________ ERROR at setup of TestXFail.test_strict_xfail_condition[False] ________
+file /testbed/testing/test_skipping.py, line 446
+      @pytest.mark.parametrize("strict", [True, False])
+      def test_strict_xfail_condition(self, testdir, strict):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:446
+________ ERROR at setup of TestXFail.test_xfail_condition_keyword[True] ________
+file /testbed/testing/test_skipping.py, line 462
+      @pytest.mark.parametrize("strict", [True, False])
+      def test_xfail_condition_keyword(self, testdir, strict):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:462
+_______ ERROR at setup of TestXFail.test_xfail_condition_keyword[False] ________
+file /testbed/testing/test_skipping.py, line 462
+      @pytest.mark.parametrize("strict", [True, False])
+      def test_xfail_condition_keyword(self, testdir, strict):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:462
+____ ERROR at setup of TestXFail.test_strict_xfail_default_from_file[true] _____
+file /testbed/testing/test_skipping.py, line 478
+      @pytest.mark.parametrize("strict_val", ["true", "false"])
+      def test_strict_xfail_default_from_file(self, testdir, strict_val):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:478
+____ ERROR at setup of TestXFail.test_strict_xfail_default_from_file[false] ____
+file /testbed/testing/test_skipping.py, line 478
+      @pytest.mark.parametrize("strict_val", ["true", "false"])
+      def test_strict_xfail_default_from_file(self, testdir, strict_val):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:478
+____ ERROR at setup of TestXFailwithSetupTeardown.test_failing_setup_issue9 ____
+file /testbed/testing/test_skipping.py, line 502
+      def test_failing_setup_issue9(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:502
+__ ERROR at setup of TestXFailwithSetupTeardown.test_failing_teardown_issue9 ___
+file /testbed/testing/test_skipping.py, line 517
+      def test_failing_teardown_issue9(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:517
+__________________ ERROR at setup of TestSkip.test_skip_class __________________
+file /testbed/testing/test_skipping.py, line 534
+      def test_skip_class(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:534
+____________ ERROR at setup of TestSkip.test_skips_on_false_string _____________
+file /testbed/testing/test_skipping.py, line 552
+      def test_skips_on_false_string(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:552
+________________ ERROR at setup of TestSkip.test_arg_as_reason _________________
+file /testbed/testing/test_skipping.py, line 564
+      def test_arg_as_reason(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:564
+________________ ERROR at setup of TestSkip.test_skip_no_reason ________________
+file /testbed/testing/test_skipping.py, line 576
+      def test_skip_no_reason(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:576
+_______________ ERROR at setup of TestSkip.test_skip_with_reason _______________
+file /testbed/testing/test_skipping.py, line 588
+      def test_skip_with_reason(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:588
+____________ ERROR at setup of TestSkip.test_only_skips_marked_test ____________
+file /testbed/testing/test_skipping.py, line 600
+      def test_only_skips_marked_test(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:600
+_______________ ERROR at setup of TestSkip.test_strict_and_skip ________________
+file /testbed/testing/test_skipping.py, line 617
+      def test_strict_and_skip(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:617
+_____________ ERROR at setup of TestSkipif.test_skipif_conditional _____________
+file /testbed/testing/test_skipping.py, line 631
+      def test_skipif_conditional(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:631
+_ ERROR at setup of TestSkipif.test_skipif_reporting["hasattr(sys, 'platform')"] _
+file /testbed/testing/test_skipping.py, line 643
+      @pytest.mark.parametrize(
+          "params", ["\"hasattr(sys, 'platform')\"", 'True, reason="invalid platform"']
+      )
+      def test_skipif_reporting(self, testdir, params):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:643
+_ ERROR at setup of TestSkipif.test_skipif_reporting[True, reason="invalid platform"] _
+file /testbed/testing/test_skipping.py, line 643
+      @pytest.mark.parametrize(
+          "params", ["\"hasattr(sys, 'platform')\"", 'True, reason="invalid platform"']
+      )
+      def test_skipif_reporting(self, testdir, params):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:643
+___________ ERROR at setup of TestSkipif.test_skipif_using_platform ____________
+file /testbed/testing/test_skipping.py, line 660
+      def test_skipif_using_platform(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:660
+_ ERROR at setup of TestSkipif.test_skipif_reporting_multiple[skipif-SKIP-skipped] _
+file /testbed/testing/test_skipping.py, line 671
+      @pytest.mark.parametrize(
+          "marker, msg1, msg2",
+          [("skipif", "SKIP", "skipped"), ("xfail", "XPASS", "xpassed")],
+      )
+      def test_skipif_reporting_multiple(self, testdir, marker, msg1, msg2):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:671
+_ ERROR at setup of TestSkipif.test_skipif_reporting_multiple[xfail-XPASS-xpassed] _
+file /testbed/testing/test_skipping.py, line 671
+      @pytest.mark.parametrize(
+          "marker, msg1, msg2",
+          [("skipif", "SKIP", "skipped"), ("xfail", "XPASS", "xpassed")],
+      )
+      def test_skipif_reporting_multiple(self, testdir, marker, msg1, msg2):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:671
+________________ ERROR at setup of test_skip_not_report_default ________________
+file /testbed/testing/test_skipping.py, line 697
+  def test_skip_not_report_default(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:697
+_____________________ ERROR at setup of test_skipif_class ______________________
+file /testbed/testing/test_skipping.py, line 714
+  def test_skipif_class(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:714
+______________ ERROR at setup of test_skipped_reasons_functional _______________
+file /testbed/testing/test_skipping.py, line 731
+  def test_skipped_reasons_functional(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:731
+____________________ ERROR at setup of test_skipped_folding ____________________
+file /testbed/testing/test_skipping.py, line 754
+  def test_skipped_folding(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:754
+______________________ ERROR at setup of test_reportchars ______________________
+file /testbed/testing/test_skipping.py, line 773
+  def test_reportchars(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:773
+___________________ ERROR at setup of test_reportchars_error ___________________
+file /testbed/testing/test_skipping.py, line 795
+  def test_reportchars_error(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:795
+____________________ ERROR at setup of test_reportchars_all ____________________
+file /testbed/testing/test_skipping.py, line 810
+  def test_reportchars_all(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:810
+_________________ ERROR at setup of test_reportchars_all_error _________________
+file /testbed/testing/test_skipping.py, line 843
+  def test_reportchars_all_error(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:843
+___________ ERROR at setup of test_errors_in_xfail_skip_expressions ____________
+file /testbed/testing/test_skipping.py, line 858
+  def test_errors_in_xfail_skip_expressions(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:858
+_______________ ERROR at setup of test_xfail_skipif_with_globals _______________
+file /testbed/testing/test_skipping.py, line 894
+  def test_xfail_skipif_with_globals(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:894
+__________________ ERROR at setup of test_direct_gives_error ___________________
+file /testbed/testing/test_skipping.py, line 911
+  def test_direct_gives_error(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:911
+____________________ ERROR at setup of test_default_markers ____________________
+file /testbed/testing/test_skipping.py, line 924
+  def test_default_markers(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:924
+______________ ERROR at setup of test_xfail_test_setup_exception _______________
+file /testbed/testing/test_skipping.py, line 934
+  def test_xfail_test_setup_exception(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:934
+_____________ ERROR at setup of test_imperativeskip_on_xfail_test ______________
+file /testbed/testing/test_skipping.py, line 955
+  def test_imperativeskip_on_xfail_test(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:955
+______________ ERROR at setup of TestBooleanCondition.test_skipif ______________
+file /testbed/testing/test_skipping.py, line 986
+      def test_skipif(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:986
+_________ ERROR at setup of TestBooleanCondition.test_skipif_noreason __________
+file /testbed/testing/test_skipping.py, line 1005
+      def test_skipif_noreason(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:1005
+______________ ERROR at setup of TestBooleanCondition.test_xfail _______________
+file /testbed/testing/test_skipping.py, line 1021
+      def test_xfail(self, testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:1021
+______________________ ERROR at setup of test_xfail_item _______________________
+file /testbed/testing/test_skipping.py, line 1040
+  def test_xfail_item(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:1040
+________________ ERROR at setup of test_module_level_skip_error ________________
+file /testbed/testing/test_skipping.py, line 1062
+  def test_module_level_skip_error(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:1062
+_______ ERROR at setup of test_module_level_skip_with_allow_module_level _______
+file /testbed/testing/test_skipping.py, line 1081
+  def test_module_level_skip_with_allow_module_level(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:1081
+____________ ERROR at setup of test_invalid_skip_keyword_parameter _____________
+file /testbed/testing/test_skipping.py, line 1098
+  def test_invalid_skip_keyword_parameter(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:1098
+____________________ ERROR at setup of test_mark_xfail_item ____________________
+file /testbed/testing/test_skipping.py, line 1115
+  def test_mark_xfail_item(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:1115
+_______________ ERROR at setup of test_summary_list_after_errors _______________
+file /testbed/testing/test_skipping.py, line 1140
+  def test_summary_list_after_errors(testdir):
+E       fixture 'testdir' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, doctest_namespace, dummy_yaml_custom_test, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, tw_mock
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/testbed/testing/test_skipping.py:1140
+=============================== warnings summary ===============================
+src/_pytest/mark/structures.py:321
+  /testbed/src/_pytest/mark/structures.py:321: PytestUnknownMarkWarning: Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/latest/mark.html
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/latest/warnings.html
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED testing/test_collection.py::TestCollector::test_collect_versus_item
+PASSED testing/test_skipping.py::test_importorskip
+XFAIL testing/test_collection.py::TestPrunetraceback::test_collect_report_postprocessing
+  other mechanism for adding to reporting needed
+ERROR testing/test_collection.py::TestCollector::test_check_equality
+ERROR testing/test_collection.py::TestCollector::test_getparent
+ERROR testing/test_collection.py::TestCollector::test_getcustomfile_roundtrip
+ERROR testing/test_collection.py::TestCollector::test_can_skip_class_with_test_attr
+ERROR testing/test_collection.py::TestCollectFS::test_ignored_certain_directories
+ERROR testing/test_collection.py::TestCollectFS::test_ignored_virtualenvs[activate]
+ERROR testing/test_collection.py::TestCollectFS::test_ignored_virtualenvs[activate.csh]
+ERROR testing/test_collection.py::TestCollectFS::test_ignored_virtualenvs[activate.fish]
+ERROR testing/test_collection.py::TestCollectFS::test_ignored_virtualenvs[Activate]
+ERROR testing/test_collection.py::TestCollectFS::test_ignored_virtualenvs[Activate.bat]
+ERROR testing/test_collection.py::TestCollectFS::test_ignored_virtualenvs[Activate.ps1]
+ERROR testing/test_collection.py::TestCollectFS::test_ignored_virtualenvs_norecursedirs_precedence[activate]
+ERROR testing/test_collection.py::TestCollectFS::test_ignored_virtualenvs_norecursedirs_precedence[activate.csh]
+ERROR testing/test_collection.py::TestCollectFS::test_ignored_virtualenvs_norecursedirs_precedence[activate.fish]
+ERROR testing/test_collection.py::TestCollectFS::test_ignored_virtualenvs_norecursedirs_precedence[Activate]
+ERROR testing/test_collection.py::TestCollectFS::test_ignored_virtualenvs_norecursedirs_precedence[Activate.bat]
+ERROR testing/test_collection.py::TestCollectFS::test_ignored_virtualenvs_norecursedirs_precedence[Activate.ps1]
+ERROR testing/test_collection.py::TestCollectFS::test__in_venv[activate]
+ERROR testing/test_collection.py::TestCollectFS::test__in_venv[activate.csh]
+ERROR testing/test_collection.py::TestCollectFS::test__in_venv[activate.fish]
+ERROR testing/test_collection.py::TestCollectFS::test__in_venv[Activate]
+ERROR testing/test_collection.py::TestCollectFS::test__in_venv[Activate.bat]
+ERROR testing/test_collection.py::TestCollectFS::test__in_venv[Activate.ps1]
+ERROR testing/test_collection.py::TestCollectFS::test_custom_norecursedirs
+ERROR testing/test_collection.py::TestCollectFS::test_testpaths_ini
+ERROR testing/test_collection.py::TestCollectPluginHookRelay::test_pytest_collect_file
+ERROR testing/test_collection.py::TestCollectPluginHookRelay::test_pytest_collect_directory
+ERROR testing/test_collection.py::TestPrunetraceback::test_custom_repr_failure
+ERROR testing/test_collection.py::TestCustomConftests::test_ignore_collect_path
+ERROR testing/test_collection.py::TestCustomConftests::test_ignore_collect_not_called_on_argument
+ERROR testing/test_collection.py::TestCustomConftests::test_collectignore_exclude_on_option
+ERROR testing/test_collection.py::TestCustomConftests::test_collectignoreglob_exclude_on_option
+ERROR testing/test_collection.py::TestCustomConftests::test_pytest_fs_collect_hooks_are_seen
+ERROR testing/test_collection.py::TestCustomConftests::test_pytest_collect_file_from_sister_dir
+ERROR testing/test_collection.py::TestSession::test_parsearg
+ERROR testing/test_collection.py::TestSession::test_collect_topdir
+ERROR testing/test_collection.py::TestSession::test_collect_protocol_single_function
+ERROR testing/test_collection.py::TestSession::test_collect_protocol_method
+ERROR testing/test_collection.py::TestSession::test_collect_custom_nodes_multi_id
+ERROR testing/test_collection.py::TestSession::test_collect_subdir_event_ordering
+ERROR testing/test_collection.py::TestSession::test_collect_two_commandline_args
+ERROR testing/test_collection.py::TestSession::test_serialization_byid
+ERROR testing/test_collection.py::TestSession::test_find_byid_without_instance_parents
+ERROR testing/test_collection.py::Test_getinitialnodes::test_global_file
+ERROR testing/test_collection.py::Test_getinitialnodes::test_pkgfile
+ERROR testing/test_collection.py::Test_genitems::test_check_collect_hashes
+ERROR testing/test_collection.py::Test_genitems::test_example_items1
+ERROR testing/test_collection.py::Test_genitems::test_class_and_functions_discovery_using_glob
+ERROR testing/test_collection.py::test_matchnodes_two_collections_same_file
+ERROR testing/test_collection.py::TestNodekeywords::test_no_under
+ERROR testing/test_collection.py::TestNodekeywords::test_issue345
+ERROR testing/test_collection.py::test_exit_on_collection_error
+ERROR testing/test_collection.py::test_exit_on_collection_with_maxfail_smaller_than_n_errors
+ERROR testing/test_collection.py::test_exit_on_collection_with_maxfail_bigger_than_n_errors
+ERROR testing/test_collection.py::test_continue_on_collection_errors
+ERROR testing/test_collection.py::test_continue_on_collection_errors_maxfail
+ERROR testing/test_collection.py::test_fixture_scope_sibling_conftests
+ERROR testing/test_collection.py::test_collect_init_tests
+ERROR testing/test_collection.py::test_collect_invalid_signature_message
+ERROR testing/test_collection.py::test_collect_handles_raising_on_dunder_class
+ERROR testing/test_collection.py::test_collect_with_chdir_during_import
+ERROR testing/test_collection.py::test_collect_pyargs_with_testpaths
+ERROR testing/test_collection.py::test_collect_symlink_file_arg
+ERROR testing/test_collection.py::test_collect_symlink_out_of_tree
+ERROR testing/test_collection.py::test_collectignore_via_conftest
+ERROR testing/test_collection.py::test_collect_pkg_init_and_file_in_args
+ERROR testing/test_collection.py::test_collect_pkg_init_only
+ERROR testing/test_collection.py::test_collect_sub_with_symlinks[True]
+ERROR testing/test_collection.py::test_collect_sub_with_symlinks[False]
+ERROR testing/test_collection.py::test_collector_respects_tbstyle
+ERROR testing/test_collection.py::test_does_not_eagerly_collect_packages
+ERROR testing/test_collection.py::test_does_not_put_src_on_path
+ERROR testing/test_skipping.py::TestEvaluator::test_no_marker
+ERROR testing/test_skipping.py::TestEvaluator::test_marked_no_args
+ERROR testing/test_skipping.py::TestEvaluator::test_marked_one_arg
+ERROR testing/test_skipping.py::TestEvaluator::test_marked_one_arg_with_reason
+ERROR testing/test_skipping.py::TestEvaluator::test_marked_one_arg_twice
+ERROR testing/test_skipping.py::TestEvaluator::test_marked_one_arg_twice2
+ERROR testing/test_skipping.py::TestEvaluator::test_marked_skip_with_not_string
+ERROR testing/test_skipping.py::TestEvaluator::test_skipif_class
+ERROR testing/test_skipping.py::TestXFail::test_xfail_simple[True]
+ERROR testing/test_skipping.py::TestXFail::test_xfail_simple[False]
+ERROR testing/test_skipping.py::TestXFail::test_xfail_xpassed
+ERROR testing/test_skipping.py::TestXFail::test_xfail_using_platform
+ERROR testing/test_skipping.py::TestXFail::test_xfail_xpassed_strict
+ERROR testing/test_skipping.py::TestXFail::test_xfail_run_anyway
+ERROR testing/test_skipping.py::TestXFail::test_xfail_evalfalse_but_fails
+ERROR testing/test_skipping.py::TestXFail::test_xfail_not_report_default
+ERROR testing/test_skipping.py::TestXFail::test_xfail_not_run_xfail_reporting
+ERROR testing/test_skipping.py::TestXFail::test_xfail_not_run_no_setup_run
+ERROR testing/test_skipping.py::TestXFail::test_xfail_xpass
+ERROR testing/test_skipping.py::TestXFail::test_xfail_imperative
+ERROR testing/test_skipping.py::TestXFail::test_xfail_imperative_in_setup_function
+ERROR testing/test_skipping.py::TestXFail::test_dynamic_xfail_no_run
+ERROR testing/test_skipping.py::TestXFail::test_dynamic_xfail_set_during_funcarg_setup
+ERROR testing/test_skipping.py::TestXFail::test_xfail_raises[TypeError-TypeError-*1 xfailed*]
+ERROR testing/test_skipping.py::TestXFail::test_xfail_raises[(AttributeError, TypeError)-TypeError-*1 xfailed*]
+ERROR testing/test_skipping.py::TestXFail::test_xfail_raises[TypeError-IndexError-*1 failed*]
+ERROR testing/test_skipping.py::TestXFail::test_xfail_raises[(AttributeError, TypeError)-IndexError-*1 failed*]
+ERROR testing/test_skipping.py::TestXFail::test_strict_sanity
+ERROR testing/test_skipping.py::TestXFail::test_strict_xfail[True]
+ERROR testing/test_skipping.py::TestXFail::test_strict_xfail[False]
+ERROR testing/test_skipping.py::TestXFail::test_strict_xfail_condition[True]
+ERROR testing/test_skipping.py::TestXFail::test_strict_xfail_condition[False]
+ERROR testing/test_skipping.py::TestXFail::test_xfail_condition_keyword[True]
+ERROR testing/test_skipping.py::TestXFail::test_xfail_condition_keyword[False]
+ERROR testing/test_skipping.py::TestXFail::test_strict_xfail_default_from_file[true]
+ERROR testing/test_skipping.py::TestXFail::test_strict_xfail_default_from_file[false]
+ERROR testing/test_skipping.py::TestXFailwithSetupTeardown::test_failing_setup_issue9
+ERROR testing/test_skipping.py::TestXFailwithSetupTeardown::test_failing_teardown_issue9
+ERROR testing/test_skipping.py::TestSkip::test_skip_class
+ERROR testing/test_skipping.py::TestSkip::test_skips_on_false_string
+ERROR testing/test_skipping.py::TestSkip::test_arg_as_reason
+ERROR testing/test_skipping.py::TestSkip::test_skip_no_reason
+ERROR testing/test_skipping.py::TestSkip::test_skip_with_reason
+ERROR testing/test_skipping.py::TestSkip::test_only_skips_marked_test
+ERROR testing/test_skipping.py::TestSkip::test_strict_and_skip
+ERROR testing/test_skipping.py::TestSkipif::test_skipif_conditional
+ERROR testing/test_skipping.py::TestSkipif::test_skipif_reporting["hasattr(sys, 'platform')"]
+ERROR testing/test_skipping.py::TestSkipif::test_skipif_reporting[True, reason="invalid platform"]
+ERROR testing/test_skipping.py::TestSkipif::test_skipif_using_platform
+ERROR testing/test_skipping.py::TestSkipif::test_skipif_reporting_multiple[skipif-SKIP-skipped]
+ERROR testing/test_skipping.py::TestSkipif::test_skipif_reporting_multiple[xfail-XPASS-xpassed]
+ERROR testing/test_skipping.py::test_skip_not_report_default
+ERROR testing/test_skipping.py::test_skipif_class
+ERROR testing/test_skipping.py::test_skipped_reasons_functional
+ERROR testing/test_skipping.py::test_skipped_folding
+ERROR testing/test_skipping.py::test_reportchars
+ERROR testing/test_skipping.py::test_reportchars_error
+ERROR testing/test_skipping.py::test_reportchars_all
+ERROR testing/test_skipping.py::test_reportchars_all_error
+ERROR testing/test_skipping.py::test_errors_in_xfail_skip_expressions
+ERROR testing/test_skipping.py::test_xfail_skipif_with_globals
+ERROR testing/test_skipping.py::test_direct_gives_error
+ERROR testing/test_skipping.py::test_default_markers
+ERROR testing/test_skipping.py::test_xfail_test_setup_exception
+ERROR testing/test_skipping.py::test_imperativeskip_on_xfail_test
+ERROR testing/test_skipping.py::TestBooleanCondition::test_skipif
+ERROR testing/test_skipping.py::TestBooleanCondition::test_skipif_noreason
+ERROR testing/test_skipping.py::TestBooleanCondition::test_xfail
+ERROR testing/test_skipping.py::test_xfail_item
+ERROR testing/test_skipping.py::test_module_level_skip_error
+ERROR testing/test_skipping.py::test_module_level_skip_with_allow_module_level
+ERROR testing/test_skipping.py::test_invalid_skip_keyword_parameter
+ERROR testing/test_skipping.py::test_mark_xfail_item
+ERROR testing/test_skipping.py::test_summary_list_after_errors
+============= 2 passed, 1 xfailed, 1 warnings, 146 error in 0.20s ==============
++ git checkout e856638ba086fcf5bebf1bebea32d5cf78de87b4 testing/test_collection.py testing/test_skipping.py
+Updated 2 paths from 4024da694

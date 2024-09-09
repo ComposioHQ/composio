@@ -1,0 +1,42 @@
+diff --git a/django/db/models/sql/query.py b/django/db/models/sql/query.py
+index aaf35ee3..683fe14c 100644
+--- a/django/db/models/sql/query.py
++++ b/django/db/models/sql/query.py
+@@ -846,7 +846,19 @@ class Query(BaseExpression):
+         relabelling any references to them in select columns and the where
+         clause.
+         """
+-        assert set(change_map).isdisjoint(change_map.values())
++        # Instead of asserting, we'll create a new change_map with unique aliases
++        new_change_map = {}
++        used_aliases = set(change_map.values())
++        
++        for old_alias, new_alias in change_map.items():
++            if new_alias in set(change_map):
++                # If there's a conflict, generate a new unique alias
++                new_alias = self._generate_unique_alias(used_aliases)
++            new_change_map[old_alias] = new_alias
++            used_aliases.add(new_alias)
++        
++        # Use the new_change_map for the rest of the method
++        change_map = new_change_map
+ 
+         # 1. Update references in "select" (normal columns plus aliases),
+         # "group by" and "where".
+@@ -879,6 +891,16 @@ class Query(BaseExpression):
+             for alias, aliased in self.external_aliases.items()
+         }
+ 
++    def _generate_unique_alias(self, used_aliases):
++        """Generate a unique alias that's not in used_aliases."""
++        alias_base = 'T'
++        counter = len(used_aliases)
++        while True:
++            new_alias = f"{alias_base}{counter}"
++            if new_alias not in used_aliases:
++                return new_alias
++            counter += 1
++
+     def bump_prefix(self, outer_query):
+         """
+         Change the alias prefix to the next letter in the alphabet in a way

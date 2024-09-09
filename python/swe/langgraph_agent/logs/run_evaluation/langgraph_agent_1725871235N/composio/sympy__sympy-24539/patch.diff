@@ -1,0 +1,91 @@
+diff --git a/sympy/polys/rings.py b/sympy/polys/rings.py
+index 12bd2fc..d7d236b 100644
+--- a/sympy/polys/rings.py
++++ b/sympy/polys/rings.py
+@@ -616,11 +616,41 @@ def set_ring(self, new_ring):
+             return new_ring.from_dict(self, self.ring.domain)
+ 
+     def as_expr(self, *symbols):
+-        if symbols and len(symbols) != self.ring.ngens:
+-            raise ValueError("not enough symbols, expected %s got %s" % (self.ring.ngens, len(symbols)))
+-        else:
+-            symbols = self.ring.symbols
++        """
++        Convert the polynomial to a SymPy expression.
++
++        Parameters:
++        ===========
++        *symbols : Symbol, optional
++            Symbols to be used for variables in the resulting expression.
++            If not provided, uses the symbols from the polynomial ring.
++
++        Returns:
++        ========
++        Expr : A SymPy expression representing the polynomial.
+ 
++        Raises:
++        =======
++        ValueError
++            If the number of provided symbols doesn't match the number of variables in the polynomial.
++
++        Examples:
++        ========
++        >>> from sympy import symbols
++        >>> from sympy.polys.rings import ring
++        >>> R, x, y, z = ring("x,y,z", ZZ)
++        >>> f = 3*x**2*y - x*y*z + 7*z**3 + 1
++        >>> f.as_expr()
++        3*x**2*y - x*y*z + 7*z**3 + 1
++        >>> u, v, w = symbols("u,v,w")
++        >>> f.as_expr(u, v, w)
++        3*u**2*v - u*v*w + 7*w**3 + 1
++        """
++        if not symbols:
++            symbols = self.ring.symbols
++        elif len(symbols) != self.ring.ngens:
++            raise ValueError(f"expected {self.ring.ngens} symbols, got {len(symbols)}")
++        
+         return expr_from_dict(self.as_expr_dict(), *symbols)
+ 
+     def as_expr_dict(self):
+diff --git a/sympy/polys/tests/test_rings.py b/sympy/polys/tests/test_rings.py
+index b396213..889a625 100644
+--- a/sympy/polys/tests/test_rings.py
++++ b/sympy/polys/tests/test_rings.py
+@@ -1420,3 +1420,36 @@ def test_issue_21410():
+     R, x = ring('x', FF(2))
+     p = x**6 + x**5 + x**4 + x**3 + 1
+     assert p._pow_multinomial(4) == x**24 + x**20 + x**16 + x**12 + 1
++
++def test_PolyElement_as_expr():
++    R, x, y, z = ring("x,y,z", ZZ)
++    f = 3*x**2*y - x*y*z + 7*z**3 + 1
++
++    # Test without custom symbols (should use ring symbols)
++    assert f.as_expr() == 3*x**2*y - x*y*z + 7*z**3 + 1
++
++    # Test with custom symbols
++    u, v, w = symbols("u,v,w")
++    assert f.as_expr(u, v, w) == 3*u**2*v - u*v*w + 7*w**3 + 1
++
++    # Test with incorrect number of symbols
++    with raises(ValueError, match="expected 3 symbols, got 2"):
++        f.as_expr(u, v)
++
++    # Test with incorrect number of symbols
++    with raises(ValueError, match="expected 3 symbols, got 4"):
++        f.as_expr(u, v, w, x)
++
++    # Test with constant polynomial
++    g = R(42)
++    assert g.as_expr() == 42
++    assert g.as_expr(u, v, w) == 42
++
++    # Test with univariate polynomial
++    R, t = ring("t", ZZ)
++    h = 3*t**2 + 2*t + 1
++    assert h.as_expr() == 3*t**2 + 2*t + 1
++    assert h.as_expr(x) == 3*x**2 + 2*x + 1
++
++    with raises(ValueError, match="expected 1 symbols, got 2"):
++        h.as_expr(x, y)

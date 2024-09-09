@@ -1,0 +1,487 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/forms/models.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 0af9a5fc7d765aa05ea784e2c3237675f3bb4b49
+Author: Jörg Breitbart <jerch@rockborn.de>
+Date:   Thu Jan 27 14:42:59 2022 +0100
+
+    Fixed #33463 -- Fixed QuerySet.bulk_update() with F() expressions.
+
+diff --git a/django/db/models/query.py b/django/db/models/query.py
+index f8d848e926..e20c46075e 100644
+--- a/django/db/models/query.py
++++ b/django/db/models/query.py
+@@ -17,7 +17,7 @@ from django.db import (
+ from django.db.models import AutoField, DateField, DateTimeField, sql
+ from django.db.models.constants import LOOKUP_SEP, OnConflict
+ from django.db.models.deletion import Collector
+-from django.db.models.expressions import Case, Expression, F, Ref, Value, When
++from django.db.models.expressions import Case, F, Ref, Value, When
+ from django.db.models.functions import Cast, Trunc
+ from django.db.models.query_utils import FilteredRelation, Q
+ from django.db.models.sql.constants import CURSOR, GET_ITERATOR_CHUNK_SIZE
+@@ -670,7 +670,7 @@ class QuerySet:
+                 when_statements = []
+                 for obj in batch_objs:
+                     attr = getattr(obj, field.attname)
+-                    if not isinstance(attr, Expression):
++                    if not hasattr(attr, 'resolve_expression'):
+                         attr = Value(attr, output_field=field)
+                     when_statements.append(When(pk=obj.pk, then=attr))
+                 case_statement = Case(*when_statements, output_field=field)
+diff --git a/tests/queries/test_bulk_update.py b/tests/queries/test_bulk_update.py
+index 1d669e0bbd..b63046f9d2 100644
+--- a/tests/queries/test_bulk_update.py
++++ b/tests/queries/test_bulk_update.py
+@@ -211,6 +211,16 @@ class BulkUpdateTests(TestCase):
+         Number.objects.bulk_update(numbers, ['num'])
+         self.assertCountEqual(Number.objects.filter(num=1), numbers)
+ 
++    def test_f_expression(self):
++        notes = [
++            Note.objects.create(note='test_note', misc='test_misc')
++            for _ in range(10)
++        ]
++        for note in notes:
++            note.misc = F('note')
++        Note.objects.bulk_update(notes, ['misc'])
++        self.assertCountEqual(Note.objects.filter(misc='test_note'), notes)
++
+     def test_booleanfield(self):
+         individuals = [Individual.objects.create(alive=False) for _ in range(10)]
+         for individual in individuals:
++ git diff 0af9a5fc7d765aa05ea784e2c3237675f3bb4b49
+diff --git a/django/forms/models.py b/django/forms/models.py
+index 7effb202e3..1d26299050 100644
+--- a/django/forms/models.py
++++ b/django/forms/models.py
+@@ -573,7 +573,8 @@ class BaseModelFormSet(BaseFormSet):
+     unique_fields = set()
+ 
+     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
+-                 queryset=None, *, initial=None, **kwargs):
++                 queryset=None, *, initial=None, allow_new=True, **kwargs):
++        self.allow_new = allow_new
+         self.queryset = queryset
+         self.initial_extra = initial
+         super().__init__(**{'data': data, 'files': files, 'auto_id': auto_id, 'prefix': prefix, **kwargs})
+@@ -663,7 +664,6 @@ class BaseModelFormSet(BaseFormSet):
+         """Deletes an existing model instance."""
+         if commit:
+             obj.delete()
+-
+     def save(self, commit=True):
+         """
+         Save model instances for every form, adding and changing instances
+@@ -676,6 +676,12 @@ class BaseModelFormSet(BaseFormSet):
+                 for form in self.saved_forms:
+                     form.save_m2m()
+             self.save_m2m = save_m2m
++
++        # Only save existing objects if allow_new is False
++        if self.allow_new:
++            return self.save_existing_objects(commit) + self.save_new_objects(commit)
++        else:
++            return self.save_existing_objects(commit)
+         return self.save_existing_objects(commit) + self.save_new_objects(commit)
+ 
+     save.alters_data = True
+@@ -1312,37 +1318,37 @@ class ModelChoiceField(ChoiceField):
+                 code='invalid_choice',
+                 params={'value': value},
+             )
+-        return value
+-
+-    def validate(self, value):
+-        return Field.validate(self, value)
+-
+-    def has_changed(self, initial, data):
+-        if self.disabled:
+-            return False
+-        initial_value = initial if initial is not None else ''
+-        data_value = data if data is not None else ''
+-        return str(self.prepare_value(initial_value)) != str(data_value)
+-
+-
+-class ModelMultipleChoiceField(ModelChoiceField):
+-    """A MultipleChoiceField whose choices are a model QuerySet."""
+-    widget = SelectMultiple
+-    hidden_widget = MultipleHiddenInput
+-    default_error_messages = {
+-        'invalid_list': _('Enter a list of values.'),
+-        'invalid_choice': _('Select a valid choice. %(value)s is not one of the'
+-                            ' available choices.'),
+-        'invalid_pk_value': _('“%(pk)s” is not a valid value.')
+-    }
++def modelformset_factory(model, form=ModelForm, formfield_callback=None,
++                         formset=BaseModelFormSet, extra=1, can_delete=False,
++                         can_order=False, max_num=None, fields=None, exclude=None,
++                         widgets=None, validate_max=False, localized_fields=None,
++                         labels=None, help_texts=None, error_messages=None,
++                         min_num=None, validate_min=False, field_classes=None,
++                         allow_new=True):
++    """
++    Returns a FormSet class for the given Django model class.
++    """
++    meta = getattr(form, 'Meta', None)
++    if meta is None:
++        meta = type('Meta', (object,), {})
++    if getattr(meta, 'fields', fields) is None and getattr(meta, 'exclude', exclude) is None:
++        raise ImproperlyConfigured(
++            "Calling modelformset_factory without defining 'fields' or "
++            "'exclude' explicitly is prohibited."
++        )
+ 
+-    def __init__(self, queryset, **kwargs):
+-        super().__init__(queryset, empty_label=None, **kwargs)
++    form = modelform_factory(model, form=form, fields=fields, exclude=exclude,
++                             formfield_callback=formfield_callback,
++                             widgets=widgets, localized_fields=localized_fields,
++                             labels=labels, help_texts=help_texts,
++                             error_messages=error_messages, field_classes=field_classes)
++    FormSet = formset_factory(form, formset, extra=extra, min_num=min_num, max_num=max_num,
++                              can_order=can_order, can_delete=can_delete,
++                              validate_min=validate_min, validate_max=validate_max)
+ 
+-    def to_python(self, value):
+-        if not value:
+-            return []
+-        return list(self._check_values(value))
++    FormSet.model = model
++    FormSet.allow_new = allow_new
++    return FormSet
+ 
+     def clean(self, value):
+         value = self.prepare_value(value)
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.4.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.1.dev20220127180326) (3.8.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.1.dev20220127180326) (0.5.1)
+Requirement already satisfied: typing-extensions>=4 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from asgiref>=3.4.1->Django==4.1.dev20220127180326) (4.12.2)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-4.1.dev20220127180326-0.editable-py3-none-any.whl size=26912 sha256=1cb6b44ad6471350f05498d059b5f922de5630dfa9aebc4d672eeb6d7f8327eb
+  Stored in directory: /tmp/pip-ephem-wheel-cache-98a5n7ph/wheels/7d/66/67/70d1ee2124ccf21d601c352e25cdca10f611f7c8b3f9ffb9e4
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 4.1.dev20220127180326
+    Uninstalling Django-4.1.dev20220127180326:
+      Successfully uninstalled Django-4.1.dev20220127180326
+Successfully installed Django-4.1.dev20220127180326
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 0af9a5fc7d765aa05ea784e2c3237675f3bb4b49 tests/model_formsets/tests.py
+Updated 0 paths from c4c9cffec5
++ git apply -v -
+Checking patch tests/model_formsets/tests.py...
+Applied patch tests/model_formsets/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 model_formsets.tests
+Traceback (most recent call last):
+  File "/testbed/./tests/runtests.py", line 26, in <module>
+    from django.test import TestCase, TransactionTestCase
+  File "/testbed/django/test/__init__.py", line 3, in <module>
+    from django.test.client import (
+  File "/testbed/django/test/client.py", line 15, in <module>
+    from django.core.handlers.asgi import ASGIRequest
+  File "/testbed/django/core/handlers/asgi.py", line 11, in <module>
+    from django.core.handlers import base
+  File "/testbed/django/core/handlers/base.py", line 11, in <module>
+    from django.urls import get_resolver, set_urlconf
+  File "/testbed/django/urls/__init__.py", line 1, in <module>
+    from .base import (
+  File "/testbed/django/urls/base.py", line 8, in <module>
+    from .exceptions import NoReverseMatch, Resolver404
+  File "/testbed/django/urls/exceptions.py", line 1, in <module>
+    from django.http import Http404
+  File "/testbed/django/http/__init__.py", line 5, in <module>
+    from django.http.response import (
+  File "/testbed/django/http/response.py", line 16, in <module>
+    from django.core.serializers.json import DjangoJSONEncoder
+  File "/testbed/django/core/serializers/__init__.py", line 23, in <module>
+    from django.core.serializers.base import SerializerDoesNotExist
+  File "/testbed/django/core/serializers/base.py", line 9, in <module>
+    from django.db import models
+  File "/testbed/django/db/models/__init__.py", line 3, in <module>
+    from django.db.models.aggregates import *  # NOQA
+  File "/testbed/django/db/models/aggregates.py", line 5, in <module>
+    from django.db.models.expressions import Case, Func, Star, When
+  File "/testbed/django/db/models/expressions.py", line 10, in <module>
+    from django.db.models import fields
+  File "/testbed/django/db/models/fields/__init__.py", line 12, in <module>
+    from django import forms
+  File "/testbed/django/forms/__init__.py", line 10, in <module>
+    from django.forms.models import *  # NOQA
+AttributeError: module 'django.forms.models' has no attribute 'ModelMultipleChoiceField'
++ git checkout 0af9a5fc7d765aa05ea784e2c3237675f3bb4b49 tests/model_formsets/tests.py
+Updated 1 path from c4c9cffec5

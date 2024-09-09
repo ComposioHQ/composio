@@ -1,0 +1,91 @@
+diff --git a/sklearn/model_selection/_search.py b/sklearn/model_selection/_search.py
+index 99d6096..d0436ec 100644
+--- a/sklearn/model_selection/_search.py
++++ b/sklearn/model_selection/_search.py
+@@ -18,7 +18,8 @@ from functools import partial, reduce
+ from itertools import product
+ import operator
+ import warnings
+-
++import warnings
++import time
+ import numpy as np
+ from scipy.stats import rankdata
+ 
+@@ -405,13 +406,23 @@ class _CVScoreTuple (namedtuple('_CVScoreTuple',
+ 
+ class BaseSearchCV(six.with_metaclass(ABCMeta, BaseEstimator,
+                                       MetaEstimatorMixin)):
+-    """Base class for hyper parameter search with cross-validation."""
++    """Base class for hyper parameter search with cross-validation.
++
++    ...
++
++    Attributes
++    ----------
++    refit_time_ : float
++        Time in seconds taken to refit the best model on the whole dataset.
++    ...
++    """
+ 
+     @abstractmethod
+     def __init__(self, estimator, scoring=None,
+                  fit_params=None, n_jobs=1, iid='warn',
+                  refit=True, cv=None, verbose=0, pre_dispatch='2*n_jobs',
+                  error_score='raise-deprecating', return_train_score=True):
++        self.refit_time_ = None
+ 
+         self.scoring = scoring
+         self.estimator = estimator
+@@ -579,6 +590,35 @@ class BaseSearchCV(six.with_metaclass(ABCMeta, BaseEstimator,
+     def fit(self, X, y=None, groups=None, **fit_params):
+         """Run fit with all sets of parameters.
+ 
++        Parameters
++        ----------
++        X : array-like, shape = [n_samples, n_features]
++            Training vector, where n_samples is the number of samples and
++            n_features is the number of features.
++
++        y : array-like, shape = [n_samples] or [n_samples, n_output], optional
++            Target relative to X for classification or regression;
++            None for unsupervised learning.
++
++        groups : array-like, with shape (n_samples,), optional
++            Group labels for the samples used while splitting the dataset into
++            train/test set.
++
++        **fit_params : dict of string -> object
++            Parameters passed to the ``fit`` method of the estimator
++
++        Returns
++        -------
++        self : object
++            Returns self.
++
++        Notes
++        -----
++        The refit_time_ attribute is updated with the time taken to refit
++        the best model on the whole dataset.
++        """
++        """Run fit with all sets of parameters.
++
+         Parameters
+         ----------
+ 
+@@ -764,6 +804,7 @@ class BaseSearchCV(six.with_metaclass(ABCMeta, BaseEstimator,
+                 self.best_index_]
+ 
+         if self.refit:
++            refit_start_time = time.time()
+             self.best_estimator_ = clone(base_estimator).set_params(
+                 **self.best_params_)
+             if y is not None:
+@@ -771,6 +812,7 @@ class BaseSearchCV(six.with_metaclass(ABCMeta, BaseEstimator,
+             else:
+                 self.best_estimator_.fit(X, **fit_params)
+ 
++
+         # Store the only scorer not as a dict for single metric evaluation
+         self.scorer_ = scorers if self.multimetric_ else scorers['score']
+ 

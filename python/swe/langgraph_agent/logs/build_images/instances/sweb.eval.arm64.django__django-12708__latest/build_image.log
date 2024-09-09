@@ -1,0 +1,43 @@
+2024-09-09 01:48:14,804 - INFO - Building image sweb.eval.arm64.django__django-12708:latest
+Using dockerfile:
+FROM --platform=linux/arm64/v8 sweb.env.arm64.a18371b03f944585b4f08c:latest
+
+COPY ./setup_repo.sh /root/
+RUN /bin/bash /root/setup_repo.sh
+
+WORKDIR /testbed/
+
+Adding (1) setup scripts to image build repo
+2024-09-09 01:48:14,804 - INFO - [SETUP SCRIPT] setup_repo.sh:
+#!/bin/bash
+set -euxo pipefail
+git clone -o origin https://github.com/django/django /testbed
+chmod -R 777 /testbed
+cd /testbed
+git reset --hard 447980e72ac01da1594dd3373a03ba40b7ee6f80
+git remote remove origin
+source /opt/miniconda3/bin/activate
+conda activate testbed
+echo "Current environment: $CONDA_DEFAULT_ENV"
+python -m pip install -e .
+
+2024-09-09 01:48:14,805 - INFO - Building docker image sweb.eval.arm64.django__django-12708:latest in logs/build_images/instances/sweb.eval.arm64.django__django-12708__latest with platform linux/arm64/v8
+2024-09-09 01:48:14,895 - INFO - Step 1/4 : FROM --platform=linux/arm64/v8 sweb.env.arm64.a18371b03f944585b4f08c:latest
+2024-09-09 01:48:14,895 - INFO - 
+2024-09-09 01:48:14,895 - INFO - ---> 3bfefd5313f1
+2024-09-09 01:48:14,895 - INFO - Step 2/4 : COPY ./setup_repo.sh /root/
+2024-09-09 01:48:14,895 - INFO - 
+2024-09-09 01:48:14,941 - INFO - ---> d27ee5b8d900
+2024-09-09 01:48:14,941 - INFO - Step 3/4 : RUN /bin/bash /root/setup_repo.sh
+2024-09-09 01:48:14,941 - INFO - 
+2024-09-09 01:48:14,953 - INFO - ---> Running in b1622418c560
+2024-09-09 01:48:15,068 - INFO - + git clone -o origin https://github.com/django/django /testbed
+2024-09-09 01:48:15,069 - INFO - Cloning into '/testbed'...
+2024-09-09 01:48:52,087 - INFO - error: RPC failed; curl 92 HTTP/2 stream 0 was not closed cleanly: CANCEL (err 8)
+error: 7505 bytes of body are still expected
+2024-09-09 01:48:52,093 - INFO - fetch-pack: unexpected disconnect while reading sideband packet
+2024-09-09 01:48:52,093 - INFO - fatal: early EOF
+2024-09-09 01:48:52,094 - INFO - fatal: fetch-pack: invalid index-pack output
+2024-09-09 01:48:52,232 - INFO - ---> Removed intermediate container b1622418c560
+2024-09-09 01:48:52,232 - ERROR - Error: The command '/bin/sh -c /bin/bash /root/setup_repo.sh' returned a non-zero code: 128
+2024-09-09 01:48:52,232 - ERROR - docker.errors.BuildError during sweb.eval.arm64.django__django-12708:latest: The command '/bin/sh -c /bin/bash /root/setup_repo.sh' returned a non-zero code: 128

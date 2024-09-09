@@ -1,0 +1,104 @@
+diff --git a/sympy/core/numbers.py b/sympy/core/numbers.py
+index 79f6a7d..714bce8 100644
+--- a/sympy/core/numbers.py
++++ b/sympy/core/numbers.py
+@@ -1380,6 +1380,21 @@ def __int__(self):
+             return 0
+         return int(mlib.to_int(self._mpf_))  # uses round_fast = round_down
+ 
++    def __eq__(self, other):
++        from sympy.logic.boolalg import Boolean
++        if isinstance(other, Boolean):
++            return False
++        try:
++            other = _sympify(other)
++            if isinstance(other, Number):
++                # Check if other is a Float
++                if isinstance(other, Float):
++                    return self._mpf_ == other._mpf_
++                # If other is not a Float, fall back to existing comparison logic
++                return bool(self._mpf_ == other)
++            return False
++        except SympifyError:
++            return NotImplemented
+     def __eq__(self, other):
+         from sympy.logic.boolalg import Boolean
+         try:
+diff --git a/sympy/core/tests/test_numbers.py b/sympy/core/tests/test_numbers.py
+index 8b3e991..1a08c16 100644
+--- a/sympy/core/tests/test_numbers.py
++++ b/sympy/core/tests/test_numbers.py
+@@ -2026,3 +2026,11 @@ def test_abc():
+ 
+ def test_floordiv():
+     assert S(2)//S.Half == 4
++
++def test_float_boolean_comparison():
++    assert S(0.0) != S.false
++    assert S.false != S(0.0)
++    assert not (S(0.0) == S.false)
++    assert not (S.false == S(0.0))
++def test_floordiv():
++    assert S(2)//S.Half == 4
+diff --git a/sympy/logic/boolalg.py b/sympy/logic/boolalg.py
+index fbcba1f..8b7f2c8 100644
+--- a/sympy/logic/boolalg.py
++++ b/sympy/logic/boolalg.py
+@@ -101,6 +101,57 @@ def __xor__(self, other):
+ 
+     __rxor__ = __xor__
+ 
++    def __eq__(self, other):
++        from sympy.core.numbers import Float
++        if isinstance(other, Float):
++            return False
++        try:
++            other = _sympify(other)
++            if isinstance(other, Boolean):
++                return self.equals(other)
++            return False
++        except TypeError:
++            return NotImplemented
++class Boolean(Basic):
++    """A boolean object is an object for which logic operations make sense."""
++
++    __slots__ = ()
++
++    kind = BooleanKind
++
++    @sympify_return([('other', 'Boolean')], NotImplemented)
++    def __and__(self, other):
++        return And(self, other)
++
++    __rand__ = __and__
++
++    @sympify_return([('other', 'Boolean')], NotImplemented)
++    def __or__(self, other):
++        return Or(self, other)
++
++    __ror__ = __or__
++
++    def __invert__(self):
++        """Overloading for ~"""
++        return Not(self)
++
++    @sympify_return([('other', 'Boolean')], NotImplemented)
++    def __rshift__(self, other):
++        return Implies(self, other)
++
++    @sympify_return([('other', 'Boolean')], NotImplemented)
++    def __lshift__(self, other):
++        return Implies(other, self)
++
++    __rrshift__ = __lshift__
++    __rlshift__ = __rshift__
++
++    @sympify_return([('other', 'Boolean')], NotImplemented)
++    def __xor__(self, other):
++        return Xor(self, other)
++
++    __rxor__ = __xor__
++
+     def equals(self, other):
+         """
+         Returns True if the given formulas have the same truth table.

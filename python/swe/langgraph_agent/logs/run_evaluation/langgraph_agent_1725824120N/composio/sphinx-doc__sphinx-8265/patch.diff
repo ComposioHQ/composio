@@ -1,0 +1,43 @@
+diff --git a/sphinx/writers/html.py b/sphinx/writers/html.py
+index 8813c2d..485c099 100644
+--- a/sphinx/writers/html.py
++++ b/sphinx/writers/html.py
+@@ -172,11 +172,37 @@ class HTMLTranslator(SphinxTranslator, BaseTranslator):
+         self.body.append('<span class="sig-paren">(</span>')
+         self.first_param = 1
+         self.optional_param_level = 0
+-        # How many required parameters are left.
+         self.required_params_left = sum([isinstance(c, addnodes.desc_parameter)
+                                          for c in node.children])
+         self.param_separator = node.child_text_separator
+ 
++        for child in node.children:
++            if isinstance(child, addnodes.desc_parameter):
++                if child.get('default'):
++                    default = child['default']
++                    if isinstance(default, tuple):
++                        default = '({})'.format(', '.join(map(str, default)))
++                    child['default'] = default
++
++        self.visit_desc_parameter = self._visit_desc_parameter_modified
++
++    def _visit_desc_parameter_modified(self, node: Element) -> None:
++        if self.first_param:
++            self.first_param = 0
++        else:
++            self.body.append(self.param_separator)
++        if self.optional_param_level == 0:
++            self.required_params_left -= 1
++        if not node.hasattr('noemph'):
++            self.body.append('<em class="sig-param">')
++        if node.get('default'):
++            self.body.append('<span class="default_value">{}</span>'.format(node['default']))
++        self.body.append(node.astext())
++        if not node.hasattr('noemph'):
++            self.body.append('</em>')
++        if node.child_text_separator:
++            self.param_separator = node.child_text_separator
++
+     def depart_desc_parameterlist(self, node: Element) -> None:
+         self.body.append('<span class="sig-paren">)</span>')
+ 

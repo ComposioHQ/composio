@@ -1,0 +1,76 @@
+{
+    "matplotlib__matplotlib-23412": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "lib/matplotlib/tests/test_patches.py::test_dash_offset_patch_draw[png]"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "lib/matplotlib/tests/test_patches.py::test_Polygon_close",
+                    "lib/matplotlib/tests/test_patches.py::test_corner_center",
+                    "lib/matplotlib/tests/test_patches.py::test_rotate_rect",
+                    "lib/matplotlib/tests/test_patches.py::test_negative_rect",
+                    "lib/matplotlib/tests/test_patches.py::test_patch_color_none",
+                    "lib/matplotlib/tests/test_patches.py::test_wedge_movement",
+                    "lib/matplotlib/tests/test_patches.py::test_patch_str",
+                    "lib/matplotlib/tests/test_patches.py::test_datetime_rectangle",
+                    "lib/matplotlib/tests/test_patches.py::test_datetime_datetime_fails",
+                    "lib/matplotlib/tests/test_patches.py::test_contains_point",
+                    "lib/matplotlib/tests/test_patches.py::test_contains_points",
+                    "lib/matplotlib/tests/test_patches.py::test_fancyarrow_units",
+                    "lib/matplotlib/tests/test_patches.py::test_fancyarrow_setdata",
+                    "lib/matplotlib/tests/test_patches.py::test_fancyarrow_shape_error",
+                    "lib/matplotlib/tests/test_patches.py::test_boxstyle_errors[foo-Unknown",
+                    "lib/matplotlib/tests/test_patches.py::test_boxstyle_errors[Round,foo-Incorrect",
+                    "lib/matplotlib/tests/test_patches.py::test_degenerate_polygon",
+                    "lib/matplotlib/tests/test_patches.py::test_color_override_warning[edgecolor]",
+                    "lib/matplotlib/tests/test_patches.py::test_color_override_warning[facecolor]",
+                    "lib/matplotlib/tests/test_patches.py::test_empty_verts",
+                    "lib/matplotlib/tests/test_patches.py::test_default_antialiased",
+                    "lib/matplotlib/tests/test_patches.py::test_default_linestyle",
+                    "lib/matplotlib/tests/test_patches.py::test_default_capstyle",
+                    "lib/matplotlib/tests/test_patches.py::test_default_joinstyle"
+                ],
+                "failure": [
+                    "lib/matplotlib/tests/test_patches.py::test_rotate_rect_draw[png]",
+                    "lib/matplotlib/tests/test_patches.py::test_clip_to_bbox[png]",
+                    "lib/matplotlib/tests/test_patches.py::test_clip_to_bbox[pdf]",
+                    "lib/matplotlib/tests/test_patches.py::test_patch_alpha_coloring[png]",
+                    "lib/matplotlib/tests/test_patches.py::test_patch_alpha_coloring[pdf]",
+                    "lib/matplotlib/tests/test_patches.py::test_patch_alpha_override[png]",
+                    "lib/matplotlib/tests/test_patches.py::test_patch_alpha_override[pdf]",
+                    "lib/matplotlib/tests/test_patches.py::test_patch_custom_linestyle[png]",
+                    "lib/matplotlib/tests/test_patches.py::test_patch_custom_linestyle[pdf]",
+                    "lib/matplotlib/tests/test_patches.py::test_patch_linestyle_accents",
+                    "lib/matplotlib/tests/test_patches.py::test_patch_linestyle_none[png]",
+                    "lib/matplotlib/tests/test_patches.py::test_wedge_range[png]",
+                    "lib/matplotlib/tests/test_patches.py::test_wedge_range[pdf]",
+                    "lib/matplotlib/tests/test_patches.py::test_multi_color_hatch[png]",
+                    "lib/matplotlib/tests/test_patches.py::test_multi_color_hatch[pdf]",
+                    "lib/matplotlib/tests/test_patches.py::test_units_rectangle[png]",
+                    "lib/matplotlib/tests/test_patches.py::test_connection_patch[png]",
+                    "lib/matplotlib/tests/test_patches.py::test_connection_patch_fig[png]",
+                    "lib/matplotlib/tests/test_patches.py::test_shadow[png]",
+                    "lib/matplotlib/tests/test_patches.py::test_annulus[png]",
+                    "lib/matplotlib/tests/test_patches.py::test_annulus_setters[png]",
+                    "lib/matplotlib/tests/test_patches.py::test_annulus_setters2[png]"
+                ]
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

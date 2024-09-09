@@ -17,7 +17,7 @@ from langchain_core.runnables.graph import CurveStyle, MermaidDrawMethod, NodeSt
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
-from prompts import CODE_ANALYZER_PROMPT, EDITING_AGENT_PROMPT, SOFTWARE_ENGINEER_PROMPT
+from prompts import CODE_ANALYZER_PROMPT, EDITING_AGENT_PROMPT, SOFTWARE_ENGINEER_PROMPT, TESTING_AGENT_PROMPT
 
 from composio_langgraph import Action, App, ComposioToolSet, WorkspaceType
 
@@ -80,10 +80,19 @@ def get_agent_graph(repo_name: str, workspace_id: str):
         ),
     ]
 
+    shell_tools = [
+        *composio_toolset.get_actions(
+            actions=[
+                Action.SHELLTOOL_EXEC_COMMAND,
+            ]
+        ),
+    ]
+
     # Create two separate tool nodes
     code_analysis_tool_node = ToolNode(code_analysis_tools)
     file_tool_node = ToolNode(file_tools)
     swe_tool_node = ToolNode(swe_tools)
+    testing_tool_node = ToolNode(shell_tools + file_tools)
 
     # Define AgentState
     class AgentState(TypedDict):
@@ -94,6 +103,7 @@ def get_agent_graph(repo_name: str, workspace_id: str):
     software_engineer_name = "SoftwareEngineer"
     code_analyzer_name = "CodeAnalyzer"
     editor_name = "Editor"
+    tester_name = "Tester"
 
     # Helper function for agent nodes
     def create_agent_node(agent, name):
@@ -138,6 +148,9 @@ def get_agent_graph(repo_name: str, workspace_id: str):
     editing_agent = create_agent(EDITING_AGENT_PROMPT, file_tools)
     editing_node = create_agent_node(editing_agent, editor_name)
 
+    tester_agent = create_agent(TESTING_AGENT_PROMPT, file_tools + shell_tools)
+    tester_node = create_agent_node(tester_agent, tester_name)
+
     # Update router function
     def router(state) -> Literal["code_edit_tool", "code_analysis_tool", "__end__", "continue", "analyze_code", "edit_file"]:
         messages = state["messages"]
@@ -166,9 +179,11 @@ def get_agent_graph(repo_name: str, workspace_id: str):
     workflow.add_node(software_engineer_name, software_engineer_node)
     workflow.add_node(code_analyzer_name, code_analyzer_node)
     workflow.add_node(editor_name, editing_node)
+    workflow.add_node(tester_name, tester_node)
     workflow.add_node("code_edit_tool", file_tool_node)
     workflow.add_node("code_analysis_tool", code_analysis_tool_node)
     workflow.add_node("swe_tool", swe_tool_node)
+    workflow.add_node("testing_tool", testing_tool_node)
     # Add start and end
     workflow.add_edge(START, software_engineer_name)
 
@@ -187,6 +202,11 @@ def get_agent_graph(repo_name: str, workspace_id: str):
         "swe_tool",
         lambda x: x["sender"],
         {software_engineer_name: software_engineer_name},
+    )
+    workflow.add_conditional_edges(
+        "testing_tool",
+        lambda x: x["sender"],
+        {tester_name: tester_name},
     )
 
     # Update conditional edges for the coding agent
@@ -248,11 +268,37 @@ def get_agent_graph(repo_name: str, workspace_id: str):
         editor_name,
         code_editor_router,
         {
-            "done": software_engineer_name,
+            "done": tester_name,
             "continue": editor_name,
             "code_edit_tool": "code_edit_tool",
         },
     )
+
+    def testing_router(state):
+        messages = state["messages"]
+        for message in reversed(messages):
+            if isinstance(message, AIMessage):
+                last_ai_message = message
+                break
+        else:
+            last_ai_message = messages[-1]
+
+        if last_ai_message.tool_calls:
+            return "testing_tool"
+        if "TESTING COMPLETED" in last_ai_message.content:
+            return "done"
+        return "continue"
+
+    workflow.add_conditional_edges(
+        tester_name,
+        testing_router,
+        {
+            "done": software_engineer_name,
+            "continue": tester_name,
+            "testing_tool": "testing_tool",
+        },
+    )
+        
 
     graph = workflow.compile()
 
@@ -273,7 +319,9 @@ def get_agent_graph(repo_name: str, workspace_id: str):
     image = Image.open(BytesIO(png_data))
 
     # Save the image
+    print("**************")
     output_path = "workflow_graph.png"
     image.save(output_path)
-
+    print("**************")
     return graph, composio_toolset
+

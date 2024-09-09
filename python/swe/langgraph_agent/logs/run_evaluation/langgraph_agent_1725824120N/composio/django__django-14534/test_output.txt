@@ -1,0 +1,524 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/forms/boundfield.py
+	modified:   tests/forms_tests/tests/test_forms.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 910ecd1b8df7678f45c3d507dde6bcb1faafa243
+Author: Jacob Walls <jacobtylerwalls@gmail.com>
+Date:   Mon Aug 2 11:07:58 2021 -0400
+
+    Fixed #29063 -- Fixed migrate crash when specifying a name of partially applied squashed migrations.
+
+diff --git a/django/core/management/commands/migrate.py b/django/core/management/commands/migrate.py
+index 55b8faf38b..34fcb9bc58 100644
+--- a/django/core/management/commands/migrate.py
++++ b/django/core/management/commands/migrate.py
+@@ -140,7 +140,16 @@ class Command(BaseCommand):
+                 except KeyError:
+                     raise CommandError("Cannot find a migration matching '%s' from app '%s'." % (
+                         migration_name, app_label))
+-                targets = [(app_label, migration.name)]
++                target = (app_label, migration.name)
++                # Partially applied squashed migrations are not included in the
++                # graph, use the last replacement instead.
++                if (
++                    target not in executor.loader.graph.nodes and
++                    target in executor.loader.replacements
++                ):
++                    incomplete_migration = executor.loader.replacements[target]
++                    target = incomplete_migration.replaces[-1]
++                targets = [target]
+             target_app_labels_only = False
+         elif options['app_label']:
+             targets = [key for key in executor.loader.graph.leaf_nodes() if key[0] == app_label]
+diff --git a/tests/migrations/test_commands.py b/tests/migrations/test_commands.py
+index b0cb0bb0b6..daeeaf8edb 100644
+--- a/tests/migrations/test_commands.py
++++ b/tests/migrations/test_commands.py
+@@ -951,6 +951,34 @@ class MigrateTests(MigrationTestBase):
+         )
+         # No changes were actually applied so there is nothing to rollback
+ 
++    def test_migrate_partially_applied_squashed_migration(self):
++        """
++        Migrating to a squashed migration specified by name should succeed
++        even if it is partially applied.
++        """
++        with self.temporary_migration_module(module='migrations.test_migrations'):
++            recorder = MigrationRecorder(connection)
++            try:
++                call_command('migrate', 'migrations', '0001_initial', verbosity=0)
++                call_command(
++                    'squashmigrations',
++                    'migrations',
++                    '0002',
++                    interactive=False,
++                    verbosity=0,
++                )
++                call_command(
++                    'migrate',
++                    'migrations',
++                    '0001_squashed_0002_second',
++                    verbosity=0,
++                )
++                applied_migrations = recorder.applied_migrations()
++                self.assertIn(('migrations', '0002_second'), applied_migrations)
++            finally:
++                # Unmigrate everything.
++                call_command('migrate', 'migrations', 'zero', verbosity=0)
++
+     @override_settings(MIGRATION_MODULES={'migrations': 'migrations.test_migrations'})
+     def test_migrate_inconsistent_history(self):
+         """
++ git diff 910ecd1b8df7678f45c3d507dde6bcb1faafa243
+diff --git a/django/forms/boundfield.py b/django/forms/boundfield.py
+index 2ff8b0ee26..325b781826 100644
+--- a/django/forms/boundfield.py
++++ b/django/forms/boundfield.py
+@@ -243,19 +243,12 @@ class BoundField:
+         return re.sub(r'widget$|input$', '', self.field.widget.__class__.__name__.lower())
+ 
+ 
++@html_safe
+ @html_safe
+ class BoundWidget:
+     """
+     A container class used for iterating over widgets. This is useful for
+-    widgets that have choices. For example, the following can be used in a
+-    template:
+-
+-    {% for radio in myform.beatles %}
+-      <label for="{{ radio.id_for_label }}">
+-        {{ radio.choice_label }}
+-        <span class="radio">{{ radio.tag }}</span>
+-      </label>
+-    {% endfor %}
++    widgets that have choices and thus produce multiple widgets.
+     """
+     def __init__(self, parent_widget, data, renderer):
+         self.parent_widget = parent_widget
+@@ -263,22 +256,26 @@ class BoundWidget:
+         self.renderer = renderer
+ 
+     def __str__(self):
+-        return self.tag(wrap_label=True)
++        return self.tag()
+ 
+     def tag(self, wrap_label=False):
+-        context = {'widget': {**self.data, 'wrap_label': wrap_label}}
++        context = self.parent_widget.get_context(self.data['name'], self.data['value'],
++                                                 self.data['attrs'])
++        context['wrap_label'] = wrap_label
+         return self.parent_widget._render(self.template_name, context, self.renderer)
+ 
+     @property
+     def template_name(self):
+-        if 'template_name' in self.data:
+-            return self.data['template_name']
+         return self.parent_widget.template_name
+ 
+     @property
+     def id_for_label(self):
+-        return 'id_%s_%s' % (self.data['name'], self.data['index'])
++        return self.data['attrs'].get('id') or 'id_%s_%s' % (self.data['name'], self.data['index'])
+ 
+     @property
+     def choice_label(self):
+         return self.data['label']
++
++    def __bool__(self):
++        # BoundWidget evaluates to True even if its value is empty.
++        return True
+diff --git a/tests/forms_tests/tests/test_forms.py b/tests/forms_tests/tests/test_forms.py
+index f3ee64ceda..61620f09af 100644
+--- a/tests/forms_tests/tests/test_forms.py
++++ b/tests/forms_tests/tests/test_forms.py
+@@ -3,6 +3,52 @@ import datetime
+ import json
+ import uuid
+ 
++from django.core.exceptions import NON_FIELD_ERRORS
++from django.core.files.uploadedfile import SimpleUploadedFile
++from django.core.validators import MaxValueValidator, RegexValidator
++from django.forms import (
++    BooleanField, CharField, CheckboxSelectMultiple, ChoiceField, DateField,
++    DateTimeField, EmailField, FileField, FileInput, FloatField, Form,
++    HiddenInput, ImageField, IntegerField, MultipleChoiceField,
++    MultipleHiddenInput, MultiValueField, NullBooleanField, PasswordInput,
++    RadioSelect, Select, SplitDateTimeField, SplitHiddenDateTimeWidget,
++    Textarea, TextInput, TimeField, ValidationError, forms,
++)
++from django.forms.renderers import DjangoTemplates, get_default_renderer
++from django.forms.utils import ErrorList
++from django.http import QueryDict
++from django.template import Context, Template
++from django.test import SimpleTestCase
++from django.utils.datastructures import MultiValueDict
++from django.utils.safestring import mark_safe
++import copy
++import datetime
++import json
++import uuid
++
++from django.core.exceptions import NON_FIELD_ERRORS
++from django.core.files.uploadedfile import SimpleUploadedFile
++from django.core.validators import MaxValueValidator, RegexValidator
++from django.forms import (
++    BooleanField, CharField, CheckboxSelectMultiple, ChoiceField, DateField,
++    DateTimeField, EmailField, FileField, FileInput, FloatField, Form,
++    HiddenInput, ImageField, IntegerField, MultipleChoiceField,
++    MultipleHiddenInput, MultiValueField, NullBooleanField, PasswordInput,
++    RadioSelect, Select, SplitDateTimeField, SplitHiddenDateTimeWidget,
++    Textarea, TextInput, TimeField, ValidationError, forms,
++)
++from django.forms.renderers import DjangoTemplates, get_default_renderer
++from django.forms.utils import ErrorList
++from django.http import QueryDict
++from django.template import Context, Template
++from django.test import SimpleTestCase
++from django.utils.datastructures import MultiValueDict
++from django.utils.safestring import mark_safe
++import copy
++import datetime
++import json
++import uuid
++
+ from django.core.exceptions import NON_FIELD_ERRORS
+ from django.core.files.uploadedfile import SimpleUploadedFile
+ from django.core.validators import MaxValueValidator, RegexValidator
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.3.2 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210804075732) (3.8.1)
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210804075732) (2024.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210804075732) (0.5.1)
+Requirement already satisfied: typing-extensions>=4 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from asgiref>=3.3.2->Django==4.0.dev20210804075732) (4.12.2)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-4.0.dev20210804075732-0.editable-py3-none-any.whl size=26586 sha256=f2c989b0169f1f064bd7721bdcb121e22f3c0ee6f1197b36c1998130682092f2
+  Stored in directory: /tmp/pip-ephem-wheel-cache-lri0eta9/wheels/b2/50/f1/218f2e9962a80d01a4b1297698978f9fb3b60056aa24343f24
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 4.0.dev20210804075732
+    Uninstalling Django-4.0.dev20210804075732:
+      Successfully uninstalled Django-4.0.dev20210804075732
+Successfully installed Django-4.0.dev20210804075732
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 910ecd1b8df7678f45c3d507dde6bcb1faafa243 tests/forms_tests/tests/test_forms.py
+Updated 1 path from 7175c8df7b
++ git apply -v -
+Checking patch tests/forms_tests/tests/test_forms.py...
+Applied patch tests/forms_tests/tests/test_forms.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 forms_tests.tests.test_forms
+Traceback (most recent call last):
+  File "./tests/runtests.py", line 25, in <module>
+    from django.test import TestCase, TransactionTestCase
+  File "/testbed/django/test/__init__.py", line 3, in <module>
+    from django.test.client import (
+  File "/testbed/django/test/client.py", line 15, in <module>
+    from django.core.handlers.asgi import ASGIRequest
+  File "/testbed/django/core/handlers/asgi.py", line 11, in <module>
+    from django.core.handlers import base
+  File "/testbed/django/core/handlers/base.py", line 11, in <module>
+    from django.urls import get_resolver, set_urlconf
+  File "/testbed/django/urls/__init__.py", line 1, in <module>
+    from .base import (
+  File "/testbed/django/urls/base.py", line 8, in <module>
+    from .exceptions import NoReverseMatch, Resolver404
+  File "/testbed/django/urls/exceptions.py", line 1, in <module>
+    from django.http import Http404
+  File "/testbed/django/http/__init__.py", line 5, in <module>
+    from django.http.response import (
+  File "/testbed/django/http/response.py", line 16, in <module>
+    from django.core.serializers.json import DjangoJSONEncoder
+  File "/testbed/django/core/serializers/__init__.py", line 23, in <module>
+    from django.core.serializers.base import SerializerDoesNotExist
+  File "/testbed/django/core/serializers/base.py", line 7, in <module>
+    from django.db import models
+  File "/testbed/django/db/models/__init__.py", line 3, in <module>
+    from django.db.models.aggregates import *  # NOQA
+  File "/testbed/django/db/models/aggregates.py", line 5, in <module>
+    from django.db.models.expressions import Case, Func, Star, When
+  File "/testbed/django/db/models/expressions.py", line 10, in <module>
+    from django.db.models import fields
+  File "/testbed/django/db/models/fields/__init__.py", line 11, in <module>
+    from django import forms
+  File "/testbed/django/forms/__init__.py", line 6, in <module>
+    from django.forms.boundfield import *  # NOQA
+  File "/testbed/django/forms/boundfield.py", line 248, in <module>
+    class BoundWidget:
+  File "/testbed/django/utils/html.py", line 367, in html_safe
+    raise ValueError(
+ValueError: can't apply @html_safe to BoundWidget because it defines __html__().
++ git checkout 910ecd1b8df7678f45c3d507dde6bcb1faafa243 tests/forms_tests/tests/test_forms.py
+Updated 1 path from 7175c8df7b

@@ -1,0 +1,12 @@
+diff --git a/django/db/backends/postgresql/operations.py b/django/db/backends/postgresql/operations.py
+index aa839f56..9a0441bc 100644
+--- a/django/db/backends/postgresql/operations.py
++++ b/django/db/backends/postgresql/operations.py
+@@ -424,3 +424,6 @@ class DatabaseOperations(BaseDatabaseOperations):
+             rhs_expr = Cast(rhs_expr, lhs_field)
+ 
+         return lhs_expr, rhs_expr
++
++DatabaseOperations.
++DatabaseOperations.
+\ No newline at end of file

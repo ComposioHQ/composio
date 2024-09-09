@@ -1,0 +1,1593 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh"'
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh"'
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh
++++ '[' -n '' ']'
++++ '[' -f /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh
++++ '[' -n /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export _CONDA_SET_ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ _CONDA_SET_ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ '[' -f /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh
++++ '[' -n '' ']'
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/gdal ']'
++++ export GDAL_DATA=/opt/miniconda3/envs/testbed/share/gdal
++++ GDAL_DATA=/opt/miniconda3/envs/testbed/share/gdal
++++ export GDAL_DRIVER_PATH=/opt/miniconda3/envs/testbed/lib/gdalplugins
++++ GDAL_DRIVER_PATH=/opt/miniconda3/envs/testbed/lib/gdalplugins
++++ '[' '!' -d /opt/miniconda3/envs/testbed/lib/gdalplugins ']'
++++ export CPL_ZIP_ENCODING=UTF-8
++++ CPL_ZIP_ENCODING=UTF-8
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/epsg_csv ']'
++++ '[' -d /opt/miniconda3/envs/testbed/Library/share/epsg_csv ']'
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh
++++ _la_log 'Beginning libarrow activation.'
++++ '[' '' = 1 ']'
++++ _la_gdb_prefix=/opt/miniconda3/envs/testbed/share/gdb/auto-load
++++ '[' '!' -w /opt/miniconda3/envs/testbed/share/gdb/auto-load ']'
++++ _la_placeholder=replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX
++++ _la_symlink_dir=/opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib
++++ _la_orig_install_dir=/opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib
++++ _la_log '          _la_gdb_prefix: /opt/miniconda3/envs/testbed/share/gdb/auto-load'
++++ '[' '' = 1 ']'
++++ _la_log '         _la_placeholder: replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX'
++++ '[' '' = 1 ']'
++++ _la_log '         _la_symlink_dir: /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib'
++++ '[' '' = 1 ']'
++++ _la_log '    _la_orig_install_dir: /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib'
++++ '[' '' = 1 ']'
++++ _la_log '  content of that folder:'
++++ '[' '' = 1 ']'
+++++ ls -al /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib
+++++ sed 's/^/      /'
++++ _la_log '      total 12
+      drwxr-xr-x 2 root root 4096 Sep  6 07:48 .
+      drwxr-xr-x 3 root root 4096 Sep  6 07:48 ..
+      -rw-r--r-- 1 root root  971 Sep  6 07:48 libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ for _la_target in "$_la_orig_install_dir/"*.py
++++ '[' '!' -e /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py ']'
+++++ basename /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py
++++ _la_symlink=/opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py
++++ _la_log '   _la_target: /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ _la_log '  _la_symlink: /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ '[' -L /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py ']'
+++++ readlink /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py
++++ '[' /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py = /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py ']'
++++ _la_log 'symlink $_la_symlink already exists and points to $_la_target, skipping.'
++++ '[' '' = 1 ']'
++++ continue
++++ _la_log 'Libarrow activation complete.'
++++ '[' '' = 1 ']'
++++ unset _la_gdb_prefix
++++ unset _la_log
++++ unset _la_orig_install_dir
++++ unset _la_placeholder
++++ unset _la_symlink
++++ unset _la_symlink_dir
++++ unset _la_target
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh
++++ export GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ export GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
++++ GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh
++++ test -n ''
++++ xml_catalog_files_libxml2=
++++ XML_CATALOG_FILES=
++++ conda_catalog_files=
++++ ifs_libxml2=' 	
+'
++++ IFS=' '
++++ rem=/opt/miniconda3/envs/testbed
++++ for pre in ${rem}
++++ test '' = /opt/miniconda3/envs/testbed
++++ conda_catalog_files=/opt/miniconda3/envs/testbed
++++ rem=
++++ IFS=' 	
+'
++++ conda_catalog_files='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ export 'XML_CATALOG_FILES=file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ XML_CATALOG_FILES='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ unset conda_catalog_files ifs_libxml2 rem
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/proj ']'
++++ export PROJ_DATA=/opt/miniconda3/envs/testbed/share/proj
++++ PROJ_DATA=/opt/miniconda3/envs/testbed/share/proj
++++ '[' -f /opt/miniconda3/envs/testbed/share/proj/copyright_and_licenses.csv ']'
++++ export PROJ_NETWORK=ON
++++ PROJ_NETWORK=ON
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/udunits ']'
++++ export UDUNITS2_XML_PATH=/opt/miniconda3/envs/testbed/share/udunits/udunits2.xml
++++ UDUNITS2_XML_PATH=/opt/miniconda3/envs/testbed/share/udunits/udunits2.xml
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   xarray/core/nanops.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit e05fddea852d08fc0845f954b79deb9e9f9ff883
+Author: Dan Nowacki <dnowacki@usgs.gov>
+Date:   Wed Aug 19 13:34:34 2020 -0700
+
+    Recreate @gajomi's #2070 to keep attrs when calling astype() (#4314)
+    
+    * Recreate @gajomi's #2070 to keep attrs when calling astype()
+    
+    * Accept keep_attrs flag, use apply_ufunc in variable.py, expand tests
+    
+    * Ignore casting if we get a TypeError (indicates sparse <= 0.10.0)
+    
+    * add to whats new
+    
+    * fix dtype test
+    
+    * improve error handling and check if sparse array
+    
+    * test and docstring updates
+    
+    * catch sparse error a bit more elegantly
+    
+    * check using sparse_array_type
+    
+    Co-authored-by: Keewis <keewis@posteo.de>
+
+diff --git a/doc/whats-new.rst b/doc/whats-new.rst
+index 91e6c829..35c0edf5 100644
+--- a/doc/whats-new.rst
++++ b/doc/whats-new.rst
+@@ -21,7 +21,9 @@ v0.16.1 (unreleased)
+ 
+ Breaking changes
+ ~~~~~~~~~~~~~~~~
+-
++- :py:meth:`DataArray.astype` and :py:meth:`Dataset.astype` now preserve attributes. Keep the
++  old behavior by passing `keep_attrs=False` (:issue:`2049`, :pull:`4314`).
++  By `Dan Nowacki <https://github.com/dnowacki-usgs>`_ and `Gabriel Joel Mitchell <https://github.com/gajomi>`_.
+ 
+ New Features
+ ~~~~~~~~~~~~
+diff --git a/xarray/core/common.py b/xarray/core/common.py
+index 4207aea3..798889f5 100644
+--- a/xarray/core/common.py
++++ b/xarray/core/common.py
+@@ -1299,6 +1299,53 @@ class DataWithCoords(SupportsArithmetic, AttrAccessMixin):
+             dask="allowed",
+         )
+ 
++    def astype(self, dtype, casting="unsafe", copy=True, keep_attrs=True):
++        """
++        Copy of the xarray object, with data cast to a specified type.
++        Leaves coordinate dtype unchanged.
++
++        Parameters
++        ----------
++        dtype : str or dtype
++            Typecode or data-type to which the array is cast.
++        casting : {'no', 'equiv', 'safe', 'same_kind', 'unsafe'}, optional
++            Controls what kind of data casting may occur. Defaults to 'unsafe'
++            for backwards compatibility.
++
++            * 'no' means the data types should not be cast at all.
++            * 'equiv' means only byte-order changes are allowed.
++            * 'safe' means only casts which can preserve values are allowed.
++            * 'same_kind' means only safe casts or casts within a kind,
++                like float64 to float32, are allowed.
++            * 'unsafe' means any data conversions may be done.
++        copy : bool, optional
++            By default, astype always returns a newly allocated array. If this
++            is set to False and the `dtype` requirement is satisfied, the input
++            array is returned instead of a copy.
++        keep_attrs : bool, optional
++            By default, astype keeps attributes. Set to False to remove
++            attributes in the returned object.
++
++        Returns
++        -------
++        out : same as object
++            New object with data cast to the specified type.
++
++        See also
++        --------
++        np.ndarray.astype
++        dask.array.Array.astype
++        """
++        from .computation import apply_ufunc
++
++        return apply_ufunc(
++            duck_array_ops.astype,
++            self,
++            kwargs=dict(dtype=dtype, casting=casting, copy=copy),
++            keep_attrs=keep_attrs,
++            dask="allowed",
++        )
++
+     def __enter__(self: T) -> T:
+         return self
+ 
+diff --git a/xarray/core/duck_array_ops.py b/xarray/core/duck_array_ops.py
+index 377e7377..e64fea2c 100644
+--- a/xarray/core/duck_array_ops.py
++++ b/xarray/core/duck_array_ops.py
+@@ -7,6 +7,7 @@ import contextlib
+ import datetime
+ import inspect
+ import warnings
++from distutils.version import LooseVersion
+ from functools import partial
+ 
+ import numpy as np
+@@ -14,7 +15,7 @@ import pandas as pd
+ 
+ from . import dask_array_compat, dask_array_ops, dtypes, npcompat, nputils
+ from .nputils import nanfirst, nanlast
+-from .pycompat import cupy_array_type, dask_array_type
++from .pycompat import cupy_array_type, dask_array_type, sparse_array_type
+ 
+ try:
+     import dask.array as dask_array
+@@ -150,6 +151,28 @@ masked_invalid = _dask_or_eager_func(
+ )
+ 
+ 
++def astype(data, **kwargs):
++    try:
++        import sparse
++    except ImportError:
++        sparse = None
++
++    if (
++        sparse is not None
++        and isinstance(data, sparse_array_type)
++        and LooseVersion(sparse.__version__) < LooseVersion("0.11.0")
++        and "casting" in kwargs
++    ):
++        warnings.warn(
++            "The current version of sparse does not support the 'casting' argument. It will be ignored in the call to astype().",
++            RuntimeWarning,
++            stacklevel=4,
++        )
++        kwargs.pop("casting")
++
++    return data.astype(**kwargs)
++
++
+ def asarray(data, xp=np):
+     return (
+         data
+diff --git a/xarray/core/ops.py b/xarray/core/ops.py
+index 9dd9ee24..28f3c302 100644
+--- a/xarray/core/ops.py
++++ b/xarray/core/ops.py
+@@ -42,7 +42,7 @@ NUM_BINARY_OPS = [
+ NUMPY_SAME_METHODS = ["item", "searchsorted"]
+ # methods which don't modify the data shape, so the result should still be
+ # wrapped in an Variable/DataArray
+-NUMPY_UNARY_METHODS = ["astype", "argsort", "clip", "conj", "conjugate"]
++NUMPY_UNARY_METHODS = ["argsort", "clip", "conj", "conjugate"]
+ PANDAS_UNARY_FUNCTIONS = ["isnull", "notnull"]
+ # methods which remove an axis
+ REDUCE_METHODS = ["all", "any"]
+diff --git a/xarray/core/variable.py b/xarray/core/variable.py
+index a9567e80..f00d8186 100644
+--- a/xarray/core/variable.py
++++ b/xarray/core/variable.py
+@@ -360,6 +360,52 @@ class Variable(
+             )
+         self._data = data
+ 
++    def astype(self, dtype, casting="unsafe", copy=True, keep_attrs=True):
++        """
++        Copy of the Variable object, with data cast to a specified type.
++
++        Parameters
++        ----------
++        dtype : str or dtype
++             Typecode or data-type to which the array is cast.
++        casting : {'no', 'equiv', 'safe', 'same_kind', 'unsafe'}, optional
++             Controls what kind of data casting may occur. Defaults to 'unsafe'
++             for backwards compatibility.
++
++             * 'no' means the data types should not be cast at all.
++             * 'equiv' means only byte-order changes are allowed.
++             * 'safe' means only casts which can preserve values are allowed.
++             * 'same_kind' means only safe casts or casts within a kind,
++                 like float64 to float32, are allowed.
++             * 'unsafe' means any data conversions may be done.
++        copy : bool, optional
++             By default, astype always returns a newly allocated array. If this
++             is set to False and the `dtype` requirement is satisfied, the input
++             array is returned instead of a copy.
++        keep_attrs : bool, optional
++            By default, astype keeps attributes. Set to False to remove
++            attributes in the returned object.
++
++        Returns
++        -------
++        out : same as object
++            New object with data cast to the specified type.
++
++        See also
++        --------
++        np.ndarray.astype
++        dask.array.Array.astype
++        """
++        from .computation import apply_ufunc
++
++        return apply_ufunc(
++            duck_array_ops.astype,
++            self,
++            kwargs=dict(dtype=dtype, casting=casting, copy=copy),
++            keep_attrs=keep_attrs,
++            dask="allowed",
++        )
++
+     def load(self, **kwargs):
+         """Manually trigger loading of this variable's data from disk or a
+         remote source into memory and return this variable.
+diff --git a/xarray/tests/test_dataarray.py b/xarray/tests/test_dataarray.py
+index 84455d32..96760207 100644
+--- a/xarray/tests/test_dataarray.py
++++ b/xarray/tests/test_dataarray.py
+@@ -1874,6 +1874,19 @@ class TestDataArray:
+         bar = Variable(["x", "y"], np.zeros((10, 20)))
+         assert_equal(self.dv, np.maximum(self.dv, bar))
+ 
++    def test_astype_attrs(self):
++        for v in [self.va.copy(), self.mda.copy(), self.ds.copy()]:
++            v.attrs["foo"] = "bar"
++            assert v.attrs == v.astype(float).attrs
++            assert not v.astype(float, keep_attrs=False).attrs
++
++    def test_astype_dtype(self):
++        original = DataArray([-1, 1, 2, 3, 1000])
++        converted = original.astype(float)
++        assert_array_equal(original, converted)
++        assert np.issubdtype(original.dtype, np.integer)
++        assert np.issubdtype(converted.dtype, np.floating)
++
+     def test_is_null(self):
+         x = np.random.RandomState(42).randn(5, 6)
+         x[x < 0] = np.nan
+diff --git a/xarray/tests/test_dataset.py b/xarray/tests/test_dataset.py
+index 72bc560b..6af8a8f0 100644
+--- a/xarray/tests/test_dataset.py
++++ b/xarray/tests/test_dataset.py
+@@ -5634,6 +5634,15 @@ class TestDataset:
+         np.testing.assert_equal(padded["var1"].isel(dim2=[0, -1]).data, 42)
+         np.testing.assert_equal(padded["dim2"][[0, -1]].data, np.nan)
+ 
++    def test_astype_attrs(self):
++        data = create_test_data(seed=123)
++        data.attrs["foo"] = "bar"
++
++        assert data.attrs == data.astype(float).attrs
++        assert data.var1.attrs == data.astype(float).var1.attrs
++        assert not data.astype(float, keep_attrs=False).attrs
++        assert not data.astype(float, keep_attrs=False).var1.attrs
++
+ 
+ # Py.test tests
+ 
++ git diff e05fddea852d08fc0845f954b79deb9e9f9ff883
+diff --git a/xarray/core/nanops.py b/xarray/core/nanops.py
+index 41c8d258..148277cd 100644
+--- a/xarray/core/nanops.py
++++ b/xarray/core/nanops.py
+@@ -26,21 +26,21 @@ def _maybe_null_out(result, axis, mask, min_count=1):
+     """
+     xarray version of pandas.core.nanops._maybe_null_out
+     """
+-    if hasattr(axis, "__len__"):  # if tuple or list
+-        raise ValueError(
+-            "min_count is not available for reduction with more than one dimensions."
+-        )
+-
+-    if axis is not None and getattr(result, "ndim", False):
+-        null_mask = (mask.shape[axis] - mask.sum(axis) - min_count) < 0
++    if axis is not None:
++        if isinstance(axis, (tuple, list)):
++            # Handle multiple dimensions
++            valid_count = np.prod([mask.shape[ax] for ax in axis]) - np.sum(mask, axis=axis)
++        else:
++            valid_count = mask.shape[axis] - np.sum(mask, axis=axis)
++        
++        null_mask = (valid_count - min_count) < 0
+         if null_mask.any():
+             dtype, fill_value = dtypes.maybe_promote(result.dtype)
+             result = result.astype(dtype)
+             result[null_mask] = fill_value
+-
+     elif getattr(result, "dtype", None) not in dtypes.NAT_TYPES:
+-        null_mask = mask.size - mask.sum()
+-        if null_mask < min_count:
++        valid_count = mask.size - np.sum(mask)
++        if valid_count < min_count:
+             result = np.nan
+ 
+     return result
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/udunits2-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/proj4-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libxml2_deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libglib_deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/geotiff-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/gdal-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmpy-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmf-deactivate.sh"
+PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval '. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/udunits2-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/proj4-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libxml2_deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libglib_deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/geotiff-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/gdal-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmpy-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmf-deactivate.sh"
+PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/udunits2-deactivate.sh
+++++ unset UDUNITS2_XML_PATH
+++++ '[' -n '' ']'
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/proj4-deactivate.sh
+++++ unset PROJ_DATA
+++++ unset PROJ_NETWORK
+++++ '[' -n '' ']'
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libxml2_deactivate.sh
+++++ test -n ''
+++++ unset XML_CATALOG_FILES
+++++ unset xml_catalog_files_libxml2
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libglib_deactivate.sh
+++++ export GSETTINGS_SCHEMA_DIR=
+++++ GSETTINGS_SCHEMA_DIR=
+++++ unset GSETTINGS_SCHEMA_DIR_CONDA_BACKUP
+++++ '[' -z ']'
+++++ unset GSETTINGS_SCHEMA_DIR
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/geotiff-deactivate.sh
+++++ unset GEOTIFF_CSV
+++++ '[' -n '' ']'
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/gdal-deactivate.sh
+++++ unset GDAL_DATA
+++++ '[' -n '' ']'
+++++ unset GDAL_DRIVER_PATH
+++++ '[' -n '' ']'
+++++ unset CPL_ZIP_ENCODING
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmpy-deactivate.sh
+++++ unset ESMFMKFILE
+++++ '[' -n /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
+++++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++++ unset _CONDA_SET_ESMFMKFILE
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmf-deactivate.sh
+++++ unset ESMFMKFILE
+++++ '[' -n '' ']'
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh"'
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh"'
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh
++++ '[' -n '' ']'
++++ '[' -f /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh
++++ '[' -n /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export _CONDA_SET_ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ _CONDA_SET_ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ '[' -f /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh
++++ '[' -n '' ']'
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/gdal ']'
++++ export GDAL_DATA=/opt/miniconda3/envs/testbed/share/gdal
++++ GDAL_DATA=/opt/miniconda3/envs/testbed/share/gdal
++++ export GDAL_DRIVER_PATH=/opt/miniconda3/envs/testbed/lib/gdalplugins
++++ GDAL_DRIVER_PATH=/opt/miniconda3/envs/testbed/lib/gdalplugins
++++ '[' '!' -d /opt/miniconda3/envs/testbed/lib/gdalplugins ']'
++++ export CPL_ZIP_ENCODING=UTF-8
++++ CPL_ZIP_ENCODING=UTF-8
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/epsg_csv ']'
++++ '[' -d /opt/miniconda3/envs/testbed/Library/share/epsg_csv ']'
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh
++++ _la_log 'Beginning libarrow activation.'
++++ '[' '' = 1 ']'
++++ _la_gdb_prefix=/opt/miniconda3/envs/testbed/share/gdb/auto-load
++++ '[' '!' -w /opt/miniconda3/envs/testbed/share/gdb/auto-load ']'
++++ _la_placeholder=replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX
++++ _la_symlink_dir=/opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib
++++ _la_orig_install_dir=/opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib
++++ _la_log '          _la_gdb_prefix: /opt/miniconda3/envs/testbed/share/gdb/auto-load'
++++ '[' '' = 1 ']'
++++ _la_log '         _la_placeholder: replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX'
++++ '[' '' = 1 ']'
++++ _la_log '         _la_symlink_dir: /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib'
++++ '[' '' = 1 ']'
++++ _la_log '    _la_orig_install_dir: /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib'
++++ '[' '' = 1 ']'
++++ _la_log '  content of that folder:'
++++ '[' '' = 1 ']'
+++++ ls -al /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib
+++++ sed 's/^/      /'
++++ _la_log '      total 12
+      drwxr-xr-x 2 root root 4096 Sep  6 07:48 .
+      drwxr-xr-x 3 root root 4096 Sep  6 07:48 ..
+      -rw-r--r-- 1 root root  971 Sep  6 07:48 libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ for _la_target in "$_la_orig_install_dir/"*.py
++++ '[' '!' -e /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py ']'
+++++ basename /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py
++++ _la_symlink=/opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py
++++ _la_log '   _la_target: /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ _la_log '  _la_symlink: /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ '[' -L /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py ']'
+++++ readlink /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py
++++ '[' /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py = /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py ']'
++++ _la_log 'symlink $_la_symlink already exists and points to $_la_target, skipping.'
++++ '[' '' = 1 ']'
++++ continue
++++ _la_log 'Libarrow activation complete.'
++++ '[' '' = 1 ']'
++++ unset _la_gdb_prefix
++++ unset _la_log
++++ unset _la_orig_install_dir
++++ unset _la_placeholder
++++ unset _la_symlink
++++ unset _la_symlink_dir
++++ unset _la_target
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh
++++ export GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ export GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
++++ GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh
++++ test -n ''
++++ xml_catalog_files_libxml2=
++++ XML_CATALOG_FILES=
++++ conda_catalog_files=
++++ ifs_libxml2=' 	
+'
++++ IFS=' '
++++ rem=/opt/miniconda3/envs/testbed
++++ for pre in ${rem}
++++ test '' = /opt/miniconda3/envs/testbed
++++ conda_catalog_files=/opt/miniconda3/envs/testbed
++++ rem=
++++ IFS=' 	
+'
++++ conda_catalog_files='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ export 'XML_CATALOG_FILES=file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ XML_CATALOG_FILES='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ unset conda_catalog_files ifs_libxml2 rem
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/proj ']'
++++ export PROJ_DATA=/opt/miniconda3/envs/testbed/share/proj
++++ PROJ_DATA=/opt/miniconda3/envs/testbed/share/proj
++++ '[' -f /opt/miniconda3/envs/testbed/share/proj/copyright_and_licenses.csv ']'
++++ export PROJ_NETWORK=ON
++++ PROJ_NETWORK=ON
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/udunits ']'
++++ export UDUNITS2_XML_PATH=/opt/miniconda3/envs/testbed/share/udunits/udunits2.xml
++++ UDUNITS2_XML_PATH=/opt/miniconda3/envs/testbed/share/udunits/udunits2.xml
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: numpy>=1.15 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from xarray==0.16.1.dev50+ge05fddea.d20240909) (1.23.0)
+Requirement already satisfied: pandas>=0.25 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from xarray==0.16.1.dev50+ge05fddea.d20240909) (1.5.3)
+Requirement already satisfied: setuptools>=38.4 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from xarray==0.16.1.dev50+ge05fddea.d20240909) (68.0.0)
+Requirement already satisfied: python-dateutil>=2.8.1 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from pandas>=0.25->xarray==0.16.1.dev50+ge05fddea.d20240909) (2.8.2)
+Requirement already satisfied: pytz>=2020.1 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from pandas>=0.25->xarray==0.16.1.dev50+ge05fddea.d20240909) (2023.3)
+Requirement already satisfied: six>=1.5 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from python-dateutil>=2.8.1->pandas>=0.25->xarray==0.16.1.dev50+ge05fddea.d20240909) (1.16.0)
+Installing collected packages: xarray
+  Attempting uninstall: xarray
+    Found existing installation: xarray 0.16.1.dev50+ge05fddea
+    Uninstalling xarray-0.16.1.dev50+ge05fddea:
+      Successfully uninstalled xarray-0.16.1.dev50+ge05fddea
+  DEPRECATION: Legacy editable install of xarray==0.16.1.dev50+ge05fddea.d20240909 from file:///testbed (setup.py develop) is deprecated. pip 25.0 will enforce this behaviour change. A possible replacement is to add a pyproject.toml or enable --use-pep517, and use setuptools >= 64. If the resulting installation is not behaving as expected, try using --config-settings editable_mode=compat. Please consult the setuptools documentation for more information. Discussion can be found at https://github.com/pypa/pip/issues/11457
+  Running setup.py develop for xarray
+Successfully installed xarray
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout e05fddea852d08fc0845f954b79deb9e9f9ff883 xarray/tests/test_duck_array_ops.py
+Updated 0 paths from 72fb5379
++ git apply -v -
+Checking patch xarray/tests/test_duck_array_ops.py...
+Applied patch xarray/tests/test_duck_array_ops.py cleanly.
++ pytest -rA xarray/tests/test_duck_array_ops.py
+============================= test session starts ==============================
+platform linux -- Python 3.10.14, pytest-7.4.0, pluggy-1.5.0
+rootdir: /testbed
+configfile: setup.cfg
+plugins: cov-5.0.0, xdist-3.6.1, hypothesis-6.111.2, env-1.1.3
+collected 820 items
+
+xarray/tests/test_duck_array_ops.py .................................... [  4%]
+..ss..............ss..............ss......ss......ss..............ss.... [ 13%]
+..................................................ss......ss............ [ 21%]
+..................ss..............ss..............ss......ss......ss.... [ 30%]
+..........ss......................................................ss.... [ 39%]
+..ss................ssssssssss..........ssssssssss..........ssssssssss.. [ 48%]
+........ssssssssss..........ssssss..............ssssss..............ssss [ 57%]
+ss..............ssssss..............sssssssssss.s.s.s.s.sssssssssss.s.s. [ 65%]
+s.s.sssssssssss.s.s.s.s.sssssssssss.s.s.s.s.sssssss.s.s.s.s.s.s.sssssss. [ 74%]
+s.s.s.s.s.s.sssssss.s.s.s.s.s.s.sssssss.s.s.s.s.s.s..................... [ 83%]
+........................................................................ [ 92%]
+................................................................         [100%]
+
+=============================== warnings summary ===============================
+xarray/__init__.py:1
+  /testbed/xarray/__init__.py:1: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
+    import pkg_resources
+
+xarray/core/dask_array_compat.py:16
+xarray/core/dask_array_compat.py:16
+  /testbed/xarray/core/dask_array_compat.py:16: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if LooseVersion(dask_version) >= LooseVersion("2.0.0"):
+
+xarray/core/dask_array_compat.py:149
+xarray/core/dask_array_compat.py:149
+  /testbed/xarray/core/dask_array_compat.py:149: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if LooseVersion(dask_version) >= LooseVersion("2.8.1"):
+
+xarray/core/dask_array_compat.py:186
+xarray/core/dask_array_compat.py:186
+  /testbed/xarray/core/dask_array_compat.py:186: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if LooseVersion(dask_version) > LooseVersion("2.9.0"):
+
+xarray/core/pdcompat.py:45
+  /testbed/xarray/core/pdcompat.py:45: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if LooseVersion(pd.__version__) < "0.25.0":
+
+../opt/miniconda3/envs/testbed/lib/python3.10/site-packages/setuptools/_distutils/version.py:345
+xarray/tests/test_duck_array_ops.py::test_cftime_datetime_mean_dask_error
+  /opt/miniconda3/envs/testbed/lib/python3.10/site-packages/setuptools/_distutils/version.py:345: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    other = LooseVersion(other)
+
+xarray/tests/__init__.py:58
+xarray/tests/__init__.py:58
+  /testbed/xarray/tests/__init__.py:58: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    return version.LooseVersion(vstring)
+
+xarray/tests/test_duck_array_ops.py::test_cftime_datetime_mean
+xarray/tests/test_duck_array_ops.py::test_cftime_datetime_mean
+xarray/tests/test_duck_array_ops.py::test_cftime_datetime_mean_dask_error
+xarray/tests/test_duck_array_ops.py::test_cftime_datetime_mean_dask_error
+xarray/tests/test_duck_array_ops.py::test_datetime_to_numeric_cftime
+xarray/tests/test_duck_array_ops.py::test_datetime_to_numeric_cftime
+xarray/tests/test_duck_array_ops.py::test_datetime_to_numeric_potential_overflow
+xarray/tests/test_duck_array_ops.py::test_datetime_to_numeric_potential_overflow
+  /testbed/xarray/coding/cftimeindex.py:122: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if LooseVersion(cftime.__version__) < LooseVersion("1.0.4"):
+
+xarray/tests/test_duck_array_ops.py::test_cftime_datetime_mean_dask_error
+  /testbed/xarray/core/variable.py:1043: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if LooseVersion(dask.__version__) < "2.0.0":
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED xarray/tests/test_duck_array_ops.py::TestOps::test_first
+PASSED xarray/tests/test_duck_array_ops.py::TestOps::test_last
+PASSED xarray/tests/test_duck_array_ops.py::TestOps::test_count
+PASSED xarray/tests/test_duck_array_ops.py::TestOps::test_where_type_promotion
+PASSED xarray/tests/test_duck_array_ops.py::TestOps::test_stack_type_promotion
+PASSED xarray/tests/test_duck_array_ops.py::TestOps::test_concatenate_type_promotion
+PASSED xarray/tests/test_duck_array_ops.py::TestOps::test_all_nan_arrays
+PASSED xarray/tests/test_duck_array_ops.py::test_cumsum_1d
+PASSED xarray/tests/test_duck_array_ops.py::test_cumsum_2d
+PASSED xarray/tests/test_duck_array_ops.py::test_cumprod_2d
+PASSED xarray/tests/test_duck_array_ops.py::TestArrayNotNullEquiv::test_equal[arr10-arr20]
+PASSED xarray/tests/test_duck_array_ops.py::TestArrayNotNullEquiv::test_equal[arr11-arr21]
+PASSED xarray/tests/test_duck_array_ops.py::TestArrayNotNullEquiv::test_equal[arr12-arr22]
+PASSED xarray/tests/test_duck_array_ops.py::TestArrayNotNullEquiv::test_some_not_equal
+PASSED xarray/tests/test_duck_array_ops.py::TestArrayNotNullEquiv::test_wrong_shape
+PASSED xarray/tests/test_duck_array_ops.py::TestArrayNotNullEquiv::test_types[val10-val20-val30-null0]
+PASSED xarray/tests/test_duck_array_ops.py::TestArrayNotNullEquiv::test_types[1.0-2.0-3.0-nan]
+PASSED xarray/tests/test_duck_array_ops.py::TestArrayNotNullEquiv::test_types[foo-bar-baz-None]
+PASSED xarray/tests/test_duck_array_ops.py::TestArrayNotNullEquiv::test_types[foo-bar-baz-nan]
+PASSED xarray/tests/test_duck_array_ops.py::test_datetime_mean[False]
+PASSED xarray/tests/test_duck_array_ops.py::test_datetime_mean[True]
+PASSED xarray/tests/test_duck_array_ops.py::test_cftime_datetime_mean
+PASSED xarray/tests/test_duck_array_ops.py::test_cftime_datetime_mean_long_time_period
+PASSED xarray/tests/test_duck_array_ops.py::test_cftime_datetime_mean_dask_error
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-sum-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-sum-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-sum-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-sum-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-sum-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-sum-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-sum-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-sum-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-sum-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-sum-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-sum-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-sum-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-sum-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-sum-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-min-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-min-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-min-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-min-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-min-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-min-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-min-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-min-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-min-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-min-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-min-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-min-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-min-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-min-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-max-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-max-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-max-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-max-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-max-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-max-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-max-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-max-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-max-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-max-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-max-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-max-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-max-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-max-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-mean-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-mean-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-mean-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-mean-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-mean-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-mean-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-mean-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-mean-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-mean-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-mean-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-mean-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-mean-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-var-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-var-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-var-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-var-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-var-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-var-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-var-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-var-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-var-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-var-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-var-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-var-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-var-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-False-var-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-sum-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-sum-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-sum-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-sum-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-sum-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-sum-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-sum-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-sum-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-sum-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-sum-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-sum-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-sum-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-sum-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-sum-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-sum-True-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-sum-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-min-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-min-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-min-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-min-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-min-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-min-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-min-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-min-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-min-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-min-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-min-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-min-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-min-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-min-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-min-True-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-min-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-max-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-max-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-max-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-max-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-max-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-max-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-max-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-max-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-max-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-max-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-max-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-max-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-max-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-max-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-max-True-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-max-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-mean-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-mean-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-mean-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-mean-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-mean-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-mean-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-mean-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-mean-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-mean-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-mean-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-mean-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-mean-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-var-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-var-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-var-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-var-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-var-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-var-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-var-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-var-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-var-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-var-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-var-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-var-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-var-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-var-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-var-True-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[None-True-var-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-sum-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-sum-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-sum-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-sum-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-sum-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-sum-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-sum-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-sum-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-sum-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-sum-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-sum-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-sum-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-sum-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-sum-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-min-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-min-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-min-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-min-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-min-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-min-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-min-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-min-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-min-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-min-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-min-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-min-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-min-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-min-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-max-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-max-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-max-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-max-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-max-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-max-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-max-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-max-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-max-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-max-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-max-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-max-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-max-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-max-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-mean-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-mean-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-mean-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-mean-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-mean-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-mean-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-mean-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-mean-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-mean-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-mean-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-mean-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-mean-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-var-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-var-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-var-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-var-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-var-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-var-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-var-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-var-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-var-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-var-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-var-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-var-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-var-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-False-var-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-sum-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-sum-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-sum-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-sum-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-sum-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-sum-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-sum-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-sum-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-sum-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-sum-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-sum-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-sum-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-sum-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-sum-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-sum-True-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-sum-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-min-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-min-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-min-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-min-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-min-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-min-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-min-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-min-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-min-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-min-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-min-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-min-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-min-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-min-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-min-True-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-min-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-max-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-max-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-max-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-max-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-max-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-max-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-max-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-max-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-max-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-max-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-max-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-max-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-max-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-max-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-max-True-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-max-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-mean-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-mean-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-mean-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-mean-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-mean-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-mean-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-mean-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-mean-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-mean-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-mean-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-mean-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-mean-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-var-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-var-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-var-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-var-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-var-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-var-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-var-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-var-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-var-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-var-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-var-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-var-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-var-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-var-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-var-True-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_reduce[x-True-var-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-False-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-False-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-False-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-False-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-False-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-False-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-False-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-False-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-False-False-str-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-False-False-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-True-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-True-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-True-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-True-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-True-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-True-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-True-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-True-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-True-False-str-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-min-True-False-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-False-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-False-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-False-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-False-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-False-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-False-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-False-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-False-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-False-False-str-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-False-False-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-True-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-True-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-True-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-True-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-True-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-True-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-True-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-True-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-True-False-str-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-False-max-True-False-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-False-True-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-False-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-False-True-str-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-False-True-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-False-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-False-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-False-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-False-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-False-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-False-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-False-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-False-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-False-False-str-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-False-False-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-True-True-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-True-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-True-True-str-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-True-True-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-True-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-True-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-True-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-True-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-True-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-True-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-True-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-True-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-True-False-str-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-min-True-False-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-False-True-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-False-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-False-True-str-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-False-True-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-False-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-False-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-False-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-False-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-False-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-False-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-False-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-False-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-False-False-str-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-False-False-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-True-True-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-True-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-True-True-str-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-True-True-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-True-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-True-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-True-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-True-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-True-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-True-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-True-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-True-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-True-False-str-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[x-True-max-True-False-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-min-False-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-min-False-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-min-False-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-min-False-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-min-False-False-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-min-True-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-min-True-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-min-True-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-min-True-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-min-True-False-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-max-False-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-max-False-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-max-False-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-max-False-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-max-False-False-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-max-True-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-max-True-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-max-True-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-max-True-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-False-max-True-False-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-min-False-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-min-False-True-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-min-False-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-min-False-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-min-False-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-min-False-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-min-False-False-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-min-True-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-min-True-True-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-min-True-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-min-True-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-min-True-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-min-True-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-min-True-False-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-max-False-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-max-False-True-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-max-False-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-max-False-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-max-False-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-max-False-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-max-False-False-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-max-True-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-max-True-True-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-max-True-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-max-True-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-max-True-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-max-True-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max[y-True-max-True-False-str-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_argmin_max_error
+PASSED xarray/tests/test_duck_array_ops.py::test_isnull[array0]
+PASSED xarray/tests/test_duck_array_ops.py::test_isnull[array1]
+PASSED xarray/tests/test_duck_array_ops.py::test_isnull[array2]
+PASSED xarray/tests/test_duck_array_ops.py::test_isnull[array3]
+PASSED xarray/tests/test_duck_array_ops.py::test_isnull[array4]
+PASSED xarray/tests/test_duck_array_ops.py::test_isnull_with_dask
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_rolling[True-3-0]
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_rolling[True-3--1]
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_rolling[True-8-0]
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_rolling[True-8--1]
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_rolling[True-11-0]
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_rolling[True-11--1]
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_rolling[False-3-0]
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_rolling[False-3--1]
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_rolling[False-8-0]
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_rolling[False-8--1]
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_rolling[False-11-0]
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_rolling[False-11--1]
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_gradient[1-0]
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_gradient[1--1]
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_gradient[1-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_gradient[2-0]
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_gradient[2--1]
+PASSED xarray/tests/test_duck_array_ops.py::test_dask_gradient[2-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-sum-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-sum-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-sum-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-sum-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-sum-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-sum-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-sum-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-sum-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-sum-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-sum-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-sum-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-sum-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-sum-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-sum-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-sum-True-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-sum-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-prod-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-prod-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-prod-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-prod-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-prod-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-prod-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-prod-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-prod-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-prod-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-prod-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-prod-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-prod-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-prod-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-prod-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-prod-True-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[None-prod-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-sum-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-sum-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-sum-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-sum-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-sum-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-sum-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-sum-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-sum-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-sum-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-sum-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-sum-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-sum-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-sum-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-sum-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-sum-True-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-sum-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-prod-False-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-prod-False-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-prod-False-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-prod-False-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-prod-False-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-prod-False-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-prod-False-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-prod-False-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-prod-True-float-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-prod-True-float-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-prod-True-int-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-prod-True-int-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-prod-True-float32-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-prod-True-float32-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-prod-True-bool_-1]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count[x-prod-True-bool_-2]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_nd[sum-False-float]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_nd[sum-False-int]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_nd[sum-False-float32]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_nd[sum-False-bool_]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_nd[sum-True-float]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_nd[sum-True-int]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_nd[sum-True-float32]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_nd[sum-True-bool_]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_nd[prod-False-float]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_nd[prod-False-int]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_nd[prod-False-float32]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_nd[prod-False-bool_]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_nd[prod-True-float]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_nd[prod-True-int]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_nd[prod-True-float32]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_nd[prod-True-bool_]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_dataset[sum]
+PASSED xarray/tests/test_duck_array_ops.py::test_min_count_dataset[prod]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[sum-False-False-float]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[sum-False-False-int]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[sum-False-False-float32]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[sum-False-False-bool_]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[sum-False-True-float]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[sum-False-True-int]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[sum-False-True-float32]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[sum-False-True-bool_]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[sum-True-False-float]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[sum-True-False-int]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[sum-True-False-float32]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[sum-True-False-bool_]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[sum-True-True-float]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[sum-True-True-int]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[sum-True-True-float32]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[sum-True-True-bool_]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[prod-False-False-float]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[prod-False-False-int]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[prod-False-False-float32]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[prod-False-False-bool_]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[prod-False-True-float]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[prod-False-True-int]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[prod-False-True-float32]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[prod-False-True-bool_]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[prod-True-False-float]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[prod-True-False-int]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[prod-True-False-float32]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[prod-True-False-bool_]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[prod-True-True-float]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[prod-True-True-int]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[prod-True-True-float32]
+PASSED xarray/tests/test_duck_array_ops.py::test_multiple_dims[prod-True-True-bool_]
+PASSED xarray/tests/test_duck_array_ops.py::test_docs
+PASSED xarray/tests/test_duck_array_ops.py::test_datetime_to_numeric_datetime64
+PASSED xarray/tests/test_duck_array_ops.py::test_datetime_to_numeric_cftime
+PASSED xarray/tests/test_duck_array_ops.py::test_datetime_to_numeric_potential_overflow
+PASSED xarray/tests/test_duck_array_ops.py::test_py_timedelta_to_float
+PASSED xarray/tests/test_duck_array_ops.py::test_np_timedelta64_to_float[td0-86400000000000.0]
+PASSED xarray/tests/test_duck_array_ops.py::test_np_timedelta64_to_float[td1-1.0]
+PASSED xarray/tests/test_duck_array_ops.py::test_pd_timedelta_to_float[td0-86400000000000.0]
+PASSED xarray/tests/test_duck_array_ops.py::test_pd_timedelta_to_float[td1-1.0]
+PASSED xarray/tests/test_duck_array_ops.py::test_timedelta_to_numeric[td0]
+PASSED xarray/tests/test_duck_array_ops.py::test_timedelta_to_numeric[td1]
+PASSED xarray/tests/test_duck_array_ops.py::test_timedelta_to_numeric[td2]
+PASSED xarray/tests/test_duck_array_ops.py::test_timedelta_to_numeric[1 day]
+PASSED xarray/tests/test_duck_array_ops.py::test_least_squares[True-True]
+PASSED xarray/tests/test_duck_array_ops.py::test_least_squares[True-False]
+PASSED xarray/tests/test_duck_array_ops.py::test_least_squares[False-True]
+PASSED xarray/tests/test_duck_array_ops.py::test_least_squares[False-False]
+SKIPPED [16] xarray/tests/test_duck_array_ops.py:398: dask does not compute object-typed array
+SKIPPED [16] xarray/tests/test_duck_array_ops.py:392: numpy does not support this
+SKIPPED [60] xarray/tests/test_duck_array_ops.py:487: numpy's argmin (not nanargmin) does not handle object-dtype
+SKIPPED [36] xarray/tests/test_duck_array_ops.py:491: numpy's nanargmin raises ValueError for all nan axis
+SKIPPED [80] xarray/tests/test_duck_array_ops.py:480: dim not in this test
+================ 612 passed, 208 skipped, 21 warnings in 41.12s ================
++ git checkout e05fddea852d08fc0845f954b79deb9e9f9ff883 xarray/tests/test_duck_array_ops.py
+Updated 1 path from 72fb5379

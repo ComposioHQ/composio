@@ -1,0 +1,13 @@
+diff --git a/django/conf/global_settings.py b/django/conf/global_settings.py
+index 09c9b95d..3a019c6a 100644
+--- a/django/conf/global_settings.py
++++ b/django/conf/global_settings.py
+@@ -491,7 +491,7 @@ CACHE_MIDDLEWARE_ALIAS = 'default'
+ ##################
+ # AUTHENTICATION #
+ ##################
+-
++SECURE_REFERRER_POLICY = 'same-origin'
+ AUTH_USER_MODEL = 'auth.User'
+ 
+ AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.ModelBackend']

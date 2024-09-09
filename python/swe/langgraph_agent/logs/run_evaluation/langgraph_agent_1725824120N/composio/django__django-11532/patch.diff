@@ -1,0 +1,21 @@
+diff --git a/django/core/mail/message.py b/django/core/mail/message.py
+index e393b4cf..77503097 100644
+--- a/django/core/mail/message.py
++++ b/django/core/mail/message.py
+@@ -1,4 +1,6 @@
+ import mimetypes
++import idna
++import mimetypes
+ from email import (
+     charset as Charset, encoders as Encoders, generator, message_from_string,
+ )
+@@ -257,7 +259,8 @@ class EmailMessage:
+             msg['Date'] = formatdate(localtime=settings.EMAIL_USE_LOCALTIME)
+         if 'message-id' not in header_names:
+             # Use cached DNS_NAME for performance
+-            msg['Message-ID'] = make_msgid(domain=DNS_NAME)
++            punycode_domain = idna.encode(DNS_NAME).decode('ascii')
++            msg['Message-ID'] = make_msgid(domain=punycode_domain)
+         for name, value in self.extra_headers.items():
+             if name.lower() != 'from':  # From is already handled
+                 msg[name] = value

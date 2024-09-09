@@ -1,0 +1,132 @@
+2024-09-06 21:51:32,799 - INFO - Environment image sweb.env.arm64.c795f4b88616b8462021ed:latest found for sympy__sympy-24066
+Building instance image sweb.eval.arm64.sympy__sympy-24066:latest for sympy__sympy-24066
+2024-09-06 21:51:53,422 - INFO - Creating container for sympy__sympy-24066...
+2024-09-06 21:51:53,444 - INFO - Container for sympy__sympy-24066 created: 71569a7ea708be95f1171eb28abc2e9d8f5772133ebae7fe00df22655300cc5f
+2024-09-06 21:51:53,554 - INFO - Container for sympy__sympy-24066 started: 71569a7ea708be95f1171eb28abc2e9d8f5772133ebae7fe00df22655300cc5f
+2024-09-06 21:51:53,555 - INFO - Intermediate patch for sympy__sympy-24066 written to logs/run_evaluation/langgraph_agent_1725636140N/composio/sympy__sympy-24066/patch.diff, now applying to container...
+2024-09-06 21:51:53,710 - INFO - Failed to apply patch to container, trying again...
+2024-09-06 21:51:53,752 - INFO - >>>>> Applied Patch:
+patching file sympy/physics/units/tests/test_unitsystem.py
+patching file sympy/physics/units/unitsystem.py
+
+2024-09-06 21:51:53,969 - INFO - Git diff before:
+diff --git a/sympy/physics/units/tests/test_unitsystem.py b/sympy/physics/units/tests/test_unitsystem.py
+index a04f3aabb6..9999640510 100644
+--- a/sympy/physics/units/tests/test_unitsystem.py
++++ b/sympy/physics/units/tests/test_unitsystem.py
+@@ -84,3 +84,25 @@ def test_derived_units_must_exist_in_unit_system():
+             units = preferred_unit.atoms(Quantity)
+             for unit in units:
+                 assert unit in unit_system._units, f"Unit {unit} is not in unit system {unit_system}"
++
++def test_collect_factor_and_dimension_with_exp():
++    from sympy import exp
++    from sympy.physics.units import second, ohm, farad
++    from sympy.physics.units.systems.si import SI
++
++    expr = second / (ohm * farad)
++    dim = SI._collect_factor_and_dimension(expr)[1]
++    assert SI.get_dimension_system().is_dimensionless(dim)
++
++    # Test that exponential of dimensionless quantity is allowed
++    buggy_expr = 100 + exp(expr)
++    factor, dim = SI._collect_factor_and_dimension(buggy_expr)
++    assert SI.get_dimension_system().is_dimensionless(dim)
++
++    # Test that exponential of dimensional quantity raises an error
++    dimensional_expr = exp(second)
++    try:
++        SI._collect_factor_and_dimension(dimensional_expr)
++        assert False, "Expected ValueError was not raised"
++    except ValueError as e:
++        assert str(e) == "Argument of exp must be dimensionless, but got Dimension(time)"
+diff --git a/sympy/physics/units/unitsystem.py b/sympy/physics/units/unitsystem.py
+index 3daf84c108..2b15bf974d 100644
+--- a/sympy/physics/units/unitsystem.py
++++ b/sympy/physics/units/unitsystem.py
+@@ -154,6 +154,7 @@ def _collect_factor_and_dimension(self, expr):
+         Return tuple with scale factor expression and dimension expression.
+         """
+         from sympy.physics.units import Quantity
++        from sympy import exp
+         if isinstance(expr, Quantity):
+             return expr.scale_factor, expr.dimension
+         elif isinstance(expr, Mul):
+@@ -189,6 +190,11 @@ def _collect_factor_and_dimension(self, expr):
+                 factor /= ifactor**count
+                 dim /= idim**count
+             return factor, dim
++        elif isinstance(expr, exp):
++            arg_factor, arg_dim = self._collect_factor_and_dimension(expr.args[0])
++            if not self.get_dimension_system().is_dimensionless(arg_dim):
++                raise ValueError(f"Argument of exp must be dimensionless, but got {arg_dim}")
++            return expr.func(arg_factor), Dimension(1)
+         elif isinstance(expr, Function):
+             fds = [self._collect_factor_and_dimension(
+                 arg) for arg in expr.args]
+2024-09-06 21:51:53,970 - INFO - Eval script for sympy__sympy-24066 written to logs/run_evaluation/langgraph_agent_1725636140N/composio/sympy__sympy-24066/eval.sh; copying to container...
+2024-09-06 21:51:56,314 - INFO - Test runtime: 2.23 seconds
+2024-09-06 21:51:56,314 - INFO - Test output for sympy__sympy-24066 written to logs/run_evaluation/langgraph_agent_1725636140N/composio/sympy__sympy-24066/test_output.txt
+2024-09-06 21:51:56,354 - INFO - Git diff after:
+diff --git a/sympy/physics/units/tests/test_unitsystem.py b/sympy/physics/units/tests/test_unitsystem.py
+index a04f3aabb6..9999640510 100644
+--- a/sympy/physics/units/tests/test_unitsystem.py
++++ b/sympy/physics/units/tests/test_unitsystem.py
+@@ -84,3 +84,25 @@ def test_derived_units_must_exist_in_unit_system():
+             units = preferred_unit.atoms(Quantity)
+             for unit in units:
+                 assert unit in unit_system._units, f"Unit {unit} is not in unit system {unit_system}"
++
++def test_collect_factor_and_dimension_with_exp():
++    from sympy import exp
++    from sympy.physics.units import second, ohm, farad
++    from sympy.physics.units.systems.si import SI
++
++    expr = second / (ohm * farad)
++    dim = SI._collect_factor_and_dimension(expr)[1]
++    assert SI.get_dimension_system().is_dimensionless(dim)
++
++    # Test that exponential of dimensionless quantity is allowed
++    buggy_expr = 100 + exp(expr)
++    factor, dim = SI._collect_factor_and_dimension(buggy_expr)
++    assert SI.get_dimension_system().is_dimensionless(dim)
++
++    # Test that exponential of dimensional quantity raises an error
++    dimensional_expr = exp(second)
++    try:
++        SI._collect_factor_and_dimension(dimensional_expr)
++        assert False, "Expected ValueError was not raised"
++    except ValueError as e:
++        assert str(e) == "Argument of exp must be dimensionless, but got Dimension(time)"
+diff --git a/sympy/physics/units/unitsystem.py b/sympy/physics/units/unitsystem.py
+index 3daf84c108..2b15bf974d 100644
+--- a/sympy/physics/units/unitsystem.py
++++ b/sympy/physics/units/unitsystem.py
+@@ -154,6 +154,7 @@ def _collect_factor_and_dimension(self, expr):
+         Return tuple with scale factor expression and dimension expression.
+         """
+         from sympy.physics.units import Quantity
++        from sympy import exp
+         if isinstance(expr, Quantity):
+             return expr.scale_factor, expr.dimension
+         elif isinstance(expr, Mul):
+@@ -189,6 +190,11 @@ def _collect_factor_and_dimension(self, expr):
+                 factor /= ifactor**count
+                 dim /= idim**count
+             return factor, dim
++        elif isinstance(expr, exp):
++            arg_factor, arg_dim = self._collect_factor_and_dimension(expr.args[0])
++            if not self.get_dimension_system().is_dimensionless(arg_dim):
++                raise ValueError(f"Argument of exp must be dimensionless, but got {arg_dim}")
++            return expr.func(arg_factor), Dimension(1)
+         elif isinstance(expr, Function):
+             fds = [self._collect_factor_and_dimension(
+                 arg) for arg in expr.args]
+2024-09-06 21:51:56,354 - INFO - Grading answer for sympy__sympy-24066...
+2024-09-06 21:51:56,359 - INFO - report: {'sympy__sympy-24066': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': True, 'tests_status': {'FAIL_TO_PASS': {'success': ['test_issue_24062'], 'failure': []}, 'PASS_TO_PASS': {'success': ['test_str_repr', 'test_eq', 'test_convert_to', 'test_Quantity_definition', 'test_abbrev', 'test_print', 'test_Quantity_eq', 'test_add_sub', 'test_quantity_abs', 'test_check_unit_consistency', 'test_mul_div', 'test_units', 'test_issue_quart', 'test_issue_5565', 'test_find_unit', 'test_Quantity_derivative', 'test_quantity_postprocessing', 'test_factor_and_dimension', 'test_dimensional_expr_of_derivative', 'test_get_dimensional_expr_with_function', 'test_binary_information', 'test_conversion_with_2_nonstandard_dimensions', 'test_eval_subs', 'test_issue_14932', 'test_issue_14547', 'test_deprecated_quantity_methods', 'test_issue_22164', 'test_issue_22819', 'test_issue_20288', 'test_prefixed_property'], 'failure': []}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for sympy__sympy-24066: resolved: True
+2024-09-06 21:51:56,360 - INFO - Attempting to stop container sweb.eval.sympy__sympy-24066.langgraph_agent_1725636140N...
+2024-09-06 21:52:11,577 - INFO - Attempting to remove container sweb.eval.sympy__sympy-24066.langgraph_agent_1725636140N...
+2024-09-06 21:52:11,593 - INFO - Container sweb.eval.sympy__sympy-24066.langgraph_agent_1725636140N removed.
+2024-09-06 21:52:11,594 - INFO - Attempting to remove image sweb.eval.arm64.sympy__sympy-24066:latest...
+2024-09-06 21:52:11,692 - INFO - Image sweb.eval.arm64.sympy__sympy-24066:latest removed.

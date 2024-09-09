@@ -1,0 +1,192 @@
+diff --git a/tox.ini b/tox.ini
+index b039416..b8b0673 100644
+--- a/tox.ini
++++ b/tox.ini
+@@ -1,181 +1,9 @@
+ [tox]
+-isolated_build = True
+-minversion = 3.5.3
+-distshare = {homedir}/.tox/distshare
+-# make sure to update environment list in travis.yml and appveyor.yml
+-envlist =
+-    linting
+-    py35
+-    py36
+-    py37
+-    py38
+-    pypy
+-    pypy3
+-    py37-{pexpect,xdist,twisted,numpy,pluggymaster}
+-    doctesting
+-    py37-freeze
+-    docs
++envlist = py37-pytest{522,523}
++skipsdist = true
+ 
+ [testenv]
+-commands =
+-    {env:_PYTEST_TOX_COVERAGE_RUN:} pytest {posargs:{env:_PYTEST_TOX_DEFAULT_POSARGS:}}
+-    coverage: coverage combine
+-    coverage: coverage report -m
+-passenv = USER USERNAME COVERAGE_* TRAVIS PYTEST_ADDOPTS
+-setenv =
+-    _PYTEST_TOX_DEFAULT_POSARGS={env:_PYTEST_TOX_POSARGS_LSOF:} {env:_PYTEST_TOX_POSARGS_XDIST:}
+-
+-    # Configuration to run with coverage similar to Travis/Appveyor, e.g.
+-    # "tox -e py37-coverage".
+-    coverage: _PYTEST_TOX_COVERAGE_RUN=coverage run -m
+-    coverage: _PYTEST_TOX_EXTRA_DEP=coverage-enable-subprocess
+-    coverage: COVERAGE_FILE={toxinidir}/.coverage
+-    coverage: COVERAGE_PROCESS_START={toxinidir}/.coveragerc
+-
+-    nobyte: PYTHONDONTWRITEBYTECODE=1
+-
+-    lsof: _PYTEST_TOX_POSARGS_LSOF=--lsof
+-
+-    pexpect: _PYTEST_TOX_PLATFORM=linux|darwin
+-
+-    xdist: _PYTEST_TOX_POSARGS_XDIST=-n auto
+-extras = testing
+-deps =
+-    oldattrs: attrs==17.4.0
+-    oldattrs: hypothesis<=4.38.1
+-    numpy: numpy
+-    pexpect: pexpect
+-    pluggymaster: git+https://github.com/pytest-dev/pluggy.git@master
+-    twisted: twisted
+-    xdist: pytest-xdist>=1.13
+-    {env:_PYTEST_TOX_EXTRA_DEP:}
+-platform = {env:_PYTEST_TOX_PLATFORM:.*}
+-
+-[testenv:linting]
+-skip_install = True
+-basepython = python3
+-deps = pre-commit>=1.11.0
+-commands = pre-commit run --all-files --show-diff-on-failure
+-
+-[testenv:docs]
+-basepython = python3
+-usedevelop = True
+-changedir = doc/en
+-deps = -r{toxinidir}/doc/en/requirements.txt
+-
+-commands =
+-    sphinx-build -W -b html . _build
+-
+-[testenv:doctesting]
+-basepython = python3
+-skipsdist = True
+-deps =
+-    {[testenv]deps}
+-    PyYAML
+-commands =
+-    {env:_PYTEST_TOX_COVERAGE_RUN:} pytest doc/en
+-    {env:_PYTEST_TOX_COVERAGE_RUN:} pytest --doctest-modules --pyargs _pytest
+-
+-[testenv:regen]
+-changedir = doc/en
+-skipsdist = True
+-basepython = python3
+-deps =
+-    sphinx
+-    PyYAML
+-    regendoc>=0.6.1
+-    dataclasses
+-whitelist_externals =
+-    rm
+-    make
+-commands =
+-    # don't show hypothesis plugin info in docs, see #4602
+-    pip uninstall hypothesis -y
+-    rm -rf /tmp/doc-exec*
+-    rm -rf {envdir}/.pytest_cache
+-    make regen
+-
+-[testenv:py37-freeze]
+-changedir = testing/freeze
+ deps =
+-    pyinstaller
+-commands =
+-    {envpython} create_executable.py
+-    {envpython} tox_run.py
+-
+-[testenv:release]
+-decription = do a release, required posarg of the version number
+-basepython = python3
+-usedevelop = True
+-passenv = *
+-deps =
+-    colorama
+-    gitpython
+-    pre-commit>=1.11.0
+-    towncrier
+-    wheel
+-commands = python scripts/release.py {posargs}
+-
+-[testenv:publish_gh_release_notes]
+-description = create GitHub release after deployment
+-basepython = python3
+-usedevelop = True
+-passenv = GH_RELEASE_NOTES_TOKEN TRAVIS_TAG TRAVIS_REPO_SLUG
+-deps =
+-    github3.py
+-    pypandoc
+-commands = python scripts/publish_gh_release_notes.py
+-
+-
+-[pytest]
+-minversion = 2.0
+-addopts = -ra -p pytester --strict-markers
+-rsyncdirs = tox.ini doc src testing
+-python_files = test_*.py *_test.py testing/*/*.py
+-python_classes = Test Acceptance
+-python_functions = test
+-# NOTE: "doc" is not included here, but gets tested explicitly via "doctesting".
+-testpaths = testing
+-norecursedirs = testing/example_scripts
+-xfail_strict=true
+-filterwarnings =
+-    error
+-    default:Using or importing the ABCs:DeprecationWarning:unittest2.*
+-    ignore:Module already imported so cannot be rewritten:pytest.PytestWarning
+-    # https://github.com/pytest-dev/pytest/issues/5974
+-    default:\(rm_rf\) error removing.*:pytest.PytestWarning
+-    # produced by python3.6/site.py itself (3.6.7 on Travis, could not trigger it with 3.6.8).
+-    ignore:.*U.*mode is deprecated:DeprecationWarning:(?!(pytest|_pytest))
+-    # produced by pytest-xdist
+-    ignore:.*type argument to addoption.*:DeprecationWarning
+-    # produced by python >=3.5 on execnet (pytest-xdist)
+-    ignore:.*inspect.getargspec.*deprecated, use inspect.signature.*:DeprecationWarning
+-    # pytest's own futurewarnings
+-    ignore::pytest.PytestExperimentalApiWarning
+-    # Do not cause SyntaxError for invalid escape sequences in py37.
+-    # Those are caught/handled by pyupgrade, and not easy to filter with the
+-    # module being the filename (with .py removed).
+-    default:invalid escape sequence:DeprecationWarning
+-    # ignore use of unregistered marks, because we use many to test the implementation
+-    ignore::_pytest.warning_types.PytestUnknownMarkWarning
+-pytester_example_dir = testing/example_scripts
+-markers =
+-    # dummy markers for testing
+-    foo
+-    bar
+-    baz
+-    # conftest.py reorders tests moving slow ones to the end of the list
+-    slow
+-    # experimental mark for all tests using pexpect
+-    uses_pexpect
+-
+-[flake8]
+-max-line-length = 120
+-extend-ignore = E203
+-
+-[isort]
+-; This config mimics what reorder-python-imports does.
+-force_single_line = 1
+-known_localfolder = pytest,_pytest
+-known_third_party = test_source,test_excinfo
+-force_alphabetical_sort_within_sections = 1
++    pytest522: pytest==5.2.2
++    pytest523: pytest==5.2.3
++commands = pytest
+\ No newline at end of file

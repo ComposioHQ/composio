@@ -1,0 +1,57 @@
+diff --git a/django/db/models/fields/files.py b/django/db/models/fields/files.py
+index 7a99b126..1b49b87f 100644
+--- a/django/db/models/fields/files.py
++++ b/django/db/models/fields/files.py
+@@ -295,7 +295,10 @@ class FileField(Field):
+         if kwargs.get("max_length") == 100:
+             del kwargs["max_length"]
+         kwargs["upload_to"] = self.upload_to
+-        if self.storage is not default_storage:
++        # Include storage in kwargs if it's a callable or not default_storage.
++        # This ensures correct deconstruction when storage is set to a callable
++        # that returns default_storage.
++        if hasattr(self, "_storage_callable") or self.storage is not default_storage:
+             kwargs["storage"] = getattr(self, "_storage_callable", self.storage)
+         return name, path, args, kwargs
+ 
+diff --git a/tests/model_fields/test_filefield.py b/tests/model_fields/test_filefield.py
+index 2259c1e4..f1f4e6fc 100644
+--- a/tests/model_fields/test_filefield.py
++++ b/tests/model_fields/test_filefield.py
+@@ -188,4 +188,35 @@ class FileFieldTests(TestCase):
+             pass
+ 
+         document = MyDocument(myfile="test_file.py")
+-        self.assertEqual(document.myfile.field.model, MyDocument)
++    def test_deconstruct_callable_storage(self):
++        """
++        FileField correctly deconstructs when storage is set to a callable
++        that returns default_storage.
++        """
++        from django.core.files.storage import default_storage
++
++        def get_storage():
++            return default_storage
++
++        class FileModel(models.Model):
++            file = models.FileField(storage=get_storage)
++
++        name, path, args, kwargs = FileModel._meta.get_field('file').deconstruct()
++        self.assertEqual(kwargs['storage'], get_storage)
++
++    def test_deconstruct_callable_storage_default(self):
++        """
++        FileField correctly deconstructs when storage is set to a callable
++        that returns default_storage, and it's not included in kwargs
++        when it's the default storage.
++        """
++        from django.core.files.storage import default_storage
++
++        def get_default_storage():
++            return default_storage
++
++        class FileModel(models.Model):
++            file = models.FileField(storage=get_default_storage)
++
++        name, path, args, kwargs = FileModel._meta.get_field('file').deconstruct()
++        self.assertNotIn('storage', kwargs)

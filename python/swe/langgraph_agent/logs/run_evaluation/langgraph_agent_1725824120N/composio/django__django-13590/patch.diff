@@ -1,0 +1,47 @@
+diff --git a/django/db/models/sql/query.py b/django/db/models/sql/query.py
+index 4648daf3..013fc826 100644
+--- a/django/db/models/sql/query.py
++++ b/django/db/models/sql/query.py
+@@ -1077,10 +1077,11 @@ class Query(BaseExpression):
+         elif isinstance(value, (list, tuple)):
+             # The items of the iterable may be expressions and therefore need
+             # to be resolved independently.
+-            return type(value)(
++            resolved_values = [
+                 self.resolve_lookup_value(sub_value, can_reuse, allow_joins)
+                 for sub_value in value
+-            )
++            ]
++            return type(value)(*resolved_values)
+         return value
+ 
+     def solve_lookup_type(self, lookup):
+diff --git a/tests/queries/tests.py b/tests/queries/tests.py
+index 5b667186..ee03ed4a 100644
+--- a/tests/queries/tests.py
++++ b/tests/queries/tests.py
+@@ -4017,3 +4017,24 @@ class Ticket23622Tests(TestCase):
+             set(Ticket23605A.objects.filter(qy).values_list('pk', flat=True))
+         )
+         self.assertSequenceEqual(Ticket23605A.objects.filter(qx), [a2])
++    def test_named_tuple_range_lookup(self):
++        from collections import namedtuple
++        Range = namedtuple('Range', ['start', 'end'])
++        
++        # Create some test data
++        Item.objects.create(name='item1', created=datetime.datetime(2021, 1, 1))
++        Item.objects.create(name='item2', created=datetime.datetime(2021, 1, 15))
++        Item.objects.create(name='item3', created=datetime.datetime(2021, 1, 31))
++        
++        # Use a named tuple for the range lookup
++        date_range = Range(start=datetime.datetime(2021, 1, 1), end=datetime.datetime(2021, 1, 31))
++        items = Item.objects.filter(created__range=date_range)
++        
++        # Check that the query works and returns the expected results
++        self.assertEqual(items.count(), 3)
++        self.assertQuerysetEqual(items, ['item1', 'item2', 'item3'], lambda x: x.name, ordered=False)
++
++        # Test with a more complex query
++        items = Item.objects.filter(created__range=date_range, name__startswith='item')
++        self.assertEqual(items.count(), 3)
++        self.assertQuerysetEqual(items, ['item1', 'item2', 'item3'], lambda x: x.name, ordered=False)

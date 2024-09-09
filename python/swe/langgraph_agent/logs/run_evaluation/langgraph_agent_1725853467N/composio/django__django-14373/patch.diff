@@ -1,0 +1,48 @@
+diff --git a/django/utils/dateformat.py b/django/utils/dateformat.py
+index 38e89c47..1750147f 100644
+--- a/django/utils/dateformat.py
++++ b/django/utils/dateformat.py
+@@ -313,8 +313,12 @@ class DateFormat(TimeFormat):
+         return '%02d' % (self.data.year % 100)
+ 
+     def Y(self):
+-        "Year, 4 digits; e.g. '1999'"
+-        return self.data.year
++        """Year, 4 digits.
++        
++        Always returns a four-digit year, zero-padded for years < 1000.
++        e.g., '1999', '0042', '0001'
++        """
++        return f"{self.data.year:04d}"
+ 
+     def z(self):
+         """Day of the year, i.e. 1 to 366."""
+diff --git a/tests/utils_tests/test_dateformat.py b/tests/utils_tests/test_dateformat.py
+index c6d3ded8..cfab8ad7 100644
+--- a/tests/utils_tests/test_dateformat.py
++++ b/tests/utils_tests/test_dateformat.py
+@@ -98,6 +98,24 @@ class DateFormatTests(SimpleTestCase):
+         self.assertEqual(dateformat.format(my_birthday, 'P'), '10 p.m.')
+         self.assertEqual(dateformat.format(my_birthday, 's'), '00')
+         self.assertEqual(dateformat.format(my_birthday, 'S'), 'th')
++
++    def test_year_format(self):
++        """
++        Test that the year format 'Y' always returns four digits, even for years < 1000.
++        """
++        tests = [
++            (date(1, 1, 1), '0001'),
++            (date(42, 1, 1), '0042'),
++            (date(999, 1, 1), '0999'),
++            (date(2023, 1, 1), '2023'),
++        ]
++        for test_date, expected in tests:
++            with self.subTest(year=test_date.year):
++                self.assertEqual(dateformat.format(test_date, 'Y'), expected)
++
++    def test_time_formats(self):
++        my_birthday = datetime(1979, 7, 8, 22, 00)
++        self.assertEqual(dateformat.format(my_birthday, 'S'), 'th')
+         self.assertEqual(dateformat.format(my_birthday, 't'), '31')
+         self.assertEqual(dateformat.format(my_birthday, 'w'), '0')
+         self.assertEqual(dateformat.format(my_birthday, 'W'), '27')

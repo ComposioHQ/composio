@@ -1,13 +1,11 @@
 #! /bin/bash
 
-export LANGCHAIN_TRACING_V2=true
-export LANGCHAIN_ENDPOINT="https://api.smith.langchain.com"
-export COMPOSIO_LOGGING_LEVEL="DEBUG"
 
 
 instances_unresolved=(
-    "django__django-16493" # unresolved
-    "sympy__sympy-20801" # image error
+    "django__django-11603"
+    "django__django-16612"
+    "sympy__sympy-24066"
 )
 instances_left=()
 for dir in ../test/*/; do
@@ -31,7 +29,7 @@ run_instance() {
 }
 
 # Set the number of instances to run in parallel
-k=2
+k=4
 run_id="langgraph_agent_$(date +%s%N)"
 # Run instances in parallel, k at a time
 for ((i=0; i<${#instances[@]}; i+=k)); do

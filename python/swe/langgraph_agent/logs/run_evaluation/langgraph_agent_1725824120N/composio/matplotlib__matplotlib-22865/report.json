@@ -1,0 +1,89 @@
+{
+    "matplotlib__matplotlib-22865": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_extend_drawedges[both-1-res0]"
+                ],
+                "failure": [
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_extend_drawedges[min-0-res1]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_extend_drawedges[max-0-res2]"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_extension_shape[png]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_extension_length[png]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_extension_inverted_axis[min-expected0-horizontal]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_extension_inverted_axis[min-expected0-vertical]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_extension_inverted_axis[max-expected1-horizontal]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_extension_inverted_axis[max-expected1-vertical]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_extension_inverted_axis[both-expected2-horizontal]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_extension_inverted_axis[both-expected2-vertical]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_positioning[png-True]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_positioning[png-False]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_single_ax_panchor_false",
+                    "lib/matplotlib/tests/test_colorbar.py::test_contour_colorbar[png]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_gridspec_make_colorbar[png]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_single_scatter[png]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_remove_from_figure[no",
+                    "lib/matplotlib/tests/test_colorbar.py::test_remove_from_figure[with",
+                    "lib/matplotlib/tests/test_colorbar.py::test_remove_from_figure_cl",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbarbase",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_closed_patch[png]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_ticks",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_minorticks_on_off",
+                    "lib/matplotlib/tests/test_colorbar.py::test_cbar_minorticks_for_rc_xyminortickvisible",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_autoticks",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_autotickslog",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_get_ticks",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_lognorm_extension[both]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_lognorm_extension[min]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_lognorm_extension[max]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_powernorm_extension",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_axes_kw",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_log_minortick_labels",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_renorm",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_format[%4.2e]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_format[{x:.2e}]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_scale_reset",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_get_ticks_2",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_inverted_ticks",
+                    "lib/matplotlib/tests/test_colorbar.py::test_mappable_no_alpha",
+                    "lib/matplotlib/tests/test_colorbar.py::test_mappable_2d_alpha",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_label",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_int[clim0]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_int[clim1]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_anchored_cbar_position_using_specgrid",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_change_lim_scale[png]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_axes_handles_same_functions[png]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_inset_colorbar_layout",
+                    "lib/matplotlib/tests/test_colorbar.py::test_twoslope_colorbar[png]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_remove_cb_whose_mappable_has_no_figure[png]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_aspects",
+                    "lib/matplotlib/tests/test_colorbar.py::test_proportional_colorbars[png]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_extend_drawedges[neither--1-res3]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_negative_boundarynorm",
+                    "lib/matplotlib/tests/test_colorbar.py::test_boundaries[png]",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_no_warning_rcparams_grid_true",
+                    "lib/matplotlib/tests/test_colorbar.py::test_colorbar_set_formatter_locator",
+                    "lib/matplotlib/tests/test_colorbar.py::test_offset_text_loc",
+                    "lib/matplotlib/tests/test_colorbar.py::test_title_text_loc"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

@@ -1,0 +1,88 @@
+{
+    "django__django-11603": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "test_distinct_on_aggregate (aggregation.tests.AggregateTestCase)",
+                    "test_empty_aggregate (aggregation.tests.AggregateTestCase)"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "test_add_implementation (aggregation.tests.AggregateTestCase)",
+                    "test_aggregate_alias (aggregation.tests.AggregateTestCase)",
+                    "test_aggregate_annotation (aggregation.tests.AggregateTestCase)",
+                    "test_aggregate_in_order_by (aggregation.tests.AggregateTestCase)",
+                    "test_aggregate_multi_join (aggregation.tests.AggregateTestCase)",
+                    "test_aggregate_over_complex_annotation (aggregation.tests.AggregateTestCase)",
+                    "test_aggregation_expressions (aggregation.tests.AggregateTestCase)",
+                    "Subquery annotations are excluded from the GROUP BY if they are",
+                    "test_annotate_basic (aggregation.tests.AggregateTestCase)",
+                    "test_annotate_defer (aggregation.tests.AggregateTestCase)",
+                    "test_annotate_defer_select_related (aggregation.tests.AggregateTestCase)",
+                    "test_annotate_m2m (aggregation.tests.AggregateTestCase)",
+                    "test_annotate_ordering (aggregation.tests.AggregateTestCase)",
+                    "test_annotate_over_annotate (aggregation.tests.AggregateTestCase)",
+                    "test_annotate_values (aggregation.tests.AggregateTestCase)",
+                    "test_annotate_values_aggregate (aggregation.tests.AggregateTestCase)",
+                    "test_annotate_values_list (aggregation.tests.AggregateTestCase)",
+                    "test_annotated_aggregate_over_annotated_aggregate (aggregation.tests.AggregateTestCase)",
+                    "test_annotation (aggregation.tests.AggregateTestCase)",
+                    "test_annotation_expressions (aggregation.tests.AggregateTestCase)",
+                    "test_arguments_must_be_expressions (aggregation.tests.AggregateTestCase)",
+                    "test_avg_decimal_field (aggregation.tests.AggregateTestCase)",
+                    "test_avg_duration_field (aggregation.tests.AggregateTestCase)",
+                    "test_backwards_m2m_annotate (aggregation.tests.AggregateTestCase)",
+                    "test_combine_different_types (aggregation.tests.AggregateTestCase)",
+                    "test_complex_aggregations_require_kwarg (aggregation.tests.AggregateTestCase)",
+                    "test_complex_values_aggregation (aggregation.tests.AggregateTestCase)",
+                    "test_count (aggregation.tests.AggregateTestCase)",
+                    "test_count_distinct_expression (aggregation.tests.AggregateTestCase)",
+                    "test_count_star (aggregation.tests.AggregateTestCase)",
+                    "test_dates_with_aggregation (aggregation.tests.AggregateTestCase)",
+                    "test_decimal_max_digits_has_no_effect (aggregation.tests.AggregateTestCase)",
+                    "test_even_more_aggregate (aggregation.tests.AggregateTestCase)",
+                    "test_expression_on_aggregation (aggregation.tests.AggregateTestCase)",
+                    "test_filter_aggregate (aggregation.tests.AggregateTestCase)",
+                    "test_filtering (aggregation.tests.AggregateTestCase)",
+                    "test_fkey_aggregate (aggregation.tests.AggregateTestCase)",
+                    "test_group_by_exists_annotation (aggregation.tests.AggregateTestCase)",
+                    "test_group_by_subquery_annotation (aggregation.tests.AggregateTestCase)",
+                    "test_grouped_annotation_in_group_by (aggregation.tests.AggregateTestCase)",
+                    "test_missing_output_field_raises_error (aggregation.tests.AggregateTestCase)",
+                    "test_more_aggregation (aggregation.tests.AggregateTestCase)",
+                    "test_multi_arg_aggregate (aggregation.tests.AggregateTestCase)",
+                    "test_multiple_aggregates (aggregation.tests.AggregateTestCase)",
+                    "test_non_grouped_annotation_not_in_group_by (aggregation.tests.AggregateTestCase)",
+                    "test_nonaggregate_aggregation_throws (aggregation.tests.AggregateTestCase)",
+                    "test_nonfield_annotation (aggregation.tests.AggregateTestCase)",
+                    "test_order_of_precedence (aggregation.tests.AggregateTestCase)",
+                    "test_related_aggregate (aggregation.tests.AggregateTestCase)",
+                    "test_reverse_fkey_annotate (aggregation.tests.AggregateTestCase)",
+                    "test_single_aggregate (aggregation.tests.AggregateTestCase)",
+                    "test_sum_distinct_aggregate (aggregation.tests.AggregateTestCase)",
+                    "test_sum_duration_field (aggregation.tests.AggregateTestCase)",
+                    "test_ticket11881 (aggregation.tests.AggregateTestCase)",
+                    "test_ticket12886 (aggregation.tests.AggregateTestCase)",
+                    "test_ticket17424 (aggregation.tests.AggregateTestCase)",
+                    "test_values_aggregation (aggregation.tests.AggregateTestCase)",
+                    "test_values_annotation_with_expression (aggregation.tests.AggregateTestCase)"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

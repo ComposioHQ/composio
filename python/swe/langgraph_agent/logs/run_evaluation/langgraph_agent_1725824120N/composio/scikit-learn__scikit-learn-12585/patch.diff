@@ -1,0 +1,56 @@
+diff --git a/sklearn/base.py b/sklearn/base.py
+index 56ffb18..0395c55 100644
+--- a/sklearn/base.py
++++ b/sklearn/base.py
+@@ -48,6 +48,10 @@ def clone(estimator, safe=True):
+     # XXX: not handling dictionaries
+     if estimator_type in (list, tuple, set, frozenset):
+         return estimator_type([clone(e, safe=safe) for e in estimator])
++    elif isinstance(estimator, type) and issubclass(estimator, BaseEstimator):
++        # If the estimator is a class (not an instance) and a subclass of BaseEstimator,
++        # return it as is, since we can't clone a class
++        return estimator
+     elif not hasattr(estimator, 'get_params'):
+         if not safe:
+             return copy.deepcopy(estimator)
+diff --git a/sklearn/tests/test_base.py b/sklearn/tests/test_base.py
+index ebcb389..2a121da 100644
+--- a/sklearn/tests/test_base.py
++++ b/sklearn/tests/test_base.py
+@@ -146,6 +146,36 @@ def test_clone_empty_array():
+     assert_array_equal(clf.empty.data, clf2.empty.data)
+ 
+ 
++def test_clone_estimator_types():
++    # Test that clone can handle estimator types (classes), not just instances
++    from sklearn.preprocessing import StandardScaler
++    
++    # Test with an estimator type (class)
++    clone_class = clone(StandardScaler)
++    assert_true(clone_class is StandardScaler)
++    
++    # Test with an estimator instance (should work as before)
++    scaler = StandardScaler()
++    clone_instance = clone(scaler)
++    assert_true(isinstance(clone_instance, StandardScaler))
++    assert_true(clone_instance is not scaler)
++    
++    # Test with a non-estimator type
++    class NonEstimator:
++        pass
++    
++    assert_raises(TypeError, clone, NonEstimator)
++def test_clone_empty_array():
++    # Regression test for cloning estimators with empty arrays
++    clf = MyEstimator(empty=np.array([]))
++    clf2 = clone(clf)
++    assert_array_equal(clf.empty, clf2.empty)
++
++    clf = MyEstimator(empty=sp.csr_matrix(np.array([[0]])))
++    clf2 = clone(clf)
++    assert_array_equal(clf.empty.data, clf2.empty.data)
++
++
+ def test_clone_nan():
+     # Regression test for cloning estimators with default parameter as np.nan
+     clf = MyEstimator(empty=np.nan)

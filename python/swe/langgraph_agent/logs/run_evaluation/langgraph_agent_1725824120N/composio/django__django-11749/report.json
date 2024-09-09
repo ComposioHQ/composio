@@ -1,0 +1,63 @@
+{
+    "django__django-11749": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "test_mutually_exclusive_group_required_options (user_commands.tests.CommandTests)"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "test_get_random_secret_key (user_commands.tests.UtilsTests)",
+                    "test_is_ignored_path_false (user_commands.tests.UtilsTests)",
+                    "test_is_ignored_path_true (user_commands.tests.UtilsTests)",
+                    "test_no_existent_external_program (user_commands.tests.UtilsTests)",
+                    "test_normalize_path_patterns_truncates_wildcard_base (user_commands.tests.UtilsTests)",
+                    "test_call_command_no_checks (user_commands.tests.CommandTests)",
+                    "test_call_command_option_parsing (user_commands.tests.CommandTests)",
+                    "test_call_command_option_parsing_non_string_arg (user_commands.tests.CommandTests)",
+                    "test_call_command_unrecognized_option (user_commands.tests.CommandTests)",
+                    "test_call_command_with_required_parameters_in_mixed_options (user_commands.tests.CommandTests)",
+                    "test_call_command_with_required_parameters_in_options (user_commands.tests.CommandTests)",
+                    "test_calling_a_command_with_no_app_labels_and_parameters_should_raise_a_command_error (user_commands.tests.CommandTests)",
+                    "test_calling_a_command_with_only_empty_parameter_should_ends_gracefully (user_commands.tests.CommandTests)",
+                    "test_calling_command_with_app_labels_and_parameters_should_be_ok (user_commands.tests.CommandTests)",
+                    "test_calling_command_with_parameters_and_app_labels_at_the_end_should_be_ok (user_commands.tests.CommandTests)",
+                    "test_check_migrations (user_commands.tests.CommandTests)",
+                    "test_command (user_commands.tests.CommandTests)",
+                    "test_command_add_arguments_after_common_arguments (user_commands.tests.CommandTests)",
+                    "test_command_style (user_commands.tests.CommandTests)",
+                    "BaseCommand.create_parser() passes kwargs to CommandParser.",
+                    "test_discover_commands_in_eggs (user_commands.tests.CommandTests)",
+                    "An unknown command raises CommandError",
+                    "test_find_command_without_PATH (user_commands.tests.CommandTests)",
+                    "test_language_preserved (user_commands.tests.CommandTests)",
+                    "test_no_translations_deactivate_translations (user_commands.tests.CommandTests)",
+                    "test_output_transaction (user_commands.tests.CommandTests)",
+                    "test_subparser (user_commands.tests.CommandTests)",
+                    "test_subparser_dest_args (user_commands.tests.CommandTests)",
+                    "test_subparser_dest_required_args (user_commands.tests.CommandTests)",
+                    "test_subparser_invalid_option (user_commands.tests.CommandTests)",
+                    "Exception raised in a command should raise CommandError with",
+                    "test_disallowed_abbreviated_options (user_commands.tests.CommandRunTests)",
+                    "test_script_prefix_set_in_commands (user_commands.tests.CommandRunTests)",
+                    "test_skip_checks (user_commands.tests.CommandRunTests)"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

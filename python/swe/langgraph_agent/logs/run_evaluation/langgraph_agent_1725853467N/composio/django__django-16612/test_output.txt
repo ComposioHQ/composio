@@ -1,0 +1,1131 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/contrib/admin/sites.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 55bcbd8d172b689811fae17cde2f09218dd74e9c
+Author: Ekaterina Vahrusheva <lajilit@gmail.com>
+Date:   Thu Mar 2 21:38:05 2023 +0300
+
+    Fixed #34378 -- Made QuerySet.in_bulk() not clear odering when id_list is passed.
+    
+    This reverts 340eaded4e30cf25bcd4e9781d33a617fe9c0f84.
+
+diff --git a/django/db/models/query.py b/django/db/models/query.py
+index 71bb088679..6ac2a4cb10 100644
+--- a/django/db/models/query.py
++++ b/django/db/models/query.py
+@@ -1108,9 +1108,9 @@ class QuerySet(AltersData):
+                 qs = ()
+                 for offset in range(0, len(id_list), batch_size):
+                     batch = id_list[offset : offset + batch_size]
+-                    qs += tuple(self.filter(**{filter_key: batch}).order_by())
++                    qs += tuple(self.filter(**{filter_key: batch}))
+             else:
+-                qs = self.filter(**{filter_key: id_list}).order_by()
++                qs = self.filter(**{filter_key: id_list})
+         else:
+             qs = self._chain()
+         return {getattr(obj, field_name): obj for obj in qs}
+diff --git a/tests/lookup/tests.py b/tests/lookup/tests.py
+index 53eb76d174..9778eaa5c5 100644
+--- a/tests/lookup/tests.py
++++ b/tests/lookup/tests.py
+@@ -246,6 +246,35 @@ class LookupTests(TestCase):
+         with self.assertRaisesMessage(ValueError, msg):
+             Article.objects.in_bulk([self.au1], field_name="author")
+ 
++    @skipUnlessDBFeature("can_distinct_on_fields")
++    def test_in_bulk_preserve_ordering(self):
++        articles = (
++            Article.objects.order_by("author_id", "-pub_date")
++            .distinct("author_id")
++            .in_bulk([self.au1.id, self.au2.id], field_name="author_id")
++        )
++        self.assertEqual(
++            articles,
++            {self.au1.id: self.a4, self.au2.id: self.a5},
++        )
++
++    @skipUnlessDBFeature("can_distinct_on_fields")
++    def test_in_bulk_preserve_ordering_with_batch_size(self):
++        old_max_query_params = connection.features.max_query_params
++        connection.features.max_query_params = 1
++        try:
++            articles = (
++                Article.objects.order_by("author_id", "-pub_date")
++                .distinct("author_id")
++                .in_bulk([self.au1.id, self.au2.id], field_name="author_id")
++            )
++            self.assertEqual(
++                articles,
++                {self.au1.id: self.a4, self.au2.id: self.a5},
++            )
++        finally:
++            connection.features.max_query_params = old_max_query_params
++
+     @skipUnlessDBFeature("can_distinct_on_fields")
+     def test_in_bulk_distinct_field(self):
+         self.assertEqual(
++ git diff 55bcbd8d172b689811fae17cde2f09218dd74e9c
+diff --git a/django/contrib/admin/sites.py b/django/contrib/admin/sites.py
+index 61be31d890..0bdfb1e70e 100644
+--- a/django/contrib/admin/sites.py
++++ b/django/contrib/admin/sites.py
+@@ -443,6 +443,7 @@ class AdminSite:
+     def autocomplete_view(self, request):
+         return AutocompleteJsonView.as_view(admin_site=self)(request)
+ 
++    @no_append_slash
+     @no_append_slash
+     def catch_all_view(self, request, url):
+         if settings.APPEND_SLASH and not url.endswith("/"):
+@@ -453,7 +454,9 @@ class AdminSite:
+                 pass
+             else:
+                 if getattr(match.func, "should_append_slash", True):
+-                    return HttpResponsePermanentRedirect("%s/" % request.path)
++                    # Include the query string in the redirect
++                    redirect_url = request.get_full_path().rstrip('/') + '/'
++                    return HttpResponsePermanentRedirect(redirect_url)
+         raise Http404
+ 
+     def _build_app_dict(self, request, label=None):
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.6.0 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from Django==5.0.dev20230303050010) (3.8.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from Django==5.0.dev20230303050010) (0.5.1)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-5.0.dev20230303050010-0.editable-py3-none-any.whl size=27354 sha256=2217ffa51428a404359756293f60936da8bf897b2b61ab5853b67e29967d2ad4
+  Stored in directory: /tmp/pip-ephem-wheel-cache-uppwnhku/wheels/49/5f/4f/01b7d31ea6ddac9643da788242d33e5fd3467d95d17b032c6b
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 5.0.dev20230303050010
+    Uninstalling Django-5.0.dev20230303050010:
+      Successfully uninstalled Django-5.0.dev20230303050010
+Successfully installed Django-5.0.dev20230303050010
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 55bcbd8d172b689811fae17cde2f09218dd74e9c tests/admin_views/tests.py
+Updated 0 paths from e0ea562085
++ git apply -v -
+Checking patch tests/admin_views/tests.py...
+Applied patch tests/admin_views/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 admin_views.tests
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Testing against Django installed in '/testbed/django'
+Importing application admin_views
+Found 364 test(s).
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: admin_views, auth, contenttypes, messages, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table admin_views_section
+    Creating table admin_views_article
+    Creating table admin_views_book
+    Creating table admin_views_promo
+    Creating table admin_views_chapter
+    Creating table admin_views_chapterxtra1
+    Creating table admin_views_chapterxtra2
+    Creating table admin_views_rowlevelchangepermissionmodel
+    Creating table admin_views_customarticle
+    Creating table admin_views_modelwithstringprimarykey
+    Creating table admin_views_color
+    Creating table admin_views_thing
+    Creating table admin_views_actor
+    Creating table admin_views_inquisition
+    Creating table admin_views_sketch
+    Creating table admin_views_character
+    Creating table admin_views_stumpjoke
+    Creating table admin_views_fabric
+    Creating table admin_views_person
+    Creating table admin_views_persona
+    Creating table admin_views_account
+    Creating table admin_views_fooaccount
+    Creating table admin_views_baraccount
+    Creating table admin_views_subscriber
+    Creating table admin_views_externalsubscriber
+    Creating table admin_views_oldsubscriber
+    Creating table admin_views_media
+    Creating table admin_views_podcast
+    Creating table admin_views_vodcast
+    Creating table admin_views_parent
+    Creating table admin_views_child
+    Creating table admin_views_pkchild
+    Creating table admin_views_toy
+    Creating table admin_views_emptymodel
+    Creating table admin_views_gallery
+    Creating table admin_views_picture
+    Creating table admin_views_language
+    Creating table admin_views_title
+    Creating table admin_views_titletranslation
+    Creating table admin_views_recommender
+    Creating table admin_views_recommendation
+    Creating table admin_views_collector
+    Creating table admin_views_widget
+    Creating table admin_views_doohickey
+    Creating table admin_views_grommet
+    Creating table admin_views_whatsit
+    Creating table admin_views_doodad
+    Creating table admin_views_fancydoodad
+    Creating table admin_views_category
+    Creating table admin_views_link
+    Creating table admin_views_prepopulatedpost
+    Creating table admin_views_prepopulatedsubpost
+    Creating table admin_views_post
+    Creating table admin_views_gadget
+    Creating table admin_views_villain
+    Creating table admin_views_supervillain
+    Creating table admin_views_funkytag
+    Creating table admin_views_plot
+    Creating table admin_views_plotdetails
+    Creating table admin_views_secrethideout
+    Creating table admin_views_supersecrethideout
+    Creating table admin_views_bookmark
+    Creating table admin_views_cyclicone
+    Creating table admin_views_cyclictwo
+    Creating table admin_views_topping
+    Creating table admin_views_pizza
+    Creating table admin_views_album
+    Creating table admin_views_song
+    Creating table admin_views_employee
+    Creating table admin_views_workhour
+    Creating table admin_views_manager
+    Creating table admin_views_bonus
+    Creating table admin_views_question
+    Creating table admin_views_answer
+    Creating table admin_views_reservation
+    Creating table admin_views_fooddelivery
+    Creating table admin_views_coverletter
+    Creating table admin_views_paper
+    Creating table admin_views_shortmessage
+    Creating table admin_views_telegram
+    Creating table admin_views_story
+    Creating table admin_views_otherstory
+    Creating table admin_views_complexsortedperson
+    Creating table admin_views_pluggablesearchperson
+    Creating table admin_views_prepopulatedpostlargeslug
+    Creating table admin_views_adminorderedfield
+    Creating table admin_views_adminorderedmodelmethod
+    Creating table admin_views_adminorderedadminmethod
+    Creating table admin_views_adminorderedcallable
+    Creating table admin_views_report
+    Creating table admin_views_mainprepopulated
+    Creating table admin_views_relatedprepopulated
+    Creating table admin_views_unorderedobject
+    Creating table admin_views_undeletableobject
+    Creating table admin_views_unchangeableobject
+    Creating table admin_views_usermessenger
+    Creating table admin_views_simple
+    Creating table admin_views_choice
+    Creating table admin_views_parentwithdependentchildren
+    Creating table admin_views_dependentchild
+    Creating table admin_views_filteredmanager
+    Creating table admin_views_emptymodelvisible
+    Creating table admin_views_emptymodelhidden
+    Creating table admin_views_emptymodelmixin
+    Creating table admin_views_state
+    Creating table admin_views_city
+    Creating table admin_views_restaurant
+    Creating table admin_views_worker
+    Creating table admin_views_referencedbyparent
+    Creating table admin_views_parentwithfk
+    Creating table admin_views_childofreferer
+    Creating table admin_views_inlinereferer
+    Creating table admin_views_referencedbyinline
+    Creating table admin_views_inlinereference
+    Creating table admin_views_recipe
+    Creating table admin_views_ingredient
+    Creating table admin_views_recipeingredient
+    Creating table admin_views_notreferenced
+    Creating table admin_views_explicitlyprovidedpk
+    Creating table admin_views_implicitlygeneratedpk
+    Creating table admin_views_referencedbygenrel
+    Creating table admin_views_genrelreference
+    Creating table admin_views_parentwithuuidpk
+    Creating table admin_views_relatedwithuuidpkmodel
+    Creating table admin_views_author
+    Creating table admin_views_authorship
+    Creating table admin_views_readonlyrelatedfield
+    Creating table admin_views_héllo
+    Creating table admin_views_box
+    Creating table admin_views_country
+    Creating table admin_views_traveler
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (1 silenced).
+test_add_model_modeladmin_defer_qs (admin_views.tests.AdminCustomQuerysetTest.test_add_model_modeladmin_defer_qs) ... ok
+test_add_model_modeladmin_only_qs (admin_views.tests.AdminCustomQuerysetTest.test_add_model_modeladmin_only_qs) ... ok
+test_change_view (admin_views.tests.AdminCustomQuerysetTest.test_change_view) ... ok
+test_changelist_view (admin_views.tests.AdminCustomQuerysetTest.test_changelist_view) ... ok
+test_changelist_view_count_queries (admin_views.tests.AdminCustomQuerysetTest.test_changelist_view_count_queries) ... ok
+test_edit_model_modeladmin_defer_qs (admin_views.tests.AdminCustomQuerysetTest.test_edit_model_modeladmin_defer_qs) ... ok
+test_edit_model_modeladmin_only_qs (admin_views.tests.AdminCustomQuerysetTest.test_edit_model_modeladmin_only_qs) ... ok
+test_history_view_custom_qs (admin_views.tests.AdminCustomQuerysetTest.test_history_view_custom_qs)
+Custom querysets are considered for the admin history view. ... ok
+test_should_be_able_to_edit_related_objects_on_add_view (admin_views.tests.AdminCustomSaveRelatedTests.test_should_be_able_to_edit_related_objects_on_add_view) ... ok
+test_should_be_able_to_edit_related_objects_on_change_view (admin_views.tests.AdminCustomSaveRelatedTests.test_should_be_able_to_edit_related_objects_on_change_view) ... ok
+test_should_be_able_to_edit_related_objects_on_changelist_view (admin_views.tests.AdminCustomSaveRelatedTests.test_should_be_able_to_edit_related_objects_on_changelist_view) ... ok
+test_change_password_template (admin_views.tests.AdminCustomTemplateTests.test_change_password_template) ... ok
+test_custom_model_admin_templates (admin_views.tests.AdminCustomTemplateTests.test_custom_model_admin_templates) ... ok
+test_extended_bodyclass_change_list (admin_views.tests.AdminCustomTemplateTests.test_extended_bodyclass_change_list)
+The admin/change_list.html' template uses block.super ... ok
+test_extended_bodyclass_template_change_form (admin_views.tests.AdminCustomTemplateTests.test_extended_bodyclass_template_change_form)
+The admin/change_form.html template uses block.super in the ... ok
+test_extended_bodyclass_template_delete_confirmation (admin_views.tests.AdminCustomTemplateTests.test_extended_bodyclass_template_delete_confirmation)
+The admin/delete_confirmation.html template uses ... ok
+test_extended_bodyclass_template_delete_selected_confirmation (admin_views.tests.AdminCustomTemplateTests.test_extended_bodyclass_template_delete_selected_confirmation)
+The admin/delete_selected_confirmation.html template uses ... ok
+test_extended_bodyclass_template_index (admin_views.tests.AdminCustomTemplateTests.test_extended_bodyclass_template_index)
+The admin/index.html template uses block.super in the bodyclass block. ... ok
+test_extended_bodyclass_template_login (admin_views.tests.AdminCustomTemplateTests.test_extended_bodyclass_template_login)
+The admin/login.html template uses block.super in the ... ok
+test_filter_with_custom_template (admin_views.tests.AdminCustomTemplateTests.test_filter_with_custom_template)
+A custom template can be used to render an admin filter. ... ok
+test_filters (admin_views.tests.AdminDocsTest.test_filters) ... ok
+test_tags (admin_views.tests.AdminDocsTest.test_tags) ... ok
+test_inline (admin_views.tests.AdminInheritedInlinesTest.test_inline)
+Inline models which inherit from a common parent are correctly handled. ... ok
+test_form_has_multipart_enctype (admin_views.tests.AdminInlineFileUploadTest.test_form_has_multipart_enctype) ... ok
+test_inline_file_upload_edit_validation_error_post (admin_views.tests.AdminInlineFileUploadTest.test_inline_file_upload_edit_validation_error_post)
+Inline file uploads correctly display prior data (#10002). ... ok
+test_char_pk_inline (admin_views.tests.AdminInlineTests.test_char_pk_inline)
+A model with a character PK can be saved as inlines. Regression for #10992 ... ok
+test_explicit_autofield_inline (admin_views.tests.AdminInlineTests.test_explicit_autofield_inline)
+A model with an explicit autofield primary key can be saved as inlines. ... ok
+test_inherited_inline (admin_views.tests.AdminInlineTests.test_inherited_inline)
+An inherited model can be saved as inlines. Regression for #11042 ... ok
+test_integer_pk_inline (admin_views.tests.AdminInlineTests.test_integer_pk_inline)
+A model with an integer PK can be saved as inlines. Regression for #10992 ... ok
+test_ordered_inline (admin_views.tests.AdminInlineTests.test_ordered_inline)
+An inline with an editable ordering fields is updated correctly. ... ok
+test_simple_inline (admin_views.tests.AdminInlineTests.test_simple_inline)
+A simple model can be saved as inlines ... ok
+test_js_minified_only_if_debug_is_false (admin_views.tests.AdminJavaScriptTest.test_js_minified_only_if_debug_is_false)
+The minified versions of the JS files are only used when DEBUG is False. ... ok
+test_add_view (admin_views.tests.AdminKeepChangeListFiltersTests.test_add_view) ... ok
+test_add_view_without_preserved_filters (admin_views.tests.AdminKeepChangeListFiltersTests.test_add_view_without_preserved_filters) ... ok
+test_assert_url_equal (admin_views.tests.AdminKeepChangeListFiltersTests.test_assert_url_equal) ... ok
+test_change_view (admin_views.tests.AdminKeepChangeListFiltersTests.test_change_view) ... ok
+test_change_view_close_link (admin_views.tests.AdminKeepChangeListFiltersTests.test_change_view_close_link) ... ok
+test_change_view_without_preserved_filters (admin_views.tests.AdminKeepChangeListFiltersTests.test_change_view_without_preserved_filters) ... ok
+test_changelist_view (admin_views.tests.AdminKeepChangeListFiltersTests.test_changelist_view) ... ok
+test_delete_view (admin_views.tests.AdminKeepChangeListFiltersTests.test_delete_view) ... ok
+test_url_prefix (admin_views.tests.AdminKeepChangeListFiltersTests.test_url_prefix) ... ok
+test_beginning_matches (admin_views.tests.AdminSearchTest.test_beginning_matches) ... ok
+test_exact_matches (admin_views.tests.AdminSearchTest.test_exact_matches) ... ok
+test_no_total_count (admin_views.tests.AdminSearchTest.test_no_total_count)
+#8408 -- "Show all" should be displayed instead of the total count if ... ok
+test_pluggable_search (admin_views.tests.AdminSearchTest.test_pluggable_search) ... ok
+test_reset_link (admin_views.tests.AdminSearchTest.test_reset_link)
+Test presence of reset link in search bar ("1 result (_x total_)"). ... ok
+test_search_on_sibling_models (admin_views.tests.AdminSearchTest.test_search_on_sibling_models)
+A search that mentions sibling models ... ok
+test_search_with_spaces (admin_views.tests.AdminSearchTest.test_search_with_spaces) ... ok
+test_with_fk_to_field (admin_views.tests.AdminSearchTest.test_with_fk_to_field)
+The to_field GET parameter is preserved when a search is performed. ... ok
+test_known_url_missing_slash_redirects_login_if_not_authenticated (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_known_url_missing_slash_redirects_login_if_not_authenticated) ... ok
+test_known_url_missing_slash_redirects_with_slash_if_not_auth_no_catch_all_view (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_known_url_missing_slash_redirects_with_slash_if_not_auth_no_catch_all_view) ... ok
+test_known_url_redirects_login_if_not_auth_without_final_catch_all_view (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_known_url_redirects_login_if_not_auth_without_final_catch_all_view) ... ok
+test_known_url_redirects_login_if_not_authenticated (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_known_url_redirects_login_if_not_authenticated) ... ok
+test_missing_slash_append_slash_false (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_missing_slash_append_slash_false) ... ok
+test_missing_slash_append_slash_false_without_final_catch_all_view (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_missing_slash_append_slash_false_without_final_catch_all_view) ... ok
+test_missing_slash_append_slash_true (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_missing_slash_append_slash_true) ... ok
+test_missing_slash_append_slash_true_force_script_name (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_missing_slash_append_slash_true_force_script_name) ... ok
+test_missing_slash_append_slash_true_non_staff_user (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_missing_slash_append_slash_true_non_staff_user) ... ok
+test_missing_slash_append_slash_true_non_staff_user_query_string (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_missing_slash_append_slash_true_non_staff_user_query_string) ... ok
+test_missing_slash_append_slash_true_query_string (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_missing_slash_append_slash_true_query_string) ... FAIL
+test_missing_slash_append_slash_true_query_without_final_catch_all_view (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_missing_slash_append_slash_true_query_without_final_catch_all_view) ... ok
+test_missing_slash_append_slash_true_script_name (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_missing_slash_append_slash_true_script_name) ... ok
+test_missing_slash_append_slash_true_script_name_query_string (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_missing_slash_append_slash_true_script_name_query_string) ... FAIL
+test_missing_slash_append_slash_true_unknown_url (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_missing_slash_append_slash_true_unknown_url) ... ok
+test_missing_slash_append_slash_true_unknown_url_without_final_catch_all_view (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_missing_slash_append_slash_true_unknown_url_without_final_catch_all_view) ... ok
+test_missing_slash_append_slash_true_without_final_catch_all_view (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_missing_slash_append_slash_true_without_final_catch_all_view) ... ok
+test_non_admin_url_404_if_not_authenticated (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_non_admin_url_404_if_not_authenticated) ... ok
+test_non_admin_url_shares_url_prefix (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_non_admin_url_shares_url_prefix) ... ok
+test_non_admin_url_shares_url_prefix_without_final_catch_all_view (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_non_admin_url_shares_url_prefix_without_final_catch_all_view) ... ok
+test_single_model_no_append_slash (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_single_model_no_append_slash) ... ok
+test_unknown_url_404_if_authenticated (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_unknown_url_404_if_authenticated) ... ok
+test_unknown_url_404_if_authenticated_without_final_catch_all_view (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_unknown_url_404_if_authenticated_without_final_catch_all_view) ... ok
+test_unknown_url_404_if_not_authenticated_without_final_catch_all_view (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_unknown_url_404_if_not_authenticated_without_final_catch_all_view) ... ok
+test_unknown_url_no_trailing_slash_if_not_auth_without_final_catch_all_view (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_unknown_url_no_trailing_slash_if_not_auth_without_final_catch_all_view) ... ok
+test_unknown_url_redirects_login_if_not_authenticated (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_unknown_url_redirects_login_if_not_authenticated) ... ok
+test_unkown_url_without_trailing_slash_if_not_authenticated (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_unkown_url_without_trailing_slash_if_not_authenticated) ... ok
+test_url_no_trailing_slash_if_not_auth_without_final_catch_all_view (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_url_no_trailing_slash_if_not_auth_without_final_catch_all_view) ... ok
+test_url_without_trailing_slash_if_not_authenticated (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_url_without_trailing_slash_if_not_authenticated) ... ok
+test_message_debug (admin_views.tests.AdminUserMessageTest.test_message_debug) ... ok
+test_message_error (admin_views.tests.AdminUserMessageTest.test_message_error) ... ok
+test_message_extra_tags (admin_views.tests.AdminUserMessageTest.test_message_extra_tags) ... ok
+test_message_info (admin_views.tests.AdminUserMessageTest.test_message_info) ... ok
+test_message_success (admin_views.tests.AdminUserMessageTest.test_message_success) ... ok
+test_message_warning (admin_views.tests.AdminUserMessageTest.test_message_warning) ... ok
+test_add_with_GET_args (admin_views.tests.AdminViewBasicTest.test_add_with_GET_args) ... ok
+test_adminsite_display_site_url (admin_views.tests.AdminViewBasicTest.test_adminsite_display_site_url)
+#13749 - Admin should display link to front-end site 'View site' ... ok
+test_allowed_filtering_15103 (admin_views.tests.AdminViewBasicTest.test_allowed_filtering_15103)
+Regressions test for ticket 15103 - filtering on fields defined in a ... ok
+test_allows_attributeerror_to_bubble_up (admin_views.tests.AdminViewBasicTest.test_allows_attributeerror_to_bubble_up)
+AttributeErrors are allowed to bubble when raised inside a change list ... ok
+test_app_index_context (admin_views.tests.AdminViewBasicTest.test_app_index_context) ... ok
+test_app_index_context_reordered (admin_views.tests.AdminViewBasicTest.test_app_index_context_reordered) ... ok
+test_basic_add_GET (admin_views.tests.AdminViewBasicTest.test_basic_add_GET)
+A smoke test to ensure GET on the add_view works. ... ok
+test_basic_add_POST (admin_views.tests.AdminViewBasicTest.test_basic_add_POST)
+A smoke test to ensure POST on add_view works. ... ok
+test_basic_edit_GET (admin_views.tests.AdminViewBasicTest.test_basic_edit_GET)
+A smoke test to ensure GET on the change_view works. ... ok
+test_basic_edit_GET_old_url_redirect (admin_views.tests.AdminViewBasicTest.test_basic_edit_GET_old_url_redirect)
+The change URL changed in Django 1.9, but the old one still redirects. ... ok
+test_basic_edit_GET_string_PK (admin_views.tests.AdminViewBasicTest.test_basic_edit_GET_string_PK)
+GET on the change_view (when passing a string as the PK argument for a ... ok
+test_basic_edit_POST (admin_views.tests.AdminViewBasicTest.test_basic_edit_POST)
+A smoke test to ensure POST on edit_view works. ... ok
+test_basic_inheritance_GET_string_PK (admin_views.tests.AdminViewBasicTest.test_basic_inheritance_GET_string_PK)
+GET on the change_view (for inherited models) redirects to the index ... ok
+test_change_list_column_field_classes (admin_views.tests.AdminViewBasicTest.test_change_list_column_field_classes) ... ok
+test_change_list_null_boolean_display (admin_views.tests.AdminViewBasicTest.test_change_list_null_boolean_display) ... ok
+test_change_list_sorting_callable (admin_views.tests.AdminViewBasicTest.test_change_list_sorting_callable)
+Ensure we can sort on a list_display field that is a callable ... ok
+test_change_list_sorting_callable_query_expression (admin_views.tests.AdminViewBasicTest.test_change_list_sorting_callable_query_expression)
+Query expressions may be used for admin_order_field. ... ok
+test_change_list_sorting_callable_query_expression_reverse (admin_views.tests.AdminViewBasicTest.test_change_list_sorting_callable_query_expression_reverse) ... ok
+test_change_list_sorting_model (admin_views.tests.AdminViewBasicTest.test_change_list_sorting_model)
+Ensure we can sort on a list_display field that is a Model method ... ok
+test_change_list_sorting_model_admin (admin_views.tests.AdminViewBasicTest.test_change_list_sorting_model_admin)
+Ensure we can sort on a list_display field that is a ModelAdmin method ... ok
+test_change_list_sorting_model_admin_reverse (admin_views.tests.AdminViewBasicTest.test_change_list_sorting_model_admin_reverse)
+Ensure we can sort on a list_display field that is a ModelAdmin ... ok
+test_change_list_sorting_model_meta (admin_views.tests.AdminViewBasicTest.test_change_list_sorting_model_meta) ... ok
+test_change_list_sorting_multiple (admin_views.tests.AdminViewBasicTest.test_change_list_sorting_multiple) ... ok
+test_change_list_sorting_override_model_admin (admin_views.tests.AdminViewBasicTest.test_change_list_sorting_override_model_admin) ... ok
+test_change_list_sorting_preserve_queryset_ordering (admin_views.tests.AdminViewBasicTest.test_change_list_sorting_preserve_queryset_ordering)
+If no ordering is defined in `ModelAdmin.ordering` or in the query ... ok
+test_change_list_sorting_property (admin_views.tests.AdminViewBasicTest.test_change_list_sorting_property)
+Sort on a list_display field that is a property (column 10 is ... ok
+test_change_view_logs_m2m_field_changes (admin_views.tests.AdminViewBasicTest.test_change_view_logs_m2m_field_changes)
+Changes to ManyToManyFields are included in the object's history. ... ok
+test_change_view_subtitle_per_object (admin_views.tests.AdminViewBasicTest.test_change_view_subtitle_per_object) ... ok
+test_change_view_with_show_delete_extra_context (admin_views.tests.AdminViewBasicTest.test_change_view_with_show_delete_extra_context)
+The 'show_delete' context variable in the admin's change view controls ... ok
+test_changelist_with_no_change_url (admin_views.tests.AdminViewBasicTest.test_changelist_with_no_change_url)
+ModelAdmin.changelist_view shouldn't result in a NoReverseMatch if url ... ok
+test_date_hierarchy_empty_queryset (admin_views.tests.AdminViewBasicTest.test_date_hierarchy_empty_queryset) ... ok
+test_date_hierarchy_local_date_differ_from_utc (admin_views.tests.AdminViewBasicTest.test_date_hierarchy_local_date_differ_from_utc) ... ok
+test_date_hierarchy_timezone_dst (admin_views.tests.AdminViewBasicTest.test_date_hierarchy_timezone_dst) ... ok
+test_disallowed_filtering (admin_views.tests.AdminViewBasicTest.test_disallowed_filtering) ... ok
+test_disallowed_to_field (admin_views.tests.AdminViewBasicTest.test_disallowed_to_field) ... ok
+test_display_decorator_with_boolean_and_empty_value (admin_views.tests.AdminViewBasicTest.test_display_decorator_with_boolean_and_empty_value) ... ok
+test_edit_save_as (admin_views.tests.AdminViewBasicTest.test_edit_save_as)
+Test "save as". ... ok
+test_edit_save_as_delete_inline (admin_views.tests.AdminViewBasicTest.test_edit_save_as_delete_inline)
+Should be able to "Save as new" while also deleting an inline. ... ok
+test_formset_kwargs_can_be_overridden (admin_views.tests.AdminViewBasicTest.test_formset_kwargs_can_be_overridden) ... ok
+test_get_sortable_by_columns_subset (admin_views.tests.AdminViewBasicTest.test_get_sortable_by_columns_subset) ... ok
+test_get_sortable_by_no_column (admin_views.tests.AdminViewBasicTest.test_get_sortable_by_no_column) ... ok
+test_has_related_field_in_list_display_fk (admin_views.tests.AdminViewBasicTest.test_has_related_field_in_list_display_fk)
+Joins shouldn't be performed for <FK>_id fields in list display. ... ok
+test_has_related_field_in_list_display_o2o (admin_views.tests.AdminViewBasicTest.test_has_related_field_in_list_display_o2o)
+Joins shouldn't be performed for <O2O>_id fields in list display. ... ok
+test_hide_change_password (admin_views.tests.AdminViewBasicTest.test_hide_change_password)
+Tests if the "change password" link in the admin is hidden if the User ... ok
+test_i18n_language_non_english_default (admin_views.tests.AdminViewBasicTest.test_i18n_language_non_english_default)
+Check if the JavaScript i18n view returns an empty language catalog ... ok
+test_i18n_language_non_english_fallback (admin_views.tests.AdminViewBasicTest.test_i18n_language_non_english_fallback)
+Makes sure that the fallback language is still working properly ... ok
+test_incorrect_lookup_parameters (admin_views.tests.AdminViewBasicTest.test_incorrect_lookup_parameters)
+Ensure incorrect lookup parameters are handled gracefully. ... ok
+test_invalid_appindex_url (admin_views.tests.AdminViewBasicTest.test_invalid_appindex_url)
+#21056 -- URL reversing shouldn't work for nonexistent apps. ... ok
+test_isnull_lookups (admin_views.tests.AdminViewBasicTest.test_isnull_lookups)
+Ensure is_null is handled correctly. ... ok
+test_jsi18n_format_fallback (admin_views.tests.AdminViewBasicTest.test_jsi18n_format_fallback)
+The JavaScript i18n view doesn't return localized date/time formats ... ok
+test_jsi18n_with_context (admin_views.tests.AdminViewBasicTest.test_jsi18n_with_context) ... ok
+test_limited_filter (admin_views.tests.AdminViewBasicTest.test_limited_filter)
+Admin changelist filters do not contain objects excluded via ... ok
+test_logout_and_password_change_URLs (admin_views.tests.AdminViewBasicTest.test_logout_and_password_change_URLs) ... ok
+test_multiple_sort_same_field (admin_views.tests.AdminViewBasicTest.test_multiple_sort_same_field) ... ok
+test_named_group_field_choices_change_list (admin_views.tests.AdminViewBasicTest.test_named_group_field_choices_change_list)
+Ensures the admin changelist shows correct values in the relevant column ... ok
+test_named_group_field_choices_filter (admin_views.tests.AdminViewBasicTest.test_named_group_field_choices_filter)
+Ensures the filter UI shows correctly when at least one named group has ... ok
+test_password_change_helptext (admin_views.tests.AdminViewBasicTest.test_password_change_helptext) ... ok
+test_popup_add_POST (admin_views.tests.AdminViewBasicTest.test_popup_add_POST)
+HTTP response from a popup is properly escaped. ... ok
+test_popup_dismiss_related (admin_views.tests.AdminViewBasicTest.test_popup_dismiss_related)
+Regression test for ticket 20664 - ensure the pk is properly quoted. ... ok
+test_relation_spanning_filters (admin_views.tests.AdminViewBasicTest.test_relation_spanning_filters) ... ok
+test_render_delete_selected_confirmation_no_subtitle (admin_views.tests.AdminViewBasicTest.test_render_delete_selected_confirmation_no_subtitle) ... ok
+test_render_views_no_subtitle (admin_views.tests.AdminViewBasicTest.test_render_views_no_subtitle) ... ok
+test_resolve_admin_views (admin_views.tests.AdminViewBasicTest.test_resolve_admin_views) ... ok
+test_sort_indicators_admin_order (admin_views.tests.AdminViewBasicTest.test_sort_indicators_admin_order)
+The admin shows default sort indicators for all kinds of 'ordering' ... ok
+test_sortable_by_columns_subset (admin_views.tests.AdminViewBasicTest.test_sortable_by_columns_subset) ... ok
+test_sortable_by_no_column (admin_views.tests.AdminViewBasicTest.test_sortable_by_no_column) ... ok
+test_trailing_slash_required (admin_views.tests.AdminViewBasicTest.test_trailing_slash_required)
+If you leave off the trailing slash, app should redirect and add it. ... ok
+test_view_subtitle_per_object (admin_views.tests.AdminViewBasicTest.test_view_subtitle_per_object) ... ok
+test_cyclic (admin_views.tests.AdminViewDeletedObjectsTest.test_cyclic)
+Cyclic relationships should still cause each object to only be ... ok
+test_delete_view_uses_get_deleted_objects (admin_views.tests.AdminViewDeletedObjectsTest.test_delete_view_uses_get_deleted_objects)
+The delete view uses ModelAdmin.get_deleted_objects(). ... ok
+test_generic_relations (admin_views.tests.AdminViewDeletedObjectsTest.test_generic_relations)
+If a deleted object has GenericForeignKeys pointing to it, ... ok
+test_generic_relations_with_related_query_name (admin_views.tests.AdminViewDeletedObjectsTest.test_generic_relations_with_related_query_name)
+If a deleted object has GenericForeignKey with ... ok
+test_inheritance (admin_views.tests.AdminViewDeletedObjectsTest.test_inheritance)
+In the case of an inherited model, if either the child or ... ok
+test_multiple_fkeys_to_same_instance (admin_views.tests.AdminViewDeletedObjectsTest.test_multiple_fkeys_to_same_instance)
+If a deleted object has two relationships pointing to it from ... ok
+test_multiple_fkeys_to_same_model (admin_views.tests.AdminViewDeletedObjectsTest.test_multiple_fkeys_to_same_model)
+If a deleted object has two relationships from another model, ... ok
+test_nesting (admin_views.tests.AdminViewDeletedObjectsTest.test_nesting)
+Objects should be nested to display the relationships that ... ok
+test_not_registered (admin_views.tests.AdminViewDeletedObjectsTest.test_not_registered) ... ok
+test_perms_needed (admin_views.tests.AdminViewDeletedObjectsTest.test_perms_needed) ... ok
+test_post_delete_protected (admin_views.tests.AdminViewDeletedObjectsTest.test_post_delete_protected)
+A POST request to delete protected objects should display the page ... ok
+test_post_delete_restricted (admin_views.tests.AdminViewDeletedObjectsTest.test_post_delete_restricted) ... ok
+test_protected (admin_views.tests.AdminViewDeletedObjectsTest.test_protected) ... ok
+test_restricted (admin_views.tests.AdminViewDeletedObjectsTest.test_restricted) ... ok
+test_change_form_URL_has_correct_value (admin_views.tests.AdminViewFormUrlTest.test_change_form_URL_has_correct_value)
+change_view has form_url in response.context ... ok
+test_initial_data_can_be_overridden (admin_views.tests.AdminViewFormUrlTest.test_initial_data_can_be_overridden)
+The behavior for setting initial form data can be overridden in the ... ok
+test_changelist_input_html (admin_views.tests.AdminViewListEditable.test_changelist_input_html) ... ok
+test_custom_pk (admin_views.tests.AdminViewListEditable.test_custom_pk) ... ok
+test_inheritance (admin_views.tests.AdminViewListEditable.test_inheritance) ... ok
+test_inheritance_2 (admin_views.tests.AdminViewListEditable.test_inheritance_2) ... ok
+test_list_editable_action_choices (admin_views.tests.AdminViewListEditable.test_list_editable_action_choices) ... ok
+test_list_editable_action_submit (admin_views.tests.AdminViewListEditable.test_list_editable_action_submit) ... ok
+test_list_editable_ordering (admin_views.tests.AdminViewListEditable.test_list_editable_ordering) ... ok
+test_list_editable_pagination (admin_views.tests.AdminViewListEditable.test_list_editable_pagination)
+Pagination works for list_editable items. ... ok
+test_list_editable_popup (admin_views.tests.AdminViewListEditable.test_list_editable_popup)
+Fields should not be list-editable in popups. ... ok
+test_non_field_errors (admin_views.tests.AdminViewListEditable.test_non_field_errors)
+Non-field errors are displayed for each of the forms in the ... ok
+test_non_form_errors (admin_views.tests.AdminViewListEditable.test_non_form_errors) ... ok
+test_non_form_errors_is_errorlist (admin_views.tests.AdminViewListEditable.test_non_form_errors_is_errorlist) ... ok
+test_pk_hidden_fields (admin_views.tests.AdminViewListEditable.test_pk_hidden_fields)
+hidden pk fields aren't displayed in the table body and their ... ok
+test_pk_hidden_fields_with_list_display_links (admin_views.tests.AdminViewListEditable.test_pk_hidden_fields_with_list_display_links)
+Similarly as test_pk_hidden_fields, but when the hidden pk fields are ... ok
+test_post_messages (admin_views.tests.AdminViewListEditable.test_post_messages) ... ok
+test_post_submission (admin_views.tests.AdminViewListEditable.test_post_submission) ... ok
+test_client_logout_url_can_be_used_to_login (admin_views.tests.AdminViewLogoutTests.test_client_logout_url_can_be_used_to_login) ... ok
+test_logout (admin_views.tests.AdminViewLogoutTests.test_logout) ... ok
+test_add_view_form_and_formsets_run_validation (admin_views.tests.AdminViewOnSiteTests.test_add_view_form_and_formsets_run_validation)
+Issue #20522 ... ok
+test_callable (admin_views.tests.AdminViewOnSiteTests.test_callable)
+The right link is displayed if view_on_site is a callable ... ok
+test_change_view_form_and_formsets_run_validation (admin_views.tests.AdminViewOnSiteTests.test_change_view_form_and_formsets_run_validation)
+Issue #20522 ... ok
+test_check (admin_views.tests.AdminViewOnSiteTests.test_check)
+The view_on_site value is either a boolean or a callable ... ok
+test_custom_admin_site (admin_views.tests.AdminViewOnSiteTests.test_custom_admin_site) ... ok
+test_false (admin_views.tests.AdminViewOnSiteTests.test_false)
+The 'View on site' button is not displayed if view_on_site is False ... ok
+test_missing_get_absolute_url (admin_views.tests.AdminViewOnSiteTests.test_missing_get_absolute_url)
+None is returned if model doesn't have get_absolute_url ... ok
+test_true (admin_views.tests.AdminViewOnSiteTests.test_true)
+The default behavior is followed if view_on_site is True ... ok
+test_add_view (admin_views.tests.AdminViewPermissionsTest.test_add_view)
+Test add view restricts access and actually adds items. ... ok
+test_add_view_with_view_only_inlines (admin_views.tests.AdminViewPermissionsTest.test_add_view_with_view_only_inlines)
+User with add permission to a section but view-only for inlines. ... ok
+test_app_list_permissions (admin_views.tests.AdminViewPermissionsTest.test_app_list_permissions)
+If a user has no module perms, the app list returns a 404. ... ok
+test_change_view (admin_views.tests.AdminViewPermissionsTest.test_change_view)
+Change view should restrict access and allow users to edit items. ... ok
+test_change_view_save_as_new (admin_views.tests.AdminViewPermissionsTest.test_change_view_save_as_new)
+'Save as new' should raise PermissionDenied for users without the 'add' ... ok
+test_change_view_with_view_and_add_inlines (admin_views.tests.AdminViewPermissionsTest.test_change_view_with_view_and_add_inlines)
+User has view and add permissions on the inline model. ... ok
+test_change_view_with_view_and_delete_inlines (admin_views.tests.AdminViewPermissionsTest.test_change_view_with_view_and_delete_inlines)
+User has view and delete permissions on the inline model. ... ok
+test_change_view_with_view_only_inlines (admin_views.tests.AdminViewPermissionsTest.test_change_view_with_view_only_inlines)
+User with change permission to a section but view-only for inlines. ... ok
+test_change_view_with_view_only_last_inline (admin_views.tests.AdminViewPermissionsTest.test_change_view_with_view_only_last_inline) ... ok
+test_change_view_without_object_change_permission (admin_views.tests.AdminViewPermissionsTest.test_change_view_without_object_change_permission)
+The object should be read-only if the user has permission to view it ... ok
+test_conditionally_show_add_section_link (admin_views.tests.AdminViewPermissionsTest.test_conditionally_show_add_section_link)
+The foreign key widget should only show the "add related" button if the ... ok
+test_conditionally_show_change_section_link (admin_views.tests.AdminViewPermissionsTest.test_conditionally_show_change_section_link)
+The foreign key widget should only show the "change related" button if ... ok
+test_conditionally_show_delete_section_link (admin_views.tests.AdminViewPermissionsTest.test_conditionally_show_delete_section_link)
+The foreign key widget should only show the "delete related" button if ... ok
+test_delete_view (admin_views.tests.AdminViewPermissionsTest.test_delete_view)
+Delete view should restrict access and actually delete items. ... ok
+test_delete_view_nonexistent_obj (admin_views.tests.AdminViewPermissionsTest.test_delete_view_nonexistent_obj) ... ok
+test_delete_view_with_no_default_permissions (admin_views.tests.AdminViewPermissionsTest.test_delete_view_with_no_default_permissions)
+The delete view allows users to delete collected objects without a ... ok
+test_disabled_permissions_when_logged_in (admin_views.tests.AdminViewPermissionsTest.test_disabled_permissions_when_logged_in) ... ok
+test_disabled_staff_permissions_when_logged_in (admin_views.tests.AdminViewPermissionsTest.test_disabled_staff_permissions_when_logged_in) ... ok
+test_double_login_is_not_allowed (admin_views.tests.AdminViewPermissionsTest.test_double_login_is_not_allowed)
+Regression test for #19327 ... ok
+test_has_module_permission (admin_views.tests.AdminViewPermissionsTest.test_has_module_permission)
+has_module_permission() returns True for all users who ... ok
+test_history_view (admin_views.tests.AdminViewPermissionsTest.test_history_view)
+History view should restrict access. ... ok
+test_history_view_bad_url (admin_views.tests.AdminViewPermissionsTest.test_history_view_bad_url) ... ok
+test_login (admin_views.tests.AdminViewPermissionsTest.test_login)
+Make sure only staff members can log in. ... ok
+test_login_has_permission (admin_views.tests.AdminViewPermissionsTest.test_login_has_permission) ... ok
+test_login_page_notice_for_non_staff_users (admin_views.tests.AdminViewPermissionsTest.test_login_page_notice_for_non_staff_users)
+A logged-in non-staff user trying to access the admin index should be ... ok
+test_login_redirect_for_direct_get (admin_views.tests.AdminViewPermissionsTest.test_login_redirect_for_direct_get)
+Login redirect should be to the admin index page when going directly to ... ok
+test_login_successfully_redirects_to_original_URL (admin_views.tests.AdminViewPermissionsTest.test_login_successfully_redirects_to_original_URL) ... ok
+test_overriding_has_module_permission (admin_views.tests.AdminViewPermissionsTest.test_overriding_has_module_permission)
+If has_module_permission() always returns False, the module shouldn't ... ok
+test_post_save_message_no_forbidden_links_visible (admin_views.tests.AdminViewPermissionsTest.test_post_save_message_no_forbidden_links_visible)
+Post-save message shouldn't contain a link to the change form if the ... ok
+test_shortcut_view_only_available_to_staff (admin_views.tests.AdminViewPermissionsTest.test_shortcut_view_only_available_to_staff)
+Only admin users should be able to use the admin shortcut view. ... ok
+test_add (admin_views.tests.AdminViewProxyModelPermissionsTests.test_add) ... ok
+test_change (admin_views.tests.AdminViewProxyModelPermissionsTests.test_change) ... ok
+test_delete (admin_views.tests.AdminViewProxyModelPermissionsTests.test_delete) ... ok
+test_view (admin_views.tests.AdminViewProxyModelPermissionsTests.test_view) ... ok
+test_change_view_history_link (admin_views.tests.AdminViewStringPrimaryKeyTest.test_change_view_history_link)
+Object history button link should work and contain the pk value quoted. ... ok
+test_changelist_to_changeform_link (admin_views.tests.AdminViewStringPrimaryKeyTest.test_changelist_to_changeform_link)
+Link to the changeform of the object in changelist should use reverse() ... ok
+test_deleteconfirmation_link (admin_views.tests.AdminViewStringPrimaryKeyTest.test_deleteconfirmation_link)
+" ... ok
+test_get_change_view (admin_views.tests.AdminViewStringPrimaryKeyTest.test_get_change_view)
+Retrieving the object using urlencoded form of primary key should work ... ok
+test_get_history_view (admin_views.tests.AdminViewStringPrimaryKeyTest.test_get_history_view)
+Retrieving the history for an object using urlencoded form of primary ... ok
+test_recentactions_link (admin_views.tests.AdminViewStringPrimaryKeyTest.test_recentactions_link)
+The link from the recent actions list referring to the changeform of ... ok
+test_redirect_on_add_view_continue_button (admin_views.tests.AdminViewStringPrimaryKeyTest.test_redirect_on_add_view_continue_button)
+As soon as an object is added using "Save and continue editing" ... ok
+test_shortcut_view_with_escaping (admin_views.tests.AdminViewStringPrimaryKeyTest.test_shortcut_view_with_escaping)
+'View on site should' work properly with char fields ... ok
+test_url_conflicts_with_add (admin_views.tests.AdminViewStringPrimaryKeyTest.test_url_conflicts_with_add)
+A model with a primary key that ends with add or is `add` should be visible ... ok
+test_url_conflicts_with_delete (admin_views.tests.AdminViewStringPrimaryKeyTest.test_url_conflicts_with_delete)
+A model with a primary key that ends with delete should be visible ... ok
+test_url_conflicts_with_history (admin_views.tests.AdminViewStringPrimaryKeyTest.test_url_conflicts_with_history)
+A model with a primary key that ends with history should be visible ... ok
+test_unicode_delete (admin_views.tests.AdminViewUnicodeTest.test_unicode_delete)
+The delete_view handles non-ASCII characters ... ok
+test_unicode_edit (admin_views.tests.AdminViewUnicodeTest.test_unicode_edit)
+A test to ensure that POST on edit_view handles non-ASCII characters. ... ok
+test_no_standard_modeladmin_urls (admin_views.tests.AdminViewsNoUrlTest.test_no_standard_modeladmin_urls)
+Admin index views don't break when user's ModelAdmin removes standard urls ... ok
+test_app_model_in_app_index_body_class (admin_views.tests.CSSTest.test_app_model_in_app_index_body_class)
+Ensure app and model tag are correctly read by app_index template ... ok
+test_app_model_in_delete_confirmation_body_class (admin_views.tests.CSSTest.test_app_model_in_delete_confirmation_body_class)
+Ensure app and model tag are correctly read by delete_confirmation ... ok
+test_app_model_in_delete_selected_confirmation_body_class (admin_views.tests.CSSTest.test_app_model_in_delete_selected_confirmation_body_class)
+Ensure app and model tag are correctly read by ... ok
+test_app_model_in_form_body_class (admin_views.tests.CSSTest.test_app_model_in_form_body_class)
+Ensure app and model tag are correctly read by change_form template ... ok
+test_app_model_in_list_body_class (admin_views.tests.CSSTest.test_app_model_in_list_body_class)
+Ensure app and model tag are correctly read by change_list template ... ok
+test_changelist_field_classes (admin_views.tests.CSSTest.test_changelist_field_classes)
+Cells of the change list table should contain the field name in their ... ok
+test_field_prefix_css_classes (admin_views.tests.CSSTest.test_field_prefix_css_classes)
+Fields have a CSS class name with a 'field-' prefix. ... ok
+test_index_css_classes (admin_views.tests.CSSTest.test_index_css_classes)
+CSS class names are used for each app and model on the admin index ... ok
+test_custom_admin_site_app_index_view_and_template (admin_views.tests.CustomModelAdminTest.test_custom_admin_site_app_index_view_and_template) ... ok
+test_custom_admin_site_index_view_and_template (admin_views.tests.CustomModelAdminTest.test_custom_admin_site_index_view_and_template) ... ok
+test_custom_admin_site_login_form (admin_views.tests.CustomModelAdminTest.test_custom_admin_site_login_form) ... ok
+test_custom_admin_site_login_template (admin_views.tests.CustomModelAdminTest.test_custom_admin_site_login_template) ... ok
+test_custom_admin_site_logout_template (admin_views.tests.CustomModelAdminTest.test_custom_admin_site_logout_template) ... ok
+test_custom_admin_site_password_change_done_template (admin_views.tests.CustomModelAdminTest.test_custom_admin_site_password_change_done_template) ... ok
+test_custom_admin_site_password_change_template (admin_views.tests.CustomModelAdminTest.test_custom_admin_site_password_change_template) ... ok
+test_custom_admin_site_password_change_with_extra_context (admin_views.tests.CustomModelAdminTest.test_custom_admin_site_password_change_with_extra_context) ... ok
+test_custom_admin_site_view (admin_views.tests.CustomModelAdminTest.test_custom_admin_site_view) ... ok
+test_pwd_change_custom_template (admin_views.tests.CustomModelAdminTest.test_pwd_change_custom_template) ... ok
+test_empty (admin_views.tests.DateHierarchyTests.test_empty)
+No date hierarchy links display with empty changelist. ... ok
+test_multiple_years (admin_views.tests.DateHierarchyTests.test_multiple_years)
+year-level links appear for year-spanning changelist. ... ok
+test_related_field (admin_views.tests.DateHierarchyTests.test_related_field) ... ok
+test_single (admin_views.tests.DateHierarchyTests.test_single)
+Single day-level date hierarchy appears for single object. ... ok
+test_within_month (admin_views.tests.DateHierarchyTests.test_within_month)
+day-level links appear for changelist within single month. ... ok
+test_within_year (admin_views.tests.DateHierarchyTests.test_within_year)
+month-level links appear for changelist within single year. ... ok
+test_explicitly_provided_pk (admin_views.tests.GetFormsetsWithInlinesArgumentTest.test_explicitly_provided_pk) ... ok
+test_implicitly_generated_pk (admin_views.tests.GetFormsetsWithInlinesArgumentTest.test_implicitly_generated_pk) ... ok
+test_group_permission_performance (admin_views.tests.GroupAdminTest.test_group_permission_performance) ... ok
+test_save_button (admin_views.tests.GroupAdminTest.test_save_button) ... ok
+test_callable (admin_views.tests.InlineAdminViewOnSiteTest.test_callable)
+The right link is displayed if view_on_site is a callable ... ok
+test_false (admin_views.tests.InlineAdminViewOnSiteTest.test_false)
+The 'View on site' button is not displayed if view_on_site is False ... ok
+test_true (admin_views.tests.InlineAdminViewOnSiteTest.test_true)
+The 'View on site' button is displayed if view_on_site is True ... ok
+test_limit_choices_to_as_callable (admin_views.tests.LimitChoicesToInAdminTest.test_limit_choices_to_as_callable)
+Test for ticket 2445 changes to admin. ... ok
+test_add_view (admin_views.tests.NamespacedAdminKeepChangeListFiltersTests.test_add_view) ... ok
+test_add_view_without_preserved_filters (admin_views.tests.NamespacedAdminKeepChangeListFiltersTests.test_add_view_without_preserved_filters) ... ok
+test_assert_url_equal (admin_views.tests.NamespacedAdminKeepChangeListFiltersTests.test_assert_url_equal) ... ok
+test_change_view (admin_views.tests.NamespacedAdminKeepChangeListFiltersTests.test_change_view) ... ok
+test_change_view_close_link (admin_views.tests.NamespacedAdminKeepChangeListFiltersTests.test_change_view_close_link) ... ok
+test_change_view_without_preserved_filters (admin_views.tests.NamespacedAdminKeepChangeListFiltersTests.test_change_view_without_preserved_filters) ... ok
+test_changelist_view (admin_views.tests.NamespacedAdminKeepChangeListFiltersTests.test_changelist_view) ... ok
+test_delete_view (admin_views.tests.NamespacedAdminKeepChangeListFiltersTests.test_delete_view) ... ok
+test_url_prefix (admin_views.tests.NamespacedAdminKeepChangeListFiltersTests.test_url_prefix) ... ok
+test_JS_i18n (admin_views.tests.NeverCacheTests.test_JS_i18n)
+Check the never-cache status of the JavaScript i18n view ... ok
+test_admin_index (admin_views.tests.NeverCacheTests.test_admin_index)
+Check the never-cache status of the main index ... ok
+test_app_index (admin_views.tests.NeverCacheTests.test_app_index)
+Check the never-cache status of an application index ... ok
+test_login (admin_views.tests.NeverCacheTests.test_login)
+Check the never-cache status of login views ... ok
+test_logout (admin_views.tests.NeverCacheTests.test_logout)
+Check the never-cache status of logout view ... ok
+test_model_add (admin_views.tests.NeverCacheTests.test_model_add)
+Check the never-cache status of a model add page ... ok
+test_model_delete (admin_views.tests.NeverCacheTests.test_model_delete)
+Check the never-cache status of a model delete page ... ok
+test_model_history (admin_views.tests.NeverCacheTests.test_model_history)
+Check the never-cache status of a model history page ... ok
+test_model_index (admin_views.tests.NeverCacheTests.test_model_index)
+Check the never-cache status of a model index ... ok
+test_model_view (admin_views.tests.NeverCacheTests.test_model_view)
+Check the never-cache status of a model edit page ... ok
+test_password_change (admin_views.tests.NeverCacheTests.test_password_change)
+Check the never-cache status of the password change view ... ok
+test_password_change_done (admin_views.tests.NeverCacheTests.test_password_change_done)
+Check the never-cache status of the password change done view ... ok
+test_prepopulated_maxlength_localized (admin_views.tests.PrePopulatedTest.test_prepopulated_maxlength_localized)
+Regression test for #15938: if USE_THOUSAND_SEPARATOR is set, make sure ... ok
+test_prepopulated_off (admin_views.tests.PrePopulatedTest.test_prepopulated_off) ... ok
+test_prepopulated_on (admin_views.tests.PrePopulatedTest.test_prepopulated_on) ... ok
+test_view_only_add_form (admin_views.tests.PrePopulatedTest.test_view_only_add_form)
+PrePopulatedPostReadOnlyAdmin.prepopulated_fields includes 'slug' ... ok
+test_view_only_change_form (admin_views.tests.PrePopulatedTest.test_view_only_change_form)
+PrePopulatedPostReadOnlyAdmin.prepopulated_fields includes 'slug'. That ... ok
+test_limit_choices_to (admin_views.tests.RawIdFieldsTest.test_limit_choices_to)
+Regression test for 14880 ... ok
+test_limit_choices_to_isnull_false (admin_views.tests.RawIdFieldsTest.test_limit_choices_to_isnull_false)
+Regression test for 20182 ... ok
+test_limit_choices_to_isnull_true (admin_views.tests.RawIdFieldsTest.test_limit_choices_to_isnull_true)
+Regression test for 20182 ... ok
+test_list_display_method_same_name_as_reverse_accessor (admin_views.tests.RawIdFieldsTest.test_list_display_method_same_name_as_reverse_accessor)
+Should be able to use a ModelAdmin method in list_display that has the ... ok
+test_change_form_renders_correct_null_choice_value (admin_views.tests.ReadonlyTest.test_change_form_renders_correct_null_choice_value)
+Regression test for #17911. ... ok
+test_correct_autoescaping (admin_views.tests.ReadonlyTest.test_correct_autoescaping)
+Make sure that non-field readonly elements are properly autoescaped (#24461) ... ok
+test_label_suffix_translated (admin_views.tests.ReadonlyTest.test_label_suffix_translated) ... ok
+test_readonly_field_overrides (admin_views.tests.ReadonlyTest.test_readonly_field_overrides)
+Regression test for #22087 - ModelForm Meta overrides are ignored by ... ok
+test_readonly_foreignkey_links_custom_admin_site (admin_views.tests.ReadonlyTest.test_readonly_foreignkey_links_custom_admin_site) ... ok
+test_readonly_foreignkey_links_default_admin_site (admin_views.tests.ReadonlyTest.test_readonly_foreignkey_links_default_admin_site) ... ok
+test_readonly_get (admin_views.tests.ReadonlyTest.test_readonly_get) ... ok
+test_readonly_manytomany (admin_views.tests.ReadonlyTest.test_readonly_manytomany)
+Regression test for #13004 ... ok
+test_readonly_manytomany_backwards_ref (admin_views.tests.ReadonlyTest.test_readonly_manytomany_backwards_ref)
+Regression test for #16433 - backwards references for related objects ... ok
+test_readonly_manytomany_forwards_ref (admin_views.tests.ReadonlyTest.test_readonly_manytomany_forwards_ref) ... ok
+test_readonly_onetoone_backwards_ref (admin_views.tests.ReadonlyTest.test_readonly_onetoone_backwards_ref)
+Can reference a reverse OneToOneField in ModelAdmin.readonly_fields. ... ok
+test_readonly_post (admin_views.tests.ReadonlyTest.test_readonly_post) ... ok
+test_readonly_text_field (admin_views.tests.ReadonlyTest.test_readonly_text_field) ... ok
+test_user_password_change_limited_queryset (admin_views.tests.ReadonlyTest.test_user_password_change_limited_queryset) ... ok
+test_save_as_continue_false (admin_views.tests.SaveAsTests.test_save_as_continue_false)
+Saving a new object using "Save as new" redirects to the changelist ... ok
+test_save_as_duplication (admin_views.tests.SaveAsTests.test_save_as_duplication)
+'save as' creates a new person ... ok
+test_save_as_new_with_inlines_with_validation_errors (admin_views.tests.SaveAsTests.test_save_as_new_with_inlines_with_validation_errors) ... ok
+test_save_as_new_with_validation_errors (admin_views.tests.SaveAsTests.test_save_as_new_with_validation_errors)
+When you click "Save as new" and have a validation error, ... ok
+test_save_as_new_with_validation_errors_with_inlines (admin_views.tests.SaveAsTests.test_save_as_new_with_validation_errors_with_inlines) ... ok
+test_secure_view_shows_login_if_not_logged_in (admin_views.tests.SecureViewTests.test_secure_view_shows_login_if_not_logged_in) ... ok
+test_staff_member_required_decorator_works_with_argument (admin_views.tests.SecureViewTests.test_staff_member_required_decorator_works_with_argument)
+Staff_member_required decorator works with an argument ... ok
+test_custom_changelist (admin_views.tests.TestCustomChangeList.test_custom_changelist)
+Validate that a custom ChangeList class can be used (#9749) ... ok
+test_generic_content_object_in_list_display (admin_views.tests.TestGenericRelations.test_generic_content_object_in_list_display) ... ok
+test_GET_parent_add (admin_views.tests.TestInlineNotEditable.test_GET_parent_add)
+InlineModelAdmin broken? ... ok
+test_all_fields_hidden (admin_views.tests.TestLabelVisibility.test_all_fields_hidden) ... ok
+test_all_fields_visible (admin_views.tests.TestLabelVisibility.test_all_fields_visible) ... ok
+test_mixin (admin_views.tests.TestLabelVisibility.test_mixin) ... ok
+test_form_url_present_in_context (admin_views.tests.UserAdminTest.test_form_url_present_in_context) ... ok
+test_password_mismatch (admin_views.tests.UserAdminTest.test_password_mismatch) ... ok
+test_save_add_another_button (admin_views.tests.UserAdminTest.test_save_add_another_button) ... ok
+test_save_button (admin_views.tests.UserAdminTest.test_save_button) ... ok
+test_save_continue_editing_button (admin_views.tests.UserAdminTest.test_save_continue_editing_button) ... ok
+test_user_fk_add_popup (admin_views.tests.UserAdminTest.test_user_fk_add_popup)
+User addition through a FK popup should return the appropriate ... ok
+test_user_fk_change_popup (admin_views.tests.UserAdminTest.test_user_fk_change_popup)
+User change through a FK popup should return the appropriate JavaScript ... ok
+test_user_fk_delete_popup (admin_views.tests.UserAdminTest.test_user_fk_delete_popup)
+User deletion through a FK popup should return the appropriate ... ok
+test_user_permission_performance (admin_views.tests.UserAdminTest.test_user_permission_performance) ... ok
+test_lang_name_present (admin_views.tests.ValidXHTMLTests.test_lang_name_present) ... ok
+test_cancel_delete_confirmation (admin_views.tests.SeleniumTests.test_cancel_delete_confirmation)
+Cancelling the deletion of an object takes the user back one page. ... skipped 'No browsers specified.'
+test_cancel_delete_related_confirmation (admin_views.tests.SeleniumTests.test_cancel_delete_related_confirmation)
+Cancelling the deletion of an object with relations takes the user back ... skipped 'No browsers specified.'
+test_collapsible_fieldset (admin_views.tests.SeleniumTests.test_collapsible_fieldset)
+The 'collapse' class in fieldsets definition allows to ... skipped 'No browsers specified.'
+test_first_field_focus (admin_views.tests.SeleniumTests.test_first_field_focus)
+JavaScript-assisted auto-focus on first usable form field. ... skipped 'No browsers specified.'
+test_hidden_fields_small_window (admin_views.tests.SeleniumTests.test_hidden_fields_small_window) ... skipped 'No browsers specified.'
+test_inline_uuid_pk_add_with_popup (admin_views.tests.SeleniumTests.test_inline_uuid_pk_add_with_popup) ... skipped 'No browsers specified.'
+test_inline_uuid_pk_delete_with_popup (admin_views.tests.SeleniumTests.test_inline_uuid_pk_delete_with_popup) ... skipped 'No browsers specified.'
+test_inline_uuid_pk_edit_with_popup (admin_views.tests.SeleniumTests.test_inline_uuid_pk_edit_with_popup) ... skipped 'No browsers specified.'
+test_inline_with_popup_cancel_delete (admin_views.tests.SeleniumTests.test_inline_with_popup_cancel_delete)
+Clicking ""No, take me back" on a delete popup closes the window. ... skipped 'No browsers specified.'
+test_input_element_font (admin_views.tests.SeleniumTests.test_input_element_font)
+Browsers' default stylesheets override the font of inputs. The admin ... skipped 'No browsers specified.'
+test_list_editable_popups (admin_views.tests.SeleniumTests.test_list_editable_popups)
+list_editable foreign keys have add/change popups. ... skipped 'No browsers specified.'
+test_list_editable_raw_id_fields (admin_views.tests.SeleniumTests.test_list_editable_raw_id_fields) ... skipped 'No browsers specified.'
+test_login_button_centered (admin_views.tests.SeleniumTests.test_login_button_centered) ... skipped 'No browsers specified.'
+test_populate_existing_object (admin_views.tests.SeleniumTests.test_populate_existing_object)
+The prepopulation works for existing objects too, as long as ... skipped 'No browsers specified.'
+test_prepopulated_fields (admin_views.tests.SeleniumTests.test_prepopulated_fields)
+The JavaScript-automated prepopulated fields work with the main form ... skipped 'No browsers specified.'
+test_redirect_on_add_view_add_another_button (admin_views.tests.SeleniumTests.test_redirect_on_add_view_add_another_button) ... skipped 'No browsers specified.'
+test_redirect_on_add_view_continue_button (admin_views.tests.SeleniumTests.test_redirect_on_add_view_continue_button) ... skipped 'No browsers specified.'
+test_related_popup_incorrect_close (admin_views.tests.SeleniumTests.test_related_popup_incorrect_close)
+Cleanup child popups when closing a parent popup. ... skipped 'No browsers specified.'
+test_related_popup_index (admin_views.tests.SeleniumTests.test_related_popup_index)
+Create a chain of 'self' related objects via popups. ... skipped 'No browsers specified.'
+test_search_input_filtered_page (admin_views.tests.SeleniumTests.test_search_input_filtered_page) ... skipped 'No browsers specified.'
+test_selectbox_height_collapsible_fieldset (admin_views.tests.SeleniumTests.test_selectbox_height_collapsible_fieldset) ... skipped 'No browsers specified.'
+test_selectbox_height_not_collapsible_fieldset (admin_views.tests.SeleniumTests.test_selectbox_height_not_collapsible_fieldset) ... skipped 'No browsers specified.'
+test_updating_related_objects_updates_fk_selects_except_autocompletes (admin_views.tests.SeleniumTests.test_updating_related_objects_updates_fk_selects_except_autocompletes) ... skipped 'No browsers specified.'
+
+======================================================================
+FAIL: test_missing_slash_append_slash_true_query_string (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_missing_slash_append_slash_true_query_string)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 443, in inner
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/tests/admin_views/tests.py", line 8477, in test_missing_slash_append_slash_true_query_string
+    self.assertRedirects(
+  File "/testbed/django/test/testcases.py", line 442, in assertRedirects
+    self.assertURLEqual(
+  File "/testbed/django/test/testcases.py", line 467, in assertURLEqual
+    self.assertEqual(
+AssertionError: '/test_admin/admin/admin_views/article?id=1%2F' != '/test_admin/admin/admin_views/article/?id=1'
+- /test_admin/admin/admin_views/article?id=1%2F
+?                                           ---
++ /test_admin/admin/admin_views/article/?id=1
+?                                      +
+ : Response redirected to '/test_admin/admin/admin_views/article?id=1/', expected '/test_admin/admin/admin_views/article/?id=1'Expected '/test_admin/admin/admin_views/article?id=1/' to equal '/test_admin/admin/admin_views/article/?id=1'.
+
+======================================================================
+FAIL: test_missing_slash_append_slash_true_script_name_query_string (admin_views.tests.AdminSiteFinalCatchAllPatternTests.test_missing_slash_append_slash_true_script_name_query_string)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 443, in inner
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/tests/admin_views/tests.py", line 8513, in test_missing_slash_append_slash_true_script_name_query_string
+    self.assertRedirects(
+  File "/testbed/django/test/testcases.py", line 442, in assertRedirects
+    self.assertURLEqual(
+  File "/testbed/django/test/testcases.py", line 467, in assertURLEqual
+    self.assertEqual(
+AssertionError: '/prefix/test_admin/admin/admin_views/article?id=1%2F' != '/prefix/test_admin/admin/admin_views/article/?id=1'
+- /prefix/test_admin/admin/admin_views/article?id=1%2F
+?                                                  ---
++ /prefix/test_admin/admin/admin_views/article/?id=1
+?                                             +
+ : Response redirected to '/prefix/test_admin/admin/admin_views/article?id=1/', expected '/prefix/test_admin/admin/admin_views/article/?id=1'Expected '/prefix/test_admin/admin/admin_views/article?id=1/' to equal '/prefix/test_admin/admin/admin_views/article/?id=1'.
+
+----------------------------------------------------------------------
+Ran 364 tests in 16.224s
+
+FAILED (failures=2, skipped=23)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout 55bcbd8d172b689811fae17cde2f09218dd74e9c tests/admin_views/tests.py
+Updated 1 path from e0ea562085

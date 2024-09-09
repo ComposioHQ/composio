@@ -1,0 +1,91 @@
+{
+    "sympy__sympy-24539": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "test_PolyElement_as_expr"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "test_PolyRing___init__",
+                    "test_PolyRing___hash__",
+                    "test_PolyRing___eq__",
+                    "test_PolyRing_ring_new",
+                    "test_PolyRing_drop",
+                    "test_PolyRing___getitem__",
+                    "test_PolyRing_is_",
+                    "test_PolyRing_add",
+                    "test_PolyRing_mul",
+                    "test_sring",
+                    "test_PolyElement___hash__",
+                    "test_PolyElement___eq__",
+                    "test_PolyElement__lt_le_gt_ge__",
+                    "test_PolyElement__str__",
+                    "test_PolyElement_copy",
+                    "test_PolyElement_from_expr",
+                    "test_PolyElement_degree",
+                    "test_PolyElement_tail_degree",
+                    "test_PolyElement_degrees",
+                    "test_PolyElement_tail_degrees",
+                    "test_PolyElement_coeff",
+                    "test_PolyElement_LC",
+                    "test_PolyElement_LM",
+                    "test_PolyElement_LT",
+                    "test_PolyElement_leading_monom",
+                    "test_PolyElement_leading_term",
+                    "test_PolyElement_terms",
+                    "test_PolyElement_monoms",
+                    "test_PolyElement_coeffs",
+                    "test_PolyElement___add__",
+                    "test_PolyElement___sub__",
+                    "test_PolyElement___mul__",
+                    "test_PolyElement___truediv__",
+                    "test_PolyElement___pow__",
+                    "test_PolyElement_div",
+                    "test_PolyElement_rem",
+                    "test_PolyElement_deflate",
+                    "test_PolyElement_clear_denoms",
+                    "test_PolyElement_cofactors",
+                    "test_PolyElement_gcd",
+                    "test_PolyElement_cancel",
+                    "test_PolyElement_max_norm",
+                    "test_PolyElement_l1_norm",
+                    "test_PolyElement_diff",
+                    "test_PolyElement___call__",
+                    "test_PolyElement_evaluate",
+                    "test_PolyElement_subs",
+                    "test_PolyElement_compose",
+                    "test_PolyElement_is_",
+                    "test_PolyElement_drop",
+                    "test_PolyElement_pdiv",
+                    "test_PolyElement_gcdex",
+                    "test_PolyElement_subresultants",
+                    "test_PolyElement_resultant",
+                    "test_PolyElement_discriminant",
+                    "test_PolyElement_decompose",
+                    "test_PolyElement_shift",
+                    "test_PolyElement_sturm",
+                    "test_PolyElement_gff_list",
+                    "test_PolyElement_sqf_norm",
+                    "test_PolyElement_sqf_list",
+                    "test_PolyElement_factor_list"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

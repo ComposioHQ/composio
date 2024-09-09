@@ -1,0 +1,202 @@
+2024-09-09 01:20:01,688 - INFO - Environment image sweb.env.arm64.428468730904ff6b4232aa:latest found for astropy__astropy-14508
+Building instance image sweb.eval.arm64.astropy__astropy-14508:latest for astropy__astropy-14508
+2024-09-09 01:21:40,066 - INFO - Creating container for astropy__astropy-14508...
+2024-09-09 01:21:40,111 - INFO - Container for astropy__astropy-14508 created: 6c25a4edbbcad88d928a1175103dfa4d6c428d053f10c82cf27fc35d88b6ec2f
+2024-09-09 01:21:40,269 - INFO - Container for astropy__astropy-14508 started: 6c25a4edbbcad88d928a1175103dfa4d6c428d053f10c82cf27fc35d88b6ec2f
+2024-09-09 01:21:40,270 - INFO - Intermediate patch for astropy__astropy-14508 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/astropy__astropy-14508/patch.diff, now applying to container...
+2024-09-09 01:21:40,409 - INFO - Failed to apply patch to container, trying again...
+2024-09-09 01:21:40,460 - INFO - >>>>> Applied Patch:
+patching file astropy/io/fits/card.py
+patching file astropy/io/fits/tests/test_header.py
+
+2024-09-09 01:21:40,690 - INFO - Git diff before:
+diff --git a/astropy/io/fits/card.py b/astropy/io/fits/card.py
+index 118bfced89..2cd20d0b51 100644
+--- a/astropy/io/fits/card.py
++++ b/astropy/io/fits/card.py
+@@ -1299,32 +1299,38 @@ def _format_value(value):
+ 
+ def _format_float(value):
+     """Format a floating number to make sure it gets the decimal point."""
+-    value_str = f"{value:.16G}"
+-    if "." not in value_str and "E" not in value_str:
+-        value_str += ".0"
+-    elif "E" in value_str:
+-        # On some Windows builds of Python (and possibly other platforms?) the
+-        # exponent is zero-padded out to, it seems, three digits.  Normalize
+-        # the format to pad only to two digits.
+-        significand, exponent = value_str.split("E")
+-        if exponent[0] in ("+", "-"):
+-            sign = exponent[0]
+-            exponent = exponent[1:]
+-        else:
+-            sign = ""
+-        value_str = f"{significand}E{sign}{int(exponent):02d}"
+-
++    # First, try using the default str() representation
++    value_str = str(value)
++    
++    # If the resulting string is longer than 20 characters or doesn't contain a decimal point,
++    # fall back to the current implementation
++    if len(value_str) > 20 or '.' not in value_str:
++        value_str = f"{value:.16G}"
++        if "." not in value_str and "E" not in value_str:
++            value_str += ".0"
++        elif "E" in value_str:
++            # On some Windows builds of Python (and possibly other platforms?) the
++            # exponent is zero-padded out to, it seems, three digits.  Normalize
++            # the format to pad only to two digits.
++            significand, exponent = value_str.split("E")
++            if exponent[0] in ("+", "-"):
++                sign = exponent[0]
++                exponent = exponent[1:]
++            else:
++                sign = ""
++            value_str = f"{significand}E{sign}{int(exponent):02d}"
++    
+     # Limit the value string to at most 20 characters.
+     str_len = len(value_str)
+-
++    
+     if str_len > 20:
+         idx = value_str.find("E")
+-
++        
+         if idx < 0:
+             value_str = value_str[:20]
+         else:
+             value_str = value_str[: 20 - (str_len - idx)] + value_str[idx:]
+-
++    
+     return value_str
+ 
+ 
+diff --git a/astropy/io/fits/tests/test_header.py b/astropy/io/fits/tests/test_header.py
+index a8f4e1160f..55af1e7700 100644
+--- a/astropy/io/fits/tests/test_header.py
++++ b/astropy/io/fits/tests/test_header.py
+@@ -3175,4 +3175,28 @@ def test_subclass():
+     assert copy_.comments["b"] == "second"
+     assert copy_.comments["c"] == "no comment"
+     my_header.extend((("d", 4.0),))
++    def test_format_float_card(self):
++        """Test the new float formatting behavior in Card creation."""
++        # Test case from the original issue
++        c = fits.Card('HIERARCH ESO IFM CL RADIUS', 0.009125, '[m] radius around actuator to avoid')
++        assert str(c) == "HIERARCH ESO IFM CL RADIUS = 0.009125 / [m] radius around actuator to avoid    "
++
++        # Test with a variety of float values
++        test_cases = [
++            (0.1, "0.1"),
++            (0.12345678901234567, "0.12345678901234567"),
++            (1.234e-30, "1.234E-30"),
++            (1.234e30, "1.234E+30"),
++            (1000000.0, "1000000.0"),
++            (1e-8, "1E-8"),
++        ]
++
++        for value, expected in test_cases:
++            c = fits.Card('TEST', value)
++            assert c.value == value
++            assert expected in str(c)
++
++        # Test that very long representations are still truncated
++        c = fits.Card('TEST', 0.123456789012345678901234567890)
++        assert len(str(c)) == 80  # Standard FITS card length
+     assert my_header.comments["d"] == "no comment"
+diff --git a/pyproject.toml b/pyproject.toml
+index 65df5b1b77..d02c4f9eda 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -1,5 +1,5 @@
+ [build-system]
+-requires = ["setuptools",
++requires = ["setuptools==68.0.0",
+             "setuptools_scm>=6.2",
+             "wheel",
+             "cython==0.29.30",
+2024-09-09 01:21:40,691 - INFO - Eval script for astropy__astropy-14508 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/astropy__astropy-14508/eval.sh; copying to container...
+2024-09-09 01:22:02,513 - INFO - Test runtime: 21.69 seconds
+2024-09-09 01:22:02,513 - INFO - Test output for astropy__astropy-14508 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/astropy__astropy-14508/test_output.txt
+2024-09-09 01:22:02,556 - INFO - Git diff after:
+diff --git a/astropy/io/fits/card.py b/astropy/io/fits/card.py
+index 118bfced89..2cd20d0b51 100644
+--- a/astropy/io/fits/card.py
++++ b/astropy/io/fits/card.py
+@@ -1299,32 +1299,38 @@ def _format_value(value):
+ 
+ def _format_float(value):
+     """Format a floating number to make sure it gets the decimal point."""
+-    value_str = f"{value:.16G}"
+-    if "." not in value_str and "E" not in value_str:
+-        value_str += ".0"
+-    elif "E" in value_str:
+-        # On some Windows builds of Python (and possibly other platforms?) the
+-        # exponent is zero-padded out to, it seems, three digits.  Normalize
+-        # the format to pad only to two digits.
+-        significand, exponent = value_str.split("E")
+-        if exponent[0] in ("+", "-"):
+-            sign = exponent[0]
+-            exponent = exponent[1:]
+-        else:
+-            sign = ""
+-        value_str = f"{significand}E{sign}{int(exponent):02d}"
+-
++    # First, try using the default str() representation
++    value_str = str(value)
++    
++    # If the resulting string is longer than 20 characters or doesn't contain a decimal point,
++    # fall back to the current implementation
++    if len(value_str) > 20 or '.' not in value_str:
++        value_str = f"{value:.16G}"
++        if "." not in value_str and "E" not in value_str:
++            value_str += ".0"
++        elif "E" in value_str:
++            # On some Windows builds of Python (and possibly other platforms?) the
++            # exponent is zero-padded out to, it seems, three digits.  Normalize
++            # the format to pad only to two digits.
++            significand, exponent = value_str.split("E")
++            if exponent[0] in ("+", "-"):
++                sign = exponent[0]
++                exponent = exponent[1:]
++            else:
++                sign = ""
++            value_str = f"{significand}E{sign}{int(exponent):02d}"
++    
+     # Limit the value string to at most 20 characters.
+     str_len = len(value_str)
+-
++    
+     if str_len > 20:
+         idx = value_str.find("E")
+-
++        
+         if idx < 0:
+             value_str = value_str[:20]
+         else:
+             value_str = value_str[: 20 - (str_len - idx)] + value_str[idx:]
+-
++    
+     return value_str
+ 
+ 
+diff --git a/pyproject.toml b/pyproject.toml
+index 65df5b1b77..d02c4f9eda 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -1,5 +1,5 @@
+ [build-system]
+-requires = ["setuptools",
++requires = ["setuptools==68.0.0",
+             "setuptools_scm>=6.2",
+             "wheel",
+             "cython==0.29.30",
+2024-09-09 01:22:02,556 - INFO - Git diff changed after running eval script
+2024-09-09 01:22:02,556 - INFO - Grading answer for astropy__astropy-14508...
+2024-09-09 01:22:02,577 - INFO - report: {'astropy__astropy-14508': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': False, 'tests_status': {'FAIL_TO_PASS': {'success': ['astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_floating_point_string_representation_card'], 'failure': []}, 'PASS_TO_PASS': {'success': ['astropy/io/fits/tests/test_header.py::test_shallow_copy', 'astropy/io/fits/tests/test_header.py::test_init_with_header', 'astropy/io/fits/tests/test_header.py::test_init_with_dict', 'astropy/io/fits/tests/test_header.py::test_init_with_ordereddict', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_rename_keyword', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_indexing_case[A]', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_indexing_case[a]', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_card_constructor_default_args', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_card_from_bytes', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_string_value_card', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_boolean_value_card', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_long_integer_value_card', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_floating_point_value_card', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_complex_value_card', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_card_image_constructed_too_long', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_constructor_filter_illegal_data_structures', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_keyword_too_long', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_illegal_characters_in_key', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_add_history', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_add_blank', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_update', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_update_comment', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_commentary_cards', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_commentary_card_created_by_fromstring', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_commentary_card_will_not_parse_numerical_value', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_equal_sign_after_column8', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_blank_keyword', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_specify_undefined_value', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_complex_number_using_string_input', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_fixable_non_standard_fits_card', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_fixable_non_fsc', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_undefined_value_using_string_input', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_undefined_keys_values', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_mislocated_equal_sign', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_equal_only_up_to_column_10', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_verify_invalid_equal_sign', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_fix_invalid_equal_sign', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_long_string_value', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_long_string_value_with_multiple_long_words', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_long_unicode_string', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_long_string_repr', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_blank_keyword_long_value', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_long_string_from_file', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_word_in_long_string_too_long', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_long_string_value_via_fromstring', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_continue_card_with_equals_in_value', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_final_continue_card_lacks_ampersand', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_final_continue_card_ampersand_removal_on_long_comments', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_hierarch_card_creation', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_hierarch_with_abbrev_value_indicator', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_hierarch_not_warn', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_hierarch_keyword_whitespace', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_verify_mixed_case_hierarch', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_missing_keyword', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_hierarch_card_lookup', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_hierarch_card_delete', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_hierarch_card_insert_delete', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_hierarch_create_and_update', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_short_hierarch_create_and_update', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_setitem_invalid', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_setitem_1tuple', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_setitem_2tuple', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_set_value_to_none', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_set_comment_only', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_iter', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_slice', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_slice_assignment', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_slice_delete', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_wildcard_slice', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_wildcard_with_hyphen', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_wildcard_slice_assignment', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_wildcard_slice_deletion', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_history', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_clear', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_clear_write[fitsext0]', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_clear_write[fitsext1]', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_fromkeys', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_fromkeys_with_value', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_fromkeys_with_value_and_comment', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_fromkeys_with_duplicates', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_items', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_iterkeys', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_itervalues', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_keys', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_list_like_pop', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_dict_like_pop', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_popitem', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_setdefault', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_update_from_dict', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_update_from_iterable', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_extend', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_extend_unique', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_extend_unique_commentary', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_extend_update', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_extend_update_commentary', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_extend_exact', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_count', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_append_use_blanks', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_append_keyword_only', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_insert_use_blanks', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_insert_before_keyword', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_remove', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_comments', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_comment_slices_and_filters', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_comment_slice_filter_assign', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_commentary_slicing', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_update_commentary', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_commentary_comparison', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_long_commentary_card', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_totxtfile[]', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_totxtfile[home_is_data]', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_totxtfile[home_is_data,', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_tofile[]', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_tofile[home_is_data]', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_tofile[home_is_data,', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_fromfile', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_fromtextfile', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_fromtextfile_with_end_card', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_append_end_card', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_invalid_end_cards', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_invalid_characters', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_unnecessary_move', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_invalid_float_cards', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_leading_zeros', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_assign_boolean', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_method_keyword_normalization', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_end_in_comment', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_assign_unicode', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_assign_non_ascii', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_strip_whitespace', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_keep_duplicate_history_in_orig_header', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_invalid_keyword_cards', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_fix_hierarch_with_invalid_value', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_assign_inf_nan', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_update_bool', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_update_numeric', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_newlines_in_commentary', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_long_commentary_card_appended_to_header', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_fromstring_bytes', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_set_keyword_with_space', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_strip', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_update_invalid_card', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_index_numpy_int', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_header_data_size', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_initialize_rvkc', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_parse_field_specifier', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_update_field_specifier', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_field_specifier_case_senstivity', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_get_rvkc_by_index', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_get_rvkc_by_keyword', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_get_rvkc_by_keyword_and_field_specifier', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_access_nonexistent_rvkc', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_update_rvkc', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_update_rvkc_2', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_raw_keyword_value', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_rvkc_insert_after', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_rvkc_delete', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_pattern_matching_keys', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_pattern_matching_key_deletion', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_successive_pattern_matching', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_rvkc_in_cardlist_keys', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_rvkc_in_cardlist_values', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_rvkc_value_attribute', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_overly_permissive_parsing', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_overly_aggressive_rvkc_lookup', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_fitsheader_script', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_fitsheader_compressed_from_primary_image_ext', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_fitsheader_table_feature', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_hdu_writeto_mode[wb]', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_hdu_writeto_mode[wb+]', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_hdu_writeto_mode[ab]', 'astropy/io/fits/tests/test_header.py::TestRecordValuedKeywordCards::test_hdu_writeto_mode[ab+]', 'astropy/io/fits/tests/test_header.py::test_subclass'], 'failure': ['astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_invalid_float_cards2']}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for astropy__astropy-14508: resolved: False
+2024-09-09 01:22:02,578 - INFO - Attempting to stop container sweb.eval.astropy__astropy-14508.langgraph_agent_1725824120N...
+2024-09-09 01:22:17,733 - INFO - Attempting to remove container sweb.eval.astropy__astropy-14508.langgraph_agent_1725824120N...
+2024-09-09 01:22:17,744 - INFO - Container sweb.eval.astropy__astropy-14508.langgraph_agent_1725824120N removed.
+2024-09-09 01:22:17,744 - INFO - Attempting to remove image sweb.eval.arm64.astropy__astropy-14508:latest...
+2024-09-09 01:22:17,786 - INFO - Image sweb.eval.arm64.astropy__astropy-14508:latest removed.

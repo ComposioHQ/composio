@@ -1,0 +1,870 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   setup.py
+	modified:   sphinx/cmd/quickstart.py
+	modified:   tox.ini
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit e05cef574b8f23ab1b57f57e7da6dee509a4e230
+Author: Takeshi KOMIYA <i.tkomiya@gmail.com>
+Date:   Sun Jun 13 20:27:59 2021 +0900
+
+    Update CHANGES for PR #9317
+
+diff --git a/CHANGES b/CHANGES
+index 859dc3ea2..7e8658017 100644
+--- a/CHANGES
++++ b/CHANGES
+@@ -65,6 +65,7 @@ Bugs fixed
+ * #9250: autodoc: The inherited method not having docstring is wrongly parsed
+ * #9283: autodoc: autoattribute directive failed to generate document for an
+   attribute not having any comment
++* #9317: html: Pushing left key causes visiting the next page at the first page
+ * #9270: html theme : pyramid theme generates incorrect logo links
+ * #9217: manpage: The name of manpage directory that is generated by
+   :confval:`man_make_section_directory` is not correct
++ git diff e05cef574b8f23ab1b57f57e7da6dee509a4e230
+diff --git a/setup.py b/setup.py
+index 206ff4ad4..4bb5faeb1 100644
+--- a/setup.py
++++ b/setup.py
+@@ -15,22 +15,22 @@ if sys.version_info < (3, 6):
+     sys.exit(1)
+ 
+ install_requires = [
+-    'sphinxcontrib-applehelp',
+-    'sphinxcontrib-devhelp',
++    'sphinxcontrib-applehelp<=1.0.7',
++    'sphinxcontrib-devhelp<=1.0.5',
+     'sphinxcontrib-jsmath',
+-    'sphinxcontrib-htmlhelp',
+-    'sphinxcontrib-serializinghtml',
+-    'sphinxcontrib-qthelp',
+-    'Jinja2>=2.3',
++    'sphinxcontrib-htmlhelp<=2.0.4',
++    'sphinxcontrib-serializinghtml<=1.1.9',
++    'sphinxcontrib-qthelp<=1.0.6',
++    'Jinja2<3.0',
+     'Pygments>=2.0',
+     'docutils>=0.14,<0.18',
+     'snowballstemmer>=1.1',
+     'babel>=1.3',
+-    'alabaster>=0.7,<0.8',
++    'alabaster>=0.7,<0.7.12',
+     'imagesize',
+     'requests>=2.5.0',
+     'setuptools',
+-    'packaging',
++    'packaging', 'markupsafe<=2.0.1',
+ ]
+ 
+ extras_require = {
+diff --git a/sphinx/cmd/quickstart.py b/sphinx/cmd/quickstart.py
+index a40a21073..a46b13576 100644
+--- a/sphinx/cmd/quickstart.py
++++ b/sphinx/cmd/quickstart.py
+@@ -182,7 +182,7 @@ class QuickstartRenderer(SphinxRenderer):
+             return super().render(template_name, context)
+ 
+ 
+-def ask_user(d: Dict) -> None:
++def ask_user(d: Dict) -> Union[Dict, None]:
+     """Ask the user for quickstart values missing from *d*.
+ 
+     Values are:
+@@ -561,10 +561,15 @@ def main(argv: List[str] = sys.argv[1:]) -> int:
+             d['extensions'].extend(ext.split(','))
+ 
+     try:
++        if os.path.exists('conf.py'):
++            print(bold(__("A conf.py file already exists in this directory.")))
++            if term_input(__("Do you want to exit? [Y/n]: ")).lower() != 'n':
++                return 0
++
+         if 'quiet' in d:
+             if not {'project', 'author'}.issubset(d):
+-                print(__('"quiet" is specified, but any of "project" or '
+-                         '"author" is not specified.'))
++                print(__('\"quiet\" is specified, but any of \"project\" or '
++                         '\"author\" is not specified.'))
+                 return 1
+ 
+         if {'quiet', 'project', 'author'}.issubset(d):
+@@ -583,7 +588,9 @@ def main(argv: List[str] = sys.argv[1:]) -> int:
+                          ' Please specify a new root path.'))
+                 return 1
+         else:
+-            ask_user(d)
++            result = ask_user(d)
++            if result is None:  # User chose to exit
++                return 0
+     except (KeyboardInterrupt, EOFError):
+         print()
+         print('[Interrupted.]')
+diff --git a/tox.ini b/tox.ini
+index a363e187f..3b8bc12d0 100644
+--- a/tox.ini
++++ b/tox.ini
+@@ -27,7 +27,7 @@ setenv =
+     PYTHONWARNINGS = all,ignore::ImportWarning:importlib._bootstrap_external,ignore::DeprecationWarning:site,ignore::DeprecationWarning:distutils,ignore::DeprecationWarning:pip._vendor.packaging.version
+     PYTEST_ADDOPTS = {env:PYTEST_ADDOPTS:} --color yes
+ commands=
+-    python -X dev -m pytest --durations 25 {posargs}
++    python -X dev -m pytest -rA --durations 25 {posargs}
+ 
+ [testenv:flake8]
+ basepython = python3
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e '.[test]'
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: sphinxcontrib-applehelp<=1.0.7 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (1.0.4)
+Requirement already satisfied: sphinxcontrib-devhelp<=1.0.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (1.0.2)
+Requirement already satisfied: sphinxcontrib-jsmath in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (1.0.1)
+Requirement already satisfied: sphinxcontrib-htmlhelp<=2.0.4 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (2.0.1)
+Requirement already satisfied: sphinxcontrib-serializinghtml<=1.1.9 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (1.1.5)
+Requirement already satisfied: sphinxcontrib-qthelp<=1.0.6 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (1.0.3)
+Requirement already satisfied: Jinja2<3.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (2.11.3)
+Requirement already satisfied: Pygments>=2.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (2.18.0)
+Requirement already satisfied: docutils<0.18,>=0.14 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (0.17.1)
+Requirement already satisfied: snowballstemmer>=1.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (2.2.0)
+Requirement already satisfied: babel>=1.3 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (2.16.0)
+Requirement already satisfied: alabaster<0.7.12,>=0.7 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (0.7.11)
+Requirement already satisfied: imagesize in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (1.4.1)
+Requirement already satisfied: requests>=2.5.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (2.32.3)
+Requirement already satisfied: setuptools in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (72.1.0)
+Requirement already satisfied: packaging in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (24.1)
+Requirement already satisfied: markupsafe<=2.0.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (2.0.1)
+Requirement already satisfied: pytest in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (8.3.2)
+Requirement already satisfied: pytest-cov in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (5.0.0)
+Requirement already satisfied: html5lib in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (1.1)
+Requirement already satisfied: cython in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==4.1.0.dev20240909) (3.0.11)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==4.1.0.dev20240909) (3.3.2)
+Requirement already satisfied: idna<4,>=2.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==4.1.0.dev20240909) (3.8)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==4.1.0.dev20240909) (2.2.2)
+Requirement already satisfied: certifi>=2017.4.17 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==4.1.0.dev20240909) (2024.8.30)
+Requirement already satisfied: six>=1.9 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from html5lib->Sphinx==4.1.0.dev20240909) (1.16.0)
+Requirement already satisfied: webencodings in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from html5lib->Sphinx==4.1.0.dev20240909) (0.5.1)
+Requirement already satisfied: iniconfig in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest->Sphinx==4.1.0.dev20240909) (2.0.0)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest->Sphinx==4.1.0.dev20240909) (1.5.0)
+Requirement already satisfied: exceptiongroup>=1.0.0rc8 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest->Sphinx==4.1.0.dev20240909) (1.2.2)
+Requirement already satisfied: tomli>=1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest->Sphinx==4.1.0.dev20240909) (2.0.1)
+Requirement already satisfied: coverage>=5.2.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from coverage[toml]>=5.2.1->pytest-cov->Sphinx==4.1.0.dev20240909) (7.6.1)
+Installing collected packages: Sphinx
+  Attempting uninstall: Sphinx
+    Found existing installation: Sphinx 4.1.0.dev20240909
+    Uninstalling Sphinx-4.1.0.dev20240909:
+      Successfully uninstalled Sphinx-4.1.0.dev20240909
+  DEPRECATION: Legacy editable install of Sphinx[test]==4.1.0.dev20240909 from file:///testbed (setup.py develop) is deprecated. pip 25.0 will enforce this behaviour change. A possible replacement is to add a pyproject.toml or enable --use-pep517, and use setuptools >= 64. If the resulting installation is not behaving as expected, try using --config-settings editable_mode=compat. Please consult the setuptools documentation for more information. Discussion can be found at https://github.com/pypa/pip/issues/11457
+  Running setup.py develop for Sphinx
+Successfully installed Sphinx
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout e05cef574b8f23ab1b57f57e7da6dee509a4e230 tests/test_quickstart.py
+Updated 0 paths from 88425c82b
++ git apply -v -
+<stdin>:19: trailing whitespace.
+    # The code detects existing conf.py with path.isfile() 
+Checking patch tests/test_quickstart.py...
+Applied patch tests/test_quickstart.py cleanly.
+warning: 1 line adds whitespace errors.
++ tox --current-env -epy39 -v -- tests/test_quickstart.py
+py39: commands[0]> python -X dev -m pytest -rA --durations 25 tests/test_quickstart.py
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.9.19, pytest-8.3.2, pluggy-1.5.0
+cachedir: .tox/py39/.pytest_cache
+libraries: Sphinx-4.1.0, docutils-0.17.1
+base tempdir: /tmp/pytest-of-root/pytest-0
+rootdir: /testbed
+configfile: setup.cfg
+plugins: cov-5.0.0
+collected 10 items
+
+tests/test_quickstart.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31m                                      [100%][0m
+
+=================================== FAILURES ===================================
+[31m[1m_______________________ test_exits_when_existing_confpy ________________________[0m
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffff8b174690>
+
+    [0m[94mdef[39;49;00m [92mtest_exits_when_existing_confpy[39;49;00m(monkeypatch):[90m[39;49;00m
+        [90m# The code detects existing conf.py with path.isfile()[39;49;00m[90m[39;49;00m
+        [90m# so we mock it as True with pytest's monkeypatch[39;49;00m[90m[39;49;00m
+        [94mdef[39;49;00m [92mmock_isfile[39;49;00m(path):[90m[39;49;00m
+            [94mreturn[39;49;00m [94mTrue[39;49;00m[90m[39;49;00m
+        monkeypatch.setattr(path, [33m'[39;49;00m[33misfile[39;49;00m[33m'[39;49;00m, mock_isfile)[90m[39;49;00m
+    [90m[39;49;00m
+        qs.term_input = mock_input({[90m[39;49;00m
+            [33m'[39;49;00m[33mPlease enter a new root path (or just Enter to exit)[39;49;00m[33m'[39;49;00m: [33m'[39;49;00m[33m'[39;49;00m[90m[39;49;00m
+        })[90m[39;49;00m
+        d = {}[90m[39;49;00m
+        [94mwith[39;49;00m pytest.raises([96mSystemExit[39;49;00m):[90m[39;49;00m
+>           qs.ask_user(d)[90m[39;49;00m
+
+[1m[31mtests/test_quickstart.py[0m:268: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+[1m[31msphinx/cmd/quickstart.py[0m:225: in ask_user
+    [0md[[33m'[39;49;00m[33mpath[39;49;00m[33m'[39;49;00m] = do_prompt(__([33m'[39;49;00m[33mPlease enter a new root path (or just Enter to exit)[39;49;00m[33m'[39;49;00m),[90m[39;49;00m
+[1m[31msphinx/cmd/quickstart.py[0m:148: in do_prompt
+    [0mx = term_input(prompt).strip()[90m[39;49;00m
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+prompt = '> Please enter a new root path (or just Enter to exit) []: '
+
+    [0m[94mdef[39;49;00m [92minput_[39;49;00m(prompt):[90m[39;49;00m
+        [94mif[39;49;00m prompt [95min[39;49;00m called:[90m[39;49;00m
+>           [94mraise[39;49;00m [96mAssertionError[39;49;00m([33m'[39;49;00m[33manswer for [39;49;00m[33m%r[39;49;00m[33m missing and no default [39;49;00m[33m'[39;49;00m[90m[39;49;00m
+                                 [33m'[39;49;00m[33mpresent[39;49;00m[33m'[39;49;00m % prompt)[90m[39;49;00m
+[1m[31mE           AssertionError: answer for '> Please enter a new root path (or just Enter to exit) []: ' missing and no default present[0m
+
+[1m[31mtests/test_quickstart.py[0m:33: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Welcome to the Sphinx 4.1.0 quickstart utility.
+
+Please enter values for the following settings (just press Enter to
+accept a default value, if one is given in brackets).
+
+Enter the root path for documentation.
+
+Error: an existing conf.py has been found in the selected root path.
+sphinx-quickstart will not overwrite existing Sphinx projects.
+
+* Please enter a valid path name.
+[33m=============================== warnings summary ===============================[0m
+sphinx/util/docutils.py:44
+  /testbed/sphinx/util/docutils.py:44: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    __version_info__ = tuple(LooseVersion(docutils.__version__).version)
+
+sphinx/highlighting.py:67
+  /testbed/sphinx/highlighting.py:67: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if tuple(LooseVersion(pygmentsversion).version) <= (2, 7, 4):
+
+sphinx/registry.py:24
+  /testbed/sphinx/registry.py:24: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
+    from pkg_resources import iter_entry_points
+
+../opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144
+../opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144
+../opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144
+../opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+tests/test_quickstart.py::test_quickstart_and_build
+tests/test_quickstart.py::test_quickstart_and_build
+tests/test_quickstart.py::test_quickstart_and_build
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/layout.html:114: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+    _gaq.push(['_setAllowLinker', true]);
+
+tests/test_quickstart.py::test_quickstart_and_build
+tests/test_quickstart.py::test_quickstart_and_build
+tests/test_quickstart.py::test_quickstart_and_build
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/about.html:70: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_quickstart.py::test_quickstart_and_build
+tests/test_quickstart.py::test_quickstart_and_build
+tests/test_quickstart.py::test_quickstart_and_build
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/about.html:99: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_quickstart.py::test_quickstart_and_build
+tests/test_quickstart.py::test_quickstart_and_build
+tests/test_quickstart.py::test_quickstart_and_build
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/layout.html:215: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_quickstart.py::test_quickstart_and_build
+tests/test_quickstart.py::test_quickstart_and_build
+tests/test_quickstart.py::test_quickstart_and_build
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/layout.html:238: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_quickstart.py::test_quickstart_and_build
+  <template>:33: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_quickstart.py::test_quickstart_and_build
+  <template>:224: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_quickstart.py::test_quickstart_and_build
+  <template>:386: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_quickstart.py::test_quickstart_and_build
+  <template>:401: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+==================================== PASSES ====================================
+[32m[1m________________________________ test_do_prompt ________________________________[0m
+----------------------------- Captured stdout call -----------------------------
+* Please enter either 'y' or 'n'.
+[32m[1m___________________________ test_quickstart_defaults ___________________________[0m
+----------------------------- Captured stdout call -----------------------------
+Welcome to the Sphinx 4.1.0 quickstart utility.
+
+Please enter values for the following settings (just press Enter to
+accept a default value, if one is given in brackets).
+
+Enter the root path for documentation.
+
+You have two options for placing the build directory for Sphinx output.
+Either, you use a directory "_build" within the root path, or you separate
+"source" and "build" directories within the root path.
+
+Inside the root directory, two more directories will be created; "_templates"
+for custom HTML templates and "_static" for custom stylesheets and other static
+files. You can enter another prefix (such as ".") to replace the underscore.
+
+The project name will occur in several places in the built documentation.
+
+Sphinx has the notion of a "version" and a "release" for the
+software. Each version can have multiple releases. For example, for
+Python the version is something like 2.5 or 3.0, while the release is
+something like 2.5.1 or 3.0a1. If you don't need this dual structure,
+just set both to the same value.
+
+If the documents are to be written in a language other than English,
+you can select a language here by its language code. Sphinx will then
+translate text that it generates into that language.
+
+For a list of supported codes, see
+https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-language.
+
+The file name suffix for source files. Commonly, this is either ".txt"
+or ".rst". Only files with this suffix are considered documents.
+
+One document is special in that it is considered the top node of the
+"contents tree", that is, it is the root of the hierarchical structure
+of the documents. Normally, this is "index", but if your "index"
+document is a custom template, you can also set this to another filename.
+Indicate which of the following Sphinx extensions should be enabled:
+
+A Makefile and a Windows command file can be generated for you so that you
+only have to run e.g. `make html' instead of invoking sphinx-build
+directly.
+
+Creating file /tmp/pytest-of-root/pytest-0/test_quickstart_defaults0/conf.py.
+Creating file /tmp/pytest-of-root/pytest-0/test_quickstart_defaults0/index.rst.
+Creating file /tmp/pytest-of-root/pytest-0/test_quickstart_defaults0/Makefile.
+Creating file /tmp/pytest-of-root/pytest-0/test_quickstart_defaults0/make.bat.
+
+Finished: An initial directory structure has been created.
+
+You should now populate your master file /tmp/pytest-of-root/pytest-0/test_quickstart_defaults0/index.rst and create other documentation
+source files. Use the Makefile to build the docs, like so:
+   make builder
+where "builder" is one of the supported builders, e.g. html, latex or linkcheck.
+
+[32m[1m_________________________ test_quickstart_all_answers __________________________[0m
+----------------------------- Captured stdout call -----------------------------
+Welcome to the Sphinx 4.1.0 quickstart utility.
+
+Please enter values for the following settings (just press Enter to
+accept a default value, if one is given in brackets).
+
+Enter the root path for documentation.
+
+You have two options for placing the build directory for Sphinx output.
+Either, you use a directory "_build" within the root path, or you separate
+"source" and "build" directories within the root path.
+
+Inside the root directory, two more directories will be created; "_templates"
+for custom HTML templates and "_static" for custom stylesheets and other static
+files. You can enter another prefix (such as ".") to replace the underscore.
+
+The project name will occur in several places in the built documentation.
+
+Sphinx has the notion of a "version" and a "release" for the
+software. Each version can have multiple releases. For example, for
+Python the version is something like 2.5 or 3.0, while the release is
+something like 2.5.1 or 3.0a1. If you don't need this dual structure,
+just set both to the same value.
+
+If the documents are to be written in a language other than English,
+you can select a language here by its language code. Sphinx will then
+translate text that it generates into that language.
+
+For a list of supported codes, see
+https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-language.
+
+The file name suffix for source files. Commonly, this is either ".txt"
+or ".rst". Only files with this suffix are considered documents.
+
+One document is special in that it is considered the top node of the
+"contents tree", that is, it is the root of the hierarchical structure
+of the documents. Normally, this is "index", but if your "index"
+document is a custom template, you can also set this to another filename.
+Indicate which of the following Sphinx extensions should be enabled:
+
+A Makefile and a Windows command file can be generated for you so that you
+only have to run e.g. `make html' instead of invoking sphinx-build
+directly.
+
+Creating file /tmp/pytest-of-root/pytest-0/test_quickstart_all_answers0/source/conf.py.
+Creating file /tmp/pytest-of-root/pytest-0/test_quickstart_all_answers0/source/contents.txt.
+
+Finished: An initial directory structure has been created.
+
+You should now populate your master file /tmp/pytest-of-root/pytest-0/test_quickstart_all_answers0/source/contents.txt and create other documentation
+source files. Use the sphinx-build command to build the docs, like so:
+   sphinx-build -b builder /tmp/pytest-of-root/pytest-0/test_quickstart_all_answers0/source /tmp/pytest-of-root/pytest-0/test_quickstart_all_answers0/build
+where "builder" is one of the supported builders, e.g. html, latex or linkcheck.
+
+[32m[1m___________________________ test_generated_files_eol ___________________________[0m
+----------------------------- Captured stdout call -----------------------------
+Welcome to the Sphinx 4.1.0 quickstart utility.
+
+Please enter values for the following settings (just press Enter to
+accept a default value, if one is given in brackets).
+
+Enter the root path for documentation.
+
+You have two options for placing the build directory for Sphinx output.
+Either, you use a directory "_build" within the root path, or you separate
+"source" and "build" directories within the root path.
+
+Inside the root directory, two more directories will be created; "_templates"
+for custom HTML templates and "_static" for custom stylesheets and other static
+files. You can enter another prefix (such as ".") to replace the underscore.
+
+The project name will occur in several places in the built documentation.
+
+Sphinx has the notion of a "version" and a "release" for the
+software. Each version can have multiple releases. For example, for
+Python the version is something like 2.5 or 3.0, while the release is
+something like 2.5.1 or 3.0a1. If you don't need this dual structure,
+just set both to the same value.
+
+If the documents are to be written in a language other than English,
+you can select a language here by its language code. Sphinx will then
+translate text that it generates into that language.
+
+For a list of supported codes, see
+https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-language.
+
+The file name suffix for source files. Commonly, this is either ".txt"
+or ".rst". Only files with this suffix are considered documents.
+
+One document is special in that it is considered the top node of the
+"contents tree", that is, it is the root of the hierarchical structure
+of the documents. Normally, this is "index", but if your "index"
+document is a custom template, you can also set this to another filename.
+Indicate which of the following Sphinx extensions should be enabled:
+
+A Makefile and a Windows command file can be generated for you so that you
+only have to run e.g. `make html' instead of invoking sphinx-build
+directly.
+
+Creating file /tmp/pytest-of-root/pytest-0/test_generated_files_eol0/conf.py.
+Creating file /tmp/pytest-of-root/pytest-0/test_generated_files_eol0/index.rst.
+Creating file /tmp/pytest-of-root/pytest-0/test_generated_files_eol0/Makefile.
+Creating file /tmp/pytest-of-root/pytest-0/test_generated_files_eol0/make.bat.
+
+Finished: An initial directory structure has been created.
+
+You should now populate your master file /tmp/pytest-of-root/pytest-0/test_generated_files_eol0/index.rst and create other documentation
+source files. Use the Makefile to build the docs, like so:
+   make builder
+where "builder" is one of the supported builders, e.g. html, latex or linkcheck.
+
+[32m[1m__________________________ test_quickstart_and_build ___________________________[0m
+----------------------------- Captured stdout call -----------------------------
+Welcome to the Sphinx 4.1.0 quickstart utility.
+
+Please enter values for the following settings (just press Enter to
+accept a default value, if one is given in brackets).
+
+Enter the root path for documentation.
+
+You have two options for placing the build directory for Sphinx output.
+Either, you use a directory "_build" within the root path, or you separate
+"source" and "build" directories within the root path.
+
+Inside the root directory, two more directories will be created; "_templates"
+for custom HTML templates and "_static" for custom stylesheets and other static
+files. You can enter another prefix (such as ".") to replace the underscore.
+
+The project name will occur in several places in the built documentation.
+
+Sphinx has the notion of a "version" and a "release" for the
+software. Each version can have multiple releases. For example, for
+Python the version is something like 2.5 or 3.0, while the release is
+something like 2.5.1 or 3.0a1. If you don't need this dual structure,
+just set both to the same value.
+
+If the documents are to be written in a language other than English,
+you can select a language here by its language code. Sphinx will then
+translate text that it generates into that language.
+
+For a list of supported codes, see
+https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-language.
+
+The file name suffix for source files. Commonly, this is either ".txt"
+or ".rst". Only files with this suffix are considered documents.
+
+One document is special in that it is considered the top node of the
+"contents tree", that is, it is the root of the hierarchical structure
+of the documents. Normally, this is "index", but if your "index"
+document is a custom template, you can also set this to another filename.
+Indicate which of the following Sphinx extensions should be enabled:
+
+A Makefile and a Windows command file can be generated for you so that you
+only have to run e.g. `make html' instead of invoking sphinx-build
+directly.
+
+Creating file /tmp/pytest-of-root/pytest-0/test_quickstart_and_build0/conf.py.
+Creating file /tmp/pytest-of-root/pytest-0/test_quickstart_and_build0/index.rst.
+Creating file /tmp/pytest-of-root/pytest-0/test_quickstart_and_build0/Makefile.
+Creating file /tmp/pytest-of-root/pytest-0/test_quickstart_and_build0/make.bat.
+
+Finished: An initial directory structure has been created.
+
+You should now populate your master file /tmp/pytest-of-root/pytest-0/test_quickstart_and_build0/index.rst and create other documentation
+source files. Use the Makefile to build the docs, like so:
+   make builder
+where "builder" is one of the supported builders, e.g. html, latex or linkcheck.
+
+[32m[1m____________________________ test_default_filename _____________________________[0m
+----------------------------- Captured stdout call -----------------------------
+Welcome to the Sphinx 4.1.0 quickstart utility.
+
+Please enter values for the following settings (just press Enter to
+accept a default value, if one is given in brackets).
+
+Enter the root path for documentation.
+
+You have two options for placing the build directory for Sphinx output.
+Either, you use a directory "_build" within the root path, or you separate
+"source" and "build" directories within the root path.
+
+Inside the root directory, two more directories will be created; "_templates"
+for custom HTML templates and "_static" for custom stylesheets and other static
+files. You can enter another prefix (such as ".") to replace the underscore.
+
+The project name will occur in several places in the built documentation.
+
+Sphinx has the notion of a "version" and a "release" for the
+software. Each version can have multiple releases. For example, for
+Python the version is something like 2.5 or 3.0, while the release is
+something like 2.5.1 or 3.0a1. If you don't need this dual structure,
+just set both to the same value.
+
+If the documents are to be written in a language other than English,
+you can select a language here by its language code. Sphinx will then
+translate text that it generates into that language.
+
+For a list of supported codes, see
+https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-language.
+
+The file name suffix for source files. Commonly, this is either ".txt"
+or ".rst". Only files with this suffix are considered documents.
+
+One document is special in that it is considered the top node of the
+"contents tree", that is, it is the root of the hierarchical structure
+of the documents. Normally, this is "index", but if your "index"
+document is a custom template, you can also set this to another filename.
+Indicate which of the following Sphinx extensions should be enabled:
+
+A Makefile and a Windows command file can be generated for you so that you
+only have to run e.g. `make html' instead of invoking sphinx-build
+directly.
+
+Creating file /tmp/pytest-of-root/pytest-0/test_default_filename0/conf.py.
+Creating file /tmp/pytest-of-root/pytest-0/test_default_filename0/index.rst.
+Creating file /tmp/pytest-of-root/pytest-0/test_default_filename0/Makefile.
+Creating file /tmp/pytest-of-root/pytest-0/test_default_filename0/make.bat.
+
+Finished: An initial directory structure has been created.
+
+You should now populate your master file /tmp/pytest-of-root/pytest-0/test_default_filename0/index.rst and create other documentation
+source files. Use the Makefile to build the docs, like so:
+   make builder
+where "builder" is one of the supported builders, e.g. html, latex or linkcheck.
+
+[32m[1m_______________________________ test_extensions ________________________________[0m
+----------------------------- Captured stdout call -----------------------------
+
+Finished: An initial directory structure has been created.
+
+You should now populate your master file /tmp/pytest-of-root/pytest-0/test_extensions0/index.rst and create other documentation
+source files. Use the Makefile to build the docs, like so:
+   make builder
+where "builder" is one of the supported builders, e.g. html, latex or linkcheck.
+
+============================= slowest 25 durations =============================
+0.36s call     tests/test_quickstart.py::test_quickstart_and_build
+0.01s call     tests/test_quickstart.py::test_quickstart_defaults
+
+(23 durations < 0.005s hidden.  Use -vv to show these durations.)
+[36m[1m=========================== short test summary info ============================[0m
+[32mPASSED[0m tests/test_quickstart.py::[1mtest_do_prompt[0m
+[32mPASSED[0m tests/test_quickstart.py::[1mtest_do_prompt_inputstrip[0m
+[32mPASSED[0m tests/test_quickstart.py::[1mtest_do_prompt_with_nonascii[0m
+[32mPASSED[0m tests/test_quickstart.py::[1mtest_quickstart_defaults[0m
+[32mPASSED[0m tests/test_quickstart.py::[1mtest_quickstart_all_answers[0m
+[32mPASSED[0m tests/test_quickstart.py::[1mtest_generated_files_eol[0m
+[32mPASSED[0m tests/test_quickstart.py::[1mtest_quickstart_and_build[0m
+[32mPASSED[0m tests/test_quickstart.py::[1mtest_default_filename[0m
+[32mPASSED[0m tests/test_quickstart.py::[1mtest_extensions[0m
+[31mFAILED[0m tests/test_quickstart.py::[1mtest_exits_when_existing_confpy[0m - AssertionError: answer for '> Please enter a new root path (or just Enter t...
+[31m=================== [31m[1m1 failed[0m, [32m9 passed[0m, [33m26 warnings[0m[31m in 0.47s[0m[31m ===================[0m
+py39: exit 1 (0.77 seconds) /testbed> python -X dev -m pytest -rA --durations 25 tests/test_quickstart.py pid=111
+  py39: FAIL code 1 (0.78=setup[0.01]+cmd[0.77] seconds)
+  evaluation failed :( (0.83 seconds)
++ git checkout e05cef574b8f23ab1b57f57e7da6dee509a4e230 tests/test_quickstart.py
+Updated 1 path from 88425c82b

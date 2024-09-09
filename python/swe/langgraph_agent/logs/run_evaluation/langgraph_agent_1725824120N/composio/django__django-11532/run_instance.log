@@ -1,0 +1,65 @@
+2024-09-09 01:27:28,875 - INFO - Environment image sweb.env.arm64.2baaea72acc974f6c02079:latest found for django__django-11532
+Building instance image sweb.eval.arm64.django__django-11532:latest for django__django-11532
+2024-09-09 01:28:44,085 - INFO - Creating container for django__django-11532...
+2024-09-09 01:28:44,153 - INFO - Container for django__django-11532 created: 9464d8880fda9c5d85400f8bfd951ce4c64dfab067df812ee9dfef164791fc16
+2024-09-09 01:28:44,271 - INFO - Container for django__django-11532 started: 9464d8880fda9c5d85400f8bfd951ce4c64dfab067df812ee9dfef164791fc16
+2024-09-09 01:28:44,272 - INFO - Intermediate patch for django__django-11532 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/django__django-11532/patch.diff, now applying to container...
+2024-09-09 01:28:44,445 - INFO - Failed to apply patch to container, trying again...
+2024-09-09 01:28:44,478 - INFO - >>>>> Applied Patch:
+patching file django/core/mail/message.py
+
+2024-09-09 01:28:44,828 - INFO - Git diff before:
+diff --git a/django/core/mail/message.py b/django/core/mail/message.py
+index e393b4cf5c..775030978f 100644
+--- a/django/core/mail/message.py
++++ b/django/core/mail/message.py
+@@ -1,4 +1,6 @@
+ import mimetypes
++import idna
++import mimetypes
+ from email import (
+     charset as Charset, encoders as Encoders, generator, message_from_string,
+ )
+@@ -257,7 +259,8 @@ class EmailMessage:
+             msg['Date'] = formatdate(localtime=settings.EMAIL_USE_LOCALTIME)
+         if 'message-id' not in header_names:
+             # Use cached DNS_NAME for performance
+-            msg['Message-ID'] = make_msgid(domain=DNS_NAME)
++            punycode_domain = idna.encode(DNS_NAME).decode('ascii')
++            msg['Message-ID'] = make_msgid(domain=punycode_domain)
+         for name, value in self.extra_headers.items():
+             if name.lower() != 'from':  # From is already handled
+                 msg[name] = value
+2024-09-09 01:28:44,829 - INFO - Eval script for django__django-11532 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/django__django-11532/eval.sh; copying to container...
+2024-09-09 01:28:47,747 - INFO - Test runtime: 2.79 seconds
+2024-09-09 01:28:47,748 - INFO - Test output for django__django-11532 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/django__django-11532/test_output.txt
+2024-09-09 01:28:47,787 - INFO - Git diff after:
+diff --git a/django/core/mail/message.py b/django/core/mail/message.py
+index e393b4cf5c..775030978f 100644
+--- a/django/core/mail/message.py
++++ b/django/core/mail/message.py
+@@ -1,4 +1,6 @@
+ import mimetypes
++import idna
++import mimetypes
+ from email import (
+     charset as Charset, encoders as Encoders, generator, message_from_string,
+ )
+@@ -257,7 +259,8 @@ class EmailMessage:
+             msg['Date'] = formatdate(localtime=settings.EMAIL_USE_LOCALTIME)
+         if 'message-id' not in header_names:
+             # Use cached DNS_NAME for performance
+-            msg['Message-ID'] = make_msgid(domain=DNS_NAME)
++            punycode_domain = idna.encode(DNS_NAME).decode('ascii')
++            msg['Message-ID'] = make_msgid(domain=punycode_domain)
+         for name, value in self.extra_headers.items():
+             if name.lower() != 'from':  # From is already handled
+                 msg[name] = value
+2024-09-09 01:28:47,788 - INFO - Grading answer for django__django-11532...
+2024-09-09 01:28:47,807 - INFO - report: {'django__django-11532': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': False, 'tests_status': {'FAIL_TO_PASS': {'success': [], 'failure': ['test_non_ascii_dns_non_unicode_email (mail.tests.MailTests)']}, 'PASS_TO_PASS': {'success': ['test_7bit (mail.tests.PythonGlobalState)', 'test_8bit_latin (mail.tests.PythonGlobalState)', 'test_8bit_non_latin (mail.tests.PythonGlobalState)', 'test_utf8 (mail.tests.PythonGlobalState)', 'test_close_connection (mail.tests.LocmemBackendTests)', 'test_empty_admins (mail.tests.LocmemBackendTests)', 'test_use_as_contextmanager (mail.tests.LocmemBackendTests)', 'test_validate_multiline_headers (mail.tests.LocmemBackendTests)', 'test_wrong_admins_managers (mail.tests.LocmemBackendTests)', 'test_close_connection (mail.tests.FileBackendTests)', 'test_empty_admins (mail.tests.FileBackendTests)', 'test_use_as_contextmanager (mail.tests.FileBackendTests)', 'test_wrong_admins_managers (mail.tests.FileBackendTests)', 'test_close_connection (mail.tests.ConsoleBackendTests)', 'test_empty_admins (mail.tests.ConsoleBackendTests)', 'test_use_as_contextmanager (mail.tests.ConsoleBackendTests)', 'test_wrong_admins_managers (mail.tests.ConsoleBackendTests)', 'test_arbitrary_keyword (mail.tests.MailTests)', 'Regression test for #9367', 'Test backend argument of mail.get_connection()', 'Test connection argument to send_mail(), et. al.', 'Test custom backend defined in this suite.', 'test_dummy_backend (mail.tests.MailTests)', 'test_header_injection (mail.tests.MailTests)', 'test_message_header_overrides (mail.tests.MailTests)', 'Regression test for #14964', 'test_recipients_as_string (mail.tests.MailTests)', 'test_recipients_with_empty_strings (mail.tests.MailTests)', 'test_safe_mime_multipart (mail.tests.MailTests)', 'Email addresses are properly sanitized.', 'test_sanitize_address_invalid (mail.tests.MailTests)', 'test_fail_silently_on_connection_error (mail.tests.SMTPBackendStoppedServerTests)', 'test_server_stopped (mail.tests.SMTPBackendStoppedServerTests)', 'test_auth_attempted (mail.tests.SMTPBackendTests)', 'test_close_connection (mail.tests.SMTPBackendTests)', 'The timeout parameter can be customized.', "The connection's timeout value is None by default.", 'test_email_authentication_override_settings (mail.tests.SMTPBackendTests)', 'test_email_authentication_use_settings (mail.tests.SMTPBackendTests)', 'test_email_disabled_authentication (mail.tests.SMTPBackendTests)', 'test_email_ssl_attempts_ssl_connection (mail.tests.SMTPBackendTests)', 'test_email_ssl_certfile_default_disabled (mail.tests.SMTPBackendTests)', 'test_email_ssl_certfile_override_settings (mail.tests.SMTPBackendTests)', 'test_email_ssl_certfile_use_settings (mail.tests.SMTPBackendTests)', 'test_email_ssl_default_disabled (mail.tests.SMTPBackendTests)', 'test_email_ssl_keyfile_default_disabled (mail.tests.SMTPBackendTests)', 'test_email_ssl_keyfile_override_settings (mail.tests.SMTPBackendTests)', 'test_email_ssl_keyfile_use_settings (mail.tests.SMTPBackendTests)', 'test_email_ssl_override_settings (mail.tests.SMTPBackendTests)', 'test_email_ssl_use_settings (mail.tests.SMTPBackendTests)', 'test_email_timeout_override_settings (mail.tests.SMTPBackendTests)', 'test_email_tls_attempts_starttls (mail.tests.SMTPBackendTests)', 'test_email_tls_default_disabled (mail.tests.SMTPBackendTests)', 'test_email_tls_override_settings (mail.tests.SMTPBackendTests)', 'test_email_tls_use_settings (mail.tests.SMTPBackendTests)', 'test_empty_admins (mail.tests.SMTPBackendTests)', 'test_reopen_connection (mail.tests.SMTPBackendTests)', 'test_send_messages_after_open_failed (mail.tests.SMTPBackendTests)', 'test_send_messages_empty_list (mail.tests.SMTPBackendTests)', "A message isn't sent if it doesn't have any recipients.", 'test_server_login (mail.tests.SMTPBackendTests)', 'test_server_open (mail.tests.SMTPBackendTests)', 'test_ssl_tls_mutually_exclusive (mail.tests.SMTPBackendTests)', 'test_use_as_contextmanager (mail.tests.SMTPBackendTests)', 'test_wrong_admins_managers (mail.tests.SMTPBackendTests)'], 'failure': ['test_date_header_localtime (mail.tests.MailTimeZoneTests)', 'test_date_header_utc (mail.tests.MailTimeZoneTests)', 'Test html_message argument to mail_admins', 'Test html_message argument to mail_managers', 'Test html_message argument to send_mail', 'test_idn_send (mail.tests.LocmemBackendTests)', 'test_lazy_addresses (mail.tests.LocmemBackendTests)', 'test_locmem_shared_messages (mail.tests.LocmemBackendTests)', 'test_manager_and_admin_mail_prefix (mail.tests.LocmemBackendTests)', 'test_message_cc_header (mail.tests.LocmemBackendTests)', 'test_plaintext_send_mail (mail.tests.LocmemBackendTests)', 'test_recipient_without_domain (mail.tests.LocmemBackendTests)', 'test_send (mail.tests.LocmemBackendTests)', 'test_send_long_lines (mail.tests.LocmemBackendTests)', 'test_send_many (mail.tests.LocmemBackendTests)', 'test_send_unicode (mail.tests.LocmemBackendTests)', 'test_send_verbose_name (mail.tests.LocmemBackendTests)', 'Make sure opening a connection creates a new file', 'test_idn_send (mail.tests.FileBackendTests)', 'test_lazy_addresses (mail.tests.FileBackendTests)', 'test_manager_and_admin_mail_prefix (mail.tests.FileBackendTests)', 'test_message_cc_header (mail.tests.FileBackendTests)', 'test_plaintext_send_mail (mail.tests.FileBackendTests)', 'test_recipient_without_domain (mail.tests.FileBackendTests)', 'test_send (mail.tests.FileBackendTests)', 'test_send_long_lines (mail.tests.FileBackendTests)', 'test_send_many (mail.tests.FileBackendTests)', 'test_send_unicode (mail.tests.FileBackendTests)', 'test_send_verbose_name (mail.tests.FileBackendTests)', 'test_console_stream_kwarg (mail.tests.ConsoleBackendTests)', 'test_idn_send (mail.tests.ConsoleBackendTests)', 'test_lazy_addresses (mail.tests.ConsoleBackendTests)', 'test_manager_and_admin_mail_prefix (mail.tests.ConsoleBackendTests)', 'test_message_cc_header (mail.tests.ConsoleBackendTests)', 'test_plaintext_send_mail (mail.tests.ConsoleBackendTests)', 'test_recipient_without_domain (mail.tests.ConsoleBackendTests)', 'test_send (mail.tests.ConsoleBackendTests)', 'test_send_long_lines (mail.tests.ConsoleBackendTests)', 'test_send_many (mail.tests.ConsoleBackendTests)', 'test_send_unicode (mail.tests.ConsoleBackendTests)', 'test_send_verbose_name (mail.tests.ConsoleBackendTests)', 'test_ascii (mail.tests.MailTests)', 'test_attach_file (mail.tests.MailTests)', 'test_attach_non_utf8_text_as_bytes (mail.tests.MailTests)', 'test_attach_text_as_bytes (mail.tests.MailTests)', 'test_attach_utf8_text_as_bytes (mail.tests.MailTests)', 'test_attachments_MIMEText (mail.tests.MailTests)', 'test_attachments_two_tuple (mail.tests.MailTests)', 'Regression test for #7722', 'test_cc_headers (mail.tests.MailTests)', 'test_cc_in_headers_only (mail.tests.MailTests)', 'A UTF-8 charset with a custom body encoding is respected.', 'test_dont_base64_encode (mail.tests.MailTests)', 'test_dont_base64_encode_message_rfc822 (mail.tests.MailTests)', 'test_dont_mangle_from_in_body (mail.tests.MailTests)', 'test_encoding (mail.tests.MailTests)', 'test_from_header (mail.tests.MailTests)', 'test_header_omitted_for_no_to_recipients (mail.tests.MailTests)', 'test_multiple_message_call (mail.tests.MailTests)', 'test_multiple_recipients (mail.tests.MailTests)', 'test_none_body (mail.tests.MailTests)', 'test_recipients_as_tuple (mail.tests.MailTests)', 'test_reply_to (mail.tests.MailTests)', 'test_reply_to_header (mail.tests.MailTests)', 'test_reply_to_in_headers_only (mail.tests.MailTests)', 'test_safe_mime_multipart_with_attachments (mail.tests.MailTests)', 'test_space_continuation (mail.tests.MailTests)', 'test_to_header (mail.tests.MailTests)', 'test_to_in_headers_only (mail.tests.MailTests)', 'test_unicode_address_header (mail.tests.MailTests)', 'test_unicode_headers (mail.tests.MailTests)', '#23063 -- RFC-compliant messages are sent over SMTP.', 'test_idn_send (mail.tests.SMTPBackendTests)', 'test_lazy_addresses (mail.tests.SMTPBackendTests)', 'test_manager_and_admin_mail_prefix (mail.tests.SMTPBackendTests)', 'test_message_cc_header (mail.tests.SMTPBackendTests)', 'test_plaintext_send_mail (mail.tests.SMTPBackendTests)', 'test_recipient_without_domain (mail.tests.SMTPBackendTests)', 'test_send (mail.tests.SMTPBackendTests)', 'test_send_long_lines (mail.tests.SMTPBackendTests)', 'test_send_many (mail.tests.SMTPBackendTests)', 'test_send_unicode (mail.tests.SMTPBackendTests)', 'test_send_verbose_name (mail.tests.SMTPBackendTests)']}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for django__django-11532: resolved: False
+2024-09-09 01:28:47,807 - INFO - Attempting to stop container sweb.eval.django__django-11532.langgraph_agent_1725824120N...
+2024-09-09 01:29:02,976 - INFO - Attempting to remove container sweb.eval.django__django-11532.langgraph_agent_1725824120N...
+2024-09-09 01:29:02,995 - INFO - Container sweb.eval.django__django-11532.langgraph_agent_1725824120N removed.
+2024-09-09 01:29:02,995 - INFO - Attempting to remove image sweb.eval.arm64.django__django-11532:latest...
+2024-09-09 01:29:03,103 - INFO - Image sweb.eval.arm64.django__django-11532:latest removed.

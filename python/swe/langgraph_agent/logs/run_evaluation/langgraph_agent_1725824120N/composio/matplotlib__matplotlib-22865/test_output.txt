@@ -1,0 +1,583 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"'
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"'
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh
++++ export GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ export GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
++++ GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh
++++ test -n ''
++++ xml_catalog_files_libxml2=
++++ XML_CATALOG_FILES=
++++ conda_catalog_files=
++++ ifs_libxml2=' 	
+'
++++ IFS=' '
++++ rem=/opt/miniconda3/envs/testbed
++++ for pre in ${rem}
++++ test '' = /opt/miniconda3/envs/testbed
++++ conda_catalog_files=/opt/miniconda3/envs/testbed
++++ rem=
++++ IFS=' 	
+'
++++ conda_catalog_files='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ export 'XML_CATALOG_FILES=file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ XML_CATALOG_FILES='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ unset conda_catalog_files ifs_libxml2 rem
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/matplotlib/colorbar.py
+	modified:   lib/matplotlib/tests/test_colorbar.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit c6c7ec1978c22ae2c704555a873d0ec6e1e2eaa8
+Merge: f569f21879 89a7e19210
+Author: Oscar Gustafsson <oscar.gustafsson@gmail.com>
+Date:   Tue Apr 19 08:54:10 2022 +0200
+
+    Merge pull request #22609 from anntzer/dvifonthelpers
+    
+    Improve usability of dviread.Text by third parties.
+
++ git diff c6c7ec1978c22ae2c704555a873d0ec6e1e2eaa8
+diff --git a/lib/matplotlib/colorbar.py b/lib/matplotlib/colorbar.py
+index c59b0ac815..1acb09729d 100644
+--- a/lib/matplotlib/colorbar.py
++++ b/lib/matplotlib/colorbar.py
+@@ -651,8 +651,14 @@ class Colorbar:
+             if not self.drawedges:
+                 if len(self._y) >= self.n_rasterize:
+                     self.solids.set_rasterized(True)
+-        self.dividers.set_segments(
+-            np.dstack([X, Y])[1:-1] if self.drawedges else [])
++        if self.drawedges:
++            if self.extend == 'both':
++                segments = np.dstack([X, Y])
++            else:
++                segments = np.dstack([X, Y])[1:-1]
++        else:
++            segments = []
++        self.dividers.set_segments(segments)
+ 
+     def _add_solids_patches(self, X, Y, C, mappable):
+         hatches = mappable.hatches * len(C)  # Have enough hatches.
+diff --git a/lib/matplotlib/tests/test_colorbar.py b/lib/matplotlib/tests/test_colorbar.py
+index ae3ab92c0d..c101720d4c 100644
+--- a/lib/matplotlib/tests/test_colorbar.py
++++ b/lib/matplotlib/tests/test_colorbar.py
+@@ -1037,3 +1037,25 @@ def test_title_text_loc():
+     # colorbar axes, including its extend triangles....
+     assert (cb.ax.title.get_window_extent(fig.canvas.get_renderer()).ymax >
+             cb.ax.spines['outline'].get_window_extent().ymax)
++
++@image_comparison(['colorbar_edges_both.png'], remove_text=True, style='mpl20')
++def test_colorbar_edges_both():
++    """
++    Test colorbar with extend='both' and drawedges=True.
++    This test ensures that the edges are drawn at the extremities.
++    """
++    fig, ax = plt.subplots(figsize=(5, 1))
++    
++    # Create data and colormap
++    data = np.linspace(0, 10, 100).reshape(10, 10)
++    cmap = plt.cm.viridis
++    
++    # Create colorbar with extend='both' and drawedges=True
++    im = ax.imshow(data, cmap=cmap)
++    cbar = fig.colorbar(im, ax=ax, extend='both', drawedges=True)
++    
++    # Set the colorbar ticks
++    cbar.set_ticks([0, 5, 10])
++    
++    # Adjust the layout
++    fig.tight_layout()
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libxml2_deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libglib_deactivate.sh"
+PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval '. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libxml2_deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libglib_deactivate.sh"
+PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libxml2_deactivate.sh
+++++ test -n ''
+++++ unset XML_CATALOG_FILES
+++++ unset xml_catalog_files_libxml2
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libglib_deactivate.sh
+++++ export GSETTINGS_SCHEMA_DIR=
+++++ GSETTINGS_SCHEMA_DIR=
+++++ unset GSETTINGS_SCHEMA_DIR_CONDA_BACKUP
+++++ '[' -z ']'
+++++ unset GSETTINGS_SCHEMA_DIR
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"'
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"'
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh
++++ export GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ export GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
++++ GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh
++++ test -n ''
++++ xml_catalog_files_libxml2=
++++ XML_CATALOG_FILES=
++++ conda_catalog_files=
++++ ifs_libxml2=' 	
+'
++++ IFS=' '
++++ rem=/opt/miniconda3/envs/testbed
++++ for pre in ${rem}
++++ test '' = /opt/miniconda3/envs/testbed
++++ conda_catalog_files=/opt/miniconda3/envs/testbed
++++ rem=
++++ IFS=' 	
+'
++++ conda_catalog_files='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ export 'XML_CATALOG_FILES=file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ XML_CATALOG_FILES='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ unset conda_catalog_files ifs_libxml2 rem
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: cycler>=0.10 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from matplotlib==3.6.0.dev2063+gc6c7ec1978.d20240908) (0.11.0)
+Requirement already satisfied: fonttools>=4.22.0 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from matplotlib==3.6.0.dev2063+gc6c7ec1978.d20240908) (4.42.1)
+Requirement already satisfied: kiwisolver>=1.0.1 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from matplotlib==3.6.0.dev2063+gc6c7ec1978.d20240908) (1.4.5)
+Requirement already satisfied: numpy>=1.19 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from matplotlib==3.6.0.dev2063+gc6c7ec1978.d20240908) (1.25.2)
+Requirement already satisfied: packaging>=20.0 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from matplotlib==3.6.0.dev2063+gc6c7ec1978.d20240908) (23.1)
+Requirement already satisfied: pillow>=6.2.0 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from matplotlib==3.6.0.dev2063+gc6c7ec1978.d20240908) (10.0.0)
+Requirement already satisfied: pyparsing>=2.2.1 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from matplotlib==3.6.0.dev2063+gc6c7ec1978.d20240908) (3.0.9)
+Requirement already satisfied: python-dateutil>=2.7 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from matplotlib==3.6.0.dev2063+gc6c7ec1978.d20240908) (2.8.2)
+Requirement already satisfied: setuptools_scm>=4 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from matplotlib==3.6.0.dev2063+gc6c7ec1978.d20240908) (7.1.0)
+Requirement already satisfied: six>=1.5 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from python-dateutil>=2.7->matplotlib==3.6.0.dev2063+gc6c7ec1978.d20240908) (1.16.0)
+Requirement already satisfied: setuptools in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from setuptools_scm>=4->matplotlib==3.6.0.dev2063+gc6c7ec1978.d20240908) (68.1.2)
+Requirement already satisfied: typing-extensions in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from setuptools_scm>=4->matplotlib==3.6.0.dev2063+gc6c7ec1978.d20240908) (4.7.1)
+Installing collected packages: matplotlib
+  Attempting uninstall: matplotlib
+    Found existing installation: matplotlib 3.6.0.dev2063+gc6c7ec1978
+    Uninstalling matplotlib-3.6.0.dev2063+gc6c7ec1978:
+      Successfully uninstalled matplotlib-3.6.0.dev2063+gc6c7ec1978
+  DEPRECATION: Legacy editable install of matplotlib==3.6.0.dev2063+gc6c7ec1978.d20240908 from file:///testbed (setup.py develop) is deprecated. pip 25.0 will enforce this behaviour change. A possible replacement is to add a pyproject.toml or enable --use-pep517, and use setuptools >= 64. If the resulting installation is not behaving as expected, try using --config-settings editable_mode=compat. Please consult the setuptools documentation for more information. Discussion can be found at https://github.com/pypa/pip/issues/11457
+  Running setup.py develop for matplotlib
+Successfully installed matplotlib-3.6.0.dev2063+gc6c7ec1978.d20240908
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout c6c7ec1978c22ae2c704555a873d0ec6e1e2eaa8 lib/matplotlib/tests/test_colorbar.py
+Updated 1 path from 939014cad4
++ git apply -v -
+Checking patch lib/matplotlib/tests/test_colorbar.py...
+Applied patch lib/matplotlib/tests/test_colorbar.py cleanly.
++ pytest -rA lib/matplotlib/tests/test_colorbar.py
+============================= test session starts ==============================
+platform linux -- Python 3.11.9, pytest-8.3.2, pluggy-1.5.0
+rootdir: /testbed
+configfile: pytest.ini
+plugins: cov-5.0.0, xdist-3.6.1, timeout-2.3.1, rerunfailures-14.0
+collected 61 items
+
+lib/matplotlib/tests/test_colorbar.py .................................. [ 55%]
+.................FF..s.....                                              [100%]
+
+=================================== FAILURES ===================================
+__________________ test_colorbar_extend_drawedges[min-0-res1] __________________
+
+extend = 'min', coloroffset = 0
+res = [array([[0., 0.],
+       [0., 1.]]), array([[1., 0.],
+       [1., 1.]])]
+
+    @pytest.mark.parametrize("extend, coloroffset, res", [
+        ('both', 1, [np.array([[0., 0.], [0., 1.]]),
+                     np.array([[1., 0.], [1., 1.]]),
+                     np.array([[2., 0.], [2., 1.]])]),
+        ('min', 0, [np.array([[0., 0.], [0., 1.]]),
+                    np.array([[1., 0.], [1., 1.]])]),
+        ('max', 0, [np.array([[1., 0.], [1., 1.]]),
+                    np.array([[2., 0.], [2., 1.]])]),
+        ('neither', -1, [np.array([[1., 0.], [1., 1.]])])
+        ])
+    def test_colorbar_extend_drawedges(extend, coloroffset, res):
+        cmap = plt.get_cmap("viridis")
+        bounds = np.arange(3)
+        nb_colors = len(bounds) + coloroffset
+        colors = cmap(np.linspace(100, 255, nb_colors).astype(int))
+        cmap, norm = mcolors.from_levels_and_colors(bounds, colors, extend=extend)
+    
+        plt.figure(figsize=(5, 1))
+        ax = plt.subplot(111)
+        cbar = Colorbar(ax, cmap=cmap, norm=norm, orientation='horizontal',
+                        drawedges=True)
+>       assert np.all(np.equal(cbar.dividers.get_segments(), res))
+E       AssertionError: assert False
+E        +  where False = <function all at 0x2aaaad081d30>(array([[[False,  True],\n        [False,  True]],\n\n       [[ True,  True],\n        [ True,  True]]]))
+E        +    where <function all at 0x2aaaad081d30> = np.all
+E        +    and   array([[[False,  True],\n        [False,  True]],\n\n       [[ True,  True],\n        [ True,  True]]]) = <ufunc 'equal'>([array([[1., 0.],\n       [1., 1.]])], [array([[0., 0.],\n       [0., 1.]]), array([[1., 0.],\n       [1., 1.]])])
+E        +      where <ufunc 'equal'> = np.equal
+E        +      and   [array([[1., 0.],\n       [1., 1.]])] = get_segments()
+E        +        where get_segments = <matplotlib.collections.LineCollection object at 0x2aaae1af4ad0>.get_segments
+E        +          where <matplotlib.collections.LineCollection object at 0x2aaae1af4ad0> = <matplotlib.colorbar.Colorbar object at 0x2aaae0565050>.dividers
+
+lib/matplotlib/tests/test_colorbar.py:943: AssertionError
+__________________ test_colorbar_extend_drawedges[max-0-res2] __________________
+
+extend = 'max', coloroffset = 0
+res = [array([[1., 0.],
+       [1., 1.]]), array([[2., 0.],
+       [2., 1.]])]
+
+    @pytest.mark.parametrize("extend, coloroffset, res", [
+        ('both', 1, [np.array([[0., 0.], [0., 1.]]),
+                     np.array([[1., 0.], [1., 1.]]),
+                     np.array([[2., 0.], [2., 1.]])]),
+        ('min', 0, [np.array([[0., 0.], [0., 1.]]),
+                    np.array([[1., 0.], [1., 1.]])]),
+        ('max', 0, [np.array([[1., 0.], [1., 1.]]),
+                    np.array([[2., 0.], [2., 1.]])]),
+        ('neither', -1, [np.array([[1., 0.], [1., 1.]])])
+        ])
+    def test_colorbar_extend_drawedges(extend, coloroffset, res):
+        cmap = plt.get_cmap("viridis")
+        bounds = np.arange(3)
+        nb_colors = len(bounds) + coloroffset
+        colors = cmap(np.linspace(100, 255, nb_colors).astype(int))
+        cmap, norm = mcolors.from_levels_and_colors(bounds, colors, extend=extend)
+    
+        plt.figure(figsize=(5, 1))
+        ax = plt.subplot(111)
+        cbar = Colorbar(ax, cmap=cmap, norm=norm, orientation='horizontal',
+                        drawedges=True)
+>       assert np.all(np.equal(cbar.dividers.get_segments(), res))
+E       AssertionError: assert False
+E        +  where False = <function all at 0x2aaaad081d30>(array([[[ True,  True],\n        [ True,  True]],\n\n       [[False,  True],\n        [False,  True]]]))
+E        +    where <function all at 0x2aaaad081d30> = np.all
+E        +    and   array([[[ True,  True],\n        [ True,  True]],\n\n       [[False,  True],\n        [False,  True]]]) = <ufunc 'equal'>([array([[1., 0.],\n       [1., 1.]])], [array([[1., 0.],\n       [1., 1.]]), array([[2., 0.],\n       [2., 1.]])])
+E        +      where <ufunc 'equal'> = np.equal
+E        +      and   [array([[1., 0.],\n       [1., 1.]])] = get_segments()
+E        +        where get_segments = <matplotlib.collections.LineCollection object at 0x2aaae5ef1d90>.get_segments
+E        +          where <matplotlib.collections.LineCollection object at 0x2aaae5ef1d90> = <matplotlib.colorbar.Colorbar object at 0x2aaae5e317d0>.dividers
+
+lib/matplotlib/tests/test_colorbar.py:943: AssertionError
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_extension_shape[png]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_extension_length[png]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_extension_inverted_axis[min-expected0-horizontal]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_extension_inverted_axis[min-expected0-vertical]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_extension_inverted_axis[max-expected1-horizontal]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_extension_inverted_axis[max-expected1-vertical]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_extension_inverted_axis[both-expected2-horizontal]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_extension_inverted_axis[both-expected2-vertical]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_positioning[png-True]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_positioning[png-False]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_single_ax_panchor_false
+PASSED lib/matplotlib/tests/test_colorbar.py::test_contour_colorbar[png]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_gridspec_make_colorbar[png]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_single_scatter[png]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_remove_from_figure[no gridspec]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_remove_from_figure[with gridspec]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_remove_from_figure_cl
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbarbase
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_closed_patch[png]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_ticks
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_minorticks_on_off
+PASSED lib/matplotlib/tests/test_colorbar.py::test_cbar_minorticks_for_rc_xyminortickvisible
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_autoticks
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_autotickslog
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_get_ticks
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_lognorm_extension[both]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_lognorm_extension[min]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_lognorm_extension[max]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_powernorm_extension
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_axes_kw
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_log_minortick_labels
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_renorm
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_format[%4.2e]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_format[{x:.2e}]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_scale_reset
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_get_ticks_2
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_inverted_ticks
+PASSED lib/matplotlib/tests/test_colorbar.py::test_mappable_no_alpha
+PASSED lib/matplotlib/tests/test_colorbar.py::test_mappable_2d_alpha
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_label
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_int[clim0]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_int[clim1]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_anchored_cbar_position_using_specgrid
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_change_lim_scale[png]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_axes_handles_same_functions[png]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_inset_colorbar_layout
+PASSED lib/matplotlib/tests/test_colorbar.py::test_twoslope_colorbar[png]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_remove_cb_whose_mappable_has_no_figure[png]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_aspects
+PASSED lib/matplotlib/tests/test_colorbar.py::test_proportional_colorbars[png]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_extend_drawedges[both-1-res0]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_extend_drawedges[neither--1-res3]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_negative_boundarynorm
+PASSED lib/matplotlib/tests/test_colorbar.py::test_boundaries[png]
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_no_warning_rcparams_grid_true
+PASSED lib/matplotlib/tests/test_colorbar.py::test_colorbar_set_formatter_locator
+PASSED lib/matplotlib/tests/test_colorbar.py::test_offset_text_loc
+PASSED lib/matplotlib/tests/test_colorbar.py::test_title_text_loc
+SKIPPED [1] ../opt/miniconda3/envs/testbed/lib/python3.11/contextlib.py:81: Cannot compare svg files on this system
+FAILED lib/matplotlib/tests/test_colorbar.py::test_colorbar_extend_drawedges[min-0-res1]
+FAILED lib/matplotlib/tests/test_colorbar.py::test_colorbar_extend_drawedges[max-0-res2]
+=================== 2 failed, 58 passed, 1 skipped in 38.87s ===================
++ git checkout c6c7ec1978c22ae2c704555a873d0ec6e1e2eaa8 lib/matplotlib/tests/test_colorbar.py
+Updated 1 path from 939014cad4

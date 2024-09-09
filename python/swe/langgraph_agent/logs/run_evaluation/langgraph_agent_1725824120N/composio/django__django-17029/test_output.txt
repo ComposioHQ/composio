@@ -1,0 +1,565 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/apps/registry.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 953f29f700a60fc09b08b2c2270c12c447490c6a
+Author: Mariusz Felisiak <felisiak.mariusz@gmail.com>
+Date:   Fri Jun 30 06:03:08 2023 +0200
+
+    Fixed #34572 -- Added support for GDAL 3.7.
+    
+    Co-authored-by: Michael Howitz <mh@gocept.com>
+
+diff --git a/django/contrib/gis/gdal/libgdal.py b/django/contrib/gis/gdal/libgdal.py
+index fe510ac142..30cba0f14f 100644
+--- a/django/contrib/gis/gdal/libgdal.py
++++ b/django/contrib/gis/gdal/libgdal.py
+@@ -22,6 +22,7 @@ if lib_path:
+ elif os.name == "nt":
+     # Windows NT shared libraries
+     lib_names = [
++        "gdal307",
+         "gdal306",
+         "gdal305",
+         "gdal304",
+@@ -36,6 +37,7 @@ elif os.name == "posix":
+     lib_names = [
+         "gdal",
+         "GDAL",
++        "gdal3.7.0",
+         "gdal3.6.0",
+         "gdal3.5.0",
+         "gdal3.4.0",
+diff --git a/docs/ref/contrib/gis/gdal.txt b/docs/ref/contrib/gis/gdal.txt
+index f46f0978fe..fbe2752e44 100644
+--- a/docs/ref/contrib/gis/gdal.txt
++++ b/docs/ref/contrib/gis/gdal.txt
+@@ -1844,8 +1844,8 @@ Key               Default  Usage
+     converted to the correct string format upon creation.
+ 
+     The following example uses some of the options available for the
+-    `GTiff driver`__. The result is a compressed signed byte raster with an
+-    internal tiling scheme. The internal tiles have a block size of 23 by 23:
++    `GTiff driver`__. The result is a compressed raster with an internal tiling
++    scheme. The internal tiles have a block size of 23 by 23:
+ 
+     .. code-block:: pycon
+ 
+@@ -1859,7 +1859,6 @@ Key               Default  Usage
+         ...         "nr_of_bands": 1,
+         ...         "papsz_options": {
+         ...             "compress": "packbits",
+-        ...             "pixeltype": "signedbyte",
+         ...             "tiled": "yes",
+         ...             "blockxsize": 23,
+         ...             "blockysize": 23,
+diff --git a/docs/ref/contrib/gis/install/geolibs.txt b/docs/ref/contrib/gis/install/geolibs.txt
+index 1475d512b0..3615e50fdc 100644
+--- a/docs/ref/contrib/gis/install/geolibs.txt
++++ b/docs/ref/contrib/gis/install/geolibs.txt
+@@ -5,16 +5,16 @@ Installing Geospatial libraries
+ GeoDjango uses and/or provides interfaces for the following open source
+ geospatial libraries:
+ 
+-========================  ====================================  ================================  ======================================
++========================  ====================================  ================================  ===========================================
+ Program                   Description                           Required                          Supported Versions
+-========================  ====================================  ================================  ======================================
++========================  ====================================  ================================  ===========================================
+ :doc:`GEOS <../geos>`     Geometry Engine Open Source           Yes                               3.11, 3.10, 3.9, 3.8
+ `PROJ`_                   Cartographic Projections library      Yes (PostgreSQL and SQLite only)  9.x, 8.x, 7.x, 6.x, 5.x
+-:doc:`GDAL <../gdal>`     Geospatial Data Abstraction Library   Yes                               3.6, 3.5, 3.4, 3.3, 3.2, 3.1, 3.0, 2.4
++:doc:`GDAL <../gdal>`     Geospatial Data Abstraction Library   Yes                               3.7, 3.6, 3.5, 3.4, 3.3, 3.2, 3.1, 3.0, 2.4
+ :doc:`GeoIP <../geoip2>`  IP-based geolocation library          No                                2
+ `PostGIS`__               Spatial extensions for PostgreSQL     Yes (PostgreSQL only)             3.3, 3.2, 3.1, 3.0, 2.5
+ `SpatiaLite`__            Spatial extensions for SQLite         Yes (SQLite only)                 5.0, 4.3
+-========================  ====================================  ================================  ======================================
++========================  ====================================  ================================  ===========================================
+ 
+ Note that older or more recent versions of these libraries *may* also work
+ totally fine with GeoDjango. Your mileage may vary.
+@@ -33,6 +33,7 @@ totally fine with GeoDjango. Your mileage may vary.
+     GDAL 3.4.0 2021-11-04
+     GDAL 3.5.0 2022-05-13
+     GDAL 3.6.0 2022-11-03
++    GDAL 3.7.0 2023-05-10
+     PostGIS 2.5.0 2018-09-23
+     PostGIS 3.0.0 2019-10-20
+     PostGIS 3.1.0 2020-12-18
+diff --git a/docs/releases/5.0.txt b/docs/releases/5.0.txt
+index f5f4ecd668..a2a04c6060 100644
+--- a/docs/releases/5.0.txt
++++ b/docs/releases/5.0.txt
+@@ -179,6 +179,8 @@ Minor features
+ * :ref:`GIS aggregates <gis-aggregation-functions>` now support the ``filter``
+   argument.
+ 
++* Added support for GDAL 3.7.
++
+ :mod:`django.contrib.messages`
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
+diff --git a/tests/gis_tests/gdal_tests/test_raster.py b/tests/gis_tests/gdal_tests/test_raster.py
+index c662366bef..67108cbb32 100644
+--- a/tests/gis_tests/gdal_tests/test_raster.py
++++ b/tests/gis_tests/gdal_tests/test_raster.py
+@@ -6,7 +6,7 @@ import zipfile
+ from pathlib import Path
+ from unittest import mock
+ 
+-from django.contrib.gis.gdal import GDALRaster, SpatialReference
++from django.contrib.gis.gdal import GDAL_VERSION, GDALRaster, SpatialReference
+ from django.contrib.gis.gdal.error import GDALException
+ from django.contrib.gis.gdal.raster.band import GDALBand
+ from django.contrib.gis.shortcuts import numpy
+@@ -415,9 +415,19 @@ class GDALRasterTests(SimpleTestCase):
+         # Check physically if compression worked.
+         self.assertLess(os.path.getsize(compressed.name), os.path.getsize(self.rs.name))
+         # Create file-based raster with options from scratch.
++        papsz_options = {
++            "compress": "packbits",
++            "blockxsize": 23,
++            "blockysize": 23,
++        }
++        if GDAL_VERSION < (3, 7):
++            datatype = 1
++            papsz_options["pixeltype"] = "signedbyte"
++        else:
++            datatype = 14
+         compressed = GDALRaster(
+             {
+-                "datatype": 1,
++                "datatype": datatype,
+                 "driver": "tif",
+                 "name": rstfile.name,
+                 "width": 40,
+@@ -432,12 +442,7 @@ class GDALRasterTests(SimpleTestCase):
+                         "nodata_value": 255,
+                     }
+                 ],
+-                "papsz_options": {
+-                    "compress": "packbits",
+-                    "pixeltype": "signedbyte",
+-                    "blockxsize": 23,
+-                    "blockysize": 23,
+-                },
++                "papsz_options": papsz_options,
+             }
+         )
+         # Check if options used on creation are stored in metadata.
+@@ -448,9 +453,12 @@ class GDALRasterTests(SimpleTestCase):
+             compressed.metadata["IMAGE_STRUCTURE"]["COMPRESSION"],
+             "PACKBITS",
+         )
+-        self.assertEqual(
+-            compressed.bands[0].metadata["IMAGE_STRUCTURE"]["PIXELTYPE"], "SIGNEDBYTE"
+-        )
++        self.assertEqual(compressed.bands[0].datatype(), datatype)
++        if GDAL_VERSION < (3, 7):
++            self.assertEqual(
++                compressed.bands[0].metadata["IMAGE_STRUCTURE"]["PIXELTYPE"],
++                "SIGNEDBYTE",
++            )
+         self.assertIn("Block=40x23", compressed.info)
+ 
+     def test_raster_warp(self):
++ git diff 953f29f700a60fc09b08b2c2270c12c447490c6a
+diff --git a/django/apps/registry.py b/django/apps/registry.py
+index 0683f3ad3c..a84727991b 100644
+--- a/django/apps/registry.py
++++ b/django/apps/registry.py
+@@ -372,10 +372,12 @@ class Apps:
+         Clear all internal caches, for methods that alter the app registry.
+ 
+         This is mostly used in tests.
++        This also clears the cache for get_swappable_settings_name.
+         """
+         # Call expire cache on each model. This will purge
+         # the relation tree and the fields cache.
+         self.get_models.cache_clear()
++        self.get_swappable_settings_name.cache_clear()  # Add this line to clear the cache for get_swappable_settings_name
+         if self.ready:
+             # Circumvent self.get_models() to prevent that the cache is refilled.
+             # This particularly prevents that an empty value is cached while cloning.
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.7.0 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from Django==5.0.dev20230630040308) (3.8.1)
+Requirement already satisfied: sqlparse>=0.3.1 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from Django==5.0.dev20230630040308) (0.5.1)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-5.0.dev20230630040308-0.editable-py3-none-any.whl size=27534 sha256=24d026dc296d62db974826c4c139ee5eb13fc96254c24f97e249eddff818095b
+  Stored in directory: /tmp/pip-ephem-wheel-cache-_i024zc6/wheels/49/5f/4f/01b7d31ea6ddac9643da788242d33e5fd3467d95d17b032c6b
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 5.0.dev20230630040308
+    Uninstalling Django-5.0.dev20230630040308:
+      Successfully uninstalled Django-5.0.dev20230630040308
+Successfully installed Django-5.0.dev20230630040308
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 953f29f700a60fc09b08b2c2270c12c447490c6a tests/apps/tests.py
+Updated 0 paths from 090ff24f74
++ git apply -v -
+Checking patch tests/apps/tests.py...
+Applied patch tests/apps/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 apps.tests
+Testing against Django installed in '/testbed/django'
+Importing application apps
+Found 44 test(s).
+Skipping setup of unused database(s): default, other.
+System check identified no issues (0 silenced).
+test_app_default_auto_field (apps.tests.AppConfigTests.test_app_default_auto_field) ... ok
+test_default_auto_field_setting (apps.tests.AppConfigTests.test_default_auto_field_setting) ... ok
+test_dunder_path (apps.tests.AppConfigTests.test_dunder_path)
+If single element in __path__, use it (in preference to __file__). ... ok
+test_duplicate_dunder_path_no_dunder_file (apps.tests.AppConfigTests.test_duplicate_dunder_path_no_dunder_file)
+If the __path__ attr contains duplicate paths and there is no ... ok
+test_empty_dunder_path_fallback_to_dunder_file (apps.tests.AppConfigTests.test_empty_dunder_path_fallback_to_dunder_file)
+If the __path__ attr is empty, use __file__ if set. ... ok
+test_empty_dunder_path_no_dunder_file (apps.tests.AppConfigTests.test_empty_dunder_path_no_dunder_file)
+If the __path__ attr is empty and there is no __file__, raise. ... ok
+test_explicit_path_overrides (apps.tests.AppConfigTests.test_explicit_path_overrides)
+If path set as class attr, overrides __path__ and __file__. ... ok
+test_invalid_label (apps.tests.AppConfigTests.test_invalid_label) ... ok
+test_multiple_dunder_path_fallback_to_dunder_file (apps.tests.AppConfigTests.test_multiple_dunder_path_fallback_to_dunder_file)
+If the __path__ attr is length>1, use __file__ if set. ... ok
+test_multiple_dunder_path_no_dunder_file (apps.tests.AppConfigTests.test_multiple_dunder_path_no_dunder_file)
+If the __path__ attr is length>1 and there is no __file__, raise. ... ok
+test_no_dunder_path_fallback_to_dunder_file (apps.tests.AppConfigTests.test_no_dunder_path_fallback_to_dunder_file)
+If there is no __path__ attr, use __file__. ... ok
+test_no_dunder_path_or_dunder_file (apps.tests.AppConfigTests.test_no_dunder_path_or_dunder_file)
+If there is no __path__ or __file__, raise ImproperlyConfigured. ... ok
+test_path_set_explicitly (apps.tests.AppConfigTests.test_path_set_explicitly)
+If subclass sets path as class attr, no module attributes needed. ... ok
+test_repr (apps.tests.AppConfigTests.test_repr) ... ok
+test_bad_app_config (apps.tests.AppsTests.test_bad_app_config)
+Tests when INSTALLED_APPS contains an incorrect app config. ... ok
+test_clear_cache (apps.tests.AppsTests.test_clear_cache) ... ok
+test_duplicate_labels (apps.tests.AppsTests.test_duplicate_labels) ... ok
+test_duplicate_names (apps.tests.AppsTests.test_duplicate_names) ... ok
+test_dynamic_load (apps.tests.AppsTests.test_dynamic_load)
+Makes a new model at runtime and ensures it goes into the right place. ... ok
+test_get_app_config (apps.tests.AppsTests.test_get_app_config)
+Tests apps.get_app_config(). ... ok
+test_get_app_configs (apps.tests.AppsTests.test_get_app_configs)
+Tests apps.get_app_configs(). ... ok
+test_get_containing_app_config_apps_not_ready (apps.tests.AppsTests.test_get_containing_app_config_apps_not_ready)
+apps.get_containing_app_config() should raise an exception if ... ok
+test_get_model (apps.tests.AppsTests.test_get_model)
+Tests apps.get_model(). ... ok
+test_import_exception_is_not_masked (apps.tests.AppsTests.test_import_exception_is_not_masked)
+App discovery should preserve stack traces. Regression test for #22920. ... ok
+test_is_installed (apps.tests.AppsTests.test_is_installed)
+Tests apps.is_installed(). ... ok
+test_lazy_model_operation (apps.tests.AppsTests.test_lazy_model_operation)
+Tests apps.lazy_model_operation(). ... ok
+test_model_clash (apps.tests.AppsTests.test_model_clash)
+Test for behavior when two models clash in the app registry. ... ok
+test_models_not_loaded (apps.tests.AppsTests.test_models_not_loaded)
+apps.get_models() raises an exception if apps.models_ready isn't True. ... ok
+test_models_py (apps.tests.AppsTests.test_models_py)
+The models in the models.py file were loaded correctly. ... ok
+test_no_config_app (apps.tests.AppsTests.test_no_config_app)
+Load an app that doesn't provide an AppConfig class. ... ok
+test_no_such_app (apps.tests.AppsTests.test_no_such_app)
+Tests when INSTALLED_APPS contains an app that doesn't exist, either ... ok
+test_no_such_app_config (apps.tests.AppsTests.test_no_such_app_config) ... ok
+test_no_such_app_config_with_choices (apps.tests.AppsTests.test_no_such_app_config_with_choices) ... ok
+test_not_an_app_config (apps.tests.AppsTests.test_not_an_app_config)
+Tests when INSTALLED_APPS contains a class that isn't an app config. ... ok
+test_one_config_app (apps.tests.AppsTests.test_one_config_app)
+Load an app that provides an AppConfig class. ... ok
+test_ready (apps.tests.AppsTests.test_ready)
+Tests the ready property of the main registry. ... ok
+test_relabeling (apps.tests.AppsTests.test_relabeling) ... ok
+test_singleton_main (apps.tests.AppsTests.test_singleton_main)
+Only one main registry can exist. ... ok
+test_two_configs_app (apps.tests.AppsTests.test_two_configs_app)
+Load an app that provides two AppConfig classes. ... ok
+test_two_configs_one_default_app (apps.tests.AppsTests.test_two_configs_one_default_app)
+Load an app that provides two AppConfig classes, one being the default. ... ok
+test_two_default_configs_app (apps.tests.AppsTests.test_two_default_configs_app)
+Load an app that provides two default AppConfig classes. ... ok
+test_multiple_paths (apps.tests.NamespacePackageAppTests.test_multiple_paths)
+A Py3.3+ namespace package with multiple locations cannot be an app. ... ok
+test_multiple_paths_explicit_path (apps.tests.NamespacePackageAppTests.test_multiple_paths_explicit_path)
+Multiple locations are ok only if app-config has explicit path. ... ok
+test_single_path (apps.tests.NamespacePackageAppTests.test_single_path)
+A Py3.3+ namespace package can be an app if it has only one path. ... ok
+
+----------------------------------------------------------------------
+Ran 44 tests in 0.010s
+
+OK
++ git checkout 953f29f700a60fc09b08b2c2270c12c447490c6a tests/apps/tests.py
+Updated 1 path from 090ff24f74

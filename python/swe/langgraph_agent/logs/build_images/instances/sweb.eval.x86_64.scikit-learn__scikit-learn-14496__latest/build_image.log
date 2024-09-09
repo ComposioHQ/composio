@@ -1,0 +1,44 @@
+2024-09-09 07:47:46,916 - INFO - Building image sweb.eval.x86_64.scikit-learn__scikit-learn-14496:latest
+Using dockerfile:
+FROM --platform=linux/x86_64 sweb.env.x86_64.aa92880033da20ca313928:latest
+
+COPY ./setup_repo.sh /root/
+RUN /bin/bash /root/setup_repo.sh
+
+WORKDIR /testbed/
+
+Adding (1) setup scripts to image build repo
+2024-09-09 07:47:46,916 - INFO - [SETUP SCRIPT] setup_repo.sh:
+#!/bin/bash
+set -euxo pipefail
+git clone -o origin https://github.com/scikit-learn/scikit-learn /testbed
+chmod -R 777 /testbed
+cd /testbed
+git reset --hard d49a6f13af2f22228d430ac64ac2b518937800d0
+git remote remove origin
+source /opt/miniconda3/bin/activate
+conda activate testbed
+echo "Current environment: $CONDA_DEFAULT_ENV"
+python -m pip install -v --no-use-pep517 --no-build-isolation -e .
+
+2024-09-09 07:47:46,916 - INFO - Building docker image sweb.eval.x86_64.scikit-learn__scikit-learn-14496:latest in logs/build_images/instances/sweb.eval.x86_64.scikit-learn__scikit-learn-14496__latest with platform linux/x86_64
+2024-09-09 07:47:46,999 - INFO - Step 1/4 : FROM --platform=linux/x86_64 sweb.env.x86_64.aa92880033da20ca313928:latest
+2024-09-09 07:47:46,999 - INFO - 
+2024-09-09 07:47:46,999 - INFO - ---> 35878756f200
+2024-09-09 07:47:47,000 - INFO - Step 2/4 : COPY ./setup_repo.sh /root/
+2024-09-09 07:47:47,000 - INFO - 
+2024-09-09 07:47:47,021 - INFO - ---> 227dea4564c6
+2024-09-09 07:47:47,021 - INFO - Step 3/4 : RUN /bin/bash /root/setup_repo.sh
+2024-09-09 07:47:47,021 - INFO - 
+2024-09-09 07:47:47,033 - INFO - ---> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+2024-09-09 07:47:47,033 - INFO - ---> Running in 872dbdb9a9ce
+2024-09-09 07:47:47,246 - INFO - + git clone -o origin https://github.com/scikit-learn/scikit-learn /testbed
+2024-09-09 07:47:47,264 - INFO - Cloning into '/testbed'...
+2024-09-09 07:49:12,569 - INFO - error: RPC failed; curl 92 HTTP/2 stream 0 was not closed cleanly: CANCEL (err 8)
+2024-09-09 07:49:12,570 - INFO - error: 7165 bytes of body are still expected
+2024-09-09 07:49:12,590 - INFO - fetch-pack: unexpected disconnect while reading sideband packet
+2024-09-09 07:49:12,591 - INFO - fatal: early EOF
+2024-09-09 07:49:12,595 - INFO - fatal: fetch-pack: invalid index-pack output
+2024-09-09 07:49:12,748 - INFO - ---> Removed intermediate container 872dbdb9a9ce
+2024-09-09 07:49:12,749 - ERROR - Error: The command '/bin/sh -c /bin/bash /root/setup_repo.sh' returned a non-zero code: 128
+2024-09-09 07:49:12,749 - ERROR - docker.errors.BuildError during sweb.eval.x86_64.scikit-learn__scikit-learn-14496:latest: The command '/bin/sh -c /bin/bash /root/setup_repo.sh' returned a non-zero code: 128

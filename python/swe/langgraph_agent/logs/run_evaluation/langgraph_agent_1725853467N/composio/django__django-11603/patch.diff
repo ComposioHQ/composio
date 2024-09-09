@@ -1,0 +1,77 @@
+diff --git a/django/db/models/aggregates.py b/django/db/models/aggregates.py
+index da4ff928..a2d4c0b2 100644
+--- a/django/db/models/aggregates.py
++++ b/django/db/models/aggregates.py
+@@ -99,6 +99,7 @@ class Aggregate(Func):
+ class Avg(FixDurationInputMixin, NumericOutputFieldMixin, Aggregate):
+     function = 'AVG'
+     name = 'Avg'
++    allow_distinct = True
+ 
+ 
+ class Count(Aggregate):
+@@ -130,18 +131,18 @@ class Min(Aggregate):
+ 
+ class StdDev(NumericOutputFieldMixin, Aggregate):
+     name = 'StdDev'
++class Sum(FixDurationInputMixin, Aggregate):
++    function = 'SUM'
++    name = 'Sum'
++    allow_distinct = True
+ 
+     def __init__(self, expression, sample=False, **extra):
+-        self.function = 'STDDEV_SAMP' if sample else 'STDDEV_POP'
+         super().__init__(expression, **extra)
+ 
+     def _get_repr_options(self):
+         return {**super()._get_repr_options(), 'sample': self.function == 'STDDEV_SAMP'}
+ 
+ 
+-class Sum(FixDurationInputMixin, Aggregate):
+-    function = 'SUM'
+-    name = 'Sum'
+ 
+ 
+ class Variance(NumericOutputFieldMixin, Aggregate):
+diff --git a/tests/aggregation/tests.py b/tests/aggregation/tests.py
+index bd6ecf69..306867d7 100644
+--- a/tests/aggregation/tests.py
++++ b/tests/aggregation/tests.py
+@@ -1162,4 +1162,37 @@ class AggregateTestCase(TestCase):
+         has_long_books_breakdown = Publisher.objects.values_list(
+             Exists(long_books_qs),
+         ).annotate(total=Count('*'))
++    def test_avg_distinct(self):
++        # Test Avg with distinct
++        avg_price = Book.objects.aggregate(avg_price=Avg('price', distinct=True))
++        self.assertAlmostEqual(avg_price['avg_price'], Decimal('45.045'), places=3)
++
++        # Test Avg without distinct (should be different)
++        avg_price_non_distinct = Book.objects.aggregate(avg_price=Avg('price'))
++        self.assertNotEqual(avg_price['avg_price'], avg_price_non_distinct['avg_price'])
++
++    def test_sum_distinct(self):
++        # Test Sum with distinct
++        sum_price = Book.objects.aggregate(sum_price=Sum('price', distinct=True))
++        self.assertAlmostEqual(sum_price['sum_price'], Decimal('270.27'), places=2)
++
++        # Test Sum without distinct (should be different)
++        sum_price_non_distinct = Book.objects.aggregate(sum_price=Sum('price'))
++        self.assertNotEqual(sum_price['sum_price'], sum_price_non_distinct['sum_price'])
++
++    def test_avg_sum_distinct_with_expression(self):
++        # Test Avg and Sum with distinct on an expression
++        result = Book.objects.aggregate(
++            avg_price_expr=Avg(F('price') * 2, distinct=True),
++            sum_price_expr=Sum(F('price') * 2, distinct=True)
++        )
++        self.assertAlmostEqual(result['avg_price_expr'], Decimal('90.09'), places=2)
++        self.assertAlmostEqual(result['sum_price_expr'], Decimal('540.54'), places=2)
++
++    def test_exists_long_books(self):
++        long_books_qs = Book.objects.filter(pages__gt=400)
++        has_long_books_breakdown = Publisher.objects.values_list(
++            Exists(long_books_qs),
++        ).annotate(total=Count('*'))
++        self.assertEqual(dict(has_long_books_breakdown), {True: 2, False: 3})
+         self.assertEqual(dict(has_long_books_breakdown), {True: 2, False: 3})

@@ -1,0 +1,46 @@
+diff --git a/sympy/polys/rings.py b/sympy/polys/rings.py
+index 12bd2fc..f482605 100644
+--- a/sympy/polys/rings.py
++++ b/sympy/polys/rings.py
+@@ -616,10 +616,10 @@ def set_ring(self, new_ring):
+             return new_ring.from_dict(self, self.ring.domain)
+ 
+     def as_expr(self, *symbols):
+-        if symbols and len(symbols) != self.ring.ngens:
+-            raise ValueError("not enough symbols, expected %s got %s" % (self.ring.ngens, len(symbols)))
+-        else:
++        if not symbols:
+             symbols = self.ring.symbols
++        elif len(symbols) != self.ring.ngens:
++            raise ValueError("not enough symbols, expected %s got %s" % (self.ring.ngens, len(symbols)))
+ 
+         return expr_from_dict(self.as_expr_dict(), *symbols)
+ 
+diff --git a/sympy/polys/tests/test_rings.py b/sympy/polys/tests/test_rings.py
+index b396213..f933939 100644
+--- a/sympy/polys/tests/test_rings.py
++++ b/sympy/polys/tests/test_rings.py
+@@ -1419,4 +1419,23 @@ def test_PolyElement_factor_list():
+ def test_issue_21410():
+     R, x = ring('x', FF(2))
+     p = x**6 + x**5 + x**4 + x**3 + 1
++def test_PolyElement_as_expr():
++    R, x, y, z = ring("x,y,z", ZZ)
++    f = x**2 + 2*x*y + 3*x + 4*z**2 + 5*z + 6
++
++    # Test with default symbols
++    assert f.as_expr() == x**2 + 2*x*y + 3*x + 4*z**2 + 5*z + 6
++
++    # Test with provided symbols
++    a, b, c = symbols("a,b,c")
++    assert f.as_expr(a, b, c) == a**2 + 2*a*b + 3*a + 4*c**2 + 5*c + 6
++
++    # Test with incorrect number of symbols
++    raises(ValueError, lambda: f.as_expr(a, b))
++    raises(ValueError, lambda: f.as_expr(a, b, c, Symbol("d")))
++
++def test_issue_21410():
++    R, x = ring('x', FF(2))
++    p = x**6 + x**5 + x**4 + x**3 + 1
++    assert p._pow_multinomial(4) == x**24 + x**20 + x**16 + x**12 + 1
+     assert p._pow_multinomial(4) == x**24 + x**20 + x**16 + x**12 + 1

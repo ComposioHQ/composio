@@ -1,0 +1,55 @@
+diff --git a/sympy/core/numbers.py b/sympy/core/numbers.py
+index 79f6a7d..421425d 100644
+--- a/sympy/core/numbers.py
++++ b/sympy/core/numbers.py
+@@ -997,6 +997,34 @@ class Float(Number):
+     -5.00000000000000
+ 
+     An actual mpf tuple also contains the number of bits in c as the last
++class Float(Number):
++    # ... (existing code)
++
++    def __eq__(self, other):
++        if other is S.false or other is S.true:
++            return False
++        try:
++            other = _sympify(other)
++        except SympifyError:
++            return NotImplemented
++        if other.is_Float:
++            return bool(mpf_eq(self._mpf_, other._mpf_))
++        if other.is_Number:
++            return bool(mpf_eq(self._mpf_, other.evalf(self._prec)._mpf_))
++        return False
++
++    # ... (rest of the existing code)
++        try:
++            other = _sympify(other)
++        except SympifyError:
++            return NotImplemented
++        if other.is_Float:
++            return bool(mpf_eq(self._mpf_, other._mpf_))
++        if other.is_Number:
++            return bool(mpf_eq(self._mpf_, other.evalf(self._prec)._mpf_))
++        return False
++
++    # ... (rest of the existing code)
+     element of the tuple:
+ 
+     >>> _._mpf_
+diff --git a/sympy/logic/boolalg.py b/sympy/logic/boolalg.py
+index fbcba1f..894c0be 100644
+--- a/sympy/logic/boolalg.py
++++ b/sympy/logic/boolalg.py
+@@ -99,6 +99,11 @@ def __lshift__(self, other):
+     def __xor__(self, other):
+         return Xor(self, other)
+ 
++    def __eq__(self, other):
++        if isinstance(other, (int, float)):
++            return False
++        return super().__eq__(other)
++
+     __rxor__ = __xor__
+ 
+     def equals(self, other):

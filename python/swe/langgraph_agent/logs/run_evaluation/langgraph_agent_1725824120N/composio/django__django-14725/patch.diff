@@ -1,0 +1,102 @@
+diff --git a/django/forms/models.py b/django/forms/models.py
+index 7effb20..1d26299 100644
+--- a/django/forms/models.py
++++ b/django/forms/models.py
+@@ -573,7 +573,8 @@ class BaseModelFormSet(BaseFormSet):
+     unique_fields = set()
+ 
+     def __init__(self, data=None, files=None, auto_id='id_%s', prefix=None,
+-                 queryset=None, *, initial=None, **kwargs):
++                 queryset=None, *, initial=None, allow_new=True, **kwargs):
++        self.allow_new = allow_new
+         self.queryset = queryset
+         self.initial_extra = initial
+         super().__init__(**{'data': data, 'files': files, 'auto_id': auto_id, 'prefix': prefix, **kwargs})
+@@ -663,7 +664,6 @@ class BaseModelFormSet(BaseFormSet):
+         """Deletes an existing model instance."""
+         if commit:
+             obj.delete()
+-
+     def save(self, commit=True):
+         """
+         Save model instances for every form, adding and changing instances
+@@ -676,6 +676,12 @@ class BaseModelFormSet(BaseFormSet):
+                 for form in self.saved_forms:
+                     form.save_m2m()
+             self.save_m2m = save_m2m
++
++        # Only save existing objects if allow_new is False
++        if self.allow_new:
++            return self.save_existing_objects(commit) + self.save_new_objects(commit)
++        else:
++            return self.save_existing_objects(commit)
+         return self.save_existing_objects(commit) + self.save_new_objects(commit)
+ 
+     save.alters_data = True
+@@ -1312,37 +1318,37 @@ class ModelChoiceField(ChoiceField):
+                 code='invalid_choice',
+                 params={'value': value},
+             )
+-        return value
+-
+-    def validate(self, value):
+-        return Field.validate(self, value)
+-
+-    def has_changed(self, initial, data):
+-        if self.disabled:
+-            return False
+-        initial_value = initial if initial is not None else ''
+-        data_value = data if data is not None else ''
+-        return str(self.prepare_value(initial_value)) != str(data_value)
+-
+-
+-class ModelMultipleChoiceField(ModelChoiceField):
+-    """A MultipleChoiceField whose choices are a model QuerySet."""
+-    widget = SelectMultiple
+-    hidden_widget = MultipleHiddenInput
+-    default_error_messages = {
+-        'invalid_list': _('Enter a list of values.'),
+-        'invalid_choice': _('Select a valid choice. %(value)s is not one of the'
+-                            ' available choices.'),
+-        'invalid_pk_value': _('“%(pk)s” is not a valid value.')
+-    }
++def modelformset_factory(model, form=ModelForm, formfield_callback=None,
++                         formset=BaseModelFormSet, extra=1, can_delete=False,
++                         can_order=False, max_num=None, fields=None, exclude=None,
++                         widgets=None, validate_max=False, localized_fields=None,
++                         labels=None, help_texts=None, error_messages=None,
++                         min_num=None, validate_min=False, field_classes=None,
++                         allow_new=True):
++    """
++    Returns a FormSet class for the given Django model class.
++    """
++    meta = getattr(form, 'Meta', None)
++    if meta is None:
++        meta = type('Meta', (object,), {})
++    if getattr(meta, 'fields', fields) is None and getattr(meta, 'exclude', exclude) is None:
++        raise ImproperlyConfigured(
++            "Calling modelformset_factory without defining 'fields' or "
++            "'exclude' explicitly is prohibited."
++        )
+ 
+-    def __init__(self, queryset, **kwargs):
+-        super().__init__(queryset, empty_label=None, **kwargs)
++    form = modelform_factory(model, form=form, fields=fields, exclude=exclude,
++                             formfield_callback=formfield_callback,
++                             widgets=widgets, localized_fields=localized_fields,
++                             labels=labels, help_texts=help_texts,
++                             error_messages=error_messages, field_classes=field_classes)
++    FormSet = formset_factory(form, formset, extra=extra, min_num=min_num, max_num=max_num,
++                              can_order=can_order, can_delete=can_delete,
++                              validate_min=validate_min, validate_max=validate_max)
+ 
+-    def to_python(self, value):
+-        if not value:
+-            return []
+-        return list(self._check_values(value))
++    FormSet.model = model
++    FormSet.allow_new = allow_new
++    return FormSet
+ 
+     def clean(self, value):
+         value = self.prepare_value(value)

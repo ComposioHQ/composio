@@ -1,0 +1,61 @@
+{
+    "sphinx-doc__sphinx-8551": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "tests/test_domain_py.py::test_info_field_list"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "tests/test_domain_py.py::test_function_signatures",
+                    "tests/test_domain_py.py::test_domain_py_xrefs",
+                    "tests/test_domain_py.py::test_domain_py_objects",
+                    "tests/test_domain_py.py::test_resolve_xref_for_properties",
+                    "tests/test_domain_py.py::test_domain_py_find_obj",
+                    "tests/test_domain_py.py::test_get_full_qualified_name",
+                    "tests/test_domain_py.py::test_parse_annotation",
+                    "tests/test_domain_py.py::test_pyfunction_signature",
+                    "tests/test_domain_py.py::test_pyfunction_signature_full",
+                    "tests/test_domain_py.py::test_pyfunction_signature_full_py38",
+                    "tests/test_domain_py.py::test_pyfunction_with_number_literals",
+                    "tests/test_domain_py.py::test_optional_pyfunction_signature",
+                    "tests/test_domain_py.py::test_pyexception_signature",
+                    "tests/test_domain_py.py::test_exceptions_module_is_ignored",
+                    "tests/test_domain_py.py::test_pydata_signature",
+                    "tests/test_domain_py.py::test_pydata_signature_old",
+                    "tests/test_domain_py.py::test_pyobject_prefix",
+                    "tests/test_domain_py.py::test_pydata",
+                    "tests/test_domain_py.py::test_pyfunction",
+                    "tests/test_domain_py.py::test_pyclass_options",
+                    "tests/test_domain_py.py::test_pymethod_options",
+                    "tests/test_domain_py.py::test_pyclassmethod",
+                    "tests/test_domain_py.py::test_pystaticmethod",
+                    "tests/test_domain_py.py::test_pyattribute",
+                    "tests/test_domain_py.py::test_pydecorator_signature",
+                    "tests/test_domain_py.py::test_pydecoratormethod_signature",
+                    "tests/test_domain_py.py::test_module_index",
+                    "tests/test_domain_py.py::test_module_index_submodule",
+                    "tests/test_domain_py.py::test_module_index_not_collapsed",
+                    "tests/test_domain_py.py::test_modindex_common_prefix",
+                    "tests/test_domain_py.py::test_noindexentry",
+                    "tests/test_domain_py.py::test_warn_missing_reference"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

@@ -1,0 +1,167 @@
+2024-09-09 08:16:47,595 - INFO - Environment image sweb.env.arm64.c6d251a05e0af7688b64fd:latest found for sphinx-doc__sphinx-8120
+Building instance image sweb.eval.arm64.sphinx-doc__sphinx-8120:latest for sphinx-doc__sphinx-8120
+2024-09-09 08:17:31,828 - INFO - Creating container for sphinx-doc__sphinx-8120...
+2024-09-09 08:17:31,860 - INFO - Container for sphinx-doc__sphinx-8120 created: 0e865229795600c1de139e3cfeaa59866e8f2a7887cd0e0eae659fefae93306f
+2024-09-09 08:17:32,011 - INFO - Container for sphinx-doc__sphinx-8120 started: 0e865229795600c1de139e3cfeaa59866e8f2a7887cd0e0eae659fefae93306f
+2024-09-09 08:17:32,011 - INFO - Intermediate patch for sphinx-doc__sphinx-8120 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/sphinx-doc__sphinx-8120/patch.diff, now applying to container...
+2024-09-09 08:17:32,182 - INFO - Failed to apply patch to container, trying again...
+2024-09-09 08:17:32,221 - INFO - >>>>> Applied Patch:
+patching file doc/conf.py
+
+2024-09-09 08:17:32,384 - INFO - Git diff before:
+diff --git a/doc/conf.py b/doc/conf.py
+index f62e02a34..4e78c9611 100644
+--- a/doc/conf.py
++++ b/doc/conf.py
+@@ -8,7 +8,8 @@ import sphinx
+ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo',
+               'sphinx.ext.autosummary', 'sphinx.ext.extlinks',
+               'sphinx.ext.intersphinx',
+-              'sphinx.ext.viewcode', 'sphinx.ext.inheritance_diagram']
++              'sphinx.ext.viewcode', 'sphinx.ext.inheritance_diagram',
++              'custom_translation_extension']
+ 
+ master_doc = 'contents'
+ templates_path = ['_templates']
+@@ -160,5 +161,7 @@ def setup(app):
+     from sphinx.util import logging
+     logger = logging.getLogger(__name__)
+     app.info = lambda *args, **kwargs: logger.info(*args, **kwargs)
+-    app.warn = lambda *args, **kwargs: logger.warning(*args, **kwargs)
+-    app.debug = lambda *args, **kwargs: logger.debug(*args, **kwargs)
++# i18n settings
++language = 'da'
++locale_dirs = ['locale/']
++gettext_compact = False
+diff --git a/setup.py b/setup.py
+index a404f1fa5..2c6848797 100644
+--- a/setup.py
++++ b/setup.py
+@@ -15,22 +15,22 @@ if sys.version_info < (3, 5):
+     sys.exit(1)
+ 
+ install_requires = [
+-    'sphinxcontrib-applehelp',
+-    'sphinxcontrib-devhelp',
++    'sphinxcontrib-applehelp<=1.0.7',
++    'sphinxcontrib-devhelp<=1.0.5',
+     'sphinxcontrib-jsmath',
+-    'sphinxcontrib-htmlhelp',
+-    'sphinxcontrib-serializinghtml',
+-    'sphinxcontrib-qthelp',
+-    'Jinja2>=2.3',
++    'sphinxcontrib-htmlhelp<=2.0.4',
++    'sphinxcontrib-serializinghtml<=1.1.9',
++    'sphinxcontrib-qthelp<=1.0.6',
++    'Jinja2<3.0',
+     'Pygments>=2.0',
+     'docutils>=0.12',
+     'snowballstemmer>=1.1',
+     'babel>=1.3',
+-    'alabaster>=0.7,<0.8',
++    'alabaster>=0.7,<0.7.12',
+     'imagesize',
+     'requests>=2.5.0',
+     'setuptools',
+-    'packaging',
++    'packaging', 'markupsafe<=2.0.1',
+ ]
+ 
+ extras_require = {
+diff --git a/tox.ini b/tox.ini
+index a61299979..e2baccc07 100644
+--- a/tox.ini
++++ b/tox.ini
+@@ -28,7 +28,7 @@ setenv =
+     PYTHONWARNINGS = all,ignore::ImportWarning:importlib._bootstrap_external,ignore::DeprecationWarning:site,ignore::DeprecationWarning:distutils
+     PYTEST_ADDOPTS = --color yes
+ commands=
+-    pytest --durations 25 {posargs}
++    pytest -rA --durations 25 {posargs}
+ 
+ [testenv:flake8]
+ basepython = python3
+2024-09-09 08:17:32,384 - INFO - Eval script for sphinx-doc__sphinx-8120 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/sphinx-doc__sphinx-8120/eval.sh; copying to container...
+2024-09-09 08:17:36,118 - INFO - Test runtime: 3.59 seconds
+2024-09-09 08:17:36,119 - INFO - Test output for sphinx-doc__sphinx-8120 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/sphinx-doc__sphinx-8120/test_output.txt
+2024-09-09 08:17:36,158 - INFO - Git diff after:
+diff --git a/doc/conf.py b/doc/conf.py
+index f62e02a34..4e78c9611 100644
+--- a/doc/conf.py
++++ b/doc/conf.py
+@@ -8,7 +8,8 @@ import sphinx
+ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.todo',
+               'sphinx.ext.autosummary', 'sphinx.ext.extlinks',
+               'sphinx.ext.intersphinx',
+-              'sphinx.ext.viewcode', 'sphinx.ext.inheritance_diagram']
++              'sphinx.ext.viewcode', 'sphinx.ext.inheritance_diagram',
++              'custom_translation_extension']
+ 
+ master_doc = 'contents'
+ templates_path = ['_templates']
+@@ -160,5 +161,7 @@ def setup(app):
+     from sphinx.util import logging
+     logger = logging.getLogger(__name__)
+     app.info = lambda *args, **kwargs: logger.info(*args, **kwargs)
+-    app.warn = lambda *args, **kwargs: logger.warning(*args, **kwargs)
+-    app.debug = lambda *args, **kwargs: logger.debug(*args, **kwargs)
++# i18n settings
++language = 'da'
++locale_dirs = ['locale/']
++gettext_compact = False
+diff --git a/setup.py b/setup.py
+index a404f1fa5..2c6848797 100644
+--- a/setup.py
++++ b/setup.py
+@@ -15,22 +15,22 @@ if sys.version_info < (3, 5):
+     sys.exit(1)
+ 
+ install_requires = [
+-    'sphinxcontrib-applehelp',
+-    'sphinxcontrib-devhelp',
++    'sphinxcontrib-applehelp<=1.0.7',
++    'sphinxcontrib-devhelp<=1.0.5',
+     'sphinxcontrib-jsmath',
+-    'sphinxcontrib-htmlhelp',
+-    'sphinxcontrib-serializinghtml',
+-    'sphinxcontrib-qthelp',
+-    'Jinja2>=2.3',
++    'sphinxcontrib-htmlhelp<=2.0.4',
++    'sphinxcontrib-serializinghtml<=1.1.9',
++    'sphinxcontrib-qthelp<=1.0.6',
++    'Jinja2<3.0',
+     'Pygments>=2.0',
+     'docutils>=0.12',
+     'snowballstemmer>=1.1',
+     'babel>=1.3',
+-    'alabaster>=0.7,<0.8',
++    'alabaster>=0.7,<0.7.12',
+     'imagesize',
+     'requests>=2.5.0',
+     'setuptools',
+-    'packaging',
++    'packaging', 'markupsafe<=2.0.1',
+ ]
+ 
+ extras_require = {
+diff --git a/tox.ini b/tox.ini
+index a61299979..e2baccc07 100644
+--- a/tox.ini
++++ b/tox.ini
+@@ -28,7 +28,7 @@ setenv =
+     PYTHONWARNINGS = all,ignore::ImportWarning:importlib._bootstrap_external,ignore::DeprecationWarning:site,ignore::DeprecationWarning:distutils
+     PYTEST_ADDOPTS = --color yes
+ commands=
+-    pytest --durations 25 {posargs}
++    pytest -rA --durations 25 {posargs}
+ 
+ [testenv:flake8]
+ basepython = python3
+2024-09-09 08:17:36,158 - INFO - Grading answer for sphinx-doc__sphinx-8120...
+2024-09-09 08:17:36,214 - INFO - report: {'sphinx-doc__sphinx-8120': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': False, 'tests_status': {'FAIL_TO_PASS': {'success': [], 'failure': ['tests/test_intl.py::test_customize_system_message']}, 'PASS_TO_PASS': {'success': ['tests/test_intl.py::test_text_toctree', 'tests/test_intl.py::test_text_emit_warnings', 'tests/test_intl.py::test_text_warning_node', 'tests/test_intl.py::test_text_title_underline', 'tests/test_intl.py::test_text_subdirs', 'tests/test_intl.py::test_text_inconsistency_warnings', 'tests/test_intl.py::test_text_literalblock_warnings', 'tests/test_intl.py::test_text_definition_terms', 'tests/test_intl.py::test_text_glossary_term', 'tests/test_intl.py::test_text_glossary_term_inconsistencies', 'tests/test_intl.py::test_gettext_section', 'tests/test_intl.py::test_text_section', 'tests/test_intl.py::test_text_seealso', 'tests/test_intl.py::test_text_figure_captions', 'tests/test_intl.py::test_text_rubric', 'tests/test_intl.py::test_text_docfields', 'tests/test_intl.py::test_text_admonitions', 'tests/test_intl.py::test_gettext_toctree', 'tests/test_intl.py::test_gettext_table', 'tests/test_intl.py::test_text_table', 'tests/test_intl.py::test_gettext_topic', 'tests/test_intl.py::test_text_topic', 'tests/test_intl.py::test_gettext_definition_terms', 'tests/test_intl.py::test_gettext_glossary_terms', 'tests/test_intl.py::test_gettext_glossary_term_inconsistencies', 'tests/test_intl.py::test_gettext_literalblock', 'tests/test_intl.py::test_gettext_buildr_ignores_only_directive', 'tests/test_intl.py::test_gettext_dont_rebuild_mo', 'tests/test_intl.py::test_html_footnotes', 'tests/test_intl.py::test_html_undefined_refs', 'tests/test_intl.py::test_html_index_entries', 'tests/test_intl.py::test_html_versionchanges', 'tests/test_intl.py::test_html_docfields', 'tests/test_intl.py::test_html_template', 'tests/test_intl.py::test_html_rebuild_mo', 'tests/test_intl.py::test_xml_footnotes', 'tests/test_intl.py::test_xml_footnote_backlinks', 'tests/test_intl.py::test_xml_refs_in_python_domain', 'tests/test_intl.py::test_xml_keep_external_links', 'tests/test_intl.py::test_xml_role_xref', 'tests/test_intl.py::test_xml_warnings', 'tests/test_intl.py::test_text_references', 'tests/test_intl.py::test_image_glob_intl', 'tests/test_intl.py::test_image_glob_intl_using_figure_language_filename'], 'failure': []}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for sphinx-doc__sphinx-8120: resolved: False
+2024-09-09 08:17:36,214 - INFO - Attempting to stop container sweb.eval.sphinx-doc__sphinx-8120.langgraph_agent_1725824120N...
+2024-09-09 08:17:51,364 - INFO - Attempting to remove container sweb.eval.sphinx-doc__sphinx-8120.langgraph_agent_1725824120N...
+2024-09-09 08:17:51,381 - INFO - Container sweb.eval.sphinx-doc__sphinx-8120.langgraph_agent_1725824120N removed.
+2024-09-09 08:17:51,381 - INFO - Attempting to remove image sweb.eval.arm64.sphinx-doc__sphinx-8120:latest...
+2024-09-09 08:17:51,507 - INFO - Image sweb.eval.arm64.sphinx-doc__sphinx-8120:latest removed.

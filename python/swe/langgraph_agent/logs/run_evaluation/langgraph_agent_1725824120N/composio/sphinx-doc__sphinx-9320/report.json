@@ -1,0 +1,38 @@
+{
+    "sphinx-doc__sphinx-9320": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "tests/test_quickstart.py::test_exits_when_existing_confpy"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "tests/test_quickstart.py::test_do_prompt",
+                    "tests/test_quickstart.py::test_do_prompt_inputstrip",
+                    "tests/test_quickstart.py::test_do_prompt_with_nonascii",
+                    "tests/test_quickstart.py::test_quickstart_defaults",
+                    "tests/test_quickstart.py::test_quickstart_all_answers",
+                    "tests/test_quickstart.py::test_generated_files_eol",
+                    "tests/test_quickstart.py::test_quickstart_and_build",
+                    "tests/test_quickstart.py::test_default_filename",
+                    "tests/test_quickstart.py::test_extensions"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

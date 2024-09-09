@@ -1,0 +1,60 @@
+diff --git a/django/db/models/sql/query.py b/django/db/models/sql/query.py
+index 4648daf3..23b719c7 100644
+--- a/django/db/models/sql/query.py
++++ b/django/db/models/sql/query.py
+@@ -1077,10 +1077,14 @@ class Query(BaseExpression):
+         elif isinstance(value, (list, tuple)):
+             # The items of the iterable may be expressions and therefore need
+             # to be resolved independently.
+-            return type(value)(
++            resolved_values = [
+                 self.resolve_lookup_value(sub_value, can_reuse, allow_joins)
+                 for sub_value in value
+-            )
++            ]
++            if isinstance(value, tuple) and hasattr(value, '_fields'):  # Check if it's a named tuple
++                # Special handling for named tuples to maintain compatibility
++                return type(value)(*resolved_values)  # Unpack the list when creating the named tuple
++            return type(value)(resolved_values)
+         return value
+ 
+     def solve_lookup_type(self, lookup):
+diff --git a/tests/queries/tests.py b/tests/queries/tests.py
+index 5b667186..0e4bc675 100644
+--- a/tests/queries/tests.py
++++ b/tests/queries/tests.py
+@@ -1222,6 +1222,34 @@ class Queries1Tests(TestCase):
+             [self.n1, self.n2],
+         )
+         self.assertSequenceEqual(Note.objects.exclude(negate=True), [self.n3])
++    def test_range_with_named_tuple(self):
++        from collections import namedtuple
++        Range = namedtuple('Range', ['start', 'end'])
++
++        # Create some test data
++        Author.objects.create(name='Author 1', num=1000)
++        Author.objects.create(name='Author 2', num=2000)
++        Author.objects.create(name='Author 3', num=3000)
++        Author.objects.create(name='Author 4', num=4000)
++
++        # Use a named tuple for the range
++        num_range = Range(start=2000, end=3000)
++
++        # Query using the named tuple
++        authors = Author.objects.filter(num__range=num_range)
++
++        # Check the results
++        self.assertEqual(authors.count(), 2)
++        self.assertQuerysetEqual(
++            authors.order_by('num'),
++            ['Author 2', 'Author 3'],
++            lambda a: a.name
++        )
++
++        # Ensure the query doesn't raise any exceptions
++        list(authors)  # Force query execution
++
++    # Keep the existing tests and classes below
+ 
+ 
+ class Queries2Tests(TestCase):

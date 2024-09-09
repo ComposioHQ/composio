@@ -1,0 +1,93 @@
+diff --git a/doc/whats-new.rst b/doc/whats-new.rst
+index 9e59fdc..3c0b840 100644
+--- a/doc/whats-new.rst
++++ b/doc/whats-new.rst
+@@ -35,6 +35,16 @@ Deprecations
+ 
+ 
+ Bug fixes
++Bug fixes
++~~~~~~~~~
++- Don't allow passing ``axis`` to :py:meth:`Dataset.reduce` methods (:issue:`3510`, :pull:`4940`).
++  By `Justus Magin <https://github.com/keewis>`_.
++- Handle _Unsigned attribute for unsigned integer data types in CFMaskCoder (:issue:`XXXX`, :pull:`YYYY`).
++  This fixes the handling of signed bytes from OPeNDAP via pydap.
++  By `Your Name <https://github.com/your-username>`_.
++
++Documentation
++~~~~~~~~~~~~~
+ ~~~~~~~~~
+ - Don't allow passing ``axis`` to :py:meth:`Dataset.reduce` methods (:issue:`3510`, :pull:`4940`).
+   By `Justus Magin <https://github.com/keewis>`_.
+diff --git a/xarray/coding/variables.py b/xarray/coding/variables.py
+index b035ff8..2f738cd 100644
+--- a/xarray/coding/variables.py
++++ b/xarray/coding/variables.py
+@@ -178,8 +178,42 @@ class CFMaskCoder(VariableCoder):
+         return Variable(dims, data, attrs, encoding)
+ 
+     def decode(self, variable, name=None):
++        """
++        Decode a variable by applying CF mask coding.
++
++        This method handles the following cases:
++        1. Decoding fill values (missing_value and _FillValue attributes)
++        2. Handling the _Unsigned attribute for unsigned integer data types
++
++        Parameters
++        ----------
++        variable : Variable
++            The variable to be decoded
++        name : str, optional
++            Name of the variable
++
++        Returns
++        -------
++        Variable
++            The decoded variable
++
++        Notes
++        -----
++        When the _Unsigned attribute is present and set to "false" for unsigned
++        integer data types, the data is converted to the corresponding signed
++        integer type. This is to handle the case where signed bytes are stored
++        as unsigned bytes in formats like OPeNDAP.
++        """
+         dims, data, attrs, encoding = unpack_for_decoding(variable)
+ 
++        # Handle _Unsigned attribute
++        unsigned = pop_to(attrs, encoding, '_Unsigned')
++        if unsigned is not None:
++            unsigned = unsigned.lower() == 'true'
++            if not unsigned and data.dtype.kind == 'u':
++                # Convert unsigned to signed
++                data = data.astype(f'i{data.dtype.itemsize}')
++
+         raw_fill_values = [
+             pop_to(attrs, encoding, attr, name=name)
+             for attr in ("missing_value", "_FillValue")
+diff --git a/xarray/tests/test_coding.py b/xarray/tests/test_coding.py
+index e0df778..a228ab3 100644
+--- a/xarray/tests/test_coding.py
++++ b/xarray/tests/test_coding.py
+@@ -21,6 +21,20 @@ def test_CFMaskCoder_decode():
+     encoded = coder.decode(original)
+     assert_identical(expected, encoded)
+ 
++def test_CFMaskCoder_decode_unsigned():
++    original = xr.Variable(("x",), np.array([0, 255, 1], dtype="u1"), {"_Unsigned": "false"})
++    expected = xr.Variable(("x",), [-128, 127, -127])
++    coder = variables.CFMaskCoder()
++    encoded = coder.decode(original)
++    assert_identical(expected, encoded)
++
++    # Test with _Unsigned=true (should not change the data)
++    original_true = xr.Variable(("x",), np.array([0, 255, 1], dtype="u1"), {"_Unsigned": "true"})
++    expected_true = xr.Variable(("x",), [0, 255, 1])
++    encoded_true = coder.decode(original_true)
++    assert_identical(expected_true, encoded_true)
++
++
+ 
+ encoding_with_dtype = {
+     "dtype": np.dtype("float64"),

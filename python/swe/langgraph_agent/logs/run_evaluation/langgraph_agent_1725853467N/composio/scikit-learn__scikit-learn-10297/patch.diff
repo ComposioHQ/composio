@@ -1,0 +1,84 @@
+diff --git a/sklearn/linear_model/ridge.py b/sklearn/linear_model/ridge.py
+index 911c74a..3a9d9f0 100644
+--- a/sklearn/linear_model/ridge.py
++++ b/sklearn/linear_model/ridge.py
+@@ -1297,7 +1297,19 @@ class RidgeClassifierCV(LinearClassifierMixin, _BaseRidgeCV):
+         Weights associated with classes in the form ``{class_label: weight}``.
+         If not given, all classes are supposed to have weight one.
+ 
+-        The "balanced" mode uses the values of y to automatically adjust
++    store_cv_values : boolean, default=False
++        Flag indicating if the cross-validation values corresponding to
++        each alpha should be stored in the `cv_values_` attribute.
++        This flag is only compatible with `cv=None` (i.e. using
++        Generalized Cross-Validation).
++
++    Attributes
++    ----------
++    cv_values_ : array, shape = [n_samples, n_alphas] or shape = [n_samples, n_targets, n_alphas], optional
++        Cross-validation values for each alpha (if `store_cv_values=True` and
++        `cv=None`). After `fit()` has been called, this attribute will
++        contain the mean squared errors (by default) or the values of the
++        `{loss,score}_func` function (if provided in the constructor).
+         weights inversely proportional to class frequencies in the input data
+         as ``n_samples / (n_classes * np.bincount(y))``
+ 
+@@ -1313,7 +1325,16 @@ class RidgeClassifierCV(LinearClassifierMixin, _BaseRidgeCV):
+     coef_ : array, shape = [n_features] or [n_targets, n_features]
+         Weight vector(s).
+ 
+-    intercept_ : float | array, shape = (n_targets,)
++    Examples
++    --------
++    >>> from sklearn.datasets import load_iris
++    >>> from sklearn.linear_model import RidgeClassifierCV
++    >>> X, y = load_iris(return_X_y=True)
++    >>> clf = RidgeClassifierCV(alphas=[1e-3, 1e-2, 1e-1, 1], store_cv_values=True)
++    >>> clf.fit(X, y)
++    RidgeClassifierCV(alphas=[0.001, 0.01, 0.1, 1], store_cv_values=True)
++    >>> print(clf.cv_values_.shape)
++    (150, 3, 4)
+         Independent term in decision function. Set to 0.0 if
+         ``fit_intercept = False``.
+ 
+@@ -1332,12 +1353,13 @@ class RidgeClassifierCV(LinearClassifierMixin, _BaseRidgeCV):
+     a one-versus-all approach. Concretely, this is implemented by taking
+     advantage of the multi-variate response support in Ridge.
+     """
+-    def __init__(self, alphas=(0.1, 1.0, 10.0), fit_intercept=True,
+-                 normalize=False, scoring=None, cv=None, class_weight=None):
+-        super(RidgeClassifierCV, self).__init__(
+-            alphas=alphas, fit_intercept=fit_intercept, normalize=normalize,
+-            scoring=scoring, cv=cv)
+-        self.class_weight = class_weight
++def __init__(self, alphas=(0.1, 1.0, 10.0), fit_intercept=True,
++             normalize=False, scoring=None, cv=None, class_weight=None,
++             store_cv_values=False):
++    super(RidgeClassifierCV, self).__init__(
++        alphas=alphas, fit_intercept=fit_intercept, normalize=normalize,
++        scoring=scoring, cv=cv, store_cv_values=store_cv_values)
++    self.class_weight = class_weight
+ 
+     def fit(self, X, y, sample_weight=None):
+         """Fit the ridge classifier.
+@@ -1373,9 +1395,16 @@ class RidgeClassifierCV(LinearClassifierMixin, _BaseRidgeCV):
+             sample_weight = (sample_weight *
+                              compute_sample_weight(self.class_weight, y))
+ 
+-        _BaseRidgeCV.fit(self, X, Y, sample_weight=sample_weight)
+-        return self
++        result = super(RidgeClassifierCV, self).fit(X, Y, sample_weight=sample_weight)
++        
++        if self.store_cv_values:
++            if self.cv is not None:
++                raise ValueError("cv!=None and store_cv_values=True are incompatible")
++            if len(Y.shape) == 1:
++                cv_values_shape = len(Y), len(self.alphas)
++            else:
++                cv_values_shape = Y.shape[0], Y.shape[1], len(self.alphas)
++            self.cv_values_ = self.cv_values_.reshape(cv_values_shape)
+ 
+-    @property
+-    def classes_(self):
++        return self
+         return self._label_binarizer.classes_

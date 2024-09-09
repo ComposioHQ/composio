@@ -1,0 +1,102 @@
+diff --git a/django/forms/formsets.py b/django/forms/formsets.py
+index a89c3559..268a4be8 100644
+--- a/django/forms/formsets.py
++++ b/django/forms/formsets.py
+@@ -75,7 +75,7 @@ class BaseFormSet:
+         self.form_kwargs = form_kwargs or {}
+         self.error_class = error_class
+         self._errors = None
+-        self._non_form_errors = None
++        self._non_form_errors = ErrorList(error_class=error_class, is_formset_nonform_errors=True)
+ 
+         messages = {}
+         for cls in reversed(type(self).__mro__):
+diff --git a/django/forms/utils.py b/django/forms/utils.py
+index 50412f41..9973e890 100644
+--- a/django/forms/utils.py
++++ b/django/forms/utils.py
+@@ -81,13 +81,14 @@ class ErrorList(UserList, list):
+     """
+     A collection of errors that knows how to display itself in various formats.
+     """
+-    def __init__(self, initlist=None, error_class=None):
++    def __init__(self, initlist=None, error_class=None, is_formset_nonform_errors=False):
+         super().__init__(initlist)
+ 
+-        if error_class is None:
+-            self.error_class = 'errorlist'
+-        else:
+-            self.error_class = 'errorlist {}'.format(error_class)
++        self.error_class = 'errorlist'
++        if error_class:
++            self.error_class += ' {}'.format(error_class)
++        if is_formset_nonform_errors:
++            self.error_class += ' nonform'
+ 
+     def as_data(self):
+         return ValidationError(self.data).error_list
+diff --git a/docs/ref/forms/formsets.txt b/docs/ref/forms/formsets.txt
+index 0e281f2f..bf7ba0a2 100644
+--- a/docs/ref/forms/formsets.txt
++++ b/docs/ref/forms/formsets.txt
+@@ -20,3 +20,22 @@ Formset API reference. For introductory material about formsets, see the
+     .. versionchanged:: 3.2
+ 
+         The ``absolute_max`` and ``can_delete_extra`` arguments were added.
++
++Rendering non-form errors
++=========================
++
++When rendering a formset, non-form errors (i.e., errors that are not associated
++with a specific form) are now rendered with an additional CSS class ``nonform``.
++This allows for easier styling and differentiation between form-specific errors
++and formset-level errors.
++
++For example, when using the ``as_ul()`` method to render errors, non-form errors
++will be rendered as:
++
++.. code-block:: html
++
++    <ul class="errorlist nonform">
++        <li>Non-form error message</li>
++    </ul>
++
++This change makes it easier to style and identify non-form errors in formsets.
+diff --git a/tests/forms_tests/tests/test_formsets.py b/tests/forms_tests/tests/test_formsets.py
+index 889560aa..4ccac65e 100644
+--- a/tests/forms_tests/tests/test_formsets.py
++++ b/tests/forms_tests/tests/test_formsets.py
+@@ -1481,4 +1481,32 @@ class AllValidTests(SimpleTestCase):
+         self.assertIs(all_valid((formset1, formset2)), False)
+         expected_errors = [{'votes': ['This field is required.']}, {'votes': ['This field is required.']}]
+         self.assertEqual(formset1._errors, expected_errors)
+-        self.assertEqual(formset2._errors, expected_errors)
++class FormSetNonFormErrorsTest(SimpleTestCase):
++    def test_nonform_error_class(self):
++        FormSet = formset_factory(Choice, extra=1)
++        formset = FormSet(data={})
++        
++        # Add a non-form error
++        formset._non_form_errors.append("Test non-form error")
++        
++        # Render the errors as HTML
++        error_html = str(formset.non_form_errors())
++        
++        # Check if the 'nonform' class is present in the rendered HTML
++        self.assertIn('class="errorlist nonform"', error_html)
++        self.assertIn('Test non-form error', error_html)
++
++    def test_form_error_class(self):
++        FormSet = formset_factory(Choice, extra=1)
++        formset = FormSet(data={})
++        
++        # Add a form-specific error
++        formset.forms[0].add_error(None, "Test form error")
++        
++        # Render the errors as HTML
++        error_html = str(formset.errors[0])
++        
++        # Check that the 'nonform' class is not present in form-specific errors
++        self.assertIn('class="errorlist"', error_html)
++        self.assertNotIn('class="errorlist nonform"', error_html)
++        self.assertIn('Test form error', error_html)

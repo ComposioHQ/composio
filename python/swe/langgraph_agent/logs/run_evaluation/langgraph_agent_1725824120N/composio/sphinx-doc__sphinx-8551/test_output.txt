@@ -1,0 +1,1298 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   setup.py
+	modified:   sphinx/domains/python.py
+	modified:   tox.ini
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 57ed10c68057c96491acbd3e62254ccfaf9e3861
+Merge: dd1615c59 c0678a4a5
+Author: Takeshi KOMIYA <i.tkomiya@gmail.com>
+Date:   Sat Dec 19 00:31:03 2020 +0900
+
+    Merge pull request #8548 from tk0miya/741_inherited_ivar
+    
+    Fix #741: autodoc: inherited-members doesn't support instance attributes on super class
+
++ git diff 57ed10c68057c96491acbd3e62254ccfaf9e3861
+diff --git a/setup.py b/setup.py
+index 8d40de1a8..03f325278 100644
+--- a/setup.py
++++ b/setup.py
+@@ -15,22 +15,22 @@ if sys.version_info < (3, 5):
+     sys.exit(1)
+ 
+ install_requires = [
+-    'sphinxcontrib-applehelp',
+-    'sphinxcontrib-devhelp',
++    'sphinxcontrib-applehelp<=1.0.7',
++    'sphinxcontrib-devhelp<=1.0.5',
+     'sphinxcontrib-jsmath',
+-    'sphinxcontrib-htmlhelp',
+-    'sphinxcontrib-serializinghtml',
+-    'sphinxcontrib-qthelp',
+-    'Jinja2>=2.3',
++    'sphinxcontrib-htmlhelp<=2.0.4',
++    'sphinxcontrib-serializinghtml<=1.1.9',
++    'sphinxcontrib-qthelp<=1.0.6',
++    'Jinja2<3.0',
+     'Pygments>=2.0',
+     'docutils>=0.12',
+     'snowballstemmer>=1.1',
+     'babel>=1.3',
+-    'alabaster>=0.7,<0.8',
++    'alabaster>=0.7,<0.7.12',
+     'imagesize',
+     'requests>=2.5.0',
+     'setuptools',
+-    'packaging',
++    'packaging', 'markupsafe<=2.0.1',
+ ]
+ 
+ extras_require = {
+diff --git a/sphinx/domains/python.py b/sphinx/domains/python.py
+index 79d7e4f46..c2eac99f2 100644
+--- a/sphinx/domains/python.py
++++ b/sphinx/domains/python.py
+@@ -1255,6 +1255,18 @@ class PythonDomain(Domain):
+             else:
+                 objtypes = self.objtypes_for_role(type)
+             if objtypes is not None:
++                # Prioritize matches in the current module context
++                if modname:
++                    fullname = modname + '.' + name
++                    if fullname in self.objects and self.objects[fullname].objtype in objtypes:
++                        return [(fullname, self.objects[fullname])]
++                    
++                    if classname:
++                        fullname = modname + '.' + classname + '.' + name
++                        if fullname in self.objects and self.objects[fullname].objtype in objtypes:
++                            return [(fullname, self.objects[fullname])]
++
++                # If no match found in the current context, proceed with the existing search logic
+                 if modname and classname:
+                     fullname = modname + '.' + classname + '.' + name
+                     if fullname in self.objects and self.objects[fullname].objtype in objtypes:
+@@ -1283,7 +1295,7 @@ class PythonDomain(Domain):
+             elif modname and modname + '.' + name in self.objects:
+                 newname = modname + '.' + name
+             elif modname and classname and \
+-                    modname + '.' + classname + '.' + name in self.objects:
++                modname + '.' + classname + '.' + name in self.objects:
+                 newname = modname + '.' + classname + '.' + name
+         if newname is not None:
+             matches.append((newname, self.objects[newname]))
+@@ -1295,13 +1307,15 @@ class PythonDomain(Domain):
+         modname = node.get('py:module')
+         clsname = node.get('py:class')
+         searchmode = 1 if node.hasattr('refspecific') else 0
+-        matches = self.find_obj(env, modname, clsname, target,
+-                                type, searchmode)
++        
++        # Pass the current module context
++        current_module = env.temp_data.get('py:module')
++        
++        matches = self.find_obj(env, current_module, clsname, target, type, searchmode)
+ 
+         if not matches and type == 'attr':
+             # fallback to meth (for property)
+-            matches = self.find_obj(env, modname, clsname, target, 'meth', searchmode)
+-
++            matches = self.find_obj(env, current_module, clsname, target, 'meth', searchmode)
+         if not matches:
+             return None
+         elif len(matches) > 1:
+diff --git a/tox.ini b/tox.ini
+index dbb705a3a..9f4fc3a32 100644
+--- a/tox.ini
++++ b/tox.ini
+@@ -28,7 +28,7 @@ setenv =
+     PYTHONWARNINGS = all,ignore::ImportWarning:importlib._bootstrap_external,ignore::DeprecationWarning:site,ignore::DeprecationWarning:distutils
+     PYTEST_ADDOPTS = {env:PYTEST_ADDOPTS:} --color yes
+ commands=
+-    python -X dev -m pytest --durations 25 {posargs}
++    python -X dev -m pytest -rA --durations 25 {posargs}
+ 
+ [testenv:flake8]
+ basepython = python3
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e '.[test]'
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: sphinxcontrib-applehelp<=1.0.7 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (1.0.4)
+Requirement already satisfied: sphinxcontrib-devhelp<=1.0.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (1.0.2)
+Requirement already satisfied: sphinxcontrib-jsmath in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (1.0.1)
+Requirement already satisfied: sphinxcontrib-htmlhelp<=2.0.4 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (2.0.1)
+Requirement already satisfied: sphinxcontrib-serializinghtml<=1.1.9 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (1.1.5)
+Requirement already satisfied: sphinxcontrib-qthelp<=1.0.6 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (1.0.3)
+Requirement already satisfied: Jinja2<3.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (2.11.3)
+Requirement already satisfied: Pygments>=2.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (2.18.0)
+Requirement already satisfied: docutils>=0.12 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (0.21.2)
+Requirement already satisfied: snowballstemmer>=1.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (2.2.0)
+Requirement already satisfied: babel>=1.3 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (2.16.0)
+Requirement already satisfied: alabaster<0.7.12,>=0.7 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (0.7.11)
+Requirement already satisfied: imagesize in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (1.4.1)
+Requirement already satisfied: requests>=2.5.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (2.32.3)
+Requirement already satisfied: setuptools in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (72.1.0)
+Requirement already satisfied: packaging in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (24.1)
+Requirement already satisfied: markupsafe<=2.0.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (2.0.1)
+Requirement already satisfied: pytest in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (8.3.2)
+Requirement already satisfied: pytest-cov in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (5.0.0)
+Requirement already satisfied: html5lib in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (1.1)
+Requirement already satisfied: cython in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.4.0.dev20240909) (3.0.11)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==3.4.0.dev20240909) (3.3.2)
+Requirement already satisfied: idna<4,>=2.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==3.4.0.dev20240909) (3.8)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==3.4.0.dev20240909) (2.2.2)
+Requirement already satisfied: certifi>=2017.4.17 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==3.4.0.dev20240909) (2024.8.30)
+Requirement already satisfied: six>=1.9 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from html5lib->Sphinx==3.4.0.dev20240909) (1.16.0)
+Requirement already satisfied: webencodings in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from html5lib->Sphinx==3.4.0.dev20240909) (0.5.1)
+Requirement already satisfied: iniconfig in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest->Sphinx==3.4.0.dev20240909) (2.0.0)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest->Sphinx==3.4.0.dev20240909) (1.5.0)
+Requirement already satisfied: exceptiongroup>=1.0.0rc8 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest->Sphinx==3.4.0.dev20240909) (1.2.2)
+Requirement already satisfied: tomli>=1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest->Sphinx==3.4.0.dev20240909) (2.0.1)
+Requirement already satisfied: coverage>=5.2.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from coverage[toml]>=5.2.1->pytest-cov->Sphinx==3.4.0.dev20240909) (7.6.1)
+Installing collected packages: Sphinx
+  Attempting uninstall: Sphinx
+    Found existing installation: Sphinx 3.4.0.dev20240909
+    Uninstalling Sphinx-3.4.0.dev20240909:
+      Successfully uninstalled Sphinx-3.4.0.dev20240909
+  DEPRECATION: Legacy editable install of Sphinx[test]==3.4.0.dev20240909 from file:///testbed (setup.py develop) is deprecated. pip 25.0 will enforce this behaviour change. A possible replacement is to add a pyproject.toml or enable --use-pep517, and use setuptools >= 64. If the resulting installation is not behaving as expected, try using --config-settings editable_mode=compat. Please consult the setuptools documentation for more information. Discussion can be found at https://github.com/pypa/pip/issues/11457
+  Running setup.py develop for Sphinx
+Successfully installed Sphinx
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 57ed10c68057c96491acbd3e62254ccfaf9e3861 tests/test_domain_py.py
+Updated 0 paths from 613e1ebc6
++ git apply -v -
+Checking patch tests/test_domain_py.py...
+Applied patch tests/test_domain_py.py cleanly.
++ tox --current-env -epy39 -v -- tests/test_domain_py.py
+py39: commands[0]> python -X dev -m pytest -rA --durations 25 tests/test_domain_py.py
+[1m============================= test session starts ==============================[0m
+platform linux -- Python 3.9.19, pytest-8.3.2, pluggy-1.5.0
+cachedir: .tox/py39/.pytest_cache
+libraries: Sphinx-3.4.0+/57ed10c68, docutils-0.21.2
+base tempdir: /tmp/pytest-of-root/pytest-0
+rootdir: /testbed
+configfile: setup.cfg
+plugins: cov-5.0.0
+collected 33 items
+
+tests/test_domain_py.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31m                [100%][0m
+
+=================================== FAILURES ===================================
+[31m[1m_____________________________ test_info_field_list _____________________________[0m
+
+app = <SphinxTestApp buildername='html'>
+
+    [0m[94mdef[39;49;00m [92mtest_info_field_list[39;49;00m(app):[90m[39;49;00m
+        text = ([33m"[39;49;00m[33m.. py:module:: example[39;49;00m[33m\n[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+                [33m"[39;49;00m[33m.. py:class:: Class[39;49;00m[33m\n[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+                [33m"[39;49;00m[33m\n[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+                [33m"[39;49;00m[33m   :param str name: blah blah[39;49;00m[33m\n[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+                [33m"[39;49;00m[33m   :param age: blah blah[39;49;00m[33m\n[39;49;00m[33m"[39;49;00m[90m[39;49;00m
+                [33m"[39;49;00m[33m   :type age: int[39;49;00m[33m\n[39;49;00m[33m"[39;49;00m)[90m[39;49;00m
+        doctree = restructuredtext.parse(app, text)[90m[39;49;00m
+        [96mprint[39;49;00m(doctree)[90m[39;49;00m
+    [90m[39;49;00m
+        assert_node(doctree, (nodes.target,[90m[39;49;00m
+                              addnodes.index,[90m[39;49;00m
+                              addnodes.index,[90m[39;49;00m
+                              [desc, ([desc_signature, ([desc_annotation, [33m"[39;49;00m[33mclass [39;49;00m[33m"[39;49;00m],[90m[39;49;00m
+                                                        [desc_addname, [33m"[39;49;00m[33mexample.[39;49;00m[33m"[39;49;00m],[90m[39;49;00m
+                                                        [desc_name, [33m"[39;49;00m[33mClass[39;49;00m[33m"[39;49;00m])],[90m[39;49;00m
+                                      [desc_content, nodes.field_list, nodes.field])]))[90m[39;49;00m
+        assert_node(doctree[[94m3[39;49;00m][[94m1[39;49;00m][[94m0[39;49;00m][[94m0[39;49;00m],[90m[39;49;00m
+                    ([nodes.field_name, [33m"[39;49;00m[33mParameters[39;49;00m[33m"[39;49;00m],[90m[39;49;00m
+                     [nodes.field_body, nodes.bullet_list, ([nodes.list_item, nodes.paragraph],[90m[39;49;00m
+                                                            [nodes.list_item, nodes.paragraph])]))[90m[39;49;00m
+    [90m[39;49;00m
+        [90m# :param str name:[39;49;00m[90m[39;49;00m
+        assert_node(doctree[[94m3[39;49;00m][[94m1[39;49;00m][[94m0[39;49;00m][[94m0[39;49;00m][[94m1[39;49;00m][[94m0[39;49;00m][[94m0[39;49;00m][[94m0[39;49;00m],[90m[39;49;00m
+                    ([addnodes.literal_strong, [33m"[39;49;00m[33mname[39;49;00m[33m"[39;49;00m],[90m[39;49;00m
+                     [33m"[39;49;00m[33m ([39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+                     [pending_xref, addnodes.literal_emphasis, [33m"[39;49;00m[33mstr[39;49;00m[33m"[39;49;00m],[90m[39;49;00m
+                     [33m"[39;49;00m[33m)[39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+                     [33m"[39;49;00m[33m -- [39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+                     [33m"[39;49;00m[33mblah blah[39;49;00m[33m"[39;49;00m))[90m[39;49;00m
+>       assert_node(doctree[[94m3[39;49;00m][[94m1[39;49;00m][[94m0[39;49;00m][[94m0[39;49;00m][[94m1[39;49;00m][[94m0[39;49;00m][[94m0[39;49;00m][[94m0[39;49;00m][[94m2[39;49;00m], pending_xref,[90m[39;49;00m
+                    refdomain=[33m"[39;49;00m[33mpy[39;49;00m[33m"[39;49;00m, reftype=[33m"[39;49;00m[33mclass[39;49;00m[33m"[39;49;00m, reftarget=[33m"[39;49;00m[33mstr[39;49;00m[33m"[39;49;00m,[90m[39;49;00m
+                    **{[33m"[39;49;00m[33mpy:module[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mexample[39;49;00m[33m"[39;49;00m, [33m"[39;49;00m[33mpy:class[39;49;00m[33m"[39;49;00m: [33m"[39;49;00m[33mClass[39;49;00m[33m"[39;49;00m})[90m[39;49;00m
+
+[1m[31mtests/test_domain_py.py[0m:807: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+node = <pending_xref: <literal_emphasis...>>
+cls = <class 'sphinx.addnodes.pending_xref'>, xpath = ''
+kwargs = {'py:class': 'Class', 'py:module': 'example', 'refdomain': 'py', 'reftarget': 'str', ...}
+key = 'py:module', value = 'example'
+
+    [0m[94mdef[39;49;00m [92massert_node[39;49;00m(node: Node, [96mcls[39;49;00m: Any = [94mNone[39;49;00m, xpath: [96mstr[39;49;00m = [33m"[39;49;00m[33m"[39;49;00m, **kwargs: Any) -> [94mNone[39;49;00m:[90m[39;49;00m
+        [94mif[39;49;00m [96mcls[39;49;00m:[90m[39;49;00m
+            [94mif[39;49;00m [96misinstance[39;49;00m([96mcls[39;49;00m, [96mlist[39;49;00m):[90m[39;49;00m
+                assert_node(node, [96mcls[39;49;00m[[94m0[39;49;00m], xpath=xpath, **kwargs)[90m[39;49;00m
+                [94mif[39;49;00m [96mcls[39;49;00m[[94m1[39;49;00m:]:[90m[39;49;00m
+                    [94mif[39;49;00m [96misinstance[39;49;00m([96mcls[39;49;00m[[94m1[39;49;00m], [96mtuple[39;49;00m):[90m[39;49;00m
+                        assert_node(node, [96mcls[39;49;00m[[94m1[39;49;00m], xpath=xpath, **kwargs)[90m[39;49;00m
+                    [94melse[39;49;00m:[90m[39;49;00m
+                        [94massert[39;49;00m [96misinstance[39;49;00m(node, nodes.Element), \
+                            [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m does not have any children[39;49;00m[33m'[39;49;00m % xpath[90m[39;49;00m
+                        [94massert[39;49;00m [96mlen[39;49;00m(node) == [94m1[39;49;00m, \
+                            [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m has [39;49;00m[33m%d[39;49;00m[33m child nodes, not one[39;49;00m[33m'[39;49;00m % (xpath, [96mlen[39;49;00m(node))[90m[39;49;00m
+                        assert_node(node[[94m0[39;49;00m], [96mcls[39;49;00m[[94m1[39;49;00m:], xpath=xpath + [33m"[39;49;00m[33m[0][39;49;00m[33m"[39;49;00m, **kwargs)[90m[39;49;00m
+            [94melif[39;49;00m [96misinstance[39;49;00m([96mcls[39;49;00m, [96mtuple[39;49;00m):[90m[39;49;00m
+                [94massert[39;49;00m [96misinstance[39;49;00m(node, ([96mlist[39;49;00m, nodes.Element)), \
+                    [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m does not have any items[39;49;00m[33m'[39;49;00m % xpath[90m[39;49;00m
+                [94massert[39;49;00m [96mlen[39;49;00m(node) == [96mlen[39;49;00m([96mcls[39;49;00m), \
+                    [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m has [39;49;00m[33m%d[39;49;00m[33m child nodes, not [39;49;00m[33m%r[39;49;00m[33m'[39;49;00m % (xpath, [96mlen[39;49;00m(node), [96mlen[39;49;00m([96mcls[39;49;00m))[90m[39;49;00m
+                [94mfor[39;49;00m i, nodecls [95min[39;49;00m [96menumerate[39;49;00m([96mcls[39;49;00m):[90m[39;49;00m
+                    path = xpath + [33m"[39;49;00m[33m[[39;49;00m[33m%d[39;49;00m[33m][39;49;00m[33m"[39;49;00m % i[90m[39;49;00m
+                    assert_node(node[i], nodecls, xpath=path, **kwargs)[90m[39;49;00m
+            [94melif[39;49;00m [96misinstance[39;49;00m([96mcls[39;49;00m, [96mstr[39;49;00m):[90m[39;49;00m
+                [94massert[39;49;00m node == [96mcls[39;49;00m, [33m'[39;49;00m[33mThe node [39;49;00m[33m%r[39;49;00m[33m is not [39;49;00m[33m%r[39;49;00m[33m: [39;49;00m[33m%r[39;49;00m[33m'[39;49;00m % (xpath, [96mcls[39;49;00m, node)[90m[39;49;00m
+            [94melse[39;49;00m:[90m[39;49;00m
+                [94massert[39;49;00m [96misinstance[39;49;00m(node, [96mcls[39;49;00m), \
+                    [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m is not subclass of [39;49;00m[33m%r[39;49;00m[33m: [39;49;00m[33m%r[39;49;00m[33m'[39;49;00m % (xpath, [96mcls[39;49;00m, node)[90m[39;49;00m
+    [90m[39;49;00m
+        [94mif[39;49;00m kwargs:[90m[39;49;00m
+            [94massert[39;49;00m [96misinstance[39;49;00m(node, nodes.Element), \
+                [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m does not have any attributes[39;49;00m[33m'[39;49;00m % xpath[90m[39;49;00m
+    [90m[39;49;00m
+            [94mfor[39;49;00m key, value [95min[39;49;00m kwargs.items():[90m[39;49;00m
+>               [94massert[39;49;00m key [95min[39;49;00m node, \
+                    [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m does not have [39;49;00m[33m%r[39;49;00m[33m attribute: [39;49;00m[33m%r[39;49;00m[33m'[39;49;00m % (xpath, key, node)[90m[39;49;00m
+[1m[31mE               AssertionError: The node does not have 'py:module' attribute: <pending_xref: <literal_emphasis...>>[0m
+
+[1m[31msphinx/testing/util.py[0m:83: AssertionError
+----------------------------- Captured stdout call -----------------------------
+<document source="/tmp/pytest-of-root/pytest-0/root/index.rst"><target ids="['module-example']" ismod="True"/><index entries="[('pair', 'module; example', 'module-example', '', None)]"/><index entries="[('single', 'Class (class in example)', 'example.Class', '', None)]"/><desc classes="py" desctype="class" domain="py" noindex="False" objtype="class"><desc_signature class="" fullname="Class" ids="example.Class" module="example"><desc_annotation xml:space="preserve">class </desc_annotation><desc_addname xml:space="preserve">example.</desc_addname><desc_name xml:space="preserve">Class</desc_name></desc_signature><desc_content><field_list><field><field_name>Parameters</field_name><field_body><bullet_list><list_item><paragraph><literal_strong refspecific="True">name</literal_strong> (<pending_xref refdomain="py" refexplicit="False" refspecific="True" reftarget="str" reftype="class"><literal_emphasis>str</literal_emphasis></pending_xref>) -- blah blah</paragraph></list_item><list_item><paragraph><literal_strong refspecific="True">age</literal_strong> (<pending_xref refdomain="py" refexplicit="False" refspecific="True" reftarget="int" reftype="class"><literal_emphasis>int</literal_emphasis></pending_xref>) -- blah blah</paragraph></list_item></bullet_list></field_body></field></field_list></desc_content></desc></document>
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+[33m=============================== warnings summary ===============================[0m
+sphinx/util/docutils.py:45
+  /testbed/sphinx/util/docutils.py:45: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    __version_info__ = tuple(LooseVersion(docutils.__version__).version)
+
+sphinx/registry.py:22
+  /testbed/sphinx/registry.py:22: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
+    from pkg_resources import iter_entry_points
+
+../opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144
+../opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144
+../opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144
+../opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+sphinx/directives/patches.py:14
+  /testbed/sphinx/directives/patches.py:14: DeprecationWarning: The `docutils.parsers.rst.directive.html` module will be removed in Docutils 2.0. Since Docutils 0.18, the "Meta" node is defined in `docutils.parsers.rst.directives.misc`.
+    from docutils.parsers.rst.directives import html, images, tables
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/transforms/__init__.py:210: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse():  # type: Node
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/transforms/i18n.py:95: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(addnodes.translatable):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/transforms/__init__.py:110: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for ref in self.document.traverse(nodes.substitution_reference):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/transforms/__init__.py:131: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.target):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/transforms/__init__.py:150: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.block_quote):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/transforms/__init__.py:175: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.Element):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/transforms/__init__.py:222: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(addnodes.index):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/transforms/__init__.py:189: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.section):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/transforms/__init__.py:279: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.doctest_block):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/domains/citation.py:116: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.citation):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/domains/citation.py:135: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.citation_reference):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/builders/latex/transforms.py:36: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(matcher):  # type: nodes.Element
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/transforms/__init__.py:291: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(matcher):  # type: Element
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/util/compat.py:44: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(addnodes.index):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/domains/index.py:51: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in document.traverse(addnodes.index):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/domains/math.py:84: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    self.data['has_equations'][docname] = any(document.traverse(math_node))
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/environment/collectors/asset.py:46: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in doctree.traverse(nodes.image):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/environment/collectors/asset.py:127: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in doctree.traverse(addnodes.download_reference):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/environment/collectors/title.py:46: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in doctree.traverse(nodes.section):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/transforms/__init__.py:301: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.system_message):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/transforms/__init__.py:390: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(addnodes.manpage):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/transforms/i18n.py:488: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for inline in self.document.traverse(matcher):  # type: nodes.inline
+
+tests/test_domain_py.py: 17 warnings
+  /testbed/sphinx/domains/c.py:3494: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(AliasNode):
+
+tests/test_domain_py.py: 17 warnings
+  /testbed/sphinx/domains/cpp.py:7061: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(AliasNode):
+
+tests/test_domain_py.py: 17 warnings
+  /testbed/sphinx/transforms/post_transforms/__init__.py:69: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(addnodes.pending_xref):
+
+tests/test_domain_py.py: 43 warnings
+  /testbed/sphinx/util/nodes.py:598: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in document.traverse(addnodes.only):
+
+tests/test_domain_py.py: 34 warnings
+  /testbed/sphinx/transforms/post_transforms/images.py:33: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.image):
+
+tests/test_domain_py.py: 17 warnings
+  /testbed/sphinx/transforms/post_transforms/__init__.py:216: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(addnodes.desc_sig_element):
+
+tests/test_domain_py.py: 17 warnings
+  /testbed/sphinx/builders/latex/transforms.py:48: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.substitution_definition):
+
+tests/test_domain_py.py: 17 warnings
+  /testbed/sphinx/builders/latex/transforms.py:606: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.title):
+
+tests/test_domain_py.py: 17 warnings
+  /testbed/sphinx/builders/latex/transforms.py:608: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for i, index in enumerate(node.traverse(addnodes.index)):
+
+tests/test_domain_py.py: 17 warnings
+  /testbed/sphinx/transforms/post_transforms/code.py:43: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(addnodes.highlightlang):
+
+tests/test_domain_py.py: 17 warnings
+  /testbed/sphinx/transforms/post_transforms/code.py:95: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for lbnode in self.document.traverse(nodes.literal_block):  # type: nodes.literal_block
+
+tests/test_domain_py.py: 17 warnings
+  /testbed/sphinx/transforms/post_transforms/code.py:99: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for dbnode in self.document.traverse(nodes.doctest_block):  # type: nodes.doctest_block
+
+tests/test_domain_py.py: 17 warnings
+  /testbed/sphinx/environment/__init__.py:540: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for toctreenode in doctree.traverse(addnodes.toctree):
+
+tests/test_domain_py.py: 22 warnings
+  /testbed/sphinx/environment/adapters/toctree.py:203: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for subtocnode in toc.traverse(addnodes.toctree):
+
+tests/test_domain_py.py: 11 warnings
+  /testbed/sphinx/environment/adapters/toctree.py:261: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for refnode in newnode.traverse(nodes.reference):
+
+tests/test_domain_py.py: 12 warnings
+  /testbed/sphinx/util/nodes.py:350: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for img in node.traverse(nodes.image):
+
+tests/test_domain_py.py: 12 warnings
+  /testbed/sphinx/util/nodes.py:352: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for raw in node.traverse(nodes.raw):
+
+tests/test_domain_py.py::test_domain_py_xrefs
+  /testbed/tests/test_domain_py.py:79: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    refnodes = list(doctree.traverse(pending_xref))
+
+tests/test_domain_py.py::test_domain_py_xrefs
+  /testbed/tests/test_domain_py.py:97: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    refnodes = list(doctree.traverse(pending_xref))
+
+tests/test_domain_py.py::test_domain_py_xrefs
+  /testbed/tests/test_domain_py.py:126: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    refnodes = list(doctree.traverse(pending_xref))
+
+tests/test_domain_py.py::test_resolve_xref_for_properties
+  /testbed/sphinx/builders/html/__init__.py:415: DeprecationWarning: The frontend.OptionParser class will be replaced by a subclass of argparse.ArgumentParser in Docutils 0.21 or later.
+    self.docsettings = OptionParser(
+
+tests/test_domain_py.py: 72 warnings
+  /opt/miniconda3/envs/testbed/lib/python3.9/optparse.py:1000: DeprecationWarning: The frontend.Option class will be removed in Docutils 0.21 or later.
+    option = self.option_class(*args, **kwargs)
+
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+  /testbed/sphinx/builders/html/transforms.py:44: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(matcher):  # type: nodes.literal
+
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+  /testbed/sphinx/builders/__init__.py:181: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in doctree.traverse(nodes.image):
+
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+  /testbed/sphinx/builders/html/__init__.py:836: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in doctree.traverse(nodes.image):
+
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+  /testbed/sphinx/environment/adapters/toctree.py:312: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in toc.traverse(nodes.reference):
+
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/layout.html:114: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+    _gaq.push(['_setAllowLinker', true]);
+
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/about.html:70: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/about.html:99: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+  /testbed/sphinx/environment/adapters/toctree.py:326: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for toctreenode in doctree.traverse(addnodes.toctree):
+
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/layout.html:215: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+tests/test_domain_py.py::test_resolve_xref_for_properties
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/layout.html:238: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_py.py::test_resolve_xref_for_properties
+  <template>:33: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_py.py::test_resolve_xref_for_properties
+  <template>:224: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_py.py::test_resolve_xref_for_properties
+  <template>:386: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_py.py::test_resolve_xref_for_properties
+  <template>:401: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_py.py: 29 warnings
+  /testbed/sphinx/ext/todo.py:97: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for todo in document.traverse(todo_node):
+
+tests/test_domain_py.py::test_warn_missing_reference
+  /testbed/sphinx/domains/std.py:756: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    toctree = next(iter(node.traverse(addnodes.toctree)), None)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+==================================== PASSES ====================================
+[32m[1m_____________________________ test_domain_py_xrefs _____________________________[0m
+----------------------------- Captured stdout call -----------------------------
+[<pending_xref: <literal...>>, <pending_xref: <literal...>>]
+<pending_xref py:class="B" py:module="test.extra" refdoc="module_option" refdomain="py" refexplicit="False" reftarget="foo" reftype="meth" refwarn="False"><literal classes="xref py py-meth">foo()</literal></pending_xref>
+<pending_xref py:class="B" py:module="test.extra" refdoc="module_option" refdomain="py" refexplicit="False" reftarget="foo" reftype="meth" refwarn="False"><literal classes="xref py py-meth">foo()</literal></pending_xref>
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: dummy
+# srcdir: /tmp/pytest-of-root/pytest-0/domain-py
+# outdir: /tmp/pytest-of-root/pytest-0/domain-py/_build/dummy
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+[01mbuilding [dummy]: [39;49;00mall source files
+[01mupdating environment: [39;49;00m[new config] 4 added, 0 changed, 0 removed
+[01mreading sources... [39;49;00m[ 25%] [35mindex[39;49;00m                                                [01mreading sources... [39;49;00m[ 50%] [35mmodule[39;49;00m                                               [01mreading sources... [39;49;00m[ 75%] [35mmodule_option[39;49;00m                                        [01mreading sources... [39;49;00m[100%] [35mroles[39;49;00m                                                
+[01mlooking for now-outdated files... [39;49;00mnone found
+[01mpickling environment... [39;49;00mdone
+[01mchecking consistency... [39;49;00mdone
+[01mpreparing documents... [39;49;00mdone
+[01mwriting output... [39;49;00m[ 25%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 50%] [32mmodule[39;49;00m                                                [01mwriting output... [39;49;00m[ 75%] [32mmodule_option[39;49;00m                                         [01mwriting output... [39;49;00m[100%] [32mroles[39;49;00m                                                 
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/domain-py/module_option.rst: WARNING: document isn't included in any toctree[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/domain-py/module.rst:49: WARNING: more than one target found for cross-reference 'ModTopLevel': module_a.submodule.ModTopLevel, module_b.submodule.ModTopLevel[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: dummy
+# srcdir: /tmp/pytest-of-root/pytest-0/domain-py
+# outdir: /tmp/pytest-of-root/pytest-0/domain-py/_build/dummy
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+[01mloading pickled environment... [39;49;00mdone
+[01mbuilding [dummy]: [39;49;00mall source files
+[01mupdating environment: [39;49;00m0 added, 0 changed, 0 removed
+[01mlooking for now-outdated files... [39;49;00mnone found
+[01mpreparing documents... [39;49;00mdone
+[01mwriting output... [39;49;00m[ 25%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 50%] [32mmodule[39;49;00m                                                [01mwriting output... [39;49;00m[ 75%] [32mmodule_option[39;49;00m                                         [01mwriting output... [39;49;00m[100%] [32mroles[39;49;00m                                                 
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/domain-py/module.rst:49: WARNING: more than one target found for cross-reference 'ModTopLevel': module_a.submodule.ModTopLevel, module_b.submodule.ModTopLevel[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/domain-py
+# outdir: /tmp/pytest-of-root/pytest-0/domain-py/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+[01mloading pickled environment... [39;49;00mdone
+[01mbuilding [html]: [39;49;00mall source files
+[01mupdating environment: [39;49;00m0 added, 0 changed, 0 removed
+[01mlooking for now-outdated files... [39;49;00mnone found
+[01mpreparing documents... [39;49;00mdone
+[01mwriting output... [39;49;00m[ 25%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 50%] [32mmodule[39;49;00m                                                [01mwriting output... [39;49;00m[ 75%] [32mmodule_option[39;49;00m                                         [01mwriting output... [39;49;00m[100%] [32mroles[39;49;00m                                                 
+[01mgenerating indices... [39;49;00mgenindex py-modindex done
+[01mwriting additional pages... [39;49;00msearch done
+[01mcopying static files... [39;49;00mdone
+[01mcopying extra files... [39;49;00mdone
+[01mdumping search index in English (code: en)... [39;49;00mdone
+[01mdumping object inventory... [39;49;00mdone
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/domain-py/module.rst:49: WARNING: more than one target found for cross-reference 'ModTopLevel': module_a.submodule.ModTopLevel, module_b.submodule.ModTopLevel[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: dummy
+# srcdir: /tmp/pytest-of-root/pytest-0/domain-py
+# outdir: /tmp/pytest-of-root/pytest-0/domain-py/_build/dummy
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+[01mloading pickled environment... [39;49;00mdone
+[01mbuilding [dummy]: [39;49;00mall source files
+[01mupdating environment: [39;49;00m0 added, 0 changed, 0 removed
+[01mlooking for now-outdated files... [39;49;00mnone found
+[01mpreparing documents... [39;49;00mdone
+[01mwriting output... [39;49;00m[ 25%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 50%] [32mmodule[39;49;00m                                                [01mwriting output... [39;49;00m[ 75%] [32mmodule_option[39;49;00m                                         [01mwriting output... [39;49;00m[100%] [32mroles[39;49;00m                                                 
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/domain-py/module.rst:49: WARNING: more than one target found for cross-reference 'ModTopLevel': module_a.submodule.ModTopLevel, module_b.submodule.ModTopLevel[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/root/index.rst:1: WARNING: duplicate object description of hello, other instance in index, use :noindex: for one of them[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/root/index.rst:1: WARNING: duplicate object description of hello, other instance in index, use :noindex: for one of them[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/root/index.rst:1: WARNING: duplicate object description of hello, other instance in index, use :noindex: for one of them[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/root/index.rst:1: WARNING: duplicate object description of f, other instance in index, use :noindex: for one of them[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/root/index.rst:2: WARNING: duplicate object description of g, other instance in index, use :noindex: for one of them[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: dummy
+# srcdir: /tmp/pytest-of-root/pytest-0/domain-py-xref-warning
+# outdir: /tmp/pytest-of-root/pytest-0/domain-py-xref-warning/_build/dummy
+# status: 
+[01mRunning Sphinx v3.4.0+/57ed10c68[39;49;00m
+[01mbuilding [mo]: [39;49;00mtargets for 0 po files that are out of date
+[01mbuilding [dummy]: [39;49;00mtargets for 1 source files that are out of date
+[01mupdating environment: [39;49;00m[new config] 1 added, 0 changed, 0 removed
+[01mreading sources... [39;49;00m[100%] [35mindex[39;49;00m                                                
+[01mlooking for now-outdated files... [39;49;00mnone found
+[01mpickling environment... [39;49;00mdone
+[01mchecking consistency... [39;49;00mdone
+[01mpreparing documents... [39;49;00mdone
+[01mwriting output... [39;49;00m[100%] [32mindex[39;49;00m                                                 
+[01mbuild succeeded, 3 warnings.[39;49;00m
+
+The dummy builder generates no files.
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/domain-py-xref-warning/index.rst:6: WARNING: undefined label: no-label[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/domain-py-xref-warning/index.rst:6: WARNING: Failed to create a cross reference. A title or caption not found: existing-label[39;49;00m
+
+============================= slowest 25 durations =============================
+0.21s setup    tests/test_domain_py.py::test_domain_py_xrefs
+0.08s call     tests/test_domain_py.py::test_resolve_xref_for_properties
+0.04s call     tests/test_domain_py.py::test_domain_py_xrefs
+0.03s setup    tests/test_domain_py.py::test_parse_annotation
+0.03s call     tests/test_domain_py.py::test_pyfunction_signature_full_py38
+0.01s setup    tests/test_domain_py.py::test_pyfunction_signature
+0.01s setup    tests/test_domain_py.py::test_pyexception_signature
+0.01s setup    tests/test_domain_py.py::test_pydata_signature_old
+0.01s setup    tests/test_domain_py.py::test_pyfunction
+0.01s setup    tests/test_domain_py.py::test_pyfunction_with_number_literals
+0.01s setup    tests/test_domain_py.py::test_module_index
+0.01s setup    tests/test_domain_py.py::test_resolve_xref_for_properties
+0.01s setup    tests/test_domain_py.py::test_pyfunction_signature_full
+0.01s setup    tests/test_domain_py.py::test_info_field_list
+0.01s setup    tests/test_domain_py.py::test_pydecoratormethod_signature
+0.01s setup    tests/test_domain_py.py::test_exceptions_module_is_ignored
+0.01s setup    tests/test_domain_py.py::test_optional_pyfunction_signature
+0.01s setup    tests/test_domain_py.py::test_pyobject_prefix
+0.01s setup    tests/test_domain_py.py::test_pydecorator_signature
+0.01s setup    tests/test_domain_py.py::test_pyfunction_signature_full_py38
+0.01s setup    tests/test_domain_py.py::test_pymethod_options
+0.01s setup    tests/test_domain_py.py::test_pyattribute
+0.01s setup    tests/test_domain_py.py::test_noindexentry
+0.01s setup    tests/test_domain_py.py::test_pydata_signature
+0.01s setup    tests/test_domain_py.py::test_pyclassmethod
+[36m[1m=========================== short test summary info ============================[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_function_signatures[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_domain_py_xrefs[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_domain_py_objects[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_resolve_xref_for_properties[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_domain_py_find_obj[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_get_full_qualified_name[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_parse_annotation[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyfunction_signature[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyfunction_signature_full[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyfunction_signature_full_py38[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyfunction_with_number_literals[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_optional_pyfunction_signature[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyexception_signature[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_exceptions_module_is_ignored[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pydata_signature[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pydata_signature_old[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyobject_prefix[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pydata[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyfunction[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyclass_options[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pymethod_options[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyclassmethod[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pystaticmethod[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pyattribute[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pydecorator_signature[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_pydecoratormethod_signature[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_module_index[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_module_index_submodule[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_module_index_not_collapsed[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_modindex_common_prefix[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_noindexentry[0m
+[32mPASSED[0m tests/test_domain_py.py::[1mtest_warn_missing_reference[0m
+[31mFAILED[0m tests/test_domain_py.py::[1mtest_info_field_list[0m - AssertionError: The node does not have 'py:module' attribute: <pending_xref...
+[31m================= [31m[1m1 failed[0m, [32m32 passed[0m, [33m1244 warnings[0m[31m in 0.78s[0m[31m ==================[0m
+py39: exit 1 (1.13 seconds) /testbed> python -X dev -m pytest -rA --durations 25 tests/test_domain_py.py pid=108
+  py39: FAIL code 1 (1.14=setup[0.01]+cmd[1.13] seconds)
+  evaluation failed :( (1.19 seconds)
++ git checkout 57ed10c68057c96491acbd3e62254ccfaf9e3861 tests/test_domain_py.py
+Updated 1 path from 613e1ebc6

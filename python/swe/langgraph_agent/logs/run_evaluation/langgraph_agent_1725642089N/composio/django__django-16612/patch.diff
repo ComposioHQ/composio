@@ -1,0 +1,13 @@
+diff --git a/django/contrib/admin/sites.py b/django/contrib/admin/sites.py
+index 61be31d8..0db20864 100644
+--- a/django/contrib/admin/sites.py
++++ b/django/contrib/admin/sites.py
+@@ -453,7 +453,7 @@ class AdminSite:
+                 pass
+             else:
+                 if getattr(match.func, "should_append_slash", True):
+-                    return HttpResponsePermanentRedirect("%s/" % request.path)
++                    return HttpResponsePermanentRedirect("%s/?%s" % (request.path, request.META.get('QUERY_STRING', '')))
+         raise Http404
+ 
+     def _build_app_dict(self, request, label=None):

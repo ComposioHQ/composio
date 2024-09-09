@@ -1,0 +1,17 @@
+diff --git a/doc/index.rst b/doc/index.rst
+index e795bdb..b9db7c2 100644
+--- a/doc/index.rst
++++ b/doc/index.rst
+@@ -111,4 +111,12 @@ usecase-driven documentation, see :ref:`get-started` or :ref:`user-guides`.
+    man/index
+    glossary
+    changes
++
++Indices and tables
++==================
++
++* :ref:`genindex`
++* :ref:`modindex`
++* :ref:`search`
++
+    examples

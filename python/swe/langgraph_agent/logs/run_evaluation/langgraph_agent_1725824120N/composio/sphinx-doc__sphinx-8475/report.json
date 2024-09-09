@@ -1,0 +1,47 @@
+{
+    "sphinx-doc__sphinx-8475": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "tests/test_build_linkcheck.py::test_TooManyRedirects_on_HEAD"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "tests/test_build_linkcheck.py::test_anchors_ignored",
+                    "tests/test_build_linkcheck.py::test_raises_for_invalid_status",
+                    "tests/test_build_linkcheck.py::test_auth_header_uses_first_match",
+                    "tests/test_build_linkcheck.py::test_auth_header_no_match",
+                    "tests/test_build_linkcheck.py::test_linkcheck_request_headers",
+                    "tests/test_build_linkcheck.py::test_linkcheck_request_headers_no_slash",
+                    "tests/test_build_linkcheck.py::test_linkcheck_request_headers_default",
+                    "tests/test_build_linkcheck.py::test_follows_redirects_on_HEAD",
+                    "tests/test_build_linkcheck.py::test_follows_redirects_on_GET",
+                    "tests/test_build_linkcheck.py::test_invalid_ssl",
+                    "tests/test_build_linkcheck.py::test_connect_to_selfsigned_fails",
+                    "tests/test_build_linkcheck.py::test_connect_to_selfsigned_with_tls_verify_false",
+                    "tests/test_build_linkcheck.py::test_connect_to_selfsigned_with_tls_cacerts",
+                    "tests/test_build_linkcheck.py::test_connect_to_selfsigned_with_requests_env_var",
+                    "tests/test_build_linkcheck.py::test_connect_to_selfsigned_nonexistent_cert_file"
+                ],
+                "failure": [
+                    "tests/test_build_linkcheck.py::test_defaults",
+                    "tests/test_build_linkcheck.py::test_defaults_json"
+                ]
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

@@ -1,0 +1,81 @@
+{
+    "django__django-12143": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "test_get_list_editable_queryset_with_regex_chars_in_prefix (admin_changelist.tests.ChangeListTests)"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "test_custom_user_pk_not_named_id (admin_changelist.tests.GetAdminLogTests)",
+                    "test_missing_args (admin_changelist.tests.GetAdminLogTests)",
+                    "{% get_admin_log %} works without specifying a user.",
+                    "test_non_integer_limit (admin_changelist.tests.GetAdminLogTests)",
+                    "test_without_as (admin_changelist.tests.GetAdminLogTests)",
+                    "test_without_for_user (admin_changelist.tests.GetAdminLogTests)",
+                    "test_builtin_lookup_in_search_fields (admin_changelist.tests.ChangeListTests)",
+                    "test_changelist_search_form_validation (admin_changelist.tests.ChangeListTests)",
+                    "list_editable edits use a filtered queryset to limit memory usage.",
+                    "test_computed_list_display_localization (admin_changelist.tests.ChangeListTests)",
+                    "test_custom_lookup_in_search_fields (admin_changelist.tests.ChangeListTests)",
+                    "test_custom_lookup_with_pk_shortcut (admin_changelist.tests.ChangeListTests)",
+                    "test_custom_paginator (admin_changelist.tests.ChangeListTests)",
+                    "test_deterministic_order_for_model_ordered_by_its_manager (admin_changelist.tests.ChangeListTests)",
+                    "test_deterministic_order_for_unordered_model (admin_changelist.tests.ChangeListTests)",
+                    "test_distinct_for_inherited_m2m_in_list_filter (admin_changelist.tests.ChangeListTests)",
+                    "test_distinct_for_m2m_in_list_filter (admin_changelist.tests.ChangeListTests)",
+                    "test_distinct_for_m2m_to_inherited_in_list_filter (admin_changelist.tests.ChangeListTests)",
+                    "test_distinct_for_many_to_many_at_second_level_in_search_fields (admin_changelist.tests.ChangeListTests)",
+                    "test_distinct_for_non_unique_related_object_in_list_filter (admin_changelist.tests.ChangeListTests)",
+                    "test_distinct_for_non_unique_related_object_in_search_fields (admin_changelist.tests.ChangeListTests)",
+                    "test_distinct_for_through_m2m_at_second_level_in_list_filter (admin_changelist.tests.ChangeListTests)",
+                    "test_distinct_for_through_m2m_in_list_filter (admin_changelist.tests.ChangeListTests)",
+                    "test_dynamic_list_display (admin_changelist.tests.ChangeListTests)",
+                    "test_dynamic_list_display_links (admin_changelist.tests.ChangeListTests)",
+                    "test_dynamic_list_filter (admin_changelist.tests.ChangeListTests)",
+                    "test_dynamic_search_fields (admin_changelist.tests.ChangeListTests)",
+                    "test_get_edited_object_ids (admin_changelist.tests.ChangeListTests)",
+                    "test_get_list_editable_queryset (admin_changelist.tests.ChangeListTests)",
+                    "test_get_select_related_custom_method (admin_changelist.tests.ChangeListTests)",
+                    "test_multiuser_edit (admin_changelist.tests.ChangeListTests)",
+                    "test_no_distinct_for_m2m_in_list_filter_without_params (admin_changelist.tests.ChangeListTests)",
+                    "#15185 -- Allow no links from the 'change list' view grid.",
+                    "test_object_tools_displayed_no_add_permission (admin_changelist.tests.ChangeListTests)",
+                    "test_pagination (admin_changelist.tests.ChangeListTests)",
+                    "test_pagination_page_range (admin_changelist.tests.ChangeListTests)",
+                    "test_pk_in_search_fields (admin_changelist.tests.ChangeListTests)",
+                    "test_result_list_editable (admin_changelist.tests.ChangeListTests)",
+                    "test_result_list_editable_html (admin_changelist.tests.ChangeListTests)",
+                    "test_result_list_empty_changelist_value (admin_changelist.tests.ChangeListTests)",
+                    "test_result_list_html (admin_changelist.tests.ChangeListTests)",
+                    "test_result_list_set_empty_value_display_in_model_admin (admin_changelist.tests.ChangeListTests)",
+                    "test_result_list_set_empty_value_display_on_admin_site (admin_changelist.tests.ChangeListTests)",
+                    "test_select_related_as_empty_tuple (admin_changelist.tests.ChangeListTests)",
+                    "test_select_related_as_tuple (admin_changelist.tests.ChangeListTests)",
+                    "test_select_related_preserved (admin_changelist.tests.ChangeListTests)",
+                    "test_show_all (admin_changelist.tests.ChangeListTests)",
+                    "test_spanning_relations_with_custom_lookup_in_search_fields (admin_changelist.tests.ChangeListTests)",
+                    "test_specified_ordering_by_f_expression (admin_changelist.tests.ChangeListTests)",
+                    "test_specified_ordering_by_f_expression_without_asc_desc (admin_changelist.tests.ChangeListTests)",
+                    "test_total_ordering_optimization (admin_changelist.tests.ChangeListTests)",
+                    "test_tuple_list_display (admin_changelist.tests.ChangeListTests)"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

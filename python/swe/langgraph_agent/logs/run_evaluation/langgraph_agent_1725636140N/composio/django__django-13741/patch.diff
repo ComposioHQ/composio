@@ -1,0 +1,121 @@
+diff --git a/django/contrib/auth/forms.py b/django/contrib/auth/forms.py
+index b9eb3332..62e9d733 100644
+--- a/django/contrib/auth/forms.py
++++ b/django/contrib/auth/forms.py
+@@ -52,10 +52,18 @@ class ReadOnlyPasswordHashWidget(forms.Widget):
+ 
+ 
+ class ReadOnlyPasswordHashField(forms.Field):
++    """
++    A form field that displays a hashed password and is disabled by default.
++
++    This field is used to display an existing password hash in a form, typically
++    in the user change form in the admin. The field is read-only and disabled
++    by default to prevent accidental changes to the password.
++    """
+     widget = ReadOnlyPasswordHashWidget
+ 
+     def __init__(self, *args, **kwargs):
+         kwargs.setdefault("required", False)
++        kwargs.setdefault("disabled", True)  # Add this line
+         super().__init__(*args, **kwargs)
+ 
+     def bound_data(self, data, initial):
+@@ -140,11 +148,17 @@ class UserCreationForm(forms.ModelForm):
+ 
+ 
+ class UserChangeForm(forms.ModelForm):
++    """
++    A form used in the admin interface to change a user's information and permissions.
++
++    The password field is now automatically disabled due to the ReadOnlyPasswordHashField.
++    The clean_password method is kept for backwards compatibility but may be deprecated in future versions.
++    """
+     password = ReadOnlyPasswordHashField(
+         label=_("Password"),
+         help_text=_(
+             'Raw passwords are not stored, so there is no way to see this '
+-            'user’s password, but you can change the password using '
++            'user\'s password, but you can change the password using '
+             '<a href="{}">this form</a>.'
+         ),
+     )
+diff --git a/docs/topics/auth/customizing.txt b/docs/topics/auth/customizing.txt
+index 6ab83054..955d81b9 100644
+--- a/docs/topics/auth/customizing.txt
++++ b/docs/topics/auth/customizing.txt
+@@ -1093,8 +1093,12 @@ code would be required in the app's ``admin.py`` file::
+     from django.contrib import admin
+     from django.contrib.auth.models import Group
+     from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+-    from django.contrib.auth.forms import ReadOnlyPasswordHashField
+-    from django.core.exceptions import ValidationError
++from django.contrib.auth.forms import ReadOnlyPasswordHashField
++
++The ReadOnlyPasswordHashField is a form field that displays the hashed password
++value. It is now disabled by default to prevent accidental changes to the
++password. This means that the clean_password method in custom UserChangeForm
++subclasses may no longer be necessary in most cases.
+ 
+     from customauth.models import MyUser
+ 
+@@ -1127,23 +1131,28 @@ code would be required in the app's ``admin.py`` file::
+ 
+ 
+     class UserChangeForm(forms.ModelForm):
+-        """A form for updating users. Includes all the fields on
+-        the user, but replaces the password field with admin's
++        password = ReadOnlyPasswordHashField(
++            label=("Password"),
++            help_text=(
++                "Raw passwords are not stored, so there is no way to see "
++                "this user's password, but you can change the password "
++                "using <a href=\"../password/\">this form</a>."
++            ),
++        )
++        # The field is automatically disabled to prevent accidental changes
+         password hash display field.
+         """
+-        password = ReadOnlyPasswordHashField()
++        # The clean_password method is no longer necessary in most cases
++        # due to the ReadOnlyPasswordHashField being disabled by default
+ 
+         class Meta:
+             model = MyUser
+-            fields = ('email', 'password', 'date_of_birth', 'is_active', 'is_admin')
+-
++            fields = ('email', 'date_of_birth', 'is_active', 'is_admin')
+         def clean_password(self):
+-            # Regardless of what the user provides, return the initial value.
+-            # This is done here, rather than on the field, because the
+-            # field does not have access to the initial value
++            # This method is now optional and may be removed in future versions.
++            # It's kept here for backwards compatibility.
+             return self.initial["password"]
+ 
+-
+     class UserAdmin(BaseUserAdmin):
+         # The forms to add and change user instances
+         form = UserChangeForm
+diff --git a/tests/auth_tests/test_forms.py b/tests/auth_tests/test_forms.py
+index 88b4b326..1d344538 100644
+--- a/tests/auth_tests/test_forms.py
++++ b/tests/auth_tests/test_forms.py
+@@ -673,7 +673,17 @@ class PasswordChangeFormTest(TestDataMixin, TestCase):
+ 
+ 
+ class UserChangeFormTest(TestDataMixin, TestCase):
++    def test_password_field_disabled(self):
++        form = UserChangeForm(instance=self.u1)
++        self.assertTrue(form.fields['password'].disabled)
+ 
++    def test_username_field_populated(self):
++        form = UserChangeForm(instance=self.u1)
++        self.assertEqual(form.initial['username'], 'testclient')
++
++    def test_password_help_text(self):
++        form = UserChangeForm(instance=self.u1)
++        self.assertIn('Raw passwords are not stored', form.fields['password'].help_text)
+     def test_username_validity(self):
+         user = User.objects.get(username='testclient')
+         data = {'username': 'not valid'}

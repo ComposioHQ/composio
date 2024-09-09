@@ -1,0 +1,37 @@
+diff --git a/django/contrib/admin/sites.py b/django/contrib/admin/sites.py
+index 59a4a036..74ef4c49 100644
+--- a/django/contrib/admin/sites.py
++++ b/django/contrib/admin/sites.py
+@@ -420,7 +420,7 @@ class AdminSite:
+     def catch_all_view(self, request, url):
+         if settings.APPEND_SLASH and not url.endswith('/'):
+             urlconf = getattr(request, 'urlconf', None)
+-            path = '%s/' % request.path_info
++            path = '%s/' % request.path
+             try:
+                 match = resolve(path, urlconf)
+             except Resolver404:
+diff --git a/tests/admin_views/tests.py b/tests/admin_views/tests.py
+index b1658941..9d41b08d 100644
+--- a/tests/admin_views/tests.py
++++ b/tests/admin_views/tests.py
+@@ -6730,4 +6730,18 @@ class AdminSiteFinalCatchAllPatternTests(TestCase):
+         unknown_url = '/unknown/'
+         response = self.client.get(unknown_url)
+         # Does not redirect to the admin login.
+-        self.assertEqual(response.status_code, 404)
++    @override_settings(FORCE_SCRIPT_NAME='/script/')
++    def test_catch_all_view_with_force_script_name(self):
++        """
++        catch_all_view works correctly when FORCE_SCRIPT_NAME is set.
++        """
++        response = self.client.get('/script/test_admin/admin/invalid-url/')
++        self.assertRedirects(response, '/script/test_admin/admin/invalid-url/', status_code=301)
++
++        # Test without trailing slash
++        response = self.client.get('/script/test_admin/admin/invalid-url')
++        self.assertRedirects(response, '/script/test_admin/admin/invalid-url/', status_code=301)
++
++        # Test with GET parameters
++        response = self.client.get('/script/test_admin/admin/invalid-url/?param=value')
++        self.assertRedirects(response, '/script/test_admin/admin/invalid-url/?param=value', status_code=301)

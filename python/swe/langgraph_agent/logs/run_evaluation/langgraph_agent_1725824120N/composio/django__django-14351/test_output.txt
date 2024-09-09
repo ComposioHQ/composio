@@ -1,0 +1,1058 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/db/models/sql/query.py
+	modified:   django/db/models/sql/where.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 06fd4df41afb5aa1d681b853c3c08d8c688ca3a5
+Author: Maxim Beder <macsim.beder@gmail.com>
+Date:   Fri Apr 30 00:40:06 2021 +0200
+
+    Fixed #32479 -- Added fallbacks to subsequent language codes in translations.
+    
+    Thanks Claude Paroz and Nick Pope for reviews.
+
+diff --git a/django/utils/translation/trans_real.py b/django/utils/translation/trans_real.py
+index 8042f6fdc4..173ad08639 100644
+--- a/django/utils/translation/trans_real.py
++++ b/django/utils/translation/trans_real.py
+@@ -474,14 +474,17 @@ def get_supported_language_variant(lang_code, strict=False):
+     <https://www.djangoproject.com/weblog/2007/oct/26/security-fix/>.
+     """
+     if lang_code:
+-        # If 'fr-ca' is not supported, try special fallback or language-only 'fr'.
++        # If 'zh-hant-tw' is not supported, try special fallback or subsequent
++        # language codes i.e. 'zh-hant' and 'zh'.
+         possible_lang_codes = [lang_code]
+         try:
+             possible_lang_codes.extend(LANG_INFO[lang_code]['fallback'])
+         except KeyError:
+             pass
+-        generic_lang_code = lang_code.split('-')[0]
+-        possible_lang_codes.append(generic_lang_code)
++        i = None
++        while (i := lang_code.rfind('-', 0, i)) > -1:
++            possible_lang_codes.append(lang_code[:i])
++        generic_lang_code = possible_lang_codes[-1]
+         supported_lang_codes = get_languages()
+ 
+         for code in possible_lang_codes:
+diff --git a/tests/i18n/tests.py b/tests/i18n/tests.py
+index 8248122a97..7d81f2a07d 100644
+--- a/tests/i18n/tests.py
++++ b/tests/i18n/tests.py
+@@ -1424,6 +1424,26 @@ class MiscTests(SimpleTestCase):
+         r.META = {'HTTP_ACCEPT_LANGUAGE': 'zh-my,en'}
+         self.assertEqual(get_language_from_request(r), 'zh-hans')
+ 
++    def test_subsequent_code_fallback_language(self):
++        """
++        Subsequent language codes should be used when the language code is not
++        supported.
++        """
++        tests = [
++            ('zh-Hans-CN', 'zh-hans'),
++            ('zh-hans-mo', 'zh-hans'),
++            ('zh-hans-HK', 'zh-hans'),
++            ('zh-Hant-HK', 'zh-hant'),
++            ('zh-hant-tw', 'zh-hant'),
++            ('zh-hant-SG', 'zh-hant'),
++        ]
++        r = self.rf.get('/')
++        r.COOKIES = {}
++        for value, expected in tests:
++            with self.subTest(value=value):
++                r.META = {'HTTP_ACCEPT_LANGUAGE': f'{value},en'}
++                self.assertEqual(get_language_from_request(r), expected)
++
+     def test_parse_language_cookie(self):
+         """
+         Now test that we parse language preferences stored in a cookie correctly.
++ git diff 06fd4df41afb5aa1d681b853c3c08d8c688ca3a5
+diff --git a/django/db/models/sql/query.py b/django/db/models/sql/query.py
+index 6629a1fd51..ea1ec31ff1 100644
+--- a/django/db/models/sql/query.py
++++ b/django/db/models/sql/query.py
+@@ -399,15 +399,19 @@ class Query(BaseExpression):
+                         new_expr = Ref(col_alias, expr)
+                         break
+                 else:
+-                    # An expression that is not selected the subquery.
++                    # An expression that is not selected in the subquery.
+                     if isinstance(expr, Col) or (expr.contains_aggregate and not expr.is_summary):
+                         # Reference column or another aggregate. Select it
+                         # under a non-conflicting alias.
+-                        col_cnt += 1
+-                        col_alias = '__col%d' % col_cnt
+-                        self.annotations[col_alias] = expr
+-                        self.append_annotation_mask([col_alias])
+-                        new_expr = Ref(col_alias, expr)
++                        if isinstance(expr, Col) and expr.output_field.related_model:
++                            # This is a subquery for a related model. Optimize it to select only the ID.
++                            new_expr = expr.output_field.related_model._meta.pk.get_col(expr.alias)
++                        else:
++                            col_cnt += 1
++                            col_alias = '__col%d' % col_cnt
++                            self.annotations[col_alias] = expr
++                            self.append_annotation_mask([col_alias])
++                            new_expr = Ref(col_alias, expr)
+                     else:
+                         # Some other expression not referencing database values
+                         # directly. Its subexpression might contain Cols.
+diff --git a/django/db/models/sql/where.py b/django/db/models/sql/where.py
+index 795eff8395..ef1f07a6b9 100644
+--- a/django/db/models/sql/where.py
++++ b/django/db/models/sql/where.py
+@@ -5,6 +5,7 @@ Code to manage the creation and SQL rendering of 'where' constraints.
+ from django.core.exceptions import EmptyResultSet
+ from django.utils import tree
+ from django.utils.functional import cached_property
++from django.db.models.lookups import Lookup
+ 
+ # Connection types
+ AND = 'AND'
+@@ -60,14 +61,24 @@ class WhereNode(tree.Node):
+                 where_parts.append(c)
+         having_node = self.__class__(having_parts, self.connector, self.negated) if having_parts else None
+         where_node = self.__class__(where_parts, self.connector, self.negated) if where_parts else None
+-        return where_node, having_node
++    def optimize_in_subquery(self):
++        """Optimize __in lookups with subqueries to select only the primary key."""
++        for child in self.children:
++            if isinstance(child, Lookup) and child.lookup_name == 'in':
++                rhs = child.rhs
++                if hasattr(rhs, 'query') and hasattr(rhs.query, 'model'):
++                    child.rhs = rhs.values_list('pk', flat=True)
++            elif isinstance(child, WhereNode):
++                child.optimize_in_subquery()
+ 
+     def as_sql(self, compiler, connection):
++        self.optimize_in_subquery()
+         """
+         Return the SQL version of the where clause and the value to be
+         substituted in. Return '', [] if this node matches everything,
+         None, [] if this node is empty, and raise EmptyResultSet if this
+         node can't match anything.
++        node can't match anything.
+         """
+         result = []
+         result_params = []
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.3.2 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210505073754) (3.8.1)
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210505073754) (2024.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210505073754) (0.5.1)
+Requirement already satisfied: typing-extensions>=4 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from asgiref>=3.3.2->Django==4.0.dev20210505073754) (4.12.2)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-4.0.dev20210505073754-0.editable-py3-none-any.whl size=26101 sha256=3577c9238f84bfc8e03cabdecaf08cf27bd55019d3ecd408e4e50cfebfbc75bf
+  Stored in directory: /tmp/pip-ephem-wheel-cache-ix4zrs__/wheels/b2/50/f1/218f2e9962a80d01a4b1297698978f9fb3b60056aa24343f24
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 4.0.dev20210505073754
+    Uninstalling Django-4.0.dev20210505073754:
+      Successfully uninstalled Django-4.0.dev20210505073754
+Successfully installed Django-4.0.dev20210505073754
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 06fd4df41afb5aa1d681b853c3c08d8c688ca3a5 tests/aggregation_regress/tests.py
+Updated 0 paths from ab9ee29577
++ git apply -v -
+Checking patch tests/aggregation_regress/tests.py...
+Applied patch tests/aggregation_regress/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 aggregation_regress.tests
+Testing against Django installed in '/testbed/django'
+Importing application aggregation_regress
+Found 65 tests.
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: aggregation_regress, auth, contenttypes, messages, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table aggregation_regress_author
+    Creating table aggregation_regress_publisher
+    Creating table aggregation_regress_itemtag
+    Creating table aggregation_regress_book
+    Creating table aggregation_regress_store
+    Creating table aggregation_regress_entries
+    Creating table aggregation_regress_clues
+    Creating table aggregation_regress_withmanualpk
+    Creating table aggregation_regress_hardbackbook
+    Creating table aggregation_regress_alfa
+    Creating table aggregation_regress_bravo
+    Creating table aggregation_regress_charlie
+    Creating table aggregation_regress_selfreffk
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique...Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+ OK
+System check identified no issues (0 silenced).
+test_aggregate (aggregation_regress.tests.AggregationTests) ... ok
+test_aggregate_annotation (aggregation_regress.tests.AggregationTests) ... ok
+test_aggregate_duplicate_columns (aggregation_regress.tests.AggregationTests) ... skipped "Database doesn't support any of the feature(s): allows_group_by_pk, allows_group_by_selected_pks"
+test_aggregate_duplicate_columns_only (aggregation_regress.tests.AggregationTests) ... skipped "Database doesn't support any of the feature(s): allows_group_by_pk, allows_group_by_selected_pks"
+test_aggregate_duplicate_columns_select_related (aggregation_regress.tests.AggregationTests) ... skipped "Database doesn't support any of the feature(s): allows_group_by_pk, allows_group_by_selected_pks"
+test_aggregate_fexpr (aggregation_regress.tests.AggregationTests) ... ERROR
+test_aggregate_on_relation (aggregation_regress.tests.AggregationTests) ... ok
+test_aggregate_unmanaged_model_as_tables (aggregation_regress.tests.AggregationTests) ... skipped "Database doesn't support feature(s): allows_group_by_selected_pks"
+test_aggregate_unmanaged_model_columns (aggregation_regress.tests.AggregationTests)
+Unmanaged models are sometimes used to represent database views which ... skipped "Database doesn't support feature(s): allows_group_by_selected_pks"
+test_aggregates_in_where_clause (aggregation_regress.tests.AggregationTests)
+Regression test for #12822: DatabaseError: aggregates not allowed in ... ok
+test_aggregates_in_where_clause_pre_eval (aggregation_regress.tests.AggregationTests)
+Regression test for #12822: DatabaseError: aggregates not allowed in ... ok
+test_aggregation_with_generic_reverse_relation (aggregation_regress.tests.AggregationTests)
+Regression test for #10870:  Aggregates with joins ignore extra ... ok
+test_allow_distinct (aggregation_regress.tests.AggregationTests) ... ok
+test_annotate_and_join (aggregation_regress.tests.AggregationTests) ... ok
+test_annotate_distinct_aggregate (aggregation_regress.tests.AggregationTests) ... ok
+test_annotate_joins (aggregation_regress.tests.AggregationTests)
+The base table's join isn't promoted to LOUTER. This could ... ok
+test_annotate_on_relation (aggregation_regress.tests.AggregationTests) ... ok
+test_annotate_reserved_word (aggregation_regress.tests.AggregationTests)
+Regression #18333 - Ensure annotated column name is properly quoted. ... ok
+test_annotate_values_list_flat (aggregation_regress.tests.AggregationTests)
+Find ages that are shared by at least two authors. ... ERROR
+test_annotate_with_extra (aggregation_regress.tests.AggregationTests)
+Regression test for #11916: Extra params + aggregation creates ... ok
+test_annotated_conditional_aggregate (aggregation_regress.tests.AggregationTests) ... ok
+test_annotation (aggregation_regress.tests.AggregationTests) ... ERROR
+test_annotation_disjunction (aggregation_regress.tests.AggregationTests) ... ERROR
+test_annotation_with_value (aggregation_regress.tests.AggregationTests) ... ok
+test_boolean_conversion (aggregation_regress.tests.AggregationTests) ... ok
+test_conditional_aggregate (aggregation_regress.tests.AggregationTests) ... ok
+test_conditional_aggregate_on_complex_condition (aggregation_regress.tests.AggregationTests) ... ok
+test_db_col_table (aggregation_regress.tests.AggregationTests) ... ok
+test_decimal_aggregate_annotation_filter (aggregation_regress.tests.AggregationTests)
+Filtering on an aggregate annotation with Decimal values should work. ... ERROR
+test_distinct_conditional_aggregate (aggregation_regress.tests.AggregationTests) ... ok
+test_duplicate_alias (aggregation_regress.tests.AggregationTests) ... ok
+test_empty (aggregation_regress.tests.AggregationTests) ... ok
+test_empty_filter_aggregate (aggregation_regress.tests.AggregationTests) ... ok
+test_empty_filter_count (aggregation_regress.tests.AggregationTests) ... ok
+test_f_expression_annotation (aggregation_regress.tests.AggregationTests) ... ERROR
+test_field_error (aggregation_regress.tests.AggregationTests) ... ok
+test_field_name_conflict (aggregation_regress.tests.AggregationTests) ... ok
+test_filtering_by_annotation_name (aggregation_regress.tests.AggregationTests) ... ERROR
+test_fk_attname_conflict (aggregation_regress.tests.AggregationTests) ... ok
+test_fobj_group_by (aggregation_regress.tests.AggregationTests)
+An F() object referring to related column works correctly in group by. ... ERROR
+test_having_group_by (aggregation_regress.tests.AggregationTests) ... ERROR
+test_having_subquery_select (aggregation_regress.tests.AggregationTests) ... ERROR
+test_m2m_name_conflict (aggregation_regress.tests.AggregationTests) ... ok
+test_more (aggregation_regress.tests.AggregationTests) ... ERROR
+test_more_more (aggregation_regress.tests.AggregationTests) ... ERROR
+test_more_more_more (aggregation_regress.tests.AggregationTests) ... ERROR
+test_name_expressions (aggregation_regress.tests.AggregationTests) ... ERROR
+test_name_filters (aggregation_regress.tests.AggregationTests) ... ERROR
+test_negated_aggregation (aggregation_regress.tests.AggregationTests) ... ERROR
+test_none_call_before_aggregate (aggregation_regress.tests.AggregationTests) ... ok
+test_pickle (aggregation_regress.tests.AggregationTests) ... ok
+test_quoting_aggregate_order_by (aggregation_regress.tests.AggregationTests) ... ok
+test_reverse_join_trimming (aggregation_regress.tests.AggregationTests) ... ok
+test_reverse_relation_name_conflict (aggregation_regress.tests.AggregationTests) ... ok
+test_sliced_conditional_aggregate (aggregation_regress.tests.AggregationTests) ... ok
+test_stddev (aggregation_regress.tests.AggregationTests) ... ok
+test_ticket_11293 (aggregation_regress.tests.AggregationTests) ... ERROR
+test_ticket_11293_q_immutable (aggregation_regress.tests.AggregationTests)
+Splitting a q object to parts for where/having doesn't alter ... ok
+test_values_annotate_values (aggregation_regress.tests.AggregationTests) ... ok
+test_values_list_annotation_args_ordering (aggregation_regress.tests.AggregationTests)
+Annotate *args ordering should be preserved in values_list results. ... ok
+test_values_queryset_non_conflict (aggregation_regress.tests.AggregationTests) ... ok
+test_existing_join_not_promoted (aggregation_regress.tests.JoinPromotionTests) ... ok
+test_non_nullable_fk_not_promoted (aggregation_regress.tests.JoinPromotionTests) ... ok
+test_ticket_21150 (aggregation_regress.tests.JoinPromotionTests) ... ok
+test_ticket_24748 (aggregation_regress.tests.SelfReferentialFKTests) ... ok
+
+======================================================================
+ERROR: test_aggregate_fexpr (aggregation_regress.tests.AggregationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/aggregation_regress/tests.py", line 542, in test_aggregate_fexpr
+    self.assertSequenceEqual(
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/unittest/case.py", line 1095, in assertSequenceEqual
+    difflib.ndiff(pprint.pformat(seq1).splitlines(),
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 58, in pformat
+    return PrettyPrinter(indent=indent, width=width, depth=depth,
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 153, in pformat
+    self._format(object, sio, 0, 0, {}, 0)
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 170, in _format
+    rep = self._repr(object, context, level)
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 404, in _repr
+    repr, readable, recursive = self.format(object, context.copy(),
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 417, in format
+    return _safe_repr(object, context, maxlevels, level, self._sort_dicts)
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 569, in _safe_repr
+    rep = repr(object)
+  File "/testbed/django/db/models/query.py", line 256, in __repr__
+    data = list(self[:REPR_OUTPUT_SIZE + 1])
+  File "/testbed/django/db/models/query.py", line 280, in __iter__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1343, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 109, in __iter__
+    for row in compiler.results_iter(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size):
+  File "/testbed/django/db/models/sql/compiler.py", line 1143, in results_iter
+    results = self.execute_sql(MULTI, chunked_fetch=chunked_fetch, chunk_size=chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1175, in execute_sql
+    sql, params = self.as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 523, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup()
+  File "/testbed/django/db/models/sql/compiler.py", line 57, in pre_sql_setup
+    self.where, self.having = self.query.where.split_having()
+TypeError: cannot unpack non-iterable NoneType object
+
+======================================================================
+ERROR: test_annotate_values_list_flat (aggregation_regress.tests.AggregationTests)
+Find ages that are shared by at least two authors.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/aggregation_regress/tests.py", line 1516, in test_annotate_values_list_flat
+    self.assertSequenceEqual(qs, [29])
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/unittest/case.py", line 1095, in assertSequenceEqual
+    difflib.ndiff(pprint.pformat(seq1).splitlines(),
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 58, in pformat
+    return PrettyPrinter(indent=indent, width=width, depth=depth,
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 153, in pformat
+    self._format(object, sio, 0, 0, {}, 0)
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 170, in _format
+    rep = self._repr(object, context, level)
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 404, in _repr
+    repr, readable, recursive = self.format(object, context.copy(),
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 417, in format
+    return _safe_repr(object, context, maxlevels, level, self._sort_dicts)
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 569, in _safe_repr
+    rep = repr(object)
+  File "/testbed/django/db/models/query.py", line 256, in __repr__
+    data = list(self[:REPR_OUTPUT_SIZE + 1])
+  File "/testbed/django/db/models/query.py", line 280, in __iter__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1343, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 171, in __iter__
+    for row in compiler.results_iter(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size):
+  File "/testbed/django/db/models/sql/compiler.py", line 1143, in results_iter
+    results = self.execute_sql(MULTI, chunked_fetch=chunked_fetch, chunk_size=chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1175, in execute_sql
+    sql, params = self.as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 523, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup()
+  File "/testbed/django/db/models/sql/compiler.py", line 57, in pre_sql_setup
+    self.where, self.having = self.query.where.split_having()
+TypeError: cannot unpack non-iterable NoneType object
+
+======================================================================
+ERROR: test_annotation (aggregation_regress.tests.AggregationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/aggregation_regress/tests.py", line 310, in test_annotation
+    self.assertSequenceEqual(
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/unittest/case.py", line 1095, in assertSequenceEqual
+    difflib.ndiff(pprint.pformat(seq1).splitlines(),
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 58, in pformat
+    return PrettyPrinter(indent=indent, width=width, depth=depth,
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 153, in pformat
+    self._format(object, sio, 0, 0, {}, 0)
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 170, in _format
+    rep = self._repr(object, context, level)
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 404, in _repr
+    repr, readable, recursive = self.format(object, context.copy(),
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 417, in format
+    return _safe_repr(object, context, maxlevels, level, self._sort_dicts)
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 569, in _safe_repr
+    rep = repr(object)
+  File "/testbed/django/db/models/query.py", line 256, in __repr__
+    data = list(self[:REPR_OUTPUT_SIZE + 1])
+  File "/testbed/django/db/models/query.py", line 280, in __iter__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1343, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 109, in __iter__
+    for row in compiler.results_iter(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size):
+  File "/testbed/django/db/models/sql/compiler.py", line 1143, in results_iter
+    results = self.execute_sql(MULTI, chunked_fetch=chunked_fetch, chunk_size=chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1175, in execute_sql
+    sql, params = self.as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 523, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup()
+  File "/testbed/django/db/models/sql/compiler.py", line 57, in pre_sql_setup
+    self.where, self.having = self.query.where.split_having()
+TypeError: cannot unpack non-iterable NoneType object
+
+======================================================================
+ERROR: test_annotation_disjunction (aggregation_regress.tests.AggregationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/aggregation_regress/tests.py", line 1041, in test_annotation_disjunction
+    self.assertQuerysetEqual(
+  File "/testbed/django/test/testcases.py", line 1089, in assertQuerysetEqual
+    items = map(transform, items)
+  File "/testbed/django/db/models/query.py", line 280, in __iter__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1343, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 51, in __iter__
+    results = compiler.execute_sql(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1175, in execute_sql
+    sql, params = self.as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 523, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup()
+  File "/testbed/django/db/models/sql/compiler.py", line 57, in pre_sql_setup
+    self.where, self.having = self.query.where.split_having()
+TypeError: cannot unpack non-iterable NoneType object
+
+======================================================================
+ERROR: test_decimal_aggregate_annotation_filter (aggregation_regress.tests.AggregationTests)
+Filtering on an aggregate annotation with Decimal values should work.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/aggregation_regress/tests.py", line 424, in test_decimal_aggregate_annotation_filter
+    len(Author.objects.annotate(sum=Sum('book_contact_set__price')).filter(sum__gt=Decimal(40))),
+  File "/testbed/django/db/models/query.py", line 262, in __len__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1343, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 51, in __iter__
+    results = compiler.execute_sql(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1175, in execute_sql
+    sql, params = self.as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 523, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup()
+  File "/testbed/django/db/models/sql/compiler.py", line 57, in pre_sql_setup
+    self.where, self.having = self.query.where.split_having()
+TypeError: cannot unpack non-iterable NoneType object
+
+======================================================================
+ERROR: test_f_expression_annotation (aggregation_regress.tests.AggregationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/aggregation_regress/tests.py", line 1000, in test_f_expression_annotation
+    self.assertQuerysetEqual(
+  File "/testbed/django/test/testcases.py", line 1089, in assertQuerysetEqual
+    items = map(transform, items)
+  File "/testbed/django/db/models/query.py", line 280, in __iter__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1343, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 51, in __iter__
+    results = compiler.execute_sql(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1175, in execute_sql
+    sql, params = self.as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 538, in as_sql
+    where, w_params = self.compile(self.where) if self.where is not None else ("", [])
+  File "/testbed/django/db/models/sql/compiler.py", line 455, in compile
+    sql, params = node.as_sql(self, self.connection)
+  File "/testbed/django/db/models/sql/where.py", line 92, in as_sql
+    sql, params = compiler.compile(child)
+  File "/testbed/django/db/models/sql/compiler.py", line 455, in compile
+    sql, params = node.as_sql(self, self.connection)
+  File "/testbed/django/db/models/lookups.py", line 416, in as_sql
+    return super().as_sql(compiler, connection)
+  File "/testbed/django/db/models/lookups.py", line 198, in as_sql
+    rhs_sql, rhs_params = self.process_rhs(compiler, connection)
+  File "/testbed/django/db/models/lookups.py", line 407, in process_rhs
+    return super().process_rhs(compiler, connection)
+  File "/testbed/django/db/models/lookups.py", line 254, in process_rhs
+    return super().process_rhs(compiler, connection)
+  File "/testbed/django/db/models/lookups.py", line 97, in process_rhs
+    sql, params = compiler.compile(value)
+  File "/testbed/django/db/models/sql/compiler.py", line 455, in compile
+    sql, params = node.as_sql(self, self.connection)
+  File "/testbed/django/db/models/sql/query.py", line 1070, in as_sql
+    sql, params = self.get_compiler(connection=connection).as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 523, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup()
+  File "/testbed/django/db/models/sql/compiler.py", line 57, in pre_sql_setup
+    self.where, self.having = self.query.where.split_having()
+TypeError: cannot unpack non-iterable NoneType object
+
+======================================================================
+ERROR: test_filtering_by_annotation_name (aggregation_regress.tests.AggregationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/aggregation_regress/tests.py", line 1178, in test_filtering_by_annotation_name
+    self.assertQuerysetEqual(
+  File "/testbed/django/test/testcases.py", line 1089, in assertQuerysetEqual
+    items = map(transform, items)
+  File "/testbed/django/db/models/query.py", line 280, in __iter__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1343, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 51, in __iter__
+    results = compiler.execute_sql(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1175, in execute_sql
+    sql, params = self.as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 523, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup()
+  File "/testbed/django/db/models/sql/compiler.py", line 57, in pre_sql_setup
+    self.where, self.having = self.query.where.split_having()
+TypeError: cannot unpack non-iterable NoneType object
+
+======================================================================
+ERROR: test_fobj_group_by (aggregation_regress.tests.AggregationTests)
+An F() object referring to related column works correctly in group by.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/aggregation_regress/tests.py", line 1478, in test_fobj_group_by
+    self.assertQuerysetEqual(
+  File "/testbed/django/test/testcases.py", line 1089, in assertQuerysetEqual
+    items = map(transform, items)
+  File "/testbed/django/db/models/query.py", line 280, in __iter__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1343, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 51, in __iter__
+    results = compiler.execute_sql(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1175, in execute_sql
+    sql, params = self.as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 523, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup()
+  File "/testbed/django/db/models/sql/compiler.py", line 57, in pre_sql_setup
+    self.where, self.having = self.query.where.split_having()
+TypeError: cannot unpack non-iterable NoneType object
+
+======================================================================
+ERROR: test_having_group_by (aggregation_regress.tests.AggregationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/aggregation_regress/tests.py", line 1023, in test_having_group_by
+    list(qs), list(Book.objects.values_list("name", flat=True))
+  File "/testbed/django/db/models/query.py", line 280, in __iter__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1343, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 171, in __iter__
+    for row in compiler.results_iter(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size):
+  File "/testbed/django/db/models/sql/compiler.py", line 1143, in results_iter
+    results = self.execute_sql(MULTI, chunked_fetch=chunked_fetch, chunk_size=chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1175, in execute_sql
+    sql, params = self.as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 523, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup()
+  File "/testbed/django/db/models/sql/compiler.py", line 57, in pre_sql_setup
+    self.where, self.having = self.query.where.split_having()
+TypeError: cannot unpack non-iterable NoneType object
+
+======================================================================
+ERROR: test_having_subquery_select (aggregation_regress.tests.AggregationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/testcases.py", line 1342, in skip_wrapper
+    return test_func(*args, **kwargs)
+  File "/testbed/tests/aggregation_regress/tests.py", line 1534, in test_having_subquery_select
+    self.assertEqual(set(books), {self.b1, self.b4})
+  File "/testbed/django/db/models/query.py", line 280, in __iter__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1343, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 51, in __iter__
+    results = compiler.execute_sql(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1175, in execute_sql
+    sql, params = self.as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 523, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup()
+  File "/testbed/django/db/models/sql/compiler.py", line 57, in pre_sql_setup
+    self.where, self.having = self.query.where.split_having()
+TypeError: cannot unpack non-iterable NoneType object
+
+======================================================================
+ERROR: test_more (aggregation_regress.tests.AggregationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/aggregation_regress/tests.py", line 505, in test_more
+    len(Book.objects.annotate(num_authors=Count('authors')).filter(num_authors__gt=2)),
+  File "/testbed/django/db/models/query.py", line 262, in __len__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1343, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 51, in __iter__
+    results = compiler.execute_sql(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1175, in execute_sql
+    sql, params = self.as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 523, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup()
+  File "/testbed/django/db/models/sql/compiler.py", line 57, in pre_sql_setup
+    self.where, self.having = self.query.where.split_having()
+TypeError: cannot unpack non-iterable NoneType object
+
+======================================================================
+ERROR: test_more_more (aggregation_regress.tests.AggregationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/aggregation_regress/tests.py", line 736, in test_more_more
+    self.assertQuerysetEqual(
+  File "/testbed/django/test/testcases.py", line 1089, in assertQuerysetEqual
+    items = map(transform, items)
+  File "/testbed/django/db/models/query.py", line 280, in __iter__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1343, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 51, in __iter__
+    results = compiler.execute_sql(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1175, in execute_sql
+    sql, params = self.as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 538, in as_sql
+    where, w_params = self.compile(self.where) if self.where is not None else ("", [])
+  File "/testbed/django/db/models/sql/compiler.py", line 455, in compile
+    sql, params = node.as_sql(self, self.connection)
+  File "/testbed/django/db/models/sql/where.py", line 92, in as_sql
+    sql, params = compiler.compile(child)
+  File "/testbed/django/db/models/sql/compiler.py", line 455, in compile
+    sql, params = node.as_sql(self, self.connection)
+  File "/testbed/django/db/models/lookups.py", line 416, in as_sql
+    return super().as_sql(compiler, connection)
+  File "/testbed/django/db/models/lookups.py", line 198, in as_sql
+    rhs_sql, rhs_params = self.process_rhs(compiler, connection)
+  File "/testbed/django/db/models/lookups.py", line 407, in process_rhs
+    return super().process_rhs(compiler, connection)
+  File "/testbed/django/db/models/lookups.py", line 254, in process_rhs
+    return super().process_rhs(compiler, connection)
+  File "/testbed/django/db/models/lookups.py", line 97, in process_rhs
+    sql, params = compiler.compile(value)
+  File "/testbed/django/db/models/sql/compiler.py", line 455, in compile
+    sql, params = node.as_sql(self, self.connection)
+  File "/testbed/django/db/models/sql/query.py", line 1070, in as_sql
+    sql, params = self.get_compiler(connection=connection).as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 523, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup()
+  File "/testbed/django/db/models/sql/compiler.py", line 57, in pre_sql_setup
+    self.where, self.having = self.query.where.split_having()
+TypeError: cannot unpack non-iterable NoneType object
+
+======================================================================
+ERROR: test_more_more_more (aggregation_regress.tests.AggregationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/aggregation_regress/tests.py", line 839, in test_more_more_more
+    self.assertSequenceEqual(
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/unittest/case.py", line 1095, in assertSequenceEqual
+    difflib.ndiff(pprint.pformat(seq1).splitlines(),
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 58, in pformat
+    return PrettyPrinter(indent=indent, width=width, depth=depth,
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 153, in pformat
+    self._format(object, sio, 0, 0, {}, 0)
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 170, in _format
+    rep = self._repr(object, context, level)
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 404, in _repr
+    repr, readable, recursive = self.format(object, context.copy(),
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 417, in format
+    return _safe_repr(object, context, maxlevels, level, self._sort_dicts)
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/pprint.py", line 569, in _safe_repr
+    rep = repr(object)
+  File "/testbed/django/db/models/query.py", line 256, in __repr__
+    data = list(self[:REPR_OUTPUT_SIZE + 1])
+  File "/testbed/django/db/models/query.py", line 280, in __iter__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1343, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 171, in __iter__
+    for row in compiler.results_iter(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size):
+  File "/testbed/django/db/models/sql/compiler.py", line 1143, in results_iter
+    results = self.execute_sql(MULTI, chunked_fetch=chunked_fetch, chunk_size=chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1175, in execute_sql
+    sql, params = self.as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 523, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup()
+  File "/testbed/django/db/models/sql/compiler.py", line 57, in pre_sql_setup
+    self.where, self.having = self.query.where.split_having()
+TypeError: cannot unpack non-iterable NoneType object
+
+======================================================================
+ERROR: test_name_expressions (aggregation_regress.tests.AggregationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/aggregation_regress/tests.py", line 1441, in test_name_expressions
+    self.assertQuerysetEqual(
+  File "/testbed/django/test/testcases.py", line 1089, in assertQuerysetEqual
+    items = map(transform, items)
+  File "/testbed/django/db/models/query.py", line 280, in __iter__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1343, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 51, in __iter__
+    results = compiler.execute_sql(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1175, in execute_sql
+    sql, params = self.as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 523, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup()
+  File "/testbed/django/db/models/sql/compiler.py", line 57, in pre_sql_setup
+    self.where, self.having = self.query.where.split_having()
+TypeError: cannot unpack non-iterable NoneType object
+
+======================================================================
+ERROR: test_name_filters (aggregation_regress.tests.AggregationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/aggregation_regress/tests.py", line 1428, in test_name_filters
+    self.assertQuerysetEqual(
+  File "/testbed/django/test/testcases.py", line 1089, in assertQuerysetEqual
+    items = map(transform, items)
+  File "/testbed/django/db/models/query.py", line 280, in __iter__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1343, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 51, in __iter__
+    results = compiler.execute_sql(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1175, in execute_sql
+    sql, params = self.as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 523, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup()
+  File "/testbed/django/db/models/sql/compiler.py", line 57, in pre_sql_setup
+    self.where, self.having = self.query.where.split_having()
+TypeError: cannot unpack non-iterable NoneType object
+
+======================================================================
+ERROR: test_negated_aggregation (aggregation_regress.tests.AggregationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/aggregation_regress/tests.py", line 1405, in test_negated_aggregation
+    expected_results = [a.name for a in expected_results]
+  File "/testbed/django/db/models/query.py", line 280, in __iter__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1343, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 51, in __iter__
+    results = compiler.execute_sql(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1175, in execute_sql
+    sql, params = self.as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 538, in as_sql
+    where, w_params = self.compile(self.where) if self.where is not None else ("", [])
+  File "/testbed/django/db/models/sql/compiler.py", line 455, in compile
+    sql, params = node.as_sql(self, self.connection)
+  File "/testbed/django/db/models/sql/where.py", line 92, in as_sql
+    sql, params = compiler.compile(child)
+  File "/testbed/django/db/models/sql/compiler.py", line 455, in compile
+    sql, params = node.as_sql(self, self.connection)
+  File "/testbed/django/db/models/sql/where.py", line 92, in as_sql
+    sql, params = compiler.compile(child)
+  File "/testbed/django/db/models/sql/compiler.py", line 455, in compile
+    sql, params = node.as_sql(self, self.connection)
+  File "/testbed/django/db/models/lookups.py", line 416, in as_sql
+    return super().as_sql(compiler, connection)
+  File "/testbed/django/db/models/lookups.py", line 198, in as_sql
+    rhs_sql, rhs_params = self.process_rhs(compiler, connection)
+  File "/testbed/django/db/models/lookups.py", line 407, in process_rhs
+    return super().process_rhs(compiler, connection)
+  File "/testbed/django/db/models/lookups.py", line 254, in process_rhs
+    return super().process_rhs(compiler, connection)
+  File "/testbed/django/db/models/lookups.py", line 97, in process_rhs
+    sql, params = compiler.compile(value)
+  File "/testbed/django/db/models/sql/compiler.py", line 455, in compile
+    sql, params = node.as_sql(self, self.connection)
+  File "/testbed/django/db/models/sql/query.py", line 1070, in as_sql
+    sql, params = self.get_compiler(connection=connection).as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 523, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup()
+  File "/testbed/django/db/models/sql/compiler.py", line 57, in pre_sql_setup
+    self.where, self.having = self.query.where.split_having()
+TypeError: cannot unpack non-iterable NoneType object
+
+======================================================================
+ERROR: test_ticket_11293 (aggregation_regress.tests.AggregationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/aggregation_regress/tests.py", line 1452, in test_ticket_11293
+    self.assertQuerysetEqual(
+  File "/testbed/django/test/testcases.py", line 1089, in assertQuerysetEqual
+    items = map(transform, items)
+  File "/testbed/django/db/models/query.py", line 280, in __iter__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1343, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 51, in __iter__
+    results = compiler.execute_sql(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1175, in execute_sql
+    sql, params = self.as_sql()
+  File "/testbed/django/db/models/sql/compiler.py", line 523, in as_sql
+    extra_select, order_by, group_by = self.pre_sql_setup()
+  File "/testbed/django/db/models/sql/compiler.py", line 57, in pre_sql_setup
+    self.where, self.having = self.query.where.split_having()
+TypeError: cannot unpack non-iterable NoneType object
+
+----------------------------------------------------------------------
+Ran 65 tests in 0.053s
+
+FAILED (errors=17, skipped=5)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout 06fd4df41afb5aa1d681b853c3c08d8c688ca3a5 tests/aggregation_regress/tests.py
+Updated 1 path from ab9ee29577

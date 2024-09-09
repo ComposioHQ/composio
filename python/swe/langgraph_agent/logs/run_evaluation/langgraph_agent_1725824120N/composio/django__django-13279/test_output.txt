@@ -1,0 +1,3033 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen
++ locale-gen
+Generating locales (this might take a while)...
+  en_US.UTF-8... done
+Generation complete.
++ export LANG=en_US.UTF-8
++ LANG=en_US.UTF-8
++ export LANGUAGE=en_US:en
++ LANGUAGE=en_US:en
++ export LC_ALL=en_US.UTF-8
++ LC_ALL=en_US.UTF-8
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/contrib/sessions/backends/base.py
+	modified:   docs/howto/upgrade-version.txt
+	modified:   docs/releases/3.1.txt
+	modified:   docs/topics/http/sessions.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 6e9c5ee88fc948e05b4a7d9f82a8861ed2b0343d
+Author: Adam Alton <adamalton@gmail.com>
+Date:   Fri Aug 7 06:05:47 2020 +0000
+
+    Removed unnecessary sentence in QuerySet docs.
+
+diff --git a/docs/ref/models/querysets.txt b/docs/ref/models/querysets.txt
+index adc070ec99..e5c0038528 100644
+--- a/docs/ref/models/querysets.txt
++++ b/docs/ref/models/querysets.txt
+@@ -151,8 +151,7 @@ Here's the formal declaration of a ``QuerySet``:
+         The ``query`` parameter to :class:`QuerySet` exists so that specialized
+         query subclasses can reconstruct internal query state. The value of the
+         parameter is an opaque representation of that query state and is not
+-        part of a public API. To put it another way: if you need to ask, you
+-        don't need to use it.
++        part of a public API.
+ 
+ .. currentmodule:: django.db.models.query.QuerySet
+ 
++ git diff 6e9c5ee88fc948e05b4a7d9f82a8861ed2b0343d
+diff --git a/django/contrib/sessions/backends/base.py b/django/contrib/sessions/backends/base.py
+index b5453160a5..3d497cb5f3 100644
+--- a/django/contrib/sessions/backends/base.py
++++ b/django/contrib/sessions/backends/base.py
+@@ -1,4 +1,13 @@
+ import base64
++from django.conf import settings
++from django.contrib.sessions.exceptions import SuspiciousSession
++from django.core import signing
++
++class SessionBase:
++    # This setting allows for a smooth transition between Django 3.0 and 3.1
++    # It determines which session encoding method to use
++    DEFAULT_HASHING_ALGORITHM = getattr(settings, 'DEFAULT_HASHING_ALGORITHM', 'sha256')
++import base64
+ import logging
+ import string
+ import warnings
+@@ -107,19 +116,57 @@ class SessionBase:
+         return salted_hmac(key_salt, value).hexdigest()
+ 
+     def encode(self, session_dict):
+-        "Return the given session dictionary serialized and encoded as a string."
++        if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
++            return self._legacy_encode(session_dict)
+         return signing.dumps(
+             session_dict, salt=self.key_salt, serializer=self.serializer,
+             compress=True,
+         )
+ 
+     def decode(self, session_data):
++        if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
++            try:
++                return self._legacy_decode(session_data)
++            except Exception:
++                # If legacy decode fails, try the new format
++                pass
++        
++        try:
++            return signing.loads(session_data, salt=self.key_salt, serializer=self.serializer)
++        except Exception:
++            # If both methods fail, raise an exception or handle it as appropriate
++            raise SuspiciousSession("Session data corrupted")
++
++    def _legacy_encode(self, session_dict):
++        """Encode using the pre-Django 3.1 format."""
++        warnings.warn(
++            "The _legacy_encode method is deprecated and will be removed in Django 4.0.",
++            RemovedInDjango40Warning,
++            stacklevel=2,
++        )
++        serialized = self.serializer().dumps(session_dict)
++        hash = self._hash(serialized)
++        return base64.b64encode(hash.encode() + b':' + serialized).decode('ascii')
++
++    def _legacy_decode(self, session_data):
++        """Decode the pre-Django 3.1 session format."""
++        warnings.warn(
++            "The _legacy_decode method is deprecated and will be removed in Django 4.0.",
++            RemovedInDjango40Warning,
++            stacklevel=2,
++        )
++        # RemovedInDjango40Warning: pre-Django 3.1 format will be invalid.
++        encoded_data = base64.b64decode(session_data.encode('ascii'))
+         try:
+             return signing.loads(session_data, salt=self.key_salt, serializer=self.serializer)
+-        # RemovedInDjango40Warning: when the deprecation ends, handle here
+-        # exceptions similar to what _legacy_decode() does now.
+         except Exception:
+-            return self._legacy_decode(session_data)
++            # If both methods fail, raise an exception or handle it as appropriate
++            raise SuspiciousSession("Session data corrupted")
++    def _legacy_encode(self, session_dict):
++        """Encode using the pre-Django 3.1 format."""
++        serialized = self.serializer().dumps(session_dict)
++        hash = self._hash(serialized)
++        return base64.b64encode(hash.encode() + b':' + serialized).decode('ascii')
+ 
+     def _legacy_decode(self, session_data):
+         # RemovedInDjango40Warning: pre-Django 3.1 format will be invalid.
+diff --git a/docs/howto/upgrade-version.txt b/docs/howto/upgrade-version.txt
+index bde9b18c1b..5f755503fd 100644
+--- a/docs/howto/upgrade-version.txt
++++ b/docs/howto/upgrade-version.txt
+@@ -99,6 +99,45 @@ If you installed Django with pip_, you can use the ``--upgrade`` or ``-U`` flag:
+ 
+ .. _pip: https://pip.pypa.io/
+ 
++Upgrading Django 3.0 to 3.1
++===========================
++
++Session encoding transition
++---------------------------
++
++Django 3.1 introduces a new session encoding format using SHA-256 instead of
++SHA-1. To facilitate a smooth transition, follow these steps:
++
++1. Upgrade to Django 3.1 without changing your session configuration.
++
++2. Set the :setting:`DEFAULT_HASHING_ALGORITHM` setting to ``'sha1'`` in your
++   settings file:
++
++   .. code-block:: python
++
++       DEFAULT_HASHING_ALGORITHM = 'sha1'
++
++   This allows Django to read both old (SHA-1) and new (SHA-256) session formats.
++
++3. Deploy your project with this setting and run it for a period of time to
++   allow active sessions to naturally expire and be replaced with new ones.
++
++4. Once you are confident that all or most sessions have been replaced
++   (typically after your session expiry time has passed), remove the
++   :setting:`DEFAULT_HASHING_ALGORITHM` setting or set it to ``'sha256'``.
++
++5. Deploy your project again with the updated setting.
++
++.. warning::
++
++    The ``'sha1'`` option is provided only for backwards compatibility and will
++    be removed in Django 4.0. It's recommended to complete this transition
++    before upgrading to Django 4.0.
++
++For more details on this transition, refer to the :ref:`sessions documentation
++<configuring-sessions>`.
++.. _pip: https://pip.pypa.io/
++
+ Testing
+ =======
+ 
+diff --git a/docs/releases/3.1.txt b/docs/releases/3.1.txt
+index db090de3f6..e5afdf899a 100644
+--- a/docs/releases/3.1.txt
++++ b/docs/releases/3.1.txt
+@@ -97,6 +97,38 @@ transforms are left as a reference to the new ones and are :ref:`deprecated as
+ of this release <deprecated-jsonfield>`.
+ 
+ .. _default-hashing-algorithm-usage:
++DEFAULT_HASHING_ALGORITHM for transitioning between session encodings
++----------------------------------------------------------------------
++
++A new setting, :setting:`DEFAULT_HASHING_ALGORITHM`, has been introduced to
++facilitate a smooth transition between Django 3.0 and 3.1 session encodings.
++This setting determines which hashing algorithm is used for encoding session
++data.
++
++By default, Django 3.1+ uses SHA-256 for session data hashing. However, if you
++need to maintain compatibility with Django 3.0 during a transition period, you
++can set :setting:`DEFAULT_HASHING_ALGORITHM` to ``'sha1'`` in your settings:
++
++.. code-block:: python
++
++    DEFAULT_HASHING_ALGORITHM = 'sha1'
++
++This allows Django to read both old (SHA-1) and new (SHA-256) session formats,
++ensuring that your application continues to work correctly during the
++transition.
++
++.. warning::
++
++    The ``'sha1'`` option is provided only for backwards compatibility and will
++    be removed in Django 4.0. It's recommended to transition to the new session
++    format as soon as possible.
++
++Once you've fully transitioned to Django 3.1 and ensured that all active
++sessions are using the new format, you should remove the
++:setting:`DEFAULT_HASHING_ALGORITHM` setting or set it to ``'sha256'``.
++
++For more details on this transition, refer to the :ref:`sessions documentation
++<configuring-sessions>`.
+ 
+ ``DEFAULT_HASHING_ALGORITHM`` settings
+ --------------------------------------
+diff --git a/docs/topics/http/sessions.txt b/docs/topics/http/sessions.txt
+index 41c2c499e4..2c945a7b30 100644
+--- a/docs/topics/http/sessions.txt
++++ b/docs/topics/http/sessions.txt
+@@ -95,6 +95,37 @@ session data be expunged from time to time, the ``cache`` backend is for you.
+ If you use the ``cached_db`` session backend, you also need to follow the
+ configuration instructions for the `using database-backed sessions`_.
+ 
++Using file-based sessions
++-------------------------
++Transitioning between Django 3.0 and 3.1 session encoding
++----------------------------------------------------------
++
++Django 3.1 introduces a new session encoding format for improved security.
++To facilitate a smooth transition between Django 3.0 and 3.1, a new setting
++`DEFAULT_HASHING_ALGORITHM` has been introduced.
++
++By default, Django 3.1+ uses the new session encoding format with SHA-256.
++However, if you need to maintain compatibility with Django 3.0 during a
++transition period, you can set `DEFAULT_HASHING_ALGORITHM` to 'sha1' in your
++settings:
++
++.. code-block:: python
++
++    DEFAULT_HASHING_ALGORITHM = 'sha1'
++
++This will allow Django to read both old and new session formats, ensuring
++that your application continues to work correctly during the transition.
++
++.. warning::
++
++    The 'sha1' option is provided only for backwards compatibility and will
++    be removed in Django 4.0. It's recommended to transition to the new
++    session format as soon as possible.
++
++Once you've fully transitioned to Django 3.1 and ensured that all active
++sessions are using the new format, you should remove the
++`DEFAULT_HASHING_ALGORITHM` setting or set it to 'sha256'.
++
+ Using file-based sessions
+ -------------------------
+ 
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: asgiref>=3.2.10 in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.2) (3.4.1)
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.2) (2024.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.2) (0.4.4)
+Requirement already satisfied: typing-extensions in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from asgiref>=3.2.10->Django==3.2) (4.1.1)
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 3.2
+    Uninstalling Django-3.2:
+      Successfully uninstalled Django-3.2
+  Running setup.py develop for Django
+Successfully installed Django-3.2
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
++ git checkout 6e9c5ee88fc948e05b4a7d9f82a8861ed2b0343d tests/sessions_tests/tests.py
+Updated 0 paths from 4c027686e4
++ git apply -v -
+Checking patch tests/sessions_tests/tests.py...
+Applied patch tests/sessions_tests/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 sessions_tests.tests
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+test_actual_expiry (sessions_tests.tests.CacheDBSessionTests) ... ERROR
+test_clear (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_custom_expiry_datetime (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_cycle (sessions_tests.tests.CacheDBSessionTests) ... ERROR
+test_cycle_with_no_session_cache (sessions_tests.tests.CacheDBSessionTests) ... ERROR
+test_decode (sessions_tests.tests.CacheDBSessionTests) ... ERROR
+test_decode_failure_logged_to_security (sessions_tests.tests.CacheDBSessionTests) ... ERROR
+test_decode_legacy (sessions_tests.tests.CacheDBSessionTests) ... ERROR
+test_default_expiry (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_default_hashing_algorith_legacy_decode (sessions_tests.tests.CacheDBSessionTests) ... ERROR
+test_delete (sessions_tests.tests.CacheDBSessionTests) ... ERROR
+test_exists_searches_cache_first (sessions_tests.tests.CacheDBSessionTests) ... ERROR
+test_flush (sessions_tests.tests.CacheDBSessionTests) ... ERROR
+test_get_empty (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_has_key (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_invalid_key (sessions_tests.tests.CacheDBSessionTests) ... ERROR
+test_items (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_keys (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_load_overlong_key (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_new_session (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_non_default_cache (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_pop (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_pop_default (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_save (sessions_tests.tests.CacheDBSessionTests) ... ERROR
+test_save_doesnt_clear_data (sessions_tests.tests.CacheDBSessionTests) ... ERROR
+test_session_key_empty_string_invalid (sessions_tests.tests.CacheDBSessionTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.CacheDBSessionTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.CacheDBSessionTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.CacheDBSessionTests) ... ERROR
+test_setdefault (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_store (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_update (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_values (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_actual_expiry (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ERROR
+test_clear (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_custom_expiry_datetime (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_cycle (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ERROR
+test_cycle_with_no_session_cache (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ERROR
+test_decode (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ERROR
+test_decode_failure_logged_to_security (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ERROR
+test_decode_legacy (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ERROR
+test_default_expiry (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_default_hashing_algorith_legacy_decode (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ERROR
+test_delete (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ERROR
+test_exists_searches_cache_first (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ERROR
+test_flush (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ERROR
+test_get_empty (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_has_key (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_invalid_key (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ERROR
+test_items (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_keys (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_load_overlong_key (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_new_session (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_non_default_cache (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_pop (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_pop_default (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_save (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ERROR
+test_save_doesnt_clear_data (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ERROR
+test_session_key_empty_string_invalid (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ERROR
+test_setdefault (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_store (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_update (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_values (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_actual_expiry (sessions_tests.tests.CustomDatabaseSessionTests) ... ERROR
+test_clear (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_clearsessions_command (sessions_tests.tests.CustomDatabaseSessionTests) ... ERROR
+test_custom_expiry_datetime (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_cycle (sessions_tests.tests.CustomDatabaseSessionTests) ... ERROR
+test_cycle_with_no_session_cache (sessions_tests.tests.CustomDatabaseSessionTests) ... ERROR
+test_decode (sessions_tests.tests.CustomDatabaseSessionTests) ... ERROR
+test_decode_failure_logged_to_security (sessions_tests.tests.CustomDatabaseSessionTests) ... ERROR
+test_decode_legacy (sessions_tests.tests.CustomDatabaseSessionTests) ... ERROR
+test_default_expiry (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_default_hashing_algorith_legacy_decode (sessions_tests.tests.CustomDatabaseSessionTests) ... ERROR
+test_delete (sessions_tests.tests.CustomDatabaseSessionTests) ... ERROR
+test_extra_session_field (sessions_tests.tests.CustomDatabaseSessionTests) ... ERROR
+test_flush (sessions_tests.tests.CustomDatabaseSessionTests) ... ERROR
+test_get_empty (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_has_key (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_invalid_key (sessions_tests.tests.CustomDatabaseSessionTests) ... ERROR
+test_items (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_keys (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_new_session (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_pop (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_pop_default (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_save (sessions_tests.tests.CustomDatabaseSessionTests) ... ERROR
+test_save_doesnt_clear_data (sessions_tests.tests.CustomDatabaseSessionTests) ... ERROR
+test_session_get_decoded (sessions_tests.tests.CustomDatabaseSessionTests) ... ERROR
+test_session_key_empty_string_invalid (sessions_tests.tests.CustomDatabaseSessionTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.CustomDatabaseSessionTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.CustomDatabaseSessionTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.CustomDatabaseSessionTests) ... ERROR
+test_session_str (sessions_tests.tests.CustomDatabaseSessionTests)
+Session repr should be the session key. ... ERROR
+test_sessionmanager_save (sessions_tests.tests.CustomDatabaseSessionTests) ... ERROR
+test_setdefault (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_store (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_update (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_values (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_actual_expiry (sessions_tests.tests.DatabaseSessionTests) ... ERROR
+test_clear (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_clearsessions_command (sessions_tests.tests.DatabaseSessionTests) ... ERROR
+test_custom_expiry_datetime (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_cycle (sessions_tests.tests.DatabaseSessionTests) ... ERROR
+test_cycle_with_no_session_cache (sessions_tests.tests.DatabaseSessionTests) ... ERROR
+test_decode (sessions_tests.tests.DatabaseSessionTests) ... ERROR
+test_decode_failure_logged_to_security (sessions_tests.tests.DatabaseSessionTests) ... ERROR
+test_decode_legacy (sessions_tests.tests.DatabaseSessionTests) ... ERROR
+test_default_expiry (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_default_hashing_algorith_legacy_decode (sessions_tests.tests.DatabaseSessionTests) ... ERROR
+test_delete (sessions_tests.tests.DatabaseSessionTests) ... ERROR
+test_flush (sessions_tests.tests.DatabaseSessionTests) ... ERROR
+test_get_empty (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_has_key (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_invalid_key (sessions_tests.tests.DatabaseSessionTests) ... ERROR
+test_items (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_keys (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_new_session (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_pop (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_pop_default (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_save (sessions_tests.tests.DatabaseSessionTests) ... ERROR
+test_save_doesnt_clear_data (sessions_tests.tests.DatabaseSessionTests) ... ERROR
+test_session_get_decoded (sessions_tests.tests.DatabaseSessionTests) ... ERROR
+test_session_key_empty_string_invalid (sessions_tests.tests.DatabaseSessionTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.DatabaseSessionTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.DatabaseSessionTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.DatabaseSessionTests) ... ERROR
+test_session_str (sessions_tests.tests.DatabaseSessionTests)
+Session repr should be the session key. ... ERROR
+test_sessionmanager_save (sessions_tests.tests.DatabaseSessionTests) ... ERROR
+test_setdefault (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_store (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_update (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_values (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_actual_expiry (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ERROR
+test_clear (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_clearsessions_command (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ERROR
+test_custom_expiry_datetime (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_cycle (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ERROR
+test_cycle_with_no_session_cache (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ERROR
+test_decode (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ERROR
+test_decode_failure_logged_to_security (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ERROR
+test_decode_legacy (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ERROR
+test_default_expiry (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_default_hashing_algorith_legacy_decode (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ERROR
+test_delete (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ERROR
+test_flush (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ERROR
+test_get_empty (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_has_key (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_invalid_key (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ERROR
+test_items (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_keys (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_new_session (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_pop (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_pop_default (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_save (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ERROR
+test_save_doesnt_clear_data (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ERROR
+test_session_get_decoded (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ERROR
+test_session_key_empty_string_invalid (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ERROR
+test_session_str (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+Session repr should be the session key. ... ERROR
+test_sessionmanager_save (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ERROR
+test_setdefault (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_store (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_update (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_values (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_empty_session_saved (sessions_tests.tests.SessionMiddlewareTests) ... ERROR
+test_flush_empty_without_session_cookie_doesnt_set_cookie (sessions_tests.tests.SessionMiddlewareTests) ... ok
+test_httponly_session_cookie (sessions_tests.tests.SessionMiddlewareTests) ... ERROR
+test_no_httponly_session_cookie (sessions_tests.tests.SessionMiddlewareTests) ... ERROR
+test_samesite_session_cookie (sessions_tests.tests.SessionMiddlewareTests) ... ERROR
+test_secure_session_cookie (sessions_tests.tests.SessionMiddlewareTests) ... ERROR
+test_session_delete_on_end (sessions_tests.tests.SessionMiddlewareTests) ... ok
+test_session_delete_on_end_with_custom_domain_and_path (sessions_tests.tests.SessionMiddlewareTests) ... ok
+test_session_save_on_500 (sessions_tests.tests.SessionMiddlewareTests) ... ok
+test_session_update_error_redirect (sessions_tests.tests.SessionMiddlewareTests) ... ERROR
+test_actual_expiry (sessions_tests.tests.CacheSessionTests) ... ok
+test_clear (sessions_tests.tests.CacheSessionTests) ... ok
+test_create_and_save (sessions_tests.tests.CacheSessionTests) ... ok
+test_custom_expiry_datetime (sessions_tests.tests.CacheSessionTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.CacheSessionTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.CacheSessionTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.CacheSessionTests) ... ok
+test_cycle (sessions_tests.tests.CacheSessionTests) ... ok
+test_cycle_with_no_session_cache (sessions_tests.tests.CacheSessionTests) ... ok
+test_decode (sessions_tests.tests.CacheSessionTests) ... ERROR
+test_decode_failure_logged_to_security (sessions_tests.tests.CacheSessionTests) ... ERROR
+test_decode_legacy (sessions_tests.tests.CacheSessionTests) ... ERROR
+test_default_cache (sessions_tests.tests.CacheSessionTests) ... ok
+test_default_expiry (sessions_tests.tests.CacheSessionTests) ... ok
+test_default_hashing_algorith_legacy_decode (sessions_tests.tests.CacheSessionTests) ... ERROR
+test_delete (sessions_tests.tests.CacheSessionTests) ... ok
+test_flush (sessions_tests.tests.CacheSessionTests) ... ok
+test_get_empty (sessions_tests.tests.CacheSessionTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.CacheSessionTests) ... ok
+test_has_key (sessions_tests.tests.CacheSessionTests) ... ok
+test_invalid_key (sessions_tests.tests.CacheSessionTests) ... ok
+test_items (sessions_tests.tests.CacheSessionTests) ... ok
+test_keys (sessions_tests.tests.CacheSessionTests) ... ok
+test_load_overlong_key (sessions_tests.tests.CacheSessionTests) ... ok
+test_new_session (sessions_tests.tests.CacheSessionTests) ... ok
+test_non_default_cache (sessions_tests.tests.CacheSessionTests) ... ok
+test_pop (sessions_tests.tests.CacheSessionTests) ... ok
+test_pop_default (sessions_tests.tests.CacheSessionTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.CacheSessionTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.CacheSessionTests) ... ok
+test_save (sessions_tests.tests.CacheSessionTests) ... ok
+test_save_doesnt_clear_data (sessions_tests.tests.CacheSessionTests) ... ok
+test_session_key_empty_string_invalid (sessions_tests.tests.CacheSessionTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.CacheSessionTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.CacheSessionTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.CacheSessionTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.CacheSessionTests) ... ok
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.CacheSessionTests) ... ok
+test_setdefault (sessions_tests.tests.CacheSessionTests) ... ok
+test_store (sessions_tests.tests.CacheSessionTests) ... ok
+test_update (sessions_tests.tests.CacheSessionTests) ... ok
+test_values (sessions_tests.tests.CacheSessionTests) ... ok
+test_actual_expiry (sessions_tests.tests.CookieSessionTests) ... expected failure
+test_clear (sessions_tests.tests.CookieSessionTests) ... ok
+test_custom_expiry_datetime (sessions_tests.tests.CookieSessionTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.CookieSessionTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.CookieSessionTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.CookieSessionTests) ... ok
+test_cycle (sessions_tests.tests.CookieSessionTests) ... ok
+test_cycle_with_no_session_cache (sessions_tests.tests.CookieSessionTests) ... ok
+test_decode (sessions_tests.tests.CookieSessionTests) ... ERROR
+test_decode_failure_logged_to_security (sessions_tests.tests.CookieSessionTests) ... ERROR
+test_decode_legacy (sessions_tests.tests.CookieSessionTests) ... ERROR
+test_default_expiry (sessions_tests.tests.CookieSessionTests) ... ok
+test_default_hashing_algorith_legacy_decode (sessions_tests.tests.CookieSessionTests) ... ERROR
+test_delete (sessions_tests.tests.CookieSessionTests) ... ok
+test_flush (sessions_tests.tests.CookieSessionTests) ... ok
+test_get_empty (sessions_tests.tests.CookieSessionTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.CookieSessionTests) ... ok
+test_has_key (sessions_tests.tests.CookieSessionTests) ... ok
+test_invalid_key (sessions_tests.tests.CookieSessionTests) ... ok
+test_items (sessions_tests.tests.CookieSessionTests) ... ok
+test_keys (sessions_tests.tests.CookieSessionTests) ... ok
+test_new_session (sessions_tests.tests.CookieSessionTests) ... ok
+test_pop (sessions_tests.tests.CookieSessionTests) ... ok
+test_pop_default (sessions_tests.tests.CookieSessionTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.CookieSessionTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.CookieSessionTests) ... ok
+test_save (sessions_tests.tests.CookieSessionTests) ... ok
+test_save_doesnt_clear_data (sessions_tests.tests.CookieSessionTests) ... ok
+test_session_key_empty_string_invalid (sessions_tests.tests.CookieSessionTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.CookieSessionTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.CookieSessionTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.CookieSessionTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.CookieSessionTests) ... skipped "Cookie backend doesn't have an external store to create records in."
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.CookieSessionTests) ... skipped 'CookieSession is stored in the client and there is no way to query it.'
+test_setdefault (sessions_tests.tests.CookieSessionTests) ... ok
+test_store (sessions_tests.tests.CookieSessionTests) ... ok
+test_unpickling_exception (sessions_tests.tests.CookieSessionTests) ... ok
+test_update (sessions_tests.tests.CookieSessionTests) ... ok
+test_values (sessions_tests.tests.CookieSessionTests) ... ok
+test_actual_expiry (sessions_tests.tests.FileSessionPathLibTests) ... ERROR
+test_clear (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_clearsessions_command (sessions_tests.tests.FileSessionPathLibTests) ... ERROR
+test_configuration_check (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_custom_expiry_datetime (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_cycle (sessions_tests.tests.FileSessionPathLibTests) ... ERROR
+test_cycle_with_no_session_cache (sessions_tests.tests.FileSessionPathLibTests) ... ERROR
+test_decode (sessions_tests.tests.FileSessionPathLibTests) ... ERROR
+test_decode_failure_logged_to_security (sessions_tests.tests.FileSessionPathLibTests) ... ERROR
+test_decode_legacy (sessions_tests.tests.FileSessionPathLibTests) ... ERROR
+test_default_expiry (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_default_hashing_algorith_legacy_decode (sessions_tests.tests.FileSessionPathLibTests) ... ERROR
+test_delete (sessions_tests.tests.FileSessionPathLibTests) ... ERROR
+test_flush (sessions_tests.tests.FileSessionPathLibTests) ... ERROR
+test_get_empty (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_has_key (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_invalid_key (sessions_tests.tests.FileSessionPathLibTests) ... ERROR
+test_invalid_key_backslash (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_invalid_key_forwardslash (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_items (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_keys (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_new_session (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_pop (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_pop_default (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_save (sessions_tests.tests.FileSessionPathLibTests) ... ERROR
+test_save_doesnt_clear_data (sessions_tests.tests.FileSessionPathLibTests) ... ERROR
+test_session_key_empty_string_invalid (sessions_tests.tests.FileSessionPathLibTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.FileSessionPathLibTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.FileSessionPathLibTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.FileSessionPathLibTests) ... ERROR
+test_setdefault (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_store (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_update (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_values (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_actual_expiry (sessions_tests.tests.FileSessionTests) ... ERROR
+test_clear (sessions_tests.tests.FileSessionTests) ... ok
+test_clearsessions_command (sessions_tests.tests.FileSessionTests) ... ERROR
+test_configuration_check (sessions_tests.tests.FileSessionTests) ... ok
+test_custom_expiry_datetime (sessions_tests.tests.FileSessionTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.FileSessionTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.FileSessionTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.FileSessionTests) ... ok
+test_cycle (sessions_tests.tests.FileSessionTests) ... ERROR
+test_cycle_with_no_session_cache (sessions_tests.tests.FileSessionTests) ... ERROR
+test_decode (sessions_tests.tests.FileSessionTests) ... ERROR
+test_decode_failure_logged_to_security (sessions_tests.tests.FileSessionTests) ... ERROR
+test_decode_legacy (sessions_tests.tests.FileSessionTests) ... ERROR
+test_default_expiry (sessions_tests.tests.FileSessionTests) ... ok
+test_default_hashing_algorith_legacy_decode (sessions_tests.tests.FileSessionTests) ... ERROR
+test_delete (sessions_tests.tests.FileSessionTests) ... ERROR
+test_flush (sessions_tests.tests.FileSessionTests) ... ERROR
+test_get_empty (sessions_tests.tests.FileSessionTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.FileSessionTests) ... ok
+test_has_key (sessions_tests.tests.FileSessionTests) ... ok
+test_invalid_key (sessions_tests.tests.FileSessionTests) ... ERROR
+test_invalid_key_backslash (sessions_tests.tests.FileSessionTests) ... ok
+test_invalid_key_forwardslash (sessions_tests.tests.FileSessionTests) ... ok
+test_items (sessions_tests.tests.FileSessionTests) ... ok
+test_keys (sessions_tests.tests.FileSessionTests) ... ok
+test_new_session (sessions_tests.tests.FileSessionTests) ... ok
+test_pop (sessions_tests.tests.FileSessionTests) ... ok
+test_pop_default (sessions_tests.tests.FileSessionTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.FileSessionTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.FileSessionTests) ... ok
+test_save (sessions_tests.tests.FileSessionTests) ... ERROR
+test_save_doesnt_clear_data (sessions_tests.tests.FileSessionTests) ... ERROR
+test_session_key_empty_string_invalid (sessions_tests.tests.FileSessionTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.FileSessionTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.FileSessionTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.FileSessionTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.FileSessionTests) ... ok
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.FileSessionTests) ... ERROR
+test_setdefault (sessions_tests.tests.FileSessionTests) ... ok
+test_store (sessions_tests.tests.FileSessionTests) ... ok
+test_update (sessions_tests.tests.FileSessionTests) ... ok
+test_values (sessions_tests.tests.FileSessionTests) ... ok
+
+======================================================================
+ERROR: test_actual_expiry (sessions_tests.tests.CacheDBSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 353, in test_actual_expiry
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_cycle (sessions_tests.tests.CacheDBSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 175, in test_cycle
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_cycle_with_no_session_cache (sessions_tests.tests.CacheDBSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 185, in test_cycle_with_no_session_cache
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode (sessions_tests.tests.CacheDBSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 313, in test_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_failure_logged_to_security (sessions_tests.tests.CacheDBSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 338, in test_decode_failure_logged_to_security
+    self.assertEqual({}, self.session.decode(bad_encode))
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_legacy (sessions_tests.tests.CacheDBSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 324, in test_decode_legacy
+    self.session.decode(legacy_encoded),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_default_hashing_algorith_legacy_decode (sessions_tests.tests.CacheDBSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 332, in test_default_hashing_algorith_legacy_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_delete (sessions_tests.tests.CacheDBSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 158, in test_delete
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_exists_searches_cache_first (sessions_tests.tests.CacheDBSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 516, in test_exists_searches_cache_first
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_flush (sessions_tests.tests.CacheDBSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 164, in test_flush
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_invalid_key (sessions_tests.tests.CacheDBSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 202, in test_invalid_key
+    session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_save (sessions_tests.tests.CacheDBSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 154, in test_save
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_save_doesnt_clear_data (sessions_tests.tests.CacheDBSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 194, in test_save_doesnt_clear_data
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.CacheDBSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 384, in test_session_save_does_not_resurrect_session_logged_out_in_other_context
+    s1.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_actual_expiry (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 353, in test_actual_expiry
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_cycle (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 175, in test_cycle
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_cycle_with_no_session_cache (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 185, in test_cycle_with_no_session_cache
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 313, in test_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_failure_logged_to_security (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 338, in test_decode_failure_logged_to_security
+    self.assertEqual({}, self.session.decode(bad_encode))
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_legacy (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 324, in test_decode_legacy
+    self.session.decode(legacy_encoded),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_default_hashing_algorith_legacy_decode (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 332, in test_default_hashing_algorith_legacy_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_delete (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 158, in test_delete
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_exists_searches_cache_first (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 516, in test_exists_searches_cache_first
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_flush (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 164, in test_flush
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_invalid_key (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 202, in test_invalid_key
+    session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_save (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 154, in test_save
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_save_doesnt_clear_data (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 194, in test_save_doesnt_clear_data
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 384, in test_session_save_does_not_resurrect_session_logged_out_in_other_context
+    s1.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/cached_db.py", line 47, in save
+    super().save(must_create)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_actual_expiry (sessions_tests.tests.CustomDatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 353, in test_actual_expiry
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/tests/sessions_tests/models.py", line 32, in create_model_instance
+    obj = super().create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_clearsessions_command (sessions_tests.tests.CustomDatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 455, in test_clearsessions_command
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/tests/sessions_tests/models.py", line 32, in create_model_instance
+    obj = super().create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_cycle (sessions_tests.tests.CustomDatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 175, in test_cycle
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/tests/sessions_tests/models.py", line 32, in create_model_instance
+    obj = super().create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_cycle_with_no_session_cache (sessions_tests.tests.CustomDatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 185, in test_cycle_with_no_session_cache
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/tests/sessions_tests/models.py", line 32, in create_model_instance
+    obj = super().create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode (sessions_tests.tests.CustomDatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 313, in test_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_failure_logged_to_security (sessions_tests.tests.CustomDatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 338, in test_decode_failure_logged_to_security
+    self.assertEqual({}, self.session.decode(bad_encode))
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_legacy (sessions_tests.tests.CustomDatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 324, in test_decode_legacy
+    self.session.decode(legacy_encoded),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_default_hashing_algorith_legacy_decode (sessions_tests.tests.CustomDatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 332, in test_default_hashing_algorith_legacy_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_delete (sessions_tests.tests.CustomDatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 158, in test_delete
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/tests/sessions_tests/models.py", line 32, in create_model_instance
+    obj = super().create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_extra_session_field (sessions_tests.tests.CustomDatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 485, in test_extra_session_field
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/tests/sessions_tests/models.py", line 32, in create_model_instance
+    obj = super().create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_flush (sessions_tests.tests.CustomDatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 164, in test_flush
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/tests/sessions_tests/models.py", line 32, in create_model_instance
+    obj = super().create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_invalid_key (sessions_tests.tests.CustomDatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 202, in test_invalid_key
+    session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/tests/sessions_tests/models.py", line 32, in create_model_instance
+    obj = super().create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_save (sessions_tests.tests.CustomDatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 154, in test_save
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/tests/sessions_tests/models.py", line 32, in create_model_instance
+    obj = super().create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_save_doesnt_clear_data (sessions_tests.tests.CustomDatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 194, in test_save_doesnt_clear_data
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/tests/sessions_tests/models.py", line 32, in create_model_instance
+    obj = super().create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_session_get_decoded (sessions_tests.tests.CustomDatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 425, in test_session_get_decoded
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/tests/sessions_tests/models.py", line 32, in create_model_instance
+    obj = super().create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.CustomDatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 384, in test_session_save_does_not_resurrect_session_logged_out_in_other_context
+    s1.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/tests/sessions_tests/models.py", line 32, in create_model_instance
+    obj = super().create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_session_str (sessions_tests.tests.CustomDatabaseSessionTests)
+Session repr should be the session key.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 412, in test_session_str
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/tests/sessions_tests/models.py", line 32, in create_model_instance
+    obj = super().create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_sessionmanager_save (sessions_tests.tests.CustomDatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 437, in test_sessionmanager_save
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/tests/sessions_tests/models.py", line 32, in create_model_instance
+    obj = super().create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_actual_expiry (sessions_tests.tests.DatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 353, in test_actual_expiry
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_clearsessions_command (sessions_tests.tests.DatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 455, in test_clearsessions_command
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_cycle (sessions_tests.tests.DatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 175, in test_cycle
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_cycle_with_no_session_cache (sessions_tests.tests.DatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 185, in test_cycle_with_no_session_cache
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode (sessions_tests.tests.DatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 313, in test_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_failure_logged_to_security (sessions_tests.tests.DatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 338, in test_decode_failure_logged_to_security
+    self.assertEqual({}, self.session.decode(bad_encode))
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_legacy (sessions_tests.tests.DatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 324, in test_decode_legacy
+    self.session.decode(legacy_encoded),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_default_hashing_algorith_legacy_decode (sessions_tests.tests.DatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 332, in test_default_hashing_algorith_legacy_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_delete (sessions_tests.tests.DatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 158, in test_delete
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_flush (sessions_tests.tests.DatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 164, in test_flush
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_invalid_key (sessions_tests.tests.DatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 202, in test_invalid_key
+    session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_save (sessions_tests.tests.DatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 154, in test_save
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_save_doesnt_clear_data (sessions_tests.tests.DatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 194, in test_save_doesnt_clear_data
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_session_get_decoded (sessions_tests.tests.DatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 425, in test_session_get_decoded
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.DatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 384, in test_session_save_does_not_resurrect_session_logged_out_in_other_context
+    s1.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_session_str (sessions_tests.tests.DatabaseSessionTests)
+Session repr should be the session key.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 412, in test_session_str
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_sessionmanager_save (sessions_tests.tests.DatabaseSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 437, in test_sessionmanager_save
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_actual_expiry (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 353, in test_actual_expiry
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_clearsessions_command (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 455, in test_clearsessions_command
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_cycle (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 175, in test_cycle
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_cycle_with_no_session_cache (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 185, in test_cycle_with_no_session_cache
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 313, in test_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_failure_logged_to_security (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 338, in test_decode_failure_logged_to_security
+    self.assertEqual({}, self.session.decode(bad_encode))
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_legacy (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 324, in test_decode_legacy
+    self.session.decode(legacy_encoded),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_default_hashing_algorith_legacy_decode (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 332, in test_default_hashing_algorith_legacy_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_delete (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 158, in test_delete
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_flush (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 164, in test_flush
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_invalid_key (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 202, in test_invalid_key
+    session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_save (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 154, in test_save
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_save_doesnt_clear_data (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 194, in test_save_doesnt_clear_data
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_session_get_decoded (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 425, in test_session_get_decoded
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 384, in test_session_save_does_not_resurrect_session_logged_out_in_other_context
+    s1.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_session_str (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+Session repr should be the session key.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 412, in test_session_str
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_sessionmanager_save (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 437, in test_sessionmanager_save
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_empty_session_saved (sessions_tests.tests.SessionMiddlewareTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 838, in test_empty_session_saved
+    response = middleware(request)
+  File "/testbed/django/utils/deprecation.py", line 119, in __call__
+    response = self.process_response(request, response)
+  File "/testbed/django/contrib/sessions/middleware.py", line 63, in process_response
+    request.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_httponly_session_cookie (sessions_tests.tests.SessionMiddlewareTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 692, in test_httponly_session_cookie
+    response = middleware(request)
+  File "/testbed/django/utils/deprecation.py", line 119, in __call__
+    response = self.process_response(request, response)
+  File "/testbed/django/contrib/sessions/middleware.py", line 63, in process_response
+    request.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_no_httponly_session_cookie (sessions_tests.tests.SessionMiddlewareTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 710, in test_no_httponly_session_cookie
+    response = middleware(request)
+  File "/testbed/django/utils/deprecation.py", line 119, in __call__
+    response = self.process_response(request, response)
+  File "/testbed/django/contrib/sessions/middleware.py", line 63, in process_response
+    request.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_samesite_session_cookie (sessions_tests.tests.SessionMiddlewareTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 703, in test_samesite_session_cookie
+    response = middleware(request)
+  File "/testbed/django/utils/deprecation.py", line 119, in __call__
+    response = self.process_response(request, response)
+  File "/testbed/django/contrib/sessions/middleware.py", line 63, in process_response
+    request.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_secure_session_cookie (sessions_tests.tests.SessionMiddlewareTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 683, in test_secure_session_cookie
+    response = middleware(request)
+  File "/testbed/django/utils/deprecation.py", line 119, in __call__
+    response = self.process_response(request, response)
+  File "/testbed/django/contrib/sessions/middleware.py", line 63, in process_response
+    request.session.save()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_session_update_error_redirect (sessions_tests.tests.SessionMiddlewareTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 748, in test_session_update_error_redirect
+    middleware(request)
+  File "/testbed/django/utils/deprecation.py", line 117, in __call__
+    response = response or self.get_response(request)
+  File "/testbed/tests/sessions_tests/tests.py", line 733, in response_delete_session
+    request.session.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 81, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/db.py", line 55, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 83, in save
+    obj = self.create_model_instance(data)
+  File "/testbed/django/contrib/sessions/backends/db.py", line 70, in create_model_instance
+    session_data=self.encode(data),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode (sessions_tests.tests.CacheSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 313, in test_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_failure_logged_to_security (sessions_tests.tests.CacheSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 338, in test_decode_failure_logged_to_security
+    self.assertEqual({}, self.session.decode(bad_encode))
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_legacy (sessions_tests.tests.CacheSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 324, in test_decode_legacy
+    self.session.decode(legacy_encoded),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_default_hashing_algorith_legacy_decode (sessions_tests.tests.CacheSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 332, in test_default_hashing_algorith_legacy_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode (sessions_tests.tests.CookieSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 313, in test_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_failure_logged_to_security (sessions_tests.tests.CookieSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 338, in test_decode_failure_logged_to_security
+    self.assertEqual({}, self.session.decode(bad_encode))
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_legacy (sessions_tests.tests.CookieSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 324, in test_decode_legacy
+    self.session.decode(legacy_encoded),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_default_hashing_algorith_legacy_decode (sessions_tests.tests.CookieSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 332, in test_default_hashing_algorith_legacy_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_actual_expiry (sessions_tests.tests.FileSessionPathLibTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 353, in test_actual_expiry
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_clearsessions_command (sessions_tests.tests.FileSessionPathLibTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 603, in test_clearsessions_command
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_cycle (sessions_tests.tests.FileSessionPathLibTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 175, in test_cycle
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_cycle_with_no_session_cache (sessions_tests.tests.FileSessionPathLibTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 185, in test_cycle_with_no_session_cache
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode (sessions_tests.tests.FileSessionPathLibTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 313, in test_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_failure_logged_to_security (sessions_tests.tests.FileSessionPathLibTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 338, in test_decode_failure_logged_to_security
+    self.assertEqual({}, self.session.decode(bad_encode))
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_legacy (sessions_tests.tests.FileSessionPathLibTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 324, in test_decode_legacy
+    self.session.decode(legacy_encoded),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_default_hashing_algorith_legacy_decode (sessions_tests.tests.FileSessionPathLibTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 332, in test_default_hashing_algorith_legacy_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_delete (sessions_tests.tests.FileSessionPathLibTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 158, in test_delete
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_flush (sessions_tests.tests.FileSessionPathLibTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 164, in test_flush
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_invalid_key (sessions_tests.tests.FileSessionPathLibTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 202, in test_invalid_key
+    session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_save (sessions_tests.tests.FileSessionPathLibTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 154, in test_save
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_save_doesnt_clear_data (sessions_tests.tests.FileSessionPathLibTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 194, in test_save_doesnt_clear_data
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.FileSessionPathLibTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 384, in test_session_save_does_not_resurrect_session_logged_out_in_other_context
+    s1.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_actual_expiry (sessions_tests.tests.FileSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 353, in test_actual_expiry
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_clearsessions_command (sessions_tests.tests.FileSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 603, in test_clearsessions_command
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_cycle (sessions_tests.tests.FileSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 175, in test_cycle
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_cycle_with_no_session_cache (sessions_tests.tests.FileSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 185, in test_cycle_with_no_session_cache
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode (sessions_tests.tests.FileSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 313, in test_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_failure_logged_to_security (sessions_tests.tests.FileSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 338, in test_decode_failure_logged_to_security
+    self.assertEqual({}, self.session.decode(bad_encode))
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_decode_legacy (sessions_tests.tests.FileSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 324, in test_decode_legacy
+    self.session.decode(legacy_encoded),
+  File "/testbed/django/contrib/sessions/backends/base.py", line 127, in decode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_default_hashing_algorith_legacy_decode (sessions_tests.tests.FileSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/sessions_tests/tests.py", line 332, in test_default_hashing_algorith_legacy_decode
+    encoded = self.session.encode(data)
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_delete (sessions_tests.tests.FileSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 158, in test_delete
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_flush (sessions_tests.tests.FileSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 164, in test_flush
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_invalid_key (sessions_tests.tests.FileSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 202, in test_invalid_key
+    session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_save (sessions_tests.tests.FileSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 154, in test_save
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_save_doesnt_clear_data (sessions_tests.tests.FileSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 194, in test_save_doesnt_clear_data
+    self.session.save()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+======================================================================
+ERROR: test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.FileSessionTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/sessions_tests/tests.py", line 384, in test_session_save_does_not_resurrect_session_logged_out_in_other_context
+    s1.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 113, in save
+    return self.create()
+  File "/testbed/django/contrib/sessions/backends/file.py", line 105, in create
+    self.save(must_create=True)
+  File "/testbed/django/contrib/sessions/backends/file.py", line 157, in save
+    os.write(output_file_fd, self.encode(session_data).encode())
+  File "/testbed/django/contrib/sessions/backends/base.py", line 119, in encode
+    if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
+AttributeError: 'SessionStore' object has no attribute 'DEFAULT_HASHING_ALGORITHM'
+
+----------------------------------------------------------------------Testing against Django installed in '/testbed/django'
+Importing application sessions_tests
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, messages, sessions, sessions_tests, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table sessions_tests_customsession
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (0 silenced).
+
+Ran 384 tests in 0.117s
+
+FAILED (errors=122, skipped=2, expected failures=1)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout 6e9c5ee88fc948e05b4a7d9f82a8861ed2b0343d tests/sessions_tests/tests.py
+Updated 1 path from 4c027686e4

@@ -1,0 +1,39 @@
+{
+    "sphinx-doc__sphinx-11445": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "tests/test_util_rst.py::test_prepend_prolog_with_roles_in_sections_with_newline",
+                    "tests/test_util_rst.py::test_prepend_prolog_with_roles_in_sections_without_newline"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "tests/test_util_rst.py::test_escape",
+                    "tests/test_util_rst.py::test_append_epilog",
+                    "tests/test_util_rst.py::test_textwidth",
+                    "tests/test_util_rst.py::test_heading"
+                ],
+                "failure": [
+                    "tests/test_util_rst.py::test_prepend_prolog",
+                    "tests/test_util_rst.py::test_prepend_prolog_with_CR",
+                    "tests/test_util_rst.py::test_prepend_prolog_without_CR",
+                    "tests/test_util_rst.py::test_prepend_prolog_with_roles_in_sections"
+                ]
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

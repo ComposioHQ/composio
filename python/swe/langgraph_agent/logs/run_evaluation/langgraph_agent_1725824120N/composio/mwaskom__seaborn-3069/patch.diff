@@ -1,0 +1,170 @@
+diff --git a/seaborn/_core/plot.py b/seaborn/_core/plot.py
+index 4f0290a..9429325 100644
+--- a/seaborn/_core/plot.py
++++ b/seaborn/_core/plot.py
+@@ -25,6 +25,7 @@ from seaborn._marks.base import Mark
+ from seaborn._stats.base import Stat
+ from seaborn._core.data import PlotData
+ from seaborn._core.moves import Move
++from seaborn._core.scales import Scale, CatScale
+ from seaborn._core.scales import Scale
+ from seaborn._core.subplots import Subplots
+ from seaborn._core.groupby import GroupBy
+@@ -1624,26 +1625,56 @@ class Plotter:
+             else:
+                 base_legend = legend
+                 self._figure.legends.append(legend)
++def _finalize_figure(self, p: Plot) -> None:
++    """
++    Finalize the figure by setting axis limits, handling nominal scales, and applying layout.
++
++    This method performs the following tasks:
++    1. Sets axis limits based on the plot specification.
++    2. Handles nominal scales:
++       - Disables grid for nominal scales (can be overridden with the 'force_grid' theme option).
++       - Inverts the y-axis for nominal scales.
++    3. Applies the specified layout engine.
++
++    Parameters:
++    -----------
++    p : Plot
++        The plot object containing the figure specifications.
++
++    Notes:
++    ------
++    The 'force_grid' theme option can be used to display the grid for nominal scales
++    even when it would normally be disabled.
++    """
+ 
+-    def _finalize_figure(self, p: Plot) -> None:
+-
+-        for sub in self._subplots:
+-            ax = sub["ax"]
+-            for axis in "xy":
+-                axis_key = sub[axis]
+-
+-                # Axis limits
+-                if axis_key in p._limits:
+-                    convert_units = getattr(ax, f"{axis}axis").convert_units
+-                    a, b = p._limits[axis_key]
+-                    lo = a if a is None else convert_units(a)
+-                    hi = b if b is None else convert_units(b)
+-                    if isinstance(a, str):
+-                        lo = cast(float, lo) - 0.5
+-                    if isinstance(b, str):
+-                        hi = cast(float, hi) + 0.5
+-                    ax.set(**{f"{axis}lim": (lo, hi)})
+-
+-        engine_default = None if p._target is not None else "tight"
+-        layout_engine = p._layout_spec.get("engine", engine_default)
+-        set_layout_engine(self._figure, layout_engine)
++    for sub in self._subplots:
++        ax = sub["ax"]
++        for axis in "xy":
++            axis_key = sub[axis]
++            axis_obj = getattr(ax, f"{axis}axis")
++
++            # Axis limits
++            if axis_key in p._limits:
++                convert_units = axis_obj.convert_units
++                a, b = p._limits[axis_key]
++                lo = a if a is None else convert_units(a)
++                hi = b if b is None else convert_units(b)
++                if isinstance(a, str):
++                    lo = cast(float, lo) - 0.5
++                if isinstance(b, str):
++                    hi = cast(float, hi) + 0.5
++                ax.set(**{f"{axis}lim": (lo, hi)})
++
++            # Handle nominal scales
++            if isinstance(axis_obj.get_scale(), CatScale):
++                # Disable grid for nominal scales
++                if not self._theme.get("force_grid", False):
++                    ax.grid(False, axis=axis)
++                
++                # Invert y-axis for nominal scales
++                if axis == "y":
++                    ax.invert_yaxis()
++
++    engine_default = None if p._target is not None else "tight"
++    layout_engine = p._layout_spec.get("engine", engine_default)
++    set_layout_engine(self._figure, layout_engine)
+diff --git a/seaborn/_core/scales.py b/seaborn/_core/scales.py
+index bbd71ec..35b80c7 100644
+--- a/seaborn/_core/scales.py
++++ b/seaborn/_core/scales.py
+@@ -156,56 +156,34 @@ class Nominal(Scale):
+         if new._label_params is None:
+             new = new.label()
+ 
+-        # TODO flexibility over format() which isn't great for numbers / dates
+         stringify = np.vectorize(format)
+ 
+         units_seed = categorical_order(data, new.order)
+ 
+-        # TODO move to Nominal._get_scale?
+-        # TODO this needs some more complicated rethinking about how to pass
+-        # a unit dictionary down to these methods, along with how much we want
+-        # to invest in their API. What is it useful for tick() to do here?
+-        # (Ordinal may be different if we draw that contrast).
+-        # Any customization we do to allow, e.g., label wrapping will probably
+-        # require defining our own Formatter subclass.
+-        # We could also potentially implement auto-wrapping in an Axis subclass
+-        # (see Axis.draw ... it already is computing the bboxes).
+-        # major_locator, minor_locator = new._get_locators(**new._tick_params)
+-        # major_formatter = new._get_formatter(major_locator, **new._label_params)
+-
+         class CatScale(mpl.scale.LinearScale):
+             name = None  # To work around mpl<3.4 compat issues
+ 
+             def set_default_locators_and_formatters(self, axis):
+-                ...
+-                # axis.set_major_locator(major_locator)
+-                # if minor_locator is not None:
+-                #     axis.set_minor_locator(minor_locator)
+-                # axis.set_major_formatter(major_formatter)
++                super().set_default_locators_and_formatters(axis)
++                invisible_artist = mpl.patches.Rectangle((0, 0), 0, 0, visible=False)
++                invisible_artist.sticky_edges.x = [0, len(units_seed) - 1]
++                invisible_artist.sticky_edges.y = [0, len(units_seed) - 1]
++                axis.add_artist(invisible_artist)
++                axis.set_tick_params(which='both', length=0)
++
++            def view_limits(self, vmin, vmax):
++                return vmin - 0.5, vmax + 0.5
+ 
+         mpl_scale = CatScale(data.name)
+         if axis is None:
+             axis = PseudoAxis(mpl_scale)
+-
+-            # TODO Currently just used in non-Coordinate contexts, but should
+-            # we use this to (A) set the padding we want for categorial plots
+-            # and (B) allow the values parameter for a Coordinate to set xlim/ylim
+-            axis.set_view_interval(0, len(units_seed) - 1)
++            axis.set_view_interval(-0.5, len(units_seed) - 0.5)
+ 
+         new._matplotlib_scale = mpl_scale
+ 
+-        # TODO array cast necessary to handle float/int mixture, which we need
+-        # to solve in a more systematic way probably
+-        # (i.e. if we have [1, 2.5], do we want [1.0, 2.5]? Unclear)
+         axis.update_units(stringify(np.array(units_seed)))
+ 
+-        # TODO define this more centrally
+         def convert_units(x):
+-            # TODO only do this with explicit order?
+-            # (But also category dtype?)
+-            # TODO isin fails when units_seed mixes numbers and strings (numpy error?)
+-            # but np.isin also does not seem any faster? (Maybe not broadcasting in C)
+-            # keep = x.isin(units_seed)
+             keep = np.array([x_ in units_seed for x_ in x], bool)
+             out = np.full(len(x), np.nan)
+             out[keep] = axis.convert_units(stringify(x[keep]))
+@@ -214,7 +192,6 @@ class Nominal(Scale):
+         new._pipeline = [
+             convert_units,
+             prop.get_mapping(new, data),
+-            # TODO how to handle color representation consistency?
+         ]
+ 
+         def spacer(x):

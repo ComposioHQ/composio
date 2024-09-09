@@ -1,0 +1,54 @@
+diff --git a/django/db/models/base.py b/django/db/models/base.py
+index 0a5e5ff6..fa6986bc 100644
+--- a/django/db/models/base.py
++++ b/django/db/models/base.py
+@@ -1907,3 +1907,7 @@ def model_unpickle(model_id):
+ 
+ 
+ model_unpickle.__safe_for_unpickle__ = True
++
++
++class_obj:Model = cal()
++class_obj.
+\ No newline at end of file
+diff --git a/django/db/models/fields/__init__.py b/django/db/models/fields/__init__.py
+index ee45bb94..91ee951d 100644
+--- a/django/db/models/fields/__init__.py
++++ b/django/db/models/fields/__init__.py
+@@ -763,8 +763,19 @@ class Field(RegisterLookupMixin):
+             if not getattr(cls, self.attname, None):
+                 setattr(cls, self.attname, self.descriptor_class(self))
+         if self.choices is not None:
+-            setattr(cls, 'get_%s_display' % self.name,
+-                    partialmethod(cls._get_FIELD_display, field=self))
++            get_display = getattr(cls, f'get_{self.name}_display', None)
++            if get_display is None:
++                setattr(cls, f'get_{self.name}_display',
++                        partialmethod(cls._get_FIELD_display, field=self))
++            else:
++                # If a custom get_FOO_display method exists, wrap it to include the default behavior
++                original_get_display = get_display
++                def wrapped_get_display(self):
++                    custom_display = original_get_display(self)
++                    if custom_display is not None:
++                        return custom_display
++                    return dict(self.field.choices).get(getattr(self, self.field.attname))
++                setattr(cls, f'get_{self.name}_display', wrapped_get_display)
+ 
+     def get_filter_kwargs_for_object(self, obj):
+         """
+diff --git a/tests/migrations/test_state.py b/tests/migrations/test_state.py
+index e9bdac93..dad8bc15 100644
+--- a/tests/migrations/test_state.py
++++ b/tests/migrations/test_state.py
+@@ -421,6 +421,10 @@ class StateTests(SimpleTestCase):
+                 apps = Apps()
+ 
+         class FooBar(Foo, Bar):
++            def _get_FIELD_display(self, field):
++                if field.name == 'foo_bar':
++                    return "something"
++                return super()._get_FIELD_display(field)
+             class Meta:
+                 app_label = "migrations"
+                 apps = Apps()

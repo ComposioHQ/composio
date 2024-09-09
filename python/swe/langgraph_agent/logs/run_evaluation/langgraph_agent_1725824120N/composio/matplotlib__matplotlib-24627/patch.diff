@@ -1,0 +1,125 @@
+diff --git a/lib/matplotlib/axes/_base.py b/lib/matplotlib/axes/_base.py
+index 90b0bf1..11ea854 100644
+--- a/lib/matplotlib/axes/_base.py
++++ b/lib/matplotlib/axes/_base.py
+@@ -1392,6 +1392,120 @@ class _AxesBase(martist.Artist):
+ 
+         self.stale = True
+ 
++    def clear(self):
++        """Clear the Axes."""
++        # Store all artists before clearing
++        artists = self.get_children()
++        
++        # Perform the existing clear operations
++        if self._subclass_uses_cla:
++            self.cla()
++        else:
++            super().clear()
++        
++        # Reset .axes and .figure attributes for all stored artists
++        for artist in artists:
++            if hasattr(artist, 'axes'):
++                artist.axes = None
++            if hasattr(artist, 'figure'):
++                artist.figure = None
++        
++        self.stale = True
++    def clear(self):
++        """Clear the Axes."""
++        # Store all artists before clearing
++        artists = self.get_children()
++        
++        # Perform the existing clear operations
++        if self._subclass_uses_cla:
++            self.cla()
++        else:
++            super().clear()
++        
++        # Reset .axes and .figure attributes for all stored artists
++        for artist in artists:
++            if hasattr(artist, 'axes'):
++                artist.axes = None
++            if hasattr(artist, 'figure'):
++                artist.figure = None
++        
++        self.stale = True
++    def clear(self):
++        """Clear the Axes."""
++        # Store all artists before clearing
++        artists = self.get_children()
++        
++        # Perform the existing clear operations
++        if self._subclass_uses_cla:
++            self.cla()
++        else:
++            super().clear()
++        
++        # Reset .axes and .figure attributes for all stored artists
++        for artist in artists:
++            if hasattr(artist, 'axes'):
++                artist.axes = None
++            if hasattr(artist, 'figure'):
++                artist.figure = None
++        
++        self.stale = True
++    def clear(self):
++        """Clear the Axes."""
++        # Store all artists before clearing
++        artists = self.get_children()
++        
++        # Perform the existing clear operations
++        if self._subclass_uses_cla:
++            self.cla()
++        else:
++            super().clear()
++        
++        # Reset .axes and .figure attributes for all stored artists
++        for artist in artists:
++            if hasattr(artist, 'axes'):
++                artist.axes = None
++            if hasattr(artist, 'figure'):
++                artist.figure = None
++        
++        self.stale = True
++    def clear(self):
++        """Clear the Axes."""
++        # Store all artists before clearing
++        artists = self.get_children()
++        
++        # Perform the existing clear operations
++        if self._subclass_uses_cla:
++            self.cla()
++        else:
++            super().clear()
++        
++        # Reset .axes and .figure attributes for all stored artists
++        for artist in artists:
++            if hasattr(artist, 'axes'):
++                artist.axes = None
++            if hasattr(artist, 'figure'):
++                artist.figure = None
++        
++        self.stale = True
++    def clear(self):
++        """Clear the Axes."""
++        # Store all artists before clearing
++        artists = self.get_children()
++        
++        # Perform the existing clear operations
++        if self._subclass_uses_cla:
++            self.cla()
++        else:
++            super().clear()
++        
++        # Reset .axes and .figure attributes for all stored artists
++        for artist in artists:
++            if hasattr(artist, 'axes'):
++                artist.axes = None
++            if hasattr(artist, 'figure'):
++                artist.figure = None
++        
++        self.stale = True
+     def clear(self):
+         """Clear the Axes."""
+         # Act as an alias, or as the superclass implementation depending on the

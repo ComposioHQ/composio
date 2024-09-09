@@ -1,0 +1,39 @@
+{
+    "django__django-14315": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "test_accent (dbshell.test_postgresql.PostgreSqlDbshellCommandTestCase)",
+                    "test_basic (dbshell.test_postgresql.PostgreSqlDbshellCommandTestCase)",
+                    "test_column (dbshell.test_postgresql.PostgreSqlDbshellCommandTestCase)",
+                    "test_crash_password_does_not_leak (dbshell.test_postgresql.PostgreSqlDbshellCommandTestCase)",
+                    "test_passfile (dbshell.test_postgresql.PostgreSqlDbshellCommandTestCase)",
+                    "test_service (dbshell.test_postgresql.PostgreSqlDbshellCommandTestCase)",
+                    "test_ssl_certificate (dbshell.test_postgresql.PostgreSqlDbshellCommandTestCase)"
+                ],
+                "failure": [
+                    "test_runshell_use_environ (backends.base.test_client.SimpleDatabaseClientTests)",
+                    "test_settings_to_cmd_args_env (backends.base.test_client.SimpleDatabaseClientTests)",
+                    "test_nopass (dbshell.test_postgresql.PostgreSqlDbshellCommandTestCase)",
+                    "test_parameters (dbshell.test_postgresql.PostgreSqlDbshellCommandTestCase)"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

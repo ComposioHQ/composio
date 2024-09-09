@@ -1,0 +1,13 @@
+diff --git a/django/db/models/fields/related.py b/django/db/models/fields/related.py
+index 397146a3..f58366e3 100644
+--- a/django/db/models/fields/related.py
++++ b/django/db/models/fields/related.py
+@@ -988,7 +988,7 @@ class ForeignKey(ForeignObject):
+                              (self.name, self.remote_field.model))
+         return super().formfield(**{
+             'form_class': forms.ModelChoiceField,
+-            'queryset': self.remote_field.model._default_manager.using(using),
++            'queryset': self.remote_field.model._default_manager.using(using).distinct(),
+             'to_field_name': self.remote_field.field_name,
+             **kwargs,
+             'blank': self.blank,

@@ -1,0 +1,193 @@
+diff --git a/lib/matplotlib/contour.py b/lib/matplotlib/contour.py
+index 3f84250..c627139 100644
+--- a/lib/matplotlib/contour.py
++++ b/lib/matplotlib/contour.py
+@@ -703,6 +703,188 @@ layers : array
+ 
+ 
+ @_docstring.dedent_interpd
++@_docstring.dedent_interpd
++class ContourSet(ContourLabeler, mcoll.Collection):
++    """
++    Store a set of contour lines or filled regions.
++
++    User-callable method: `~.Axes.clabel`
++
++    Parameters
++    ----------
++    ax : `~.axes.Axes`
++
++    %(contour_set_attributes)s
++
++    """
++
++    def __init__(self, ax, *args, levels=None, filled=False, linewidths=None,
++                 linestyles=None, hatches=(None,), alpha=None, origin=None,
++                 extent=None, cmap=None, colors=None, norm=None, vmin=None,
++                 vmax=None, extend='neither', antialiased=None, nchunk=0,
++                 locator=None, transform=None, negative_linestyles=None,
++                 clip_path=None, **kwargs):
++        """
++        Draw contour lines or filled regions, depending on
++        whether keyword arg *filled* is False (default) or True.
++
++        Call signature::
++
++            ContourSet(ax, levels, [X, Y,] Z, [opts...])
++
++        Parameters
++        ----------
++        ax : `~.axes.Axes`
++            The `~.axes.Axes` object to draw on.
++
++        levels : [level0, level1, ..., leveln]
++            A list of floating point numbers indicating the contour levels.
++
++        X, Y : array-like, optional
++            The coordinates of the values in *Z*.
++
++        Z : array-like(N, M)
++            The height values over which the contour is drawn.
++
++        [...]
++
++        """
++        # ... (rest of the __init__ method)
++
++    def get_paths(self):
++        """
++        Get the paths of the contour set.
++
++        Returns
++        -------
++        list of Path
++            The list of paths in the contour set.
++        """
++        return self._paths
++
++    def set_paths(self, paths):
++        """
++        Set the paths of the contour set.
++
++        Parameters
++        ----------
++        paths : list of Path
++            The new set of paths for the contour set.
++        """
++        self._paths = paths
++        super().set_paths(paths)
++        self.stale = True
++
++    # ... (rest of the existing methods)
++# End of ContourSet class
++# The duplicate __init__ method has been removed.
++# The next class or function should start here.
++# The next class or function should start here.
++# The duplicate __init__ method has been removed.
++# The next method or content should start here.
++    def __init__(self, ax, *args, levels=None, filled=False, linewidths=None,
++                 linestyles=None, hatches=(None,), alpha=None, origin=None,
++                 extent=None, cmap=None, colors=None, norm=None, vmin=None,
++                 vmax=None, extend='neither', antialiased=None, nchunk=0,
++                 locator=None, transform=None, negative_linestyles=None,
++                 clip_path=None, **kwargs):
++        """
++        Draw contour lines or filled regions, depending on
++        whether keyword arg *filled* is False (default) or True.
++
++        Call signature::
++
++            ContourSet(ax, levels, [X, Y,] Z, [opts...])
++
++        Parameters
++        ----------
++        ax : `~.axes.Axes`
++            The `~.axes.Axes` object to draw on.
++
++        levels : [level0, level1, ..., leveln]
++            A list of floating point numbers indicating the contour levels.
++
++        X, Y : array-like, optional
++            The coordinates of the values in *Z*.
++
++        Z : array-like(N, M)
++            The height values over which the contour is drawn.
++
++        [...]
++
++        """
++        # ... (rest of the __init__ method)
++
++    def get_paths(self):
++        """
++        Get the paths of the contour set.
++
++        Returns
++        -------
++        list of Path
++            The list of paths in the contour set.
++        """
++        return self._paths
++
++    def set_paths(self, paths):
++        """
++        Set the paths of the contour set.
++
++        Parameters
++        ----------
++        paths : list of Path
++            The new set of paths for the contour set.
++        """
++        self._paths = paths
++        super().set_paths(paths)
++        self.stale = True
++
++    # ... (rest of the existing methods)
++class ContourSet(ContourLabeler, mcoll.Collection):
++    # ... existing code ...
++
++    def get_paths(self):
++        """
++        Get the paths of the contour set.
++
++        Returns
++        -------
++        list of Path
++            The list of paths in the contour set.
++        """
++        return self._paths
++
++    def set_paths(self, paths):
++        """
++        Set the paths of the contour set.
++
++        Parameters
++        ----------
++        paths : list of Path
++            The new set of paths for the contour set.
++        """
++        self._paths = paths
++        super().set_paths(paths)
++        self.stale = True
++
++    # ... rest of the existing code ...
++class ContourSet(ContourLabeler, mcoll.Collection):
++    # ... existing code ...
++
++    def set_paths(self, paths):
++        """
++        Set the paths of the contour set.
++
++        Parameters
++        ----------
++        paths : list of Path
++            The new set of paths for the contour set.
++        """
++        self._paths = paths
++        super().set_paths(paths)
++        self.stale = True
++
++    # ... rest of the existing code ...
+ class ContourSet(ContourLabeler, mcoll.Collection):
+     """
+     Store a set of contour lines or filled regions.

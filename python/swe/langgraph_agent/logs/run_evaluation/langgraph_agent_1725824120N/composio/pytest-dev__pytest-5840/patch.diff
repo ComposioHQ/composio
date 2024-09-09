@@ -1,0 +1,48 @@
+diff --git a/src/_pytest/config/__init__.py b/src/_pytest/config/__init__.py
+index 3a0eca5..cf322dd 100644
+--- a/src/_pytest/config/__init__.py
++++ b/src/_pytest/config/__init__.py
+@@ -8,6 +8,10 @@ import sys
+ import types
+ import warnings
+ from functools import lru_cache
++import sys
++import types
++import warnings
++from functools import lru_cache
+ from pathlib import Path
+ 
+ import attr
+@@ -396,8 +400,11 @@ class PytestPluginManager(PluginManager):
+                 if x.check(dir=1):
+                     self._getconftestmodules(x)
+ 
++    @lru_cache(maxsize=128)
+     @lru_cache(maxsize=128)
+     def _getconftestmodules(self, path):
++        if os.name == 'nt':  # Windows
++            path = str(path).lower()  # Convert path to lowercase for case-insensitive comparison
+         if self._noconftest:
+             return []
+ 
+diff --git a/src/_pytest/main.py b/src/_pytest/main.py
+index 23eff52..10275e7 100644
+--- a/src/_pytest/main.py
++++ b/src/_pytest/main.py
+@@ -5,6 +5,7 @@ import functools
+ import importlib
+ import os
+ import sys
++import sys
+ 
+ import attr
+ import py
+@@ -421,6 +422,8 @@ class Session(nodes.FSCollector):
+         # check if we have the common case of running
+         # hooks with all conftest.py files
+         pm = self.config.pluginmanager
++        if os.name == 'nt':  # Windows
++            fspath = str(fspath).lower()  # Convert fspath to lowercase for case-insensitive comparison
+         my_conftestmodules = pm._getconftestmodules(fspath)
+         remove_mods = pm._conftest_plugins.difference(my_conftestmodules)
+         if remove_mods:

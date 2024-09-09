@@ -1,0 +1,133 @@
+2024-09-09 01:39:44,576 - INFO - Environment image sweb.env.arm64.a18371b03f944585b4f08c:latest found for django__django-11999
+Building instance image sweb.eval.arm64.django__django-11999:latest for django__django-11999
+2024-09-09 01:41:08,224 - INFO - Creating container for django__django-11999...
+2024-09-09 01:41:08,248 - INFO - Container for django__django-11999 created: 73590a3c6760f019fffa8c80c73bdb4ab908d540566b74b3b38248eb47eb8e89
+2024-09-09 01:41:08,363 - INFO - Container for django__django-11999 started: 73590a3c6760f019fffa8c80c73bdb4ab908d540566b74b3b38248eb47eb8e89
+2024-09-09 01:41:08,363 - INFO - Intermediate patch for django__django-11999 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/django__django-11999/patch.diff, now applying to container...
+2024-09-09 01:41:08,516 - INFO - Failed to apply patch to container, trying again...
+2024-09-09 01:41:08,546 - INFO - >>>>> Applied Patch:
+patching file django/db/models/base.py
+patching file django/db/models/fields/__init__.py
+patching file tests/migrations/test_state.py
+
+2024-09-09 01:41:08,897 - INFO - Git diff before:
+diff --git a/django/db/models/base.py b/django/db/models/base.py
+index 0a5e5ff673..fa6986bcc8 100644
+--- a/django/db/models/base.py
++++ b/django/db/models/base.py
+@@ -1907,3 +1907,7 @@ def model_unpickle(model_id):
+ 
+ 
+ model_unpickle.__safe_for_unpickle__ = True
++
++
++class_obj:Model = cal()
++class_obj.
+\ No newline at end of file
+diff --git a/django/db/models/fields/__init__.py b/django/db/models/fields/__init__.py
+index ee45bb941e..91ee951dda 100644
+--- a/django/db/models/fields/__init__.py
++++ b/django/db/models/fields/__init__.py
+@@ -763,8 +763,19 @@ class Field(RegisterLookupMixin):
+             if not getattr(cls, self.attname, None):
+                 setattr(cls, self.attname, self.descriptor_class(self))
+         if self.choices is not None:
+-            setattr(cls, 'get_%s_display' % self.name,
+-                    partialmethod(cls._get_FIELD_display, field=self))
++            get_display = getattr(cls, f'get_{self.name}_display', None)
++            if get_display is None:
++                setattr(cls, f'get_{self.name}_display',
++                        partialmethod(cls._get_FIELD_display, field=self))
++            else:
++                # If a custom get_FOO_display method exists, wrap it to include the default behavior
++                original_get_display = get_display
++                def wrapped_get_display(self):
++                    custom_display = original_get_display(self)
++                    if custom_display is not None:
++                        return custom_display
++                    return dict(self.field.choices).get(getattr(self, self.field.attname))
++                setattr(cls, f'get_{self.name}_display', wrapped_get_display)
+ 
+     def get_filter_kwargs_for_object(self, obj):
+         """
+diff --git a/tests/migrations/test_state.py b/tests/migrations/test_state.py
+index e9bdac93c5..dad8bc1542 100644
+--- a/tests/migrations/test_state.py
++++ b/tests/migrations/test_state.py
+@@ -421,6 +421,10 @@ class StateTests(SimpleTestCase):
+                 apps = Apps()
+ 
+         class FooBar(Foo, Bar):
++            def _get_FIELD_display(self, field):
++                if field.name == 'foo_bar':
++                    return "something"
++                return super()._get_FIELD_display(field)
+             class Meta:
+                 app_label = "migrations"
+                 apps = Apps()
+2024-09-09 01:41:08,898 - INFO - Eval script for django__django-11999 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/django__django-11999/eval.sh; copying to container...
+2024-09-09 01:41:11,118 - INFO - Test runtime: 2.09 seconds
+2024-09-09 01:41:11,118 - INFO - Test output for django__django-11999 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/django__django-11999/test_output.txt
+2024-09-09 01:41:11,169 - INFO - Git diff after:
+diff --git a/django/db/models/base.py b/django/db/models/base.py
+index 0a5e5ff673..fa6986bcc8 100644
+--- a/django/db/models/base.py
++++ b/django/db/models/base.py
+@@ -1907,3 +1907,7 @@ def model_unpickle(model_id):
+ 
+ 
+ model_unpickle.__safe_for_unpickle__ = True
++
++
++class_obj:Model = cal()
++class_obj.
+\ No newline at end of file
+diff --git a/django/db/models/fields/__init__.py b/django/db/models/fields/__init__.py
+index ee45bb941e..91ee951dda 100644
+--- a/django/db/models/fields/__init__.py
++++ b/django/db/models/fields/__init__.py
+@@ -763,8 +763,19 @@ class Field(RegisterLookupMixin):
+             if not getattr(cls, self.attname, None):
+                 setattr(cls, self.attname, self.descriptor_class(self))
+         if self.choices is not None:
+-            setattr(cls, 'get_%s_display' % self.name,
+-                    partialmethod(cls._get_FIELD_display, field=self))
++            get_display = getattr(cls, f'get_{self.name}_display', None)
++            if get_display is None:
++                setattr(cls, f'get_{self.name}_display',
++                        partialmethod(cls._get_FIELD_display, field=self))
++            else:
++                # If a custom get_FOO_display method exists, wrap it to include the default behavior
++                original_get_display = get_display
++                def wrapped_get_display(self):
++                    custom_display = original_get_display(self)
++                    if custom_display is not None:
++                        return custom_display
++                    return dict(self.field.choices).get(getattr(self, self.field.attname))
++                setattr(cls, f'get_{self.name}_display', wrapped_get_display)
+ 
+     def get_filter_kwargs_for_object(self, obj):
+         """
+diff --git a/tests/migrations/test_state.py b/tests/migrations/test_state.py
+index e9bdac93c5..dad8bc1542 100644
+--- a/tests/migrations/test_state.py
++++ b/tests/migrations/test_state.py
+@@ -421,6 +421,10 @@ class StateTests(SimpleTestCase):
+                 apps = Apps()
+ 
+         class FooBar(Foo, Bar):
++            def _get_FIELD_display(self, field):
++                if field.name == 'foo_bar':
++                    return "something"
++                return super()._get_FIELD_display(field)
+             class Meta:
+                 app_label = "migrations"
+                 apps = Apps()
+2024-09-09 01:41:11,169 - INFO - Grading answer for django__django-11999...
+2024-09-09 01:41:11,176 - INFO - report: {'django__django-11999': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': False, 'tests_status': {'FAIL_TO_PASS': {'success': [], 'failure': ['test_overriding_FIELD_display (model_fields.tests.GetFieldDisplayTests)']}, 'PASS_TO_PASS': {'success': [], 'failure': ['test_blank_in_choices (model_fields.tests.GetChoicesTests)', 'test_blank_in_grouped_choices (model_fields.tests.GetChoicesTests)', 'test_empty_choices (model_fields.tests.GetChoicesTests)', 'test_lazy_strings_not_evaluated (model_fields.tests.GetChoicesTests)', 'test_check (model_fields.tests.ChoicesTests)', 'test_choices (model_fields.tests.ChoicesTests)', 'test_flatchoices (model_fields.tests.ChoicesTests)', 'test_formfield (model_fields.tests.ChoicesTests)', 'test_invalid_choice (model_fields.tests.ChoicesTests)', 'Can supply a custom choices form class to Field.formfield()', 'deconstruct() uses __qualname__ for nested class support.', 'Field instances can be pickled.', 'test_field_name (model_fields.tests.BasicFieldTests)', 'Fields are ordered based on their creation.', 'test_field_repr (model_fields.tests.BasicFieldTests)', '__repr__() uses __qualname__ for nested class support.', 'test_field_str (model_fields.tests.BasicFieldTests)', 'test_field_verbose_name (model_fields.tests.BasicFieldTests)', 'Field.formfield() sets disabled for fields with choices.', 'test_show_hidden_initial (model_fields.tests.BasicFieldTests)', 'test_choices_and_field_display (model_fields.tests.GetFieldDisplayTests)', 'test_empty_iterator_choices (model_fields.tests.GetFieldDisplayTests)', 'A translated display value is coerced to str.', 'test_iterator_choices (model_fields.tests.GetFieldDisplayTests)', 'test_get_choices (model_fields.tests.GetChoicesLimitChoicesToTests)', 'test_get_choices_reverse_related_field (model_fields.tests.GetChoicesLimitChoicesToTests)', 'test_get_choices (model_fields.tests.GetChoicesOrderingTests)', 'test_get_choices_default_ordering (model_fields.tests.GetChoicesOrderingTests)', 'test_get_choices_reverse_related_field (model_fields.tests.GetChoicesOrderingTests)', 'test_get_choices_reverse_related_field_default_ordering (model_fields.tests.GetChoicesOrderingTests)']}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for django__django-11999: resolved: False
+2024-09-09 01:41:11,177 - INFO - Attempting to stop container sweb.eval.django__django-11999.langgraph_agent_1725824120N...
+2024-09-09 01:41:26,347 - INFO - Attempting to remove container sweb.eval.django__django-11999.langgraph_agent_1725824120N...
+2024-09-09 01:41:26,357 - INFO - Container sweb.eval.django__django-11999.langgraph_agent_1725824120N removed.
+2024-09-09 01:41:26,357 - INFO - Attempting to remove image sweb.eval.arm64.django__django-11999:latest...
+2024-09-09 01:41:26,475 - INFO - Image sweb.eval.arm64.django__django-11999:latest removed.

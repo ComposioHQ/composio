@@ -1,0 +1,37 @@
+diff --git a/django/utils/dateformat.py b/django/utils/dateformat.py
+index afd36d79..79b4c552 100644
+--- a/django/utils/dateformat.py
++++ b/django/utils/dateformat.py
+@@ -325,8 +325,8 @@ class DateFormat(TimeFormat):
+         return self.data.isocalendar()[1]
+ 
+     def y(self):
+-        "Year, 2 digits; e.g. '99'"
+-        return str(self.data.year)[2:]
++        "Year, 2 digits with zero-padding; e.g. '99', '03', '00'"
++        return f'{self.data.year % 100:02d}'
+ 
+     def Y(self):
+         "Year, 4 digits; e.g. '1999'"
+diff --git a/tests/utils_tests/test_dateformat.py b/tests/utils_tests/test_dateformat.py
+index d050ac43..3ce2d030 100644
+--- a/tests/utils_tests/test_dateformat.py
++++ b/tests/utils_tests/test_dateformat.py
+@@ -91,6 +91,17 @@ class DateFormatTests(SimpleTestCase):
+         self.assertEqual(dateformat.format(my_birthday, 'b'), 'jul')
+         self.assertEqual(dateformat.format(my_birthday, 'n'), '7')
+         self.assertEqual(dateformat.format(my_birthday, 'N'), 'July')
++        self.assertEqual(dateformat.format(my_birthday, 'N'), 'July')
++
++        # Test the 'y' format for various years
++        self.assertEqual(dateformat.format(datetime(1, 1, 1), 'y'), '01')
++        self.assertEqual(dateformat.format(datetime(9, 1, 1), 'y'), '09')
++        self.assertEqual(dateformat.format(datetime(99, 1, 1), 'y'), '99')
++        self.assertEqual(dateformat.format(datetime(999, 1, 1), 'y'), '99')
++        self.assertEqual(dateformat.format(datetime(2000, 1, 1), 'y'), '00')
++        self.assertEqual(dateformat.format(datetime(2009, 1, 1), 'y'), '09')
++        self.assertEqual(dateformat.format(datetime(2018, 1, 1), 'y'), '18')
++        self.assertEqual(dateformat.format(datetime(2023, 1, 1), 'y'), '23')
+ 
+     def test_time_formats(self):
+         my_birthday = datetime(1979, 7, 8, 22, 00)

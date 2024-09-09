@@ -1,0 +1,506 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   sympy/core/symbol.py
+	modified:   sympy/core/tests/test_symbol.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 6fd65310fa3167b9626c38a5487e171ca407d988
+Merge: ef94e55883 0afa9cf54e
+Author: Aaron Meurer <asmeurer@gmail.com>
+Date:   Wed Apr 10 18:22:11 2019 -0600
+
+    Merge pull request #16625 from asmeurer/travis-fix
+    
+    Fix the tests not running on Travis
+
++ git diff 6fd65310fa3167b9626c38a5487e171ca407d988
+diff --git a/sympy/core/symbol.py b/sympy/core/symbol.py
+index 44674d1984..1314153124 100644
+--- a/sympy/core/symbol.py
++++ b/sympy/core/symbol.py
+@@ -208,10 +208,34 @@ def __new__(cls, name, **assumptions):
+         >>> Symbol("x", real=True) == Symbol("x", real=False)
+         False
+ 
++        Note on assumptions:
++        - Assumptions are not automatically inferred. For example, `even=True`
++          does not imply `finite=True`.
++        - If you need a symbol with multiple common assumptions, consider using
++          the `real_symbol`, `integer_symbol`, or `real_nonnegative_symbol` methods.
++
++        See Also
++        ========
++        real_symbol, integer_symbol, real_nonnegative_symbol
+         """
+         cls._sanitize(assumptions, cls)
+         return Symbol.__xnew_cached_(cls, name, **assumptions)
+ 
++    @classmethod
++    def real_symbol(cls, name):
++        """Create a real, finite symbol."""
++        return cls(name, real=True, finite=True)
++
++    @classmethod
++    def integer_symbol(cls, name):
++        """Create an integer symbol (implies real and finite)."""
++        return cls(name, integer=True)
++
++    @classmethod
++    def real_nonnegative_symbol(cls, name):
++        """Create a real, finite, non-negative symbol."""
++        return cls(name, real=True, finite=True, nonnegative=True)
++
+     def __new_stage2__(cls, name, **assumptions):
+         if not isinstance(name, string_types):
+             raise TypeError("name should be a string, not %s" % repr(type(name)))
+diff --git a/sympy/core/tests/test_symbol.py b/sympy/core/tests/test_symbol.py
+index 61f36df151..1d90148681 100644
+--- a/sympy/core/tests/test_symbol.py
++++ b/sympy/core/tests/test_symbol.py
+@@ -382,3 +382,42 @@ def test_disambiguate():
+     assert disambiguate(*t7) == (y*y_1, y_1)
+     assert disambiguate(Dummy('x_1'), Dummy('x_1')
+         ) == (x_1, Symbol('x_1_1'))
++
++def test_symbol_assumptions():
++    x = Symbol('x', even=True)
++    assert x.is_even is True
++    assert x.is_finite is None  # even does not imply finite
++
++    y = Symbol('y', odd=True)
++    assert y.is_odd is True
++    assert y.is_finite is None  # odd does not imply finite
++
++    z = Symbol('z', prime=True)
++    assert z.is_prime is True
++    assert z.is_finite is True  # prime implies finite
++
++def test_symbol_class_methods():
++    x = Symbol.real_symbol('x')
++    assert x.is_real is True
++    assert x.is_finite is True
++
++    y = Symbol.integer_symbol('y')
++    assert y.is_integer is True
++    assert y.is_real is True
++    assert y.is_finite is True
++
++    z = Symbol.real_nonnegative_symbol('z')
++    assert z.is_real is True
++    assert z.is_finite is True
++    assert z.is_nonnegative is True
++
++def test_symbol_assumptions_independence():
++    x = Symbol('x', even=True)
++    y = Symbol('y', even=True, finite=True)
++    assert x.is_finite is None
++    assert y.is_finite is True
++
++    a = Symbol('a', positive=True)
++    b = Symbol('b', positive=True, real=True)
++    assert a.is_real is None
++    assert b.is_real is True
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: mpmath>=0.19 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from sympy==1.5.dev0) (1.3.0)
+Installing collected packages: sympy
+  Attempting uninstall: sympy
+    Found existing installation: sympy 1.5.dev0
+    Uninstalling sympy-1.5.dev0:
+      Successfully uninstalled sympy-1.5.dev0
+  DEPRECATION: Legacy editable install of sympy==1.5.dev0 from file:///testbed (setup.py develop) is deprecated. pip 25.0 will enforce this behaviour change. A possible replacement is to add a pyproject.toml or enable --use-pep517, and use setuptools >= 64. If the resulting installation is not behaving as expected, try using --config-settings editable_mode=compat. Please consult the setuptools documentation for more information. Discussion can be found at https://github.com/pypa/pip/issues/11457
+  Running setup.py develop for sympy
+Successfully installed sympy
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 6fd65310fa3167b9626c38a5487e171ca407d988 sympy/core/tests/test_assumptions.py sympy/functions/elementary/tests/test_miscellaneous.py
+Updated 0 paths from 85cc9629e6
++ git apply -v -
+Checking patch sympy/core/tests/test_assumptions.py...
+Checking patch sympy/functions/elementary/tests/test_miscellaneous.py...
+Applied patch sympy/core/tests/test_assumptions.py cleanly.
+Applied patch sympy/functions/elementary/tests/test_miscellaneous.py cleanly.
++ PYTHONWARNINGS=ignore::UserWarning,ignore::SyntaxWarning
++ bin/test -C --verbose sympy/core/tests/test_assumptions.py sympy/functions/elementary/tests/test_miscellaneous.py
+============================= test process starts ==============================
+executable:         /opt/miniconda3/envs/testbed/bin/python  (3.9.19-final-0) [CPython]
+architecture:       64-bit
+cache:              no
+ground types:       python 
+numpy:              None
+random seed:        35408857
+hash randomization: on (PYTHONHASHSEED=1793400162)
+
+sympy/core/tests/test_assumptions.py[69] 
+test_symbol_unset ok
+test_zero ok
+test_one ok
+test_negativeone ok
+test_infinity F
+test_neg_infinity F
+test_zoo ok
+test_nan ok
+test_pos_rational ok
+test_neg_rational ok
+test_pi ok
+test_E ok
+test_I ok
+test_symbol_real ok
+test_symbol_imaginary ok
+test_symbol_zero ok
+test_symbol_positive ok
+test_neg_symbol_positive ok
+test_symbol_nonpositive ok
+test_neg_symbol_nonpositive ok
+test_symbol_falsepositive ok
+test_symbol_falsepositive_mul ok
+test_neg_symbol_falsepositive ok
+test_neg_symbol_falsenegative ok
+test_symbol_falsepositive_real ok
+test_neg_symbol_falsepositive_real ok
+test_symbol_falsenonnegative ok
+test_neg_symbol_falsenonnegative f
+test_symbol_falsenonnegative_real ok
+test_neg_symbol_falsenonnegative_real ok
+test_prime ok
+test_composite ok
+test_prime_symbol ok
+test_symbol_noncommutative ok
+test_other_symbol F
+test_issue_3825 ok
+test_issue_4822 ok
+test_hash_vs_typeinfo ok
+test_hash_vs_typeinfo_2 ok
+test_hash_vs_eq ok
+test_Add_is_pos_neg ok
+test_Add_is_imaginary ok
+test_Add_is_algebraic ok
+test_Mul_is_algebraic ok
+test_Pow_is_algebraic ok
+test_Mul_is_prime_composite ok
+test_Pow_is_pos_neg ok
+test_Pow_is_prime_composite ok
+test_Mul_is_infinite ok
+test_special_is_rational ok
+test_issue_6275 f
+test_sanitize_assumptions ok
+test_special_assumptions ok
+test_inconsistent ok
+test_issue_6631 ok
+test_issue_2730 ok
+test_issue_4149 ok
+test_issue_2920 ok
+test_issue_7899 ok
+test_issue_7993 f
+test_issue_8075 ok
+test_issue_8642 ok
+test_issues_8632_8633_8638_8675_8992 ok
+test_issue_9115_9150 ok
+test_issue_9165 ok
+test_issue_10024 ok
+test_issue_10302 ok
+test_complex_reciprocal_imaginary ok
+test_issue_16313 ok                                                       [FAIL]
+
+sympy/functions/elementary/tests/test_miscellaneous.py[14] 
+test_Min ok
+test_Max ok
+test_minmax_assumptions ok
+test_issue_8413 ok
+test_root ok
+test_real_root ok
+test_issue_11463 numpy not installed. s
+test_rewrite_MaxMin_as_Heaviside ok
+test_rewrite_MaxMin_as_Piecewise ok
+test_issue_11099 ok
+test_issue_12638 ok
+test_instantiation_evaluation ok
+test_rewrite_as_Abs ok
+test_issue_14000 ok                                                         [OK]
+
+
+________________________________________________________________________________
+______________ sympy/core/tests/test_assumptions.py:test_infinity ______________
+Traceback (most recent call last):
+  File "/testbed/sympy/core/tests/test_assumptions.py", line 101, in test_infinity
+    assert oo.is_integer is False
+AssertionError
+________________________________________________________________________________
+____________ sympy/core/tests/test_assumptions.py:test_neg_infinity ____________
+Traceback (most recent call last):
+  File "/testbed/sympy/core/tests/test_assumptions.py", line 128, in test_neg_infinity
+    assert mm.is_integer is False
+AssertionError
+________________________________________________________________________________
+____________ sympy/core/tests/test_assumptions.py:test_other_symbol ____________
+Traceback (most recent call last):
+  File "/testbed/sympy/core/tests/test_assumptions.py", line 570, in test_other_symbol
+    assert x.is_finite is True
+AssertionError
+
+ tests finished: 76 passed, 3 failed, 1 skipped, 3 expected to fail, 
+in 4.79 seconds 
+DO *NOT* COMMIT!
++ git checkout 6fd65310fa3167b9626c38a5487e171ca407d988 sympy/core/tests/test_assumptions.py sympy/functions/elementary/tests/test_miscellaneous.py
+Updated 2 paths from 85cc9629e6

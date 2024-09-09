@@ -1,0 +1,49 @@
+diff --git a/HISTORY.rst b/HISTORY.rst
+index d2bbdd9..3041498 100644
+--- a/HISTORY.rst
++++ b/HISTORY.rst
+@@ -3,6 +3,16 @@
+ Release History
+ ---------------
+ 
++2.9.1 (unreleased)
++++++++++++++++++++
++
++**Bugfixes**
++
++- Fixed an issue where binary payloads in PUT requests were being incorrectly processed,
++  causing encoding errors. The `_encode_params` method now correctly handles binary data.
++
++2.9.0 (2015-12-15)
++++++++++++++++++++
+ 2.9.0 (2015-12-15)
+ ++++++++++++++++++
+ 
+diff --git a/requests/__init__.py b/requests/__init__.py
+index 35987f9..bd5b5b9 100644
+--- a/requests/__init__.py
++++ b/requests/__init__.py
+@@ -42,8 +42,8 @@ is at <http://python-requests.org>.
+ """
+ 
+ __title__ = 'requests'
+-__version__ = '2.9.0'
+-__build__ = 0x020900
++__version__ = '2.9.1'
++__build__ = 0x020901
+ __author__ = 'Kenneth Reitz'
+ __license__ = 'Apache 2.0'
+ __copyright__ = 'Copyright 2015 Kenneth Reitz'
+diff --git a/requests/models.py b/requests/models.py
+index 9c624d3..f3a4f6d 100644
+--- a/requests/models.py
++++ b/requests/models.py
+@@ -81,7 +81,7 @@ class RequestEncodingMixin(object):
+         """
+ 
+         if isinstance(data, (str, bytes)):
+-            return to_native_string(data)
++            return data
+         elif hasattr(data, 'read'):
+             return data
+         elif hasattr(data, '__iter__'):

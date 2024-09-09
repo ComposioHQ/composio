@@ -27,6 +27,12 @@ def bench(workspace_id: str, issue_config: IssueConfig) -> str:
     )
     print("Result of git tree", git_tree_response)
 
+    cd_response = composio_toolset.execute_action(
+        action=Action.SHELLTOOL_EXEC_COMMAND,
+        params={"cmd": f"cd ~/{issue_config.repo_name.split('/')[-1]}"},
+    )
+    print("Result of cd", cd_response)
+
     # kick off the crew on the issue.
 
     try:
@@ -38,7 +44,7 @@ def bench(workspace_id: str, issue_config: IssueConfig) -> str:
                     )
                 ]
             },
-            {"recursion_limit": 50},
+            {"recursion_limit": 60},
         )
         return final_state["messages"][-1].content
     except Exception as e:

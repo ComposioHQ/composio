@@ -1,0 +1,38 @@
+diff --git a/django/contrib/admin/options.py b/django/contrib/admin/options.py
+index 64be087b..6d4f2865 100644
+--- a/django/contrib/admin/options.py
++++ b/django/contrib/admin/options.py
+@@ -269,7 +269,7 @@ class BaseModelAdmin(metaclass=forms.MediaDefiningClass):
+                         "class": get_ul_class(self.radio_fields[db_field.name]),
+                     }
+                 )
+-                kwargs["empty_label"] = _("None") if db_field.blank else None
++                kwargs["empty_label"] = (kwargs.get("empty_label") or _("None")) if db_field.blank else None
+ 
+         if "queryset" not in kwargs:
+             queryset = self.get_field_queryset(db, db_field, request)
+diff --git a/tests/admin_ordering/tests.py b/tests/admin_ordering/tests.py
+index d79e7477..55121194 100644
+--- a/tests/admin_ordering/tests.py
++++ b/tests/admin_ordering/tests.py
+@@ -205,4 +205,19 @@ class TestRelatedFieldsAdminOrdering(TestCase):
+         site.register(Song, SongAdmin)
+         site.register(Band, StaticOrderingBandAdmin)
+ 
+-        self.check_ordering_of_field_choices([self.b2])
++    def test_custom_empty_label_respected(self):
++        class CustomEmptyLabelAdmin(admin.ModelAdmin):
++            def formfield_for_foreignkey(self, db_field, request, **kwargs):
++                if db_field.name == "band":
++                    kwargs["empty_label"] = "Custom Empty Label"
++                return super().formfield_for_foreignkey(db_field, request, **kwargs)
++
++        site.unregister(Song)
++        site.register(Song, CustomEmptyLabelAdmin)
++
++        song_admin = site._registry[Song]
++        form_field = song_admin.formfield_for_foreignkey(Song.band.field, request=None)
++        self.assertEqual(form_field.empty_label, "Custom Empty Label")
++
++site.unregister(Song)
++site.unregister(Band)

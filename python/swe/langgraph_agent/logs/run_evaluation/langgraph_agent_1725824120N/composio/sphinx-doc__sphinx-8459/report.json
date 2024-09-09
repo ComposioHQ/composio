@@ -1,0 +1,46 @@
+{
+    "sphinx-doc__sphinx-8459": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "tests/test_ext_autodoc_configs.py::test_autodoc_typehints_description_and_type_aliases"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "tests/test_ext_autodoc_configs.py::test_autoclass_content_class",
+                    "tests/test_ext_autodoc_configs.py::test_autoclass_content_init",
+                    "tests/test_ext_autodoc_configs.py::test_autoclass_content_both",
+                    "tests/test_ext_autodoc_configs.py::test_autodoc_inherit_docstrings",
+                    "tests/test_ext_autodoc_configs.py::test_autodoc_docstring_signature",
+                    "tests/test_ext_autodoc_configs.py::test_autoclass_content_and_docstring_signature_class",
+                    "tests/test_ext_autodoc_configs.py::test_autoclass_content_and_docstring_signature_init",
+                    "tests/test_ext_autodoc_configs.py::test_autoclass_content_and_docstring_signature_both",
+                    "tests/test_ext_autodoc_configs.py::test_mocked_module_imports",
+                    "tests/test_ext_autodoc_configs.py::test_autodoc_typehints_signature",
+                    "tests/test_ext_autodoc_configs.py::test_autodoc_typehints_none",
+                    "tests/test_ext_autodoc_configs.py::test_autodoc_typehints_none_for_overload",
+                    "tests/test_ext_autodoc_configs.py::test_autodoc_typehints_description",
+                    "tests/test_ext_autodoc_configs.py::test_autodoc_typehints_description_for_invalid_node",
+                    "tests/test_ext_autodoc_configs.py::test_autodoc_type_aliases",
+                    "tests/test_ext_autodoc_configs.py::test_autodoc_default_options",
+                    "tests/test_ext_autodoc_configs.py::test_autodoc_default_options_with_values"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

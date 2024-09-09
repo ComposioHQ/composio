@@ -1,0 +1,54 @@
+diff --git a/sympy/physics/units/tests/test_unitsystem.py b/sympy/physics/units/tests/test_unitsystem.py
+index a04f3aa..9999640 100644
+--- a/sympy/physics/units/tests/test_unitsystem.py
++++ b/sympy/physics/units/tests/test_unitsystem.py
+@@ -84,3 +84,25 @@ def test_derived_units_must_exist_in_unit_system():
+             units = preferred_unit.atoms(Quantity)
+             for unit in units:
+                 assert unit in unit_system._units, f"Unit {unit} is not in unit system {unit_system}"
++
++def test_collect_factor_and_dimension_with_exp():
++    from sympy import exp
++    from sympy.physics.units import second, ohm, farad
++    from sympy.physics.units.systems.si import SI
++
++    expr = second / (ohm * farad)
++    dim = SI._collect_factor_and_dimension(expr)[1]
++    assert SI.get_dimension_system().is_dimensionless(dim)
++
++    # Test that exponential of dimensionless quantity is allowed
++    buggy_expr = 100 + exp(expr)
++    factor, dim = SI._collect_factor_and_dimension(buggy_expr)
++    assert SI.get_dimension_system().is_dimensionless(dim)
++
++    # Test that exponential of dimensional quantity raises an error
++    dimensional_expr = exp(second)
++    try:
++        SI._collect_factor_and_dimension(dimensional_expr)
++        assert False, "Expected ValueError was not raised"
++    except ValueError as e:
++        assert str(e) == "Argument of exp must be dimensionless, but got Dimension(time)"
+diff --git a/sympy/physics/units/unitsystem.py b/sympy/physics/units/unitsystem.py
+index 3daf84c..2b15bf9 100644
+--- a/sympy/physics/units/unitsystem.py
++++ b/sympy/physics/units/unitsystem.py
+@@ -154,6 +154,7 @@ def _collect_factor_and_dimension(self, expr):
+         Return tuple with scale factor expression and dimension expression.
+         """
+         from sympy.physics.units import Quantity
++        from sympy import exp
+         if isinstance(expr, Quantity):
+             return expr.scale_factor, expr.dimension
+         elif isinstance(expr, Mul):
+@@ -189,6 +190,11 @@ def _collect_factor_and_dimension(self, expr):
+                 factor /= ifactor**count
+                 dim /= idim**count
+             return factor, dim
++        elif isinstance(expr, exp):
++            arg_factor, arg_dim = self._collect_factor_and_dimension(expr.args[0])
++            if not self.get_dimension_system().is_dimensionless(arg_dim):
++                raise ValueError(f"Argument of exp must be dimensionless, but got {arg_dim}")
++            return expr.func(arg_factor), Dimension(1)
+         elif isinstance(expr, Function):
+             fds = [self._collect_factor_and_dimension(
+                 arg) for arg in expr.args]

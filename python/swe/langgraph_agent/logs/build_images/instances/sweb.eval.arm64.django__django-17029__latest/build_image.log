@@ -1,0 +1,202 @@
+2024-09-09 03:29:32,923 - INFO - Building image sweb.eval.arm64.django__django-17029:latest
+Using dockerfile:
+FROM --platform=linux/arm64/v8 sweb.env.arm64.c70909fdac4897d1c685df:latest
+
+COPY ./setup_repo.sh /root/
+RUN /bin/bash /root/setup_repo.sh
+
+WORKDIR /testbed/
+
+Adding (1) setup scripts to image build repo
+2024-09-09 03:29:32,923 - INFO - [SETUP SCRIPT] setup_repo.sh:
+#!/bin/bash
+set -euxo pipefail
+git clone -o origin https://github.com/django/django /testbed
+chmod -R 777 /testbed
+cd /testbed
+git reset --hard 953f29f700a60fc09b08b2c2270c12c447490c6a
+git remote remove origin
+source /opt/miniconda3/bin/activate
+conda activate testbed
+echo "Current environment: $CONDA_DEFAULT_ENV"
+python -m pip install -e .
+
+2024-09-09 03:29:32,924 - INFO - Building docker image sweb.eval.arm64.django__django-17029:latest in logs/build_images/instances/sweb.eval.arm64.django__django-17029__latest with platform linux/arm64/v8
+2024-09-09 03:29:33,024 - INFO - Step 1/4 : FROM --platform=linux/arm64/v8 sweb.env.arm64.c70909fdac4897d1c685df:latest
+2024-09-09 03:29:33,024 - INFO - 
+2024-09-09 03:29:33,024 - INFO - ---> 024c751b9789
+2024-09-09 03:29:33,024 - INFO - Step 2/4 : COPY ./setup_repo.sh /root/
+2024-09-09 03:29:33,024 - INFO - 
+2024-09-09 03:29:33,056 - INFO - ---> 029f46a5a5c4
+2024-09-09 03:29:33,056 - INFO - Step 3/4 : RUN /bin/bash /root/setup_repo.sh
+2024-09-09 03:29:33,056 - INFO - 
+2024-09-09 03:29:33,067 - INFO - ---> Running in 8e1b804a333c
+2024-09-09 03:29:33,232 - INFO - + git clone -o origin https://github.com/django/django /testbed
+2024-09-09 03:29:33,233 - INFO - Cloning into '/testbed'...
+2024-09-09 03:32:17,524 - INFO - + chmod -R 777 /testbed
+2024-09-09 03:32:17,548 - INFO - + cd /testbed
++ git reset --hard 953f29f700a60fc09b08b2c2270c12c447490c6a
+2024-09-09 03:32:17,819 - INFO - HEAD is now at 953f29f700 Fixed #34572 -- Added support for GDAL 3.7.
+2024-09-09 03:32:17,821 - INFO - + git remote remove origin
+2024-09-09 03:32:17,825 - INFO - + source /opt/miniconda3/bin/activate
+2024-09-09 03:32:17,825 - INFO - ++ _CONDA_ROOT=/opt/miniconda3
+2024-09-09 03:32:17,825 - INFO - ++ . /opt/miniconda3/etc/profile.d/conda.sh
+2024-09-09 03:32:17,825 - INFO - +++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
+2024-09-09 03:32:17,825 - INFO - +++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+2024-09-09 03:32:17,825 - INFO - +++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
+2024-09-09 03:32:17,825 - INFO - +++++ dirname /opt/miniconda3/bin/conda
+2024-09-09 03:32:17,826 - INFO - ++++ dirname /opt/miniconda3/bin
+2024-09-09 03:32:17,826 - INFO - +++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+2024-09-09 03:32:17,826 - INFO - ++ conda activate
+++ local cmd=activate
+2024-09-09 03:32:17,826 - INFO - ++ case "$cmd" in
+++ __conda_activate activate
+2024-09-09 03:32:17,826 - INFO - ++ '[' -n '' ']'
+++ local ask_conda
+2024-09-09 03:32:17,826 - INFO - +++ PS1=
++++ __conda_exe shell.posix activate
+2024-09-09 03:32:17,826 - INFO - +++ /opt/miniconda3/bin/conda shell.posix activate
+2024-09-09 03:32:17,893 - INFO - ++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
+2024-09-09 03:32:17,894 - INFO - + conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
+2024-09-09 03:32:17,894 - INFO - + local ask_conda
+2024-09-09 03:32:17,894 - INFO - ++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+2024-09-09 03:32:17,894 - INFO - ++ /opt/miniconda3/bin/conda shell.posix activate testbed
+2024-09-09 03:32:17,976 - INFO - + ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
+2024-09-09 03:32:17,976 - INFO - Current environment: testbed
+2024-09-09 03:32:17,976 - INFO - + '[' -n '' ']'
++ hash -r
++ echo 'Current environment: testbed'
++ python -m pip install -e .
+2024-09-09 03:32:18,294 - INFO - Obtaining file:///testbed
+2024-09-09 03:32:18,295 - INFO - Installing build dependencies: started
+2024-09-09 03:32:19,165 - INFO - Installing build dependencies: finished with status 'done'
+2024-09-09 03:32:19,166 - INFO - Checking if build backend supports build_editable: started
+2024-09-09 03:32:19,238 - INFO - Checking if build backend supports build_editable: finished with status 'done'
+2024-09-09 03:32:19,238 - INFO - Getting requirements to build editable: started
+2024-09-09 03:32:19,416 - INFO - Getting requirements to build editable: finished with status 'done'
+2024-09-09 03:32:19,417 - INFO - Preparing editable metadata (pyproject.toml): started
+2024-09-09 03:32:19,603 - INFO - Preparing editable metadata (pyproject.toml): finished with status 'done'
+2024-09-09 03:32:19,605 - INFO - Requirement already satisfied: asgiref>=3.7.0 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from Django==5.0.dev20230630040308) (3.8.1)
+2024-09-09 03:32:19,605 - INFO - Requirement already satisfied: sqlparse>=0.3.1 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from Django==5.0.dev20230630040308) (0.5.1)
+2024-09-09 03:32:19,606 - INFO - Building wheels for collected packages: Django
+2024-09-09 03:32:19,607 - INFO - Building editable for Django (pyproject.toml): started
+2024-09-09 03:32:19,975 - INFO - Building editable for Django (pyproject.toml): finished with status 'done'
+2024-09-09 03:32:19,976 - INFO - Created wheel for Django: filename=Django-5.0.dev20230630040308-0.editable-py3-none-any.whl size=27534 sha256=eae371f56c71cb3531b2816669c6bc2d4ac423daa2ce701cdfc1c2f1231db6b7
+2024-09-09 03:32:19,976 - INFO - Stored in directory: /tmp/pip-ephem-wheel-cache-yy8x0qem/wheels/49/5f/4f/01b7d31ea6ddac9643da788242d33e5fd3467d95d17b032c6b
+2024-09-09 03:32:19,977 - INFO - Successfully built Django
+2024-09-09 03:32:19,996 - INFO - Installing collected packages: Django
+2024-09-09 03:32:20,008 - INFO - Successfully installed Django-5.0.dev20230630040308
+2024-09-09 03:32:20,009 - INFO - WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+2024-09-09 03:32:22,811 - INFO - ---> Removed intermediate container 8e1b804a333c
+2024-09-09 03:32:22,812 - INFO - ---> f54c09f8aa25
+2024-09-09 03:32:22,812 - INFO - Step 4/4 : WORKDIR /testbed/
+2024-09-09 03:32:22,812 - INFO - 
+2024-09-09 03:32:22,844 - INFO - ---> Running in 9cf7b2f61985
+2024-09-09 03:32:22,862 - INFO - ---> Removed intermediate container 9cf7b2f61985
+2024-09-09 03:32:22,862 - INFO - ---> fd8b03dbbc2c
+2024-09-09 03:32:22,869 - INFO - Successfully built fd8b03dbbc2c
+2024-09-09 03:32:22,872 - INFO - Successfully tagged sweb.eval.arm64.django__django-17029:latest
+2024-09-09 03:32:22,873 - INFO - Image built successfully!

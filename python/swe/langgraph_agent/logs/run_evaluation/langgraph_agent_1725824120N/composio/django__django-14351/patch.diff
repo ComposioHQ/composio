@@ -1,0 +1,68 @@
+diff --git a/django/db/models/sql/query.py b/django/db/models/sql/query.py
+index 6629a1fd..ea1ec31f 100644
+--- a/django/db/models/sql/query.py
++++ b/django/db/models/sql/query.py
+@@ -399,15 +399,19 @@ class Query(BaseExpression):
+                         new_expr = Ref(col_alias, expr)
+                         break
+                 else:
+-                    # An expression that is not selected the subquery.
++                    # An expression that is not selected in the subquery.
+                     if isinstance(expr, Col) or (expr.contains_aggregate and not expr.is_summary):
+                         # Reference column or another aggregate. Select it
+                         # under a non-conflicting alias.
+-                        col_cnt += 1
+-                        col_alias = '__col%d' % col_cnt
+-                        self.annotations[col_alias] = expr
+-                        self.append_annotation_mask([col_alias])
+-                        new_expr = Ref(col_alias, expr)
++                        if isinstance(expr, Col) and expr.output_field.related_model:
++                            # This is a subquery for a related model. Optimize it to select only the ID.
++                            new_expr = expr.output_field.related_model._meta.pk.get_col(expr.alias)
++                        else:
++                            col_cnt += 1
++                            col_alias = '__col%d' % col_cnt
++                            self.annotations[col_alias] = expr
++                            self.append_annotation_mask([col_alias])
++                            new_expr = Ref(col_alias, expr)
+                     else:
+                         # Some other expression not referencing database values
+                         # directly. Its subexpression might contain Cols.
+diff --git a/django/db/models/sql/where.py b/django/db/models/sql/where.py
+index 795eff83..ef1f07a6 100644
+--- a/django/db/models/sql/where.py
++++ b/django/db/models/sql/where.py
+@@ -5,6 +5,7 @@ Code to manage the creation and SQL rendering of 'where' constraints.
+ from django.core.exceptions import EmptyResultSet
+ from django.utils import tree
+ from django.utils.functional import cached_property
++from django.db.models.lookups import Lookup
+ 
+ # Connection types
+ AND = 'AND'
+@@ -60,14 +61,24 @@ class WhereNode(tree.Node):
+                 where_parts.append(c)
+         having_node = self.__class__(having_parts, self.connector, self.negated) if having_parts else None
+         where_node = self.__class__(where_parts, self.connector, self.negated) if where_parts else None
+-        return where_node, having_node
++    def optimize_in_subquery(self):
++        """Optimize __in lookups with subqueries to select only the primary key."""
++        for child in self.children:
++            if isinstance(child, Lookup) and child.lookup_name == 'in':
++                rhs = child.rhs
++                if hasattr(rhs, 'query') and hasattr(rhs.query, 'model'):
++                    child.rhs = rhs.values_list('pk', flat=True)
++            elif isinstance(child, WhereNode):
++                child.optimize_in_subquery()
+ 
+     def as_sql(self, compiler, connection):
++        self.optimize_in_subquery()
+         """
+         Return the SQL version of the where clause and the value to be
+         substituted in. Return '', [] if this node matches everything,
+         None, [] if this node is empty, and raise EmptyResultSet if this
+         node can't match anything.
++        node can't match anything.
+         """
+         result = []
+         result_params = []

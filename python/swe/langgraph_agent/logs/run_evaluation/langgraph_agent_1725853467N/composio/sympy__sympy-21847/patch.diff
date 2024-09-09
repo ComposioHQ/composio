@@ -1,0 +1,57 @@
+diff --git a/sympy/polys/monomials.py b/sympy/polys/monomials.py
+index 0e84403..3a7ed0a 100644
+--- a/sympy/polys/monomials.py
++++ b/sympy/polys/monomials.py
+@@ -20,7 +20,7 @@ def itermonomials(variables, max_degrees, min_degrees=None):
+ 
+     A generator of all monomials ``monom`` is returned, such that
+     either
+-    ``min_degree <= total_degree(monom) <= max_degree``,
++    ``min_degree <= total_degree(monom) <= max_degree``, where total_degree is the sum of all exponents,
+     or
+     ``min_degrees[i] <= degree_list(monom)[i] <= max_degrees[i]``,
+     for all ``i``.
+@@ -127,7 +127,7 @@ def itermonomials(variables, max_degrees, min_degrees=None):
+                 for variable in item:
+                     if variable != 1:
+                         powers[variable] += 1
+-                if max(powers.values()) >= min_degree:
++                if sum(powers.values()) >= min_degree:
+                     monomials_list_comm.append(Mul(*item))
+             yield from set(monomials_list_comm)
+         else:
+@@ -139,7 +139,7 @@ def itermonomials(variables, max_degrees, min_degrees=None):
+                 for variable in item:
+                     if variable != 1:
+                         powers[variable] += 1
+-                if max(powers.values()) >= min_degree:
++                if sum(powers.values()) >= min_degree:
+                     monomials_list_non_comm.append(Mul(*item))
+             yield from set(monomials_list_non_comm)
+     else:
+diff --git a/sympy/polys/tests/test_monomials.py b/sympy/polys/tests/test_monomials.py
+index 482cbee..6c9b7c9 100644
+--- a/sympy/polys/tests/test_monomials.py
++++ b/sympy/polys/tests/test_monomials.py
+@@ -97,6 +97,21 @@ def test_monomials():
+     raises(ValueError, lambda: set(itermonomials([x, y, z], [1, 2, 3], [0, 1])))
+ 
+     raises(ValueError, lambda: set(itermonomials([x], [1], [-1])))
++    # Test cases for min_degrees
++    assert set(itermonomials([x, y], 3, 2)) == {x**2, y**2, x*y, x**3, x**2*y, x*y**2, y**3}
++    assert set(itermonomials([x, y], 4, 3)) == {x**3, y**3, x**2*y, x*y**2, x**4, x**3*y, x**2*y**2, x*y**3, y**4}
++    assert set(itermonomials([x, y, z], 3, 3)) == {x**3, y**3, z**3, x**2*y, x**2*z, y**2*x, y**2*z, z**2*x, z**2*y, x*y*z}
++
++    # Test case for the specific example in the issue
++    x1, x2, x3 = symbols('x1, x2, x3')
++    assert set(itermonomials([x1, x2, x3], 3, 3)) == {x1**3, x2**3, x3**3, x1**2*x2, x1**2*x3, x2**2*x1, x2**2*x3, x3**2*x1, x3**2*x2, x1*x2*x3}
++
++    # Test case for max_degrees > min_degrees
++    assert set(itermonomials([x, y], 4, 2)) == {x**2, y**2, x*y, x**3, x**2*y, x*y**2, y**3, x**4, x**3*y, x**2*y**2, x*y**3, y**4}
++
++    # Test case for non-commutative variables
++    i, j = symbols('i j', commutative=False)
++    assert set(itermonomials([i, j], 3, 2)) == {i**2, j**2, i*j, j*i, i**3, i**2*j, i*j*i, j*i**2, j**2*i, j*i*j, i*j**2, j**3}
+     raises(ValueError, lambda: set(itermonomials([x, y], [1, 2], [1, -1])))
+ 
+     raises(ValueError, lambda: set(itermonomials([], [], 1)))

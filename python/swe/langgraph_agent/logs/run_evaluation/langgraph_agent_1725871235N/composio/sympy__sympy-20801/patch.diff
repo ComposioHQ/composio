@@ -1,0 +1,166 @@
+diff --git a/sympy/logic/boolalg.py b/sympy/logic/boolalg.py
+index fbcba1f..4d687bd 100644
+--- a/sympy/logic/boolalg.py
++++ b/sympy/logic/boolalg.py
+@@ -101,6 +101,75 @@ def __xor__(self, other):
+ 
+     __rxor__ = __xor__
+ 
++    def __eq__(self, other):
++        from sympy import Float
++        if isinstance(other, (Float, float)):
++            return False  # A Boolean should never be equal to a Float or float
++        return super().__eq__(other)
++
++    def equals(self, other):
++        """
++        Returns True if the given formulas have the same truth table.
++        For two formulas to be equal they must have the same literals.
++
++        Examples
++        ========
++
++        >>> from sympy.abc import A, B, C
++        >>> from sympy.logic.boolalg import And, Or, Not
++        >>> (A >> B).equals(~B >> ~A)
++        True
++        >>> Not(And(A, B, C)).equals(And(Not(A), Not(B), Not(C)))
++        False
++        >>> Not(And(A, Not(A))).equals(Or(B, Not(B)))
++        False
++
++        """
++        from sympy.logic.inference import satisfiable
++        from sympy.core.relational import Relational
++
++        if self.has(Relational) or (isinstance(other, Boolean) and other.has(Relational)):
++            return None
++
++        return self.atoms() == other.atoms() and \
++            not satisfiable(Not(Equivalent(self, other)))
++    def __eq__(self, other):
++        from sympy import Float
++        if isinstance(other, Float):
++            return False  # A Boolean should never be equal to a Float
++        return super().__eq__(other)
++
++    def equals(self, other):
++        """
++        Returns True if the given formulas have the same truth table.
++        For two formulas to be equal they must have the same literals.
++
++        Examples
++        ========
++
++        >>> from sympy.abc import A, B, C
++        >>> from sympy.logic.boolalg import And, Or, Not
++        >>> (A >> B).equals(~B >> ~A)
++        True
++        >>> Not(And(A, B, C)).equals(And(Not(A), Not(B), Not(C)))
++        False
++        >>> Not(And(A, Not(A))).equals(Or(B, Not(B)))
++        False
++
++        """
++        from sympy.logic.inference import satisfiable
++        from sympy.core.relational import Relational
++
++        if self.has(Relational) or (isinstance(other, Boolean) and other.has(Relational)):
++            return None
++
++        return self.atoms() == other.atoms() and \
++            not satisfiable(Not(Equivalent(self, other)))
++    def __xor__(self, other):
++        return Xor(self, other)
++
++    __rxor__ = __xor__
++
+     def equals(self, other):
+         """
+         Returns True if the given formulas have the same truth table.
+diff --git a/sympy/logic/tests/test_boolalg.py b/sympy/logic/tests/test_boolalg.py
+index f990057..86ff807 100644
+--- a/sympy/logic/tests/test_boolalg.py
++++ b/sympy/logic/tests/test_boolalg.py
+@@ -18,6 +18,35 @@
+     truth_table, as_Boolean, to_anf, is_anf, distribute_xor_over_and,
+     anf_coeffs, ANFform, bool_minterm, bool_maxterm, bool_monomial)
+ from sympy.assumptions.cnf import CNF
++from sympy.core.numbers import Float
++
++from sympy.testing.pytest import raises, XFAIL, slow
++from sympy.utilities.iterables import cartes
++
++from itertools import combinations, permutations
++
++A, B, C, D = symbols('A:D')
++a, b, c, d, e, w, x, y, z = symbols('a:e w:z')
++from sympy.assumptions.ask import Q
++from sympy.core.numbers import oo
++from sympy.core.relational import Equality, Eq, Ne
++from sympy.core.singleton import S
++from sympy.core.symbol import (Dummy, symbols)
++from sympy.functions import Piecewise
++from sympy.functions.elementary.miscellaneous import Max, Min
++from sympy.functions.elementary.trigonometric import sin
++from sympy.sets.sets import (EmptySet, Interval, Union)
++from sympy.simplify.simplify import simplify
++from sympy.logic.boolalg import (
++    And, Boolean, Equivalent, ITE, Implies, Nand, Nor, Not, Or,
++    POSform, SOPform, Xor, Xnor, conjuncts, disjuncts,
++    distribute_or_over_and, distribute_and_over_or,
++    eliminate_implications, is_nnf, is_cnf, is_dnf, simplify_logic,
++    to_nnf, to_cnf, to_dnf, to_int_repr, bool_map, true, false,
++    BooleanAtom, is_literal, term_to_integer, integer_to_term,
++    truth_table, as_Boolean, to_anf, is_anf, distribute_xor_over_and,
++    anf_coeffs, ANFform, bool_minterm, bool_maxterm, bool_monomial)
++from sympy.assumptions.cnf import CNF
+ 
+ from sympy.testing.pytest import raises, XFAIL, slow
+ from sympy.utilities.iterables import cartes
+@@ -1161,6 +1190,19 @@ def test_anf_coeffs():
+     assert anf_coeffs([0, 0, 0, 1]) == [0, 0, 0, 1]
+     assert anf_coeffs([0, 1, 1, 1]) == [0, 1, 1, 1]
+     assert anf_coeffs([1, 1, 1, 0]) == [1, 0, 0, 1]
++def test_Boolean_Float_comparison():
++    assert S.false != Float(0.0)
++    assert Float(0.0) != S.false
++    assert S.true != Float(1.0)
++    assert Float(1.0) != S.true
++    assert S(0.0) != S.false
++    assert S.false != S(0.0)
++    assert S(1.0) != S.true
++    assert S.true != S(1.0)
++
++if __name__ == '__main__':
++    import unittest
++    unittest.main()
+     assert anf_coeffs([1, 0, 0, 0]) == [1, 1, 1, 1]
+     assert anf_coeffs([1, 0, 0, 1]) == [1, 1, 1, 0]
+     assert anf_coeffs([1, 1, 0, 1]) == [1, 0, 1, 1]
+@@ -1190,4 +1232,25 @@ def test_bool_maxterm():
+ def test_bool_monomial():
+     x, y = symbols('x,y')
+     assert bool_monomial(1, [x, y]) == y
++def test_Boolean_Float_comparison():
++    from sympy import S, Float
++    assert S.false != Float(0.0)
++    assert Float(0.0) != S.false
++    assert S.true != Float(1.0)
++    assert Float(1.0) != S.true
++    assert S(0.0) != S.false
++    assert S.false != S(0.0)
++    assert S(1.0) != S.true
++    assert S.true != S(1.0)
++
++def test_boolean_float_comparison():
++    from sympy import S, Float
++    assert S.false != Float(0.0)
++    assert Float(0.0) != S.false
++    assert S.true != Float(1.0)
++    assert Float(1.0) != S.true
++    assert S(0.0) != S.false
++    assert S.false != S(0.0)
++    assert S(1.0) != S.true
++    assert S.true != S(1.0)
+     assert bool_monomial([1, 1], [x, y]) == And(x, y)

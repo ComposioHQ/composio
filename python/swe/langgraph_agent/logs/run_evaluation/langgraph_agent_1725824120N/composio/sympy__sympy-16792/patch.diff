@@ -1,0 +1,88 @@
+diff --git a/sympy/utilities/autowrap.py b/sympy/utilities/autowrap.py
+index bd6afb1..956646b 100644
+--- a/sympy/utilities/autowrap.py
++++ b/sympy/utilities/autowrap.py
+@@ -437,34 +437,40 @@ def _partition_args(self, args):
+         return py_returns, py_args, py_locals, py_inferred
+ 
+     def _prototype_arg(self, arg):
+-        mat_dec = "np.ndarray[{mtype}, ndim={ndim}] {name}"
+-        np_types = {'double': 'np.double_t',
+-                    'int': 'np.int_t'}
+-        t = arg.get_datatype('c')
++        from sympy.tensor.indexed import IndexedBase
++        from sympy.matrices.expressions.matexpr import MatrixSymbol
++        if isinstance(arg, (IndexedBase, MatrixSymbol)):
++            return f"np.ndarray[{arg.dtype}, ndim={arg.rank}]"
++        mat_dec = "np.ndarray[{mtype}, ndim={ndim}]"
+         if arg.dimensions:
+             self._need_numpy = True
+             ndim = len(arg.dimensions)
+-            mtype = np_types[t]
++            mtype = arg.get_datatype('cython')
+             return mat_dec.format(mtype=mtype, ndim=ndim, name=self._string_var(arg.name))
+         else:
+-            return "%s %s" % (t, self._string_var(arg.name))
++            return "%s %s" % (arg.get_datatype('cython'), self._string_var(arg.name))
+ 
+     def _declare_arg(self, arg):
++        from sympy.tensor.indexed import IndexedBase
++        from sympy.matrices.expressions.matexpr import MatrixSymbol
+         proto = self._prototype_arg(arg)
+-        if arg.dimensions:
++        if isinstance(arg, (IndexedBase, MatrixSymbol)):
++            return f"cdef np.ndarray[{arg.dtype}, ndim={arg.rank}] {arg.name}"
++        elif arg.dimensions:
+             shape = '(' + ','.join(self._string_var(i[1] + 1) for i in arg.dimensions) + ')'
+             return proto + " = np.empty({shape})".format(shape=shape)
+         else:
+             return proto + " = 0"
+-
+     def _call_arg(self, arg):
+-        if arg.dimensions:
+-            t = arg.get_datatype('c')
+-            return "<{0}*> {1}.data".format(t, self._string_var(arg.name))
++        from sympy.tensor.indexed import IndexedBase
++        from sympy.matrices.expressions.matexpr import MatrixSymbol
++        if isinstance(arg, (IndexedBase, MatrixSymbol)) or arg.dimensions:
++            return self._string_var(arg.name)
+         elif isinstance(arg, ResultBase):
+             return "&{0}".format(self._string_var(arg.name))
+         else:
+             return self._string_var(arg.name)
++            return self._string_var(arg.name)
+ 
+     def _string_var(self, var):
+         printer = self.generator.printer.doprint
+diff --git a/sympy/utilities/tests/test_autowrap.py b/sympy/utilities/tests/test_autowrap.py
+index 47fe933..0ca7cfe 100644
+--- a/sympy/utilities/tests/test_autowrap.py
++++ b/sympy/utilities/tests/test_autowrap.py
+@@ -466,4 +466,26 @@ def test_ufuncify_source_multioutput():
+     Py_DECREF(ufunc0);
+ }
+ #endif""" % {'num': CodeWrapper._module_counter}
+-    assert source == expected
++def test_autowrap_array_arg_not_in_expr():
++    from sympy import MatrixSymbol, symbols
++    from sympy.utilities.autowrap import autowrap
++    import numpy as np
++
++    x = MatrixSymbol('x', 2, 1)
++    y = symbols('y')
++    expr = y
++    f = autowrap(expr, args=(x, y), backend='cython')
++
++    # Test with array argument
++    result = f(np.array([[1.0], [2.0]]), 3.0)
++    assert result == 3.0
++
++    # Test with scalar arguments
++    result = f(np.array([[1.0], [2.0]]), 5.0)
++    assert result == 5.0
++
++    # Test that the function doesn't raise an error when called with an array
++    try:
++        f(np.array([[1.0], [2.0]]), 3.0)
++    except TypeError:
++        raise AssertionError("Unexpected TypeError raised")

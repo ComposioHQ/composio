@@ -1,0 +1,46 @@
+{
+    "sympy__sympy-13551": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "test_issue_13546"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "test_karr_convention",
+                    "test_karr_proposition_2a",
+                    "test_karr_proposition_2b",
+                    "test_simple_products",
+                    "test_multiple_products",
+                    "test_rational_products",
+                    "test_special_products",
+                    "test__eval_product",
+                    "test_product_pow",
+                    "test_infinite_product",
+                    "test_conjugate_transpose",
+                    "test_simplify",
+                    "test_change_index",
+                    "test_reorder",
+                    "test_Product_is_convergent",
+                    "test_reverse_order",
+                    "test_issue_9983"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

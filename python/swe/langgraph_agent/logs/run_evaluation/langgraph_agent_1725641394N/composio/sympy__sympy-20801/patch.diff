@@ -1,0 +1,16 @@
+diff --git a/sympy/logic/boolalg.py b/sympy/logic/boolalg.py
+index fbcba1f..fbf09d5 100644
+--- a/sympy/logic/boolalg.py
++++ b/sympy/logic/boolalg.py
+@@ -101,6 +101,11 @@ def __xor__(self, other):
+ 
+     __rxor__ = __xor__
+ 
++    def __eq__(self, other):
++        if isinstance(other, (int, float)):
++            return False
++        return super().__eq__(other)
++
+     def equals(self, other):
+         """
+         Returns True if the given formulas have the same truth table.

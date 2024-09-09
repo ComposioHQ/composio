@@ -1,0 +1,61 @@
+diff --git a/sphinx/builders/linkcheck.py b/sphinx/builders/linkcheck.py
+index 1dc0337..5dac5f4 100644
+--- a/sphinx/builders/linkcheck.py
++++ b/sphinx/builders/linkcheck.py
+@@ -20,7 +20,7 @@ from urllib.parse import unquote, urlparse
+ 
+ from docutils import nodes
+ from docutils.nodes import Node
+-from requests.exceptions import HTTPError
++from requests.exceptions import HTTPError, TooManyRedirects
+ 
+ from sphinx.application import Sphinx
+ from sphinx.builders import Builder
+@@ -155,29 +155,19 @@ class CheckExternalLinksBuilder(Builder):
+             kwargs['headers'] = get_request_headers()
+ 
+             try:
+-                if anchor and self.app.config.linkcheck_anchors:
+-                    # Read the whole document and see if #anchor exists
++                try:
++                    # try a HEAD request first, which should be easier on
++                    # the server and the network
++                    response = requests.head(req_url, allow_redirects=True,
++                                             config=self.app.config, auth=auth_info,
++                                             **kwargs)
++                    response.raise_for_status()
++                except (HTTPError, TooManyRedirects):
++                    # retry with GET request if that fails, some servers
++                    # don't like HEAD requests or might enter redirect loops
+                     response = requests.get(req_url, stream=True, config=self.app.config,
+                                             auth=auth_info, **kwargs)
+                     response.raise_for_status()
+-                    found = check_anchor(response, unquote(anchor))
+-
+-                    if not found:
+-                        raise Exception(__("Anchor '%s' not found") % anchor)
+-                else:
+-                    try:
+-                        # try a HEAD request first, which should be easier on
+-                        # the server and the network
+-                        response = requests.head(req_url, allow_redirects=True,
+-                                                 config=self.app.config, auth=auth_info,
+-                                                 **kwargs)
+-                        response.raise_for_status()
+-                    except HTTPError:
+-                        # retry with GET request if that fails, some servers
+-                        # don't like HEAD requests.
+-                        response = requests.get(req_url, stream=True, config=self.app.config,
+-                                                auth=auth_info, **kwargs)
+-                        response.raise_for_status()
+             except HTTPError as err:
+                 if err.response.status_code == 401:
+                     # We'll take "Unauthorized" as working.
+@@ -189,6 +179,7 @@ class CheckExternalLinksBuilder(Builder):
+                     return 'broken', str(err), 0
+             except Exception as err:
+                 return 'broken', str(err), 0
++                return 'broken', str(err), 0
+             if response.url.rstrip('/') == req_url.rstrip('/'):
+                 return 'working', '', 0
+             else:

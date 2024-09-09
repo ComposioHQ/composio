@@ -1,0 +1,454 @@
+2024-09-09 02:00:56,429 - INFO - Environment image sweb.env.arm64.e83e37f52c09532c62acfb:latest found for django__django-13279
+Building instance image sweb.eval.arm64.django__django-13279:latest for django__django-13279
+2024-09-09 02:02:05,044 - INFO - Creating container for django__django-13279...
+2024-09-09 02:02:05,070 - INFO - Container for django__django-13279 created: abb4015ffd4f8fadebf2737418bb983f9d01e244915ac897917932c3667c9f4b
+2024-09-09 02:02:05,191 - INFO - Container for django__django-13279 started: abb4015ffd4f8fadebf2737418bb983f9d01e244915ac897917932c3667c9f4b
+2024-09-09 02:02:05,191 - INFO - Intermediate patch for django__django-13279 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/django__django-13279/patch.diff, now applying to container...
+2024-09-09 02:02:05,341 - INFO - Failed to apply patch to container, trying again...
+2024-09-09 02:02:05,357 - INFO - >>>>> Applied Patch:
+patching file django/contrib/sessions/backends/base.py
+patching file docs/howto/upgrade-version.txt
+patching file docs/releases/3.1.txt
+patching file docs/topics/http/sessions.txt
+
+2024-09-09 02:02:05,701 - INFO - Git diff before:
+diff --git a/django/contrib/sessions/backends/base.py b/django/contrib/sessions/backends/base.py
+index b5453160a5..3d497cb5f3 100644
+--- a/django/contrib/sessions/backends/base.py
++++ b/django/contrib/sessions/backends/base.py
+@@ -1,4 +1,13 @@
+ import base64
++from django.conf import settings
++from django.contrib.sessions.exceptions import SuspiciousSession
++from django.core import signing
++
++class SessionBase:
++    # This setting allows for a smooth transition between Django 3.0 and 3.1
++    # It determines which session encoding method to use
++    DEFAULT_HASHING_ALGORITHM = getattr(settings, 'DEFAULT_HASHING_ALGORITHM', 'sha256')
++import base64
+ import logging
+ import string
+ import warnings
+@@ -107,19 +116,57 @@ class SessionBase:
+         return salted_hmac(key_salt, value).hexdigest()
+ 
+     def encode(self, session_dict):
+-        "Return the given session dictionary serialized and encoded as a string."
++        if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
++            return self._legacy_encode(session_dict)
+         return signing.dumps(
+             session_dict, salt=self.key_salt, serializer=self.serializer,
+             compress=True,
+         )
+ 
+     def decode(self, session_data):
++        if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
++            try:
++                return self._legacy_decode(session_data)
++            except Exception:
++                # If legacy decode fails, try the new format
++                pass
++        
++        try:
++            return signing.loads(session_data, salt=self.key_salt, serializer=self.serializer)
++        except Exception:
++            # If both methods fail, raise an exception or handle it as appropriate
++            raise SuspiciousSession("Session data corrupted")
++
++    def _legacy_encode(self, session_dict):
++        """Encode using the pre-Django 3.1 format."""
++        warnings.warn(
++            "The _legacy_encode method is deprecated and will be removed in Django 4.0.",
++            RemovedInDjango40Warning,
++            stacklevel=2,
++        )
++        serialized = self.serializer().dumps(session_dict)
++        hash = self._hash(serialized)
++        return base64.b64encode(hash.encode() + b':' + serialized).decode('ascii')
++
++    def _legacy_decode(self, session_data):
++        """Decode the pre-Django 3.1 session format."""
++        warnings.warn(
++            "The _legacy_decode method is deprecated and will be removed in Django 4.0.",
++            RemovedInDjango40Warning,
++            stacklevel=2,
++        )
++        # RemovedInDjango40Warning: pre-Django 3.1 format will be invalid.
++        encoded_data = base64.b64decode(session_data.encode('ascii'))
+         try:
+             return signing.loads(session_data, salt=self.key_salt, serializer=self.serializer)
+-        # RemovedInDjango40Warning: when the deprecation ends, handle here
+-        # exceptions similar to what _legacy_decode() does now.
+         except Exception:
+-            return self._legacy_decode(session_data)
++            # If both methods fail, raise an exception or handle it as appropriate
++            raise SuspiciousSession("Session data corrupted")
++    def _legacy_encode(self, session_dict):
++        """Encode using the pre-Django 3.1 format."""
++        serialized = self.serializer().dumps(session_dict)
++        hash = self._hash(serialized)
++        return base64.b64encode(hash.encode() + b':' + serialized).decode('ascii')
+ 
+     def _legacy_decode(self, session_data):
+         # RemovedInDjango40Warning: pre-Django 3.1 format will be invalid.
+diff --git a/docs/howto/upgrade-version.txt b/docs/howto/upgrade-version.txt
+index bde9b18c1b..5f755503fd 100644
+--- a/docs/howto/upgrade-version.txt
++++ b/docs/howto/upgrade-version.txt
+@@ -99,6 +99,45 @@ If you installed Django with pip_, you can use the ``--upgrade`` or ``-U`` flag:
+ 
+ .. _pip: https://pip.pypa.io/
+ 
++Upgrading Django 3.0 to 3.1
++===========================
++
++Session encoding transition
++---------------------------
++
++Django 3.1 introduces a new session encoding format using SHA-256 instead of
++SHA-1. To facilitate a smooth transition, follow these steps:
++
++1. Upgrade to Django 3.1 without changing your session configuration.
++
++2. Set the :setting:`DEFAULT_HASHING_ALGORITHM` setting to ``'sha1'`` in your
++   settings file:
++
++   .. code-block:: python
++
++       DEFAULT_HASHING_ALGORITHM = 'sha1'
++
++   This allows Django to read both old (SHA-1) and new (SHA-256) session formats.
++
++3. Deploy your project with this setting and run it for a period of time to
++   allow active sessions to naturally expire and be replaced with new ones.
++
++4. Once you are confident that all or most sessions have been replaced
++   (typically after your session expiry time has passed), remove the
++   :setting:`DEFAULT_HASHING_ALGORITHM` setting or set it to ``'sha256'``.
++
++5. Deploy your project again with the updated setting.
++
++.. warning::
++
++    The ``'sha1'`` option is provided only for backwards compatibility and will
++    be removed in Django 4.0. It's recommended to complete this transition
++    before upgrading to Django 4.0.
++
++For more details on this transition, refer to the :ref:`sessions documentation
++<configuring-sessions>`.
++.. _pip: https://pip.pypa.io/
++
+ Testing
+ =======
+ 
+diff --git a/docs/releases/3.1.txt b/docs/releases/3.1.txt
+index db090de3f6..e5afdf899a 100644
+--- a/docs/releases/3.1.txt
++++ b/docs/releases/3.1.txt
+@@ -97,6 +97,38 @@ transforms are left as a reference to the new ones and are :ref:`deprecated as
+ of this release <deprecated-jsonfield>`.
+ 
+ .. _default-hashing-algorithm-usage:
++DEFAULT_HASHING_ALGORITHM for transitioning between session encodings
++----------------------------------------------------------------------
++
++A new setting, :setting:`DEFAULT_HASHING_ALGORITHM`, has been introduced to
++facilitate a smooth transition between Django 3.0 and 3.1 session encodings.
++This setting determines which hashing algorithm is used for encoding session
++data.
++
++By default, Django 3.1+ uses SHA-256 for session data hashing. However, if you
++need to maintain compatibility with Django 3.0 during a transition period, you
++can set :setting:`DEFAULT_HASHING_ALGORITHM` to ``'sha1'`` in your settings:
++
++.. code-block:: python
++
++    DEFAULT_HASHING_ALGORITHM = 'sha1'
++
++This allows Django to read both old (SHA-1) and new (SHA-256) session formats,
++ensuring that your application continues to work correctly during the
++transition.
++
++.. warning::
++
++    The ``'sha1'`` option is provided only for backwards compatibility and will
++    be removed in Django 4.0. It's recommended to transition to the new session
++    format as soon as possible.
++
++Once you've fully transitioned to Django 3.1 and ensured that all active
++sessions are using the new format, you should remove the
++:setting:`DEFAULT_HASHING_ALGORITHM` setting or set it to ``'sha256'``.
++
++For more details on this transition, refer to the :ref:`sessions documentation
++<configuring-sessions>`.
+ 
+ ``DEFAULT_HASHING_ALGORITHM`` settings
+ --------------------------------------
+diff --git a/docs/topics/http/sessions.txt b/docs/topics/http/sessions.txt
+index 41c2c499e4..2c945a7b30 100644
+--- a/docs/topics/http/sessions.txt
++++ b/docs/topics/http/sessions.txt
+@@ -95,6 +95,37 @@ session data be expunged from time to time, the ``cache`` backend is for you.
+ If you use the ``cached_db`` session backend, you also need to follow the
+ configuration instructions for the `using database-backed sessions`_.
+ 
++Using file-based sessions
++-------------------------
++Transitioning between Django 3.0 and 3.1 session encoding
++----------------------------------------------------------
++
++Django 3.1 introduces a new session encoding format for improved security.
++To facilitate a smooth transition between Django 3.0 and 3.1, a new setting
++`DEFAULT_HASHING_ALGORITHM` has been introduced.
++
++By default, Django 3.1+ uses the new session encoding format with SHA-256.
++However, if you need to maintain compatibility with Django 3.0 during a
++transition period, you can set `DEFAULT_HASHING_ALGORITHM` to 'sha1' in your
++settings:
++
++.. code-block:: python
++
++    DEFAULT_HASHING_ALGORITHM = 'sha1'
++
++This will allow Django to read both old and new session formats, ensuring
++that your application continues to work correctly during the transition.
++
++.. warning::
++
++    The 'sha1' option is provided only for backwards compatibility and will
++    be removed in Django 4.0. It's recommended to transition to the new
++    session format as soon as possible.
++
++Once you've fully transitioned to Django 3.1 and ensured that all active
++sessions are using the new format, you should remove the
++`DEFAULT_HASHING_ALGORITHM` setting or set it to 'sha256'.
++
+ Using file-based sessions
+ -------------------------
+2024-09-09 02:02:05,702 - INFO - Eval script for django__django-13279 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/django__django-13279/eval.sh; copying to container...
+2024-09-09 02:02:08,201 - INFO - Test runtime: 2.39 seconds
+2024-09-09 02:02:08,201 - INFO - Test output for django__django-13279 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/django__django-13279/test_output.txt
+2024-09-09 02:02:08,248 - INFO - Git diff after:
+diff --git a/django/contrib/sessions/backends/base.py b/django/contrib/sessions/backends/base.py
+index b5453160a5..3d497cb5f3 100644
+--- a/django/contrib/sessions/backends/base.py
++++ b/django/contrib/sessions/backends/base.py
+@@ -1,4 +1,13 @@
+ import base64
++from django.conf import settings
++from django.contrib.sessions.exceptions import SuspiciousSession
++from django.core import signing
++
++class SessionBase:
++    # This setting allows for a smooth transition between Django 3.0 and 3.1
++    # It determines which session encoding method to use
++    DEFAULT_HASHING_ALGORITHM = getattr(settings, 'DEFAULT_HASHING_ALGORITHM', 'sha256')
++import base64
+ import logging
+ import string
+ import warnings
+@@ -107,19 +116,57 @@ class SessionBase:
+         return salted_hmac(key_salt, value).hexdigest()
+ 
+     def encode(self, session_dict):
+-        "Return the given session dictionary serialized and encoded as a string."
++        if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
++            return self._legacy_encode(session_dict)
+         return signing.dumps(
+             session_dict, salt=self.key_salt, serializer=self.serializer,
+             compress=True,
+         )
+ 
+     def decode(self, session_data):
++        if self.DEFAULT_HASHING_ALGORITHM == 'sha1':
++            try:
++                return self._legacy_decode(session_data)
++            except Exception:
++                # If legacy decode fails, try the new format
++                pass
++        
++        try:
++            return signing.loads(session_data, salt=self.key_salt, serializer=self.serializer)
++        except Exception:
++            # If both methods fail, raise an exception or handle it as appropriate
++            raise SuspiciousSession("Session data corrupted")
++
++    def _legacy_encode(self, session_dict):
++        """Encode using the pre-Django 3.1 format."""
++        warnings.warn(
++            "The _legacy_encode method is deprecated and will be removed in Django 4.0.",
++            RemovedInDjango40Warning,
++            stacklevel=2,
++        )
++        serialized = self.serializer().dumps(session_dict)
++        hash = self._hash(serialized)
++        return base64.b64encode(hash.encode() + b':' + serialized).decode('ascii')
++
++    def _legacy_decode(self, session_data):
++        """Decode the pre-Django 3.1 session format."""
++        warnings.warn(
++            "The _legacy_decode method is deprecated and will be removed in Django 4.0.",
++            RemovedInDjango40Warning,
++            stacklevel=2,
++        )
++        # RemovedInDjango40Warning: pre-Django 3.1 format will be invalid.
++        encoded_data = base64.b64decode(session_data.encode('ascii'))
+         try:
+             return signing.loads(session_data, salt=self.key_salt, serializer=self.serializer)
+-        # RemovedInDjango40Warning: when the deprecation ends, handle here
+-        # exceptions similar to what _legacy_decode() does now.
+         except Exception:
+-            return self._legacy_decode(session_data)
++            # If both methods fail, raise an exception or handle it as appropriate
++            raise SuspiciousSession("Session data corrupted")
++    def _legacy_encode(self, session_dict):
++        """Encode using the pre-Django 3.1 format."""
++        serialized = self.serializer().dumps(session_dict)
++        hash = self._hash(serialized)
++        return base64.b64encode(hash.encode() + b':' + serialized).decode('ascii')
+ 
+     def _legacy_decode(self, session_data):
+         # RemovedInDjango40Warning: pre-Django 3.1 format will be invalid.
+diff --git a/docs/howto/upgrade-version.txt b/docs/howto/upgrade-version.txt
+index bde9b18c1b..5f755503fd 100644
+--- a/docs/howto/upgrade-version.txt
++++ b/docs/howto/upgrade-version.txt
+@@ -99,6 +99,45 @@ If you installed Django with pip_, you can use the ``--upgrade`` or ``-U`` flag:
+ 
+ .. _pip: https://pip.pypa.io/
+ 
++Upgrading Django 3.0 to 3.1
++===========================
++
++Session encoding transition
++---------------------------
++
++Django 3.1 introduces a new session encoding format using SHA-256 instead of
++SHA-1. To facilitate a smooth transition, follow these steps:
++
++1. Upgrade to Django 3.1 without changing your session configuration.
++
++2. Set the :setting:`DEFAULT_HASHING_ALGORITHM` setting to ``'sha1'`` in your
++   settings file:
++
++   .. code-block:: python
++
++       DEFAULT_HASHING_ALGORITHM = 'sha1'
++
++   This allows Django to read both old (SHA-1) and new (SHA-256) session formats.
++
++3. Deploy your project with this setting and run it for a period of time to
++   allow active sessions to naturally expire and be replaced with new ones.
++
++4. Once you are confident that all or most sessions have been replaced
++   (typically after your session expiry time has passed), remove the
++   :setting:`DEFAULT_HASHING_ALGORITHM` setting or set it to ``'sha256'``.
++
++5. Deploy your project again with the updated setting.
++
++.. warning::
++
++    The ``'sha1'`` option is provided only for backwards compatibility and will
++    be removed in Django 4.0. It's recommended to complete this transition
++    before upgrading to Django 4.0.
++
++For more details on this transition, refer to the :ref:`sessions documentation
++<configuring-sessions>`.
++.. _pip: https://pip.pypa.io/
++
+ Testing
+ =======
+ 
+diff --git a/docs/releases/3.1.txt b/docs/releases/3.1.txt
+index db090de3f6..e5afdf899a 100644
+--- a/docs/releases/3.1.txt
++++ b/docs/releases/3.1.txt
+@@ -97,6 +97,38 @@ transforms are left as a reference to the new ones and are :ref:`deprecated as
+ of this release <deprecated-jsonfield>`.
+ 
+ .. _default-hashing-algorithm-usage:
++DEFAULT_HASHING_ALGORITHM for transitioning between session encodings
++----------------------------------------------------------------------
++
++A new setting, :setting:`DEFAULT_HASHING_ALGORITHM`, has been introduced to
++facilitate a smooth transition between Django 3.0 and 3.1 session encodings.
++This setting determines which hashing algorithm is used for encoding session
++data.
++
++By default, Django 3.1+ uses SHA-256 for session data hashing. However, if you
++need to maintain compatibility with Django 3.0 during a transition period, you
++can set :setting:`DEFAULT_HASHING_ALGORITHM` to ``'sha1'`` in your settings:
++
++.. code-block:: python
++
++    DEFAULT_HASHING_ALGORITHM = 'sha1'
++
++This allows Django to read both old (SHA-1) and new (SHA-256) session formats,
++ensuring that your application continues to work correctly during the
++transition.
++
++.. warning::
++
++    The ``'sha1'`` option is provided only for backwards compatibility and will
++    be removed in Django 4.0. It's recommended to transition to the new session
++    format as soon as possible.
++
++Once you've fully transitioned to Django 3.1 and ensured that all active
++sessions are using the new format, you should remove the
++:setting:`DEFAULT_HASHING_ALGORITHM` setting or set it to ``'sha256'``.
++
++For more details on this transition, refer to the :ref:`sessions documentation
++<configuring-sessions>`.
+ 
+ ``DEFAULT_HASHING_ALGORITHM`` settings
+ --------------------------------------
+diff --git a/docs/topics/http/sessions.txt b/docs/topics/http/sessions.txt
+index 41c2c499e4..2c945a7b30 100644
+--- a/docs/topics/http/sessions.txt
++++ b/docs/topics/http/sessions.txt
+@@ -95,6 +95,37 @@ session data be expunged from time to time, the ``cache`` backend is for you.
+ If you use the ``cached_db`` session backend, you also need to follow the
+ configuration instructions for the `using database-backed sessions`_.
+ 
++Using file-based sessions
++-------------------------
++Transitioning between Django 3.0 and 3.1 session encoding
++----------------------------------------------------------
++
++Django 3.1 introduces a new session encoding format for improved security.
++To facilitate a smooth transition between Django 3.0 and 3.1, a new setting
++`DEFAULT_HASHING_ALGORITHM` has been introduced.
++
++By default, Django 3.1+ uses the new session encoding format with SHA-256.
++However, if you need to maintain compatibility with Django 3.0 during a
++transition period, you can set `DEFAULT_HASHING_ALGORITHM` to 'sha1' in your
++settings:
++
++.. code-block:: python
++
++    DEFAULT_HASHING_ALGORITHM = 'sha1'
++
++This will allow Django to read both old and new session formats, ensuring
++that your application continues to work correctly during the transition.
++
++.. warning::
++
++    The 'sha1' option is provided only for backwards compatibility and will
++    be removed in Django 4.0. It's recommended to transition to the new
++    session format as soon as possible.
++
++Once you've fully transitioned to Django 3.1 and ensured that all active
++sessions are using the new format, you should remove the
++`DEFAULT_HASHING_ALGORITHM` setting or set it to 'sha256'.
++
+ Using file-based sessions
+ -------------------------
+2024-09-09 02:02:08,248 - INFO - Grading answer for django__django-13279...
+2024-09-09 02:02:08,274 - INFO - report: {'django__django-13279': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': False, 'tests_status': {'FAIL_TO_PASS': {'success': [], 'failure': ['test_default_hashing_algorith_legacy_decode (sessions_tests.tests.CookieSessionTests)', 'test_default_hashing_algorith_legacy_decode (sessions_tests.tests.CacheSessionTests)', 'test_default_hashing_algorith_legacy_decode (sessions_tests.tests.FileSessionTests)', 'test_default_hashing_algorith_legacy_decode (sessions_tests.tests.FileSessionPathLibTests)', 'test_default_hashing_algorith_legacy_decode (sessions_tests.tests.CacheDBSessionTests)', 'test_default_hashing_algorith_legacy_decode (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_default_hashing_algorith_legacy_decode (sessions_tests.tests.DatabaseSessionTests)', 'test_default_hashing_algorith_legacy_decode (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_default_hashing_algorith_legacy_decode (sessions_tests.tests.CustomDatabaseSessionTests)']}, 'PASS_TO_PASS': {'success': ['test_clear (sessions_tests.tests.CookieSessionTests)', 'test_custom_expiry_datetime (sessions_tests.tests.CookieSessionTests)', 'test_custom_expiry_reset (sessions_tests.tests.CookieSessionTests)', 'test_custom_expiry_seconds (sessions_tests.tests.CookieSessionTests)', 'test_custom_expiry_timedelta (sessions_tests.tests.CookieSessionTests)', 'test_cycle (sessions_tests.tests.CookieSessionTests)', 'test_cycle_with_no_session_cache (sessions_tests.tests.CookieSessionTests)', 'test_default_expiry (sessions_tests.tests.CookieSessionTests)', 'test_delete (sessions_tests.tests.CookieSessionTests)', 'test_flush (sessions_tests.tests.CookieSessionTests)', 'test_get_empty (sessions_tests.tests.CookieSessionTests)', 'test_get_expire_at_browser_close (sessions_tests.tests.CookieSessionTests)', 'test_has_key (sessions_tests.tests.CookieSessionTests)', 'test_invalid_key (sessions_tests.tests.CookieSessionTests)', 'test_items (sessions_tests.tests.CookieSessionTests)', 'test_keys (sessions_tests.tests.CookieSessionTests)', 'test_new_session (sessions_tests.tests.CookieSessionTests)', 'test_pop (sessions_tests.tests.CookieSessionTests)', 'test_pop_default (sessions_tests.tests.CookieSessionTests)', 'test_pop_default_named_argument (sessions_tests.tests.CookieSessionTests)', 'test_pop_no_default_keyerror_raised (sessions_tests.tests.CookieSessionTests)', 'test_save (sessions_tests.tests.CookieSessionTests)', 'test_save_doesnt_clear_data (sessions_tests.tests.CookieSessionTests)', 'Falsey values (Such as an empty string) are rejected.', 'test_session_key_is_read_only (sessions_tests.tests.CookieSessionTests)', 'Strings shorter than 8 characters are rejected.', 'Strings of length 8 and up are accepted and stored.', 'test_setdefault (sessions_tests.tests.CookieSessionTests)', 'test_store (sessions_tests.tests.CookieSessionTests)', 'test_unpickling_exception (sessions_tests.tests.CookieSessionTests)', 'test_update (sessions_tests.tests.CookieSessionTests)', 'test_values (sessions_tests.tests.CookieSessionTests)', 'test_actual_expiry (sessions_tests.tests.CacheSessionTests)', 'test_clear (sessions_tests.tests.CacheSessionTests)', 'test_create_and_save (sessions_tests.tests.CacheSessionTests)', 'test_custom_expiry_datetime (sessions_tests.tests.CacheSessionTests)', 'test_custom_expiry_reset (sessions_tests.tests.CacheSessionTests)', 'test_custom_expiry_seconds (sessions_tests.tests.CacheSessionTests)', 'test_custom_expiry_timedelta (sessions_tests.tests.CacheSessionTests)', 'test_cycle (sessions_tests.tests.CacheSessionTests)', 'test_cycle_with_no_session_cache (sessions_tests.tests.CacheSessionTests)', 'test_default_cache (sessions_tests.tests.CacheSessionTests)', 'test_default_expiry (sessions_tests.tests.CacheSessionTests)', 'test_delete (sessions_tests.tests.CacheSessionTests)', 'test_flush (sessions_tests.tests.CacheSessionTests)', 'test_get_empty (sessions_tests.tests.CacheSessionTests)', 'test_get_expire_at_browser_close (sessions_tests.tests.CacheSessionTests)', 'test_has_key (sessions_tests.tests.CacheSessionTests)', 'test_invalid_key (sessions_tests.tests.CacheSessionTests)', 'test_items (sessions_tests.tests.CacheSessionTests)', 'test_keys (sessions_tests.tests.CacheSessionTests)', 'test_load_overlong_key (sessions_tests.tests.CacheSessionTests)', 'test_new_session (sessions_tests.tests.CacheSessionTests)', 'test_non_default_cache (sessions_tests.tests.CacheSessionTests)', 'test_pop (sessions_tests.tests.CacheSessionTests)', 'test_pop_default (sessions_tests.tests.CacheSessionTests)', 'test_pop_default_named_argument (sessions_tests.tests.CacheSessionTests)', 'test_pop_no_default_keyerror_raised (sessions_tests.tests.CacheSessionTests)', 'test_save (sessions_tests.tests.CacheSessionTests)', 'test_save_doesnt_clear_data (sessions_tests.tests.CacheSessionTests)', 'test_session_key_is_read_only (sessions_tests.tests.CacheSessionTests)', 'test_session_load_does_not_create_record (sessions_tests.tests.CacheSessionTests)', 'test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.CacheSessionTests)', 'test_setdefault (sessions_tests.tests.CacheSessionTests)', 'test_store (sessions_tests.tests.CacheSessionTests)', 'test_update (sessions_tests.tests.CacheSessionTests)', 'test_values (sessions_tests.tests.CacheSessionTests)', 'test_flush_empty_without_session_cookie_doesnt_set_cookie (sessions_tests.tests.SessionMiddlewareTests)', 'test_session_delete_on_end (sessions_tests.tests.SessionMiddlewareTests)', 'test_session_delete_on_end_with_custom_domain_and_path (sessions_tests.tests.SessionMiddlewareTests)', 'test_session_save_on_500 (sessions_tests.tests.SessionMiddlewareTests)', 'test_clear (sessions_tests.tests.FileSessionTests)', 'test_configuration_check (sessions_tests.tests.FileSessionTests)', 'test_custom_expiry_datetime (sessions_tests.tests.FileSessionTests)', 'test_custom_expiry_reset (sessions_tests.tests.FileSessionTests)', 'test_custom_expiry_seconds (sessions_tests.tests.FileSessionTests)', 'test_custom_expiry_timedelta (sessions_tests.tests.FileSessionTests)', 'test_default_expiry (sessions_tests.tests.FileSessionTests)', 'test_get_empty (sessions_tests.tests.FileSessionTests)', 'test_get_expire_at_browser_close (sessions_tests.tests.FileSessionTests)', 'test_has_key (sessions_tests.tests.FileSessionTests)', 'test_invalid_key_backslash (sessions_tests.tests.FileSessionTests)', 'test_invalid_key_forwardslash (sessions_tests.tests.FileSessionTests)', 'test_items (sessions_tests.tests.FileSessionTests)', 'test_keys (sessions_tests.tests.FileSessionTests)', 'test_new_session (sessions_tests.tests.FileSessionTests)', 'test_pop (sessions_tests.tests.FileSessionTests)', 'test_pop_default (sessions_tests.tests.FileSessionTests)', 'test_pop_default_named_argument (sessions_tests.tests.FileSessionTests)', 'test_pop_no_default_keyerror_raised (sessions_tests.tests.FileSessionTests)', 'test_session_key_is_read_only (sessions_tests.tests.FileSessionTests)', 'test_session_load_does_not_create_record (sessions_tests.tests.FileSessionTests)', 'test_setdefault (sessions_tests.tests.FileSessionTests)', 'test_store (sessions_tests.tests.FileSessionTests)', 'test_update (sessions_tests.tests.FileSessionTests)', 'test_values (sessions_tests.tests.FileSessionTests)', 'test_clear (sessions_tests.tests.FileSessionPathLibTests)', 'test_configuration_check (sessions_tests.tests.FileSessionPathLibTests)', 'test_custom_expiry_datetime (sessions_tests.tests.FileSessionPathLibTests)', 'test_custom_expiry_reset (sessions_tests.tests.FileSessionPathLibTests)', 'test_custom_expiry_seconds (sessions_tests.tests.FileSessionPathLibTests)', 'test_custom_expiry_timedelta (sessions_tests.tests.FileSessionPathLibTests)', 'test_default_expiry (sessions_tests.tests.FileSessionPathLibTests)', 'test_get_empty (sessions_tests.tests.FileSessionPathLibTests)', 'test_get_expire_at_browser_close (sessions_tests.tests.FileSessionPathLibTests)', 'test_has_key (sessions_tests.tests.FileSessionPathLibTests)', 'test_invalid_key_backslash (sessions_tests.tests.FileSessionPathLibTests)', 'test_invalid_key_forwardslash (sessions_tests.tests.FileSessionPathLibTests)', 'test_items (sessions_tests.tests.FileSessionPathLibTests)', 'test_keys (sessions_tests.tests.FileSessionPathLibTests)', 'test_new_session (sessions_tests.tests.FileSessionPathLibTests)', 'test_pop (sessions_tests.tests.FileSessionPathLibTests)', 'test_pop_default (sessions_tests.tests.FileSessionPathLibTests)', 'test_pop_default_named_argument (sessions_tests.tests.FileSessionPathLibTests)', 'test_pop_no_default_keyerror_raised (sessions_tests.tests.FileSessionPathLibTests)', 'test_session_key_is_read_only (sessions_tests.tests.FileSessionPathLibTests)', 'test_session_load_does_not_create_record (sessions_tests.tests.FileSessionPathLibTests)', 'test_setdefault (sessions_tests.tests.FileSessionPathLibTests)', 'test_store (sessions_tests.tests.FileSessionPathLibTests)', 'test_update (sessions_tests.tests.FileSessionPathLibTests)', 'test_values (sessions_tests.tests.FileSessionPathLibTests)', 'test_clear (sessions_tests.tests.CacheDBSessionTests)', 'test_custom_expiry_datetime (sessions_tests.tests.CacheDBSessionTests)', 'test_custom_expiry_reset (sessions_tests.tests.CacheDBSessionTests)', 'test_custom_expiry_seconds (sessions_tests.tests.CacheDBSessionTests)', 'test_custom_expiry_timedelta (sessions_tests.tests.CacheDBSessionTests)', 'test_default_expiry (sessions_tests.tests.CacheDBSessionTests)', 'test_get_empty (sessions_tests.tests.CacheDBSessionTests)', 'test_get_expire_at_browser_close (sessions_tests.tests.CacheDBSessionTests)', 'test_has_key (sessions_tests.tests.CacheDBSessionTests)', 'test_items (sessions_tests.tests.CacheDBSessionTests)', 'test_keys (sessions_tests.tests.CacheDBSessionTests)', 'test_load_overlong_key (sessions_tests.tests.CacheDBSessionTests)', 'test_new_session (sessions_tests.tests.CacheDBSessionTests)', 'test_non_default_cache (sessions_tests.tests.CacheDBSessionTests)', 'test_pop (sessions_tests.tests.CacheDBSessionTests)', 'test_pop_default (sessions_tests.tests.CacheDBSessionTests)', 'test_pop_default_named_argument (sessions_tests.tests.CacheDBSessionTests)', 'test_pop_no_default_keyerror_raised (sessions_tests.tests.CacheDBSessionTests)', 'test_session_key_is_read_only (sessions_tests.tests.CacheDBSessionTests)', 'test_session_load_does_not_create_record (sessions_tests.tests.CacheDBSessionTests)', 'test_setdefault (sessions_tests.tests.CacheDBSessionTests)', 'test_store (sessions_tests.tests.CacheDBSessionTests)', 'test_update (sessions_tests.tests.CacheDBSessionTests)', 'test_values (sessions_tests.tests.CacheDBSessionTests)', 'test_clear (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_custom_expiry_datetime (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_custom_expiry_reset (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_custom_expiry_seconds (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_custom_expiry_timedelta (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_default_expiry (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_get_empty (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_get_expire_at_browser_close (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_has_key (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_items (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_keys (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_load_overlong_key (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_new_session (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_non_default_cache (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_pop (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_pop_default (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_pop_default_named_argument (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_pop_no_default_keyerror_raised (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_session_key_is_read_only (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_session_load_does_not_create_record (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_setdefault (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_store (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_update (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_values (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_clear (sessions_tests.tests.DatabaseSessionTests)', 'test_custom_expiry_datetime (sessions_tests.tests.DatabaseSessionTests)', 'test_custom_expiry_reset (sessions_tests.tests.DatabaseSessionTests)', 'test_custom_expiry_seconds (sessions_tests.tests.DatabaseSessionTests)', 'test_custom_expiry_timedelta (sessions_tests.tests.DatabaseSessionTests)', 'test_default_expiry (sessions_tests.tests.DatabaseSessionTests)', 'test_get_empty (sessions_tests.tests.DatabaseSessionTests)', 'test_get_expire_at_browser_close (sessions_tests.tests.DatabaseSessionTests)', 'test_has_key (sessions_tests.tests.DatabaseSessionTests)', 'test_items (sessions_tests.tests.DatabaseSessionTests)', 'test_keys (sessions_tests.tests.DatabaseSessionTests)', 'test_new_session (sessions_tests.tests.DatabaseSessionTests)', 'test_pop (sessions_tests.tests.DatabaseSessionTests)', 'test_pop_default (sessions_tests.tests.DatabaseSessionTests)', 'test_pop_default_named_argument (sessions_tests.tests.DatabaseSessionTests)', 'test_pop_no_default_keyerror_raised (sessions_tests.tests.DatabaseSessionTests)', 'test_session_key_is_read_only (sessions_tests.tests.DatabaseSessionTests)', 'test_session_load_does_not_create_record (sessions_tests.tests.DatabaseSessionTests)', 'test_setdefault (sessions_tests.tests.DatabaseSessionTests)', 'test_store (sessions_tests.tests.DatabaseSessionTests)', 'test_update (sessions_tests.tests.DatabaseSessionTests)', 'test_values (sessions_tests.tests.DatabaseSessionTests)', 'test_clear (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_custom_expiry_datetime (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_custom_expiry_reset (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_custom_expiry_seconds (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_custom_expiry_timedelta (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_default_expiry (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_get_empty (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_get_expire_at_browser_close (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_has_key (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_items (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_keys (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_new_session (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_pop (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_pop_default (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_pop_default_named_argument (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_pop_no_default_keyerror_raised (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_session_key_is_read_only (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_session_load_does_not_create_record (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_setdefault (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_store (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_update (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_values (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_clear (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_custom_expiry_datetime (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_custom_expiry_reset (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_custom_expiry_seconds (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_custom_expiry_timedelta (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_default_expiry (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_get_empty (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_get_expire_at_browser_close (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_has_key (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_items (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_keys (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_new_session (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_pop (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_pop_default (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_pop_default_named_argument (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_pop_no_default_keyerror_raised (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_session_key_is_read_only (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_session_load_does_not_create_record (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_setdefault (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_store (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_update (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_values (sessions_tests.tests.CustomDatabaseSessionTests)'], 'failure': ['test_decode (sessions_tests.tests.CookieSessionTests)', 'test_decode_failure_logged_to_security (sessions_tests.tests.CookieSessionTests)', 'test_decode_legacy (sessions_tests.tests.CookieSessionTests)', 'test_decode (sessions_tests.tests.CacheSessionTests)', 'test_decode_failure_logged_to_security (sessions_tests.tests.CacheSessionTests)', 'test_decode_legacy (sessions_tests.tests.CacheSessionTests)', 'test_empty_session_saved (sessions_tests.tests.SessionMiddlewareTests)', 'test_httponly_session_cookie (sessions_tests.tests.SessionMiddlewareTests)', 'test_no_httponly_session_cookie (sessions_tests.tests.SessionMiddlewareTests)', 'test_samesite_session_cookie (sessions_tests.tests.SessionMiddlewareTests)', 'test_secure_session_cookie (sessions_tests.tests.SessionMiddlewareTests)', 'test_session_update_error_redirect (sessions_tests.tests.SessionMiddlewareTests)', 'test_actual_expiry (sessions_tests.tests.FileSessionTests)', 'test_clearsessions_command (sessions_tests.tests.FileSessionTests)', 'test_cycle (sessions_tests.tests.FileSessionTests)', 'test_cycle_with_no_session_cache (sessions_tests.tests.FileSessionTests)', 'test_decode (sessions_tests.tests.FileSessionTests)', 'test_decode_failure_logged_to_security (sessions_tests.tests.FileSessionTests)', 'test_decode_legacy (sessions_tests.tests.FileSessionTests)', 'test_delete (sessions_tests.tests.FileSessionTests)', 'test_flush (sessions_tests.tests.FileSessionTests)', 'test_invalid_key (sessions_tests.tests.FileSessionTests)', 'test_save (sessions_tests.tests.FileSessionTests)', 'test_save_doesnt_clear_data (sessions_tests.tests.FileSessionTests)', 'test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.FileSessionTests)', 'test_actual_expiry (sessions_tests.tests.FileSessionPathLibTests)', 'test_clearsessions_command (sessions_tests.tests.FileSessionPathLibTests)', 'test_cycle (sessions_tests.tests.FileSessionPathLibTests)', 'test_cycle_with_no_session_cache (sessions_tests.tests.FileSessionPathLibTests)', 'test_decode (sessions_tests.tests.FileSessionPathLibTests)', 'test_decode_failure_logged_to_security (sessions_tests.tests.FileSessionPathLibTests)', 'test_decode_legacy (sessions_tests.tests.FileSessionPathLibTests)', 'test_delete (sessions_tests.tests.FileSessionPathLibTests)', 'test_flush (sessions_tests.tests.FileSessionPathLibTests)', 'test_invalid_key (sessions_tests.tests.FileSessionPathLibTests)', 'test_save (sessions_tests.tests.FileSessionPathLibTests)', 'test_save_doesnt_clear_data (sessions_tests.tests.FileSessionPathLibTests)', 'test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.FileSessionPathLibTests)', 'test_actual_expiry (sessions_tests.tests.CacheDBSessionTests)', 'test_cycle (sessions_tests.tests.CacheDBSessionTests)', 'test_cycle_with_no_session_cache (sessions_tests.tests.CacheDBSessionTests)', 'test_decode (sessions_tests.tests.CacheDBSessionTests)', 'test_decode_failure_logged_to_security (sessions_tests.tests.CacheDBSessionTests)', 'test_decode_legacy (sessions_tests.tests.CacheDBSessionTests)', 'test_delete (sessions_tests.tests.CacheDBSessionTests)', 'test_exists_searches_cache_first (sessions_tests.tests.CacheDBSessionTests)', 'test_flush (sessions_tests.tests.CacheDBSessionTests)', 'test_invalid_key (sessions_tests.tests.CacheDBSessionTests)', 'test_save (sessions_tests.tests.CacheDBSessionTests)', 'test_save_doesnt_clear_data (sessions_tests.tests.CacheDBSessionTests)', 'test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.CacheDBSessionTests)', 'test_actual_expiry (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_cycle (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_cycle_with_no_session_cache (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_decode (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_decode_failure_logged_to_security (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_decode_legacy (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_delete (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_exists_searches_cache_first (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_flush (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_invalid_key (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_save (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_save_doesnt_clear_data (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)', 'test_actual_expiry (sessions_tests.tests.DatabaseSessionTests)', 'test_clearsessions_command (sessions_tests.tests.DatabaseSessionTests)', 'test_cycle (sessions_tests.tests.DatabaseSessionTests)', 'test_cycle_with_no_session_cache (sessions_tests.tests.DatabaseSessionTests)', 'test_decode (sessions_tests.tests.DatabaseSessionTests)', 'test_decode_failure_logged_to_security (sessions_tests.tests.DatabaseSessionTests)', 'test_decode_legacy (sessions_tests.tests.DatabaseSessionTests)', 'test_delete (sessions_tests.tests.DatabaseSessionTests)', 'test_flush (sessions_tests.tests.DatabaseSessionTests)', 'test_invalid_key (sessions_tests.tests.DatabaseSessionTests)', 'test_save (sessions_tests.tests.DatabaseSessionTests)', 'test_save_doesnt_clear_data (sessions_tests.tests.DatabaseSessionTests)', 'test_session_get_decoded (sessions_tests.tests.DatabaseSessionTests)', 'test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.DatabaseSessionTests)', 'Session repr should be the session key.', 'test_sessionmanager_save (sessions_tests.tests.DatabaseSessionTests)', 'test_actual_expiry (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_clearsessions_command (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_cycle (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_cycle_with_no_session_cache (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_decode (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_decode_failure_logged_to_security (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_decode_legacy (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_delete (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_flush (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_invalid_key (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_save (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_save_doesnt_clear_data (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_session_get_decoded (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_sessionmanager_save (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)', 'test_actual_expiry (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_clearsessions_command (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_cycle (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_cycle_with_no_session_cache (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_decode (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_decode_failure_logged_to_security (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_decode_legacy (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_delete (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_extra_session_field (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_flush (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_invalid_key (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_save (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_save_doesnt_clear_data (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_session_get_decoded (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.CustomDatabaseSessionTests)', 'test_sessionmanager_save (sessions_tests.tests.CustomDatabaseSessionTests)']}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for django__django-13279: resolved: False
+2024-09-09 02:02:08,275 - INFO - Attempting to stop container sweb.eval.django__django-13279.langgraph_agent_1725824120N...
+2024-09-09 02:02:23,450 - INFO - Attempting to remove container sweb.eval.django__django-13279.langgraph_agent_1725824120N...
+2024-09-09 02:02:23,462 - INFO - Container sweb.eval.django__django-13279.langgraph_agent_1725824120N removed.
+2024-09-09 02:02:23,462 - INFO - Attempting to remove image sweb.eval.arm64.django__django-13279:latest...
+2024-09-09 02:02:23,574 - INFO - Image sweb.eval.arm64.django__django-13279:latest removed.

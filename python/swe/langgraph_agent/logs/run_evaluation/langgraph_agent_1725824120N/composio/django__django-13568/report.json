@@ -1,0 +1,42 @@
+{
+    "django__django-13568": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "test_username_unique_with_model_constraint (auth_tests.test_checks.UserModelChecksTests)"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "test_clashing_custom_permissions (auth_tests.test_checks.ModelsPermissionsChecksTests)",
+                    "test_clashing_default_permissions (auth_tests.test_checks.ModelsPermissionsChecksTests)",
+                    "test_custom_permission_codename_max_length (auth_tests.test_checks.ModelsPermissionsChecksTests)",
+                    "test_custom_permission_name_max_length (auth_tests.test_checks.ModelsPermissionsChecksTests)",
+                    "test_empty_default_permissions (auth_tests.test_checks.ModelsPermissionsChecksTests)",
+                    "test_model_name_max_length (auth_tests.test_checks.ModelsPermissionsChecksTests)",
+                    "test_non_clashing_custom_permissions (auth_tests.test_checks.ModelsPermissionsChecksTests)",
+                    "test_verbose_name_max_length (auth_tests.test_checks.ModelsPermissionsChecksTests)",
+                    "test_is_anonymous_authenticated_methods (auth_tests.test_checks.UserModelChecksTests)",
+                    "REQUIRED_FIELDS should be a list.",
+                    "test_username_non_unique (auth_tests.test_checks.UserModelChecksTests)",
+                    "USERNAME_FIELD should not appear in REQUIRED_FIELDS.",
+                    "test_username_partially_unique (auth_tests.test_checks.UserModelChecksTests)"
+                ]
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

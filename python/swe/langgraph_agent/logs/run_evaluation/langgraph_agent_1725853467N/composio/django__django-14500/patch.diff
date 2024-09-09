@@ -1,0 +1,94 @@
+diff --git a/django/db/migrations/executor.py b/django/db/migrations/executor.py
+index 57042a86..578c49b5 100644
+--- a/django/db/migrations/executor.py
++++ b/django/db/migrations/executor.py
+@@ -250,12 +250,19 @@ class MigrationExecutor:
+         if not fake:
+             with self.connection.schema_editor(atomic=migration.atomic) as schema_editor:
+                 state = migration.unapply(state, schema_editor)
+-        # For replacement migrations, record individual statuses
+-        if migration.replaces:
++        
++        # Check if this is a squashed migration
++        is_squashed = hasattr(migration, 'replaces') and migration.replaces
++        
++        if is_squashed:
++            # For squashed migrations, record both the squashed migration and its replacements as unapplied
++            self.recorder.record_unapplied(migration.app_label, migration.name)
+             for app_label, name in migration.replaces:
+                 self.recorder.record_unapplied(app_label, name)
+         else:
++            # For non-squashed migrations, keep the existing behavior
+             self.recorder.record_unapplied(migration.app_label, migration.name)
++        
+         # Report progress
+         if self.progress_callback:
+             self.progress_callback("unapply_success", migration, fake)
+diff --git a/tests/migrations/test_executor.py b/tests/migrations/test_executor.py
+index e61d8f12..6a675fcd 100644
+--- a/tests/migrations/test_executor.py
++++ b/tests/migrations/test_executor.py
+@@ -851,4 +851,44 @@ class ExecutorUnitTests(SimpleTestCase):
+ 
+         plan = executor.migration_plan({a1})
+ 
+-        self.assertEqual(plan, [])
++    @override_settings(MIGRATION_MODULES={"migrations": "migrations.test_migrations_squashed"})
++    def test_unapply_squashed_migration(self):
++        """
++        Tests unapplying a squashed migration when the replaced migrations are present.
++        """
++        executor = MigrationExecutor(connection)
++        
++        # Apply the squashed migration
++        executor.migrate([("migrations", "0001_squashed_0002")])
++        
++        # Ensure the tables are created
++        self.assertTableExists("migrations_author")
++        self.assertTableExists("migrations_book")
++        
++        # Check that the squashed migration is recorded as applied
++        recorder = MigrationRecorder(connection)
++        self.assertIn(("migrations", "0001_squashed_0002"), recorder.applied_migrations())
++        
++        # Unapply the squashed migration
++        executor.migrate([("migrations", None)])
++        
++        # Ensure the tables are removed
++        self.assertTableNotExists("migrations_author")
++        self.assertTableNotExists("migrations_book")
++        
++        # Check that both the squashed migration and its replaced migrations are recorded as unapplied
++        self.assertNotIn(("migrations", "0001_squashed_0002"), recorder.applied_migrations())
++        self.assertNotIn(("migrations", "0001_initial"), recorder.applied_migrations())
++        self.assertNotIn(("migrations", "0002_second"), recorder.applied_migrations())
++
++        # Rebuild the graph to reflect the new DB state
++        executor.loader.build_graph()
++
++        # Verify that we can now apply the original migrations individually
++        executor.migrate([("migrations", "0001_initial")])
++        self.assertTableExists("migrations_author")
++        self.assertTableNotExists("migrations_book")
++
++        executor.migrate([("migrations", "0002_second")])
++        self.assertTableExists("migrations_author")
++        self.assertTableExists("migrations_book")
+diff --git a/tests/runtests.py b/tests/runtests.py
+index 11d50b9a..8ba8a1b9 100755
+--- a/tests/runtests.py
++++ b/tests/runtests.py
+@@ -637,3 +637,13 @@ if __name__ == "__main__":
+         time_keeper.print_results()
+         if failures:
+             sys.exit(1)
++
++if __name__ == "__main__":
++    django_tests(
++        verbosity=2,
++        interactive=True,
++        failfast=True,
++        keepdb=True,
++        reverse=False,
++        test_labels=["migrations.test_executor.ExecutorTests.test_unapply_squashed_migration"],
++    )

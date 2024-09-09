@@ -1,0 +1,40 @@
+diff --git a/sympy/printing/repr.py b/sympy/printing/repr.py
+index c936a69..4fd0612 100644
+--- a/sympy/printing/repr.py
++++ b/sympy/printing/repr.py
+@@ -111,6 +111,35 @@ def _print_FunctionClass(self, expr):
+     def _print_Half(self, expr):
+         return 'Rational(1, 2)'
+ 
++    def _print_FunctionClass(self, expr):
++        if issubclass(expr, AppliedUndef):
++            return 'Function(%r)' % (expr.__name__)
++        else:
++            return expr.__name__
++
++    def _print_dict(self, expr):
++        return "{" + ", ".join(f"{self._print(key)}: {self._print(value)}" for key, value in expr.items()) + "}"
++
++    def _print_set(self, expr):
++        if not expr:
++            return "set()"
++        return "{" + ", ".join(self._print(item) for item in expr) + "}"
++
++    def _print_Half(self, expr):
++        return 'Rational(1, 2)'
++
++    def _print_RationalConstant(self, expr):
++        return str(expr)
++
++    def _print_AtomicExpr(self, expr):
++        return str(expr)
++    def _print_RationalConstant(self, expr):
++        return str(expr)
++
++    def _print_AtomicExpr(self, expr):
++        return str(expr)
++    def _print_RationalConstant(self, expr):
++        return str(expr)
+     def _print_RationalConstant(self, expr):
+         return str(expr)
+ 

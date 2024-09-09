@@ -1,0 +1,20 @@
+diff --git a/sympy/printing/pycode.py b/sympy/printing/pycode.py
+index 3a72ab6..7171c69 100644
+--- a/sympy/printing/pycode.py
++++ b/sympy/printing/pycode.py
+@@ -423,6 +423,15 @@ def _hprint_Pow(self, expr, rational=False, sqrt='math.sqrt'):
+ 
+ 
+ class PythonCodePrinter(AbstractPythonCodePrinter):
++    def _print_Min(self, expr):
++        return "min({})".format(", ".join(self._print(arg) for arg in expr.args))
++
++    def _print_Max(self, expr):
++        return "max({})".format(", ".join(self._print(arg) for arg in expr.args))
++
++    def _print_frac(self, expr):
++        from sympy.core.mod import Mod
++        return self._print_Mod(Mod(expr.args[0], 1))
+ 
+     def _print_sign(self, e):
+         return '(0.0 if {e} == 0 else {f}(1, {e}))'.format(

@@ -1,0 +1,58 @@
+{
+    "matplotlib__matplotlib-24637": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "lib/matplotlib/tests/test_backend_svg.py::test_annotationbbox_gid"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "lib/matplotlib/tests/test_backend_svg.py::test_visibility",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_noscale[png]",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_noscale[pdf]",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_text_urls",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_rasterized[png]",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_rasterized[pdf]",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_rasterized_ordering[png]",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_rasterized_ordering[pdf]",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_prevent_rasterization[pdf]",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_count_bitmaps",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_svgnone_with_data_coordinates",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_gid",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_savefig_tight",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_url",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_url_tick",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_svg_default_metadata",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_svg_clear_default_metadata",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_svg_clear_all_metadata",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_svg_metadata",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_svg_incorrect_metadata[metadata0-TypeError-Invalid",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_svg_incorrect_metadata[metadata1-TypeError-Invalid",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_svg_incorrect_metadata[metadata2-TypeError-Invalid",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_svg_incorrect_metadata[metadata3-TypeError-Invalid",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_svg_incorrect_metadata[metadata4-TypeError-Invalid",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_svg_incorrect_metadata[metadata5-TypeError-Invalid",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_svg_incorrect_metadata[metadata6-TypeError-Invalid",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_svg_incorrect_metadata[metadata7-TypeError-Invalid",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_svg_incorrect_metadata[metadata8-ValueError-Unknown",
+                    "lib/matplotlib/tests/test_backend_svg.py::test_svg_escape"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

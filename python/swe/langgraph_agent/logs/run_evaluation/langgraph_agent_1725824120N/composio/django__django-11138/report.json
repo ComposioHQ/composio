@@ -1,0 +1,102 @@
+{
+    "django__django-11138": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "test_query_convert_timezones (timezones.tests.NewDatabaseTests)"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "test_aware_datetime_in_utc (timezones.tests.SerializationTests)",
+                    "test_naive_datetime (timezones.tests.SerializationTests)",
+                    "test_naive_datetime_with_microsecond (timezones.tests.SerializationTests)",
+                    "test_auto_now_and_auto_now_add (timezones.tests.LegacyDatabaseTests)",
+                    "test_aware_datetime_unsupported (timezones.tests.LegacyDatabaseTests)",
+                    "test_cursor_execute_accepts_naive_datetime (timezones.tests.LegacyDatabaseTests)",
+                    "test_cursor_execute_returns_naive_datetime (timezones.tests.LegacyDatabaseTests)",
+                    "test_filter_date_field_with_aware_datetime (timezones.tests.LegacyDatabaseTests)",
+                    "test_naive_datetime (timezones.tests.LegacyDatabaseTests)",
+                    "test_naive_datetime_with_microsecond (timezones.tests.LegacyDatabaseTests)",
+                    "test_query_aggregation (timezones.tests.LegacyDatabaseTests)",
+                    "test_query_annotation (timezones.tests.LegacyDatabaseTests)",
+                    "test_query_datetime_lookups (timezones.tests.LegacyDatabaseTests)",
+                    "test_query_datetimes (timezones.tests.LegacyDatabaseTests)",
+                    "test_query_filter (timezones.tests.LegacyDatabaseTests)",
+                    "test_raw_sql (timezones.tests.LegacyDatabaseTests)",
+                    "test_form (timezones.tests.LegacyFormsTests)",
+                    "test_form_with_ambiguous_time (timezones.tests.LegacyFormsTests)",
+                    "test_form_with_non_existent_time (timezones.tests.LegacyFormsTests)",
+                    "test_model_form (timezones.tests.LegacyFormsTests)",
+                    "test_split_form (timezones.tests.LegacyFormsTests)",
+                    "test_date_and_time_template_filters (timezones.tests.TemplateTests)",
+                    "test_date_and_time_template_filters_honor_localtime (timezones.tests.TemplateTests)",
+                    "test_get_current_timezone_templatetag (timezones.tests.TemplateTests)",
+                    "test_get_current_timezone_templatetag_invalid_argument (timezones.tests.TemplateTests)",
+                    "test_get_current_timezone_templatetag_with_pytz (timezones.tests.TemplateTests)",
+                    "test_localtime_filters_do_not_raise_exceptions (timezones.tests.TemplateTests)",
+                    "test_localtime_filters_with_pytz (timezones.tests.TemplateTests)",
+                    "test_localtime_templatetag_and_filters (timezones.tests.TemplateTests)",
+                    "test_localtime_templatetag_invalid_argument (timezones.tests.TemplateTests)",
+                    "test_now_template_tag_uses_current_time_zone (timezones.tests.TemplateTests)",
+                    "test_timezone_templatetag (timezones.tests.TemplateTests)",
+                    "test_timezone_templatetag_invalid_argument (timezones.tests.TemplateTests)",
+                    "test_timezone_templatetag_with_pytz (timezones.tests.TemplateTests)",
+                    "test_tz_template_context_processor (timezones.tests.TemplateTests)",
+                    "test_auto_now_and_auto_now_add (timezones.tests.NewDatabaseTests)",
+                    "test_aware_datetime_in_local_timezone (timezones.tests.NewDatabaseTests)",
+                    "test_aware_datetime_in_local_timezone_with_microsecond (timezones.tests.NewDatabaseTests)",
+                    "test_aware_datetime_in_other_timezone (timezones.tests.NewDatabaseTests)",
+                    "test_aware_datetime_in_utc (timezones.tests.NewDatabaseTests)",
+                    "test_cursor_execute_accepts_naive_datetime (timezones.tests.NewDatabaseTests)",
+                    "test_cursor_execute_returns_naive_datetime (timezones.tests.NewDatabaseTests)",
+                    "test_datetime_from_date (timezones.tests.NewDatabaseTests)",
+                    "test_filter_date_field_with_aware_datetime (timezones.tests.NewDatabaseTests)",
+                    "test_naive_datetime (timezones.tests.NewDatabaseTests)",
+                    "test_naive_datetime_with_microsecond (timezones.tests.NewDatabaseTests)",
+                    "test_null_datetime (timezones.tests.NewDatabaseTests)",
+                    "test_query_aggregation (timezones.tests.NewDatabaseTests)",
+                    "test_query_annotation (timezones.tests.NewDatabaseTests)",
+                    "test_query_datetime_lookups (timezones.tests.NewDatabaseTests)",
+                    "test_query_datetime_lookups_in_other_timezone (timezones.tests.NewDatabaseTests)",
+                    "test_query_datetimes (timezones.tests.NewDatabaseTests)",
+                    "test_query_datetimes_in_other_timezone (timezones.tests.NewDatabaseTests)",
+                    "test_query_filter (timezones.tests.NewDatabaseTests)",
+                    "test_query_filter_with_naive_datetime (timezones.tests.NewDatabaseTests)",
+                    "test_query_filter_with_pytz_timezones (timezones.tests.NewDatabaseTests)",
+                    "test_raw_sql (timezones.tests.NewDatabaseTests)",
+                    "test_update_with_timedelta (timezones.tests.NewDatabaseTests)",
+                    "test_form (timezones.tests.NewFormsTests)",
+                    "test_form_with_ambiguous_time (timezones.tests.NewFormsTests)",
+                    "test_form_with_explicit_timezone (timezones.tests.NewFormsTests)",
+                    "test_form_with_non_existent_time (timezones.tests.NewFormsTests)",
+                    "test_form_with_other_timezone (timezones.tests.NewFormsTests)",
+                    "test_localized_form (timezones.tests.NewFormsTests)",
+                    "test_localized_model_form (timezones.tests.NewFormsTests)",
+                    "test_model_form (timezones.tests.NewFormsTests)",
+                    "test_split_form (timezones.tests.NewFormsTests)",
+                    "test_change_editable (timezones.tests.AdminTests)",
+                    "test_change_editable_in_other_timezone (timezones.tests.AdminTests)",
+                    "test_change_readonly (timezones.tests.AdminTests)",
+                    "test_change_readonly_in_other_timezone (timezones.tests.AdminTests)",
+                    "test_changelist (timezones.tests.AdminTests)",
+                    "test_changelist_in_other_timezone (timezones.tests.AdminTests)"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

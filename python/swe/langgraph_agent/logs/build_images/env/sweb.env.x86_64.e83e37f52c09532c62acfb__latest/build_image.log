@@ -1,0 +1,425 @@
+2024-09-09 01:48:17,937 - INFO - Building image sweb.env.x86_64.e83e37f52c09532c62acfb:latest
+Using dockerfile:
+FROM --platform=linux/x86_64 sweb.base.x86_64:latest
+
+COPY ./setup_env.sh /root/
+RUN chmod +x /root/setup_env.sh
+RUN /bin/bash -c "source ~/.bashrc && /root/setup_env.sh"
+
+WORKDIR /testbed/
+
+# Automatically activate the testbed environment
+RUN echo "source /opt/miniconda3/etc/profile.d/conda.sh && conda activate testbed" > /root/.bashrc
+
+Adding (1) setup scripts to image build repo
+2024-09-09 01:48:17,938 - INFO - [SETUP SCRIPT] setup_env.sh:
+#!/bin/bash
+set -euxo pipefail
+source /opt/miniconda3/bin/activate
+conda create -n testbed python=3.6 -y
+cat <<'EOF_59812759871' > $HOME/requirements.txt
+asgiref >= 3.3.2
+argon2-cffi >= 16.1.0
+backports.zoneinfo; python_version < '3.9'
+bcrypt
+docutils
+geoip2
+jinja2 >= 2.9.2
+numpy
+Pillow >= 6.2.0
+pylibmc; sys.platform != 'win32'
+pymemcache >= 3.4.0
+python-memcached >= 1.59
+pytz
+pywatchman; sys.platform != 'win32'
+PyYAML
+selenium
+sqlparse >= 0.2.2
+tblib >= 1.5.0
+tzdata
+colorama; sys.platform == 'win32'
+
+EOF_59812759871
+conda activate testbed && python -m pip install -r $HOME/requirements.txt
+rm $HOME/requirements.txt
+conda activate testbed
+
+2024-09-09 01:48:17,938 - INFO - Building docker image sweb.env.x86_64.e83e37f52c09532c62acfb:latest in logs/build_images/env/sweb.env.x86_64.e83e37f52c09532c62acfb__latest with platform linux/x86_64
+2024-09-09 01:48:17,977 - INFO - Step 1/6 : FROM --platform=linux/x86_64 sweb.base.x86_64:latest
+2024-09-09 01:48:17,978 - INFO - 
+2024-09-09 01:48:17,978 - INFO - ---> f26f8e4f9bff
+2024-09-09 01:48:17,978 - INFO - Step 2/6 : COPY ./setup_env.sh /root/
+2024-09-09 01:48:17,978 - INFO - 
+2024-09-09 01:48:18,004 - INFO - ---> 8a5f8c26062f
+2024-09-09 01:48:18,004 - INFO - Step 3/6 : RUN chmod +x /root/setup_env.sh
+2024-09-09 01:48:18,004 - INFO - 
+2024-09-09 01:48:18,033 - INFO - ---> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+2024-09-09 01:48:18,033 - INFO - ---> Running in 240c9767fd6b
+2024-09-09 01:48:18,249 - INFO - ---> Removed intermediate container 240c9767fd6b
+2024-09-09 01:48:18,249 - INFO - ---> b8f8f562b861
+2024-09-09 01:48:18,249 - INFO - Step 4/6 : RUN /bin/bash -c "source ~/.bashrc && /root/setup_env.sh"
+2024-09-09 01:48:18,249 - INFO - 
+2024-09-09 01:48:18,260 - INFO - ---> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+2024-09-09 01:48:18,261 - INFO - ---> Running in 3441ce6db637
+2024-09-09 01:48:18,491 - INFO - + source /opt/miniconda3/bin/activate
+2024-09-09 01:48:18,493 - INFO - ++ _CONDA_ROOT=/opt/miniconda3
+2024-09-09 01:48:18,494 - INFO - ++ . /opt/miniconda3/etc/profile.d/conda.sh
+2024-09-09 01:48:18,495 - INFO - +++ export CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-09 01:48:18,496 - INFO - +++ CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-09 01:48:18,496 - INFO - +++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+2024-09-09 01:48:18,500 - INFO - +++ '[' -z '' ']'
+2024-09-09 01:48:18,500 - INFO - +++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
+2024-09-09 01:48:18,500 - INFO - +++ '[' -n '' ']'
+2024-09-09 01:48:18,503 - INFO - +++++ dirname /opt/miniconda3/bin/conda
+2024-09-09 01:48:18,517 - INFO - ++++ dirname /opt/miniconda3/bin
+2024-09-09 01:48:18,530 - INFO - +++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-09 01:48:18,531 - INFO - +++ export PATH
+2024-09-09 01:48:18,531 - INFO - +++ '[' -z '' ']'
+2024-09-09 01:48:18,531 - INFO - +++ PS1=
+2024-09-09 01:48:18,531 - INFO - ++ conda activate
+2024-09-09 01:48:18,532 - INFO - ++ local cmd=activate
+2024-09-09 01:48:18,533 - INFO - ++ case "$cmd" in
+2024-09-09 01:48:18,533 - INFO - ++ __conda_activate activate
+2024-09-09 01:48:18,533 - INFO - ++ '[' -n '' ']'
+2024-09-09 01:48:18,533 - INFO - ++ local ask_conda
+2024-09-09 01:48:18,536 - INFO - +++ PS1=
++++ __conda_exe shell.posix activate
+2024-09-09 01:48:18,538 - INFO - +++ /opt/miniconda3/bin/conda shell.posix activate
+2024-09-09 01:48:19,021 - INFO - ++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+2024-09-09 01:48:19,021 - INFO - ++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+2024-09-09 01:48:19,021 - INFO - +++ PS1='(base) '
+2024-09-09 01:48:19,021 - INFO - +++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-09 01:48:19,021 - INFO - +++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
+2024-09-09 01:48:19,021 - INFO - +++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
+2024-09-09 01:48:19,021 - INFO - +++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
+2024-09-09 01:48:19,022 - INFO - +++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-09 01:48:19,022 - INFO - +++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
+2024-09-09 01:48:19,022 - INFO - +++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+2024-09-09 01:48:19,022 - INFO - ++ __conda_hashr
+2024-09-09 01:48:19,022 - INFO - ++ '[' -n '' ']'
+2024-09-09 01:48:19,022 - INFO - ++ '[' -n '' ']'
+2024-09-09 01:48:19,022 - INFO - ++ hash -r
+2024-09-09 01:48:19,022 - INFO - + conda create -n testbed python=3.6 -y
+2024-09-09 01:48:19,023 - INFO - + local cmd=create
+2024-09-09 01:48:19,023 - INFO - + case "$cmd" in
+2024-09-09 01:48:19,023 - INFO - + __conda_exe create -n testbed python=3.6 -y
+2024-09-09 01:48:19,024 - INFO - + /opt/miniconda3/bin/conda create -n testbed python=3.6 -y
+2024-09-09 01:48:21,434 - INFO - Channels:
+ - defaults
+ - conda-forge
+Platform: linux-64
+Collecting package metadata (repodata.json): ...working...
+2024-09-09 01:50:41,784 - INFO - done
+2024-09-09 01:50:41,785 - INFO - Solving environment: ...working...
+2024-09-09 01:50:47,747 - INFO - done
+2024-09-09 01:51:06,864 - INFO - ## Package Plan ##
+
+  environment location: /opt/miniconda3/envs/testbed
+
+  added / updated specs:
+    - python=3.6
+
+
+The following packages will be downloaded:
+
+    package                    |            build
+    ---------------------------|-----------------
+    ca-certificates-2024.7.2   |       h06a4308_0         127 KB
+    certifi-2021.5.30          |   py36h06a4308_0         139 KB
+    libffi-3.3                 |       he6710b0_2          50 KB
+    openssl-1.1.1w             |       h7f8727e_0         3.7 MB
+    pip-21.2.2                 |   py36h06a4308_0         1.8 MB
+    python-3.6.13              |       h12debd9_1        32.5 MB
+    setuptools-58.0.4          |   py36h06a4308_0         788 KB
+    sqlite-3.45.3              |       h5eee18b_0         1.2 MB
+    tk-8.6.14                  |       h39e8969_0         3.4 MB
+    wheel-0.37.1               |     pyhd3eb1b0_0          33 KB
+    xz-5.4.6                   |       h5eee18b_1         643 KB
+    zlib-1.2.13                |       h5eee18b_1         111 KB
+    ------------------------------------------------------------
+                                           Total:        44.5 MB
+
+The following NEW packages will be INSTALLED:
+
+  _libgcc_mutex      pkgs/main/linux-64::_libgcc_mutex-0.1-main 
+  _openmp_mutex      pkgs/main/linux-64::_openmp_mutex-5.1-1_gnu 
+  ca-certificates    pkgs/main/linux-64::ca-certificates-2024.7.2-h06a4308_0 
+  certifi            pkgs/main/linux-64::certifi-2021.5.30-py36h06a4308_0 
+  ld_impl_linux-64   pkgs/main/linux-64::ld_impl_linux-64-2.38-h1181459_1 
+  libffi             pkgs/main/linux-64::libffi-3.3-he6710b0_2 
+  libgcc-ng          pkgs/main/linux-64::libgcc-ng-11.2.0-h1234567_1 
+  libgomp            pkgs/main/linux-64::libgomp-11.2.0-h1234567_1 
+  libstdcxx-ng       pkgs/main/linux-64::libstdcxx-ng-11.2.0-h1234567_1 
+  ncurses            pkgs/main/linux-64::ncurses-6.4-h6a678d5_0 
+  openssl            pkgs/main/linux-64::openssl-1.1.1w-h7f8727e_0 
+  pip                pkgs/main/linux-64::pip-21.2.2-py36h06a4308_0 
+  python             pkgs/main/linux-64::python-3.6.13-h12debd9_1 
+  readline           pkgs/main/linux-64::readline-8.2-h5eee18b_0 
+  setuptools         pkgs/main/linux-64::setuptools-58.0.4-py36h06a4308_0 
+  sqlite             pkgs/main/linux-64::sqlite-3.45.3-h5eee18b_0 
+  tk                 pkgs/main/linux-64::tk-8.6.14-h39e8969_0 
+  wheel              pkgs/main/noarch::wheel-0.37.1-pyhd3eb1b0_0 
+  xz                 pkgs/main/linux-64::xz-5.4.6-h5eee18b_1 
+  zlib               pkgs/main/linux-64::zlib-1.2.13-h5eee18b_1 
+
+
+
+Downloading and Extracting Packages: ...working... done
+Preparing transaction: ...working...
+2024-09-09 01:51:07,694 - INFO - done
+2024-09-09 01:51:07,694 - INFO - Verifying transaction: ...working...
+2024-09-09 01:51:10,883 - INFO - done
+2024-09-09 01:51:10,887 - INFO - Executing transaction: ...working...
+2024-09-09 01:51:15,677 - INFO - done
+2024-09-09 01:51:15,695 - INFO - #
+# To activate this environment, use
+#
+#     $ conda activate testbed
+#
+# To deactivate an active environment, use
+#
+#     $ conda deactivate
+2024-09-09 01:51:15,911 - INFO - + cat
+2024-09-09 01:51:15,927 - INFO - + conda activate testbed
+2024-09-09 01:51:15,927 - INFO - + local cmd=activate
+2024-09-09 01:51:15,927 - INFO - + case "$cmd" in
++ __conda_activate activate testbed
+2024-09-09 01:51:15,928 - INFO - + '[' -n '' ']'
+2024-09-09 01:51:15,928 - INFO - + local ask_conda
+2024-09-09 01:51:15,929 - INFO - ++ PS1='(base) '
+2024-09-09 01:51:15,929 - INFO - ++ __conda_exe shell.posix activate testbed
+2024-09-09 01:51:15,930 - INFO - ++ /opt/miniconda3/bin/conda shell.posix activate testbed
+2024-09-09 01:51:16,393 - INFO - + ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+2024-09-09 01:51:16,393 - INFO - + eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+2024-09-09 01:51:16,393 - INFO - ++ PS1='(testbed) '
+2024-09-09 01:51:16,393 - INFO - ++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-09 01:51:16,393 - INFO - ++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+2024-09-09 01:51:16,394 - INFO - ++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+2024-09-09 01:51:16,394 - INFO - ++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+2024-09-09 01:51:16,394 - INFO - ++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+2024-09-09 01:51:16,394 - INFO - ++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+2024-09-09 01:51:16,394 - INFO - ++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-09 01:51:16,394 - INFO - ++ export _CE_M=
+++ _CE_M=
+2024-09-09 01:51:16,394 - INFO - ++ export _CE_CONDA=
+++ _CE_CONDA=
+2024-09-09 01:51:16,394 - INFO - ++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+2024-09-09 01:51:16,394 - INFO - + __conda_hashr
+2024-09-09 01:51:16,394 - INFO - + '[' -n '' ']'
+2024-09-09 01:51:16,394 - INFO - + '[' -n '' ']'
++ hash -r
+2024-09-09 01:51:16,394 - INFO - + python -m pip install -r /root/requirements.txt
+2024-09-09 01:51:17,624 - INFO - Ignoring colorama: markers 'sys_platform == "win32"' don't match your environment
+2024-09-09 01:51:18,017 - INFO - Collecting asgiref>=3.3.2
+2024-09-09 01:51:18,124 - INFO - Downloading asgiref-3.4.1-py3-none-any.whl (25 kB)
+2024-09-09 01:51:18,468 - INFO - Collecting argon2-cffi>=16.1.0
+2024-09-09 01:51:18,499 - INFO - Downloading argon2_cffi-21.3.0-py3-none-any.whl (14 kB)
+2024-09-09 01:51:18,677 - INFO - Collecting backports.zoneinfo
+2024-09-09 01:51:18,709 - INFO - Downloading backports.zoneinfo-0.2.1-cp36-cp36m-manylinux1_x86_64.whl (70 kB)
+2024-09-09 01:51:19,402 - INFO - Collecting bcrypt
+2024-09-09 01:51:19,460 - INFO - Downloading bcrypt-4.0.1-cp36-abi3-manylinux_2_28_x86_64.whl (593 kB)
+2024-09-09 01:51:19,982 - INFO - Collecting docutils
+2024-09-09 01:51:20,008 - INFO - Downloading docutils-0.18.1-py2.py3-none-any.whl (570 kB)
+2024-09-09 01:51:20,393 - INFO - Collecting geoip2
+2024-09-09 01:51:20,418 - INFO - Downloading geoip2-4.6.0-py2.py3-none-any.whl (26 kB)
+2024-09-09 01:51:20,639 - INFO - Collecting jinja2>=2.9.2
+2024-09-09 01:51:20,668 - INFO - Downloading Jinja2-3.0.3-py3-none-any.whl (133 kB)
+2024-09-09 01:51:24,286 - INFO - Collecting numpy
+2024-09-09 01:51:24,318 - INFO - Downloading numpy-1.19.5-cp36-cp36m-manylinux2010_x86_64.whl (14.8 MB)
+2024-09-09 01:51:32,490 - INFO - Collecting Pillow>=6.2.0
+2024-09-09 01:51:32,522 - INFO - Downloading Pillow-8.4.0-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.1 MB)
+2024-09-09 01:51:33,888 - INFO - Collecting pylibmc
+2024-09-09 01:51:33,914 - INFO - Downloading pylibmc-1.6.3-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (1.2 MB)
+2024-09-09 01:51:34,685 - INFO - Collecting pymemcache>=3.4.0
+2024-09-09 01:51:34,712 - INFO - Downloading pymemcache-3.5.2-py2.py3-none-any.whl (56 kB)
+2024-09-09 01:51:34,837 - INFO - Collecting python-memcached>=1.59
+2024-09-09 01:51:34,865 - INFO - Downloading python_memcached-1.62-py2.py3-none-any.whl (15 kB)
+2024-09-09 01:51:35,485 - INFO - Collecting pytz
+2024-09-09 01:51:35,520 - INFO - Downloading pytz-2024.1-py2.py3-none-any.whl (505 kB)
+2024-09-09 01:51:35,986 - INFO - Collecting pywatchman
+2024-09-09 01:51:36,015 - INFO - Downloading pywatchman-1.4.1.tar.gz (29 kB)
+2024-09-09 01:51:37,499 - INFO - Collecting PyYAML
+2024-09-09 01:51:37,535 - INFO - Downloading PyYAML-6.0.1-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (677 kB)
+2024-09-09 01:51:38,087 - INFO - Collecting selenium
+2024-09-09 01:51:38,113 - INFO - Downloading selenium-3.141.0-py2.py3-none-any.whl (904 kB)
+2024-09-09 01:51:38,477 - INFO - Collecting sqlparse>=0.2.2
+2024-09-09 01:51:38,501 - INFO - Downloading sqlparse-0.4.4-py3-none-any.whl (41 kB)
+2024-09-09 01:51:38,625 - INFO - Collecting tblib>=1.5.0
+2024-09-09 01:51:38,650 - INFO - Downloading tblib-1.7.0-py2.py3-none-any.whl (12 kB)
+2024-09-09 01:51:38,812 - INFO - Collecting tzdata
+2024-09-09 01:51:38,843 - INFO - Downloading tzdata-2024.1-py2.py3-none-any.whl (345 kB)
+2024-09-09 01:51:39,210 - INFO - Collecting typing-extensions
+2024-09-09 01:51:39,235 - INFO - Downloading typing_extensions-4.1.1-py3-none-any.whl (26 kB)
+2024-09-09 01:51:39,396 - INFO - Collecting dataclasses
+2024-09-09 01:51:39,421 - INFO - Downloading dataclasses-0.8-py3-none-any.whl (19 kB)
+2024-09-09 01:51:39,552 - INFO - Collecting argon2-cffi-bindings
+2024-09-09 01:51:39,576 - INFO - Downloading argon2_cffi_bindings-21.2.0-cp36-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (86 kB)
+2024-09-09 01:51:40,012 - INFO - Collecting importlib-resources
+2024-09-09 01:51:40,042 - INFO - Downloading importlib_resources-5.4.0-py3-none-any.whl (28 kB)
+2024-09-09 01:51:40,459 - INFO - Collecting requests<3.0.0,>=2.24.0
+2024-09-09 01:51:40,484 - INFO - Downloading requests-2.27.1-py2.py3-none-any.whl (63 kB)
+2024-09-09 01:51:40,925 - INFO - Collecting urllib3<2.0.0,>=1.25.2
+2024-09-09 01:51:40,951 - INFO - Downloading urllib3-1.26.20-py2.py3-none-any.whl (144 kB)
+2024-09-09 01:51:46,717 - INFO - Collecting aiohttp<4.0.0,>=3.6.2
+2024-09-09 01:51:46,747 - INFO - Downloading aiohttp-3.8.6-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (985 kB)
+2024-09-09 01:51:47,632 - INFO - Collecting maxminddb<3.0.0,>=2.2.0
+2024-09-09 01:51:47,667 - INFO - Downloading maxminddb-2.2.0.tar.gz (330 kB)
+2024-09-09 01:51:49,540 - INFO - Collecting MarkupSafe>=2.0
+2024-09-09 01:51:49,574 - INFO - Downloading MarkupSafe-2.0.1-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl (30 kB)
+2024-09-09 01:51:49,758 - INFO - Collecting six
+2024-09-09 01:51:49,783 - INFO - Downloading six-1.16.0-py2.py3-none-any.whl (11 kB)
+2024-09-09 01:51:50,063 - INFO - Collecting aiosignal>=1.1.2
+2024-09-09 01:51:50,089 - INFO - Downloading aiosignal-1.2.0-py3-none-any.whl (8.2 kB)
+2024-09-09 01:51:51,436 - INFO - Collecting charset-normalizer<4.0,>=2.0
+2024-09-09 01:51:51,508 - INFO - Downloading charset_normalizer-3.0.1-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (162 kB)
+2024-09-09 01:51:51,684 - INFO - Collecting asynctest==0.13.0
+2024-09-09 01:51:51,709 - INFO - Downloading asynctest-0.13.0-py3-none-any.whl (26 kB)
+2024-09-09 01:51:52,657 - INFO - Collecting frozenlist>=1.1.1
+2024-09-09 01:51:52,705 - INFO - Downloading frozenlist-1.2.0-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl (191 kB)
+2024-09-09 01:51:52,822 - INFO - Collecting idna-ssl>=1.0
+2024-09-09 01:51:52,849 - INFO - Downloading idna-ssl-1.1.0.tar.gz (3.4 kB)
+2024-09-09 01:51:57,064 - INFO - Collecting multidict<7.0,>=4.5
+2024-09-09 01:51:57,093 - INFO - Downloading multidict-5.2.0-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl (159 kB)
+2024-09-09 01:51:57,294 - INFO - Collecting async-timeout<5.0,>=4.0.0a3
+2024-09-09 01:51:57,319 - INFO - Downloading async_timeout-4.0.2-py3-none-any.whl (5.8 kB)
+2024-09-09 01:51:57,500 - INFO - Collecting attrs>=17.3.0
+2024-09-09 01:51:57,525 - INFO - Downloading attrs-22.2.0-py3-none-any.whl (60 kB)
+2024-09-09 01:52:00,876 - INFO - Collecting yarl<2.0,>=1.0
+2024-09-09 01:52:00,909 - INFO - Downloading yarl-1.7.2-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_12_x86_64.manylinux2010_x86_64.whl (270 kB)
+2024-09-09 01:52:01,357 - INFO - Collecting idna>=2.0
+2024-09-09 01:52:01,409 - INFO - Downloading idna-3.8-py3-none-any.whl (66 kB)
+2024-09-09 01:52:01,580 - INFO - Requirement already satisfied: certifi>=2017.4.17 in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from requests<3.0.0,>=2.24.0->geoip2->-r /root/requirements.txt (line 6)) (2021.5.30)
+2024-09-09 01:52:01,636 - INFO - Collecting charset-normalizer<4.0,>=2.0
+2024-09-09 01:52:01,664 - INFO - Downloading charset_normalizer-2.0.12-py3-none-any.whl (39 kB)
+2024-09-09 01:52:04,252 - INFO - Collecting cffi>=1.0.1
+2024-09-09 01:52:04,281 - INFO - Downloading cffi-1.15.1-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.whl (402 kB)
+2024-09-09 01:52:04,528 - INFO - Collecting pycparser
+2024-09-09 01:52:04,552 - INFO - Downloading pycparser-2.21-py2.py3-none-any.whl (118 kB)
+2024-09-09 01:52:04,919 - INFO - Collecting zipp>=3.1.0
+2024-09-09 01:52:04,948 - INFO - Downloading zipp-3.6.0-py3-none-any.whl (5.3 kB)
+2024-09-09 01:52:05,106 - INFO - Building wheels for collected packages: pywatchman, idna-ssl, maxminddb
+2024-09-09 01:52:05,107 - INFO - Building wheel for pywatchman (setup.py): started
+2024-09-09 01:52:07,932 - INFO - Building wheel for pywatchman (setup.py): finished with status 'done'
+2024-09-09 01:52:07,934 - INFO - Created wheel for pywatchman: filename=pywatchman-1.4.1-cp36-cp36m-linux_x86_64.whl size=62416 sha256=89b01a394257a03499cccc204312c8ac5c1a3797aa08566e0613e7f4b6fff261
+2024-09-09 01:52:07,934 - INFO - Stored in directory: /root/.cache/pip/wheels/8d/98/a9/f03130b4b0b1798a35f4572d60e096bebc8201267eaddf7874
+2024-09-09 01:52:07,940 - INFO - Building wheel for idna-ssl (setup.py): started
+2024-09-09 01:52:08,738 - INFO - Building wheel for idna-ssl (setup.py): finished with status 'done'
+2024-09-09 01:52:08,739 - INFO - Created wheel for idna-ssl: filename=idna_ssl-1.1.0-py3-none-any.whl size=3178 sha256=c9c1e28e61b6caa04773417503f6ce496a97a29ad53767f683d3b5f7b6cad232
+2024-09-09 01:52:08,739 - INFO - Stored in directory: /root/.cache/pip/wheels/6a/f5/9c/f8331a854f7a8739cf0e74c13854e4dd7b1af11b04fe1dde13
+2024-09-09 01:52:08,745 - INFO - Building wheel for maxminddb (setup.py): started
+2024-09-09 01:52:10,005 - INFO - Building wheel for maxminddb (setup.py): finished with status 'done'
+2024-09-09 01:52:10,006 - INFO - Created wheel for maxminddb: filename=maxminddb-2.2.0-py2.py3-none-any.whl size=16356 sha256=f2e40c2b6b4149b6e883934c79323eea0c3e70242f48146b6fbc3046191baf63
+2024-09-09 01:52:10,006 - INFO - Stored in directory: /root/.cache/pip/wheels/4a/01/2e/0219dd35e909a917dea3da2113250fa684693406bbcfd64dbe
+2024-09-09 01:52:10,012 - INFO - Successfully built pywatchman idna-ssl maxminddb
+2024-09-09 01:52:10,668 - INFO - Installing collected packages: typing-extensions, pycparser, multidict, idna, frozenlist, zipp, yarl, urllib3, idna-ssl, charset-normalizer, cffi, attrs, asynctest, async-timeout, aiosignal, six, requests, maxminddb, MarkupSafe, importlib-resources, dataclasses, argon2-cffi-bindings, aiohttp, tzdata, tblib, sqlparse, selenium, PyYAML, pywatchman, pytz, python-memcached, pymemcache, pylibmc, Pillow, numpy, jinja2, geoip2, docutils, bcrypt, backports.zoneinfo, asgiref, argon2-cffi
+2024-09-09 01:52:18,881 - INFO - Successfully installed MarkupSafe-2.0.1 Pillow-8.4.0 PyYAML-6.0.1 aiohttp-3.8.6 aiosignal-1.2.0 argon2-cffi-21.3.0 argon2-cffi-bindings-21.2.0 asgiref-3.4.1 async-timeout-4.0.2 asynctest-0.13.0 attrs-22.2.0 backports.zoneinfo-0.2.1 bcrypt-4.0.1 cffi-1.15.1 charset-normalizer-2.0.12 dataclasses-0.8 docutils-0.18.1 frozenlist-1.2.0 geoip2-4.6.0 idna-3.8 idna-ssl-1.1.0 importlib-resources-5.4.0 jinja2-3.0.3 maxminddb-2.2.0 multidict-5.2.0 numpy-1.19.5 pycparser-2.21 pylibmc-1.6.3 pymemcache-3.5.2 python-memcached-1.62 pytz-2024.1 pywatchman-1.4.1 requests-2.27.1 selenium-3.141.0 six-1.16.0 sqlparse-0.4.4 tblib-1.7.0 typing-extensions-4.1.1 tzdata-2024.1 urllib3-1.26.20 yarl-1.7.2 zipp-3.6.0
+2024-09-09 01:52:18,882 - INFO - WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+2024-09-09 01:52:19,653 - INFO - + rm /root/requirements.txt
+2024-09-09 01:52:19,663 - INFO - + conda activate testbed
+2024-09-09 01:52:19,664 - INFO - + local cmd=activate
+2024-09-09 01:52:19,664 - INFO - + case "$cmd" in
+2024-09-09 01:52:19,664 - INFO - + __conda_activate activate testbed
+2024-09-09 01:52:19,664 - INFO - + '[' -n '' ']'
+2024-09-09 01:52:19,664 - INFO - + local ask_conda
+2024-09-09 01:52:19,665 - INFO - ++ PS1='(testbed) '
+2024-09-09 01:52:19,665 - INFO - ++ __conda_exe shell.posix activate testbed
+2024-09-09 01:52:19,666 - INFO - ++ /opt/miniconda3/bin/conda shell.posix activate testbed
+2024-09-09 01:52:20,106 - INFO - + ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\'''
+2024-09-09 01:52:20,106 - INFO - + eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\'''
+2024-09-09 01:52:20,106 - INFO - ++ PS1='(testbed) '
+2024-09-09 01:52:20,107 - INFO - ++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-09 01:52:20,107 - INFO - ++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+2024-09-09 01:52:20,107 - INFO - ++ CONDA_PROMPT_MODIFIER='(testbed) '
++ __conda_hashr
+2024-09-09 01:52:20,107 - INFO - + '[' -n '' ']'
+2024-09-09 01:52:20,107 - INFO - + '[' -n '' ']'
+2024-09-09 01:52:20,107 - INFO - + hash -r
+2024-09-09 01:52:26,272 - INFO - ---> Removed intermediate container 3441ce6db637
+2024-09-09 01:52:26,273 - INFO - ---> f1f07d30e53d
+2024-09-09 01:52:26,273 - INFO - Step 5/6 : WORKDIR /testbed/
+2024-09-09 01:52:26,273 - INFO - 
+2024-09-09 01:52:26,305 - INFO - ---> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+2024-09-09 01:52:26,305 - INFO - ---> Running in 9c71261d818a
+2024-09-09 01:52:26,337 - INFO - ---> Removed intermediate container 9c71261d818a
+2024-09-09 01:52:26,337 - INFO - ---> 1098fbd8c315
+2024-09-09 01:52:26,337 - INFO - Step 6/6 : RUN echo "source /opt/miniconda3/etc/profile.d/conda.sh && conda activate testbed" > /root/.bashrc
+2024-09-09 01:52:26,337 - INFO - 
+2024-09-09 01:52:26,352 - INFO - ---> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+2024-09-09 01:52:26,352 - INFO - ---> Running in 6039f6d608af
+2024-09-09 01:52:26,579 - INFO - ---> Removed intermediate container 6039f6d608af
+2024-09-09 01:52:26,579 - INFO - ---> df84886d65e9
+2024-09-09 01:52:26,580 - INFO - Successfully built df84886d65e9
+2024-09-09 01:52:26,581 - INFO - Successfully tagged sweb.env.x86_64.e83e37f52c09532c62acfb:latest
+2024-09-09 01:52:26,582 - INFO - Image built successfully!

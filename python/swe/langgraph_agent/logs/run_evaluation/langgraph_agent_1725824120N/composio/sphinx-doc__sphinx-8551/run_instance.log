@@ -1,0 +1,223 @@
+2024-09-09 08:22:50,551 - INFO - Environment image sweb.env.arm64.c6d251a05e0af7688b64fd:latest found for sphinx-doc__sphinx-8551
+Building instance image sweb.eval.arm64.sphinx-doc__sphinx-8551:latest for sphinx-doc__sphinx-8551
+2024-09-09 08:23:29,105 - INFO - Creating container for sphinx-doc__sphinx-8551...
+2024-09-09 08:23:29,129 - INFO - Container for sphinx-doc__sphinx-8551 created: e040b4c9c1fe1e5afb66a4e1835ddf70f331c8efd153f633b980447d712011c1
+2024-09-09 08:23:29,252 - INFO - Container for sphinx-doc__sphinx-8551 started: e040b4c9c1fe1e5afb66a4e1835ddf70f331c8efd153f633b980447d712011c1
+2024-09-09 08:23:29,253 - INFO - Intermediate patch for sphinx-doc__sphinx-8551 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/sphinx-doc__sphinx-8551/patch.diff, now applying to container...
+2024-09-09 08:23:29,424 - INFO - Failed to apply patch to container, trying again...
+2024-09-09 08:23:29,459 - INFO - >>>>> Applied Patch:
+patching file sphinx/domains/python.py
+
+2024-09-09 08:23:29,591 - INFO - Git diff before:
+diff --git a/setup.py b/setup.py
+index 8d40de1a8..03f325278 100644
+--- a/setup.py
++++ b/setup.py
+@@ -15,22 +15,22 @@ if sys.version_info < (3, 5):
+     sys.exit(1)
+ 
+ install_requires = [
+-    'sphinxcontrib-applehelp',
+-    'sphinxcontrib-devhelp',
++    'sphinxcontrib-applehelp<=1.0.7',
++    'sphinxcontrib-devhelp<=1.0.5',
+     'sphinxcontrib-jsmath',
+-    'sphinxcontrib-htmlhelp',
+-    'sphinxcontrib-serializinghtml',
+-    'sphinxcontrib-qthelp',
+-    'Jinja2>=2.3',
++    'sphinxcontrib-htmlhelp<=2.0.4',
++    'sphinxcontrib-serializinghtml<=1.1.9',
++    'sphinxcontrib-qthelp<=1.0.6',
++    'Jinja2<3.0',
+     'Pygments>=2.0',
+     'docutils>=0.12',
+     'snowballstemmer>=1.1',
+     'babel>=1.3',
+-    'alabaster>=0.7,<0.8',
++    'alabaster>=0.7,<0.7.12',
+     'imagesize',
+     'requests>=2.5.0',
+     'setuptools',
+-    'packaging',
++    'packaging', 'markupsafe<=2.0.1',
+ ]
+ 
+ extras_require = {
+diff --git a/sphinx/domains/python.py b/sphinx/domains/python.py
+index 79d7e4f46..c2eac99f2 100644
+--- a/sphinx/domains/python.py
++++ b/sphinx/domains/python.py
+@@ -1255,6 +1255,18 @@ class PythonDomain(Domain):
+             else:
+                 objtypes = self.objtypes_for_role(type)
+             if objtypes is not None:
++                # Prioritize matches in the current module context
++                if modname:
++                    fullname = modname + '.' + name
++                    if fullname in self.objects and self.objects[fullname].objtype in objtypes:
++                        return [(fullname, self.objects[fullname])]
++                    
++                    if classname:
++                        fullname = modname + '.' + classname + '.' + name
++                        if fullname in self.objects and self.objects[fullname].objtype in objtypes:
++                            return [(fullname, self.objects[fullname])]
++
++                # If no match found in the current context, proceed with the existing search logic
+                 if modname and classname:
+                     fullname = modname + '.' + classname + '.' + name
+                     if fullname in self.objects and self.objects[fullname].objtype in objtypes:
+@@ -1283,7 +1295,7 @@ class PythonDomain(Domain):
+             elif modname and modname + '.' + name in self.objects:
+                 newname = modname + '.' + name
+             elif modname and classname and \
+-                    modname + '.' + classname + '.' + name in self.objects:
++                modname + '.' + classname + '.' + name in self.objects:
+                 newname = modname + '.' + classname + '.' + name
+         if newname is not None:
+             matches.append((newname, self.objects[newname]))
+@@ -1295,13 +1307,15 @@ class PythonDomain(Domain):
+         modname = node.get('py:module')
+         clsname = node.get('py:class')
+         searchmode = 1 if node.hasattr('refspecific') else 0
+-        matches = self.find_obj(env, modname, clsname, target,
+-                                type, searchmode)
++        
++        # Pass the current module context
++        current_module = env.temp_data.get('py:module')
++        
++        matches = self.find_obj(env, current_module, clsname, target, type, searchmode)
+ 
+         if not matches and type == 'attr':
+             # fallback to meth (for property)
+-            matches = self.find_obj(env, modname, clsname, target, 'meth', searchmode)
+-
++            matches = self.find_obj(env, current_module, clsname, target, 'meth', searchmode)
+         if not matches:
+             return None
+         elif len(matches) > 1:
+diff --git a/tox.ini b/tox.ini
+index dbb705a3a..9f4fc3a32 100644
+--- a/tox.ini
++++ b/tox.ini
+@@ -28,7 +28,7 @@ setenv =
+     PYTHONWARNINGS = all,ignore::ImportWarning:importlib._bootstrap_external,ignore::DeprecationWarning:site,ignore::DeprecationWarning:distutils
+     PYTEST_ADDOPTS = {env:PYTEST_ADDOPTS:} --color yes
+ commands=
+-    python -X dev -m pytest --durations 25 {posargs}
++    python -X dev -m pytest -rA --durations 25 {posargs}
+ 
+ [testenv:flake8]
+ basepython = python3
+2024-09-09 08:23:29,592 - INFO - Eval script for sphinx-doc__sphinx-8551 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/sphinx-doc__sphinx-8551/eval.sh; copying to container...
+2024-09-09 08:23:31,915 - INFO - Test runtime: 2.20 seconds
+2024-09-09 08:23:31,916 - INFO - Test output for sphinx-doc__sphinx-8551 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/sphinx-doc__sphinx-8551/test_output.txt
+2024-09-09 08:23:31,957 - INFO - Git diff after:
+diff --git a/setup.py b/setup.py
+index 8d40de1a8..03f325278 100644
+--- a/setup.py
++++ b/setup.py
+@@ -15,22 +15,22 @@ if sys.version_info < (3, 5):
+     sys.exit(1)
+ 
+ install_requires = [
+-    'sphinxcontrib-applehelp',
+-    'sphinxcontrib-devhelp',
++    'sphinxcontrib-applehelp<=1.0.7',
++    'sphinxcontrib-devhelp<=1.0.5',
+     'sphinxcontrib-jsmath',
+-    'sphinxcontrib-htmlhelp',
+-    'sphinxcontrib-serializinghtml',
+-    'sphinxcontrib-qthelp',
+-    'Jinja2>=2.3',
++    'sphinxcontrib-htmlhelp<=2.0.4',
++    'sphinxcontrib-serializinghtml<=1.1.9',
++    'sphinxcontrib-qthelp<=1.0.6',
++    'Jinja2<3.0',
+     'Pygments>=2.0',
+     'docutils>=0.12',
+     'snowballstemmer>=1.1',
+     'babel>=1.3',
+-    'alabaster>=0.7,<0.8',
++    'alabaster>=0.7,<0.7.12',
+     'imagesize',
+     'requests>=2.5.0',
+     'setuptools',
+-    'packaging',
++    'packaging', 'markupsafe<=2.0.1',
+ ]
+ 
+ extras_require = {
+diff --git a/sphinx/domains/python.py b/sphinx/domains/python.py
+index 79d7e4f46..c2eac99f2 100644
+--- a/sphinx/domains/python.py
++++ b/sphinx/domains/python.py
+@@ -1255,6 +1255,18 @@ class PythonDomain(Domain):
+             else:
+                 objtypes = self.objtypes_for_role(type)
+             if objtypes is not None:
++                # Prioritize matches in the current module context
++                if modname:
++                    fullname = modname + '.' + name
++                    if fullname in self.objects and self.objects[fullname].objtype in objtypes:
++                        return [(fullname, self.objects[fullname])]
++                    
++                    if classname:
++                        fullname = modname + '.' + classname + '.' + name
++                        if fullname in self.objects and self.objects[fullname].objtype in objtypes:
++                            return [(fullname, self.objects[fullname])]
++
++                # If no match found in the current context, proceed with the existing search logic
+                 if modname and classname:
+                     fullname = modname + '.' + classname + '.' + name
+                     if fullname in self.objects and self.objects[fullname].objtype in objtypes:
+@@ -1283,7 +1295,7 @@ class PythonDomain(Domain):
+             elif modname and modname + '.' + name in self.objects:
+                 newname = modname + '.' + name
+             elif modname and classname and \
+-                    modname + '.' + classname + '.' + name in self.objects:
++                modname + '.' + classname + '.' + name in self.objects:
+                 newname = modname + '.' + classname + '.' + name
+         if newname is not None:
+             matches.append((newname, self.objects[newname]))
+@@ -1295,13 +1307,15 @@ class PythonDomain(Domain):
+         modname = node.get('py:module')
+         clsname = node.get('py:class')
+         searchmode = 1 if node.hasattr('refspecific') else 0
+-        matches = self.find_obj(env, modname, clsname, target,
+-                                type, searchmode)
++        
++        # Pass the current module context
++        current_module = env.temp_data.get('py:module')
++        
++        matches = self.find_obj(env, current_module, clsname, target, type, searchmode)
+ 
+         if not matches and type == 'attr':
+             # fallback to meth (for property)
+-            matches = self.find_obj(env, modname, clsname, target, 'meth', searchmode)
+-
++            matches = self.find_obj(env, current_module, clsname, target, 'meth', searchmode)
+         if not matches:
+             return None
+         elif len(matches) > 1:
+diff --git a/tox.ini b/tox.ini
+index dbb705a3a..9f4fc3a32 100644
+--- a/tox.ini
++++ b/tox.ini
+@@ -28,7 +28,7 @@ setenv =
+     PYTHONWARNINGS = all,ignore::ImportWarning:importlib._bootstrap_external,ignore::DeprecationWarning:site,ignore::DeprecationWarning:distutils
+     PYTEST_ADDOPTS = {env:PYTEST_ADDOPTS:} --color yes
+ commands=
+-    python -X dev -m pytest --durations 25 {posargs}
++    python -X dev -m pytest -rA --durations 25 {posargs}
+ 
+ [testenv:flake8]
+ basepython = python3
+2024-09-09 08:23:31,957 - INFO - Grading answer for sphinx-doc__sphinx-8551...
+2024-09-09 08:23:31,973 - INFO - report: {'sphinx-doc__sphinx-8551': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': False, 'tests_status': {'FAIL_TO_PASS': {'success': [], 'failure': ['tests/test_domain_py.py::test_info_field_list']}, 'PASS_TO_PASS': {'success': ['tests/test_domain_py.py::test_function_signatures', 'tests/test_domain_py.py::test_domain_py_xrefs', 'tests/test_domain_py.py::test_domain_py_objects', 'tests/test_domain_py.py::test_resolve_xref_for_properties', 'tests/test_domain_py.py::test_domain_py_find_obj', 'tests/test_domain_py.py::test_get_full_qualified_name', 'tests/test_domain_py.py::test_parse_annotation', 'tests/test_domain_py.py::test_pyfunction_signature', 'tests/test_domain_py.py::test_pyfunction_signature_full', 'tests/test_domain_py.py::test_pyfunction_signature_full_py38', 'tests/test_domain_py.py::test_pyfunction_with_number_literals', 'tests/test_domain_py.py::test_optional_pyfunction_signature', 'tests/test_domain_py.py::test_pyexception_signature', 'tests/test_domain_py.py::test_exceptions_module_is_ignored', 'tests/test_domain_py.py::test_pydata_signature', 'tests/test_domain_py.py::test_pydata_signature_old', 'tests/test_domain_py.py::test_pyobject_prefix', 'tests/test_domain_py.py::test_pydata', 'tests/test_domain_py.py::test_pyfunction', 'tests/test_domain_py.py::test_pyclass_options', 'tests/test_domain_py.py::test_pymethod_options', 'tests/test_domain_py.py::test_pyclassmethod', 'tests/test_domain_py.py::test_pystaticmethod', 'tests/test_domain_py.py::test_pyattribute', 'tests/test_domain_py.py::test_pydecorator_signature', 'tests/test_domain_py.py::test_pydecoratormethod_signature', 'tests/test_domain_py.py::test_module_index', 'tests/test_domain_py.py::test_module_index_submodule', 'tests/test_domain_py.py::test_module_index_not_collapsed', 'tests/test_domain_py.py::test_modindex_common_prefix', 'tests/test_domain_py.py::test_noindexentry', 'tests/test_domain_py.py::test_warn_missing_reference'], 'failure': []}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for sphinx-doc__sphinx-8551: resolved: False
+2024-09-09 08:23:31,973 - INFO - Attempting to stop container sweb.eval.sphinx-doc__sphinx-8551.langgraph_agent_1725824120N...
+2024-09-09 08:23:47,127 - INFO - Attempting to remove container sweb.eval.sphinx-doc__sphinx-8551.langgraph_agent_1725824120N...
+2024-09-09 08:23:47,137 - INFO - Container sweb.eval.sphinx-doc__sphinx-8551.langgraph_agent_1725824120N removed.
+2024-09-09 08:23:47,137 - INFO - Attempting to remove image sweb.eval.arm64.sphinx-doc__sphinx-8551:latest...
+2024-09-09 08:23:47,261 - INFO - Image sweb.eval.arm64.sphinx-doc__sphinx-8551:latest removed.

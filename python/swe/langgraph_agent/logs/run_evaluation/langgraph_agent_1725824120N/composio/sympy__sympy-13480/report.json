@@ -1,0 +1,72 @@
+{
+    "sympy__sympy-13480": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "test_coth"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "test_sinh",
+                    "test_sinh_series",
+                    "test_cosh",
+                    "test_cosh_series",
+                    "test_tanh",
+                    "test_tanh_series",
+                    "test_coth_series",
+                    "test_csch",
+                    "test_csch_series",
+                    "test_sech",
+                    "test_sech_series",
+                    "test_asinh",
+                    "test_asinh_rewrite",
+                    "test_asinh_series",
+                    "test_acosh",
+                    "test_acosh_rewrite",
+                    "test_acosh_series",
+                    "test_asech",
+                    "test_asech_series",
+                    "test_asech_rewrite",
+                    "test_acsch",
+                    "test_acsch_infinities",
+                    "test_acsch_rewrite",
+                    "test_atanh",
+                    "test_atanh_rewrite",
+                    "test_atanh_series",
+                    "test_acoth",
+                    "test_acoth_rewrite",
+                    "test_acoth_series",
+                    "test_inverses",
+                    "test_leading_term",
+                    "test_complex",
+                    "test_complex_2899",
+                    "test_simplifications",
+                    "test_issue_4136",
+                    "test_sinh_rewrite",
+                    "test_cosh_rewrite",
+                    "test_tanh_rewrite",
+                    "test_coth_rewrite",
+                    "test_csch_rewrite",
+                    "test_sech_rewrite",
+                    "test_derivs",
+                    "test_sinh_expansion"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

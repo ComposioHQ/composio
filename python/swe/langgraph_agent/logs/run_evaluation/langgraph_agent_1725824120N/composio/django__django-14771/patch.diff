@@ -1,0 +1,42 @@
+diff --git a/django/core/management/commands/runserver.py b/django/core/management/commands/runserver.py
+index 473fde0d..a727cbdd 100644
+--- a/django/core/management/commands/runserver.py
++++ b/django/core/management/commands/runserver.py
+@@ -1,3 +1,11 @@
++import os
++import sys
++import datetime
++import errno
++import logging
++import socket
++import warnings
++from pathlib import Path
+ import errno
+ import os
+ import re
+@@ -25,7 +33,7 @@ class Command(BaseCommand):
+     help = "Starts a lightweight web server for development."
+ 
+     # Validation is called explicitly each time the server is reloaded.
+-    requires_system_checks = []
++    xoptions = None
+     stealth_options = ('shutdown_message',)
+     suppressed_base_arguments = {'--verbosity', '--traceback'}
+ 
+@@ -63,6 +71,7 @@ class Command(BaseCommand):
+             # way to reach WSGIRequestHandler. This seems an acceptable
+             # compromise considering `runserver` runs indefinitely.
+             os.environ["DJANGO_COLORS"] = "nocolor"
++        self.xoptions = sys._xoptions.copy()  # Store the current xoptions
+         super().execute(*args, **options)
+ 
+     def get_handler(self, *args, **options):
+@@ -105,7 +114,7 @@ class Command(BaseCommand):
+         use_reloader = options['use_reloader']
+ 
+         if use_reloader:
+-            autoreload.run_with_reloader(self.inner_run, **options)
++            autoreload.run_with_reloader(self.inner_run, **options, xoptions=self.xoptions)
+         else:
+             self.inner_run(None, **options)
+ 

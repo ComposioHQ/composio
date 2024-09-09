@@ -1,0 +1,79 @@
+{
+    "scikit-learn__scikit-learn-11310": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "sklearn/model_selection/tests/test_search.py::test_search_cv_timing"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "sklearn/model_selection/tests/test_search.py::test_parameter_grid",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_with_fit_params",
+                    "sklearn/model_selection/tests/test_search.py::test_random_search_with_fit_params",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_fit_params_deprecation",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_fit_params_two_places",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_no_score",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_score_method",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_groups",
+                    "sklearn/model_selection/tests/test_search.py::test_return_train_score_warn",
+                    "sklearn/model_selection/tests/test_search.py::test_classes__property",
+                    "sklearn/model_selection/tests/test_search.py::test_trivial_cv_results_attr",
+                    "sklearn/model_selection/tests/test_search.py::test_no_refit",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_error",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_one_grid_point",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_when_param_grid_includes_range",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_bad_param_grid",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_sparse",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_sparse_scoring",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_precomputed_kernel",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_precomputed_kernel_error_nonsquare",
+                    "sklearn/model_selection/tests/test_search.py::test_refit",
+                    "sklearn/model_selection/tests/test_search.py::test_gridsearch_nd",
+                    "sklearn/model_selection/tests/test_search.py::test_X_as_list",
+                    "sklearn/model_selection/tests/test_search.py::test_y_as_list",
+                    "sklearn/model_selection/tests/test_search.py::test_pandas_input",
+                    "sklearn/model_selection/tests/test_search.py::test_unsupervised_grid_search",
+                    "sklearn/model_selection/tests/test_search.py::test_gridsearch_no_predict",
+                    "sklearn/model_selection/tests/test_search.py::test_param_sampler",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_cv_results",
+                    "sklearn/model_selection/tests/test_search.py::test_random_search_cv_results",
+                    "sklearn/model_selection/tests/test_search.py::test_search_iid_param",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_cv_results_multimetric",
+                    "sklearn/model_selection/tests/test_search.py::test_random_search_cv_results_multimetric",
+                    "sklearn/model_selection/tests/test_search.py::test_search_cv_results_rank_tie_breaking",
+                    "sklearn/model_selection/tests/test_search.py::test_search_cv_results_none_param",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_correct_score_results",
+                    "sklearn/model_selection/tests/test_search.py::test_fit_grid_point",
+                    "sklearn/model_selection/tests/test_search.py::test_pickle",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_with_multioutput_data",
+                    "sklearn/model_selection/tests/test_search.py::test_predict_proba_disabled",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_allows_nans",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_failing_classifier",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_failing_classifier_raise",
+                    "sklearn/model_selection/tests/test_search.py::test_parameters_sampler_replacement",
+                    "sklearn/model_selection/tests/test_search.py::test_stochastic_gradient_loss_param",
+                    "sklearn/model_selection/tests/test_search.py::test_search_train_scores_set_to_false",
+                    "sklearn/model_selection/tests/test_search.py::test_grid_search_cv_splits_consistency",
+                    "sklearn/model_selection/tests/test_search.py::test_transform_inverse_transform_round_trip",
+                    "sklearn/model_selection/tests/test_search.py::test_deprecated_grid_search_iid"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

@@ -1,0 +1,13 @@
+diff --git a/django/contrib/admin/options.py b/django/contrib/admin/options.py
+index 137e6faa..0e86a759 100644
+--- a/django/contrib/admin/options.py
++++ b/django/contrib/admin/options.py
+@@ -1944,7 +1944,7 @@ class ModelAdmin(BaseModelAdmin):
+                 """Return whether or not the user deleted the form."""
+                 return (
+                     inline.has_delete_permission(request, obj) and
+-                    '{}-{}-DELETE'.format(formset.prefix, index) in request.POST
++                    '{}-{}-DELETE'.format(re.escape(formset.prefix), index) in request.POST
+                 )
+ 
+             # Bypass validation of each view-only inline form (since the form's

@@ -1,0 +1,43 @@
+diff --git a/django/contrib/admin/sites.py b/django/contrib/admin/sites.py
+index 61be31d8..741315c6 100644
+--- a/django/contrib/admin/sites.py
++++ b/django/contrib/admin/sites.py
+@@ -453,7 +453,11 @@ class AdminSite:
+                 pass
+             else:
+                 if getattr(match.func, "should_append_slash", True):
+-                    return HttpResponsePermanentRedirect("%s/" % request.path)
++                    # Use request.get_full_path() to include query string
++                    full_path = request.get_full_path()
++                    # Append slash to the path part while preserving query string
++                    redirect_url = full_path.rstrip('/') + '/'
++                    return HttpResponsePermanentRedirect(redirect_url)
+         raise Http404
+ 
+     def _build_app_dict(self, request, label=None):
+diff --git a/tests/admin_views/test_adminsite.py b/tests/admin_views/test_adminsite.py
+index 68a32567..510e917e 100644
+--- a/tests/admin_views/test_adminsite.py
++++ b/tests/admin_views/test_adminsite.py
+@@ -1,6 +1,7 @@
+ from django.contrib import admin
+ from django.contrib.admin.actions import delete_selected
+ from django.contrib.auth.models import User
++from django.http import HttpResponsePermanentRedirect
+ from django.test import SimpleTestCase, TestCase, override_settings
+ from django.test.client import RequestFactory
+ from django.urls import path, reverse
+@@ -82,6 +83,13 @@ class SiteEachContextTest(TestCase):
+         self.assertEqual(user["admin_url"], "/test_admin/admin/auth/user/")
+         self.assertEqual(user["add_url"], "/test_admin/admin/auth/user/add/")
+         self.assertEqual(user["name"], "Users")
++    @override_settings(APPEND_SLASH=True)
++    def test_catch_all_view_preserves_query_string(self):
++        request = self.request_factory.get('/test_admin/admin/auth/user?q=test')
++        request.user = self.u1
++        response = site.catch_all_view(request, '')
++        self.assertIsInstance(response, HttpResponsePermanentRedirect)
++        self.assertEqual(response.url, '/test_admin/admin/auth/user/?q=test')
+ 
+ 
+ class SiteActionsTests(SimpleTestCase):

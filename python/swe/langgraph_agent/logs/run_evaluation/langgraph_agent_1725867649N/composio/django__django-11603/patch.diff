@@ -1,0 +1,126 @@
+diff --git a/django/db/models/aggregates.py b/django/db/models/aggregates.py
+index da4ff928..ffa216f2 100644
+--- a/django/db/models/aggregates.py
++++ b/django/db/models/aggregates.py
+@@ -99,6 +99,7 @@ class Aggregate(Func):
+ class Avg(FixDurationInputMixin, NumericOutputFieldMixin, Aggregate):
+     function = 'AVG'
+     name = 'Avg'
++    allow_distinct = True
+ 
+ 
+ class Count(Aggregate):
+@@ -121,14 +122,16 @@ class Count(Aggregate):
+ class Max(Aggregate):
+     function = 'MAX'
+     name = 'Max'
+-
++    allow_distinct = True
+ 
+ class Min(Aggregate):
+     function = 'MIN'
+     name = 'Min'
+-
+-
+-class StdDev(NumericOutputFieldMixin, Aggregate):
++    allow_distinct = True
++class Sum(FixDurationInputMixin, Aggregate):
++    function = 'SUM'
++    name = 'Sum'
++    allow_distinct = True
+     name = 'StdDev'
+ 
+     def __init__(self, expression, sample=False, **extra):
+diff --git a/docs/topics/db/aggregation.txt b/docs/topics/db/aggregation.txt
+index 505b3adf..58e1029c 100644
+--- a/docs/topics/db/aggregation.txt
++++ b/docs/topics/db/aggregation.txt
+@@ -60,17 +60,32 @@ In a hurry? Here's how to do common aggregate queries, assuming the models above
+     >>> Book.objects.all().aggregate(Avg('price'))
+     {'price__avg': 34.35}
+ 
++    # Average price across all books, with DISTINCT.
++    >>> Book.objects.all().aggregate(Avg('price', distinct=True))
++    {'price__avg': 30.75}
++
+     # Max price across all books.
+     >>> from django.db.models import Max
+     >>> Book.objects.all().aggregate(Max('price'))
+     {'price__max': Decimal('81.20')}
+ 
++    # Max price across all books, with DISTINCT.
++    >>> Book.objects.all().aggregate(Max('price', distinct=True))
++    {'price__max': Decimal('81.20')}
+     # Difference between the highest priced book and the average price of all books.
+     >>> from django.db.models import FloatField
+     >>> Book.objects.aggregate(
+     ...     price_diff=Max('price', output_field=FloatField()) - Avg('price'))
+     {'price_diff': 46.85}
+ 
++    # Sum of all book prices.
++    >>> from django.db.models import Sum
++    >>> Book.objects.aggregate(Sum('price'))
++    {'price__sum': Decimal('34.35')}
++
++    # Sum of all book prices, with DISTINCT.
++    >>> Book.objects.aggregate(Sum('price', distinct=True))
++    {'price__sum': Decimal('30.75')}
+     # All the following queries involve traversing the Book<->Publisher
+     # foreign key relationship backwards.
+ 
+diff --git a/tests/postgres_tests/test_aggregates.py b/tests/postgres_tests/test_aggregates.py
+index 9bd5b70a..fc5043c4 100644
+--- a/tests/postgres_tests/test_aggregates.py
++++ b/tests/postgres_tests/test_aggregates.py
+@@ -1,8 +1,9 @@
+ import json
+ 
+-from django.db.models import CharField
++from django.db.models import Avg, CharField, Max, Min, Sum
+ from django.db.models.expressions import F, OuterRef, Subquery, Value
+ from django.db.models.functions import Cast, Concat, Substr
++from django.db.models.functions import Cast, Concat, Substr
+ from django.test.utils import Approximate
+ 
+ from . import PostgreSQLTestCase
+@@ -411,5 +412,40 @@ class TestStatisticsAggregate(PostgreSQLTestCase):
+         This is more complex test to check if JOIN on field and
+         number as argument works as expected.
+         """
++class TestDistinctAggregates(PostgreSQLTestCase):
++    @classmethod
++    def setUpTestData(cls):
++        AggregateTestModel.objects.create(integer_field=1, char_field='Foo')
++        AggregateTestModel.objects.create(integer_field=2, char_field='Bar')
++        AggregateTestModel.objects.create(integer_field=3, char_field='Foo')
++        AggregateTestModel.objects.create(integer_field=4, char_field='Bar')
++
++    def test_string_agg_distinct(self):
++        values = AggregateTestModel.objects.aggregate(stringagg=StringAgg('char_field', delimiter=';', distinct=True))
++        self.assertEqual(values['stringagg'].split(';'), ['Bar', 'Foo'])
++
++    def test_array_agg_distinct(self):
++        values = AggregateTestModel.objects.aggregate(arrayagg=ArrayAgg('char_field', distinct=True))
++        self.assertEqual(sorted(values['arrayagg']), ['Bar', 'Foo'])
++
++    def test_jsonb_agg_distinct(self):
++        values = AggregateTestModel.objects.aggregate(jsonbagg=JSONBAgg('char_field', distinct=True))
++        self.assertEqual(sorted(values['jsonbagg']), ['Bar', 'Foo'])
++
++    def test_avg_distinct(self):
++        values = AggregateTestModel.objects.aggregate(avg=Avg('integer_field', distinct=True))
++        self.assertEqual(values['avg'], 2.5)
++
++    def test_sum_distinct(self):
++        values = AggregateTestModel.objects.aggregate(sum=Sum('integer_field', distinct=True))
++        self.assertEqual(values['sum'], 10)
++
++    def test_max_distinct(self):
++        values = AggregateTestModel.objects.aggregate(max=Max('integer_field', distinct=True))
++        self.assertEqual(values['max'], 4)
++
++    def test_min_distinct(self):
++        values = AggregateTestModel.objects.aggregate(min=Min('integer_field', distinct=True))
++        self.assertEqual(values['min'], 1)
+         values = StatTestModel.objects.aggregate(complex_regravgx=RegrAvgX(y=5, x='related_field__integer_field'))
+         self.assertEqual(values, {'complex_regravgx': 1.0})

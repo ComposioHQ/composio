@@ -1,0 +1,96 @@
+2024-09-09 07:28:47,579 - INFO - Environment image sweb.env.x86_64.aa92880033da20ca313928:latest found for scikit-learn__scikit-learn-12585
+Building instance image sweb.eval.x86_64.scikit-learn__scikit-learn-12585:latest for scikit-learn__scikit-learn-12585
+2024-09-09 07:44:07,305 - INFO - Creating container for scikit-learn__scikit-learn-12585...
+2024-09-09 07:44:07,344 - INFO - Container for scikit-learn__scikit-learn-12585 created: 63a70127857967a71bd92cb33a0abfbb7e56da70b9d366ab1f44c4e518227363
+2024-09-09 07:44:07,470 - INFO - Container for scikit-learn__scikit-learn-12585 started: 63a70127857967a71bd92cb33a0abfbb7e56da70b9d366ab1f44c4e518227363
+2024-09-09 07:44:07,473 - INFO - Intermediate patch for scikit-learn__scikit-learn-12585 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/scikit-learn__scikit-learn-12585/patch.diff, now applying to container...
+2024-09-09 07:44:07,714 - INFO - Failed to apply patch to container, trying again...
+2024-09-09 07:44:07,763 - INFO - >>>>> Applied Patch:
+patching file sklearn/base.py
+patching file sklearn/tests/test_base.py
+
+2024-09-09 07:44:08,360 - INFO - Git diff before:
+diff --git a/sklearn/base.py b/sklearn/base.py
+index 56ffb18bf..0395c55d3 100644
+--- a/sklearn/base.py
++++ b/sklearn/base.py
+@@ -48,6 +48,10 @@ def clone(estimator, safe=True):
+     # XXX: not handling dictionaries
+     if estimator_type in (list, tuple, set, frozenset):
+         return estimator_type([clone(e, safe=safe) for e in estimator])
++    elif isinstance(estimator, type) and issubclass(estimator, BaseEstimator):
++        # If the estimator is a class (not an instance) and a subclass of BaseEstimator,
++        # return it as is, since we can't clone a class
++        return estimator
+     elif not hasattr(estimator, 'get_params'):
+         if not safe:
+             return copy.deepcopy(estimator)
+diff --git a/sklearn/tests/test_base.py b/sklearn/tests/test_base.py
+index ebcb38925..2a121daec 100644
+--- a/sklearn/tests/test_base.py
++++ b/sklearn/tests/test_base.py
+@@ -146,6 +146,36 @@ def test_clone_empty_array():
+     assert_array_equal(clf.empty.data, clf2.empty.data)
+ 
+ 
++def test_clone_estimator_types():
++    # Test that clone can handle estimator types (classes), not just instances
++    from sklearn.preprocessing import StandardScaler
++    
++    # Test with an estimator type (class)
++    clone_class = clone(StandardScaler)
++    assert_true(clone_class is StandardScaler)
++    
++    # Test with an estimator instance (should work as before)
++    scaler = StandardScaler()
++    clone_instance = clone(scaler)
++    assert_true(isinstance(clone_instance, StandardScaler))
++    assert_true(clone_instance is not scaler)
++    
++    # Test with a non-estimator type
++    class NonEstimator:
++        pass
++    
++    assert_raises(TypeError, clone, NonEstimator)
++def test_clone_empty_array():
++    # Regression test for cloning estimators with empty arrays
++    clf = MyEstimator(empty=np.array([]))
++    clf2 = clone(clf)
++    assert_array_equal(clf.empty, clf2.empty)
++
++    clf = MyEstimator(empty=sp.csr_matrix(np.array([[0]])))
++    clf2 = clone(clf)
++    assert_array_equal(clf.empty.data, clf2.empty.data)
++
++
+ def test_clone_nan():
+     # Regression test for cloning estimators with default parameter as np.nan
+     clf = MyEstimator(empty=np.nan)
+2024-09-09 07:44:08,360 - INFO - Eval script for scikit-learn__scikit-learn-12585 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/scikit-learn__scikit-learn-12585/eval.sh; copying to container...
+2024-09-09 07:44:25,170 - INFO - Test runtime: 16.58 seconds
+2024-09-09 07:44:25,171 - INFO - Test output for scikit-learn__scikit-learn-12585 written to logs/run_evaluation/langgraph_agent_1725824120N/composio/scikit-learn__scikit-learn-12585/test_output.txt
+2024-09-09 07:44:25,271 - INFO - Git diff after:
+diff --git a/sklearn/base.py b/sklearn/base.py
+index 56ffb18bf..0395c55d3 100644
+--- a/sklearn/base.py
++++ b/sklearn/base.py
+@@ -48,6 +48,10 @@ def clone(estimator, safe=True):
+     # XXX: not handling dictionaries
+     if estimator_type in (list, tuple, set, frozenset):
+         return estimator_type([clone(e, safe=safe) for e in estimator])
++    elif isinstance(estimator, type) and issubclass(estimator, BaseEstimator):
++        # If the estimator is a class (not an instance) and a subclass of BaseEstimator,
++        # return it as is, since we can't clone a class
++        return estimator
+     elif not hasattr(estimator, 'get_params'):
+         if not safe:
+             return copy.deepcopy(estimator)
+2024-09-09 07:44:25,271 - INFO - Git diff changed after running eval script
+2024-09-09 07:44:25,271 - INFO - Grading answer for scikit-learn__scikit-learn-12585...
+2024-09-09 07:44:25,280 - INFO - report: {'scikit-learn__scikit-learn-12585': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': True, 'tests_status': {'FAIL_TO_PASS': {'success': ['sklearn/tests/test_base.py::test_clone_estimator_types'], 'failure': []}, 'PASS_TO_PASS': {'success': ['sklearn/tests/test_base.py::test_clone', 'sklearn/tests/test_base.py::test_clone_2', 'sklearn/tests/test_base.py::test_clone_buggy', 'sklearn/tests/test_base.py::test_clone_empty_array', 'sklearn/tests/test_base.py::test_clone_nan', 'sklearn/tests/test_base.py::test_clone_sparse_matrices', 'sklearn/tests/test_base.py::test_repr', 'sklearn/tests/test_base.py::test_str', 'sklearn/tests/test_base.py::test_get_params', 'sklearn/tests/test_base.py::test_is_classifier', 'sklearn/tests/test_base.py::test_set_params', 'sklearn/tests/test_base.py::test_set_params_passes_all_parameters', 'sklearn/tests/test_base.py::test_set_params_updates_valid_params', 'sklearn/tests/test_base.py::test_score_sample_weight', 'sklearn/tests/test_base.py::test_clone_pandas_dataframe', 'sklearn/tests/test_base.py::test_pickle_version_warning_is_not_raised_with_matching_version', 'sklearn/tests/test_base.py::test_pickle_version_warning_is_issued_upon_different_version', 'sklearn/tests/test_base.py::test_pickle_version_warning_is_issued_when_no_version_info_in_pickle', 'sklearn/tests/test_base.py::test_pickle_version_no_warning_is_issued_with_non_sklearn_estimator', 'sklearn/tests/test_base.py::test_pickling_when_getstate_is_overwritten_by_mixin', 'sklearn/tests/test_base.py::test_pickling_when_getstate_is_overwritten_by_mixin_outside_of_sklearn', 'sklearn/tests/test_base.py::test_pickling_works_when_getstate_is_overwritten_in_the_child_class'], 'failure': []}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for scikit-learn__scikit-learn-12585: resolved: True
+2024-09-09 07:44:25,281 - INFO - Attempting to stop container sweb.eval.scikit-learn__scikit-learn-12585.langgraph_agent_1725824120N...
+2024-09-09 07:44:40,467 - INFO - Attempting to remove container sweb.eval.scikit-learn__scikit-learn-12585.langgraph_agent_1725824120N...
+2024-09-09 07:44:40,478 - INFO - Container sweb.eval.scikit-learn__scikit-learn-12585.langgraph_agent_1725824120N removed.
+2024-09-09 07:44:40,478 - INFO - Attempting to remove image sweb.eval.x86_64.scikit-learn__scikit-learn-12585:latest...
+2024-09-09 07:44:40,654 - INFO - Image sweb.eval.x86_64.scikit-learn__scikit-learn-12585:latest removed.

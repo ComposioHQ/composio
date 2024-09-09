@@ -1,0 +1,41 @@
+{
+    "sphinx-doc__sphinx-7440": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "tests/test_domain_std.py::test_glossary"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "tests/test_domain_std.py::test_process_doc_handle_figure_caption",
+                    "tests/test_domain_std.py::test_process_doc_handle_table_title",
+                    "tests/test_domain_std.py::test_get_full_qualified_name",
+                    "tests/test_domain_std.py::test_glossary_warning",
+                    "tests/test_domain_std.py::test_glossary_comment",
+                    "tests/test_domain_std.py::test_glossary_comment2",
+                    "tests/test_domain_std.py::test_glossary_sorted",
+                    "tests/test_domain_std.py::test_glossary_alphanumeric",
+                    "tests/test_domain_std.py::test_glossary_conflicted_labels",
+                    "tests/test_domain_std.py::test_cmdoption",
+                    "tests/test_domain_std.py::test_multiple_cmdoptions",
+                    "tests/test_domain_std.py::test_disabled_docref"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

@@ -1,0 +1,95 @@
+{
+    "django__django-14725": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "test_edit_only (model_formsets.tests.ModelFormsetTest)",
+                    "test_edit_only_inlineformset_factory (model_formsets.tests.ModelFormsetTest)",
+                    "test_edit_only_object_outside_of_queryset (model_formsets.tests.ModelFormsetTest)"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "Make sure that an add form that is filled out, but marked for deletion",
+                    "Make sure that a change form that is filled out, but marked for deletion",
+                    "test_deletion (model_formsets.tests.DeletionTests)",
+                    "test_outdated_deletion (model_formsets.tests.DeletionTests)",
+                    "test_callable_defaults (model_formsets.tests.ModelFormsetTest)",
+                    "test_commit_false (model_formsets.tests.ModelFormsetTest)",
+                    "model_formset_factory() respects fields and exclude parameters of a",
+                    "test_custom_pk (model_formsets.tests.ModelFormsetTest)",
+                    "A queryset can be overridden in the formset's __init__() method.",
+                    "test_custom_save_method (model_formsets.tests.ModelFormsetTest)",
+                    "test_foreign_keys_in_parents (model_formsets.tests.ModelFormsetTest)",
+                    "test_initial_form_count_empty_data (model_formsets.tests.ModelFormsetTest)",
+                    "test_inline_formsets (model_formsets.tests.ModelFormsetTest)",
+                    "test_inline_formsets_save_as_new (model_formsets.tests.ModelFormsetTest)",
+                    "test_inline_formsets_with_custom_pk (model_formsets.tests.ModelFormsetTest)",
+                    "test_inline_formsets_with_custom_save_method (model_formsets.tests.ModelFormsetTest)",
+                    "The ModelForm.save() method should be able to access the related object",
+                    "test_inline_formsets_with_multi_table_inheritance (model_formsets.tests.ModelFormsetTest)",
+                    "test_inline_formsets_with_nullable_unique_together (model_formsets.tests.ModelFormsetTest)",
+                    "Regression for #23451",
+                    "test_inlineformset_factory_with_null_fk (model_formsets.tests.ModelFormsetTest)",
+                    "test_inlineformset_with_arrayfield (model_formsets.tests.ModelFormsetTest)",
+                    "test_max_num (model_formsets.tests.ModelFormsetTest)",
+                    "test_min_num (model_formsets.tests.ModelFormsetTest)",
+                    "test_min_num_with_existing (model_formsets.tests.ModelFormsetTest)",
+                    "test_model_formset_with_custom_pk (model_formsets.tests.ModelFormsetTest)",
+                    "test_model_formset_with_initial_model_instance (model_formsets.tests.ModelFormsetTest)",
+                    "test_model_formset_with_initial_queryset (model_formsets.tests.ModelFormsetTest)",
+                    "test_model_inheritance (model_formsets.tests.ModelFormsetTest)",
+                    "Regression for #19733",
+                    "test_modelformset_min_num_equals_max_num_less_than (model_formsets.tests.ModelFormsetTest)",
+                    "test_modelformset_min_num_equals_max_num_more_than (model_formsets.tests.ModelFormsetTest)",
+                    "test_modelformset_validate_max_flag (model_formsets.tests.ModelFormsetTest)",
+                    "test_prevent_change_outer_model_and_create_invalid_data (model_formsets.tests.ModelFormsetTest)",
+                    "test_prevent_duplicates_from_with_the_same_formset (model_formsets.tests.ModelFormsetTest)",
+                    "test_simple_save (model_formsets.tests.ModelFormsetTest)",
+                    "test_unique_together_validation (model_formsets.tests.ModelFormsetTest)",
+                    "test_unique_together_with_inlineformset_factory (model_formsets.tests.ModelFormsetTest)",
+                    "test_unique_true_enforces_max_num_one (model_formsets.tests.ModelFormsetTest)",
+                    "test_unique_validation (model_formsets.tests.ModelFormsetTest)",
+                    "test_validation_with_child_model_without_id (model_formsets.tests.ModelFormsetTest)",
+                    "test_validation_with_invalid_id (model_formsets.tests.ModelFormsetTest)",
+                    "test_validation_with_nonexistent_id (model_formsets.tests.ModelFormsetTest)",
+                    "test_validation_without_id (model_formsets.tests.ModelFormsetTest)",
+                    "test_inlineformset_factory_absolute_max (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_inlineformset_factory_absolute_max_with_max_num (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_inlineformset_factory_can_delete_extra (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_inlineformset_factory_can_not_delete_extra (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_inlineformset_factory_error_messages_overrides (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_inlineformset_factory_field_class_overrides (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_inlineformset_factory_help_text_overrides (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_inlineformset_factory_labels_overrides (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_inlineformset_factory_passes_renderer (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_inlineformset_factory_widgets (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_modelformset_factory_absolute_max (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_modelformset_factory_absolute_max_with_max_num (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_modelformset_factory_can_delete_extra (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_modelformset_factory_disable_delete_extra (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_modelformset_factory_error_messages_overrides (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_modelformset_factory_field_class_overrides (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_modelformset_factory_help_text_overrides (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_modelformset_factory_labels_overrides (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_modelformset_factory_passes_renderer (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)",
+                    "test_modelformset_factory_widgets (model_formsets.tests.TestModelFormsetOverridesTroughFormMeta)"
+                ]
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

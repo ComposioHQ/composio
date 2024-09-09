@@ -1,0 +1,143 @@
+2024-09-06 21:05:32,492 - INFO - Environment image sweb.env.arm64.e83e37f52c09532c62acfb:latest found for django__django-13810
+Building instance image sweb.eval.arm64.django__django-13810:latest for django__django-13810
+2024-09-06 21:06:05,671 - INFO - Creating container for django__django-13810...
+2024-09-06 21:06:05,693 - INFO - Container for django__django-13810 created: fb387393fc06056efd1c4ebc3f261736f04b477e08284aaf9c249947cf28e64c
+2024-09-06 21:06:05,822 - INFO - Container for django__django-13810 started: fb387393fc06056efd1c4ebc3f261736f04b477e08284aaf9c249947cf28e64c
+2024-09-06 21:06:05,822 - INFO - Intermediate patch for django__django-13810 written to logs/run_evaluation/langgraph_agent_1725636140N/composio/django__django-13810/patch.diff, now applying to container...
+2024-09-06 21:06:06,024 - INFO - Failed to apply patch to container, trying again...
+2024-09-06 21:06:06,065 - INFO - >>>>> Applied Patch:
+patching file django/core/handlers/base.py
+patching file docs/releases/3.2.txt
+patching file docs/topics/http/middleware.txt
+
+2024-09-06 21:06:06,472 - INFO - Git diff before:
+diff --git a/django/core/handlers/base.py b/django/core/handlers/base.py
+index 8e8c3da06a..a3d42056e2 100644
+--- a/django/core/handlers/base.py
++++ b/django/core/handlers/base.py
+@@ -49,6 +49,11 @@ class BaseHandler:
+                 middleware_is_async = False
+             else:
+                 middleware_is_async = middleware_can_async
++            # Store the current state of handler and handler_is_async
++            # This allows us to restore the previous state if MiddlewareNotUsed is raised,
++            # preventing incompatible handlers from remaining in the chain
++            previous_handler = handler
++            previous_handler_is_async = handler_is_async
+             try:
+                 # Adapt handler, if needed.
+                 handler = self.adapt_method_mode(
+@@ -62,6 +67,9 @@ class BaseHandler:
+                         logger.debug('MiddlewareNotUsed(%r): %s', middleware_path, exc)
+                     else:
+                         logger.debug('MiddlewareNotUsed: %r', middleware_path)
++                # Restore previous handler state
++                handler = previous_handler
++                handler_is_async = previous_handler_is_async
+                 continue
+ 
+             if mw_instance is None:
+diff --git a/docs/releases/3.2.txt b/docs/releases/3.2.txt
+index 8cd77ffad0..47d7a1a534 100644
+--- a/docs/releases/3.2.txt
++++ b/docs/releases/3.2.txt
+@@ -723,4 +723,11 @@ Miscellaneous
+ * The ``django.core.cache.backends.memcached.MemcachedCache`` backend is
+   deprecated as ``python-memcached`` has some problems and seems to be
+   unmaintained. Use ``django.core.cache.backends.memcached.PyMemcacheCache``
+-  or ``django.core.cache.backends.memcached.PyLibMCCache`` instead.
++
++Middleware
++----------
++
++* Fixed a bug in middleware handling where raising ``MiddlewareNotUsed`` could
++  leave incompatible handlers in the middleware chain, particularly in
++  asynchronous contexts. Django now ensures proper removal of unused middleware
++  while preserving the integrity of the request/response cycle.
+diff --git a/docs/topics/http/middleware.txt b/docs/topics/http/middleware.txt
+index 1626d16992..8d3b2351d2 100644
+--- a/docs/topics/http/middleware.txt
++++ b/docs/topics/http/middleware.txt
+@@ -99,6 +99,12 @@ method may raise :exc:`~django.core.exceptions.MiddlewareNotUsed`. Django will
+ then remove that middleware from the middleware process and log a debug message
+ to the :ref:`django-request-logger` logger when :setting:`DEBUG` is ``True``.
+ 
++When a middleware raises :exc:`~django.core.exceptions.MiddlewareNotUsed`, Django
++ensures that the middleware is properly removed from the middleware chain, both
++in synchronous and asynchronous contexts. This means that any changes made to the
++request or response by middleware that comes before the removed middleware in the
++chain are preserved, maintaining the integrity of the request/response cycle.
++
+ Activating middleware
+ =====================
+2024-09-06 21:06:06,473 - INFO - Eval script for django__django-13810 written to logs/run_evaluation/langgraph_agent_1725636140N/composio/django__django-13810/eval.sh; copying to container...
+2024-09-06 21:06:09,025 - INFO - Test runtime: 2.42 seconds
+2024-09-06 21:06:09,026 - INFO - Test output for django__django-13810 written to logs/run_evaluation/langgraph_agent_1725636140N/composio/django__django-13810/test_output.txt
+2024-09-06 21:06:09,074 - INFO - Git diff after:
+diff --git a/django/core/handlers/base.py b/django/core/handlers/base.py
+index 8e8c3da06a..a3d42056e2 100644
+--- a/django/core/handlers/base.py
++++ b/django/core/handlers/base.py
+@@ -49,6 +49,11 @@ class BaseHandler:
+                 middleware_is_async = False
+             else:
+                 middleware_is_async = middleware_can_async
++            # Store the current state of handler and handler_is_async
++            # This allows us to restore the previous state if MiddlewareNotUsed is raised,
++            # preventing incompatible handlers from remaining in the chain
++            previous_handler = handler
++            previous_handler_is_async = handler_is_async
+             try:
+                 # Adapt handler, if needed.
+                 handler = self.adapt_method_mode(
+@@ -62,6 +67,9 @@ class BaseHandler:
+                         logger.debug('MiddlewareNotUsed(%r): %s', middleware_path, exc)
+                     else:
+                         logger.debug('MiddlewareNotUsed: %r', middleware_path)
++                # Restore previous handler state
++                handler = previous_handler
++                handler_is_async = previous_handler_is_async
+                 continue
+ 
+             if mw_instance is None:
+diff --git a/docs/releases/3.2.txt b/docs/releases/3.2.txt
+index 8cd77ffad0..47d7a1a534 100644
+--- a/docs/releases/3.2.txt
++++ b/docs/releases/3.2.txt
+@@ -723,4 +723,11 @@ Miscellaneous
+ * The ``django.core.cache.backends.memcached.MemcachedCache`` backend is
+   deprecated as ``python-memcached`` has some problems and seems to be
+   unmaintained. Use ``django.core.cache.backends.memcached.PyMemcacheCache``
+-  or ``django.core.cache.backends.memcached.PyLibMCCache`` instead.
++
++Middleware
++----------
++
++* Fixed a bug in middleware handling where raising ``MiddlewareNotUsed`` could
++  leave incompatible handlers in the middleware chain, particularly in
++  asynchronous contexts. Django now ensures proper removal of unused middleware
++  while preserving the integrity of the request/response cycle.
+diff --git a/docs/topics/http/middleware.txt b/docs/topics/http/middleware.txt
+index 1626d16992..8d3b2351d2 100644
+--- a/docs/topics/http/middleware.txt
++++ b/docs/topics/http/middleware.txt
+@@ -99,6 +99,12 @@ method may raise :exc:`~django.core.exceptions.MiddlewareNotUsed`. Django will
+ then remove that middleware from the middleware process and log a debug message
+ to the :ref:`django-request-logger` logger when :setting:`DEBUG` is ``True``.
+ 
++When a middleware raises :exc:`~django.core.exceptions.MiddlewareNotUsed`, Django
++ensures that the middleware is properly removed from the middleware chain, both
++in synchronous and asynchronous contexts. This means that any changes made to the
++request or response by middleware that comes before the removed middleware in the
++chain are preserved, maintaining the integrity of the request/response cycle.
++
+ Activating middleware
+ =====================
+2024-09-06 21:06:09,075 - INFO - Grading answer for django__django-13810...
+2024-09-06 21:06:09,081 - INFO - report: {'django__django-13810': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': True, 'tests_status': {'FAIL_TO_PASS': {'success': ['test_async_and_sync_middleware_chain_async_call (middleware_exceptions.tests.MiddlewareNotUsedTests)'], 'failure': []}, 'PASS_TO_PASS': {'success': ['test_missing_root_urlconf (middleware_exceptions.tests.RootUrlconfTests)', 'test_do_not_log_when_debug_is_false (middleware_exceptions.tests.MiddlewareNotUsedTests)', 'test_log (middleware_exceptions.tests.MiddlewareNotUsedTests)', 'test_log_custom_message (middleware_exceptions.tests.MiddlewareNotUsedTests)', 'test_raise_exception (middleware_exceptions.tests.MiddlewareNotUsedTests)', 'test_exception_in_middleware_converted_before_prior_middleware (middleware_exceptions.tests.MiddlewareTests)', 'test_exception_in_render_passed_to_process_exception (middleware_exceptions.tests.MiddlewareTests)', 'test_process_template_response (middleware_exceptions.tests.MiddlewareTests)', 'test_process_template_response_returns_none (middleware_exceptions.tests.MiddlewareTests)', 'test_process_view_return_none (middleware_exceptions.tests.MiddlewareTests)', 'test_process_view_return_response (middleware_exceptions.tests.MiddlewareTests)', 'test_response_from_process_exception_short_circuits_remainder (middleware_exceptions.tests.MiddlewareTests)', 'test_response_from_process_exception_when_return_response (middleware_exceptions.tests.MiddlewareTests)', 'test_templateresponse_from_process_view_passed_to_process_template_response (middleware_exceptions.tests.MiddlewareTests)', 'test_templateresponse_from_process_view_rendered (middleware_exceptions.tests.MiddlewareTests)', 'test_view_exception_converted_before_middleware (middleware_exceptions.tests.MiddlewareTests)', 'test_view_exception_handled_by_process_exception (middleware_exceptions.tests.MiddlewareTests)', 'test_async_and_sync_middleware_async_call (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_async_and_sync_middleware_sync_call (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_async_middleware (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_async_middleware_async (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_not_sync_or_async_middleware (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_sync_decorated_middleware (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_sync_middleware (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_sync_middleware_async (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_exception_in_async_render_passed_to_process_exception (middleware_exceptions.tests.AsyncMiddlewareTests)', 'test_exception_in_render_passed_to_process_exception (middleware_exceptions.tests.AsyncMiddlewareTests)', 'test_process_template_response (middleware_exceptions.tests.AsyncMiddlewareTests)', 'test_process_template_response_returns_none (middleware_exceptions.tests.AsyncMiddlewareTests)', 'test_process_view_return_response (middleware_exceptions.tests.AsyncMiddlewareTests)'], 'failure': []}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for django__django-13810: resolved: True
+2024-09-06 21:06:09,082 - INFO - Attempting to stop container sweb.eval.django__django-13810.langgraph_agent_1725636140N...
+2024-09-06 21:06:24,276 - INFO - Attempting to remove container sweb.eval.django__django-13810.langgraph_agent_1725636140N...
+2024-09-06 21:06:24,287 - INFO - Container sweb.eval.django__django-13810.langgraph_agent_1725636140N removed.
+2024-09-06 21:06:24,287 - INFO - Attempting to remove image sweb.eval.arm64.django__django-13810:latest...
+2024-09-06 21:06:24,434 - INFO - Image sweb.eval.arm64.django__django-13810:latest removed.

@@ -1,0 +1,113 @@
+2024-09-09 10:11:01,920 - INFO - Environment image sweb.env.arm64.c795f4b88616b8462021ed:latest found for sympy__sympy-21847
+Building instance image sweb.eval.arm64.sympy__sympy-21847:latest for sympy__sympy-21847
+2024-09-09 10:11:42,991 - INFO - Creating container for sympy__sympy-21847...
+2024-09-09 10:11:43,024 - INFO - Container for sympy__sympy-21847 created: ed815debe11750028d3e7b482dec56773c587b493758a1edc0187d4af0d82bb7
+2024-09-09 10:11:43,136 - INFO - Container for sympy__sympy-21847 started: ed815debe11750028d3e7b482dec56773c587b493758a1edc0187d4af0d82bb7
+2024-09-09 10:11:43,137 - INFO - Intermediate patch for sympy__sympy-21847 written to logs/run_evaluation/langgraph_agent_1725853467N/composio/sympy__sympy-21847/patch.diff, now applying to container...
+2024-09-09 10:11:43,329 - INFO - Failed to apply patch to container, trying again...
+2024-09-09 10:11:43,363 - INFO - >>>>> Applied Patch:
+patching file sympy/polys/monomials.py
+patching file sympy/polys/tests/test_monomials.py
+
+2024-09-09 10:11:43,616 - INFO - Git diff before:
+diff --git a/sympy/polys/monomials.py b/sympy/polys/monomials.py
+index 0e84403307..3a7ed0a89d 100644
+--- a/sympy/polys/monomials.py
++++ b/sympy/polys/monomials.py
+@@ -20,7 +20,7 @@ def itermonomials(variables, max_degrees, min_degrees=None):
+ 
+     A generator of all monomials ``monom`` is returned, such that
+     either
+-    ``min_degree <= total_degree(monom) <= max_degree``,
++    ``min_degree <= total_degree(monom) <= max_degree``, where total_degree is the sum of all exponents,
+     or
+     ``min_degrees[i] <= degree_list(monom)[i] <= max_degrees[i]``,
+     for all ``i``.
+@@ -127,7 +127,7 @@ def itermonomials(variables, max_degrees, min_degrees=None):
+                 for variable in item:
+                     if variable != 1:
+                         powers[variable] += 1
+-                if max(powers.values()) >= min_degree:
++                if sum(powers.values()) >= min_degree:
+                     monomials_list_comm.append(Mul(*item))
+             yield from set(monomials_list_comm)
+         else:
+@@ -139,7 +139,7 @@ def itermonomials(variables, max_degrees, min_degrees=None):
+                 for variable in item:
+                     if variable != 1:
+                         powers[variable] += 1
+-                if max(powers.values()) >= min_degree:
++                if sum(powers.values()) >= min_degree:
+                     monomials_list_non_comm.append(Mul(*item))
+             yield from set(monomials_list_non_comm)
+     else:
+diff --git a/sympy/polys/tests/test_monomials.py b/sympy/polys/tests/test_monomials.py
+index 482cbee30d..6c9b7c9288 100644
+--- a/sympy/polys/tests/test_monomials.py
++++ b/sympy/polys/tests/test_monomials.py
+@@ -97,6 +97,21 @@ def test_monomials():
+     raises(ValueError, lambda: set(itermonomials([x, y, z], [1, 2, 3], [0, 1])))
+ 
+     raises(ValueError, lambda: set(itermonomials([x], [1], [-1])))
++    # Test cases for min_degrees
++    assert set(itermonomials([x, y], 3, 2)) == {x**2, y**2, x*y, x**3, x**2*y, x*y**2, y**3}
++    assert set(itermonomials([x, y], 4, 3)) == {x**3, y**3, x**2*y, x*y**2, x**4, x**3*y, x**2*y**2, x*y**3, y**4}
++    assert set(itermonomials([x, y, z], 3, 3)) == {x**3, y**3, z**3, x**2*y, x**2*z, y**2*x, y**2*z, z**2*x, z**2*y, x*y*z}
++
++    # Test case for the specific example in the issue
++    x1, x2, x3 = symbols('x1, x2, x3')
++    assert set(itermonomials([x1, x2, x3], 3, 3)) == {x1**3, x2**3, x3**3, x1**2*x2, x1**2*x3, x2**2*x1, x2**2*x3, x3**2*x1, x3**2*x2, x1*x2*x3}
++
++    # Test case for max_degrees > min_degrees
++    assert set(itermonomials([x, y], 4, 2)) == {x**2, y**2, x*y, x**3, x**2*y, x*y**2, y**3, x**4, x**3*y, x**2*y**2, x*y**3, y**4}
++
++    # Test case for non-commutative variables
++    i, j = symbols('i j', commutative=False)
++    assert set(itermonomials([i, j], 3, 2)) == {i**2, j**2, i*j, j*i, i**3, i**2*j, i*j*i, j*i**2, j**2*i, j*i*j, i*j**2, j**3}
+     raises(ValueError, lambda: set(itermonomials([x, y], [1, 2], [1, -1])))
+ 
+     raises(ValueError, lambda: set(itermonomials([], [], 1)))
+2024-09-09 10:11:43,617 - INFO - Eval script for sympy__sympy-21847 written to logs/run_evaluation/langgraph_agent_1725853467N/composio/sympy__sympy-21847/eval.sh; copying to container...
+2024-09-09 10:11:45,266 - INFO - Test runtime: 1.54 seconds
+2024-09-09 10:11:45,266 - INFO - Test output for sympy__sympy-21847 written to logs/run_evaluation/langgraph_agent_1725853467N/composio/sympy__sympy-21847/test_output.txt
+2024-09-09 10:11:45,307 - INFO - Git diff after:
+diff --git a/sympy/polys/monomials.py b/sympy/polys/monomials.py
+index 0e84403307..3a7ed0a89d 100644
+--- a/sympy/polys/monomials.py
++++ b/sympy/polys/monomials.py
+@@ -20,7 +20,7 @@ def itermonomials(variables, max_degrees, min_degrees=None):
+ 
+     A generator of all monomials ``monom`` is returned, such that
+     either
+-    ``min_degree <= total_degree(monom) <= max_degree``,
++    ``min_degree <= total_degree(monom) <= max_degree``, where total_degree is the sum of all exponents,
+     or
+     ``min_degrees[i] <= degree_list(monom)[i] <= max_degrees[i]``,
+     for all ``i``.
+@@ -127,7 +127,7 @@ def itermonomials(variables, max_degrees, min_degrees=None):
+                 for variable in item:
+                     if variable != 1:
+                         powers[variable] += 1
+-                if max(powers.values()) >= min_degree:
++                if sum(powers.values()) >= min_degree:
+                     monomials_list_comm.append(Mul(*item))
+             yield from set(monomials_list_comm)
+         else:
+@@ -139,7 +139,7 @@ def itermonomials(variables, max_degrees, min_degrees=None):
+                 for variable in item:
+                     if variable != 1:
+                         powers[variable] += 1
+-                if max(powers.values()) >= min_degree:
++                if sum(powers.values()) >= min_degree:
+                     monomials_list_non_comm.append(Mul(*item))
+             yield from set(monomials_list_non_comm)
+     else:
+2024-09-09 10:11:45,307 - INFO - Git diff changed after running eval script
+2024-09-09 10:11:45,307 - INFO - Grading answer for sympy__sympy-21847...
+2024-09-09 10:11:45,312 - INFO - report: {'sympy__sympy-21847': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': True, 'tests_status': {'FAIL_TO_PASS': {'success': ['test_monomials'], 'failure': []}, 'PASS_TO_PASS': {'success': ['test_monomial_count', 'test_monomial_mul', 'test_monomial_div', 'test_monomial_gcd', 'test_monomial_lcm', 'test_monomial_max', 'test_monomial_pow', 'test_monomial_min', 'test_monomial_divides'], 'failure': []}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for sympy__sympy-21847: resolved: True
+2024-09-09 10:11:45,313 - INFO - Attempting to stop container sweb.eval.sympy__sympy-21847.langgraph_agent_1725853467N...
+2024-09-09 10:12:00,447 - INFO - Attempting to remove container sweb.eval.sympy__sympy-21847.langgraph_agent_1725853467N...
+2024-09-09 10:12:00,459 - INFO - Container sweb.eval.sympy__sympy-21847.langgraph_agent_1725853467N removed.
+2024-09-09 10:12:00,459 - INFO - Attempting to remove image sweb.eval.arm64.sympy__sympy-21847:latest...
+2024-09-09 10:12:00,523 - INFO - Image sweb.eval.arm64.sympy__sympy-21847:latest removed.

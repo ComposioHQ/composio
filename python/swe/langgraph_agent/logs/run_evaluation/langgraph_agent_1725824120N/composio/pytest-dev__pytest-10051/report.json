@@ -1,0 +1,44 @@
+{
+    "pytest-dev__pytest-10051": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "testing/logging/test_fixture.py::test_clear_for_call_stage"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "testing/logging/test_fixture.py::test_change_level",
+                    "testing/logging/test_fixture.py::test_with_statement",
+                    "testing/logging/test_fixture.py::test_log_access",
+                    "testing/logging/test_fixture.py::test_messages",
+                    "testing/logging/test_fixture.py::test_record_tuples",
+                    "testing/logging/test_fixture.py::test_unicode",
+                    "testing/logging/test_fixture.py::test_clear",
+                    "testing/logging/test_fixture.py::test_caplog_captures_for_all_stages",
+                    "testing/logging/test_fixture.py::test_fixture_help",
+                    "testing/logging/test_fixture.py::test_change_level_undo",
+                    "testing/logging/test_fixture.py::test_change_level_undos_handler_level",
+                    "testing/logging/test_fixture.py::test_ini_controls_global_log_level",
+                    "testing/logging/test_fixture.py::test_caplog_can_override_global_log_level",
+                    "testing/logging/test_fixture.py::test_caplog_captures_despite_exception",
+                    "testing/logging/test_fixture.py::test_log_report_captures_according_to_config_option_upon_failure"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

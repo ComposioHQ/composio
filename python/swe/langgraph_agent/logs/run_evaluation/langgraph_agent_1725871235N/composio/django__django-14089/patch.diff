@@ -1,0 +1,46 @@
+diff --git a/django/utils/datastructures.py b/django/utils/datastructures.py
+index 871b0167..de77be71 100644
+--- a/django/utils/datastructures.py
++++ b/django/utils/datastructures.py
+@@ -5,6 +5,7 @@ from collections.abc import Mapping
+ class OrderedSet:
+     """
+     A set which keeps the ordering of the inserted items.
++    This class is reversible.
+     """
+ 
+     def __init__(self, iterable=None):
+@@ -34,6 +35,9 @@ class OrderedSet:
+     def __len__(self):
+         return len(self.dict)
+ 
++    def __reversed__(self):
++        return reversed(self.dict)
++
+ 
+ class MultiValueDictKeyError(KeyError):
+     pass
+diff --git a/tests/utils_tests/test_datastructures.py b/tests/utils_tests/test_datastructures.py
+index 45d172f9..ef5d0a80 100644
+--- a/tests/utils_tests/test_datastructures.py
++++ b/tests/utils_tests/test_datastructures.py
+@@ -54,6 +54,19 @@ class OrderedSetTests(SimpleTestCase):
+         s.add(2)
+         s.add(2)
+         self.assertEqual(len(s), 2)
++    def test_len(self):
++        s = OrderedSet()
++        self.assertEqual(len(s), 0)
++        s.add(1)
++        s.add(2)
++        s.add(2)
++        self.assertEqual(len(s), 2)
++
++    def test_reversed(self):
++        s = OrderedSet([1, 2, 3, 4, 5])
++        self.assertEqual(list(reversed(s)), [5, 4, 3, 2, 1])
++        s.add(6)
++        self.assertEqual(list(reversed(s)), [6, 5, 4, 3, 2, 1])
+ 
+ 
+ class MultiValueDictTests(SimpleTestCase):

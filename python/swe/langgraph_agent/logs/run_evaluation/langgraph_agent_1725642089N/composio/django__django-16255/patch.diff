@@ -1,0 +1,30 @@
+diff --git a/django/contrib/sitemaps/__init__.py b/django/contrib/sitemaps/__init__.py
+index 27756d9d..298d2f82 100644
+--- a/django/contrib/sitemaps/__init__.py
++++ b/django/contrib/sitemaps/__init__.py
+@@ -162,16 +162,16 @@ class Sitemap:
+         domain = self.get_domain(site)
+         return self._urls(page, protocol, domain)
+ 
+-    def get_latest_lastmod(self):
+-        if not hasattr(self, "lastmod"):
++def get_latest_lastmod(self):
++    if not hasattr(self, "lastmod"):
++        return None
++    if callable(self.lastmod):
++        try:
++            return max([self.lastmod(item) for item in self.items()])
++        except (TypeError, ValueError):
+             return None
+-        if callable(self.lastmod):
+-            try:
+-                return max([self.lastmod(item) for item in self.items()])
+-            except TypeError:
+-                return None
+-        else:
+-            return self.lastmod
++    else:
++        return self.lastmod
+ 
+     def _urls(self, page, protocol, domain):
+         urls = []

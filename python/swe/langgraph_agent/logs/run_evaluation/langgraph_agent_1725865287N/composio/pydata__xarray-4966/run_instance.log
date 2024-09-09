@@ -1,0 +1,187 @@
+2024-09-09 12:37:23,635 - INFO - Environment image sweb.env.x86_64.502d8fc6ebccd881244091:latest found for pydata__xarray-4966
+Building instance image sweb.eval.x86_64.pydata__xarray-4966:latest for pydata__xarray-4966
+2024-09-09 12:37:52,469 - INFO - Creating container for pydata__xarray-4966...
+2024-09-09 12:37:52,496 - INFO - Container for pydata__xarray-4966 created: 8765fa460692b8f8dc7edfb294e3e023dbb9e431fe772db71b106f91980548a9
+2024-09-09 12:37:52,615 - INFO - Container for pydata__xarray-4966 started: 8765fa460692b8f8dc7edfb294e3e023dbb9e431fe772db71b106f91980548a9
+2024-09-09 12:37:52,616 - INFO - Intermediate patch for pydata__xarray-4966 written to logs/run_evaluation/langgraph_agent_1725865287N/composio/pydata__xarray-4966/patch.diff, now applying to container...
+2024-09-09 12:37:52,850 - INFO - Failed to apply patch to container, trying again...
+2024-09-09 12:37:52,912 - INFO - >>>>> Applied Patch:
+patching file doc/whats-new.rst
+patching file xarray/coding/variables.py
+patching file xarray/tests/test_coding.py
+
+2024-09-09 12:37:53,134 - INFO - Git diff before:
+diff --git a/doc/whats-new.rst b/doc/whats-new.rst
+index 9e59fdc5..3c0b840b 100644
+--- a/doc/whats-new.rst
++++ b/doc/whats-new.rst
+@@ -35,6 +35,16 @@ Deprecations
+ 
+ 
+ Bug fixes
++Bug fixes
++~~~~~~~~~
++- Don't allow passing ``axis`` to :py:meth:`Dataset.reduce` methods (:issue:`3510`, :pull:`4940`).
++  By `Justus Magin <https://github.com/keewis>`_.
++- Handle _Unsigned attribute for unsigned integer data types in CFMaskCoder (:issue:`XXXX`, :pull:`YYYY`).
++  This fixes the handling of signed bytes from OPeNDAP via pydap.
++  By `Your Name <https://github.com/your-username>`_.
++
++Documentation
++~~~~~~~~~~~~~
+ ~~~~~~~~~
+ - Don't allow passing ``axis`` to :py:meth:`Dataset.reduce` methods (:issue:`3510`, :pull:`4940`).
+   By `Justus Magin <https://github.com/keewis>`_.
+diff --git a/xarray/coding/variables.py b/xarray/coding/variables.py
+index b035ff82..2f738cd7 100644
+--- a/xarray/coding/variables.py
++++ b/xarray/coding/variables.py
+@@ -178,8 +178,42 @@ class CFMaskCoder(VariableCoder):
+         return Variable(dims, data, attrs, encoding)
+ 
+     def decode(self, variable, name=None):
++        """
++        Decode a variable by applying CF mask coding.
++
++        This method handles the following cases:
++        1. Decoding fill values (missing_value and _FillValue attributes)
++        2. Handling the _Unsigned attribute for unsigned integer data types
++
++        Parameters
++        ----------
++        variable : Variable
++            The variable to be decoded
++        name : str, optional
++            Name of the variable
++
++        Returns
++        -------
++        Variable
++            The decoded variable
++
++        Notes
++        -----
++        When the _Unsigned attribute is present and set to "false" for unsigned
++        integer data types, the data is converted to the corresponding signed
++        integer type. This is to handle the case where signed bytes are stored
++        as unsigned bytes in formats like OPeNDAP.
++        """
+         dims, data, attrs, encoding = unpack_for_decoding(variable)
+ 
++        # Handle _Unsigned attribute
++        unsigned = pop_to(attrs, encoding, '_Unsigned')
++        if unsigned is not None:
++            unsigned = unsigned.lower() == 'true'
++            if not unsigned and data.dtype.kind == 'u':
++                # Convert unsigned to signed
++                data = data.astype(f'i{data.dtype.itemsize}')
++
+         raw_fill_values = [
+             pop_to(attrs, encoding, attr, name=name)
+             for attr in ("missing_value", "_FillValue")
+diff --git a/xarray/tests/test_coding.py b/xarray/tests/test_coding.py
+index e0df7782..a228ab3d 100644
+--- a/xarray/tests/test_coding.py
++++ b/xarray/tests/test_coding.py
+@@ -21,6 +21,20 @@ def test_CFMaskCoder_decode():
+     encoded = coder.decode(original)
+     assert_identical(expected, encoded)
+ 
++def test_CFMaskCoder_decode_unsigned():
++    original = xr.Variable(("x",), np.array([0, 255, 1], dtype="u1"), {"_Unsigned": "false"})
++    expected = xr.Variable(("x",), [-128, 127, -127])
++    coder = variables.CFMaskCoder()
++    encoded = coder.decode(original)
++    assert_identical(expected, encoded)
++
++    # Test with _Unsigned=true (should not change the data)
++    original_true = xr.Variable(("x",), np.array([0, 255, 1], dtype="u1"), {"_Unsigned": "true"})
++    expected_true = xr.Variable(("x",), [0, 255, 1])
++    encoded_true = coder.decode(original_true)
++    assert_identical(expected_true, encoded_true)
++
++
+ 
+ encoding_with_dtype = {
+     "dtype": np.dtype("float64"),
+2024-09-09 12:37:53,134 - INFO - Eval script for pydata__xarray-4966 written to logs/run_evaluation/langgraph_agent_1725865287N/composio/pydata__xarray-4966/eval.sh; copying to container...
+2024-09-09 12:38:28,176 - INFO - Test runtime: 34.89 seconds
+2024-09-09 12:38:28,176 - INFO - Test output for pydata__xarray-4966 written to logs/run_evaluation/langgraph_agent_1725865287N/composio/pydata__xarray-4966/test_output.txt
+2024-09-09 12:38:28,263 - INFO - Git diff after:
+diff --git a/doc/whats-new.rst b/doc/whats-new.rst
+index 9e59fdc5..3c0b840b 100644
+--- a/doc/whats-new.rst
++++ b/doc/whats-new.rst
+@@ -35,6 +35,16 @@ Deprecations
+ 
+ 
+ Bug fixes
++Bug fixes
++~~~~~~~~~
++- Don't allow passing ``axis`` to :py:meth:`Dataset.reduce` methods (:issue:`3510`, :pull:`4940`).
++  By `Justus Magin <https://github.com/keewis>`_.
++- Handle _Unsigned attribute for unsigned integer data types in CFMaskCoder (:issue:`XXXX`, :pull:`YYYY`).
++  This fixes the handling of signed bytes from OPeNDAP via pydap.
++  By `Your Name <https://github.com/your-username>`_.
++
++Documentation
++~~~~~~~~~~~~~
+ ~~~~~~~~~
+ - Don't allow passing ``axis`` to :py:meth:`Dataset.reduce` methods (:issue:`3510`, :pull:`4940`).
+   By `Justus Magin <https://github.com/keewis>`_.
+diff --git a/xarray/coding/variables.py b/xarray/coding/variables.py
+index b035ff82..2f738cd7 100644
+--- a/xarray/coding/variables.py
++++ b/xarray/coding/variables.py
+@@ -178,8 +178,42 @@ class CFMaskCoder(VariableCoder):
+         return Variable(dims, data, attrs, encoding)
+ 
+     def decode(self, variable, name=None):
++        """
++        Decode a variable by applying CF mask coding.
++
++        This method handles the following cases:
++        1. Decoding fill values (missing_value and _FillValue attributes)
++        2. Handling the _Unsigned attribute for unsigned integer data types
++
++        Parameters
++        ----------
++        variable : Variable
++            The variable to be decoded
++        name : str, optional
++            Name of the variable
++
++        Returns
++        -------
++        Variable
++            The decoded variable
++
++        Notes
++        -----
++        When the _Unsigned attribute is present and set to "false" for unsigned
++        integer data types, the data is converted to the corresponding signed
++        integer type. This is to handle the case where signed bytes are stored
++        as unsigned bytes in formats like OPeNDAP.
++        """
+         dims, data, attrs, encoding = unpack_for_decoding(variable)
+ 
++        # Handle _Unsigned attribute
++        unsigned = pop_to(attrs, encoding, '_Unsigned')
++        if unsigned is not None:
++            unsigned = unsigned.lower() == 'true'
++            if not unsigned and data.dtype.kind == 'u':
++                # Convert unsigned to signed
++                data = data.astype(f'i{data.dtype.itemsize}')
++
+         raw_fill_values = [
+             pop_to(attrs, encoding, attr, name=name)
+             for attr in ("missing_value", "_FillValue")
+2024-09-09 12:38:28,263 - INFO - Git diff changed after running eval script
+2024-09-09 12:38:28,263 - INFO - Grading answer for pydata__xarray-4966...
+2024-09-09 12:38:28,270 - INFO - report: {'pydata__xarray-4966': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': False, 'tests_status': {'FAIL_TO_PASS': {'success': [], 'failure': ['xarray/tests/test_coding.py::test_decode_signed_from_unsigned[1]', 'xarray/tests/test_coding.py::test_decode_signed_from_unsigned[2]', 'xarray/tests/test_coding.py::test_decode_signed_from_unsigned[4]', 'xarray/tests/test_coding.py::test_decode_signed_from_unsigned[8]']}, 'PASS_TO_PASS': {'success': ['xarray/tests/test_coding.py::test_CFMaskCoder_decode', 'xarray/tests/test_coding.py::test_CFMaskCoder_encode_missing_fill_values_conflict[numeric-with-dtype]', 'xarray/tests/test_coding.py::test_CFMaskCoder_encode_missing_fill_values_conflict[numeric-without-dtype]', 'xarray/tests/test_coding.py::test_CFMaskCoder_encode_missing_fill_values_conflict[times-with-dtype]', 'xarray/tests/test_coding.py::test_CFMaskCoder_missing_value', 'xarray/tests/test_coding.py::test_CFMaskCoder_decode_dask', 'xarray/tests/test_coding.py::test_coder_roundtrip', 'xarray/tests/test_coding.py::test_scaling_converts_to_float32[u1]', 'xarray/tests/test_coding.py::test_scaling_converts_to_float32[u2]', 'xarray/tests/test_coding.py::test_scaling_converts_to_float32[i1]', 'xarray/tests/test_coding.py::test_scaling_converts_to_float32[i2]', 'xarray/tests/test_coding.py::test_scaling_converts_to_float32[f2]', 'xarray/tests/test_coding.py::test_scaling_converts_to_float32[f4]', 'xarray/tests/test_coding.py::test_scaling_offset_as_list[0.1-10]', 'xarray/tests/test_coding.py::test_scaling_offset_as_list[0.1-scale_factor1]', 'xarray/tests/test_coding.py::test_scaling_offset_as_list[add_offset1-10]', 'xarray/tests/test_coding.py::test_scaling_offset_as_list[add_offset1-scale_factor1]', 'xarray/tests/test_coding.py::test_decode_unsigned_from_signed[1]', 'xarray/tests/test_coding.py::test_decode_unsigned_from_signed[2]', 'xarray/tests/test_coding.py::test_decode_unsigned_from_signed[4]', 'xarray/tests/test_coding.py::test_decode_unsigned_from_signed[8]'], 'failure': []}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for pydata__xarray-4966: resolved: False
+2024-09-09 12:38:28,271 - INFO - Attempting to stop container sweb.eval.pydata__xarray-4966.langgraph_agent_1725865287N...
+2024-09-09 12:38:43,495 - INFO - Attempting to remove container sweb.eval.pydata__xarray-4966.langgraph_agent_1725865287N...
+2024-09-09 12:38:43,511 - INFO - Container sweb.eval.pydata__xarray-4966.langgraph_agent_1725865287N removed.
+2024-09-09 12:38:43,511 - INFO - Attempting to remove image sweb.eval.x86_64.pydata__xarray-4966:latest...
+2024-09-09 12:38:43,566 - INFO - Image sweb.eval.x86_64.pydata__xarray-4966:latest removed.

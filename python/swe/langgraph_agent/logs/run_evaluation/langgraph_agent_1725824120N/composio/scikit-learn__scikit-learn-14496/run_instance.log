@@ -1,0 +1,23 @@
+2024-09-09 07:47:46,913 - INFO - Environment image sweb.env.x86_64.aa92880033da20ca313928:latest found for scikit-learn__scikit-learn-14496
+Building instance image sweb.eval.x86_64.scikit-learn__scikit-learn-14496:latest for scikit-learn__scikit-learn-14496
+2024-09-09 07:49:12,753 - INFO - Traceback (most recent call last):
+  File "/Users/shrey/.local/share/virtualenvs/python-PN9waRBr/lib/python3.10/site-packages/swebench/harness/docker_build.py", line 142, in build_image
+    raise docker.errors.BuildError(
+docker.errors.BuildError: The command '/bin/sh -c /bin/bash /root/setup_repo.sh' returned a non-zero code: 128
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/shrey/.local/share/virtualenvs/python-PN9waRBr/lib/python3.10/site-packages/swebench/harness/run_evaluation.py", line 105, in run_instance
+    container = build_container(test_spec, client, run_id, logger, rm_image, force_rebuild)
+  File "/Users/shrey/.local/share/virtualenvs/python-PN9waRBr/lib/python3.10/site-packages/swebench/harness/docker_build.py", line 505, in build_container
+    build_instance_image(test_spec, client, logger, nocache)
+  File "/Users/shrey/.local/share/virtualenvs/python-PN9waRBr/lib/python3.10/site-packages/swebench/harness/docker_build.py", line 465, in build_instance_image
+    build_image(
+  File "/Users/shrey/.local/share/virtualenvs/python-PN9waRBr/lib/python3.10/site-packages/swebench/harness/docker_build.py", line 148, in build_image
+    raise BuildImageError(image_name, str(e), logger) from e
+swebench.harness.docker_build.BuildImageError: Error building image sweb.eval.x86_64.scikit-learn__scikit-learn-14496:latest: The command '/bin/sh -c /bin/bash /root/setup_repo.sh' returned a non-zero code: 128
+Check (logs/build_images/instances/sweb.eval.x86_64.scikit-learn__scikit-learn-14496__latest/build_image.log) for more information.
+
+2024-09-09 07:49:12,754 - INFO - Attempting to remove image sweb.eval.x86_64.scikit-learn__scikit-learn-14496:latest...
+2024-09-09 07:49:12,760 - INFO - Image sweb.eval.x86_64.scikit-learn__scikit-learn-14496:latest not found, removing has no effect.
