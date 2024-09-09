@@ -64,7 +64,7 @@ export class Composio {
             const latestVersion = response.data.version;
 
             if (latestVersion !== currentVersionFromPackageJson) {
-                console.warn(`ℹ️ A new version of composio-core is available. Current version: ${currentVersionFromPackageJson}, Latest version: ${latestVersion}`);
+                console.warn(`🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`);
             }
         } catch (error) {
             // Ignore and do nothing
