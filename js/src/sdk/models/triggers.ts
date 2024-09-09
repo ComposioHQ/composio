@@ -26,7 +26,7 @@ export class Triggers {
      * @throws {ApiError} If the request fails.
      */
     //@ts-ignore
-    list(data?: RequiredQuery={} ): Promise<TriggersControllerListTriggersResponse> {
+    list(data: RequiredQuery={} ): Promise<TriggersControllerListTriggersResponse> {
         //@ts-ignore
         return apiClient.triggers.listTriggers({
             query: {
