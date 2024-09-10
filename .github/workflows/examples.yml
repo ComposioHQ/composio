@@ -78,7 +78,7 @@ jobs:
 
           CI=false COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} PLUGIN_TO_TEST=${{matrix.package}} pytest -vv tests/test_example.py
       - name: Slack Notification on Failure
-        if: ${{ failure() && !contains(github.event.pull_request.title, 'release') && !contains(github.event.pull_request.title, 'Release') }}
+        if: ${{ failure() && !contains(github.event.head_commit.message, 'release') && !contains(github.event.head_commit.message, 'Release') }}
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_TECH_WEBHOOK }}
