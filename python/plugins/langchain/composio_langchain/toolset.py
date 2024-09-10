@@ -1,4 +1,3 @@
-import functools
 import types
 import typing as t
 from inspect import Signature
