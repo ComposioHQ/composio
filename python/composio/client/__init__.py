@@ -147,8 +147,10 @@ class Composio(BaseClient):
             },
             timeout=60,
         )
-        if response.status_code != 200:
+        if response.status_code in (401, 403):
             raise ComposioClientError("API Key is not valid!")
+        elif response.status_code != 200:
+            raise ComposioClientError(f"Unexpected error: HTTP {response.status_code}")
 
         _valid_keys.add(key)
         return key
