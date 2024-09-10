@@ -680,9 +680,10 @@ class ComposioToolSet(WithLogger):
                     "format": "file-path",
                     "description": f"File path to {param_details.get('description', '')}",
                 }
-            elif param_details.get("allOf", [{}])[0].get(
-                "properties"
-            ) == FileType.schema().get("properties"):
+            elif param_details.get("allOf", [{}])[0].get("title") == "FileType" and all(
+                fprop in param_details.get("allOf", [{}])[0].get("properties", {})
+                for fprop in ("name", "content")
+            ):
                 action_item.parameters.properties[param_name].pop("allOf")
                 action_item.parameters.properties[param_name].update(
                     {

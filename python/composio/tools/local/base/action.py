@@ -130,12 +130,6 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
                     },
                 ]
                 del details["type"]  # Remove original type to avoid conflict in oneOf
-            if _check_file_uploadable(details):
-                details["type"] = "string"
-                details["format"] = "file-path"
-                details[
-                    "description"
-                ] = f"File path to {details.get('description', '')}"
         request_schema_json["properties"] = modified_properties
         action_schema = {
             "appKey": self._tool_name,
