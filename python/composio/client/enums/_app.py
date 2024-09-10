@@ -65,6 +65,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     PERPLEXITYAI: "App"
     PIPEDRIVE: "App"
     RAGTOOL: "App"
+    SALESFORCE: "App"
     SCHEDULER: "App"
     SERPAPI: "App"
     SHELLTOOL: "App"
