@@ -84,7 +84,7 @@ def process_message(event: TriggerEventData, is_new_message: bool) -> None:
         is_new_message (bool): Whether this is a new message or part of a thread.
     """
     # Extract message details from the event payload
-    print("Recieved new messsage")
+    print("Received new message")
     payload = event.payload
     user_id = payload.get("user", "")
 

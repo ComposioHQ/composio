@@ -278,7 +278,7 @@ class RemoteWorkspace(Workspace):
             return
 
         self.logger.debug(
-            f"Succesfully uploaded: {action.slug} - {response}",
+            f"Successfully uploaded: {action.slug} - {response}",
         )
         return
 

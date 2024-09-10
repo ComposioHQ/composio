@@ -37,7 +37,7 @@ class AddDependencyRequest(BaseModel):
     depedency_of: str = Field(
         default=None,
         alias="depedency_of",
-        description="Depedency Of",
+        description="Dependency Of",
     )
 
 

@@ -19,7 +19,7 @@ def test_get_web_url() -> None:
     ), pytest.raises(
         ValueError,
         match=(
-            "Incorrect format for base_url: http://url. Format should be on of follwing {https://backend.composio.dev/api, https://staging-backend.composio.dev/api, http://localhost:9900/api}"
+            "Incorrect format for base_url: http://url. Format should be on of following {https://backend.composio.dev/api, https://staging-backend.composio.dev/api, http://localhost:9900/api}"
         ),
     ):
         get_web_url("/url")

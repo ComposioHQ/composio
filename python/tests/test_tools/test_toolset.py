@@ -43,7 +43,7 @@ def test_find_actions_by_tags() -> None:
 
 
 def test_uninitialize_app() -> None:
-    """Test if the usage of an app without connected account raises erorr or not."""
+    """Test if the usage of an app without connected account raises error or not."""
     with pytest.raises(
         ComposioSDKError,
         match=(
