@@ -669,7 +669,10 @@ class ComposioToolSet(WithLogger):
     def _process_schema(self, action_item: ActionModel) -> ActionModel:
         required_params = action_item.parameters.required or []
         for param_name, param_details in action_item.parameters.properties.items():
-            if param_details.get("properties") == FileType.schema().get("properties"):
+            if param_details.get("title") == "FileType" and all(
+                fprop in param_details.get("properties")
+                for fprop in ("name", "content")
+            ):
                 action_item.parameters.properties[param_name].pop("properties")
                 action_item.parameters.properties[param_name] = {
                     "default": param_details.get("default"),
@@ -677,9 +680,10 @@ class ComposioToolSet(WithLogger):
                     "format": "file-path",
                     "description": f"File path to {param_details.get('description', '')}",
                 }
-            elif param_details.get("allOf", [{}])[0].get(
-                "properties"
-            ) == FileType.schema().get("properties"):
+            elif param_details.get("allOf", [{}])[0].get("title") == "FileType" and all(
+                fprop in param_details.get("allOf", [{}])[0].get("properties", {})
+                for fprop in ("name", "content")
+            ):
                 action_item.parameters.properties[param_name].pop("allOf")
                 action_item.parameters.properties[param_name].update(
                     {
