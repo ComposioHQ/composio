@@ -1,8 +1,12 @@
-import pydantic
-import pydantic.v1.error_wrappers
 import typing as t
 
-def parse_pydantic_error(e: t.Union[pydantic.ValidationError, pydantic.v1.error_wrappers.ValidationError]) -> str:
+import pydantic
+import pydantic.v1.error_wrappers
+
+
+def parse_pydantic_error(
+    e: t.Union[pydantic.ValidationError, pydantic.v1.error_wrappers.ValidationError]
+) -> str:
     """Parse pydantic validation error."""
     message = "Invalid request data provided"
     missing = []

@@ -7,7 +7,6 @@ import typing as t
 from abc import abstractmethod
 from pathlib import Path
 
-from composio.utils.pydantic import parse_pydantic_error
 import inflection
 import jsonref
 import pydantic
@@ -16,6 +15,7 @@ from pydantic import BaseModel, Field
 from composio.client.enums import Action as ActionEnum
 from composio.exceptions import ComposioSDKError
 from composio.utils.logging import WithLogger
+from composio.utils.pydantic import parse_pydantic_error
 
 
 GroupID = t.Literal["runtime", "local", "api"]

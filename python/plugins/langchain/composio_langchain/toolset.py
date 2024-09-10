@@ -3,7 +3,6 @@ import types
 import typing as t
 from inspect import Signature
 
-from composio.utils.pydantic import parse_pydantic_error
 import pydantic
 import pydantic.error_wrappers
 import pydantic.v1.error_wrappers
@@ -12,16 +11,21 @@ from langchain_core.tools import StructuredTool as BaseStructuredTool
 
 from composio import Action, ActionType, AppType, TagType
 from composio.tools import ComposioToolSet as BaseComposioToolSet
+from composio.utils.pydantic import parse_pydantic_error
 from composio.utils.shared import (
     get_signature_format_from_schema_params,
     json_schema_to_model,
 )
 
+
 class StructuredTool(BaseStructuredTool):
     def run(self, *args, **kwargs):
         try:
             return super().run(*args, **kwargs)
-        except (pydantic.ValidationError, pydantic.v1.error_wrappers.ValidationError) as e:
+        except (
+            pydantic.ValidationError,
+            pydantic.v1.error_wrappers.ValidationError,
+        ) as e:
             return {"successful": False, "error": parse_pydantic_error(e), "data": None}
 
 
@@ -120,14 +124,14 @@ class ComposioToolSet(
         parameters = json_schema_to_model(
             json_schema=schema_params,
         )
-        tool =  StructuredTool.from_function(
+        tool = StructuredTool.from_function(
             name=action,
             description=description,
             args_schema=parameters,
             return_schema=True,
             func=action_func,
         )
-        return tool # type: ignore
+        return tool  # type: ignore
 
     @te.deprecated("Use `ComposioToolSet.get_tools` instead")
     def get_actions(
