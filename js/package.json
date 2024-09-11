@@ -12,6 +12,9 @@
     "type-docs": "typedoc",
     "openapispec:generate": "npx @hey-api/openapi-ts"
   },
+  "bin": {
+    "composio": "./lib/src/cli/index.js"
+  },
   "keywords": [],
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",
   "license": "ISC",
