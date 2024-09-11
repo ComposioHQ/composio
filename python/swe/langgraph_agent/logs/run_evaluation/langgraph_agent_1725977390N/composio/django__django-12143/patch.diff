@@ -1,0 +1,50 @@
+diff --git a/django/contrib/admin/options.py b/django/contrib/admin/options.py
+index 137e6faa..fbf795dc 100644
+--- a/django/contrib/admin/options.py
++++ b/django/contrib/admin/options.py
+@@ -1631,7 +1631,8 @@ class ModelAdmin(BaseModelAdmin):
+ 
+     def _get_edited_object_pks(self, request, prefix):
+         """Return POST data values of list_editable primary keys."""
+-        pk_pattern = re.compile(r'{}-\d+-{}$'.format(prefix, self.model._meta.pk.name))
++        # Use re.escape() to handle special regex characters in prefix and pk name
++        pk_pattern = re.compile(r'{}-\d+-{}$'.format(re.escape(prefix), re.escape(self.model._meta.pk.name)))
+         return [value for key, value in request.POST.items() if pk_pattern.match(key)]
+ 
+     def _get_list_editable_queryset(self, request, prefix):
+diff --git a/docs/ref/contrib/admin/index.txt b/docs/ref/contrib/admin/index.txt
+index 75d82454..e5ae62ec 100644
+--- a/docs/ref/contrib/admin/index.txt
++++ b/docs/ref/contrib/admin/index.txt
+@@ -76,6 +76,14 @@ Other topics
+ 
+     Having problems?  Try :doc:`/faq/admin`.
+ 
++.. note::
++   When using custom formset prefixes in the admin interface, be aware that
++   special regex characters in the prefix are now properly escaped. This
++   prevents potential data loss issues when using prefixes containing
++   characters like '.', '*', '+', etc.
++
++``ModelAdmin`` objects
++
+ ``ModelAdmin`` objects
+ ======================
+ 
+diff --git a/docs/releases/3.1.txt b/docs/releases/3.1.txt
+index b7c98066..2781b09f 100644
+--- a/docs/releases/3.1.txt
++++ b/docs/releases/3.1.txt
+@@ -33,7 +33,11 @@ Minor features
+ :mod:`django.contrib.admin`
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
+-* ...
++* Special regex characters in formset prefixes are now properly escaped in the
++  admin interface. This prevents potential data loss issues when using prefixes
++  containing characters like '.', '*', '+', etc.
++
++*
+ 
+ :mod:`django.contrib.admindocs`
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

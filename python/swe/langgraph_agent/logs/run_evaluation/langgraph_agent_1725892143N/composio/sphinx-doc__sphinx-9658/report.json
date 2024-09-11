@@ -1,0 +1,53 @@
+{
+    "sphinx-doc__sphinx-9658": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "tests/test_util_typing.py::test_restify_mock"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "tests/test_util_typing.py::test_restify",
+                    "tests/test_util_typing.py::test_restify_type_hints_containers",
+                    "tests/test_util_typing.py::test_restify_type_hints_Callable",
+                    "tests/test_util_typing.py::test_restify_type_hints_Union",
+                    "tests/test_util_typing.py::test_restify_type_hints_typevars",
+                    "tests/test_util_typing.py::test_restify_type_hints_custom_class",
+                    "tests/test_util_typing.py::test_restify_type_hints_alias",
+                    "tests/test_util_typing.py::test_restify_type_ForwardRef",
+                    "tests/test_util_typing.py::test_restify_type_Literal",
+                    "tests/test_util_typing.py::test_restify_pep_585",
+                    "tests/test_util_typing.py::test_restify_broken_type_hints",
+                    "tests/test_util_typing.py::test_stringify",
+                    "tests/test_util_typing.py::test_stringify_type_hints_containers",
+                    "tests/test_util_typing.py::test_stringify_type_hints_pep_585",
+                    "tests/test_util_typing.py::test_stringify_Annotated",
+                    "tests/test_util_typing.py::test_stringify_type_hints_string",
+                    "tests/test_util_typing.py::test_stringify_type_hints_Callable",
+                    "tests/test_util_typing.py::test_stringify_type_hints_Union",
+                    "tests/test_util_typing.py::test_stringify_type_hints_typevars",
+                    "tests/test_util_typing.py::test_stringify_type_hints_custom_class",
+                    "tests/test_util_typing.py::test_stringify_type_hints_alias",
+                    "tests/test_util_typing.py::test_stringify_type_Literal",
+                    "tests/test_util_typing.py::test_stringify_broken_type_hints",
+                    "tests/test_util_typing.py::test_stringify_mock"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

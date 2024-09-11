@@ -1,0 +1,79 @@
+diff --git a/django/db/models/sql/query.py b/django/db/models/sql/query.py
+index 4648daf3..6a6864ca 100644
+--- a/django/db/models/sql/query.py
++++ b/django/db/models/sql/query.py
+@@ -1074,6 +1074,14 @@ class Query(BaseExpression):
+             value = value.resolve_expression(
+                 self, reuse=can_reuse, allow_joins=allow_joins,
+             )
++        elif isinstance(value, tuple) and hasattr(value, '_fields'):  # Check if it's a named tuple
++            tuple_type = type(value)
++            value = tuple(value)  # Convert to regular tuple for processing
++            resolved_value = tuple(
++                self.resolve_lookup_value(sub_value, can_reuse, allow_joins)
++                for sub_value in value
++            )
++            return tuple_type(*resolved_value)  # Reconstruct the named tuple
+         elif isinstance(value, (list, tuple)):
+             # The items of the iterable may be expressions and therefore need
+             # to be resolved independently.
+diff --git a/tests/queries/test_query.py b/tests/queries/test_query.py
+index 523fa607..34d2369a 100644
+--- a/tests/queries/test_query.py
++++ b/tests/queries/test_query.py
+@@ -1,3 +1,55 @@
++from collections import namedtuple
++from datetime import date
++
++from django.db import models
++from django.test import TestCase
++
++from .models import Article
++
++class NamedTupleRangeTests(TestCase):
++    @classmethod
++    def setUpTestData(cls):
++        Article.objects.bulk_create([
++            Article(headline='Article 1', pub_date=date(2023, 1, 1)),
++            Article(headline='Article 2', pub_date=date(2023, 6, 15)),
++            Article(headline='Article 3', pub_date=date(2023, 12, 31)),
++        ])
++
++    def test_named_tuple_range_filter(self):
++        Range = namedtuple('Range', ['start', 'end'])
++        range_value = Range(start=date(2023, 1, 1), end=date(2023, 12, 31))
++        result = Article.objects.filter(pub_date__range=range_value)
++        self.assertEqual(result.count(), 3)
++
++    def test_custom_named_tuple_range_filter(self):
++        CustomRange = namedtuple('CustomRange', ['lower', 'upper'])
++        custom_range = CustomRange(lower=date(2023, 2, 1), upper=date(2023, 11, 30))
++        result = Article.objects.filter(pub_date__range=custom_range)
++        self.assertEqual(result.count(), 1)
++        self.assertEqual(result.first().headline, 'Article 2')
++
++    def test_regular_tuple_range_filter(self):
++        result = Article.objects.filter(pub_date__range=(date(2023, 1, 1), date(2023, 12, 31)))
++        self.assertEqual(result.count(), 3)
++
++    def test_list_range_filter(self):
++        result = Article.objects.filter(pub_date__range=[date(2023, 1, 1), date(2023, 12, 31)])
++        self.assertEqual(result.count(), 3)
++
++    def test_named_tuple_extra_fields(self):
++        ExtendedRange = namedtuple('ExtendedRange', ['start', 'end', 'step'])
++        extended_range = ExtendedRange(start=date(2023, 1, 1), end=date(2023, 12, 31), step=30)
++        result = Article.objects.filter(pub_date__range=extended_range)
++        self.assertEqual(result.count(), 3)
++
++    def test_multiple_named_tuple_ranges(self):
++        DateRange = namedtuple('DateRange', ['start', 'end'])
++        date_range = DateRange(start=date(2023, 1, 1), end=date(2023, 12, 31))
++        result = Article.objects.filter(
++            pub_date__range=date_range,
++            id__range=(1, 3)
++        )
++        self.assertEqual(result.count(), 3)
+ from datetime import datetime
+ 
+ from django.core.exceptions import FieldError

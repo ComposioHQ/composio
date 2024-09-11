@@ -1,0 +1,53 @@
+2024-09-10 17:18:42,624 - INFO - Environment image sweb.env.arm64.297af196949a2a635bce66:latest found for django__django-14373
+Building instance image sweb.eval.arm64.django__django-14373:latest for django__django-14373
+2024-09-10 17:19:11,578 - INFO - Creating container for django__django-14373...
+2024-09-10 17:19:11,619 - INFO - Container for django__django-14373 created: 8a70b7157c30bb61c8d8e50553c5e42ee79970a3014834d24ae4fb0e56cf97d6
+2024-09-10 17:19:11,925 - INFO - Container for django__django-14373 started: 8a70b7157c30bb61c8d8e50553c5e42ee79970a3014834d24ae4fb0e56cf97d6
+2024-09-10 17:19:11,926 - INFO - Intermediate patch for django__django-14373 written to logs/run_evaluation/langgraph_agent_1725968500N/composio/django__django-14373/patch.diff, now applying to container...
+2024-09-10 17:19:12,189 - INFO - Failed to apply patch to container, trying again...
+2024-09-10 17:19:12,221 - INFO - >>>>> Applied Patch:
+patching file django/utils/dateformat.py
+
+2024-09-10 17:19:13,414 - INFO - Git diff before:
+diff --git a/django/utils/dateformat.py b/django/utils/dateformat.py
+index 38e89c47bb..65e5755034 100644
+--- a/django/utils/dateformat.py
++++ b/django/utils/dateformat.py
+@@ -313,8 +313,8 @@ class DateFormat(TimeFormat):
+         return '%02d' % (self.data.year % 100)
+ 
+     def Y(self):
+-        "Year, 4 digits; e.g. '1999'"
+-        return self.data.year
++        "Year, 4 digits; e.g. '1999', '0001'"
++        return f'{self.data.year:04d}'
+ 
+     def z(self):
+         """Day of the year, i.e. 1 to 366."""
+2024-09-10 17:19:13,415 - INFO - Eval script for django__django-14373 written to logs/run_evaluation/langgraph_agent_1725968500N/composio/django__django-14373/eval.sh; copying to container...
+2024-09-10 17:19:16,844 - INFO - Test runtime: 3.27 seconds
+2024-09-10 17:19:16,844 - INFO - Test output for django__django-14373 written to logs/run_evaluation/langgraph_agent_1725968500N/composio/django__django-14373/test_output.txt
+2024-09-10 17:19:16,889 - INFO - Git diff after:
+diff --git a/django/utils/dateformat.py b/django/utils/dateformat.py
+index 38e89c47bb..65e5755034 100644
+--- a/django/utils/dateformat.py
++++ b/django/utils/dateformat.py
+@@ -313,8 +313,8 @@ class DateFormat(TimeFormat):
+         return '%02d' % (self.data.year % 100)
+ 
+     def Y(self):
+-        "Year, 4 digits; e.g. '1999'"
+-        return self.data.year
++        "Year, 4 digits; e.g. '1999', '0001'"
++        return f'{self.data.year:04d}'
+ 
+     def z(self):
+         """Day of the year, i.e. 1 to 366."""
+2024-09-10 17:19:16,889 - INFO - Grading answer for django__django-14373...
+2024-09-10 17:19:16,894 - INFO - report: {'django__django-14373': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': True, 'tests_status': {'FAIL_TO_PASS': {'success': ['test_Y_format_year_before_1000 (utils_tests.test_dateformat.DateFormatTests)'], 'failure': []}, 'PASS_TO_PASS': {'success': ['test_am_pm (utils_tests.test_dateformat.DateFormatTests)', 'test_date (utils_tests.test_dateformat.DateFormatTests)', 'test_date_formats (utils_tests.test_dateformat.DateFormatTests)', 'test_dateformat (utils_tests.test_dateformat.DateFormatTests)', 'test_datetime_with_local_tzinfo (utils_tests.test_dateformat.DateFormatTests)', 'test_datetime_with_tzinfo (utils_tests.test_dateformat.DateFormatTests)', 'test_day_of_year_leap (utils_tests.test_dateformat.DateFormatTests)', 'test_empty_format (utils_tests.test_dateformat.DateFormatTests)', 'test_epoch (utils_tests.test_dateformat.DateFormatTests)', 'test_futuredates (utils_tests.test_dateformat.DateFormatTests)', 'test_invalid_time_format_specifiers (utils_tests.test_dateformat.DateFormatTests)', 'test_microsecond (utils_tests.test_dateformat.DateFormatTests)', 'test_naive_ambiguous_datetime (utils_tests.test_dateformat.DateFormatTests)', 'test_naive_datetime (utils_tests.test_dateformat.DateFormatTests)', 'test_r_format_with_non_en_locale (utils_tests.test_dateformat.DateFormatTests)', 'test_time_formats (utils_tests.test_dateformat.DateFormatTests)', 'test_timezones (utils_tests.test_dateformat.DateFormatTests)', 'test_twelve_hour_format (utils_tests.test_dateformat.DateFormatTests)', 'test_y_format_year_before_1000 (utils_tests.test_dateformat.DateFormatTests)'], 'failure': []}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for django__django-14373: resolved: True
+2024-09-10 17:19:16,895 - INFO - Attempting to stop container sweb.eval.django__django-14373.langgraph_agent_1725968500N...
+2024-09-10 17:19:32,178 - INFO - Attempting to remove container sweb.eval.django__django-14373.langgraph_agent_1725968500N...
+2024-09-10 17:19:32,196 - INFO - Container sweb.eval.django__django-14373.langgraph_agent_1725968500N removed.
+2024-09-10 17:19:32,196 - INFO - Attempting to remove image sweb.eval.arm64.django__django-14373:latest...
+2024-09-10 17:19:32,199 - INFO - Image sweb.eval.arm64.django__django-14373:latest not found, removing has no effect.

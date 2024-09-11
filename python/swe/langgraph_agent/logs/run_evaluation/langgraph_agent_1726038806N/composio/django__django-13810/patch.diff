@@ -1,0 +1,72 @@
+diff --git a/django/core/handlers/base.py b/django/core/handlers/base.py
+index 8e8c3da0..c3dda266 100644
+--- a/django/core/handlers/base.py
++++ b/django/core/handlers/base.py
+@@ -51,11 +51,34 @@ class BaseHandler:
+                 middleware_is_async = middleware_can_async
+             try:
+                 # Adapt handler, if needed.
+-                handler = self.adapt_method_mode(
++                adapted_handler = self.adapt_method_mode(
+                     middleware_is_async, handler, handler_is_async,
+                     debug=settings.DEBUG, name='middleware %s' % middleware_path,
+                 )
+-                mw_instance = middleware(handler)
++                mw_instance = middleware(adapted_handler)
++                if mw_instance is None:
++                    raise ImproperlyConfigured(
++                        'Middleware factory %s returned None.' % middleware_path
++                    )
++
++                if hasattr(mw_instance, 'process_view'):
++                    self._view_middleware.insert(
++                        0,
++                        self.adapt_method_mode(is_async, mw_instance.process_view),
++                    )
++                if hasattr(mw_instance, 'process_template_response'):
++                    self._template_response_middleware.append(
++                        self.adapt_method_mode(is_async, mw_instance.process_template_response),
++                    )
++                if hasattr(mw_instance, 'process_exception'):
++                    # The exception-handling stack is still always synchronous for
++                    # now, so adapt that way.
++                    self._exception_middleware.append(
++                        self.adapt_method_mode(False, mw_instance.process_exception),
++                    )
++
++                handler = convert_exception_to_response(mw_instance)
++                handler_is_async = middleware_is_async
+             except MiddlewareNotUsed as exc:
+                 if settings.DEBUG:
+                     if str(exc):
+@@ -64,30 +87,6 @@ class BaseHandler:
+                         logger.debug('MiddlewareNotUsed: %r', middleware_path)
+                 continue
+ 
+-            if mw_instance is None:
+-                raise ImproperlyConfigured(
+-                    'Middleware factory %s returned None.' % middleware_path
+-                )
+-
+-            if hasattr(mw_instance, 'process_view'):
+-                self._view_middleware.insert(
+-                    0,
+-                    self.adapt_method_mode(is_async, mw_instance.process_view),
+-                )
+-            if hasattr(mw_instance, 'process_template_response'):
+-                self._template_response_middleware.append(
+-                    self.adapt_method_mode(is_async, mw_instance.process_template_response),
+-                )
+-            if hasattr(mw_instance, 'process_exception'):
+-                # The exception-handling stack is still always synchronous for
+-                # now, so adapt that way.
+-                self._exception_middleware.append(
+-                    self.adapt_method_mode(False, mw_instance.process_exception),
+-                )
+-
+-            handler = convert_exception_to_response(mw_instance)
+-            handler_is_async = middleware_is_async
+-
+         # Adapt the top of the stack, if needed.
+         handler = self.adapt_method_mode(is_async, handler, handler_is_async)
+         # We only assign to this when initialization is complete as it is used

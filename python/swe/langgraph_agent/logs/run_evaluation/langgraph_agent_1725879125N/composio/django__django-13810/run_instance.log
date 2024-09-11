@@ -1,0 +1,79 @@
+2024-09-09 16:37:07,089 - INFO - Environment image sweb.env.arm64.e83e37f52c09532c62acfb:latest found for django__django-13810
+Building instance image sweb.eval.arm64.django__django-13810:latest for django__django-13810
+2024-09-09 16:37:33,547 - INFO - Creating container for django__django-13810...
+2024-09-09 16:37:33,581 - INFO - Container for django__django-13810 created: 129c2f12bf74dba5ceb44608cf2d044b83c555baba17120daba404a0f6dcb369
+2024-09-09 16:37:33,740 - INFO - Container for django__django-13810 started: 129c2f12bf74dba5ceb44608cf2d044b83c555baba17120daba404a0f6dcb369
+2024-09-09 16:37:33,740 - INFO - Intermediate patch for django__django-13810 written to logs/run_evaluation/langgraph_agent_1725879125N/composio/django__django-13810/patch.diff, now applying to container...
+2024-09-09 16:37:33,890 - INFO - Failed to apply patch to container, trying again...
+2024-09-09 16:37:33,921 - INFO - >>>>> Applied Patch:
+patching file django/core/handlers/base.py
+
+2024-09-09 16:37:34,679 - INFO - Git diff before:
+diff --git a/django/core/handlers/base.py b/django/core/handlers/base.py
+index 8e8c3da06a..52c4d34d40 100644
+--- a/django/core/handlers/base.py
++++ b/django/core/handlers/base.py
+@@ -49,6 +49,12 @@ class BaseHandler:
+                 middleware_is_async = False
+             else:
+                 middleware_is_async = middleware_can_async
++                if is_async and not middleware_can_async:
++                    logger.warning(
++                        'Middleware %s is sync-only but is being used in an ASGI application. '
++                        'You should either make the middleware async-capable or use it in a WSGI application instead.',
++                        middleware_path
++                    )
+             try:
+                 # Adapt handler, if needed.
+                 handler = self.adapt_method_mode(
+@@ -64,6 +70,10 @@ class BaseHandler:
+                         logger.debug('MiddlewareNotUsed: %r', middleware_path)
+                 continue
+ 
++            # Reset handler and handler_is_async when middleware is not used
++            handler = get_response
++            handler_is_async = is_async
++
+             if mw_instance is None:
+                 raise ImproperlyConfigured(
+                     'Middleware factory %s returned None.' % middleware_path
+2024-09-09 16:37:34,679 - INFO - Eval script for django__django-13810 written to logs/run_evaluation/langgraph_agent_1725879125N/composio/django__django-13810/eval.sh; copying to container...
+2024-09-09 16:37:37,500 - INFO - Test runtime: 2.76 seconds
+2024-09-09 16:37:37,501 - INFO - Test output for django__django-13810 written to logs/run_evaluation/langgraph_agent_1725879125N/composio/django__django-13810/test_output.txt
+2024-09-09 16:37:37,552 - INFO - Git diff after:
+diff --git a/django/core/handlers/base.py b/django/core/handlers/base.py
+index 8e8c3da06a..52c4d34d40 100644
+--- a/django/core/handlers/base.py
++++ b/django/core/handlers/base.py
+@@ -49,6 +49,12 @@ class BaseHandler:
+                 middleware_is_async = False
+             else:
+                 middleware_is_async = middleware_can_async
++                if is_async and not middleware_can_async:
++                    logger.warning(
++                        'Middleware %s is sync-only but is being used in an ASGI application. '
++                        'You should either make the middleware async-capable or use it in a WSGI application instead.',
++                        middleware_path
++                    )
+             try:
+                 # Adapt handler, if needed.
+                 handler = self.adapt_method_mode(
+@@ -64,6 +70,10 @@ class BaseHandler:
+                         logger.debug('MiddlewareNotUsed: %r', middleware_path)
+                 continue
+ 
++            # Reset handler and handler_is_async when middleware is not used
++            handler = get_response
++            handler_is_async = is_async
++
+             if mw_instance is None:
+                 raise ImproperlyConfigured(
+                     'Middleware factory %s returned None.' % middleware_path
+2024-09-09 16:37:37,552 - INFO - Grading answer for django__django-13810...
+2024-09-09 16:37:37,560 - INFO - report: {'django__django-13810': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': False, 'tests_status': {'FAIL_TO_PASS': {'success': [], 'failure': ['test_async_and_sync_middleware_chain_async_call (middleware_exceptions.tests.MiddlewareNotUsedTests)']}, 'PASS_TO_PASS': {'success': ['test_missing_root_urlconf (middleware_exceptions.tests.RootUrlconfTests)', 'test_do_not_log_when_debug_is_false (middleware_exceptions.tests.MiddlewareNotUsedTests)', 'test_log (middleware_exceptions.tests.MiddlewareNotUsedTests)', 'test_log_custom_message (middleware_exceptions.tests.MiddlewareNotUsedTests)', 'test_raise_exception (middleware_exceptions.tests.MiddlewareNotUsedTests)', 'test_exception_in_middleware_converted_before_prior_middleware (middleware_exceptions.tests.MiddlewareTests)', 'test_exception_in_render_passed_to_process_exception (middleware_exceptions.tests.MiddlewareTests)', 'test_process_template_response (middleware_exceptions.tests.MiddlewareTests)', 'test_process_template_response_returns_none (middleware_exceptions.tests.MiddlewareTests)', 'test_process_view_return_none (middleware_exceptions.tests.MiddlewareTests)', 'test_process_view_return_response (middleware_exceptions.tests.MiddlewareTests)', 'test_response_from_process_exception_short_circuits_remainder (middleware_exceptions.tests.MiddlewareTests)', 'test_response_from_process_exception_when_return_response (middleware_exceptions.tests.MiddlewareTests)', 'test_templateresponse_from_process_view_passed_to_process_template_response (middleware_exceptions.tests.MiddlewareTests)', 'test_templateresponse_from_process_view_rendered (middleware_exceptions.tests.MiddlewareTests)', 'test_view_exception_converted_before_middleware (middleware_exceptions.tests.MiddlewareTests)', 'test_view_exception_handled_by_process_exception (middleware_exceptions.tests.MiddlewareTests)', 'test_async_and_sync_middleware_async_call (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_async_and_sync_middleware_sync_call (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_async_middleware (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_async_middleware_async (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_not_sync_or_async_middleware (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_sync_decorated_middleware (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_sync_middleware (middleware_exceptions.tests.MiddlewareSyncAsyncTests)', 'test_exception_in_async_render_passed_to_process_exception (middleware_exceptions.tests.AsyncMiddlewareTests)', 'test_exception_in_render_passed_to_process_exception (middleware_exceptions.tests.AsyncMiddlewareTests)', 'test_process_template_response (middleware_exceptions.tests.AsyncMiddlewareTests)', 'test_process_template_response_returns_none (middleware_exceptions.tests.AsyncMiddlewareTests)', 'test_process_view_return_response (middleware_exceptions.tests.AsyncMiddlewareTests)'], 'failure': ['test_sync_middleware_async (middleware_exceptions.tests.MiddlewareSyncAsyncTests)']}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for django__django-13810: resolved: False
+2024-09-09 16:37:37,561 - INFO - Attempting to stop container sweb.eval.django__django-13810.langgraph_agent_1725879125N...
+2024-09-09 16:37:52,799 - INFO - Attempting to remove container sweb.eval.django__django-13810.langgraph_agent_1725879125N...
+2024-09-09 16:37:52,824 - INFO - Container sweb.eval.django__django-13810.langgraph_agent_1725879125N removed.
+2024-09-09 16:37:52,824 - INFO - Attempting to remove image sweb.eval.arm64.django__django-13810:latest...
+2024-09-09 16:37:52,827 - INFO - Image sweb.eval.arm64.django__django-13810:latest not found, removing has no effect.

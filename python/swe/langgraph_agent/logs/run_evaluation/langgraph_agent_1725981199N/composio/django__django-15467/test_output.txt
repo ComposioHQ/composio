@@ -1,0 +1,477 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/contrib/admin/options.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit e0442a628eb480eac6a7888aed5a86f83499e299
+Author: Dulalet <45894697+Dulalet@users.noreply.github.com>
+Date:   Sat Feb 26 23:07:56 2022 +0600
+
+    Fixed #33527 -- Removed unnecessary code in ModelAdmin._changeform_view().
+    
+    Co-authored-by: Daulet1 <d.abduali@thefactory.kz>
+
+diff --git a/django/contrib/admin/options.py b/django/contrib/admin/options.py
+index b1aa610d43..64be087bf1 100644
+--- a/django/contrib/admin/options.py
++++ b/django/contrib/admin/options.py
+@@ -1787,7 +1787,7 @@ class ModelAdmin(BaseModelAdmin):
+             form = ModelForm(request.POST, request.FILES, instance=obj)
+             formsets, inline_instances = self._create_formsets(
+                 request,
+-                form.instance if add else obj,
++                form.instance,
+                 change=not add,
+             )
+             form_validated = form.is_valid()
++ git diff e0442a628eb480eac6a7888aed5a86f83499e299
+diff --git a/django/contrib/admin/options.py b/django/contrib/admin/options.py
+index 64be087bf1..6d4f2865ab 100644
+--- a/django/contrib/admin/options.py
++++ b/django/contrib/admin/options.py
+@@ -269,7 +269,7 @@ class BaseModelAdmin(metaclass=forms.MediaDefiningClass):
+                         "class": get_ul_class(self.radio_fields[db_field.name]),
+                     }
+                 )
+-                kwargs["empty_label"] = _("None") if db_field.blank else None
++                kwargs["empty_label"] = (kwargs.get("empty_label") or _("None")) if db_field.blank else None
+ 
+         if "queryset" not in kwargs:
+             queryset = self.get_field_queryset(db, db_field, request)
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.4.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.1.dev20220226170756) (3.8.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.1.dev20220226170756) (0.5.1)
+Requirement already satisfied: typing-extensions>=4 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from asgiref>=3.4.1->Django==4.1.dev20220226170756) (4.12.2)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-4.1.dev20220226170756-0.editable-py3-none-any.whl size=26907 sha256=f458c196020ff1594e40f45a4c81b0113e7479fc687429fca230d048908be7e7
+  Stored in directory: /tmp/pip-ephem-wheel-cache-7edpi8r_/wheels/7d/66/67/70d1ee2124ccf21d601c352e25cdca10f611f7c8b3f9ffb9e4
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 4.1.dev20220226170756
+    Uninstalling Django-4.1.dev20220226170756:
+      Successfully uninstalled Django-4.1.dev20220226170756
+Successfully installed Django-4.1.dev20220226170756
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout e0442a628eb480eac6a7888aed5a86f83499e299 tests/admin_widgets/tests.py
+Updated 0 paths from ab7943a802
++ git apply -v -
+Checking patch tests/admin_widgets/tests.py...
+Applied patch tests/admin_widgets/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 admin_widgets.tests
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Testing against Django installed in '/testbed/django'
+Importing application admin_widgets
+Found 77 test(s).
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: admin_widgets, auth, contenttypes, messages, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table admin_widgets_member
+    Creating table admin_widgets_artist
+    Creating table admin_widgets_band
+    Creating table admin_widgets_unsafelimitchoicesto
+    Creating table admin_widgets_album
+    Creating table admin_widgets_releaseevent
+    Creating table admin_widgets_videostream
+    Creating table admin_widgets_inventory
+    Creating table admin_widgets_event
+    Creating table admin_widgets_car
+    Creating table admin_widgets_cartire
+    Creating table admin_widgets_honeycomb
+    Creating table admin_widgets_bee
+    Creating table admin_widgets_individual
+    Creating table admin_widgets_company
+    Creating table admin_widgets_advisor
+    Creating table admin_widgets_student
+    Creating table admin_widgets_school
+    Creating table admin_widgets_profile
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (1 silenced).
+test_readonly_fields (admin_widgets.tests.AdminFileWidgetTests)
+File widgets should render as a link when they're marked "read only." ... ok
+test_render (admin_widgets.tests.AdminFileWidgetTests) ... ok
+test_render_disabled (admin_widgets.tests.AdminFileWidgetTests) ... ok
+test_render_required (admin_widgets.tests.AdminFileWidgetTests) ... ok
+test_invalid_target_id (admin_widgets.tests.AdminForeignKeyRawIdWidget) ... ok
+test_label_and_url_for_value_invalid_uuid (admin_widgets.tests.AdminForeignKeyRawIdWidget) ... ok
+test_nonexistent_target_id (admin_widgets.tests.AdminForeignKeyRawIdWidget) ... ok
+test_url_params_from_lookup_dict_any_iterable (admin_widgets.tests.AdminForeignKeyRawIdWidget) ... ok
+test_url_params_from_lookup_dict_callable (admin_widgets.tests.AdminForeignKeyRawIdWidget) ... ok
+test_changelist_ForeignKey (admin_widgets.tests.AdminForeignKeyWidgetChangeList) ... ok
+test_filter_choices_by_request_user (admin_widgets.tests.AdminFormfieldForDBFieldWithRequestTests)
+Ensure the user can only see their own cars in the foreign key dropdown. ... ok
+test_fk_related_model_not_in_admin (admin_widgets.tests.ForeignKeyRawIdWidgetTest) ... ok
+test_fk_to_self_model_not_in_admin (admin_widgets.tests.ForeignKeyRawIdWidgetTest) ... ok
+test_proper_manager_for_label_lookup (admin_widgets.tests.ForeignKeyRawIdWidgetTest) ... ok
+test_relations_to_non_primary_key (admin_widgets.tests.ForeignKeyRawIdWidgetTest) ... ok
+test_render (admin_widgets.tests.ForeignKeyRawIdWidgetTest) ... ok
+test_render_fk_as_pk_model (admin_widgets.tests.ForeignKeyRawIdWidgetTest) ... ok
+test_render_unsafe_limit_choices_to (admin_widgets.tests.ForeignKeyRawIdWidgetTest) ... ok
+test_m2m_related_model_not_in_admin (admin_widgets.tests.ManyToManyRawIdWidgetTest) ... ok
+test_render (admin_widgets.tests.ManyToManyRawIdWidgetTest) ... ok
+test_attrs (admin_widgets.tests.AdminDateWidgetTest) ... ok
+test_CharField (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_DateField (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_DateTimeField (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_EmailField (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_FileField (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_ForeignKey (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_IntegerField (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_TextField (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_TimeField (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_URLField (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_choices_with_radio_fields (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_field_with_choices (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_filtered_many_to_many (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_formfield_overrides (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_formfield_overrides_for_custom_field (admin_widgets.tests.AdminFormfieldForDBFieldTests)
+formfield_overrides works for a custom field class. ... ok
+test_formfield_overrides_for_datetime_field (admin_widgets.tests.AdminFormfieldForDBFieldTests)
+Overriding the widget for DateTimeField doesn't overrides the default ... ok
+test_formfield_overrides_m2m_filter_widget (admin_widgets.tests.AdminFormfieldForDBFieldTests)
+The autocomplete_fields, raw_id_fields, filter_vertical, and ... ok
+test_formfield_overrides_widget_instances (admin_widgets.tests.AdminFormfieldForDBFieldTests)
+Widget instances in formfield_overrides are not shared between ... ok
+test_inheritance (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_m2m_widgets (admin_widgets.tests.AdminFormfieldForDBFieldTests)
+m2m fields help text as it applies to admin app (#9321). ... ok
+test_many_to_many (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_radio_fields_ForeignKey (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_radio_fields_foreignkey_formfield_overrides_empty_label (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_raw_id_ForeignKey (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_raw_id_many_to_many (admin_widgets.tests.AdminFormfieldForDBFieldTests) ... ok
+test_ForeignKey (admin_widgets.tests.AdminRawIdWidgetSeleniumTests) ... skipped 'No browsers specified.'
+test_many_to_many (admin_widgets.tests.AdminRawIdWidgetSeleniumTests) ... skipped 'No browsers specified.'
+test_localization (admin_widgets.tests.AdminSplitDateTimeWidgetTest) ... ok
+test_render (admin_widgets.tests.AdminSplitDateTimeWidgetTest) ... ok
+test_attrs (admin_widgets.tests.AdminTimeWidgetTest) ... ok
+test_get_context_validates_url (admin_widgets.tests.AdminURLWidgetTest) ... ok
+test_render (admin_widgets.tests.AdminURLWidgetTest) ... ok
+test_render_idn (admin_widgets.tests.AdminURLWidgetTest) ... ok
+test_render_quoting (admin_widgets.tests.AdminURLWidgetTest)
+WARNING: This test doesn't use assertHTMLEqual since it will get rid ... ok
+test_attrs (admin_widgets.tests.AdminUUIDWidgetTests) ... ok
+test_date_time_picker_shortcuts (admin_widgets.tests.DateTimePickerAltTimezoneSeleniumTests)
+date/time/datetime picker shortcuts work in the current time zone. ... skipped 'No browsers specified.'
+test_calendar_no_selected_class (admin_widgets.tests.DateTimePickerSeleniumTests)
+Ensure no cells are given the selected class when the field is empty. ... skipped 'No browsers specified.'
+test_calendar_nonday_class (admin_widgets.tests.DateTimePickerSeleniumTests)
+Ensure cells that are not days of the month have the `nonday` CSS class. ... skipped 'No browsers specified.'
+test_calendar_selected_class (admin_widgets.tests.DateTimePickerSeleniumTests)
+Ensure cell for the day in the input has the `selected` CSS class. ... skipped 'No browsers specified.'
+test_calendar_show_date_from_input (admin_widgets.tests.DateTimePickerSeleniumTests)
+The calendar shows the date from the input field for every locale ... skipped 'No browsers specified.'
+test_show_hide_date_time_picker_widgets (admin_widgets.tests.DateTimePickerSeleniumTests)
+Pressing the ESC key or clicking on a widget value closes the date and ... skipped 'No browsers specified.'
+test_date_time_picker_shortcuts (admin_widgets.tests.DateTimePickerShortcutsSeleniumTests)
+date/time/datetime picker shortcuts work in the current time zone. ... skipped 'No browsers specified.'
+test_render (admin_widgets.tests.FilteredSelectMultipleWidgetTest) ... ok
+test_stacked_render (admin_widgets.tests.FilteredSelectMultipleWidgetTest) ... ok
+test_back_button_bug (admin_widgets.tests.HorizontalVerticalFilterSeleniumTests)
+Some browsers had a bug where navigating away from the change page ... skipped 'No browsers specified.'
+test_basic (admin_widgets.tests.HorizontalVerticalFilterSeleniumTests) ... skipped 'No browsers specified.'
+test_filter (admin_widgets.tests.HorizontalVerticalFilterSeleniumTests)
+Typing in the search box filters out options displayed in the 'from' ... skipped 'No browsers specified.'
+test_refresh_page (admin_widgets.tests.HorizontalVerticalFilterSeleniumTests)
+Horizontal and vertical filter widgets keep selected options on page ... skipped 'No browsers specified.'
+test_ForeignKey_using_to_field (admin_widgets.tests.RelatedFieldWidgetSeleniumTests) ... skipped 'No browsers specified.'
+test_custom_widget_render (admin_widgets.tests.RelatedFieldWidgetWrapperTests) ... ok
+test_no_can_add_related (admin_widgets.tests.RelatedFieldWidgetWrapperTests) ... ok
+test_on_delete_cascade_rel_cant_delete_related (admin_widgets.tests.RelatedFieldWidgetWrapperTests) ... ok
+test_select_multiple_widget_cant_change_delete_related (admin_widgets.tests.RelatedFieldWidgetWrapperTests) ... ok
+test_widget_delegates_value_omitted_from_data (admin_widgets.tests.RelatedFieldWidgetWrapperTests) ... ok
+test_widget_is_hidden (admin_widgets.tests.RelatedFieldWidgetWrapperTests) ... ok
+test_widget_is_not_hidden (admin_widgets.tests.RelatedFieldWidgetWrapperTests) ... ok
+
+----------------------------------------------------------------------
+Ran 77 tests in 0.143s
+
+OK (skipped=14)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout e0442a628eb480eac6a7888aed5a86f83499e299 tests/admin_widgets/tests.py
+Updated 1 path from ab7943a802

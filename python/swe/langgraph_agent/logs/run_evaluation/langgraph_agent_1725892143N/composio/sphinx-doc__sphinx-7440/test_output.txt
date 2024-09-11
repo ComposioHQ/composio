@@ -1,0 +1,982 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   setup.py
+	modified:   tox.ini
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 9bb204dcabe6ba0fc422bf4a45ad0c79c680d90b
+Merge: b4db396a0 63d610d9a
+Author: Takeshi KOMIYA <i.tkomiya@gmail.com>
+Date:   Thu Apr 9 23:44:42 2020 +0900
+
+    Merge pull request #7431 from tk0miya/7422_autodoc_mock_imports_causes_ValueError
+    
+    Fix #7422: autodoc: fails with ValueError when using autodoc_mock_imports
+
++ git diff 9bb204dcabe6ba0fc422bf4a45ad0c79c680d90b
+diff --git a/setup.py b/setup.py
+index a427d5493..978e3d8e0 100644
+--- a/setup.py
++++ b/setup.py
+@@ -15,22 +15,22 @@ if sys.version_info < (3, 5):
+     sys.exit(1)
+ 
+ install_requires = [
+-    'sphinxcontrib-applehelp',
+-    'sphinxcontrib-devhelp',
++    'sphinxcontrib-applehelp<=1.0.7',
++    'sphinxcontrib-devhelp<=1.0.5',
+     'sphinxcontrib-jsmath',
+-    'sphinxcontrib-htmlhelp',
+-    'sphinxcontrib-serializinghtml',
+-    'sphinxcontrib-qthelp',
+-    'Jinja2>=2.3',
++    'sphinxcontrib-htmlhelp<=2.0.4',
++    'sphinxcontrib-serializinghtml<=1.1.9',
++    'sphinxcontrib-qthelp<=1.0.6',
++    'Jinja2<3.0',
+     'Pygments>=2.0',
+     'docutils>=0.12',
+     'snowballstemmer>=1.1',
+     'babel>=1.3',
+-    'alabaster>=0.7,<0.8',
++    'alabaster>=0.7,<0.7.12',
+     'imagesize',
+     'requests>=2.5.0',
+     'setuptools',
+-    'packaging',
++    'packaging', 'markupsafe<=2.0.1',
+ ]
+ 
+ extras_require = {
+diff --git a/tox.ini b/tox.ini
+index d9f040544..bf39854b6 100644
+--- a/tox.ini
++++ b/tox.ini
+@@ -28,7 +28,7 @@ extras =
+ setenv =
+     PYTHONWARNINGS = all,ignore::ImportWarning:importlib._bootstrap_external,ignore::DeprecationWarning:site,ignore::DeprecationWarning:distutils
+ commands=
+-    pytest --durations 25 {posargs}
++    pytest -rA --durations 25 {posargs}
+ 
+ [testenv:flake8]
+ basepython = python3
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e '.[test]'
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: sphinxcontrib-applehelp<=1.0.7 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (1.0.4)
+Requirement already satisfied: sphinxcontrib-devhelp<=1.0.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (1.0.2)
+Requirement already satisfied: sphinxcontrib-jsmath in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (1.0.1)
+Requirement already satisfied: sphinxcontrib-htmlhelp<=2.0.4 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (2.0.1)
+Requirement already satisfied: sphinxcontrib-serializinghtml<=1.1.9 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (1.1.5)
+Requirement already satisfied: sphinxcontrib-qthelp<=1.0.6 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (1.0.3)
+Requirement already satisfied: Jinja2<3.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (2.11.3)
+Requirement already satisfied: Pygments>=2.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (2.18.0)
+Requirement already satisfied: docutils>=0.12 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (0.21.2)
+Requirement already satisfied: snowballstemmer>=1.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (2.2.0)
+Requirement already satisfied: babel>=1.3 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (2.16.0)
+Requirement already satisfied: alabaster<0.7.12,>=0.7 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (0.7.11)
+Requirement already satisfied: imagesize in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (1.4.1)
+Requirement already satisfied: requests>=2.5.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (2.32.3)
+Requirement already satisfied: setuptools in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (72.1.0)
+Requirement already satisfied: packaging in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (24.1)
+Requirement already satisfied: markupsafe<=2.0.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (2.0.1)
+Requirement already satisfied: pytest in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (8.3.2)
+Requirement already satisfied: pytest-cov in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (5.0.0)
+Requirement already satisfied: html5lib in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (1.1)
+Requirement already satisfied: typed_ast in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (1.5.5)
+Requirement already satisfied: cython in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==3.0.1.dev20240909) (3.0.11)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==3.0.1.dev20240909) (3.3.2)
+Requirement already satisfied: idna<4,>=2.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==3.0.1.dev20240909) (3.8)
+Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==3.0.1.dev20240909) (2.2.2)
+Requirement already satisfied: certifi>=2017.4.17 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==3.0.1.dev20240909) (2024.8.30)
+Requirement already satisfied: six>=1.9 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from html5lib->Sphinx==3.0.1.dev20240909) (1.16.0)
+Requirement already satisfied: webencodings in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from html5lib->Sphinx==3.0.1.dev20240909) (0.5.1)
+Requirement already satisfied: iniconfig in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest->Sphinx==3.0.1.dev20240909) (2.0.0)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest->Sphinx==3.0.1.dev20240909) (1.5.0)
+Requirement already satisfied: exceptiongroup>=1.0.0rc8 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest->Sphinx==3.0.1.dev20240909) (1.2.2)
+Requirement already satisfied: tomli>=1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest->Sphinx==3.0.1.dev20240909) (2.0.1)
+Requirement already satisfied: coverage>=5.2.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from coverage[toml]>=5.2.1->pytest-cov->Sphinx==3.0.1.dev20240909) (7.6.1)
+Installing collected packages: Sphinx
+  Attempting uninstall: Sphinx
+    Found existing installation: Sphinx 3.0.1.dev20240909
+    Uninstalling Sphinx-3.0.1.dev20240909:
+      Successfully uninstalled Sphinx-3.0.1.dev20240909
+  DEPRECATION: Legacy editable install of Sphinx[test]==3.0.1.dev20240909 from file:///testbed (setup.py develop) is deprecated. pip 25.0 will enforce this behaviour change. A possible replacement is to add a pyproject.toml or enable --use-pep517, and use setuptools >= 64. If the resulting installation is not behaving as expected, try using --config-settings editable_mode=compat. Please consult the setuptools documentation for more information. Discussion can be found at https://github.com/pypa/pip/issues/11457
+  Running setup.py develop for Sphinx
+Successfully installed Sphinx
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 9bb204dcabe6ba0fc422bf4a45ad0c79c680d90b tests/test_domain_std.py
+Updated 0 paths from e6ea19c41
++ git apply -v -
+Checking patch tests/test_domain_std.py...
+Applied patch tests/test_domain_std.py cleanly.
++ tox --current-env -epy39 -v -- tests/test_domain_std.py
+py39: commands[0]> pytest -rA --durations 25 tests/test_domain_std.py
+============================= test session starts ==============================
+platform linux -- Python 3.9.19, pytest-8.3.2, pluggy-1.5.0
+cachedir: .tox/py39/.pytest_cache
+libraries: Sphinx-3.0.1+/9bb204dca, docutils-0.21.2
+base tempdir: /tmp/pytest-of-root/pytest-0
+rootdir: /testbed
+configfile: setup.cfg
+plugins: cov-5.0.0
+collected 14 items
+
+tests/test_domain_std.py ...F........F.                                  [100%]
+
+=================================== FAILURES ===================================
+________________________________ test_glossary _________________________________
+
+app = <SphinxTestApp buildername='html'>
+
+    def test_glossary(app):
+        text = (".. glossary::\n"
+                "\n"
+                "   term1\n"
+                "   TERM2\n"
+                "       description\n"
+                "\n"
+                "   term3 : classifier\n"
+                "       description\n"
+                "       description\n"
+                "\n"
+                "   term4 : class1 : class2\n"
+                "       description\n")
+    
+        # doctree
+        doctree = restructuredtext.parse(app, text)
+        assert_node(doctree, (
+            [glossary, definition_list, ([definition_list_item, ([term, ("term1",
+                                                                         index)],
+                                                                 [term, ("TERM2",
+                                                                         index)],
+                                                                 definition)],
+                                         [definition_list_item, ([term, ("term3",
+                                                                         index)],
+                                                                 definition)],
+                                         [definition_list_item, ([term, ("term4",
+                                                                         index)],
+                                                                 definition)])],
+        ))
+        assert_node(doctree[0][0][0][0][1],
+                    entries=[("single", "term1", "term-term1", "main", None)])
+        assert_node(doctree[0][0][0][1][1],
+                    entries=[("single", "TERM2", "term-TERM2", "main", None)])
+        assert_node(doctree[0][0][0][2],
+                    [definition, nodes.paragraph, "description"])
+        assert_node(doctree[0][0][1][0][1],
+                    entries=[("single", "term3", "term-term3", "main", "classifier")])
+        assert_node(doctree[0][0][1][1],
+                    [definition, nodes.paragraph, ("description\n"
+                                                   "description")])
+        assert_node(doctree[0][0][2][0][1],
+                    entries=[("single", "term4", "term-term4", "main", "class1")])
+        assert_node(doctree[0][0][2][1],
+                    [nodes.definition, nodes.paragraph, "description"])
+    
+        # index
+        objects = list(app.env.get_domain("std").get_objects())
+        assert ("term1", "term1", "term", "index", "term-term1", -1) in objects
+>       assert ("TERM2", "TERM2", "term", "index", "term-TERM2", -1) in objects
+E       AssertionError: assert ('TERM2', 'TERM2', 'term', 'index', 'term-TERM2', -1) in [('term1', 'term1', 'term', 'index', 'term-term1', -1), ('term2', 'term2', 'term', 'index', 'term-TERM2', -1), ('term3...'genindex', i'Index', 'label', 'genindex', '', -1), ('modindex', i'Module Index', 'label', 'py-modindex', '', -1), ...]
+
+tests/test_domain_std.py:146: AssertionError
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.0.1+/9bb204dca[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+_____________________________ test_productionlist ______________________________
+
+app = <SphinxTestApp buildername='html'>
+status = <_io.StringIO object at 0xffff8081ed30>
+warning = <_io.StringIO object at 0xffff8081edc0>
+
+    @pytest.mark.skipif(docutils.__version_info__ < (0, 13),
+                        reason='docutils-0.13 or above is required')
+    @pytest.mark.sphinx(testroot='productionlist')
+    def test_productionlist(app, status, warning):
+        app.builder.build_all()
+    
+        warnings = warning.getvalue().split("\n");
+>       assert len(warnings) == 2
+E       assert 3 == 2
+E        +  where 3 = len(["\x1b[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors w...st-0/productionlist/Dup2.rst:4: WARNING: duplicate token description of Dup, other instance in Dup1\x1b[39;49;00m', ''])
+
+tests/test_domain_std.py:330: AssertionError
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/productionlist
+# outdir: /tmp/pytest-of-root/pytest-0/productionlist/_build/html
+# status: 
+[01mRunning Sphinx v3.0.1+/9bb204dca[39;49;00m
+[01mbuilding [html]: [39;49;00mall source files
+[01mupdating environment: [39;49;00m[new config] 8 added, 0 changed, 0 removed
+[01mreading sources... [39;49;00m[ 12%] [35mBare[39;49;00m                                                 [01mreading sources... [39;49;00m[ 25%] [35mDup1[39;49;00m                                                 [01mreading sources... [39;49;00m[ 37%] [35mDup2[39;49;00m                                                 [01mreading sources... [39;49;00m[ 50%] [35mLineContinuation[39;49;00m                                     [01mreading sources... [39;49;00m[ 62%] [35mP1[39;49;00m                                                   [01mreading sources... [39;49;00m[ 75%] [35mP2[39;49;00m                                                   [01mreading sources... [39;49;00m[ 87%] [35mfirstLineRule[39;49;00m                                        [01mreading sources... [39;49;00m[100%] [35mindex[39;49;00m                                                
+[01mlooking for now-outdated files... [39;49;00mnone found
+[01mpickling environment... [39;49;00mdone
+[01mchecking consistency... [39;49;00mdone
+[01mpreparing documents... [39;49;00mdone
+[01mwriting output... [39;49;00m[ 12%] [32mBare[39;49;00m                                                  [01mwriting output... [39;49;00m[ 25%] [32mDup1[39;49;00m                                                  [01mwriting output... [39;49;00m[ 37%] [32mDup2[39;49;00m                                                  [01mwriting output... [39;49;00m[ 50%] [32mLineContinuation[39;49;00m                                      [01mwriting output... [39;49;00m[ 62%] [32mP1[39;49;00m                                                    [01mwriting output... [39;49;00m[ 75%] [32mP2[39;49;00m                                                    [01mwriting output... [39;49;00m[ 87%] [32mfirstLineRule[39;49;00m                                         [01mwriting output... [39;49;00m[100%] [32mindex[39;49;00m                                                 
+[01mgenerating indices... [39;49;00m genindexdone
+[01mwriting additional pages... [39;49;00m searchdone
+[01mcopying static files... ... [39;49;00mdone
+[01mcopying extra files... [39;49;00mdone
+[01mdumping search index in English (code: en)... [39;49;00mdone
+[01mdumping object inventory... [39;49;00mdone
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/productionlist/Dup2.rst:4: WARNING: duplicate token description of Dup, other instance in Dup1[39;49;00m
+
+=============================== warnings summary ===============================
+sphinx/util/docutils.py:45
+  /testbed/sphinx/util/docutils.py:45: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    __version_info__ = tuple(LooseVersion(docutils.__version__).version)
+
+sphinx/registry.py:22
+  /testbed/sphinx/registry.py:22: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
+    from pkg_resources import iter_entry_points
+
+../opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144
+../opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144
+../opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144
+../opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pkg_resources/__init__.py:3144: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('sphinxcontrib')`.
+  Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+    declare_namespace(pkg)
+
+sphinx/directives/patches.py:15
+  /testbed/sphinx/directives/patches.py:15: DeprecationWarning: The `docutils.parsers.rst.directive.html` module will be removed in Docutils 2.0. Since Docutils 0.18, the "Meta" node is defined in `docutils.parsers.rst.directives.misc`.
+    from docutils.parsers.rst.directives import images, html, tables
+
+tests/test_domain_std.py: 18 warnings
+  /testbed/sphinx/util/nodes.py:348: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for img in node.traverse(nodes.image):
+
+tests/test_domain_std.py: 18 warnings
+  /testbed/sphinx/util/nodes.py:350: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for raw in node.traverse(nodes.raw):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/transforms/__init__.py:210: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse():  # type: Node
+
+tests/test_domain_std.py: 20 warnings
+  /testbed/sphinx/util/nodes.py:153: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for classifier in reversed(list(node.parent.traverse(nodes.classifier))):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/transforms/i18n.py:88: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(addnodes.translatable):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/transforms/__init__.py:110: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for ref in self.document.traverse(nodes.substitution_reference):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/transforms/__init__.py:131: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.target):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/transforms/__init__.py:150: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.block_quote):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/transforms/__init__.py:175: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.Element):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/transforms/__init__.py:222: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(addnodes.index):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/transforms/references.py:30: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.substitution_definition):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/transforms/__init__.py:189: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.section):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/transforms/__init__.py:279: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.doctest_block):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/domains/citation.py:117: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.citation):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/domains/citation.py:136: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.citation_reference):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/builders/latex/transforms.py:37: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(matcher):  # type: nodes.Element
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/transforms/__init__.py:291: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(matcher):  # type: Element
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/util/compat.py:44: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(addnodes.index):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/domains/index.py:52: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in document.traverse(addnodes.index):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/domains/math.py:85: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    self.data['has_equations'][docname] = any(document.traverse(math_node))
+
+tests/test_domain_std.py: 13 warnings
+  /testbed/sphinx/ext/todo.py:98: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for todo in document.traverse(todo_node):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/environment/collectors/asset.py:47: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in doctree.traverse(nodes.image):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/environment/collectors/asset.py:124: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in doctree.traverse(addnodes.download_reference):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/environment/collectors/title.py:46: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in doctree.traverse(nodes.section):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/transforms/__init__.py:301: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.system_message):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/transforms/__init__.py:384: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(addnodes.manpage):
+
+tests/test_domain_std.py: 21 warnings
+  /testbed/sphinx/transforms/i18n.py:484: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for inline in self.document.traverse(matcher):  # type: nodes.inline
+
+tests/test_domain_std.py::test_glossary_conflicted_labels
+  /testbed/sphinx/domains/std.py:739: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    toctree = next(iter(node.traverse(addnodes.toctree)), None)
+
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+  /testbed/sphinx/domains/std.py:448: DeprecationWarning: nodes.Text: initialization argument "rawsource" is ignored and will be removed in Docutils 2.0.
+    retnodes.append(nodes.Text(txt, txt))
+
+tests/test_domain_std.py: 11 warnings
+  /testbed/sphinx/domains/std.py:455: DeprecationWarning: nodes.Text: initialization argument "rawsource" is ignored and will be removed in Docutils 2.0.
+    retnodes.append(nodes.Text(text[pos:], text[pos:]))
+
+tests/test_domain_std.py::test_productionlist
+  /testbed/sphinx/builders/html/__init__.py:415: DeprecationWarning: The frontend.OptionParser class will be replaced by a subclass of argparse.ArgumentParser in Docutils 0.21 or later.
+    self.docsettings = OptionParser(
+
+tests/test_domain_std.py: 72 warnings
+  /opt/miniconda3/envs/testbed/lib/python3.9/optparse.py:1000: DeprecationWarning: The frontend.Option class will be removed in Docutils 0.21 or later.
+    option = self.option_class(*args, **kwargs)
+
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+  /testbed/sphinx/domains/cpp.py:6895: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(AliasNode):
+
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+  /testbed/sphinx/transforms/post_transforms/__init__.py:71: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(addnodes.pending_xref):
+
+tests/test_domain_std.py: 93 warnings
+  /testbed/sphinx/util/nodes.py:596: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in document.traverse(addnodes.only):
+
+tests/test_domain_std.py: 16 warnings
+  /testbed/sphinx/transforms/post_transforms/images.py:36: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.image):
+
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+  /testbed/sphinx/transforms/post_transforms/__init__.py:214: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(addnodes.desc_sig_element):
+
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+  /testbed/sphinx/builders/latex/transforms.py:595: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(nodes.title):
+
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+  /testbed/sphinx/builders/latex/transforms.py:597: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for i, index in enumerate(node.traverse(addnodes.index)):
+
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+  /testbed/sphinx/transforms/post_transforms/code.py:44: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in self.document.traverse(addnodes.highlightlang):
+
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+  /testbed/sphinx/transforms/post_transforms/code.py:99: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for lbnode in self.document.traverse(nodes.literal_block):  # type: nodes.literal_block
+
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+  /testbed/sphinx/transforms/post_transforms/code.py:103: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for dbnode in self.document.traverse(nodes.doctest_block):  # type: nodes.doctest_block
+
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+  /testbed/sphinx/environment/__init__.py:541: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for toctreenode in doctree.traverse(addnodes.toctree):
+
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+  /testbed/sphinx/builders/__init__.py:182: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in doctree.traverse(nodes.image):
+
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+  /testbed/sphinx/builders/html/__init__.py:827: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in doctree.traverse(nodes.image):
+
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+tests/test_domain_std.py::test_productionlist
+  /testbed/sphinx/environment/adapters/toctree.py:313: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for node in toc.traverse(nodes.reference):
+
+tests/test_domain_std.py: 10 warnings
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/layout.html:114: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+    _gaq.push(['_setAllowLinker', true]);
+
+tests/test_domain_std.py: 10 warnings
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/about.html:70: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_std.py: 10 warnings
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/about.html:99: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_std.py: 10 warnings
+  /testbed/sphinx/environment/adapters/toctree.py:327: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for toctreenode in doctree.traverse(addnodes.toctree):
+
+tests/test_domain_std.py: 77 warnings
+  /testbed/sphinx/environment/adapters/toctree.py:204: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for subtocnode in toc.traverse(addnodes.toctree):
+
+tests/test_domain_std.py: 11 warnings
+  /testbed/sphinx/environment/adapters/toctree.py:262: PendingDeprecationWarning: nodes.Node.traverse() is obsoleted by Node.findall().
+    for refnode in newnode.traverse(nodes.reference):
+
+tests/test_domain_std.py: 10 warnings
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/layout.html:215: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_std.py: 10 warnings
+  /opt/miniconda3/envs/testbed/lib/python3.9/site-packages/alabaster/layout.html:238: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_std.py::test_productionlist
+  <template>:33: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_std.py::test_productionlist
+  <template>:224: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_std.py::test_productionlist
+  <template>:386: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+tests/test_domain_std.py::test_productionlist
+  <template>:401: DeprecationWarning: 'soft_unicode' has been renamed to 'soft_str'. The old name will be removed in MarkupSafe 2.1.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+==================================== PASSES ====================================
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.0.1+/9bb204dca[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/root/case1.rst:4: WARNING: glossary terms must not be separated by empty lines[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/root/case2.rst:2: WARNING: glossary seems to be misformatted, check indentation[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/root/case2.rst:3: WARNING: glossary term must be preceded by empty line[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/root/case3.rst:4: WARNING: glossary term must be preceded by empty line[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/root/case3.rst:2: WARNING: duplicate term description of term1, other instance in case1[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/root/case3.rst:4: WARNING: duplicate term description of term2, other instance in case1[39;49;00m
+[91m/tmp/pytest-of-root/pytest-0/root/case4.rst:3: WARNING: duplicate term description of term-case4, other instance in case4[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.0.1+/9bb204dca[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.0.1+/9bb204dca[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.0.1+/9bb204dca[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.0.1+/9bb204dca[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.0.1+/9bb204dca[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.0.1+/9bb204dca[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.0.1+/9bb204dca[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+--------------------------- Captured stdout teardown ---------------------------
+# testroot: root
+# builder: html
+# srcdir: /tmp/pytest-of-root/pytest-0/root
+# outdir: /tmp/pytest-of-root/pytest-0/root/_build/html
+# status: 
+[01mRunning Sphinx v3.0.1+/9bb204dca[39;49;00m
+
+# warning: 
+[91mWARNING: while setting up extension sphinx.addnodes: node class 'meta' is already registered, its visitors will be overridden[39;49;00m
+
+============================= slowest 25 durations =============================
+0.24s setup    tests/test_domain_std.py::test_glossary
+0.14s call     tests/test_domain_std.py::test_productionlist
+0.01s call     tests/test_domain_std.py::test_glossary
+0.01s call     tests/test_domain_std.py::test_glossary_warning
+0.01s setup    tests/test_domain_std.py::test_disabled_docref
+0.01s setup    tests/test_domain_std.py::test_glossary_warning
+0.01s setup    tests/test_domain_std.py::test_productionlist
+0.01s setup    tests/test_domain_std.py::test_glossary_comment
+0.01s setup    tests/test_domain_std.py::test_glossary_alphanumeric
+0.01s setup    tests/test_domain_std.py::test_cmdoption
+0.01s setup    tests/test_domain_std.py::test_glossary_comment2
+0.01s setup    tests/test_domain_std.py::test_glossary_conflicted_labels
+0.01s setup    tests/test_domain_std.py::test_glossary_sorted
+0.01s setup    tests/test_domain_std.py::test_multiple_cmdoptions
+
+(11 durations < 0.005s hidden.  Use -vv to show these durations.)
+=========================== short test summary info ============================
+PASSED tests/test_domain_std.py::test_process_doc_handle_figure_caption
+PASSED tests/test_domain_std.py::test_process_doc_handle_table_title
+PASSED tests/test_domain_std.py::test_get_full_qualified_name
+PASSED tests/test_domain_std.py::test_glossary_warning
+PASSED tests/test_domain_std.py::test_glossary_comment
+PASSED tests/test_domain_std.py::test_glossary_comment2
+PASSED tests/test_domain_std.py::test_glossary_sorted
+PASSED tests/test_domain_std.py::test_glossary_alphanumeric
+PASSED tests/test_domain_std.py::test_glossary_conflicted_labels
+PASSED tests/test_domain_std.py::test_cmdoption
+PASSED tests/test_domain_std.py::test_multiple_cmdoptions
+PASSED tests/test_domain_std.py::test_disabled_docref
+FAILED tests/test_domain_std.py::test_glossary - AssertionError: assert ('TER...
+FAILED tests/test_domain_std.py::test_productionlist - assert 3 == 2
+================= 2 failed, 12 passed, 1008 warnings in 0.54s ==================
+py39: exit 1 (0.89 seconds) /testbed> pytest -rA --durations 25 tests/test_domain_std.py pid=108
+  py39: FAIL code 1 (0.90=setup[0.01]+cmd[0.89] seconds)
+  evaluation failed :( (1.01 seconds)
++ git checkout 9bb204dcabe6ba0fc422bf4a45ad0c79c680d90b tests/test_domain_std.py
+Updated 1 path from e6ea19c41

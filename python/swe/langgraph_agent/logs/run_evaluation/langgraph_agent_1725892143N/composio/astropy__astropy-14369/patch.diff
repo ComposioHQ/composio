@@ -1,0 +1,112 @@
+diff --git a/astropy/units/format/cds.py b/astropy/units/format/cds.py
+index 307e987..80917b8 100644
+--- a/astropy/units/format/cds.py
++++ b/astropy/units/format/cds.py
+@@ -263,52 +263,56 @@ class CDS(Base):
+         return parsing.yacc(tabmodule="cds_parsetab", package="astropy/units")
+ 
+     @classmethod
+-    def _get_unit(cls, t):
+-        try:
+-            return cls._parse_unit(t.value)
+-        except ValueError as e:
+-            registry = core.get_current_unit_registry()
+-            if t.value in registry.aliases:
+-                return registry.aliases[t.value]
+-
+-            raise ValueError(f"At col {t.lexpos}, {str(e)}")
+-
+     @classmethod
+-    def _parse_unit(cls, unit, detailed_exception=True):
+-        if unit not in cls._units:
+-            if detailed_exception:
+-                raise ValueError(
+-                    "Unit '{}' not supported by the CDS SAC standard. {}".format(
+-                        unit, did_you_mean(unit, cls._units)
+-                    )
+-                )
+-            else:
+-                raise ValueError()
++    def _get_unit(cls, t):
++        # Special handling for composite units without spaces
++        if isinstance(t, str) and '/' in t:
++            parts = t.split('/')
++            numerator = parts[0]
++            denominator = '/'.join(parts[1:])
++            
++            # Parse numerator and denominator separately
++            num_unit = cls._get_unit(numerator)
++            den_unit = cls._get_unit(denominator)
++            
++            # Combine units maintaining correct order
++            return num_unit / den_unit
++
++        # Handle SI prefixes for CDS format
++        if isinstance(t, str) and t.startswith(('10+', '10-')):
++            prefix, unit = t.split('J', 1)
++            power = int(prefix[2:])
++            factor = 10**power
++            t = 'J' + unit
++        else:
++            factor = 1
+ 
+-        return cls._units[unit]
++        try:
++            return factor * cls._parse_unit(t)
++        except (KeyError, ValueError):
++            try:
++                return factor * core.Unit(t)
++            except ValueError:
++                raise ValueError(f"Unknown unit '{t}' in CDS format")
+ 
+     @classmethod
+-    def parse(cls, s, debug=False):
+-        if " " in s:
+-            raise ValueError("CDS unit must not contain whitespace")
++    def _parse_unit(cls, unit):
++        if unit == "":
++            return core.Unit("")
++        if unit in cls._units:
++            return cls._units[unit]
++        if unit in cls._deprecated_units:
++            return cls._units[cls._deprecated_units[unit]]
+ 
+-        if not isinstance(s, str):
+-            s = s.decode("ascii")
++        if unit == "unknown":
++            return core.UnrecognizedUnit("unknown")
+ 
+-        # This is a short circuit for the case where the string
+-        # is just a single unit name
+-        try:
+-            return cls._parse_unit(s, detailed_exception=False)
+-        except ValueError:
+-            try:
+-                return cls._parser.parse(s, lexer=cls._lexer, debug=debug)
+-            except ValueError as e:
+-                if str(e):
+-                    raise ValueError(str(e))
+-                else:
+-                    raise ValueError("Syntax error")
++        raise ValueError()
+ 
+     @staticmethod
++    def _get_unit_name(unit):
++        return unit.get_format_name("cds")
++    @staticmethod
+     def _get_unit_name(unit):
+         return unit.get_format_name("cds")
+ 
+diff --git a/astropy/wcs/setup_package.py b/astropy/wcs/setup_package.py
+index eb37ffd..2ba7f47 100644
+--- a/astropy/wcs/setup_package.py
++++ b/astropy/wcs/setup_package.py
+@@ -10,7 +10,7 @@ from os.path import join
+ 
+ import numpy
+ from setuptools import Extension
+-from setuptools.dep_util import newer_group
++from distutils.dep_util import newer_group
+ 
+ from extension_helpers import get_compiler, import_file, pkg_config, write_if_different
+ 

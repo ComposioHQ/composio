@@ -1,0 +1,712 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/forms/models.py
+	modified:   tests/forms_tests/tests/test_forms.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 88e67a54b7ed0210c11523a337b498aadb2f5187
+Author: Carlton Gibson <carlton.gibson@noumenal.es>
+Date:   Sat Aug 6 19:10:27 2022 +0200
+
+    Added test for non-HTTP request on ASGIStaticFilesHandler.
+
+diff --git a/tests/staticfiles_tests/test_handlers.py b/tests/staticfiles_tests/test_handlers.py
+index e0451c6e16..5145d187e1 100644
+--- a/tests/staticfiles_tests/test_handlers.py
++++ b/tests/staticfiles_tests/test_handlers.py
+@@ -5,6 +5,13 @@ from django.test import AsyncRequestFactory
+ from .cases import StaticFilesTestCase
+ 
+ 
++class MockApplication:
++    """ASGI application that returns a string indicating that it was called."""
++
++    async def __call__(self, scope, receive, send):
++        return "Application called"
++
++
+ class TestASGIStaticFilesHandler(StaticFilesTestCase):
+     async_request_factory = AsyncRequestFactory()
+ 
+@@ -20,3 +27,15 @@ class TestASGIStaticFilesHandler(StaticFilesTestCase):
+         handler = ASGIStaticFilesHandler(ASGIHandler())
+         response = await handler.get_response_async(request)
+         self.assertEqual(response.status_code, 404)
++
++    async def test_non_http_requests_passed_to_the_wrapped_application(self):
++        tests = [
++            "/static/path.txt",
++            "/non-static/path.txt",
++        ]
++        for path in tests:
++            with self.subTest(path=path):
++                scope = {"type": "websocket", "path": path}
++                handler = ASGIStaticFilesHandler(MockApplication())
++                response = await handler(scope, None, None)
++                self.assertEqual(response, "Application called")
++ git diff 88e67a54b7ed0210c11523a337b498aadb2f5187
+diff --git a/django/forms/models.py b/django/forms/models.py
+index 192d9fad94..b9900384da 100644
+--- a/django/forms/models.py
++++ b/django/forms/models.py
+@@ -257,13 +257,19 @@ class ModelFormOptions:
+ 
+ class ModelFormMetaclass(DeclarativeFieldsMetaclass):
+     def __new__(mcs, name, bases, attrs):
++        # Check for formfield_callback in base classes and current class Meta
+         base_formfield_callback = None
++        meta_formfield_callback = None
+         for b in bases:
+-            if hasattr(b, "Meta") and hasattr(b.Meta, "formfield_callback"):
+-                base_formfield_callback = b.Meta.formfield_callback
++            if hasattr(b, "Meta"):
++                if hasattr(b.Meta, "formfield_callback"):
++                    base_formfield_callback = b.Meta.formfield_callback
+                 break
+ 
+-        formfield_callback = attrs.pop("formfield_callback", base_formfield_callback)
++        if 'Meta' in attrs and hasattr(attrs['Meta'], 'formfield_callback'):
++            meta_formfield_callback = attrs['Meta'].formfield_callback
++        # Prioritize formfield_callback from current class Meta, then base class Meta, then class-level
++        formfield_callback = attrs.pop("formfield_callback", meta_formfield_callback or base_formfield_callback)
+ 
+         new_class = super().__new__(mcs, name, bases, attrs)
+ 
+diff --git a/tests/forms_tests/tests/test_forms.py b/tests/forms_tests/tests/test_forms.py
+index 6005472194..a4826a905e 100644
+--- a/tests/forms_tests/tests/test_forms.py
++++ b/tests/forms_tests/tests/test_forms.py
+@@ -5080,4 +5080,57 @@ class DeprecationTests(SimpleTestCase):
+             RemovedInDjango50Warning, DEFAULT_TEMPLATE_DEPRECATION_MSG
+         ):
+             form = Person()
+-            str(form)
++class ModelFormMetaFormfieldCallbackTests(SimpleTestCase):
++    def test_formfield_callback_priority(self):
++        from django.forms import ModelForm
++        from django.db import models
++
++        def global_callback(field, **kwargs):
++            return CharField(initial='global')
++
++        class TestModel(models.Model):
++            name = models.CharField(max_length=20)
++
++            class Meta:
++                app_label = 'tests'
++
++        class BaseForm(ModelForm):
++            class Meta:
++                model = TestModel
++                fields = ['name']
++                formfield_callback = lambda field, **kwargs: CharField(initial='base')
++
++        class DerivedForm(BaseForm):
++            class Meta(BaseForm.Meta):
++                formfield_callback = lambda field, **kwargs: CharField(initial='derived')
++
++        # Test that formfield_callback in derived Meta takes priority
++        form = DerivedForm()
++        self.assertEqual(form.fields['name'].initial, 'derived')
++
++        # Test that formfield_callback in base Meta is used if not in derived
++        class DerivedFormNoCallback(BaseForm):
++            class Meta(BaseForm.Meta):
++                pass
++
++        form = DerivedFormNoCallback()
++        self.assertEqual(form.fields['name'].initial, 'base')
++
++        # Test that global formfield_callback is used if not specified in Meta
++        class GlobalCallbackForm(ModelForm):
++            class Meta:
++                model = TestModel
++                fields = ['name']
++
++        form = GlobalCallbackForm()
++        self.assertEqual(form.fields['name'].initial, 'global')
++
++        # Test that formfield_callback in Meta takes priority over global
++        class LocalCallbackForm(ModelForm):
++            class Meta:
++                model = TestModel
++                fields = ['name']
++                formfield_callback = lambda field, **kwargs: CharField(initial='local')
++
++        form = LocalCallbackForm(formfield_callback=global_callback)
++        self.assertEqual(form.fields['name'].initial, 'local')
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.5.2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.2.dev20220808052732) (3.8.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.2.dev20220808052732) (0.5.1)
+Requirement already satisfied: typing-extensions>=4 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from asgiref>=3.5.2->Django==4.2.dev20220808052732) (4.12.2)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-4.2.dev20220808052732-0.editable-py3-none-any.whl size=27128 sha256=1e404d653030357af449e2716c948c7618e984355e878bf06dfff37314016d5e
+  Stored in directory: /tmp/pip-ephem-wheel-cache-udz__chg/wheels/7d/66/67/70d1ee2124ccf21d601c352e25cdca10f611f7c8b3f9ffb9e4
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 4.2.dev20220808052732
+    Uninstalling Django-4.2.dev20220808052732:
+      Successfully uninstalled Django-4.2.dev20220808052732
+Successfully installed Django-4.2.dev20220808052732
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 88e67a54b7ed0210c11523a337b498aadb2f5187 tests/model_forms/tests.py
+Updated 0 paths from 6ceacec098
++ git apply -v -
+Checking patch tests/model_forms/tests.py...
+Applied patch tests/model_forms/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 model_forms.tests
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Testing against Django installed in '/testbed/django'
+Importing application model_forms
+Found 152 test(s).
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, messages, model_forms, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table model_forms_person
+    Creating table model_forms_category
+    Creating table model_forms_writer
+    Creating table model_forms_article
+    Creating table model_forms_improvedarticle
+    Creating table model_forms_improvedarticlewithparentlink
+    Creating table model_forms_betterwriter
+    Creating table model_forms_publication
+    Creating table model_forms_publicationdefaults
+    Creating table model_forms_author
+    Creating table model_forms_author1
+    Creating table model_forms_writerprofile
+    Creating table model_forms_document
+    Creating table model_forms_textfile
+    Creating table model_forms_customff
+    Creating table model_forms_filepathmodel
+    Creating table model_forms_imagefile
+    Creating table model_forms_optionalimagefile
+    Creating table model_forms_noextensionimagefile
+    Creating table model_forms_homepage
+    Creating table model_forms_product
+    Creating table model_forms_price
+    Creating table model_forms_triple
+    Creating table model_forms_articlestatus
+    Creating table model_forms_inventory
+    Creating table model_forms_book
+    Creating table model_forms_derivedbook
+    Creating table model_forms_explicitpk
+    Creating table model_forms_post
+    Creating table model_forms_datetimepost
+    Creating table model_forms_derivedpost
+    Creating table model_forms_bigint
+    Creating table model_forms_customfieldforexclusionmodel
+    Creating table model_forms_flexibledatepost
+    Creating table model_forms_colour
+    Creating table model_forms_colourfulitem
+    Creating table model_forms_customerrormessage
+    Creating table model_forms_character
+    Creating table model_forms_stumpjoke
+    Creating table model_forms_student
+    Creating table model_forms_photo
+    Creating table model_forms_uuidpk
+    Creating table model_forms_strictassignmentfieldspecific
+    Creating table model_forms_strictassignmentall
+    Creating table model_forms_award
+    Creating table model_forms_nullableuniquecharfieldmodel
+    Creating table model_forms_number
+    Creating table model_forms_numberstodice
+    Creating table model_forms_dice
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (0 silenced).
+test_model_form_clean_applies_to_model (model_forms.tests.CustomCleanTests)
+Regression test for #12960. Make sure the cleaned_data returned from ... ok
+test_override_clean (model_forms.tests.CustomCleanTests)
+Regression for #12596: Calling super from ModelForm.clean() should be ... ok
+test_clean_false (model_forms.tests.FileAndImageFieldTests)
+If the ``clean`` method on a non-required FileField receives False as ... ok
+test_clean_false_required (model_forms.tests.FileAndImageFieldTests)
+If the ``clean`` method on a required FileField receives False as the ... ok
+test_clear_and_file_contradiction (model_forms.tests.FileAndImageFieldTests)
+If the user submits a new file upload AND checks the clear checkbox, ... ok
+test_custom_file_field_save (model_forms.tests.FileAndImageFieldTests)
+Regression for #11149: save_form_data should be called only once ... ok
+test_file_field_data (model_forms.tests.FileAndImageFieldTests) ... ok
+test_file_field_multiple_save (model_forms.tests.FileAndImageFieldTests)
+Simulate a file upload and check how many times Model.save() gets ... ok
+test_file_path_field_blank (model_forms.tests.FileAndImageFieldTests)
+FilePathField(blank=True) includes the empty option. ... ok
+test_filefield_required_false (model_forms.tests.FileAndImageFieldTests) ... ok
+test_full_clear (model_forms.tests.FileAndImageFieldTests)
+Integration happy-path test that a model FileField can actually be set ... ok
+test_image_field (model_forms.tests.FileAndImageFieldTests) ... ok
+test_render_empty_file_field (model_forms.tests.FileAndImageFieldTests) ... ok
+test_callable_called_each_time_form_is_instantiated (model_forms.tests.LimitChoicesToTests) ... ok
+test_custom_field_with_queryset_but_no_limit_choices_to (model_forms.tests.LimitChoicesToTests)
+A custom field with a `queryset` attribute but no `limit_choices_to` ... ok
+test_fields_for_model_applies_limit_choices_to (model_forms.tests.LimitChoicesToTests) ... ok
+test_limit_choices_to_callable_for_fk_rel (model_forms.tests.LimitChoicesToTests)
+A ForeignKey can use limit_choices_to as a callable (#2554). ... ok
+test_limit_choices_to_callable_for_m2m_rel (model_forms.tests.LimitChoicesToTests)
+A ManyToManyField can use limit_choices_to as a callable (#2554). ... ok
+test_limit_choices_to_m2m_through (model_forms.tests.LimitChoicesToTests) ... ok
+test_limit_choices_to_no_duplicates (model_forms.tests.LimitChoicesToTests) ... ok
+test_model_form_applies_localize_to_all_fields (model_forms.tests.LocalizedModelFormTest) ... ok
+test_model_form_applies_localize_to_some_fields (model_forms.tests.LocalizedModelFormTest) ... ok
+test_model_form_refuses_arbitrary_string (model_forms.tests.LocalizedModelFormTest) ... ok
+test_article_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_bad_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_base_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_blank_false_with_null_true_foreign_key_field (model_forms.tests.ModelFormBaseTest)
+A ModelForm with a model having ForeignKey(blank=False, null=True) ... ok
+test_blank_foreign_key_with_radio (model_forms.tests.ModelFormBaseTest) ... ok
+test_blank_with_null_foreign_key_field (model_forms.tests.ModelFormBaseTest)
+#13776 -- ModelForm's with models having a FK set to null=False and ... ok
+test_confused_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_default_filefield (model_forms.tests.ModelFormBaseTest) ... ok
+test_default_not_populated_on_checkboxselectmultiple (model_forms.tests.ModelFormBaseTest) ... ok
+test_default_not_populated_on_non_empty_value_in_cleaned_data (model_forms.tests.ModelFormBaseTest) ... ok
+test_default_not_populated_on_optional_checkbox_input (model_forms.tests.ModelFormBaseTest) ... ok
+test_default_not_populated_on_selectmultiple (model_forms.tests.ModelFormBaseTest) ... ok
+test_default_populated_on_optional_field (model_forms.tests.ModelFormBaseTest) ... ok
+test_default_selectdatewidget (model_forms.tests.ModelFormBaseTest) ... ok
+test_default_splitdatetime_field (model_forms.tests.ModelFormBaseTest) ... ok
+test_empty_fields_on_modelform (model_forms.tests.ModelFormBaseTest)
+No fields on a ModelForm should actually result in no fields. ... ok
+test_empty_fields_to_construct_instance (model_forms.tests.ModelFormBaseTest)
+No fields should be set on a model instance if construct_instance ... ok
+test_empty_fields_to_fields_for_model (model_forms.tests.ModelFormBaseTest)
+An argument of fields=() to fields_for_model should return an empty dictionary ... ok
+test_exclude_and_validation (model_forms.tests.ModelFormBaseTest) ... ok
+test_exclude_fields (model_forms.tests.ModelFormBaseTest) ... ok
+test_exclude_fields_with_string (model_forms.tests.ModelFormBaseTest) ... ok
+test_exclude_nonexistent_field (model_forms.tests.ModelFormBaseTest) ... ok
+test_extra_declared_field_model_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_extra_field_model_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_extra_field_modelform_factory (model_forms.tests.ModelFormBaseTest) ... ok
+test_extra_fields (model_forms.tests.ModelFormBaseTest) ... ok
+test_invalid_meta_model (model_forms.tests.ModelFormBaseTest) ... ok
+test_limit_fields_with_string (model_forms.tests.ModelFormBaseTest) ... ok
+test_limit_nonexistent_field (model_forms.tests.ModelFormBaseTest) ... ok
+test_missing_fields_attribute (model_forms.tests.ModelFormBaseTest) ... ok
+test_mixmodel_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_no_model_class (model_forms.tests.ModelFormBaseTest) ... ok
+test_non_blank_foreign_key_with_radio (model_forms.tests.ModelFormBaseTest) ... ok
+test_orderfields2_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_orderfields_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_override_field (model_forms.tests.ModelFormBaseTest) ... ok
+test_prefixed_form_with_default_field (model_forms.tests.ModelFormBaseTest) ... ok
+test_renderer_kwarg (model_forms.tests.ModelFormBaseTest) ... ok
+test_replace_field (model_forms.tests.ModelFormBaseTest) ... ok
+test_replace_field_variant_2 (model_forms.tests.ModelFormBaseTest) ... ok
+test_replace_field_variant_3 (model_forms.tests.ModelFormBaseTest) ... ok
+test_save_blank_false_with_required_false (model_forms.tests.ModelFormBaseTest)
+A ModelForm with a model with a field set to blank=False and the form ... ok
+test_save_blank_null_unique_charfield_saves_null (model_forms.tests.ModelFormBaseTest) ... ok
+test_subcategory_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_subclassmeta_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_auto_id (model_forms.tests.ModelFormBasicTests) ... ok
+test_base_form (model_forms.tests.ModelFormBasicTests) ... ok
+test_basic_creation (model_forms.tests.ModelFormBasicTests) ... ok
+test_custom_form_fields (model_forms.tests.ModelFormBasicTests) ... ok
+test_initial_values (model_forms.tests.ModelFormBasicTests) ... ok
+test_m2m_editing (model_forms.tests.ModelFormBasicTests) ... ok
+test_m2m_initial_callable (model_forms.tests.ModelFormBasicTests)
+A callable can be provided as the initial value for an m2m field. ... ok
+test_multi_fields (model_forms.tests.ModelFormBasicTests) ... ok
+test_recleaning_model_form_instance (model_forms.tests.ModelFormBasicTests)
+Re-cleaning an instance that was added via a ModelForm shouldn't raise ... ok
+test_runtime_choicefield_populated (model_forms.tests.ModelFormBasicTests) ... ok
+test_save_commit_false (model_forms.tests.ModelFormBasicTests) ... ok
+test_save_with_data_errors (model_forms.tests.ModelFormBasicTests) ... ok
+test_subset_fields (model_forms.tests.ModelFormBasicTests) ... ok
+test_validate_foreign_key_to_model_with_overridden_manager (model_forms.tests.ModelFormBasicTests) ... ok
+test_validate_foreign_key_uses_default_manager (model_forms.tests.ModelFormBasicTests) ... ok
+test_clean_does_deduplicate_values (model_forms.tests.ModelMultipleChoiceFieldTests) ... ok
+test_model_multiple_choice_field (model_forms.tests.ModelMultipleChoiceFieldTests) ... ok
+test_model_multiple_choice_field_22745 (model_forms.tests.ModelMultipleChoiceFieldTests)
+#22745 -- Make sure that ModelMultipleChoiceField with ... ok
+test_model_multiple_choice_number_of_queries (model_forms.tests.ModelMultipleChoiceFieldTests)
+ModelMultipleChoiceField does O(1) queries instead of O(n) (#10156). ... ok
+test_model_multiple_choice_required_false (model_forms.tests.ModelMultipleChoiceFieldTests) ... ok
+test_model_multiple_choice_run_validators (model_forms.tests.ModelMultipleChoiceFieldTests)
+ModelMultipleChoiceField run given validators (#14144). ... ok
+test_model_multiple_choice_show_hidden_initial (model_forms.tests.ModelMultipleChoiceFieldTests)
+Test support of show_hidden_initial by ModelMultipleChoiceField. ... ok
+test_show_hidden_initial_changed_queries_efficiently (model_forms.tests.ModelMultipleChoiceFieldTests) ... ok
+test_to_field_name_with_initial_data (model_forms.tests.ModelMultipleChoiceFieldTests) ... ok
+test_assignment_of_none (model_forms.tests.ModelOneToOneFieldTests) ... ok
+test_assignment_of_none_null_false (model_forms.tests.ModelOneToOneFieldTests) ... ok
+test_modelform_onetoonefield (model_forms.tests.ModelOneToOneFieldTests) ... ok
+test_modelform_subclassed_model (model_forms.tests.ModelOneToOneFieldTests) ... ok
+test_onetoonefield (model_forms.tests.ModelOneToOneFieldTests) ... ok
+test_many_to_many (model_forms.tests.ModelToDictTests)
+Data for a ManyToManyField is a list rather than a lazy QuerySet. ... ok
+test_callable_field_default (model_forms.tests.OtherModelFormTests) ... ok
+test_choices_type (model_forms.tests.OtherModelFormTests) ... ok
+test_foreignkeys_which_use_to_field (model_forms.tests.OtherModelFormTests) ... ok
+test_iterable_model_m2m (model_forms.tests.OtherModelFormTests) ... ok
+test_media_on_modelform (model_forms.tests.OtherModelFormTests) ... ok
+test_model_field_that_returns_none_to_exclude_itself_with_explicit_fields (model_forms.tests.OtherModelFormTests) ... ok
+test_prefetch_related_queryset (model_forms.tests.OtherModelFormTests)
+ModelChoiceField should respect a prefetch_related() on its queryset. ... ok
+test_abstract_inherited_unique (model_forms.tests.UniqueTest) ... ok
+test_abstract_inherited_unique_together (model_forms.tests.UniqueTest) ... ok
+test_explicitpk_unique (model_forms.tests.UniqueTest)
+Ensure keys and blank character strings are tested for uniqueness. ... ok
+test_explicitpk_unspecified (model_forms.tests.UniqueTest)
+Test for primary_key being in the form and failing validation. ... ok
+test_inherited_unique (model_forms.tests.UniqueTest) ... ok
+test_inherited_unique_for_date (model_forms.tests.UniqueTest) ... ok
+test_inherited_unique_together (model_forms.tests.UniqueTest) ... ok
+test_multiple_field_unique_together (model_forms.tests.UniqueTest)
+When the same field is involved in multiple unique_together ... ok
+test_override_unique_for_date_message (model_forms.tests.UniqueTest) ... ok
+test_override_unique_message (model_forms.tests.UniqueTest) ... ok
+test_override_unique_together_message (model_forms.tests.UniqueTest) ... ok
+test_simple_unique (model_forms.tests.UniqueTest) ... ok
+test_unique_for_date (model_forms.tests.UniqueTest) ... ok
+test_unique_for_date_in_exclude (model_forms.tests.UniqueTest)
+If the date for unique_for_* constraints is excluded from the ... ok
+test_unique_for_date_with_nullable_date (model_forms.tests.UniqueTest) ... ok
+test_unique_null (model_forms.tests.UniqueTest) ... ok
+test_unique_together (model_forms.tests.UniqueTest)
+ModelForm test of unique_together constraint ... ok
+test_unique_together_exclusion (model_forms.tests.UniqueTest)
+Forms don't validate unique_together constraints when only part of the ... ok
+test_modelform_factory_metaclass (model_forms.tests.CustomMetaclassTestCase) ... ok
+test_bad_callback (model_forms.tests.FormFieldCallbackTests) ... ok
+test_baseform_with_widgets_in_meta (model_forms.tests.FormFieldCallbackTests)
+Using base forms with widgets defined in Meta should not raise errors. ... ok
+test_custom_callback (model_forms.tests.FormFieldCallbackTests)
+A custom formfield_callback is used if provided ... ok
+test_custom_callback_from_base_form_meta (model_forms.tests.FormFieldCallbackTests) ... FAIL
+test_custom_callback_in_meta (model_forms.tests.FormFieldCallbackTests) ... ok
+test_factory_with_widget_argument (model_forms.tests.FormFieldCallbackTests)
+Regression for #15315: modelform_factory should accept widgets ... ok
+test_inherit_after_custom_callback (model_forms.tests.FormFieldCallbackTests) ... ok
+test_modelform_factory_with_all_fields (model_forms.tests.FormFieldCallbackTests)
+Regression for #19733 ... ok
+test_modelform_factory_without_fields (model_forms.tests.FormFieldCallbackTests)
+Regression for #19733 ... ok
+test_custom_error_messages (model_forms.tests.ModelFormCustomErrorTests) ... ok
+test_model_clean_error_messages (model_forms.tests.ModelFormCustomErrorTests) ... ok
+test_field_removal (model_forms.tests.ModelFormInheritanceTests) ... ok
+test_field_removal_name_clashes (model_forms.tests.ModelFormInheritanceTests)
+Form fields can be removed in subclasses by setting them to None ... ok
+test_form_subclass_inheritance (model_forms.tests.ModelFormInheritanceTests) ... ok
+test_big_integer_field (model_forms.tests.ModelOtherFieldTests) ... ok
+test_http_prefixing (model_forms.tests.ModelOtherFieldTests)
+If the http:// prefix is omitted on form input, the field adds it again. ... ok
+test_modelform_non_editable_field (model_forms.tests.ModelOtherFieldTests)
+When explicitly including a non-editable field in a ModelForm, the ... ok
+test_url_on_modelform (model_forms.tests.ModelOtherFieldTests)
+Check basic URL field validation on model forms ... ok
+test_setattr_raises_validation_error_field_specific (model_forms.tests.StrictAssignmentTests)
+A model ValidationError using the dict form should put the error ... ok
+test_setattr_raises_validation_error_non_field (model_forms.tests.StrictAssignmentTests)
+A model ValidationError not using the dict form should put the error ... ok
+test_error_messages_overrides (model_forms.tests.TestFieldOverridesByFormMeta) ... ok
+test_field_type_overrides (model_forms.tests.TestFieldOverridesByFormMeta) ... ok
+test_help_text_overrides (model_forms.tests.TestFieldOverridesByFormMeta) ... ok
+test_label_overrides (model_forms.tests.TestFieldOverridesByFormMeta) ... ok
+test_widget_overrides (model_forms.tests.TestFieldOverridesByFormMeta) ... ok
+test_notrequired_overrides_notblank (model_forms.tests.ValidationTest) ... ok
+test_validates_with_replaced_field_excluded (model_forms.tests.ValidationTest) ... ok
+test_validates_with_replaced_field_not_specified (model_forms.tests.ValidationTest) ... ok
+
+======================================================================
+FAIL: test_custom_callback_from_base_form_meta (model_forms.tests.FormFieldCallbackTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 3528, in test_custom_callback_from_base_form_meta
+    self.assertEqual(type(field.widget), forms.Textarea)
+AssertionError: <class 'django.forms.widgets.TextInput'> != <class 'django.forms.widgets.Textarea'>
+
+----------------------------------------------------------------------
+Ran 152 tests in 0.220s
+
+FAILED (failures=1)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout 88e67a54b7ed0210c11523a337b498aadb2f5187 tests/model_forms/tests.py
+Updated 1 path from 6ceacec098

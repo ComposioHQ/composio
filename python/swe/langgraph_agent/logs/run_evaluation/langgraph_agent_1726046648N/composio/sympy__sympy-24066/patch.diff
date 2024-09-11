@@ -1,0 +1,53 @@
+diff --git a/sympy/physics/units/tests/test_unitsystem.py b/sympy/physics/units/tests/test_unitsystem.py
+index a04f3aa..db57f93 100644
+--- a/sympy/physics/units/tests/test_unitsystem.py
++++ b/sympy/physics/units/tests/test_unitsystem.py
+@@ -84,3 +84,17 @@ def test_derived_units_must_exist_in_unit_system():
+             units = preferred_unit.atoms(Quantity)
+             for unit in units:
+                 assert unit in unit_system._units, f"Unit {unit} is not in unit system {unit_system}"
++
++def test_collect_factor_and_dimension_exp():
++    from sympy import exp
++    from sympy.physics.units import second, ohm, farad
++    from sympy.physics.units.systems.si import SI
++
++    expr = second / (ohm * farad)
++    unit_system = UnitSystem.get_unit_system("SI")
++    factor, dim = unit_system._collect_factor_and_dimension(expr)
++    assert unit_system.get_dimension_system().is_dimensionless(dim)
++
++    buggy_expr = 100 + exp(expr)
++    factor, dim = unit_system._collect_factor_and_dimension(buggy_expr)
++    assert unit_system.get_dimension_system().is_dimensionless(dim)
+diff --git a/sympy/physics/units/unitsystem.py b/sympy/physics/units/unitsystem.py
+index 3daf84c..aa91a54 100644
+--- a/sympy/physics/units/unitsystem.py
++++ b/sympy/physics/units/unitsystem.py
+@@ -154,6 +154,7 @@ def _collect_factor_and_dimension(self, expr):
+         Return tuple with scale factor expression and dimension expression.
+         """
+         from sympy.physics.units import Quantity
++        from sympy import exp
+         if isinstance(expr, Quantity):
+             return expr.scale_factor, expr.dimension
+         elif isinstance(expr, Mul):
+@@ -190,10 +191,14 @@ def _collect_factor_and_dimension(self, expr):
+                 dim /= idim**count
+             return factor, dim
+         elif isinstance(expr, Function):
+-            fds = [self._collect_factor_and_dimension(
+-                arg) for arg in expr.args]
+-            return (expr.func(*(f[0] for f in fds)),
+-                    *(d[1] for d in fds))
++            if expr.func == exp:
++                # For exponential function, always return dimensionless result
++                factor, _ = self._collect_factor_and_dimension(expr.args[0])
++                return exp(factor), Dimension(1)
++            else:
++                # Existing handling for other functions
++                fds = [self._collect_factor_and_dimension(arg) for arg in expr.args]
++                return (expr.func(*(f[0] for f in fds)), *(d[1] for d in fds))
+         elif isinstance(expr, Dimension):
+             return S.One, expr
+         else:

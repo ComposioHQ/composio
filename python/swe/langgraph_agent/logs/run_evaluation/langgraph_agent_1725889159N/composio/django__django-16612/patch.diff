@@ -1,0 +1,36 @@
+diff --git a/django/contrib/admin/sites.py b/django/contrib/admin/sites.py
+index 61be31d8..075af2e6 100644
+--- a/django/contrib/admin/sites.py
++++ b/django/contrib/admin/sites.py
+@@ -443,6 +443,7 @@ class AdminSite:
+     def autocomplete_view(self, request):
+         return AutocompleteJsonView.as_view(admin_site=self)(request)
+ 
++    @no_append_slash
+     @no_append_slash
+     def catch_all_view(self, request, url):
+         if settings.APPEND_SLASH and not url.endswith("/"):
+@@ -453,7 +454,7 @@ class AdminSite:
+                 pass
+             else:
+                 if getattr(match.func, "should_append_slash", True):
+-                    return HttpResponsePermanentRedirect("%s/" % request.path)
++                    return HttpResponsePermanentRedirect("%s/" % request.get_full_path())
+         raise Http404
+ 
+     def _build_app_dict(self, request, label=None):
+diff --git a/tests/admin_views/tests.py b/tests/admin_views/tests.py
+index 5f7aafe4..8c9a3f8f 100644
+--- a/tests/admin_views/tests.py
++++ b/tests/admin_views/tests.py
+@@ -296,6 +296,10 @@ class AdminViewBasicTestCase(TestCase):
+ 
+ 
+ class AdminViewBasicTest(AdminViewBasicTestCase):
++
++    def test_catch_all_view_preserves_query_string(self):
++        response = self.client.get('/admin/auth/user/add?test=1', follow=True)
++        self.assertRedirects(response, '/admin/auth/user/add/?test=1', status_code=301)
+     def test_trailing_slash_required(self):
+         """
+         If you leave off the trailing slash, app should redirect and add it.

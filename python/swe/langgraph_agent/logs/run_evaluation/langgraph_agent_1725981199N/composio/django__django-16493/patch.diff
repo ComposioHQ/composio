@@ -1,0 +1,74 @@
+diff --git a/django/db/models/fields/files.py b/django/db/models/fields/files.py
+index 7a99b126..63073ee8 100644
+--- a/django/db/models/fields/files.py
++++ b/django/db/models/fields/files.py
+@@ -235,8 +235,10 @@ class FileField(Field):
+     def __init__(
+         self, verbose_name=None, name=None, upload_to="", storage=None, **kwargs
+     ):
+-        self._primary_key_set_explicitly = "primary_key" in kwargs
+-
++        self._storage_callable = None
++        if callable(storage):
++            self._storage_callable = storage
++            storage = storage()
+         self.storage = storage or default_storage
+         if callable(self.storage):
+             # Hold a reference to the callable for deconstruct().
+@@ -295,8 +297,8 @@ class FileField(Field):
+         if kwargs.get("max_length") == 100:
+             del kwargs["max_length"]
+         kwargs["upload_to"] = self.upload_to
+-        if self.storage is not default_storage:
+-            kwargs["storage"] = getattr(self, "_storage_callable", self.storage)
++        if self._storage_callable or self.storage is not default_storage:
++            kwargs["storage"] = self._storage_callable or self.storage
+         return name, path, args, kwargs
+ 
+     def get_internal_type(self):
+diff --git a/tests/model_fields/models.py b/tests/model_fields/models.py
+index 28ed59c3..de9d8f55 100644
+--- a/tests/model_fields/models.py
++++ b/tests/model_fields/models.py
+@@ -16,6 +16,12 @@ except ImportError:
+     Image = None
+ 
+ 
++class Foo(models.Model):
++    a = models.CharField(max_length=10)
++    d = models.DecimalField(max_digits=5, decimal_places=3)
++
++    class Meta:
++        app_label = 'model_fields'
+ class Foo(models.Model):
+     a = models.CharField(max_length=10)
+     d = models.DecimalField(max_digits=5, decimal_places=3)
+diff --git a/tests/model_fields/test_filefield.py b/tests/model_fields/test_filefield.py
+index 2259c1e4..bc91a214 100644
+--- a/tests/model_fields/test_filefield.py
++++ b/tests/model_fields/test_filefield.py
+@@ -14,6 +14,24 @@ from django.test import TestCase, override_settings
+ from django.test.utils import isolate_apps
+ 
+ from .models import Document
++from django.core.files.storage import FileSystemStorage, default_storage
++import random
++
++other_storage = FileSystemStorage(location='/media/other')
++
++def get_storage():
++    return random.choice([default_storage, other_storage])
++
++class StorageModel(models.Model):
++    file = models.FileField(storage=get_storage)
++
++class TestFileFieldDeconstruct(TestCase):
++    def test_deconstruct_callable_storage(self):
++        field = StorageModel._meta.get_field('file')
++        name, path, args, kwargs = field.deconstruct()
++        self.assertEqual(kwargs['storage'], get_storage)
++
++# Existing code starts here
+ 
+ 
+ class FileFieldTests(TestCase):

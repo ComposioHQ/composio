@@ -1,0 +1,37 @@
+diff --git a/tests/expressions/models.py b/tests/expressions/models.py
+index 02836e65..fe978ab1 100644
+--- a/tests/expressions/models.py
++++ b/tests/expressions/models.py
+@@ -4,6 +4,8 @@ Tests for F() query expression syntax.
+ import uuid
+ 
+ from django.db import models
++from django.db.models import F, DurationField
++from django.db.models.expressions import ExpressionWrapper
+ 
+ 
+ class Manager(models.Model):
+@@ -51,8 +53,6 @@ class Number(models.Model):
+ 
+     def __str__(self):
+         return '%i, %.3f' % (self.integer, self.float)
+-
+-
+ class Experiment(models.Model):
+     name = models.CharField(max_length=24)
+     assigned = models.DateField()
+@@ -68,6 +68,14 @@ class Experiment(models.Model):
+     def duration(self):
+         return self.end - self.start
+ 
++    @classmethod
++    def annotate_duration(cls):
++        return cls.objects.annotate(
++            delta=ExpressionWrapper(F('end') - F('start'), output_field=DurationField())
++        )
++    def duration(self):
++        return self.end - self.start
++
+ 
+ class Result(models.Model):
+     experiment = models.ForeignKey(Experiment, models.CASCADE)

@@ -1,0 +1,52 @@
+diff --git a/sympy/polys/monomials.py b/sympy/polys/monomials.py
+index 0e84403..01c7c3c 100644
+--- a/sympy/polys/monomials.py
++++ b/sympy/polys/monomials.py
+@@ -25,6 +25,8 @@ def itermonomials(variables, max_degrees, min_degrees=None):
+     ``min_degrees[i] <= degree_list(monom)[i] <= max_degrees[i]``,
+     for all ``i``.
+ 
++    When ``min_degrees`` is specified as an integer, it represents the minimum total degree.
++
+     Case I. ``max_degrees`` and ``min_degrees`` are both integers
+     =============================================================
+ 
+@@ -127,7 +129,7 @@ def itermonomials(variables, max_degrees, min_degrees=None):
+                 for variable in item:
+                     if variable != 1:
+                         powers[variable] += 1
+-                if max(powers.values()) >= min_degree:
++                if sum(powers.values()) >= min_degree:
+                     monomials_list_comm.append(Mul(*item))
+             yield from set(monomials_list_comm)
+         else:
+@@ -139,7 +141,7 @@ def itermonomials(variables, max_degrees, min_degrees=None):
+                 for variable in item:
+                     if variable != 1:
+                         powers[variable] += 1
+-                if max(powers.values()) >= min_degree:
++                if sum(powers.values()) >= min_degree:
+                     monomials_list_non_comm.append(Mul(*item))
+             yield from set(monomials_list_non_comm)
+     else:
+diff --git a/sympy/polys/tests/test_monomials.py b/sympy/polys/tests/test_monomials.py
+index 482cbee..0b27d2c 100644
+--- a/sympy/polys/tests/test_monomials.py
++++ b/sympy/polys/tests/test_monomials.py
+@@ -1,5 +1,8 @@
+ """Tests for tools and arithmetics for monomials of distributed polynomials. """
+ 
++import unittest
++"""Tests for tools and arithmetics for monomials of distributed polynomials. """
++
+ from sympy.polys.monomials import (
+     itermonomials, monomial_count,
+     monomial_mul, monomial_div,
+@@ -251,4 +254,6 @@ def test_Monomial():
+     raises(NotImplementedError, lambda: m/1)
+     raises(ValueError, lambda: m**-1)
+     raises(TypeError, lambda: m.gcd(3))
+-    raises(TypeError, lambda: m.lcm(3))
++    # Test for min_degrees argument
++    assert set(itermonomials([x, y], 3, 2)) == {x**2, y**2, x*y, x**3, x**2*y, x*y**2, y**3}
++    assert set(itermonomials([x, y, z], 3, 2)) == {x**2, y**2, z**2, x*y, x*z, y*z, x**3, y**3, z**3, x**2*y, x**2*z, y**2*x, y**2*z, z**2*x, z**2*y, x*y*z}

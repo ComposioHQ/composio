@@ -1,0 +1,149 @@
+2024-09-10 21:14:17,397 - INFO - Environment image sweb.env.x86_64.aa92880033da20ca313928:latest found for scikit-learn__scikit-learn-10297
+Building instance image sweb.eval.x86_64.scikit-learn__scikit-learn-10297:latest for scikit-learn__scikit-learn-10297
+2024-09-10 21:27:35,858 - INFO - Creating container for scikit-learn__scikit-learn-10297...
+2024-09-10 21:27:35,954 - INFO - Container for scikit-learn__scikit-learn-10297 created: f40d50c5ecb0d3672fce6380c301eec834a017f499336b535716c4f835055bcc
+2024-09-10 21:27:36,169 - INFO - Container for scikit-learn__scikit-learn-10297 started: f40d50c5ecb0d3672fce6380c301eec834a017f499336b535716c4f835055bcc
+2024-09-10 21:27:36,171 - INFO - Intermediate patch for scikit-learn__scikit-learn-10297 written to logs/run_evaluation/langgraph_agent_1725981199N/composio/scikit-learn__scikit-learn-10297/patch.diff, now applying to container...
+2024-09-10 21:27:36,427 - INFO - Failed to apply patch to container, trying again...
+2024-09-10 21:27:36,491 - INFO - >>>>> Applied Patch:
+patching file sklearn/linear_model/ridge.py
+patching file sklearn/linear_model/tests/test_ridge.py
+
+2024-09-10 21:27:37,241 - INFO - Git diff before:
+diff --git a/sklearn/linear_model/ridge.py b/sklearn/linear_model/ridge.py
+index 911c74ae3..832c1020a 100644
+--- a/sklearn/linear_model/ridge.py
++++ b/sklearn/linear_model/ridge.py
+@@ -1252,6 +1252,13 @@ class RidgeClassifierCV(LinearClassifierMixin, _BaseRidgeCV):
+     n_samples case is handled efficiently.
+ 
+     Read more in the :ref:`User Guide <ridge_regression>`.
++    def __init__(self, alphas=(0.1, 1.0, 10.0), fit_intercept=True,
++                 normalize=False, scoring=None, cv=None, class_weight=None,
++                 store_cv_values=False):
++        super(RidgeClassifierCV, self).__init__(
++            alphas=alphas, fit_intercept=fit_intercept, normalize=normalize,
++            scoring=scoring, cv=cv, store_cv_values=store_cv_values)
++        self.class_weight = class_weight
+ 
+     Parameters
+     ----------
+@@ -1262,6 +1269,11 @@ class RidgeClassifierCV(LinearClassifierMixin, _BaseRidgeCV):
+         the estimates. Larger values specify stronger regularization.
+         Alpha corresponds to ``C^-1`` in other linear models such as
+         LogisticRegression or LinearSVC.
++    store_cv_values : boolean, default=False
++        Flag indicating if the cross-validation values corresponding to
++        each alpha should be stored in the `cv_values_` attribute (see
++        below). This flag is only available for backwards compatibility
++        and will be removed in version 0.23.
+ 
+     fit_intercept : boolean
+         Whether to calculate the intercept for this model. If set
+diff --git a/sklearn/linear_model/tests/test_ridge.py b/sklearn/linear_model/tests/test_ridge.py
+index ee44da5d5..99cece4fd 100644
+--- a/sklearn/linear_model/tests/test_ridge.py
++++ b/sklearn/linear_model/tests/test_ridge.py
+@@ -19,6 +19,39 @@ from sklearn.metrics import mean_squared_error
+ from sklearn.metrics import make_scorer
+ from sklearn.metrics import get_scorer
+ 
++from sklearn.linear_model.base import LinearRegression
++from sklearn.linear_model.ridge import ridge_regression
++from sklearn.linear_model.ridge import Ridge
++from sklearn.linear_model.ridge import _RidgeGCV
++from sklearn.linear_model.ridge import RidgeCV
++from sklearn.linear_model.ridge import RidgeClassifier
++from sklearn.linear_model.ridge import RidgeClassifierCV
++from sklearn.linear_model.ridge import _solve_cholesky
++from sklearn.linear_model.ridge import _solve_cholesky_kernel
++from sklearn.datasets import make_regression
++from sklearn.datasets import make_classification
++
++from sklearn.model_selection import GridSearchCV
++from sklearn.model_selection import KFold
++
++from sklearn.utils import check_random_state
++from sklearn.datasets import make_multilabel_classification
++
++from sklearn.utils.testing import assert_almost_equal
++from sklearn.utils.testing import assert_array_almost_equal
++from sklearn.utils.testing import assert_equal
++from sklearn.utils.testing import assert_array_equal
++from sklearn.utils.testing import assert_greater
++from sklearn.utils.testing import assert_raises
++from sklearn.utils.testing import assert_raise_message
++from sklearn.utils.testing import ignore_warnings
++from sklearn.utils.testing import assert_warns
++
++from sklearn import datasets
++from sklearn.metrics import mean_squared_error
++from sklearn.metrics import make_scorer
++from sklearn.metrics import get_scorer
++
+ from sklearn.linear_model.base import LinearRegression
+ from sklearn.linear_model.ridge import ridge_regression
+ from sklearn.linear_model.ridge import Ridge
+@@ -859,4 +892,18 @@ def test_dtype_match_cholesky():
+     assert coef_64.dtype == X_64.dtype
+     assert ridge_32.predict(X_32).dtype == X_32.dtype
+     assert ridge_64.predict(X_64).dtype == X_64.dtype
+-    assert_almost_equal(ridge_32.coef_, ridge_64.coef_, decimal=5)
++
++def test_ridge_classifier_cv_store_cv_values():
++    # Test RidgeClassifierCV with store_cv_values=True
++    rng = np.random.RandomState(42)
++    X, y = make_classification(n_samples=50, n_features=10, random_state=rng)
++    clf = RidgeClassifierCV(alphas=[0.1, 1.0, 10.0], store_cv_values=True)
++    clf.fit(X, y)
++
++    assert hasattr(clf, 'cv_values_')
++    assert clf.cv_values_.shape == (X.shape[0], len(clf.alphas))
++
++    # Test that cv_values_ is not stored when store_cv_values=False
++    clf_no_store = RidgeClassifierCV(alphas=[0.1, 1.0, 10.0], store_cv_values=False)
++    clf_no_store.fit(X, y)
++    assert not hasattr(clf_no_store, 'cv_values_')
+2024-09-10 21:27:37,242 - INFO - Eval script for scikit-learn__scikit-learn-10297 written to logs/run_evaluation/langgraph_agent_1725981199N/composio/scikit-learn__scikit-learn-10297/eval.sh; copying to container...
+2024-09-10 21:27:55,526 - INFO - Test runtime: 18.09 seconds
+2024-09-10 21:27:55,527 - INFO - Test output for scikit-learn__scikit-learn-10297 written to logs/run_evaluation/langgraph_agent_1725981199N/composio/scikit-learn__scikit-learn-10297/test_output.txt
+2024-09-10 21:27:55,636 - INFO - Git diff after:
+diff --git a/sklearn/linear_model/ridge.py b/sklearn/linear_model/ridge.py
+index 911c74ae3..832c1020a 100644
+--- a/sklearn/linear_model/ridge.py
++++ b/sklearn/linear_model/ridge.py
+@@ -1252,6 +1252,13 @@ class RidgeClassifierCV(LinearClassifierMixin, _BaseRidgeCV):
+     n_samples case is handled efficiently.
+ 
+     Read more in the :ref:`User Guide <ridge_regression>`.
++    def __init__(self, alphas=(0.1, 1.0, 10.0), fit_intercept=True,
++                 normalize=False, scoring=None, cv=None, class_weight=None,
++                 store_cv_values=False):
++        super(RidgeClassifierCV, self).__init__(
++            alphas=alphas, fit_intercept=fit_intercept, normalize=normalize,
++            scoring=scoring, cv=cv, store_cv_values=store_cv_values)
++        self.class_weight = class_weight
+ 
+     Parameters
+     ----------
+@@ -1262,6 +1269,11 @@ class RidgeClassifierCV(LinearClassifierMixin, _BaseRidgeCV):
+         the estimates. Larger values specify stronger regularization.
+         Alpha corresponds to ``C^-1`` in other linear models such as
+         LogisticRegression or LinearSVC.
++    store_cv_values : boolean, default=False
++        Flag indicating if the cross-validation values corresponding to
++        each alpha should be stored in the `cv_values_` attribute (see
++        below). This flag is only available for backwards compatibility
++        and will be removed in version 0.23.
+ 
+     fit_intercept : boolean
+         Whether to calculate the intercept for this model. If set
+2024-09-10 21:27:55,636 - INFO - Git diff changed after running eval script
+2024-09-10 21:27:55,636 - INFO - Grading answer for scikit-learn__scikit-learn-10297...
+2024-09-10 21:27:55,651 - INFO - report: {'scikit-learn__scikit-learn-10297': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': False, 'tests_status': {'FAIL_TO_PASS': {'success': [], 'failure': ['sklearn/linear_model/tests/test_ridge.py::test_ridge_classifier_cv_store_cv_values']}, 'PASS_TO_PASS': {'success': ['sklearn/linear_model/tests/test_ridge.py::test_ridge', 'sklearn/linear_model/tests/test_ridge.py::test_primal_dual_relationship', 'sklearn/linear_model/tests/test_ridge.py::test_ridge_singular', 'sklearn/linear_model/tests/test_ridge.py::test_ridge_regression_sample_weights', 'sklearn/linear_model/tests/test_ridge.py::test_ridge_sample_weights', 'sklearn/linear_model/tests/test_ridge.py::test_ridge_shapes', 'sklearn/linear_model/tests/test_ridge.py::test_ridge_intercept', 'sklearn/linear_model/tests/test_ridge.py::test_toy_ridge_object', 'sklearn/linear_model/tests/test_ridge.py::test_ridge_vs_lstsq', 'sklearn/linear_model/tests/test_ridge.py::test_ridge_individual_penalties', 'sklearn/linear_model/tests/test_ridge.py::test_ridge_cv_sparse_svd', 'sklearn/linear_model/tests/test_ridge.py::test_ridge_sparse_svd', 'sklearn/linear_model/tests/test_ridge.py::test_class_weights', 'sklearn/linear_model/tests/test_ridge.py::test_class_weight_vs_sample_weight', 'sklearn/linear_model/tests/test_ridge.py::test_class_weights_cv', 'sklearn/linear_model/tests/test_ridge.py::test_ridgecv_store_cv_values', 'sklearn/linear_model/tests/test_ridge.py::test_ridgecv_sample_weight', 'sklearn/linear_model/tests/test_ridge.py::test_raises_value_error_if_sample_weights_greater_than_1d', 'sklearn/linear_model/tests/test_ridge.py::test_sparse_design_with_sample_weights', 'sklearn/linear_model/tests/test_ridge.py::test_raises_value_error_if_solver_not_supported', 'sklearn/linear_model/tests/test_ridge.py::test_sparse_cg_max_iter', 'sklearn/linear_model/tests/test_ridge.py::test_n_iter', 'sklearn/linear_model/tests/test_ridge.py::test_ridge_fit_intercept_sparse', 'sklearn/linear_model/tests/test_ridge.py::test_errors_and_values_helper', 'sklearn/linear_model/tests/test_ridge.py::test_errors_and_values_svd_helper', 'sklearn/linear_model/tests/test_ridge.py::test_ridge_classifier_no_support_multilabel', 'sklearn/linear_model/tests/test_ridge.py::test_dtype_match', 'sklearn/linear_model/tests/test_ridge.py::test_dtype_match_cholesky'], 'failure': []}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for scikit-learn__scikit-learn-10297: resolved: False
+2024-09-10 21:27:55,653 - INFO - Attempting to stop container sweb.eval.scikit-learn__scikit-learn-10297.langgraph_agent_1725981199N...
+2024-09-10 21:28:10,874 - INFO - Attempting to remove container sweb.eval.scikit-learn__scikit-learn-10297.langgraph_agent_1725981199N...
+2024-09-10 21:28:10,889 - INFO - Container sweb.eval.scikit-learn__scikit-learn-10297.langgraph_agent_1725981199N removed.
+2024-09-10 21:28:10,889 - INFO - Attempting to remove image sweb.eval.x86_64.scikit-learn__scikit-learn-10297:latest...
+2024-09-10 21:28:11,084 - INFO - Image sweb.eval.x86_64.scikit-learn__scikit-learn-10297:latest removed.

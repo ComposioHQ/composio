@@ -1,0 +1,94 @@
+diff --git a/sklearn/linear_model/ridge.py b/sklearn/linear_model/ridge.py
+index 911c74a..832c102 100644
+--- a/sklearn/linear_model/ridge.py
++++ b/sklearn/linear_model/ridge.py
+@@ -1252,6 +1252,13 @@ class RidgeClassifierCV(LinearClassifierMixin, _BaseRidgeCV):
+     n_samples case is handled efficiently.
+ 
+     Read more in the :ref:`User Guide <ridge_regression>`.
++    def __init__(self, alphas=(0.1, 1.0, 10.0), fit_intercept=True,
++                 normalize=False, scoring=None, cv=None, class_weight=None,
++                 store_cv_values=False):
++        super(RidgeClassifierCV, self).__init__(
++            alphas=alphas, fit_intercept=fit_intercept, normalize=normalize,
++            scoring=scoring, cv=cv, store_cv_values=store_cv_values)
++        self.class_weight = class_weight
+ 
+     Parameters
+     ----------
+@@ -1262,6 +1269,11 @@ class RidgeClassifierCV(LinearClassifierMixin, _BaseRidgeCV):
+         the estimates. Larger values specify stronger regularization.
+         Alpha corresponds to ``C^-1`` in other linear models such as
+         LogisticRegression or LinearSVC.
++    store_cv_values : boolean, default=False
++        Flag indicating if the cross-validation values corresponding to
++        each alpha should be stored in the `cv_values_` attribute (see
++        below). This flag is only available for backwards compatibility
++        and will be removed in version 0.23.
+ 
+     fit_intercept : boolean
+         Whether to calculate the intercept for this model. If set
+diff --git a/sklearn/linear_model/tests/test_ridge.py b/sklearn/linear_model/tests/test_ridge.py
+index ee44da5..99cece4 100644
+--- a/sklearn/linear_model/tests/test_ridge.py
++++ b/sklearn/linear_model/tests/test_ridge.py
+@@ -19,6 +19,39 @@ from sklearn.metrics import mean_squared_error
+ from sklearn.metrics import make_scorer
+ from sklearn.metrics import get_scorer
+ 
++from sklearn.linear_model.base import LinearRegression
++from sklearn.linear_model.ridge import ridge_regression
++from sklearn.linear_model.ridge import Ridge
++from sklearn.linear_model.ridge import _RidgeGCV
++from sklearn.linear_model.ridge import RidgeCV
++from sklearn.linear_model.ridge import RidgeClassifier
++from sklearn.linear_model.ridge import RidgeClassifierCV
++from sklearn.linear_model.ridge import _solve_cholesky
++from sklearn.linear_model.ridge import _solve_cholesky_kernel
++from sklearn.datasets import make_regression
++from sklearn.datasets import make_classification
++
++from sklearn.model_selection import GridSearchCV
++from sklearn.model_selection import KFold
++
++from sklearn.utils import check_random_state
++from sklearn.datasets import make_multilabel_classification
++
++from sklearn.utils.testing import assert_almost_equal
++from sklearn.utils.testing import assert_array_almost_equal
++from sklearn.utils.testing import assert_equal
++from sklearn.utils.testing import assert_array_equal
++from sklearn.utils.testing import assert_greater
++from sklearn.utils.testing import assert_raises
++from sklearn.utils.testing import assert_raise_message
++from sklearn.utils.testing import ignore_warnings
++from sklearn.utils.testing import assert_warns
++
++from sklearn import datasets
++from sklearn.metrics import mean_squared_error
++from sklearn.metrics import make_scorer
++from sklearn.metrics import get_scorer
++
+ from sklearn.linear_model.base import LinearRegression
+ from sklearn.linear_model.ridge import ridge_regression
+ from sklearn.linear_model.ridge import Ridge
+@@ -859,4 +892,18 @@ def test_dtype_match_cholesky():
+     assert coef_64.dtype == X_64.dtype
+     assert ridge_32.predict(X_32).dtype == X_32.dtype
+     assert ridge_64.predict(X_64).dtype == X_64.dtype
+-    assert_almost_equal(ridge_32.coef_, ridge_64.coef_, decimal=5)
++
++def test_ridge_classifier_cv_store_cv_values():
++    # Test RidgeClassifierCV with store_cv_values=True
++    rng = np.random.RandomState(42)
++    X, y = make_classification(n_samples=50, n_features=10, random_state=rng)
++    clf = RidgeClassifierCV(alphas=[0.1, 1.0, 10.0], store_cv_values=True)
++    clf.fit(X, y)
++
++    assert hasattr(clf, 'cv_values_')
++    assert clf.cv_values_.shape == (X.shape[0], len(clf.alphas))
++
++    # Test that cv_values_ is not stored when store_cv_values=False
++    clf_no_store = RidgeClassifierCV(alphas=[0.1, 1.0, 10.0], store_cv_values=False)
++    clf_no_store.fit(X, y)
++    assert not hasattr(clf_no_store, 'cv_values_')

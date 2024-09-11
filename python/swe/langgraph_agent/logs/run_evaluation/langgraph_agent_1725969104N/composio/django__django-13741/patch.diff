@@ -1,0 +1,40 @@
+diff --git a/django/contrib/auth/forms.py b/django/contrib/auth/forms.py
+index b9eb3332..cca241a6 100644
+--- a/django/contrib/auth/forms.py
++++ b/django/contrib/auth/forms.py
+@@ -52,10 +52,18 @@ class ReadOnlyPasswordHashWidget(forms.Widget):
+ 
+ 
+ class ReadOnlyPasswordHashField(forms.Field):
++    """
++    A read-only field that displays the hashed password.
++    
++    This field is disabled by default to prevent accidental changes
++    to the password. The 'disabled' attribute can be overridden
++    if needed.
++    """
+     widget = ReadOnlyPasswordHashWidget
+ 
+     def __init__(self, *args, **kwargs):
+         kwargs.setdefault("required", False)
++        kwargs.setdefault("disabled", True)  # Set disabled to True by default
+         super().__init__(*args, **kwargs)
+ 
+     def bound_data(self, data, initial):
+diff --git a/tests/auth_tests/test_forms.py b/tests/auth_tests/test_forms.py
+index 88b4b326..959ac0a4 100644
+--- a/tests/auth_tests/test_forms.py
++++ b/tests/auth_tests/test_forms.py
+@@ -1086,3 +1086,12 @@ class AdminPasswordChangeFormTest(TestDataMixin, TestCase):
+         for field_name, autocomplete in tests:
+             with self.subTest(field_name=field_name, autocomplete=autocomplete):
+                 self.assertEqual(form.fields[field_name].widget.attrs['autocomplete'], autocomplete)
++
++class ReadOnlyPasswordHashFieldTest(TestCase):
++    def test_readonly_password_hash_field_disabled_by_default(self):
++        field = ReadOnlyPasswordHashField()
++        self.assertTrue(field.disabled)
++
++    def test_readonly_password_hash_field_can_be_enabled(self):
++        field = ReadOnlyPasswordHashField(disabled=False)
++        self.assertFalse(field.disabled)

@@ -1,0 +1,14 @@
+diff --git a/django/utils/datastructures.py b/django/utils/datastructures.py
+index 871b0167..044068a3 100644
+--- a/django/utils/datastructures.py
++++ b/django/utils/datastructures.py
+@@ -34,6 +34,9 @@ class OrderedSet:
+     def __len__(self):
+         return len(self.dict)
+ 
++    def __reversed__(self):
++        return reversed(self.dict.keys())
++
+ 
+ class MultiValueDictKeyError(KeyError):
+     pass

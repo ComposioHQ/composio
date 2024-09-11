@@ -1,12 +1,19 @@
 #! /bin/bash
 
+export COMPOSIO_LOGGING_LEVEL=DEBUG
+export TOKENIZERS_PARALLELISM=false
+
+export LANGCHAIN_TRACING_V2=true
+export LANGCHAIN_ENDPOINT="https://api.smith.langchain.com"
 
 
 instances_unresolved=(
-    "django__django-11603"
+    "django__django-13590"
     "django__django-16612"
     "sympy__sympy-24066"
+    "scikit-learn__scikit-learn-10297"
 )
+
 instances_left=()
 for dir in ../test/*/; do
     dir=${dir%*/}  # remove trailing slash
@@ -17,6 +24,7 @@ done
 
 # instances=("${instances_unresolved[@]}" "${instances_left[@]:15}")
 instances=("${instances_unresolved[@]}")
+# instances=("${instances_left[@]}")
 echo "Instances: ${instances[*]}"
 
 
@@ -29,11 +37,12 @@ run_instance() {
 }
 
 # Set the number of instances to run in parallel
-k=4
+k=2
 run_id="langgraph_agent_$(date +%s%N)"
 # Run instances in parallel, k at a time
 for ((i=0; i<${#instances[@]}; i+=k)); do
     # Get up to k instances
+    docker rmi $(docker images -f "dangling=true" -q)
     batch=("${instances[@]:i:k}")
     
     # Run the batch in parallel
@@ -43,4 +52,5 @@ for ((i=0; i<${#instances[@]}; i+=k)); do
     
     # Wait for all background processes to finish before starting the next batch
     wait
+    docker rmi $(docker images -f "dangling=true" -q)
 done

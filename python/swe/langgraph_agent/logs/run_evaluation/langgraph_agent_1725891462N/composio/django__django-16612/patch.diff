@@ -1,0 +1,61 @@
+diff --git a/django/contrib/admin/sites.py b/django/contrib/admin/sites.py
+index 61be31d8..9289f8e3 100644
+--- a/django/contrib/admin/sites.py
++++ b/django/contrib/admin/sites.py
+@@ -443,6 +443,8 @@ class AdminSite:
+     def autocomplete_view(self, request):
+         return AutocompleteJsonView.as_view(admin_site=self)(request)
+ 
++    @no_append_slash
++    @no_append_slash
+     @no_append_slash
+     def catch_all_view(self, request, url):
+         if settings.APPEND_SLASH and not url.endswith("/"):
+@@ -453,7 +455,10 @@ class AdminSite:
+                 pass
+             else:
+                 if getattr(match.func, "should_append_slash", True):
+-                    return HttpResponsePermanentRedirect("%s/" % request.path)
++                    redirect_url = request.path + '/'
++                    if request.META.get('QUERY_STRING'):
++                        redirect_url += '?' + request.META['QUERY_STRING']
++                    return HttpResponsePermanentRedirect(redirect_url)
+         raise Http404
+ 
+     def _build_app_dict(self, request, label=None):
+diff --git a/tests/admin_views/test_adminsite.py b/tests/admin_views/test_adminsite.py
+index 68a32567..06078ef8 100644
+--- a/tests/admin_views/test_adminsite.py
++++ b/tests/admin_views/test_adminsite.py
+@@ -107,4 +107,31 @@ class SiteActionsTests(SimpleTestCase):
+         action_name = "delete_selected"
+         self.assertEqual(self.site.get_action(action_name), delete_selected)
+         self.site.disable_action(action_name)
++
++class AdminSiteCatchAllViewTest(TestCase):
++    @override_settings(APPEND_SLASH=True)
++    def test_catch_all_view_with_query_string(self):
++        def dummy_view(request):
++            return None
++
++        admin.autodiscover()
++        admin_site = admin.site
++
++        urlpatterns = [
++            path('admin/', admin_site.urls),
++            path('admin/custom/', dummy_view),
++        ]
++
++        with self.settings(ROOT_URLCONF=type('URLConf', (), {'urlpatterns': urlpatterns})):
++            response = self.client.get('/admin/custom?param=value', follow=False)
++            self.assertRedirects(
++                response,
++                '/admin/custom/?param=value',
++                status_code=301,
++                fetch_redirect_response=False
++            )
++
++# Existing code starts here
++        action_name = "delete_selected"
++        self.assertEqual(self.site.get_action(action_name), delete_selected)
+         self.assertEqual(self.site.get_action(action_name), delete_selected)

@@ -1,0 +1,62 @@
+2024-09-11 12:48:04,379 - INFO - Environment image sweb.env.arm64.2baaea72acc974f6c02079:latest found for django__django-11603
+Building instance image sweb.eval.arm64.django__django-11603:latest for django__django-11603
+2024-09-11 12:48:04,381 - INFO - Image sweb.eval.arm64.django__django-11603:latest already exists, skipping build.
+2024-09-11 12:48:04,381 - INFO - Creating container for django__django-11603...
+2024-09-11 12:48:04,433 - INFO - Container for django__django-11603 created: 6e1f16e36483d2d4590a9804899b37f2ec49e2361a7946523e6e9a7f558184f1
+2024-09-11 12:48:04,693 - INFO - Container for django__django-11603 started: 6e1f16e36483d2d4590a9804899b37f2ec49e2361a7946523e6e9a7f558184f1
+2024-09-11 12:48:04,693 - INFO - Intermediate patch for django__django-11603 written to logs/run_evaluation/langgraph_agent_1726038806N/composio/django__django-11603/patch.diff, now applying to container...
+2024-09-11 12:48:04,879 - INFO - Failed to apply patch to container, trying again...
+2024-09-11 12:48:04,906 - INFO - >>>>> Applied Patch:
+patching file django/db/models/aggregates.py
+
+2024-09-11 12:48:07,065 - INFO - Git diff before:
+diff --git a/django/db/models/aggregates.py b/django/db/models/aggregates.py
+index da4ff928aa..8b10829eb8 100644
+--- a/django/db/models/aggregates.py
++++ b/django/db/models/aggregates.py
+@@ -99,6 +99,7 @@ class Aggregate(Func):
+ class Avg(FixDurationInputMixin, NumericOutputFieldMixin, Aggregate):
+     function = 'AVG'
+     name = 'Avg'
++    allow_distinct = True
+ 
+ 
+ class Count(Aggregate):
+@@ -142,6 +143,7 @@ class StdDev(NumericOutputFieldMixin, Aggregate):
+ class Sum(FixDurationInputMixin, Aggregate):
+     function = 'SUM'
+     name = 'Sum'
++    allow_distinct = True
+ 
+ 
+ class Variance(NumericOutputFieldMixin, Aggregate):
+2024-09-11 12:48:07,066 - INFO - Eval script for django__django-11603 written to logs/run_evaluation/langgraph_agent_1726038806N/composio/django__django-11603/eval.sh; copying to container...
+2024-09-11 12:48:10,790 - INFO - Test runtime: 3.59 seconds
+2024-09-11 12:48:10,790 - INFO - Test output for django__django-11603 written to logs/run_evaluation/langgraph_agent_1726038806N/composio/django__django-11603/test_output.txt
+2024-09-11 12:48:10,831 - INFO - Git diff after:
+diff --git a/django/db/models/aggregates.py b/django/db/models/aggregates.py
+index da4ff928aa..8b10829eb8 100644
+--- a/django/db/models/aggregates.py
++++ b/django/db/models/aggregates.py
+@@ -99,6 +99,7 @@ class Aggregate(Func):
+ class Avg(FixDurationInputMixin, NumericOutputFieldMixin, Aggregate):
+     function = 'AVG'
+     name = 'Avg'
++    allow_distinct = True
+ 
+ 
+ class Count(Aggregate):
+@@ -142,6 +143,7 @@ class StdDev(NumericOutputFieldMixin, Aggregate):
+ class Sum(FixDurationInputMixin, Aggregate):
+     function = 'SUM'
+     name = 'Sum'
++    allow_distinct = True
+ 
+ 
+ class Variance(NumericOutputFieldMixin, Aggregate):
+2024-09-11 12:48:10,831 - INFO - Grading answer for django__django-11603...
+2024-09-11 12:48:10,838 - INFO - report: {'django__django-11603': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': True, 'tests_status': {'FAIL_TO_PASS': {'success': ['test_distinct_on_aggregate (aggregation.tests.AggregateTestCase)', 'test_empty_aggregate (aggregation.tests.AggregateTestCase)'], 'failure': []}, 'PASS_TO_PASS': {'success': ['test_add_implementation (aggregation.tests.AggregateTestCase)', 'test_aggregate_alias (aggregation.tests.AggregateTestCase)', 'test_aggregate_annotation (aggregation.tests.AggregateTestCase)', 'test_aggregate_in_order_by (aggregation.tests.AggregateTestCase)', 'test_aggregate_multi_join (aggregation.tests.AggregateTestCase)', 'test_aggregate_over_complex_annotation (aggregation.tests.AggregateTestCase)', 'test_aggregation_expressions (aggregation.tests.AggregateTestCase)', 'Subquery annotations are excluded from the GROUP BY if they are', 'test_annotate_basic (aggregation.tests.AggregateTestCase)', 'test_annotate_defer (aggregation.tests.AggregateTestCase)', 'test_annotate_defer_select_related (aggregation.tests.AggregateTestCase)', 'test_annotate_m2m (aggregation.tests.AggregateTestCase)', 'test_annotate_ordering (aggregation.tests.AggregateTestCase)', 'test_annotate_over_annotate (aggregation.tests.AggregateTestCase)', 'test_annotate_values (aggregation.tests.AggregateTestCase)', 'test_annotate_values_aggregate (aggregation.tests.AggregateTestCase)', 'test_annotate_values_list (aggregation.tests.AggregateTestCase)', 'test_annotated_aggregate_over_annotated_aggregate (aggregation.tests.AggregateTestCase)', 'test_annotation (aggregation.tests.AggregateTestCase)', 'test_annotation_expressions (aggregation.tests.AggregateTestCase)', 'test_arguments_must_be_expressions (aggregation.tests.AggregateTestCase)', 'test_avg_decimal_field (aggregation.tests.AggregateTestCase)', 'test_avg_duration_field (aggregation.tests.AggregateTestCase)', 'test_backwards_m2m_annotate (aggregation.tests.AggregateTestCase)', 'test_combine_different_types (aggregation.tests.AggregateTestCase)', 'test_complex_aggregations_require_kwarg (aggregation.tests.AggregateTestCase)', 'test_complex_values_aggregation (aggregation.tests.AggregateTestCase)', 'test_count (aggregation.tests.AggregateTestCase)', 'test_count_distinct_expression (aggregation.tests.AggregateTestCase)', 'test_count_star (aggregation.tests.AggregateTestCase)', 'test_dates_with_aggregation (aggregation.tests.AggregateTestCase)', 'test_decimal_max_digits_has_no_effect (aggregation.tests.AggregateTestCase)', 'test_even_more_aggregate (aggregation.tests.AggregateTestCase)', 'test_expression_on_aggregation (aggregation.tests.AggregateTestCase)', 'test_filter_aggregate (aggregation.tests.AggregateTestCase)', 'test_filtering (aggregation.tests.AggregateTestCase)', 'test_fkey_aggregate (aggregation.tests.AggregateTestCase)', 'test_group_by_exists_annotation (aggregation.tests.AggregateTestCase)', 'test_group_by_subquery_annotation (aggregation.tests.AggregateTestCase)', 'test_grouped_annotation_in_group_by (aggregation.tests.AggregateTestCase)', 'test_missing_output_field_raises_error (aggregation.tests.AggregateTestCase)', 'test_more_aggregation (aggregation.tests.AggregateTestCase)', 'test_multi_arg_aggregate (aggregation.tests.AggregateTestCase)', 'test_multiple_aggregates (aggregation.tests.AggregateTestCase)', 'test_non_grouped_annotation_not_in_group_by (aggregation.tests.AggregateTestCase)', 'test_nonaggregate_aggregation_throws (aggregation.tests.AggregateTestCase)', 'test_nonfield_annotation (aggregation.tests.AggregateTestCase)', 'test_order_of_precedence (aggregation.tests.AggregateTestCase)', 'test_related_aggregate (aggregation.tests.AggregateTestCase)', 'test_reverse_fkey_annotate (aggregation.tests.AggregateTestCase)', 'test_single_aggregate (aggregation.tests.AggregateTestCase)', 'test_sum_distinct_aggregate (aggregation.tests.AggregateTestCase)', 'test_sum_duration_field (aggregation.tests.AggregateTestCase)', 'test_ticket11881 (aggregation.tests.AggregateTestCase)', 'test_ticket12886 (aggregation.tests.AggregateTestCase)', 'test_ticket17424 (aggregation.tests.AggregateTestCase)', 'test_values_aggregation (aggregation.tests.AggregateTestCase)', 'test_values_annotation_with_expression (aggregation.tests.AggregateTestCase)'], 'failure': []}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for django__django-11603: resolved: True
+2024-09-11 12:48:10,839 - INFO - Attempting to stop container sweb.eval.django__django-11603.langgraph_agent_1726038806N...
+2024-09-11 12:48:26,118 - INFO - Attempting to remove container sweb.eval.django__django-11603.langgraph_agent_1726038806N...
+2024-09-11 12:48:26,138 - INFO - Container sweb.eval.django__django-11603.langgraph_agent_1726038806N removed.

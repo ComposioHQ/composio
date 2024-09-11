@@ -1,0 +1,12 @@
+diff --git a/django/contrib/auth/forms.py b/django/contrib/auth/forms.py
+index b9eb3332..47d2711d 100644
+--- a/django/contrib/auth/forms.py
++++ b/django/contrib/auth/forms.py
+@@ -56,6 +56,7 @@ class ReadOnlyPasswordHashField(forms.Field):
+ 
+     def __init__(self, *args, **kwargs):
+         kwargs.setdefault("required", False)
++        kwargs.setdefault("disabled", True)  # Set disabled to True by default
+         super().__init__(*args, **kwargs)
+ 
+     def bound_data(self, data, initial):

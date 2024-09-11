@@ -1,0 +1,22 @@
+diff --git a/django/db/models/sql/query.py b/django/db/models/sql/query.py
+index 4648daf3..f0b344ec 100644
+--- a/django/db/models/sql/query.py
++++ b/django/db/models/sql/query.py
+@@ -1070,10 +1070,17 @@ class Query(BaseExpression):
+         return sql, params
+ 
+     def resolve_lookup_value(self, value, can_reuse, allow_joins):
++        # Handle named tuples separately to fix issues with __range queries
++        # when upgrading from Django 2.2 to 3.0
+         if hasattr(value, 'resolve_expression'):
+             value = value.resolve_expression(
+                 self, reuse=can_reuse, allow_joins=allow_joins,
+             )
++        elif isinstance(value, tuple) and hasattr(value, '_fields'):  # Check for named tuple
++            return type(value)._make(
++                self.resolve_lookup_value(sub_value, can_reuse, allow_joins)
++                for sub_value in value
++            )
+         elif isinstance(value, (list, tuple)):
+             # The items of the iterable may be expressions and therefore need
+             # to be resolved independently.

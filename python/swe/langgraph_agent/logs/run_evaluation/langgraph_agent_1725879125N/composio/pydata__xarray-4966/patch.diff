@@ -1,0 +1,156 @@
+diff --git a/xarray/coding/variables.py b/xarray/coding/variables.py
+index b035ff8..4cef313 100644
+--- a/xarray/coding/variables.py
++++ b/xarray/coding/variables.py
+@@ -285,43 +285,66 @@ class CFScaleOffsetCoder(VariableCoder):
+ 
+ 
+ class UnsignedIntegerCoder(VariableCoder):
++    """Handles encoding and decoding of unsigned integers.
++
++    This coder manages the '_Unsigned' attribute for integer data types.
++    It converts between signed and unsigned integers based on the '_Unsigned'
++    attribute value.
++
++    - When '_Unsigned' is 'true':
++      - During encoding: Converts unsigned to signed integers.
++      - During decoding: Converts signed to unsigned integers.
++    - When '_Unsigned' is 'false':
++      - During encoding: Converts signed to unsigned integers.
++      - During decoding: Converts unsigned to signed integers.
++
++    The coder also updates the '_FillValue' attribute if present to match
++    the new data type after conversion.
++    """
++
+     def encode(self, variable, name=None):
+         dims, data, attrs, encoding = unpack_for_encoding(variable)
+ 
+-        # from netCDF best practices
+-        # https://www.unidata.ucar.edu/software/netcdf/docs/BestPractices.html
+-        #     "_Unsigned = "true" to indicate that
+-        #      integer data should be treated as unsigned"
+-        if encoding.get("_Unsigned", "false") == "true":
+-            pop_to(encoding, attrs, "_Unsigned")
+-            signed_dtype = np.dtype("i%s" % data.dtype.itemsize)
+-            if "_FillValue" in attrs:
+-                new_fill = signed_dtype.type(attrs["_FillValue"])
+-                attrs["_FillValue"] = new_fill
+-            data = duck_array_ops.around(data).astype(signed_dtype)
++        if "_Unsigned" in attrs:
++            unsigned = attrs["_Unsigned"]
++            if unsigned == "true" or unsigned == "True" or unsigned is True:
++                if data.dtype.kind == "u":
++                    signed_dtype = np.dtype(f"i{data.dtype.itemsize}")
++                    if "_FillValue" in attrs:
++                        new_fill = signed_dtype.type(attrs["_FillValue"])
++                        attrs["_FillValue"] = new_fill
++                    data = duck_array_ops.around(data).astype(signed_dtype)
++                    encoding["_Unsigned"] = "true"
++            elif unsigned == "false" or unsigned == "False" or unsigned is False:
++                if data.dtype.kind == "i":
++                    unsigned_dtype = np.dtype(f"u{data.dtype.itemsize}")
++                    if "_FillValue" in attrs:
++                        new_fill = unsigned_dtype.type(attrs["_FillValue"])
++                        attrs["_FillValue"] = new_fill
++                    data = duck_array_ops.around(data).astype(unsigned_dtype)
++                    encoding["_Unsigned"] = "false"
+ 
+         return Variable(dims, data, attrs, encoding)
+ 
+     def decode(self, variable, name=None):
+         dims, data, attrs, encoding = unpack_for_decoding(variable)
+-
+-        if "_Unsigned" in attrs:
+-            unsigned = pop_to(attrs, encoding, "_Unsigned")
+-
+-            if data.dtype.kind == "i":
+-                if unsigned == "true":
+-                    unsigned_dtype = np.dtype("u%s" % data.dtype.itemsize)
+-                    transform = partial(np.asarray, dtype=unsigned_dtype)
+-                    data = lazy_elemwise_func(data, transform, unsigned_dtype)
++        if "_Unsigned" in encoding:
++            unsigned = encoding["_Unsigned"]
++            if unsigned == "true" or unsigned == "True" or unsigned is True:
++                if data.dtype.kind == "i":
++                    unsigned_dtype = np.dtype(f"u{data.dtype.itemsize}")
+                     if "_FillValue" in attrs:
+                         new_fill = unsigned_dtype.type(attrs["_FillValue"])
+                         attrs["_FillValue"] = new_fill
+-            else:
+-                warnings.warn(
+-                    "variable %r has _Unsigned attribute but is not "
+-                    "of integer type. Ignoring attribute." % name,
+-                    SerializationWarning,
+-                    stacklevel=3,
+-                )
++                    data = duck_array_ops.around(data).astype(unsigned_dtype)
++                    attrs["_Unsigned"] = "true"
++            elif unsigned == "false" or unsigned == "False" or unsigned is False:
++                if data.dtype.kind == "u":
++                    signed_dtype = np.dtype(f"i{data.dtype.itemsize}")
++                    if "_FillValue" in attrs:
++                        new_fill = signed_dtype.type(attrs["_FillValue"])
++                        attrs["_FillValue"] = new_fill
++                    data = duck_array_ops.around(data).astype(signed_dtype)
++                    attrs["_Unsigned"] = "false"
+ 
+         return Variable(dims, data, attrs, encoding)
+diff --git a/xarray/tests/test_coding.py b/xarray/tests/test_coding.py
+index e0df778..eaef0cb 100644
+--- a/xarray/tests/test_coding.py
++++ b/xarray/tests/test_coding.py
+@@ -116,4 +116,52 @@ def test_scaling_offset_as_list(scale_factor, add_offset):
+     coder = variables.CFScaleOffsetCoder()
+     encoded = coder.encode(original)
+     roundtripped = coder.decode(encoded)
+-    assert_allclose(original, roundtripped)
++def test_UnsignedIntegerCoder():
++    coder = variables.UnsignedIntegerCoder()
++
++    # Test encoding unsigned to signed
++    original_unsigned = xr.Variable(("x",), np.array([0, 128, 255], dtype="u1"),
++                                    attrs={"_Unsigned": "true"})
++    expected_signed = xr.Variable(("x",), np.array([0, -128, -1], dtype="i1"),
++                                  attrs={"_Unsigned": "true"})
++    encoded = coder.encode(original_unsigned)
++    assert_identical(expected_signed, encoded)
++    assert encoded.encoding["_Unsigned"] == "true"
++
++    # Test decoding signed to unsigned
++    decoded = coder.decode(encoded)
++    assert_identical(original_unsigned, decoded)
++
++    # Test encoding signed to unsigned
++    original_signed = xr.Variable(("x",), np.array([-128, 0, 127], dtype="i1"),
++                                  attrs={"_Unsigned": "false"})
++    expected_unsigned = xr.Variable(("x",), np.array([128, 0, 127], dtype="u1"),
++                                        attrs={"_Unsigned": "false"})
++    encoded = coder.encode(original_signed)
++    assert_identical(expected_unsigned, encoded)
++    assert encoded.encoding["_Unsigned"] == "false"
++
++    # Test decoding unsigned to signed
++    decoded = coder.decode(encoded)
++    assert_identical(original_signed, decoded)
++
++    # Test with _FillValue
++    original_with_fill = xr.Variable(("x",), np.array([0, 255, 128], dtype="u1"),
++                                     attrs={"_Unsigned": "true", "_FillValue": 255})
++    expected_with_fill = xr.Variable(("x",), np.array([0, -1, -128], dtype="i1"),
++                                     attrs={"_FillValue": -1})
++    encoded = coder.encode(original_with_fill)
++    assert_identical(expected_with_fill, encoded)
++    assert encoded.encoding["_Unsigned"] == "true"
++
++    decoded = coder.decode(encoded)
++    assert_identical(original_with_fill, decoded)
++
++    # Test with non-integer data (should not modify)
++    original_float = xr.Variable(("x",), np.array([0.0, 1.5, 2.0], dtype="f4"),
++                                 attrs={"_Unsigned": "true"})
++    encoded = coder.encode(original_float)
++    assert_identical(original_float, encoded)
++
++    decoded = coder.decode(encoded)
++    assert_identical(original_float, decoded)

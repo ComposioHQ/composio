@@ -1,0 +1,49 @@
+diff --git a/sympy/printing/pycode.py b/sympy/printing/pycode.py
+index 3a72ab6..f42abe8 100644
+--- a/sympy/printing/pycode.py
++++ b/sympy/printing/pycode.py
+@@ -464,6 +464,11 @@ def _print_Symbol(self, expr):
+             return name.replace('{', '').replace('}', '')
+         else:
+             return name
++    def _print_Min(self, expr):
++        return "min({})".format(", ".join(self._print(arg) for arg in expr.args))
++
++    def _print_Max(self, expr):
++        return "max({})".format(", ".join(self._print(arg) for arg in expr.args))
+ 
+     _print_lowergamma = CodePrinter._print_not_supported
+     _print_uppergamma = CodePrinter._print_not_supported
+diff --git a/sympy/printing/tests/test_pycode.py b/sympy/printing/tests/test_pycode.py
+index 9c1285d..5342e55 100644
+--- a/sympy/printing/tests/test_pycode.py
++++ b/sympy/printing/tests/test_pycode.py
+@@ -4,6 +4,9 @@
+ from sympy.codegen.scipy_nodes import cosm1
+ from sympy.codegen.matrix_nodes import MatrixSolve
+ from sympy.core import Expr, Mod, symbols, Eq, Le, Gt, zoo, oo, Rational, Pow
++from sympy import Min, Max
++
++
+ from sympy.core.numbers import pi
+ from sympy.core.singleton import S
+ from sympy.functions import acos, KroneckerDelta, Piecewise, sign, sqrt
+@@ -56,6 +59,10 @@ def test_PythonCodePrinter():
+     assert prntr.doprint(KroneckerDelta(x,y)) == '(1 if x == y else 0)'
+ 
+     assert prntr.doprint((2,3)) == "(2, 3)"
++    assert prntr.doprint(Min(x, y)) == 'min(x, y)'
++    assert prntr.doprint(Max(x, y)) == 'max(x, y)'
++    assert prntr.doprint(Min(x, y, z)) == 'min(x, y, z)'
++    assert prntr.doprint(Max(x, y, z)) == 'max(x, y, z)'
+     assert prntr.doprint([2,3]) == "[2, 3]"
+ 
+ 
+@@ -392,3 +399,7 @@ def test_numerical_accuracy_functions():
+     assert prntr.doprint(expm1(x)) == 'numpy.expm1(x)'
+     assert prntr.doprint(log1p(x)) == 'numpy.log1p(x)'
+     assert prntr.doprint(cosm1(x)) == 'scipy.special.cosm1(x)'
++
++if __name__ == '__main__':
++    import unittest
++    unittest.main()

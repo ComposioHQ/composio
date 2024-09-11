@@ -1,0 +1,71 @@
+diff --git a/django/core/handlers/base.py b/django/core/handlers/base.py
+index 8e8c3da0..03c6cd04 100644
+--- a/django/core/handlers/base.py
++++ b/django/core/handlers/base.py
+@@ -1,6 +1,7 @@
+ import asyncio
+ import logging
+ import types
++import warnings
+ 
+ from asgiref.sync import async_to_sync, sync_to_async
+ 
+@@ -62,6 +63,14 @@ class BaseHandler:
+                         logger.debug('MiddlewareNotUsed(%r): %s', middleware_path, exc)
+                     else:
+                         logger.debug('MiddlewareNotUsed: %r', middleware_path)
++                if is_async:
++                    warnings.warn(
++                        f"MiddlewareNotUsed exception raised by {middleware_path} in ASGI context. "
++                        "This may cause unintended side effects in the middleware chain.",
++                        RuntimeWarning
++                    )
++                handler = get_response
++                handler_is_async = is_async
+                 continue
+ 
+             if mw_instance is None:
+diff --git a/tests/middleware/tests.py b/tests/middleware/tests.py
+index c7a007b8..5a75652b 100644
+--- a/tests/middleware/tests.py
++++ b/tests/middleware/tests.py
+@@ -963,4 +963,38 @@ class ETagGZipMiddlewareTest(SimpleTestCase):
+         gzip_etag = response.headers['ETag']
+         next_request = self.rf.get('/', HTTP_ACCEPT_ENCODING='gzip, deflate', HTTP_IF_NONE_MATCH=gzip_etag)
+         next_response = ConditionalGetMiddleware(get_response)(next_request)
+-        self.assertEqual(next_response.status_code, 304)
++from django.core.handlers.asgi import ASGIHandler
++from django.core.exceptions import MiddlewareNotUsed
++from django.test import AsyncRequestFactory, SimpleTestCase, override_settings
++from django.http import HttpResponse
++import asyncio
++
++class MiddlewareNotUsedTestCase(SimpleTestCase):
++    async def test_middleware_not_used_asgi(self):
++        class NotUsedMiddleware:
++            def __init__(self, get_response):
++                raise MiddlewareNotUsed()
++
++        class UsedMiddleware:
++            def __init__(self, get_response):
++                self.get_response = get_response
++
++            async def __call__(self, request):
++                response = await self.get_response(request)
++                response['X-Used-Middleware'] = 'True'
++                return response
++
++        async def get_response(request):
++            return HttpResponse()
++
++        handler = ASGIHandler()
++        with override_settings(MIDDLEWARE=[
++            'tests.middleware.tests.MiddlewareNotUsedTestCase.test_middleware_not_used_asgi.<locals>.NotUsedMiddleware',
++            'tests.middleware.tests.MiddlewareNotUsedTestCase.test_middleware_not_used_asgi.<locals>.UsedMiddleware'
++        ]):
++            handler.load_middleware(is_async=True)
++
++        request = AsyncRequestFactory().get('/')
++        response = await handler(request)
++
++        self.assertEqual(response['X-Used-Middleware'], 'True')

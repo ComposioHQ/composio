@@ -1,0 +1,41 @@
+diff --git a/django/contrib/admin/sites.py b/django/contrib/admin/sites.py
+index 61be31d8..c8a933e4 100644
+--- a/django/contrib/admin/sites.py
++++ b/django/contrib/admin/sites.py
+@@ -453,7 +453,7 @@ class AdminSite:
+                 pass
+             else:
+                 if getattr(match.func, "should_append_slash", True):
+-                    return HttpResponsePermanentRedirect("%s/" % request.path)
++                    return HttpResponsePermanentRedirect(request.get_full_path() + "/")
+         raise Http404
+ 
+     def _build_app_dict(self, request, label=None):
+diff --git a/tests/admin_views/tests.py b/tests/admin_views/tests.py
+index 5f7aafe4..ce9ee2c4 100644
+--- a/tests/admin_views/tests.py
++++ b/tests/admin_views/tests.py
+@@ -8648,4 +8648,23 @@ class AdminSiteFinalCatchAllPatternTests(TestCase):
+         unknown_url = "/unknown/"
+         response = self.client.get(unknown_url)
+         # Does not redirect to the admin login.
++
++class AdminSiteCatchAllViewTests(TestCase):
++    @classmethod
++    def setUpTestData(cls):
++        cls.superuser = User.objects.create_superuser(
++            username="super", password="secret", email="super@example.com"
++        )
++
++    def setUp(self):
++        self.client.force_login(self.superuser)
++
++    def test_catch_all_view_preserves_query_string(self):
++        response = self.client.get('/admin/auth/foo?id=123', follow=True)
++        self.assertRedirects(response, '/admin/auth/foo/?id=123', status_code=301, target_status_code=404)
++
++    @override_settings(APPEND_SLASH=False)
++    def test_catch_all_view_without_append_slash(self):
++        response = self.client.get('/admin/auth/foo?id=123')
++        self.assertEqual(response.status_code, 404)
+         self.assertEqual(response.status_code, 404)

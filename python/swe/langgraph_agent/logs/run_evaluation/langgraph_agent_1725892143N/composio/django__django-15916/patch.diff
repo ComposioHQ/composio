@@ -1,0 +1,90 @@
+diff --git a/django/forms/models.py b/django/forms/models.py
+index 192d9fad..b9900384 100644
+--- a/django/forms/models.py
++++ b/django/forms/models.py
+@@ -257,13 +257,19 @@ class ModelFormOptions:
+ 
+ class ModelFormMetaclass(DeclarativeFieldsMetaclass):
+     def __new__(mcs, name, bases, attrs):
++        # Check for formfield_callback in base classes and current class Meta
+         base_formfield_callback = None
++        meta_formfield_callback = None
+         for b in bases:
+-            if hasattr(b, "Meta") and hasattr(b.Meta, "formfield_callback"):
+-                base_formfield_callback = b.Meta.formfield_callback
++            if hasattr(b, "Meta"):
++                if hasattr(b.Meta, "formfield_callback"):
++                    base_formfield_callback = b.Meta.formfield_callback
+                 break
+ 
+-        formfield_callback = attrs.pop("formfield_callback", base_formfield_callback)
++        if 'Meta' in attrs and hasattr(attrs['Meta'], 'formfield_callback'):
++            meta_formfield_callback = attrs['Meta'].formfield_callback
++        # Prioritize formfield_callback from current class Meta, then base class Meta, then class-level
++        formfield_callback = attrs.pop("formfield_callback", meta_formfield_callback or base_formfield_callback)
+ 
+         new_class = super().__new__(mcs, name, bases, attrs)
+ 
+diff --git a/tests/forms_tests/tests/test_forms.py b/tests/forms_tests/tests/test_forms.py
+index 60054721..a4826a90 100644
+--- a/tests/forms_tests/tests/test_forms.py
++++ b/tests/forms_tests/tests/test_forms.py
+@@ -5080,4 +5080,57 @@ class DeprecationTests(SimpleTestCase):
+             RemovedInDjango50Warning, DEFAULT_TEMPLATE_DEPRECATION_MSG
+         ):
+             form = Person()
+-            str(form)
++class ModelFormMetaFormfieldCallbackTests(SimpleTestCase):
++    def test_formfield_callback_priority(self):
++        from django.forms import ModelForm
++        from django.db import models
++
++        def global_callback(field, **kwargs):
++            return CharField(initial='global')
++
++        class TestModel(models.Model):
++            name = models.CharField(max_length=20)
++
++            class Meta:
++                app_label = 'tests'
++
++        class BaseForm(ModelForm):
++            class Meta:
++                model = TestModel
++                fields = ['name']
++                formfield_callback = lambda field, **kwargs: CharField(initial='base')
++
++        class DerivedForm(BaseForm):
++            class Meta(BaseForm.Meta):
++                formfield_callback = lambda field, **kwargs: CharField(initial='derived')
++
++        # Test that formfield_callback in derived Meta takes priority
++        form = DerivedForm()
++        self.assertEqual(form.fields['name'].initial, 'derived')
++
++        # Test that formfield_callback in base Meta is used if not in derived
++        class DerivedFormNoCallback(BaseForm):
++            class Meta(BaseForm.Meta):
++                pass
++
++        form = DerivedFormNoCallback()
++        self.assertEqual(form.fields['name'].initial, 'base')
++
++        # Test that global formfield_callback is used if not specified in Meta
++        class GlobalCallbackForm(ModelForm):
++            class Meta:
++                model = TestModel
++                fields = ['name']
++
++        form = GlobalCallbackForm()
++        self.assertEqual(form.fields['name'].initial, 'global')
++
++        # Test that formfield_callback in Meta takes priority over global
++        class LocalCallbackForm(ModelForm):
++            class Meta:
++                model = TestModel
++                fields = ['name']
++                formfield_callback = lambda field, **kwargs: CharField(initial='local')
++
++        form = LocalCallbackForm(formfield_callback=global_callback)
++        self.assertEqual(form.fields['name'].initial, 'local')

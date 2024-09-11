@@ -1,4 +1,4 @@
-2024-09-09 15:01:39,173 - INFO - Building image sweb.eval.arm64.sympy__sympy-22914:latest
+2024-09-10 18:10:33,644 - INFO - Building image sweb.eval.arm64.sympy__sympy-22914:latest
 Using dockerfile:
 FROM --platform=linux/arm64/v8 sweb.env.arm64.c795f4b88616b8462021ed:latest
 
@@ -8,7 +8,7 @@ RUN /bin/bash /root/setup_repo.sh
 WORKDIR /testbed/
 
 Adding (1) setup scripts to image build repo
-2024-09-09 15:01:39,173 - INFO - [SETUP SCRIPT] setup_repo.sh:
+2024-09-10 18:10:33,644 - INFO - [SETUP SCRIPT] setup_repo.sh:
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/sympy/sympy /testbed
@@ -21,54 +21,54 @@ conda activate testbed
 echo "Current environment: $CONDA_DEFAULT_ENV"
 python -m pip install -e .
 
-2024-09-09 15:01:39,175 - INFO - Building docker image sweb.eval.arm64.sympy__sympy-22914:latest in logs/build_images/instances/sweb.eval.arm64.sympy__sympy-22914__latest with platform linux/arm64/v8
-2024-09-09 15:01:39,268 - INFO - Step 1/4 : FROM --platform=linux/arm64/v8 sweb.env.arm64.c795f4b88616b8462021ed:latest
-2024-09-09 15:01:39,269 - INFO - 
-2024-09-09 15:01:39,269 - INFO - ---> e36c920e48e1
-2024-09-09 15:01:39,269 - INFO - Step 2/4 : COPY ./setup_repo.sh /root/
-2024-09-09 15:01:39,269 - INFO - 
-2024-09-09 15:01:39,315 - INFO - ---> d4cc3bff025a
-2024-09-09 15:01:39,315 - INFO - Step 3/4 : RUN /bin/bash /root/setup_repo.sh
-2024-09-09 15:01:39,315 - INFO - 
-2024-09-09 15:01:39,333 - INFO - ---> Running in e7a5b1918d06
-2024-09-09 15:01:39,542 - INFO - + git clone -o origin https://github.com/sympy/sympy /testbed
-2024-09-09 15:01:39,548 - INFO - Cloning into '/testbed'...
-2024-09-09 15:01:53,367 - INFO - + chmod -R 777 /testbed
-2024-09-09 15:01:53,371 - INFO - + cd /testbed
-+ git reset --hard c4e836cdf73fc6aa7bab6a86719a0f08861ffb1d
-2024-09-09 15:01:53,604 - INFO - HEAD is now at c4e836cdf7 Merge pull request #22906 from ThePauliPrinciple/idx_printing
-2024-09-09 15:01:53,607 - INFO - + git remote remove origin
-2024-09-09 15:01:53,610 - INFO - + source /opt/miniconda3/bin/activate
-2024-09-09 15:01:53,611 - INFO - ++ _CONDA_ROOT=/opt/miniconda3
-2024-09-09 15:01:53,611 - INFO - ++ . /opt/miniconda3/etc/profile.d/conda.sh
-2024-09-09 15:01:53,611 - INFO - +++ export CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-10 18:10:33,645 - INFO - Building docker image sweb.eval.arm64.sympy__sympy-22914:latest in logs/build_images/instances/sweb.eval.arm64.sympy__sympy-22914__latest with platform linux/arm64/v8
+2024-09-10 18:10:33,717 - INFO - Step 1/4 : FROM --platform=linux/arm64/v8 sweb.env.arm64.c795f4b88616b8462021ed:latest
+2024-09-10 18:10:33,717 - INFO - 
+2024-09-10 18:10:33,717 - INFO - ---> e36c920e48e1
+2024-09-10 18:10:33,717 - INFO - Step 2/4 : COPY ./setup_repo.sh /root/
+2024-09-10 18:10:33,717 - INFO - 
+2024-09-10 18:10:33,749 - INFO - ---> 0e03ea141994
+2024-09-10 18:10:33,749 - INFO - Step 3/4 : RUN /bin/bash /root/setup_repo.sh
+2024-09-10 18:10:33,749 - INFO - 
+2024-09-10 18:10:33,763 - INFO - ---> Running in d7ce79744d31
+2024-09-10 18:10:33,943 - INFO - + git clone -o origin https://github.com/sympy/sympy /testbed
+2024-09-10 18:10:33,947 - INFO - Cloning into '/testbed'...
+2024-09-10 18:10:49,989 - INFO - + chmod -R 777 /testbed
+2024-09-10 18:10:49,993 - INFO - + cd /testbed
+2024-09-10 18:10:49,993 - INFO - + git reset --hard c4e836cdf73fc6aa7bab6a86719a0f08861ffb1d
+2024-09-10 18:10:50,286 - INFO - HEAD is now at c4e836cdf7 Merge pull request #22906 from ThePauliPrinciple/idx_printing
+2024-09-10 18:10:50,289 - INFO - + git remote remove origin
+2024-09-10 18:10:50,293 - INFO - + source /opt/miniconda3/bin/activate
+2024-09-10 18:10:50,293 - INFO - ++ _CONDA_ROOT=/opt/miniconda3
+2024-09-10 18:10:50,293 - INFO - ++ . /opt/miniconda3/etc/profile.d/conda.sh
+2024-09-10 18:10:50,293 - INFO - +++ export CONDA_EXE=/opt/miniconda3/bin/conda
 +++ CONDA_EXE=/opt/miniconda3/bin/conda
-2024-09-09 15:01:53,611 - INFO - +++ export _CE_M=
+2024-09-10 18:10:50,293 - INFO - +++ export _CE_M=
 +++ _CE_M=
 +++ export _CE_CONDA=
 +++ _CE_CONDA=
 +++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
 +++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
-2024-09-09 15:01:53,611 - INFO - +++ '[' -z '' ']'
+2024-09-10 18:10:50,293 - INFO - +++ '[' -z '' ']'
 +++ export CONDA_SHLVL=0
 +++ CONDA_SHLVL=0
-+++ '[' -n '' ']'
-2024-09-09 15:01:53,611 - INFO - +++++ dirname /opt/miniconda3/bin/conda
-2024-09-09 15:01:53,611 - INFO - ++++ dirname /opt/miniconda3/bin
-2024-09-09 15:01:53,612 - INFO - +++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-10 18:10:50,293 - INFO - +++ '[' -n '' ']'
+2024-09-10 18:10:50,294 - INFO - +++++ dirname /opt/miniconda3/bin/conda
+2024-09-10 18:10:50,294 - INFO - ++++ dirname /opt/miniconda3/bin
+2024-09-10 18:10:50,294 - INFO - +++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 +++ export PATH
 +++ '[' -z '' ']'
 +++ PS1=
-2024-09-09 15:01:53,612 - INFO - ++ conda activate
+++ conda activate
 ++ local cmd=activate
-2024-09-09 15:01:53,612 - INFO - ++ case "$cmd" in
-2024-09-09 15:01:53,612 - INFO - ++ __conda_activate activate
+2024-09-10 18:10:50,294 - INFO - ++ case "$cmd" in
+++ __conda_activate activate
 ++ '[' -n '' ']'
-2024-09-09 15:01:53,612 - INFO - ++ local ask_conda
-2024-09-09 15:01:53,612 - INFO - +++ PS1=
+++ local ask_conda
+2024-09-10 18:10:50,294 - INFO - +++ PS1=
 +++ __conda_exe shell.posix activate
-2024-09-09 15:01:53,612 - INFO - +++ /opt/miniconda3/bin/conda shell.posix activate
-2024-09-09 15:01:53,736 - INFO - ++ ask_conda='PS1='\''(base) '\''
+2024-09-10 18:10:50,295 - INFO - +++ /opt/miniconda3/bin/conda shell.posix activate
+2024-09-10 18:10:50,400 - INFO - ++ ask_conda='PS1='\''(base) '\''
 export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
 export CONDA_PREFIX='\''/opt/miniconda3'\''
 export CONDA_SHLVL='\''1'\''
@@ -108,19 +108,19 @@ export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
 +++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
 +++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
 ++ __conda_hashr
-++ '[' -n '' ']'
+2024-09-10 18:10:50,400 - INFO - ++ '[' -n '' ']'
 ++ '[' -n '' ']'
 ++ hash -r
-+ conda activate testbed
+2024-09-10 18:10:50,400 - INFO - + conda activate testbed
 + local cmd=activate
 + case "$cmd" in
 + __conda_activate activate testbed
-+ '[' -n '' ']'
+2024-09-10 18:10:50,400 - INFO - + '[' -n '' ']'
 + local ask_conda
-2024-09-09 15:01:53,736 - INFO - ++ PS1='(base) '
+2024-09-10 18:10:50,400 - INFO - ++ PS1='(base) '
 ++ __conda_exe shell.posix activate testbed
-2024-09-09 15:01:53,736 - INFO - ++ /opt/miniconda3/bin/conda shell.posix activate testbed
-2024-09-09 15:01:53,858 - INFO - + ask_conda='PS1='\''(testbed) '\''
+2024-09-10 18:10:50,400 - INFO - ++ /opt/miniconda3/bin/conda shell.posix activate testbed
+2024-09-10 18:10:50,488 - INFO - + ask_conda='PS1='\''(testbed) '\''
 export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
 export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
 export CONDA_SHLVL='\''2'\''
@@ -167,25 +167,25 @@ export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
 + '[' -n '' ']'
 + '[' -n '' ']'
 + hash -r
-+ echo 'Current environment: testbed'
+2024-09-10 18:10:50,488 - INFO - Current environment: testbed
+2024-09-10 18:10:50,488 - INFO - + echo 'Current environment: testbed'
 + python -m pip install -e .
-2024-09-09 15:01:53,858 - INFO - Current environment: testbed
-2024-09-09 15:01:54,295 - INFO - Obtaining file:///testbed
-2024-09-09 15:01:54,296 - INFO - Preparing metadata (setup.py): started
-2024-09-09 15:01:54,455 - INFO - Preparing metadata (setup.py): finished with status 'done'
-2024-09-09 15:01:54,458 - INFO - Requirement already satisfied: mpmath>=0.19 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from sympy==1.10.dev0) (1.3.0)
-2024-09-09 15:01:54,466 - INFO - Installing collected packages: sympy
-2024-09-09 15:01:54,467 - INFO - DEPRECATION: Legacy editable install of sympy==1.10.dev0 from file:///testbed (setup.py develop) is deprecated. pip 25.0 will enforce this behaviour change. A possible replacement is to add a pyproject.toml or enable --use-pep517, and use setuptools >= 64. If the resulting installation is not behaving as expected, try using --config-settings editable_mode=compat. Please consult the setuptools documentation for more information. Discussion can be found at https://github.com/pypa/pip/issues/11457
-2024-09-09 15:01:54,467 - INFO - Running setup.py develop for sympy
-2024-09-09 15:01:54,601 - INFO - Successfully installed sympy
-2024-09-09 15:01:54,601 - INFO - WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
-2024-09-09 15:01:56,746 - INFO - ---> Removed intermediate container e7a5b1918d06
-2024-09-09 15:01:56,747 - INFO - ---> c33f61c7d915
-2024-09-09 15:01:56,747 - INFO - Step 4/4 : WORKDIR /testbed/
-2024-09-09 15:01:56,747 - INFO - 
-2024-09-09 15:01:56,786 - INFO - ---> Running in 6b19de9807c6
-2024-09-09 15:01:56,856 - INFO - ---> Removed intermediate container 6b19de9807c6
-2024-09-09 15:01:56,856 - INFO - ---> 50fc5908f00f
-2024-09-09 15:01:56,856 - INFO - Successfully built 50fc5908f00f
-2024-09-09 15:01:56,859 - INFO - Successfully tagged sweb.eval.arm64.sympy__sympy-22914:latest
-2024-09-09 15:01:56,860 - INFO - Image built successfully!
+2024-09-10 18:10:51,010 - INFO - Obtaining file:///testbed
+2024-09-10 18:10:51,010 - INFO - Preparing metadata (setup.py): started
+2024-09-10 18:10:51,168 - INFO - Preparing metadata (setup.py): finished with status 'done'
+2024-09-10 18:10:51,171 - INFO - Requirement already satisfied: mpmath>=0.19 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from sympy==1.10.dev0) (1.3.0)
+2024-09-10 18:10:51,177 - INFO - Installing collected packages: sympy
+2024-09-10 18:10:51,178 - INFO - Running setup.py develop for sympy
+2024-09-10 18:10:51,178 - INFO - DEPRECATION: Legacy editable install of sympy==1.10.dev0 from file:///testbed (setup.py develop) is deprecated. pip 25.0 will enforce this behaviour change. A possible replacement is to add a pyproject.toml or enable --use-pep517, and use setuptools >= 64. If the resulting installation is not behaving as expected, try using --config-settings editable_mode=compat. Please consult the setuptools documentation for more information. Discussion can be found at https://github.com/pypa/pip/issues/11457
+2024-09-10 18:10:51,365 - INFO - Successfully installed sympy
+2024-09-10 18:10:51,365 - INFO - WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+2024-09-10 18:10:53,438 - INFO - ---> Removed intermediate container d7ce79744d31
+2024-09-10 18:10:53,439 - INFO - ---> 657b957a1fd6
+2024-09-10 18:10:53,439 - INFO - Step 4/4 : WORKDIR /testbed/
+2024-09-10 18:10:53,439 - INFO - 
+2024-09-10 18:10:53,461 - INFO - ---> Running in 003793e8752c
+2024-09-10 18:10:53,483 - INFO - ---> Removed intermediate container 003793e8752c
+2024-09-10 18:10:53,483 - INFO - ---> 6cf8d02555ba
+2024-09-10 18:10:53,483 - INFO - Successfully built 6cf8d02555ba
+2024-09-10 18:10:53,485 - INFO - Successfully tagged sweb.eval.arm64.sympy__sympy-22914:latest
+2024-09-10 18:10:53,486 - INFO - Image built successfully!

@@ -1,0 +1,47 @@
+diff --git a/sympy/core/numbers.py b/sympy/core/numbers.py
+index 79f6a7d..0d52542 100644
+--- a/sympy/core/numbers.py
++++ b/sympy/core/numbers.py
+@@ -1382,12 +1382,15 @@ def __int__(self):
+ 
+     def __eq__(self, other):
+         from sympy.logic.boolalg import Boolean
++        from sympy.core.singleton import S
+         try:
+             other = _sympify(other)
+         except SympifyError:
+             return NotImplemented
+         if not self:
+             return not other
++        if other is S.false:
++            return False
+         if isinstance(other, Boolean):
+             return False
+         if other.is_NumberSymbol:
+diff --git a/sympy/core/tests/test_numbers.py b/sympy/core/tests/test_numbers.py
+index 8b3e991..906f570 100644
+--- a/sympy/core/tests/test_numbers.py
++++ b/sympy/core/tests/test_numbers.py
+@@ -1676,6 +1676,22 @@ def test_bool_eq():
+ 
+ 
+ def test_Float_eq():
++    from sympy import Float, S
++    assert Float(1.0) != 1
++    assert Float(1.0) != S(1)
++    assert Float(1.0) != S.One
++    assert Float(1.0) == 1.0
++    assert Float(1.0) != S.false
++    assert S.false != Float(1.0)
++    assert Float(0.0) != S.false
++    assert S.false != Float(0.0)
++
++def test_Float_eq_S_false():
++    from sympy import S, Float
++    assert Float(0.0) != S.false
++    assert S.false != Float(0.0)
++    assert Float(1.0) != S.false
++    assert S.false != Float(1.0)
+     # all .5 values are the same
+     assert Float(.5, 10) == Float(.5, 11) == Float(.5, 1)
+     # but floats that aren't exact in base-2 still

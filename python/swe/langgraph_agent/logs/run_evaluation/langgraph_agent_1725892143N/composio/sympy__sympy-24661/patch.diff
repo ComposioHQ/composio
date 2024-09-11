@@ -1,0 +1,90 @@
+diff --git a/sympy/parsing/sympy_parser.py b/sympy/parsing/sympy_parser.py
+index 52711d1..cab8ebc 100644
+--- a/sympy/parsing/sympy_parser.py
++++ b/sympy/parsing/sympy_parser.py
+@@ -1099,6 +1099,69 @@ def evaluateFalse(s: str):
+     return ast.fix_missing_locations(transformed_node)
+ 
+ 
++class EvaluateFalseTransformer(ast.NodeTransformer):
++    operators = {
++        'Add': 'add',
++        'Mult': 'mul',
++        'Pow': 'pow',
++        'Mod': 'mod',
++        'Div': 'truediv',
++    }
++
++    functions = {
++        'Integer': 'Integer',
++        'Float': 'Float',
++        'Rational': 'Rational',
++        'Symbol': 'Symbol',
++    }
++
++    def flatten(self, args, func):
++        result = []
++        for arg in args:
++            if isinstance(arg, ast.Call) and arg.func.attr == func:
++                result.extend(self.flatten(arg.args, func))
++            else:
++                result.append(arg)
++        return result
++
++    def visit_BinOp(self, node):
++        if type(node.op).__name__ in self.operators:
++            sympy_class = self.operators[type(node.op).__name__]
++            right = self.visit(node.right)
++            left = self.visit(node.left)
++
++            new_node = ast.Call(
++                func=ast.Attribute(
++                    value=ast.Name(id='sympy', ctx=ast.Load()),
++                    attr=sympy_class,
++                    ctx=ast.Load()
++                ),
++                args=self.flatten([left, right], sympy_class),
++                keywords=[ast.keyword(arg='evaluate', value=ast.NameConstant(value=False))]
++            )
++
++            return new_node
++        return node
++
++    def visit_Call(self, node):
++        node.args = [self.visit(arg) for arg in node.args]
++        return node
++
++    def visit_Compare(self, node):
++        left = self.visit(node.left)
++        comparators = [self.visit(comparator) for comparator in node.comparators]
++        ops = node.ops
++
++        new_node = ast.Call(
++            func=ast.Attribute(
++                value=ast.Name(id='sympy', ctx=ast.Load()),
++                attr='Rel',
++                ctx=ast.Load()
++            ),
++            args=[left] + comparators + [ast.Str(s=type(op).__name__) for op in ops],
++            keywords=[ast.keyword(arg='evaluate', value=ast.NameConstant(value=False))]
++        )
++        return new_node
+ class EvaluateFalseTransformer(ast.NodeTransformer):
+     operators = {
+         ast.Add: 'Add',
+diff --git a/sympy/parsing/tests/test_sympy_parser.py b/sympy/parsing/tests/test_sympy_parser.py
+index 7c43e1f..4014cba 100644
+--- a/sympy/parsing/tests/test_sympy_parser.py
++++ b/sympy/parsing/tests/test_sympy_parser.py
+@@ -359,3 +359,11 @@ def test_issue_22822():
+     raises(ValueError, lambda: parse_expr('x', {'': 1}))
+     data = {'some_parameter': None}
+     assert parse_expr('some_parameter is None', data) is True
++def test_parse_expr_relational_evaluate_false():
++    from sympy.parsing.sympy_parser import parse_expr
++    from sympy import Lt
++
++    result = parse_expr('1 < 2', evaluate=False)
++    assert isinstance(result, Lt)
++    assert result.args == (1, 2)
++    assert str(result) == '1 < 2'

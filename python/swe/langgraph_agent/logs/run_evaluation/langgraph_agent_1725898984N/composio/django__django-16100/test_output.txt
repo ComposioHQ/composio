@@ -1,0 +1,757 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+nothing to commit, working tree clean
++ git show
+commit c6350d594c359151ee17b0c4f354bb44f28ff69e
+Author: Simon Charette <charette.s@gmail.com>
+Date:   Wed Sep 28 10:51:06 2022 -0400
+
+    Refs #30158 -- Removed alias argument for Expression.get_group_by_cols().
+    
+    Recent refactors allowed GROUP BY aliasing allowed for aliasing to be
+    entirely handled by the sql.Query.set_group_by and compiler layers.
+
+diff --git a/django/db/models/aggregates.py b/django/db/models/aggregates.py
+index 2ffed7cd2c..ec21e5fd11 100644
+--- a/django/db/models/aggregates.py
++++ b/django/db/models/aggregates.py
+@@ -97,7 +97,7 @@ class Aggregate(Func):
+             return "%s__%s" % (expressions[0].name, self.name.lower())
+         raise TypeError("Complex expressions require an alias")
+ 
+-    def get_group_by_cols(self, alias=None):
++    def get_group_by_cols(self):
+         return []
+ 
+     def as_sql(self, compiler, connection, **extra_context):
+diff --git a/django/db/models/expressions.py b/django/db/models/expressions.py
+index 387a7aa357..6c3bc5c4de 100644
+--- a/django/db/models/expressions.py
++++ b/django/db/models/expressions.py
+@@ -417,10 +417,8 @@ class BaseExpression:
+         )
+         return clone
+ 
+-    def get_group_by_cols(self, alias=None):
++    def get_group_by_cols(self):
+         if not self.contains_aggregate:
+-            if alias:
+-                return [Ref(alias, self)]
+             return [self]
+         cols = []
+         for source in self.get_source_expressions():
+@@ -858,7 +856,7 @@ class ResolvedOuterRef(F):
+     def relabeled_clone(self, relabels):
+         return self
+ 
+-    def get_group_by_cols(self, alias=None):
++    def get_group_by_cols(self):
+         return []
+ 
+ 
+@@ -1021,7 +1019,7 @@ class Value(SQLiteNumericMixin, Expression):
+         c.for_save = for_save
+         return c
+ 
+-    def get_group_by_cols(self, alias=None):
++    def get_group_by_cols(self):
+         return []
+ 
+     def _resolve_output_field(self):
+@@ -1066,7 +1064,7 @@ class RawSQL(Expression):
+     def as_sql(self, compiler, connection):
+         return "(%s)" % self.sql, self.params
+ 
+-    def get_group_by_cols(self, alias=None):
++    def get_group_by_cols(self):
+         return [self]
+ 
+     def resolve_expression(
+@@ -1124,7 +1122,7 @@ class Col(Expression):
+             relabels.get(self.alias, self.alias), self.target, self.output_field
+         )
+ 
+-    def get_group_by_cols(self, alias=None):
++    def get_group_by_cols(self):
+         return [self]
+ 
+     def get_db_converters(self, connection):
+@@ -1167,7 +1165,7 @@ class Ref(Expression):
+     def as_sql(self, compiler, connection):
+         return connection.ops.quote_name(self.refs), []
+ 
+-    def get_group_by_cols(self, alias=None):
++    def get_group_by_cols(self):
+         return [self]
+ 
+ 
+@@ -1238,14 +1236,14 @@ class ExpressionWrapper(SQLiteNumericMixin, Expression):
+     def get_source_expressions(self):
+         return [self.expression]
+ 
+-    def get_group_by_cols(self, alias=None):
++    def get_group_by_cols(self):
+         if isinstance(self.expression, Expression):
+             expression = self.expression.copy()
+             expression.output_field = self.output_field
+-            return expression.get_group_by_cols(alias=alias)
++            return expression.get_group_by_cols()
+         # For non-expressions e.g. an SQL WHERE clause, the entire
+         # `expression` must be included in the GROUP BY clause.
+-        return super().get_group_by_cols(alias=alias)
++        return super().get_group_by_cols()
+ 
+     def as_sql(self, compiler, connection):
+         return compiler.compile(self.expression)
+@@ -1330,7 +1328,7 @@ class When(Expression):
+             *result_params,
+         )
+ 
+-    def get_group_by_cols(self, alias=None):
++    def get_group_by_cols(self):
+         # This is not a complete expression and cannot be used in GROUP BY.
+         cols = []
+         for source in self.get_source_expressions():
+@@ -1426,10 +1424,10 @@ class Case(SQLiteNumericMixin, Expression):
+             sql = connection.ops.unification_cast_sql(self.output_field) % sql
+         return sql, sql_params
+ 
+-    def get_group_by_cols(self, alias=None):
++    def get_group_by_cols(self):
+         if not self.cases:
+-            return self.default.get_group_by_cols(alias)
+-        return super().get_group_by_cols(alias)
++            return self.default.get_group_by_cols()
++        return super().get_group_by_cols()
+ 
+ 
+ class Subquery(BaseExpression, Combinable):
+@@ -1480,8 +1478,8 @@ class Subquery(BaseExpression, Combinable):
+         sql = template % template_params
+         return sql, sql_params
+ 
+-    def get_group_by_cols(self, alias=None):
+-        return self.query.get_group_by_cols(alias=alias, wrapper=self)
++    def get_group_by_cols(self):
++        return self.query.get_group_by_cols(wrapper=self)
+ 
+ 
+ class Exists(Subquery):
+@@ -1602,7 +1600,7 @@ class OrderBy(Expression):
+             return copy.as_sql(compiler, connection)
+         return self.as_sql(compiler, connection)
+ 
+-    def get_group_by_cols(self, alias=None):
++    def get_group_by_cols(self):
+         cols = []
+         for source in self.get_source_expressions():
+             cols.extend(source.get_group_by_cols())
+@@ -1732,7 +1730,7 @@ class Window(SQLiteNumericMixin, Expression):
+     def __repr__(self):
+         return "<%s: %s>" % (self.__class__.__name__, self)
+ 
+-    def get_group_by_cols(self, alias=None):
++    def get_group_by_cols(self):
+         group_by_cols = []
+         if self.partition_by:
+             group_by_cols.extend(self.partition_by.get_group_by_cols())
+@@ -1780,7 +1778,7 @@ class WindowFrame(Expression):
+     def __repr__(self):
+         return "<%s: %s>" % (self.__class__.__name__, self)
+ 
+-    def get_group_by_cols(self, alias=None):
++    def get_group_by_cols(self):
+         return []
+ 
+     def __str__(self):
+diff --git a/django/db/models/functions/math.py b/django/db/models/functions/math.py
+index 8b5fd79c3a..460143ba5a 100644
+--- a/django/db/models/functions/math.py
++++ b/django/db/models/functions/math.py
+@@ -169,7 +169,7 @@ class Random(NumericOutputFieldMixin, Func):
+     def as_sqlite(self, compiler, connection, **extra_context):
+         return super().as_sql(compiler, connection, function="RAND", **extra_context)
+ 
+-    def get_group_by_cols(self, alias=None):
++    def get_group_by_cols(self):
+         return []
+ 
+ 
+diff --git a/django/db/models/lookups.py b/django/db/models/lookups.py
+index 866e38df83..9b4bdb9bd6 100644
+--- a/django/db/models/lookups.py
++++ b/django/db/models/lookups.py
+@@ -128,7 +128,7 @@ class Lookup(Expression):
+     def rhs_is_direct_value(self):
+         return not hasattr(self.rhs, "as_sql")
+ 
+-    def get_group_by_cols(self, alias=None):
++    def get_group_by_cols(self):
+         cols = []
+         for source in self.get_source_expressions():
+             cols.extend(source.get_group_by_cols())
+diff --git a/django/db/models/sql/query.py b/django/db/models/sql/query.py
+index 9d4ca0ffb6..c2a71ff589 100644
+--- a/django/db/models/sql/query.py
++++ b/django/db/models/sql/query.py
+@@ -1147,13 +1147,11 @@ class Query(BaseExpression):
+             if col.alias in self.external_aliases
+         ]
+ 
+-    def get_group_by_cols(self, alias=None, wrapper=None):
++    def get_group_by_cols(self, wrapper=None):
+         # If wrapper is referenced by an alias for an explicit GROUP BY through
+         # values() a reference to this expression and not the self must be
+         # returned to ensure external column references are not grouped against
+         # as well.
+-        if alias:
+-            return [Ref(alias, wrapper or self)]
+         external_cols = self.get_external_cols()
+         if any(col.possibly_multivalued for col in external_cols):
+             return [wrapper or self]
+@@ -2247,11 +2245,16 @@ class Query(BaseExpression):
+                 self.select = tuple(values_select.values())
+                 self.values_select = tuple(values_select)
+         group_by = list(self.select)
+-        if self.annotation_select:
+-            for alias, annotation in self.annotation_select.items():
+-                if not allow_aliases or alias in column_names:
+-                    alias = None
+-                group_by_cols = annotation.get_group_by_cols(alias=alias)
++        for alias, annotation in self.annotation_select.items():
++            if not (group_by_cols := annotation.get_group_by_cols()):
++                continue
++            if (
++                allow_aliases
++                and alias not in column_names
++                and not annotation.contains_aggregate
++            ):
++                group_by.append(Ref(alias, annotation))
++            else:
+                 group_by.extend(group_by_cols)
+         self.group_by = tuple(group_by)
+ 
+diff --git a/django/db/models/sql/where.py b/django/db/models/sql/where.py
+index 5ce7e4e55c..63fdf58d9d 100644
+--- a/django/db/models/sql/where.py
++++ b/django/db/models/sql/where.py
+@@ -178,7 +178,7 @@ class WhereNode(tree.Node):
+                 sql_string = "(%s)" % sql_string
+         return sql_string, result_params
+ 
+-    def get_group_by_cols(self, alias=None):
++    def get_group_by_cols(self):
+         cols = []
+         for child in self.children:
+             cols.extend(child.get_group_by_cols())
+diff --git a/docs/ref/models/expressions.txt b/docs/ref/models/expressions.txt
+index 95f093e2a3..ccd18670b1 100644
+--- a/docs/ref/models/expressions.txt
++++ b/docs/ref/models/expressions.txt
+@@ -1036,13 +1036,16 @@ calling the appropriate methods on the wrapped expression.
+ 
+         ``expression`` is the same as ``self``.
+ 
+-    .. method:: get_group_by_cols(alias=None)
++    .. method:: get_group_by_cols()
+ 
+         Responsible for returning the list of columns references by
+         this expression. ``get_group_by_cols()`` should be called on any
+         nested expressions. ``F()`` objects, in particular, hold a reference
+-        to a column. The ``alias`` parameter will be ``None`` unless the
+-        expression has been annotated and is used for grouping.
++        to a column.
++
++        .. versionchanged:: 4.2
++
++            The ``alias=None`` keyword argument was removed.
+ 
+     .. method:: asc(nulls_first=None, nulls_last=None)
+ 
+diff --git a/docs/releases/4.2.txt b/docs/releases/4.2.txt
+index 0c5492e125..5a849cbbe5 100644
+--- a/docs/releases/4.2.txt
++++ b/docs/releases/4.2.txt
+@@ -329,6 +329,8 @@ Miscellaneous
+ * The :option:`makemigrations --check` option no longer creates missing
+   migration files.
+ 
++* The ``alias`` argument for :meth:`.Expression.get_group_by_cols` is removed.
++
+ .. _deprecated-features-4.2:
+ 
+ Features deprecated in 4.2
+diff --git a/tests/expressions/tests.py b/tests/expressions/tests.py
+index d63415ae72..7a759feda5 100644
+--- a/tests/expressions/tests.py
++++ b/tests/expressions/tests.py
+@@ -2525,13 +2525,13 @@ class CombinedExpressionTests(SimpleTestCase):
+ class ExpressionWrapperTests(SimpleTestCase):
+     def test_empty_group_by(self):
+         expr = ExpressionWrapper(Value(3), output_field=IntegerField())
+-        self.assertEqual(expr.get_group_by_cols(alias=None), [])
++        self.assertEqual(expr.get_group_by_cols(), [])
+ 
+     def test_non_empty_group_by(self):
+         value = Value("f")
+         value.output_field = None
+         expr = ExpressionWrapper(Lower(value), output_field=IntegerField())
+-        group_by_cols = expr.get_group_by_cols(alias=None)
++        group_by_cols = expr.get_group_by_cols()
+         self.assertEqual(group_by_cols, [expr.expression])
+         self.assertEqual(group_by_cols[0].output_field, expr.output_field)
+ 
++ git diff c6350d594c359151ee17b0c4f354bb44f28ff69e
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.5.2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.2.dev20221006100400) (3.8.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.2.dev20221006100400) (0.5.1)
+Requirement already satisfied: typing-extensions>=4 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from asgiref>=3.5.2->Django==4.2.dev20221006100400) (4.12.2)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-4.2.dev20221006100400-0.editable-py3-none-any.whl size=27188 sha256=1b962dde6f7140c5847d316aa7828aec51ab260e789064f364686fee8f6f5e0c
+  Stored in directory: /tmp/pip-ephem-wheel-cache-01qumxo3/wheels/7d/66/67/70d1ee2124ccf21d601c352e25cdca10f611f7c8b3f9ffb9e4
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 4.2.dev20221006100400
+    Uninstalling Django-4.2.dev20221006100400:
+      Successfully uninstalled Django-4.2.dev20221006100400
+Successfully installed Django-4.2.dev20221006100400
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout c6350d594c359151ee17b0c4f354bb44f28ff69e tests/admin_changelist/tests.py
+Updated 0 paths from e01d3ff121
++ git apply -v -
+Checking patch tests/admin_changelist/tests.py...
+Applied patch tests/admin_changelist/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 admin_changelist.tests
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Testing against Django installed in '/testbed/django'
+Importing application admin_changelist
+Found 71 test(s).
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: admin_changelist, auth, contenttypes, messages, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table admin_changelist_event
+    Creating table admin_changelist_parent
+    Creating table admin_changelist_child
+    Creating table admin_changelist_genre
+    Creating table admin_changelist_band
+    Creating table admin_changelist_musician
+    Creating table admin_changelist_group
+    Creating table admin_changelist_concert
+    Creating table admin_changelist_membership
+    Creating table admin_changelist_quartet
+    Creating table admin_changelist_chordsmusician
+    Creating table admin_changelist_chordsband
+    Creating table admin_changelist_invitation
+    Creating table admin_changelist_swallow
+    Creating table admin_changelist_swallowonetoone
+    Creating table admin_changelist_unorderedobject
+    Creating table admin_changelist_orderedobject
+    Creating table admin_changelist_customiduser
+    Creating table admin_changelist_charpk
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (0 silenced).
+test_builtin_lookup_in_search_fields (admin_changelist.tests.ChangeListTests) ... ok
+test_changelist_search_form_validation (admin_changelist.tests.ChangeListTests) ... ok
+test_changelist_view_list_editable_changed_objects_uses_filter (admin_changelist.tests.ChangeListTests)
+list_editable edits use a filtered queryset to limit memory usage. ... ok
+test_clear_all_filters_link (admin_changelist.tests.ChangeListTests) ... ok
+test_clear_all_filters_link_callable_filter (admin_changelist.tests.ChangeListTests) ... ok
+test_computed_list_display_localization (admin_changelist.tests.ChangeListTests)
+Regression test for #13196: output of functions should be  localized ... ok
+test_custom_lookup_in_search_fields (admin_changelist.tests.ChangeListTests) ... ok
+test_custom_lookup_with_pk_shortcut (admin_changelist.tests.ChangeListTests) ... ok
+test_custom_paginator (admin_changelist.tests.ChangeListTests) ... ok
+test_deterministic_order_for_model_ordered_by_its_manager (admin_changelist.tests.ChangeListTests)
+The primary key is used in the ordering of the changelist's results to ... ok
+test_deterministic_order_for_unordered_model (admin_changelist.tests.ChangeListTests)
+The primary key is used in the ordering of the changelist's results to ... ok
+test_dynamic_list_display (admin_changelist.tests.ChangeListTests)
+Regression tests for #14206: dynamic list_display support. ... ok
+test_dynamic_list_display_links (admin_changelist.tests.ChangeListTests)
+Regression tests for #16257: dynamic list_display_links support. ... ok
+test_dynamic_list_filter (admin_changelist.tests.ChangeListTests)
+Regression tests for ticket #17646: dynamic list_filter support. ... ok
+test_dynamic_search_fields (admin_changelist.tests.ChangeListTests) ... ok
+test_get_edited_object_ids (admin_changelist.tests.ChangeListTests) ... ok
+test_get_list_editable_queryset (admin_changelist.tests.ChangeListTests) ... ok
+test_get_list_editable_queryset_with_regex_chars_in_prefix (admin_changelist.tests.ChangeListTests) ... ok
+test_get_select_related_custom_method (admin_changelist.tests.ChangeListTests) ... ok
+test_list_editable_atomicity (admin_changelist.tests.ChangeListTests) ... FAIL
+test_many_search_terms (admin_changelist.tests.ChangeListTests) ... ok
+test_multiple_search_fields (admin_changelist.tests.ChangeListTests)
+All rows containing each of the searched words are returned, where each ... ok
+test_multiuser_edit (admin_changelist.tests.ChangeListTests)
+Simultaneous edits of list_editable fields on the changelist by ... ok
+test_no_clear_all_filters_link (admin_changelist.tests.ChangeListTests) ... ok
+test_no_duplicates_for_inherited_m2m_in_list_filter (admin_changelist.tests.ChangeListTests)
+Regression test for #13902: When using a ManyToMany in list_filter, ... ok
+test_no_duplicates_for_m2m_in_list_filter (admin_changelist.tests.ChangeListTests)
+Regression test for #13902: When using a ManyToMany in list_filter, ... ok
+test_no_duplicates_for_m2m_to_inherited_in_list_filter (admin_changelist.tests.ChangeListTests)
+Regression test for #13902: When using a ManyToMany in list_filter, ... ok
+test_no_duplicates_for_many_to_many_at_second_level_in_search_fields (admin_changelist.tests.ChangeListTests)
+When using a ManyToMany in search_fields at the second level behind a ... ok
+test_no_duplicates_for_non_unique_related_object_in_list_filter (admin_changelist.tests.ChangeListTests)
+Regressions tests for #15819: If a field listed in list_filters is a ... ok
+test_no_duplicates_for_non_unique_related_object_in_search_fields (admin_changelist.tests.ChangeListTests)
+Regressions tests for #15819: If a field listed in search_fields ... ok
+test_no_duplicates_for_through_m2m_at_second_level_in_list_filter (admin_changelist.tests.ChangeListTests)
+When using a ManyToMany in list_filter at the second level behind a ... ok
+test_no_duplicates_for_through_m2m_in_list_filter (admin_changelist.tests.ChangeListTests)
+Regression test for #13902: When using a ManyToMany in list_filter, ... ok
+test_no_exists_for_m2m_in_list_filter_without_params (admin_changelist.tests.ChangeListTests)
+If a ManyToManyField is in list_filter but isn't in any lookup params, ... ok
+test_no_list_display_links (admin_changelist.tests.ChangeListTests)
+#15185 -- Allow no links from the 'change list' view grid. ... ok
+test_object_tools_displayed_no_add_permission (admin_changelist.tests.ChangeListTests)
+When ModelAdmin.has_add_permission() returns False, the object-tools ... ok
+test_pagination (admin_changelist.tests.ChangeListTests)
+Regression tests for #12893: Pagination in admins changelist doesn't ... ok
+test_pagination_page_range (admin_changelist.tests.ChangeListTests)
+Regression tests for ticket #15653: ensure the number of pages ... ok
+test_pk_in_search_fields (admin_changelist.tests.ChangeListTests) ... ok
+test_related_field_multiple_search_terms (admin_changelist.tests.ChangeListTests)
+Searches over multi-valued relationships return rows from related ... ok
+test_repr (admin_changelist.tests.ChangeListTests) ... ok
+test_result_list_editable (admin_changelist.tests.ChangeListTests)
+Regression test for #14312: list_editable with pagination ... ok
+test_result_list_editable_html (admin_changelist.tests.ChangeListTests)
+Regression tests for #11791: Inclusion tag result_list generates a ... ok
+test_result_list_empty_changelist_value (admin_changelist.tests.ChangeListTests)
+Regression test for #14982: EMPTY_CHANGELIST_VALUE should be honored ... ok
+test_result_list_html (admin_changelist.tests.ChangeListTests)
+Inclusion tag result_list generates a table when with default ... ok
+test_result_list_set_empty_value_display_in_model_admin (admin_changelist.tests.ChangeListTests)
+Empty value display can be set in ModelAdmin or individual fields. ... ok
+test_result_list_set_empty_value_display_on_admin_site (admin_changelist.tests.ChangeListTests)
+Empty value display can be set on AdminSite. ... ok
+test_search_help_text (admin_changelist.tests.ChangeListTests) ... ok
+test_select_related_as_empty_tuple (admin_changelist.tests.ChangeListTests) ... ok
+test_select_related_as_tuple (admin_changelist.tests.ChangeListTests) ... ok
+test_select_related_preserved (admin_changelist.tests.ChangeListTests)
+Regression test for #10348: ChangeList.get_queryset() shouldn't ... ok
+test_select_related_preserved_when_multi_valued_in_search_fields (admin_changelist.tests.ChangeListTests) ... ok
+test_show_all (admin_changelist.tests.ChangeListTests) ... ok
+test_spanning_relations_with_custom_lookup_in_search_fields (admin_changelist.tests.ChangeListTests) ... ok
+test_specified_ordering_by_f_expression (admin_changelist.tests.ChangeListTests) ... ok
+test_specified_ordering_by_f_expression_without_asc_desc (admin_changelist.tests.ChangeListTests) ... ok
+test_total_ordering_optimization (admin_changelist.tests.ChangeListTests) ... ok
+test_total_ordering_optimization_meta_constraints (admin_changelist.tests.ChangeListTests) ... ok
+test_tuple_list_display (admin_changelist.tests.ChangeListTests) ... ok
+test_custom_user_pk_not_named_id (admin_changelist.tests.GetAdminLogTests)
+{% get_admin_log %} works if the user model's primary key isn't named ... ok
+test_missing_args (admin_changelist.tests.GetAdminLogTests) ... ok
+test_no_user (admin_changelist.tests.GetAdminLogTests)
+{% get_admin_log %} works without specifying a user. ... ok
+test_non_integer_limit (admin_changelist.tests.GetAdminLogTests) ... ok
+test_without_as (admin_changelist.tests.GetAdminLogTests) ... ok
+test_without_for_user (admin_changelist.tests.GetAdminLogTests) ... ok
+test_actions_warn_on_pending_edits (admin_changelist.tests.SeleniumTests) ... skipped 'No browsers specified.'
+test_add_row_selection (admin_changelist.tests.SeleniumTests)
+The status line for selected rows gets updated correctly (#22038). ... skipped 'No browsers specified.'
+test_collapse_filters (admin_changelist.tests.SeleniumTests) ... skipped 'No browsers specified.'
+test_modifier_allows_multiple_section (admin_changelist.tests.SeleniumTests)
+Selecting a row and then selecting another row whilst holding shift ... skipped 'No browsers specified.'
+test_save_with_changes_warns_on_pending_action (admin_changelist.tests.SeleniumTests) ... skipped 'No browsers specified.'
+test_save_without_changes_warns_on_pending_action (admin_changelist.tests.SeleniumTests) ... skipped 'No browsers specified.'
+test_select_all_across_pages (admin_changelist.tests.SeleniumTests) ... skipped 'No browsers specified.'
+
+======================================================================
+FAIL: test_list_editable_atomicity (admin_changelist.tests.ChangeListTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/testcases.py", line 1586, in skip_wrapper
+    return test_func(*args, **kwargs)
+  File "/testbed/tests/admin_changelist/tests.py", line 431, in test_list_editable_atomicity
+    self.assertEqual(a.load, 4)
+AssertionError: 9.0 != 4
+
+----------------------------------------------------------------------
+Ran 71 tests in 0.525s
+
+FAILED (failures=1, skipped=7)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout c6350d594c359151ee17b0c4f354bb44f28ff69e tests/admin_changelist/tests.py
+Updated 1 path from e01d3ff121

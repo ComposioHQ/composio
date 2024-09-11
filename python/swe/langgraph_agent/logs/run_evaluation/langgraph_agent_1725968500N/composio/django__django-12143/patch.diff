@@ -1,0 +1,14 @@
+diff --git a/django/contrib/admin/options.py b/django/contrib/admin/options.py
+index 137e6faa..1e228320 100644
+--- a/django/contrib/admin/options.py
++++ b/django/contrib/admin/options.py
+@@ -1631,7 +1631,8 @@ class ModelAdmin(BaseModelAdmin):
+ 
+     def _get_edited_object_pks(self, request, prefix):
+         """Return POST data values of list_editable primary keys."""
+-        pk_pattern = re.compile(r'{}-\d+-{}$'.format(prefix, self.model._meta.pk.name))
++        escaped_prefix = re.escape(prefix)
++        pk_pattern = re.compile(r'{}-\d+-{}$'.format(escaped_prefix, self.model._meta.pk.name))
+         return [value for key, value in request.POST.items() if pk_pattern.match(key)]
+ 
+     def _get_list_editable_queryset(self, request, prefix):

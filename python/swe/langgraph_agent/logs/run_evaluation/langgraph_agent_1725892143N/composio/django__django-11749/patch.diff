@@ -1,0 +1,27 @@
+diff --git a/django/core/management/__init__.py b/django/core/management/__init__.py
+index 5f2e6476..7f229bd0 100644
+--- a/django/core/management/__init__.py
++++ b/django/core/management/__init__.py
+@@ -72,6 +72,12 @@ def get_commands():
+ 
+     return commands
+ 
++def get_required_group_arguments(parser):
++    for action in parser._mutually_exclusive_groups:
++        if action.required:
++            for arg in action._group_actions:
++                yield arg
++
+ 
+ def call_command(command_name, *args, **options):
+     """
+@@ -134,7 +140,8 @@ def call_command(command_name, *args, **options):
+     # to parse_args().
+     parse_args += [
+         '{}={}'.format(min(opt.option_strings), arg_options[opt.dest])
+-        for opt in parser_actions if opt.required and opt.dest in options
++        for opt in list(parser_actions) + list(get_required_group_arguments(parser))
++        if opt.dest in options
+     ]
+     defaults = parser.parse_args(args=parse_args)
+     defaults = dict(defaults._get_kwargs(), **arg_options)

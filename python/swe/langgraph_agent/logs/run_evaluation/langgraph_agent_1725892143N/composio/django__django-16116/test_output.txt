@@ -1,0 +1,627 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/core/management/commands/makemigrations.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 5d36a8266c7d5d1994d7a7eeb4016f80d9cb0401
+Author: Mariusz Felisiak <felisiak.mariusz@gmail.com>
+Date:   Wed Sep 28 09:26:10 2022 +0200
+
+    Changed note about update_fields and pre_save() to admonition.
+    
+    Follow up to bf47c719719d0e190a99fa2e7f959d5bbb7caf8a.
+
+diff --git a/docs/ref/models/instances.txt b/docs/ref/models/instances.txt
+index 7fc4465afa..62c680833a 100644
+--- a/docs/ref/models/instances.txt
++++ b/docs/ref/models/instances.txt
+@@ -621,7 +621,7 @@ from the DB will get updated. In effect there is an automatic
+ ``update_fields`` in this case. If you assign or change any deferred field
+ value, the field will be added to the updated fields.
+ 
+-.. note::
++.. admonition:: ``Field.pre_save()`` and ``update_fields``
+ 
+     If ``update_fields`` is passed in, only the
+     :meth:`~django.db.models.Field.pre_save` methods of the ``update_fields``
++ git diff 5d36a8266c7d5d1994d7a7eeb4016f80d9cb0401
+diff --git a/django/core/management/commands/makemigrations.py b/django/core/management/commands/makemigrations.py
+index 2e97d9064b..49b3a12eeb 100644
+--- a/django/core/management/commands/makemigrations.py
++++ b/django/core/management/commands/makemigrations.py
+@@ -247,13 +247,17 @@ class Command(BaseCommand):
+                         )
+                 else:
+                     self.log("No changes detected")
++            if check_changes:
++                sys.exit(0)
+         else:
+-            if self.update:
+-                self.write_to_last_migration_files(changes)
+-            else:
+-                self.write_migration_files(changes)
+             if check_changes:
++                self.log("Changes detected")
+                 sys.exit(1)
++            else:
++                if self.update:
++                    self.write_to_last_migration_files(changes)
++                else:
++                    self.write_migration_files(changes)
+ 
+     def write_to_last_migration_files(self, changes):
+         loader = MigrationLoader(connections[DEFAULT_DB_ALIAS])
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.5.2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.2.dev20220928072610) (3.8.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.2.dev20220928072610) (0.5.1)
+Requirement already satisfied: typing-extensions>=4 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from asgiref>=3.5.2->Django==4.2.dev20220928072610) (4.12.2)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-4.2.dev20220928072610-0.editable-py3-none-any.whl size=27191 sha256=8a71da5497158c62e241b37d7a77f5018c777a7186c7fc4f58278ea605c481e5
+  Stored in directory: /tmp/pip-ephem-wheel-cache-hkburbva/wheels/7d/66/67/70d1ee2124ccf21d601c352e25cdca10f611f7c8b3f9ffb9e4
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 4.2.dev20220928072610
+    Uninstalling Django-4.2.dev20220928072610:
+      Successfully uninstalled Django-4.2.dev20220928072610
+Successfully installed Django-4.2.dev20220928072610
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 5d36a8266c7d5d1994d7a7eeb4016f80d9cb0401 tests/migrations/test_commands.py
+Updated 0 paths from 6388e96c28
++ git apply -v -
+Checking patch tests/migrations/test_commands.py...
+Applied patch tests/migrations/test_commands.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 migrations.test_commands
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Testing against Django installed in '/testbed/django'
+Importing application migrations
+Found 140 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, messages, migrations, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table migrations_modelwithcustombase
+    Creating table migrations_unmigratedmodel
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+Creating test database for alias 'other' ('file:memorydb_other?mode=memory&cache=shared')...
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, messages, migrations, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table migrations_modelwithcustombase
+    Creating table migrations_unmigratedmodel
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (0 silenced).
+test_makemigrations_app_name_specified_as_label (migrations.test_commands.AppLabelErrorTests) ... ok
+test_makemigrations_nonexistent_app_label (migrations.test_commands.AppLabelErrorTests) ... ok
+test_migrate_app_name_specified_as_label (migrations.test_commands.AppLabelErrorTests) ... ok
+test_migrate_nonexistent_app_label (migrations.test_commands.AppLabelErrorTests) ... ok
+test_optimizemigration_app_name_specified_as_label (migrations.test_commands.AppLabelErrorTests) ... ok
+test_optimizemigration_nonexistent_app_label (migrations.test_commands.AppLabelErrorTests) ... ok
+test_showmigrations_app_name_specified_as_label (migrations.test_commands.AppLabelErrorTests) ... ok
+test_showmigrations_nonexistent_app_label (migrations.test_commands.AppLabelErrorTests) ... ok
+test_sqlmigrate_app_name_specified_as_label (migrations.test_commands.AppLabelErrorTests) ... ok
+test_sqlmigrate_nonexistent_app_label (migrations.test_commands.AppLabelErrorTests) ... ok
+test_squashmigrations_app_name_specified_as_label (migrations.test_commands.AppLabelErrorTests) ... ok
+test_squashmigrations_nonexistent_app_label (migrations.test_commands.AppLabelErrorTests) ... ok
+test_failing_migration (migrations.test_commands.MakeMigrationsTests) ... ok
+test_files_content (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigration_merge_dry_run (migrations.test_commands.MakeMigrationsTests)
+makemigrations respects --dry-run option when fixing migration ... ok
+test_makemigration_merge_dry_run_verbosity_3 (migrations.test_commands.MakeMigrationsTests)
+`makemigrations --merge --dry-run` writes the merge migration file to ... ok
+test_makemigrations_auto_merge_name (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_auto_now_add_interactive (migrations.test_commands.MakeMigrationsTests)
+makemigrations prompts the user when adding auto_now_add to an existing ... ok
+test_makemigrations_auto_now_add_interactive_quit (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_check (migrations.test_commands.MakeMigrationsTests)
+makemigrations --check should exit with a non-zero status when ... Changes detected
+ERROR
+test_makemigrations_conflict_exit (migrations.test_commands.MakeMigrationsTests)
+makemigrations exits if it detects a conflict. ... ok
+test_makemigrations_consistency_checks_respect_routers (migrations.test_commands.MakeMigrationsTests)
+The history consistency checks in makemigrations respect ... ok
+test_makemigrations_continues_number_sequence_after_squash (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_default_merge_name (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_disabled_migrations_for_app (migrations.test_commands.MakeMigrationsTests)
+makemigrations raises a nice error when migrations are disabled for an ... ok
+test_makemigrations_dry_run (migrations.test_commands.MakeMigrationsTests)
+`makemigrations --dry-run` should not ask for defaults. ... ok
+test_makemigrations_dry_run_verbosity_3 (migrations.test_commands.MakeMigrationsTests)
+Allow `makemigrations --dry-run` to output the migrations file to ... ok
+test_makemigrations_empty_connections (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_empty_migration (migrations.test_commands.MakeMigrationsTests)
+makemigrations properly constructs an empty migration. ... ok
+test_makemigrations_empty_no_app_specified (migrations.test_commands.MakeMigrationsTests)
+makemigrations exits if no app is specified with 'empty' mode. ... ok
+test_makemigrations_field_rename_interactive (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_handle_merge (migrations.test_commands.MakeMigrationsTests)
+makemigrations properly merges the conflicting migrations with --noinput. ... ok
+test_makemigrations_inconsistent_history (migrations.test_commands.MakeMigrationsTests)
+makemigrations should raise InconsistentMigrationHistory exception if ... ok
+test_makemigrations_inconsistent_history_db_failure (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_interactive_accept (migrations.test_commands.MakeMigrationsTests)
+makemigrations enters interactive mode and merges properly. ... ok
+test_makemigrations_interactive_by_default (migrations.test_commands.MakeMigrationsTests)
+The user is prompted to merge by default if there are conflicts and ... ok
+test_makemigrations_interactive_not_null_addition (migrations.test_commands.MakeMigrationsTests)
+makemigrations messages when adding a NOT NULL field in interactive ... ok
+test_makemigrations_interactive_not_null_alteration (migrations.test_commands.MakeMigrationsTests)
+makemigrations messages when changing a NULL field to NOT NULL in ... ok
+test_makemigrations_interactive_reject (migrations.test_commands.MakeMigrationsTests)
+makemigrations enters and exits interactive mode properly. ... ok
+test_makemigrations_interactive_unique_callable_default_addition (migrations.test_commands.MakeMigrationsTests)
+makemigrations prompts the user when adding a unique field with ... ok
+test_makemigrations_merge_dont_output_dependency_operations (migrations.test_commands.MakeMigrationsTests)
+makemigrations --merge does not output any operations from apps that ... ok
+test_makemigrations_merge_no_conflict (migrations.test_commands.MakeMigrationsTests)
+makemigrations exits if in merge mode with no conflicts. ... ok
+test_makemigrations_migration_path_output (migrations.test_commands.MakeMigrationsTests)
+makemigrations should print the relative paths to the migrations unless ... ok
+test_makemigrations_migration_path_output_valueerror (migrations.test_commands.MakeMigrationsTests)
+makemigrations prints the absolute path if os.path.relpath() raises a ... ok
+test_makemigrations_migrations_announce (migrations.test_commands.MakeMigrationsTests)
+makemigrations announces the migration at the default verbosity level. ... ok
+test_makemigrations_migrations_modules_nonexistent_toplevel_package (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_migrations_modules_path_not_exist (migrations.test_commands.MakeMigrationsTests)
+makemigrations creates migrations when specifying a custom location ... ok
+test_makemigrations_model_rename_interactive (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_no_apps_initial (migrations.test_commands.MakeMigrationsTests)
+makemigrations should detect initial is needed on empty migration ... ok
+test_makemigrations_no_changes (migrations.test_commands.MakeMigrationsTests)
+makemigrations exits when there are no changes to an app. ... ok
+test_makemigrations_no_changes_no_apps (migrations.test_commands.MakeMigrationsTests)
+makemigrations exits when there are no changes and no apps are specified. ... ok
+test_makemigrations_no_common_ancestor (migrations.test_commands.MakeMigrationsTests)
+makemigrations fails to merge migrations with no common ancestor. ... ok
+test_makemigrations_no_init (migrations.test_commands.MakeMigrationsTests)
+Migration directories without an __init__.py file are allowed. ... ok
+test_makemigrations_non_interactive_auto_now_add_addition (migrations.test_commands.MakeMigrationsTests)
+Non-interactive makemigrations fails when a default is missing on a ... ok
+test_makemigrations_non_interactive_no_field_rename (migrations.test_commands.MakeMigrationsTests)
+makemigrations adds and removes a possible field rename in ... ok
+test_makemigrations_non_interactive_no_model_rename (migrations.test_commands.MakeMigrationsTests)
+makemigrations adds and removes a possible model rename in ... ok
+test_makemigrations_non_interactive_not_null_addition (migrations.test_commands.MakeMigrationsTests)
+Non-interactive makemigrations fails when a default is missing on a ... ok
+test_makemigrations_non_interactive_not_null_alteration (migrations.test_commands.MakeMigrationsTests)
+Non-interactive makemigrations fails when a default is missing on a ... ok
+test_makemigrations_non_interactive_unique_callable_default_addition (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_order (migrations.test_commands.MakeMigrationsTests)
+makemigrations should recognize number-only migrations (0001.py). ... ok
+test_makemigrations_scriptable (migrations.test_commands.MakeMigrationsTests)
+With scriptable=True, log output is diverted to stderr, and only the ... ok
+test_makemigrations_scriptable_merge (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_unspecified_app_with_conflict_merge (migrations.test_commands.MakeMigrationsTests)
+makemigrations does not create a merge for an unspecified app even if ... ok
+test_makemigrations_unspecified_app_with_conflict_no_merge (migrations.test_commands.MakeMigrationsTests)
+makemigrations does not raise a CommandError when an unspecified app ... ok
+test_makemigrations_update (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_update_applied_migration (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_update_dependency_migration (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_update_existing_name (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_update_manual_porting (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_update_no_migration (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_update_squash_migration (migrations.test_commands.MakeMigrationsTests) ... ok
+test_makemigrations_with_custom_name (migrations.test_commands.MakeMigrationsTests)
+makemigrations --name generate a custom migration name. ... ok
+test_makemigrations_with_invalid_custom_name (migrations.test_commands.MakeMigrationsTests) ... ok
+test_ambiguous_prefix (migrations.test_commands.MigrateTests) ... ok
+test_app_without_migrations (migrations.test_commands.MigrateTests) ... ok
+test_migrate (migrations.test_commands.MigrateTests)
+Tests basic usage of the migrate command. ... ok
+test_migrate_backward_to_squashed_migration (migrations.test_commands.MigrateTests) ... ok
+test_migrate_check (migrations.test_commands.MigrateTests) ... ok
+test_migrate_check_migrated_app (migrations.test_commands.MigrateTests) ... ok
+test_migrate_check_plan (migrations.test_commands.MigrateTests) ... ok
+test_migrate_conflict_exit (migrations.test_commands.MigrateTests)
+migrate exits if it detects a conflict. ... ok
+test_migrate_fake_initial (migrations.test_commands.MigrateTests)
+--fake-initial only works if all tables created in the initial ... ok
+test_migrate_fake_initial_case_insensitive (migrations.test_commands.MigrateTests) ... ok
+test_migrate_fake_split_initial (migrations.test_commands.MigrateTests)
+Split initial migrations can be faked with --fake-initial. ... ok
+test_migrate_inconsistent_history (migrations.test_commands.MigrateTests)
+Running migrate with some migrations applied before their dependencies ... ok
+test_migrate_initial_false (migrations.test_commands.MigrateTests)
+`Migration.initial = False` skips fake-initial detection. ... ok
+test_migrate_not_reflected_changes (migrations.test_commands.MigrateTests) ... ok
+test_migrate_partially_applied_squashed_migration (migrations.test_commands.MigrateTests)
+Migrating to a squashed migration specified by name should succeed ... ok
+test_migrate_plan (migrations.test_commands.MigrateTests)
+Tests migrate --plan output. ... ok
+test_migrate_prune (migrations.test_commands.MigrateTests)
+With prune=True, references to migration files deleted from the ... ok
+test_migrate_record_replaced (migrations.test_commands.MigrateTests)
+Running a single squashed migration should record all of the original ... ok
+test_migrate_record_squashed (migrations.test_commands.MigrateTests)
+Running migrate for a squashed migration should record as run ... ok
+test_migrate_syncdb_app_label (migrations.test_commands.MigrateTests)
+Running migrate --run-syncdb with an app_label only creates tables for ... ok
+test_migrate_syncdb_app_with_migrations (migrations.test_commands.MigrateTests) ... ok
+test_migrate_syncdb_deferred_sql_executed_with_schemaeditor (migrations.test_commands.MigrateTests)
+For an app without migrations, editor.execute() is used for executing ... ok
+test_migrate_with_system_checks (migrations.test_commands.MigrateTests) ... ok
+test_prune_deleted_squashed_migrations_in_replaces (migrations.test_commands.MigrateTests) ... ok
+test_prune_no_app_label (migrations.test_commands.MigrateTests) ... ok
+test_prune_no_migrations_to_prune (migrations.test_commands.MigrateTests) ... ok
+test_regression_22823_unmigrated_fk_to_migrated_model (migrations.test_commands.MigrateTests)
+Assuming you have 3 apps, `A`, `B`, and `C`, such that: ... ok
+test_showmigrations_list (migrations.test_commands.MigrateTests)
+showmigrations --list  displays migrations and whether or not they're ... ok
+test_showmigrations_list_squashed (migrations.test_commands.MigrateTests) ... ok
+test_showmigrations_no_migrations (migrations.test_commands.MigrateTests) ... ok
+test_showmigrations_plan (migrations.test_commands.MigrateTests)
+Tests --plan output of showmigrations command ... ok
+test_showmigrations_plan_app_label_no_migrations (migrations.test_commands.MigrateTests) ... ok
+test_showmigrations_plan_multiple_app_labels (migrations.test_commands.MigrateTests)
+`showmigrations --plan app_label` output with multiple app_labels. ... ok
+test_showmigrations_plan_no_migrations (migrations.test_commands.MigrateTests)
+Tests --plan output of showmigrations command without migrations ... ok
+test_showmigrations_plan_single_app_label (migrations.test_commands.MigrateTests)
+`showmigrations --plan app_label` output with a single app_label. ... ok
+test_showmigrations_plan_squashed (migrations.test_commands.MigrateTests)
+Tests --plan output of showmigrations command with squashed migrations. ... ok
+test_showmigrations_unmigrated_app (migrations.test_commands.MigrateTests) ... ok
+test_sqlmigrate_ambiguous_prefix_squashed_migrations (migrations.test_commands.MigrateTests) ... ok
+test_sqlmigrate_backwards (migrations.test_commands.MigrateTests)
+sqlmigrate outputs reverse looking SQL. ... ok
+test_sqlmigrate_for_non_atomic_migration (migrations.test_commands.MigrateTests)
+Transaction wrappers aren't shown for non-atomic migrations. ... ok
+test_sqlmigrate_for_non_transactional_databases (migrations.test_commands.MigrateTests)
+Transaction wrappers aren't shown for databases that don't support ... ok
+test_sqlmigrate_forwards (migrations.test_commands.MigrateTests)
+sqlmigrate outputs forward looking SQL. ... ok
+test_sqlmigrate_no_operations (migrations.test_commands.MigrateTests) ... ok
+test_sqlmigrate_noop (migrations.test_commands.MigrateTests) ... ok
+test_sqlmigrate_replaced_migration (migrations.test_commands.MigrateTests) ... ok
+test_sqlmigrate_squashed_migration (migrations.test_commands.MigrateTests) ... ok
+test_sqlmigrate_unrepresentable (migrations.test_commands.MigrateTests) ... ok
+test_unknown_prefix (migrations.test_commands.MigrateTests) ... ok
+test_ambigious_prefix (migrations.test_commands.OptimizeMigrationTests) ... ok
+test_app_without_migrations (migrations.test_commands.OptimizeMigrationTests) ... ok
+test_creates_replace_migration_manual_porting (migrations.test_commands.OptimizeMigrationTests) ... ok
+test_fails_squash_migration_manual_porting (migrations.test_commands.OptimizeMigrationTests) ... ok
+test_no_optimization_possible (migrations.test_commands.OptimizeMigrationTests) ... ok
+test_optimization (migrations.test_commands.OptimizeMigrationTests) ... ok
+test_optimization_no_verbosity (migrations.test_commands.OptimizeMigrationTests) ... ok
+test_optimizemigration_check (migrations.test_commands.OptimizeMigrationTests) ... ok
+test_unknown_prefix (migrations.test_commands.OptimizeMigrationTests) ... ok
+test_squashed_name_exists (migrations.test_commands.SquashMigrationsTests) ... ok
+test_squashed_name_with_start_migration_name (migrations.test_commands.SquashMigrationsTests)
+--squashed-name specifies the new migration's name. ... ok
+test_squashed_name_without_start_migration_name (migrations.test_commands.SquashMigrationsTests)
+--squashed-name also works if a start migration is omitted. ... ok
+test_squashmigrations_initial_attribute (migrations.test_commands.SquashMigrationsTests) ... ok
+test_squashmigrations_invalid_start (migrations.test_commands.SquashMigrationsTests)
+squashmigrations doesn't accept a starting migration after the ending migration. ... ok
+test_squashmigrations_manual_porting (migrations.test_commands.SquashMigrationsTests) ... ok
+test_squashmigrations_optimizes (migrations.test_commands.SquashMigrationsTests)
+squashmigrations optimizes operations. ... ok
+test_squashmigrations_squashes (migrations.test_commands.SquashMigrationsTests)
+squashmigrations squashes migrations. ... ok
+test_squashmigrations_valid_start (migrations.test_commands.SquashMigrationsTests)
+squashmigrations accepts a starting migration. ... ok
+test_ticket_23799_squashmigrations_no_optimize (migrations.test_commands.SquashMigrationsTests)
+squashmigrations --no-optimize doesn't optimize operations. ... ok
+
+======================================================================
+ERROR: test_makemigrations_check (migrations.test_commands.MakeMigrationsTests)
+makemigrations --check should exit with a non-zero status when
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/migrations/test_commands.py", line 2402, in test_makemigrations_check
+    call_command("makemigrations", "--check", "migrations", verbosity=0)
+  File "/testbed/django/core/management/__init__.py", line 194, in call_command
+    return command.execute(*args, **defaults)
+  File "/testbed/django/core/management/base.py", line 448, in execute
+    output = self.handle(*args, **options)
+  File "/testbed/django/core/management/base.py", line 96, in wrapper
+    res = handle_func(*args, **kwargs)
+  File "/testbed/django/core/management/commands/makemigrations.py", line 251, in handle
+    sys.exit(0)
+SystemExit: 0
+
+----------------------------------------------------------------------
+Ran 140 tests in 3.850s
+
+FAILED (errors=1)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Destroying test database for alias 'other' ('file:memorydb_other?mode=memory&cache=shared')...
++ git checkout 5d36a8266c7d5d1994d7a7eeb4016f80d9cb0401 tests/migrations/test_commands.py
+Updated 1 path from 6388e96c28

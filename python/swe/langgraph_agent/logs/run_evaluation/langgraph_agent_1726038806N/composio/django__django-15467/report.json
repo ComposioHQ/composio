@@ -1,0 +1,91 @@
+{
+    "django__django-15467": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "test_radio_fields_foreignkey_formfield_overrides_empty_label (admin_widgets.tests.AdminFormfieldForDBFieldTests)"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "test_CharField (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "test_DateField (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "test_DateTimeField (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "test_EmailField (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "test_FileField (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "test_ForeignKey (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "test_IntegerField (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "test_TextField (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "test_TimeField (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "test_URLField (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "test_choices_with_radio_fields (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "test_field_with_choices (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "test_filtered_many_to_many (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "test_formfield_overrides (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "formfield_overrides works for a custom field class.",
+                    "Overriding the widget for DateTimeField doesn't overrides the default",
+                    "The autocomplete_fields, raw_id_fields, filter_vertical, and",
+                    "Widget instances in formfield_overrides are not shared between",
+                    "test_inheritance (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "m2m fields help text as it applies to admin app (#9321).",
+                    "test_many_to_many (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "test_radio_fields_ForeignKey (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "test_raw_id_ForeignKey (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "test_raw_id_many_to_many (admin_widgets.tests.AdminFormfieldForDBFieldTests)",
+                    "test_render (admin_widgets.tests.FilteredSelectMultipleWidgetTest)",
+                    "test_stacked_render (admin_widgets.tests.FilteredSelectMultipleWidgetTest)",
+                    "test_attrs (admin_widgets.tests.AdminDateWidgetTest)",
+                    "test_attrs (admin_widgets.tests.AdminUUIDWidgetTests)",
+                    "test_attrs (admin_widgets.tests.AdminTimeWidgetTest)",
+                    "test_custom_widget_render (admin_widgets.tests.RelatedFieldWidgetWrapperTests)",
+                    "test_no_can_add_related (admin_widgets.tests.RelatedFieldWidgetWrapperTests)",
+                    "test_on_delete_cascade_rel_cant_delete_related (admin_widgets.tests.RelatedFieldWidgetWrapperTests)",
+                    "test_select_multiple_widget_cant_change_delete_related (admin_widgets.tests.RelatedFieldWidgetWrapperTests)",
+                    "test_widget_delegates_value_omitted_from_data (admin_widgets.tests.RelatedFieldWidgetWrapperTests)",
+                    "test_widget_is_hidden (admin_widgets.tests.RelatedFieldWidgetWrapperTests)",
+                    "test_widget_is_not_hidden (admin_widgets.tests.RelatedFieldWidgetWrapperTests)",
+                    "test_get_context_validates_url (admin_widgets.tests.AdminURLWidgetTest)",
+                    "test_render (admin_widgets.tests.AdminURLWidgetTest)",
+                    "test_render_idn (admin_widgets.tests.AdminURLWidgetTest)",
+                    "WARNING: This test doesn't use assertHTMLEqual since it will get rid",
+                    "test_localization (admin_widgets.tests.AdminSplitDateTimeWidgetTest)",
+                    "test_render (admin_widgets.tests.AdminSplitDateTimeWidgetTest)",
+                    "test_fk_related_model_not_in_admin (admin_widgets.tests.ForeignKeyRawIdWidgetTest)",
+                    "test_fk_to_self_model_not_in_admin (admin_widgets.tests.ForeignKeyRawIdWidgetTest)",
+                    "test_proper_manager_for_label_lookup (admin_widgets.tests.ForeignKeyRawIdWidgetTest)",
+                    "test_relations_to_non_primary_key (admin_widgets.tests.ForeignKeyRawIdWidgetTest)",
+                    "test_render (admin_widgets.tests.ForeignKeyRawIdWidgetTest)",
+                    "test_render_fk_as_pk_model (admin_widgets.tests.ForeignKeyRawIdWidgetTest)",
+                    "test_render_unsafe_limit_choices_to (admin_widgets.tests.ForeignKeyRawIdWidgetTest)",
+                    "test_m2m_related_model_not_in_admin (admin_widgets.tests.ManyToManyRawIdWidgetTest)",
+                    "test_render (admin_widgets.tests.ManyToManyRawIdWidgetTest)",
+                    "Ensure the user can only see their own cars in the foreign key dropdown.",
+                    "test_changelist_ForeignKey (admin_widgets.tests.AdminForeignKeyWidgetChangeList)",
+                    "File widgets should render as a link when they're marked \"read only.\"",
+                    "test_render (admin_widgets.tests.AdminFileWidgetTests)",
+                    "test_render_disabled (admin_widgets.tests.AdminFileWidgetTests)",
+                    "test_render_required (admin_widgets.tests.AdminFileWidgetTests)",
+                    "test_invalid_target_id (admin_widgets.tests.AdminForeignKeyRawIdWidget)",
+                    "test_label_and_url_for_value_invalid_uuid (admin_widgets.tests.AdminForeignKeyRawIdWidget)",
+                    "test_nonexistent_target_id (admin_widgets.tests.AdminForeignKeyRawIdWidget)",
+                    "test_url_params_from_lookup_dict_any_iterable (admin_widgets.tests.AdminForeignKeyRawIdWidget)",
+                    "test_url_params_from_lookup_dict_callable (admin_widgets.tests.AdminForeignKeyRawIdWidget)"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

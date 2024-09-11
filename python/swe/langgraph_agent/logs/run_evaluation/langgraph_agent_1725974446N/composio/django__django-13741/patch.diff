@@ -1,0 +1,82 @@
+diff --git a/django/contrib/auth/forms.py b/django/contrib/auth/forms.py
+index b9eb3332..063612d5 100644
+--- a/django/contrib/auth/forms.py
++++ b/django/contrib/auth/forms.py
+@@ -1,3 +1,4 @@
++import warnings
+ import unicodedata
+ 
+ from django import forms
+@@ -54,8 +55,11 @@ class ReadOnlyPasswordHashWidget(forms.Widget):
+ class ReadOnlyPasswordHashField(forms.Field):
+     widget = ReadOnlyPasswordHashWidget
+ 
++    # The disabled property is set to True by default to prevent accidental changes
++    # to the password hash and to make the field read-only in forms.
+     def __init__(self, *args, **kwargs):
+         kwargs.setdefault("required", False)
++        kwargs.setdefault("disabled", True)
+         super().__init__(*args, **kwargs)
+ 
+     def bound_data(self, data, initial):
+@@ -138,13 +142,12 @@ class UserCreationForm(forms.ModelForm):
+             user.save()
+         return user
+ 
+-
+ class UserChangeForm(forms.ModelForm):
+     password = ReadOnlyPasswordHashField(
+         label=_("Password"),
+         help_text=_(
+             'Raw passwords are not stored, so there is no way to see this '
+-            'user’s password, but you can change the password using '
++            'user\'s password, but you can change the password using '
+             '<a href="{}">this form</a>.'
+         ),
+     )
+@@ -163,11 +166,18 @@ class UserChangeForm(forms.ModelForm):
+         if user_permissions:
+             user_permissions.queryset = user_permissions.queryset.select_related('content_type')
+ 
+-    def clean_password(self):
+-        # Regardless of what the user provides, return the initial value.
+-        # This is done here, rather than on the field, because the
+-        # field does not have access to the initial value
+-        return self.initial.get('password')
++        if hasattr(self, 'clean_password'):
++            warnings.warn(
++                "The 'clean_password' method in UserChangeForm is deprecated and will be "
++                "removed in Django 5.0. The ReadOnlyPasswordHashField is now disabled by "
++                "default, making this method unnecessary.",
++                DeprecationWarning,
++                stacklevel=2,
++            )
++
++    # The clean_password method is no longer necessary as the ReadOnlyPasswordHashField
++    # is now disabled by default, preventing any changes to the password hash.
++    # is now disabled by default, preventing any changes to the password hash.
+ 
+ 
+ class AuthenticationForm(forms.Form):
+diff --git a/docs/topics/auth/customizing.txt b/docs/topics/auth/customizing.txt
+index 6ab83054..a0cb7b1c 100644
+--- a/docs/topics/auth/customizing.txt
++++ b/docs/topics/auth/customizing.txt
+@@ -1126,7 +1126,16 @@ code would be required in the app's ``admin.py`` file::
+             return user
+ 
+ 
+-    class UserChangeForm(forms.ModelForm):
++class UserChangeForm(forms.ModelForm):
++
++    .. note::
++
++        As of Django X.Y (replace with the appropriate version number), 
++        the ReadOnlyPasswordHashField used in UserChangeForm is disabled by default. 
++        This means that the `clean_password` method is no longer necessary in custom 
++        forms for the User model. If your custom form still implements this method, 
++        it will receive a deprecation warning and should be removed to align with 
++        the new default behavior.
+         """A form for updating users. Includes all the fields on
+         the user, but replaces the password field with admin's
+         password hash display field.

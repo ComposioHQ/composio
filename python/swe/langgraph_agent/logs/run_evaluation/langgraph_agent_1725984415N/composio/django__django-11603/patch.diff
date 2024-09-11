@@ -1,0 +1,195 @@
+diff --git a/django/db/models/aggregates.py b/django/db/models/aggregates.py
+index da4ff928..2e55f982 100644
+--- a/django/db/models/aggregates.py
++++ b/django/db/models/aggregates.py
+@@ -96,6 +96,114 @@ class Aggregate(Func):
+         return options
+ 
+ 
++class Avg(FixDurationInputMixin, NumericOutputFieldMixin, Aggregate):
++    function = 'AVG'
++    name = 'Avg'
++    allow_distinct = True
++
++
++class Sum(FixDurationInputMixin, Aggregate):
++    function = 'SUM'
++    name = 'Sum'
++    allow_distinct = True
++
++
++class Count(Aggregate):
++    function = 'COUNT'
++    name = 'Count'
++    output_field = IntegerField()
++    allow_distinct = True
++    empty_result_set_value = 0
++class Avg(FixDurationInputMixin, NumericOutputFieldMixin, Aggregate):
++    function = 'AVG'
++    name = 'Avg'
++    allow_distinct = True
++
++
++class Sum(FixDurationInputMixin, Aggregate):
++    function = 'SUM'
++    name = 'Sum'
++    allow_distinct = True
++
++
++class Count(Aggregate):
++    function = 'COUNT'
++    name = 'Count'
++    output_field = IntegerField()
++    allow_distinct = True
++    empty_result_set_value = 0
++class Avg(FixDurationInputMixin, NumericOutputFieldMixin, Aggregate):
++    function = 'AVG'
++    name = 'Avg'
++    allow_distinct = True
++
++
++class Sum(FixDurationInputMixin, Aggregate):
++    function = 'SUM'
++    name = 'Sum'
++    allow_distinct = True
++
++
++class Count(Aggregate):
++    function = 'COUNT'
++    name = 'Count'
++    output_field = IntegerField()
++    allow_distinct = True
++    empty_result_set_value = 0
++class Avg(FixDurationInputMixin, NumericOutputFieldMixin, Aggregate):
++    function = 'AVG'
++    name = 'Avg'
++    allow_distinct = True
++
++
++class Sum(FixDurationInputMixin, Aggregate):
++    function = 'SUM'
++    name = 'Sum'
++    allow_distinct = True
++
++
++class Count(Aggregate):
++    function = 'COUNT'
++    name = 'Count'
++    output_field = IntegerField()
++    allow_distinct = True
++    empty_result_set_value = 0
++class Avg(FixDurationInputMixin, NumericOutputFieldMixin, Aggregate):
++    function = 'AVG'
++    name = 'Avg'
++    allow_distinct = True
++
++
++class Sum(FixDurationInputMixin, Aggregate):
++    function = 'SUM'
++    name = 'Sum'
++    allow_distinct = True
++
++
++class Count(Aggregate):
++    function = 'COUNT'
++    name = 'Count'
++    output_field = IntegerField()
++    allow_distinct = True
++    empty_result_set_value = 0
++class Avg(FixDurationInputMixin, NumericOutputFieldMixin, Aggregate):
++    function = 'AVG'
++    name = 'Avg'
++    allow_distinct = True
++
++
++class Sum(FixDurationInputMixin, Aggregate):
++    function = 'SUM'
++    name = 'Sum'
++    allow_distinct = True
++
++
++class Count(Aggregate):
++    function = 'COUNT'
++    name = 'Count'
++    output_field = IntegerField()
++    allow_distinct = True
++    empty_result_set_value = 0
+ class Avg(FixDurationInputMixin, NumericOutputFieldMixin, Aggregate):
+     function = 'AVG'
+     name = 'Avg'
+diff --git a/docs/ref/models/querysets.txt b/docs/ref/models/querysets.txt
+index f84097ae..fa07c648 100644
+--- a/docs/ref/models/querysets.txt
++++ b/docs/ref/models/querysets.txt
+@@ -3378,6 +3378,20 @@ by the aggregate.
+ ``Avg``
+ ~~~~~~~
+ 
++.. class:: Avg(expression, output_field=None, filter=None, distinct=False, **extra)
++
++    Returns the mean value of the given expression, which must be numeric
++    unless you specify a different ``output_field``.
++
++    * Default alias: ``<field>__avg``
++    * Return type: ``float`` (or the type of ``output_field``)
++
++    The ``distinct`` parameter is new in Django 4.0 and allows you to
++    compute the average of distinct values of the given expression.
++
++
++
++
+ .. class:: Avg(expression, output_field=None, filter=None, **extra)
+ 
+     Returns the mean value of the given expression, which must be numeric
+diff --git a/tests/aggregation/tests.py b/tests/aggregation/tests.py
+index bd6ecf69..47408a30 100644
+--- a/tests/aggregation/tests.py
++++ b/tests/aggregation/tests.py
+@@ -1159,6 +1159,46 @@ class AggregateTestCase(TestCase):
+             publisher=OuterRef('pk'),
+             pages__gt=800,
+         )
++        has_long_books_breakdown = Publisher.objects.annotate(
++            has_long_books=Exists(long_books_qs)
++        ).values_list('has_long_books').annotate(total=Count('*'))
++        self.assertEqual(dict(has_long_books_breakdown), {True: 2, False: 3})
++
++    def test_avg_distinct(self):
++        # Test Avg with distinct
++        avg_age_distinct = Author.objects.aggregate(Avg('age', distinct=True))
++        avg_age = Author.objects.aggregate(Avg('age'))
++        self.assertNotEqual(avg_age_distinct, avg_age)
++        
++        # Ensure that distinct works correctly
++        distinct_ages = Author.objects.values('age').distinct().count()
++        self.assertEqual(avg_age_distinct['age__avg'], sum(a.age for a in Author.objects.distinct('age')) / distinct_ages)
++
++    def test_sum_distinct(self):
++        # Test Sum with distinct
++        sum_pages_distinct = Book.objects.aggregate(Sum('pages', distinct=True))
++        sum_pages = Book.objects.aggregate(Sum('pages'))
++        self.assertNotEqual(sum_pages_distinct, sum_pages)
++        
++        # Ensure that distinct works correctly
++        distinct_pages = Book.objects.values('pages').distinct().count()
++        self.assertEqual(sum_pages_distinct['pages__sum'], sum(b.pages for b in Book.objects.distinct('pages')))
++
++    def test_avg_sum_distinct_with_expression(self):
++        # Test Avg and Sum with distinct on expressions
++        avg_price_distinct = Book.objects.aggregate(Avg(F('price') * 2, distinct=True))
++        sum_price_distinct = Book.objects.aggregate(Sum(F('price') * 2, distinct=True))
++        
++        # Compare with non-distinct results
++        avg_price = Book.objects.aggregate(Avg(F('price') * 2))
++        sum_price = Book.objects.aggregate(Sum(F('price') * 2))
++        
++        self.assertNotEqual(avg_price_distinct, avg_price)
++        self.assertNotEqual(sum_price_distinct, sum_price)
++        long_books_qs = Book.objects.filter(
++            publisher=OuterRef('pk'),
++            pages__gt=800,
++        )
+         has_long_books_breakdown = Publisher.objects.values_list(
+             Exists(long_books_qs),
+         ).annotate(total=Count('*'))
