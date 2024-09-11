@@ -233,15 +233,19 @@ def setup_workspace(
     base_commit,
     workspace_env=WorkspaceType.Docker,
     image_name=DEFAULT_IMAGE,
+    num_instances=1,
 ):
-    workspace_id = build_image_and_container(
-        repo=repo,
-        base_commit=base_commit,
-        workspace_env=workspace_env,
-        image_name=image_name,
-    )
-    repo_to_workspace_map[repo] = workspace_id
-    return workspace_id
+    workspace_ids = []
+    for _ in range(num_instances):
+        workspace_id = build_image_and_container(
+            repo=repo,
+            base_commit=base_commit,
+            workspace_env=workspace_env,
+            image_name=image_name,
+        )
+        workspace_ids.append(workspace_id)
+    repo_to_workspace_map[repo] = workspace_ids
+    return workspace_ids
 
 
 def check_and_pull_image(image_name):
@@ -285,4 +289,4 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-    get_score(logs_dir="/Users/shrey/.composio_coder/logs/1725604725/", run_id="langgraph_agent")
+    get_score(logs_dir="/Users/shrey/.composio_coder/logs/17258774764852/", run_id="langgraph_agent_temp")

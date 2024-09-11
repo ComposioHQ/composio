@@ -126,9 +126,11 @@ class EvaluationManager(WithLogger):
         if not patch:
             error = patch_data.get("error")
             if error:
-                raise Exception(f"Error in patch data: {error}")
+                self.logger.error(f"Error in patch data: {error}")
+                return None
             else:
-                raise Exception("No patch found in the response data")
+                self.logger.error("No patch found in the response data")
+                return None
 
         self.logger.info(f"Final Patch: {patch}")
         return patch
@@ -143,7 +145,7 @@ class EvaluationManager(WithLogger):
                         issue_config.issue_id: [
                             {
                                 "agent_action": "final_patch",
-                                "agent_output": issue_patch,
+                                "agent_output": issue_patch if issue_patch else "",
                             }
                         ]
                     }
@@ -207,13 +209,14 @@ class EvaluationManager(WithLogger):
                 self.logger.info(f"Using image: {image_name}")
 
                 try:
-                    workspace_id = setup_workspace(
+                    workspace_ids = setup_workspace(
                         repo,
                         self.repo_to_workspace_map,
                         self.repo_to_image_id_map,
                         issue["base_commit"],
                         self.workspace_env,
                         image_name,
+                        num_instances=2,
                     )
                 except Exception as e:
                     self.logger.error(f"Error setting up workspace: {e}")
@@ -224,11 +227,11 @@ class EvaluationManager(WithLogger):
                     issue["patch"],
                     issue["environment_setup_commit"],
                 )
-                # run agent function with the specified agent-function
-                agent_func(workspace_id, issue_config)
-                issue_patch = self.get_patch_for_issue(workspace_id, issue)
+                issue_patch = agent_func(workspace_ids, issue_config)
+                # issue_patch = self.get_patch_for_issue(workspace_id, issue)
                 self.save_agent_run(issue_config, issue_patch)
-                WorkspaceFactory.close(id=workspace_id)
+                for workspace_id in workspace_ids:
+                    WorkspaceFactory.close(id=workspace_id)
 
             except Exception as e:
                 self.logger.error(f"Error processing issue {issue['instance_id']}: {e}")

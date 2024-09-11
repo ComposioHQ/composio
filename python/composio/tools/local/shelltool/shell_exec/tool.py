@@ -6,6 +6,7 @@ from composio.tools.base.local import LocalAction, LocalTool
 from composio.tools.local.shelltool.shell_exec.actions.exec import ExecCommand
 from composio.tools.local.shelltool.shell_exec.actions.new import CreateShell
 from composio.tools.local.shelltool.shell_exec.actions.spawn import SpawnProcess
+from composio.tools.local.shelltool.shell_exec.actions.test import TestCommand
 
 
 class Shelltool(LocalTool, autoload=True):
@@ -18,4 +19,5 @@ class Shelltool(LocalTool, autoload=True):
             ExecCommand,
             CreateShell,
             SpawnProcess,
+            TestCommand,
         ]
