@@ -25,7 +25,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         baseUrl?: Optional<string>,
         entityId?: string,
         workspaceConfig?: WorkspaceConfig
-      }
+      }={}
     ) {
         super(
             config.apiKey || null,

@@ -10,7 +10,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     apiKey?: Optional<string>;
     baseUrl?: Optional<string>;
     entityId?: string;
-  }) {
+  }={}) {
     super(
       config.apiKey || null,
       config.baseUrl || null,
