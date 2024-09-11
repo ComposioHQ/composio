@@ -183,19 +183,9 @@ class HostWorkspace(Workspace):
 
         # TODO: Create CRUD object
         tags = tags or []
-<<<<<<< HEAD
-        for action in Action.all():
-            if not action.is_local:
-                continue
-
-            if not any(tag in action.tags for tag in tags):
-                continue
-
-=======
         for action in map(Action, action_registry["local"]):
             if not any(tag in action.tags for tag in tags):
                 continue
->>>>>>> master
             for dependency in action_registry["local"][action.slug].requires or []:
                 if check_if_package_is_intalled(dependency):
                     continue
