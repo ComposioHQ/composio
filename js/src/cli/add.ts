@@ -5,6 +5,7 @@ import {  setAxiosForBEAPICall } from "../sdk/utils/config";
 import client from "../sdk/client/client";
 import { Composio } from "../sdk";
 import inquirer from "inquirer";
+import open from "open";
 export default class AddCommand {
     private program: Command;
     private composioClient: Composio;
@@ -41,54 +42,55 @@ export default class AddCommand {
         });
 
         // @ts-ignore
-        if(connection.items.length > 0 && !this.program.force){
+        if (connection.items.length > 0 && options.force !== true){
             console.log(chalk.green("Connection already exists for", appName));
             return;
         }
    
         // @ts-ignore
-        const setupConnections = await this.setupConnections(firstIntegration.id);
+        await this.setupConnections(firstIntegration.id);
       
     }   
 
-    private async waitUntilConnected(connectedAccountId: any,timeout: number = 10000){
+    private async waitUntilConnected(connectedAccountId: string, timeout: number = 30000): Promise<void> {
+        const startTime = Date.now();
+        const pollInterval = 3000; // 3 seconds
 
-        return new Promise((resolve, reject) => {
-            let count = 0;
-            setInterval(async () => {
-
-                if (count > 10){
-                    reject(new Error("Connection did not get active in time"));
-                }
-                // @ts-ignore
-                const { data } = await this.composioClient.connectedAccounts.get({
-                        connectedAccountId: connectedAccountId
+        while (Date.now() - startTime < timeout) {
+            try {
+                const data = await this.composioClient.connectedAccounts.get({
+                    connectedAccountId: connectedAccountId
                 });
 
-                if (data.status === "ACTIVE"){
-                    resolve(true);
+                // @ts-ignore
+                if (data.status === "ACTIVE") {
+                    return;
                 }
+            } catch (error) {
+                console.error("Error checking connection status:", error);
+            }
 
-                count++;
-                
-            }, 3000);
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
+        }
 
-        });
-
+        throw new Error(`Connection did not become active within the specified timeout in ${timeout / 1000} seconds`);
     }
 
 
     private async setupConnections(integrationId: string){
-        const {data} = await this.composioClient.integrations.get({
-            integrationId: integrationId
+        const data = await this.composioClient.integrations.get({
+            integrationId: integrationId,
+            
         });
+
+
 
         const { expectedInputFields } = data;
 
         const config = await this.collectInputFields(expectedInputFields);
 
 
-        const {data: connectionData} = await this.composioClient.connectedAccounts.create({
+        const connectionData = await this.composioClient.connectedAccounts.create({
             integrationId: integrationId,
             config: config,
         });
@@ -100,13 +102,13 @@ export default class AddCommand {
 
 
         if (connectionData.redirectUrl){
-            console.log(chalk.green("Redirecting to the app"));
+            console.log(chalk.white("Redirecting to the app"), chalk.blue(connectionData.redirectUrl));
             open(connectionData.redirectUrl);
-            console.log(open(connectionData.redirectUrl));
-
-            await this.waitUntilConnected(connectionData.id);
+            
+            await this.waitUntilConnected(connectionData.connectedAccountId);
 
             console.log(chalk.green("Connection is active"));
+            process.exit(0);
         }
         
     }
