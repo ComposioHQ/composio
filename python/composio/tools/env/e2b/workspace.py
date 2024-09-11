@@ -71,6 +71,7 @@ class E2BWorkspace(RemoteWorkspace):
         # Start sandbox
         self.sandbox = Sandbox(template=self.template, api_key=self.api_key)
         self.url = TOOLSERVER_URL.format(host=self.sandbox.get_host(self.port))
+        self.logger.debug(f"{self}.url = {self.url}")
 
         # Start app update in background
         self.sandbox.commands.run(
@@ -102,6 +103,7 @@ class E2BWorkspace(RemoteWorkspace):
         )
         self.host = self.sandbox.get_host(port=80)
         self.ports = []
+        self._wait()
 
     def teardown(self) -> None:
         """Teardown E2B workspace."""

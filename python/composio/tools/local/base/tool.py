@@ -4,7 +4,7 @@ from .action import Action
 
 
 class Tool:
-    """Asbtraction for local tools."""
+    """Abstraction for local tools."""
 
     @property
     def name(self) -> str:

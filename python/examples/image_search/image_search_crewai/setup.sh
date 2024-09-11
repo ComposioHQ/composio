@@ -24,8 +24,13 @@ fi
 # Prompt the user to enter the OPENAI_API_KEY
 read -p "Enter your OPENAI_API_KEY: " OPENAI_API_KEY
 
-# Update the .env file with the entered OPENAI_API_KEY
-sed -i "s/^OPENAI_API_KEY=.*$/OPENAI_API_KEY=$OPENAI_API_KEY/" .env
+# Update or add the OPENAI_API_KEY line
+if grep -qE "^OPENAI_API_KEY" .env; then
+    sed -i.bak "s/^OPENAI_API_KEY.*/OPENAI_API_KEY = $OPENAI_API_KEY/" .env && rm .env.bak
+else
+    echo "OPENAI_API_KEY = $OPENAI_API_KEY # add your openai key here" >> .env
+fi
+
 
 echo "OPENAI_API_KEY has been set in the .env file"
 

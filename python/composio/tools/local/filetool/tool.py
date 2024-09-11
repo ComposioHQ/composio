@@ -17,6 +17,7 @@ from .actions import (
     GitRepoTree,
     ListFiles,
     OpenFile,
+    RenameFile,
     Scroll,
     SearchWord,
     Write,
@@ -26,11 +27,14 @@ from .actions import (
 class Filetool(LocalTool, autoload=True):
     """File I/O tool."""
 
+    logo = "https://raw.githubusercontent.com/ComposioHQ/composio/master/python/docs/imgs/logos/filetool.png"
+
     @classmethod
     def actions(cls) -> t.List[t.Type[LocalAction]]:
         """Return the list of actions."""
         return [
             OpenFile,
+            RenameFile,
             EditFile,
             CreateFile,
             Scroll,

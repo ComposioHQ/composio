@@ -137,6 +137,7 @@ class ComposioToolSet(WithLogger):
         output_in_file: bool = False,
         logging_level: LogLevel = LogLevel.INFO,
         output_dir: t.Optional[Path] = None,
+        verbosity_level: t.Optional[int] = None,
         **kwargs: t.Any,
     ) -> None:
         """
@@ -206,9 +207,14 @@ class ComposioToolSet(WithLogger):
                 }
             )
             ```
+        :param verbosity_level: This defines the size of the log object that will
+            be printed on the console.
 
         """
-        super().__init__(logging_level=logging_level)
+        super().__init__(
+            logging_level=logging_level,
+            verbosity_level=verbosity_level,
+        )
         self.logger.info(
             f"Logging is set to {self._logging_level}, "
             "use `logging_level` argument or "
@@ -216,19 +222,20 @@ class ComposioToolSet(WithLogger):
         )
         self.entity_id = entity_id
         self.output_in_file = output_in_file
-        self.base_url = base_url or get_api_url_base()
         self.output_dir = (
             output_dir or LOCAL_CACHE_DIRECTORY / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
         )
         self._ensure_output_dir_exists()
 
+        self._base_url = base_url or get_api_url_base()
         try:
-            self.api_key = (
+            self._api_key = (
                 api_key
                 or os.environ.get(ENV_COMPOSIO_API_KEY)
                 or UserData.load(LOCAL_CACHE_DIRECTORY / USER_DATA_FILE_NAME).api_key
             )
         except FileNotFoundError:
+            self._api_key = None
             self.logger.debug("`api_key` is not set when initializing toolset.")
 
         self._processors = (
@@ -270,6 +277,23 @@ class ComposioToolSet(WithLogger):
             return None
 
     @property
+    def api_key(self) -> str:
+        if self._api_key is None:
+            raise ApiKeyNotProvidedError()
+        return self._api_key
+
+    @property
+    def client(self) -> Composio:
+        if self._remote_client is None:
+            self._remote_client = Composio(
+                api_key=self._api_key,
+                base_url=self._base_url,
+                runtime=self._runtime,
+            )
+        self._remote_client.local = self._local_client
+        return self._remote_client
+
+    @property
     def workspace(self) -> Workspace:
         """Workspace for this toolset instance."""
         if self._workspace is not None:
@@ -284,7 +308,7 @@ class ComposioToolSet(WithLogger):
             workspace_config.composio_api_key = self.api_key
 
         if workspace_config.composio_base_url is None:
-            workspace_config.composio_base_url = self.base_url
+            workspace_config.composio_base_url = self._base_url
 
         if workspace_config.github_access_token is None:
             workspace_config.github_access_token = (
@@ -298,21 +322,6 @@ class ComposioToolSet(WithLogger):
         self._workspace_id = workspace_id
         if self._workspace is not None:
             self._workspace = WorkspaceFactory.get(id=workspace_id)
-
-    @property
-    def client(self) -> Composio:
-        if self.api_key is None:
-            raise ApiKeyNotProvidedError()
-
-        if self._remote_client is None:
-            self._remote_client = Composio(
-                api_key=self.api_key,
-                base_url=self.base_url,
-                runtime=self._runtime,
-            )
-            self._remote_client.local = self._local_client
-
-        return self._remote_client
 
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
@@ -397,9 +406,9 @@ class ComposioToolSet(WithLogger):
         file_name_prefix: str,
         success_response_model: SuccessExecuteActionResponseModel,
     ) -> dict:
-        execution_status = success_response_model.successfull
+        error = success_response_model.error
         resp_data = success_response_model.data
-
+        is_invalid_file = False
         for key, val in resp_data.items():
             try:
                 file_model = FileType.model_validate(val)
@@ -416,12 +425,12 @@ class ComposioToolSet(WithLogger):
 
                 resp_data[key] = str(local_filepath)
             except binascii.Error:
-                execution_status = False
+                is_invalid_file = True
                 resp_data[key] = "Invalid File! Unable to decode."
             except Exception:
                 pass
 
-        if execution_status is False:
+        if is_invalid_file is True and error is None:
             success_response_model.error = "Execution failed"
         success_response_model.data = resp_data
         return success_response_model.model_dump()
@@ -673,7 +682,10 @@ class ComposioToolSet(WithLogger):
     def _process_schema(self, action_item: ActionModel) -> ActionModel:
         required_params = action_item.parameters.required or []
         for param_name, param_details in action_item.parameters.properties.items():
-            if param_details.get("properties") == FileType.schema().get("properties"):
+            if param_details.get("title") == "FileType" and all(
+                fprop in param_details.get("properties")
+                for fprop in ("name", "content")
+            ):
                 action_item.parameters.properties[param_name].pop("properties")
                 action_item.parameters.properties[param_name] = {
                     "default": param_details.get("default"),
@@ -681,9 +693,10 @@ class ComposioToolSet(WithLogger):
                     "format": "file-path",
                     "description": f"File path to {param_details.get('description', '')}",
                 }
-            elif param_details.get("allOf", [{}])[0].get(
-                "properties"
-            ) == FileType.schema().get("properties"):
+            elif param_details.get("allOf", [{}])[0].get("title") == "FileType" and all(
+                fprop in param_details.get("allOf", [{}])[0].get("properties", {})
+                for fprop in ("name", "content")
+            ):
                 action_item.parameters.properties[param_name].pop("allOf")
                 action_item.parameters.properties[param_name].update(
                     {

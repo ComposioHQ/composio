@@ -2,8 +2,6 @@
 
 import typing as t
 
-import pytest
-
 from composio import Action
 from composio.tools.env.base import Workspace, WorkspaceConfigType
 from composio.tools.env.factory import (
@@ -39,7 +37,7 @@ class BaseFactoryTest:
             metadata={},
         )
 
-        assert response["successfull"]
+        assert response.get("successful", response.get("successfull"))
         assert "stdout" in response["data"]
         assert response["data"]["exit_code"] == 0
 
@@ -50,7 +48,7 @@ class BaseFactoryTest:
             metadata={},
         )
 
-        assert response["successfull"]
+        assert response.get("successful", response.get("successfull"))
         assert response["data"]["output"] == "Cow says: Hello, World!"
 
 
@@ -64,7 +62,6 @@ class TestDocker(BaseFactoryTest):
     config = WorkspaceType.Docker(image="composio/composio:dev")
 
 
-@pytest.mark.skip(reason="E2B is not working")
 class TestE2B(BaseFactoryTest):
     type = E2BWorkspace
     config = WorkspaceType.E2B(template="bg8v5hkbhq1w09i5h65u")

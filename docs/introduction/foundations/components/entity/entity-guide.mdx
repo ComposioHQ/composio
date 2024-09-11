@@ -22,24 +22,29 @@ description: "Manage all the connected accounts of your Users"
 ```python get the entity and auth scheme for an app
 from composio import ComposioToolSet, App
 
-toolset = ComposioToolSet(entity_id="Jessica")
+user_id = "Jessica"  # this is the user id of the user you want to connect with
+app_to_connect = App.GMAIL  # can also be gmail, github, etc.
+
+toolset = ComposioToolSet(entity_id=user_id)
 
 entity = toolset.get_entity()
 
 from composio.client.exceptions import NoItemsFound
 
 try:
-    entity.get_connection(app=App.GITHUB)
+    entity.get_connection(app=app_to_connect)
 
-    print(f"User {entity_id} is already authenticated with GitHub")
+    print(f"User {user_id} is already authenticated with {app_to_connect}")
 
 except NoItemsFound as e:
 
     # Create a request to initiate connection
-    request = entity.initiate_connection(App.GITHUB, redirect_url="https://google.com")
+    request = entity.initiate_connection(
+        app_to_connect, redirect_url="https://google.com"
+    )
 
     print(
-        f"Please authenticate {App.GITHUB} in the browser and come back here. URL: {request.redirectUrl}"
+        f"Please authenticate {app_to_connect} in the browser and come back here. URL: {request.redirectUrl}"
     )
 
     # Poll until the connection is active

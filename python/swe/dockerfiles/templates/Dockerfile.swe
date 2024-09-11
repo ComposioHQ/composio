@@ -21,18 +21,22 @@ RUN git checkout {{ basecommit}}
 WORKDIR /home/user
 
 RUN mkdir -p /home/user/.composio/tmp
+<<<<<<< HEAD
 COPY deeplake /home/user/.composio/tmp/{{ reponame }}/deeplake
+=======
+COPY deeplake /home/user/.composio/tmp/{{ reponame }}
+>>>>>>> master
 COPY fqdn_cache.json /home/user/.composio/tmp/{{ reponame }}
 
 {% if dependencies -%}
-# Install dependecies
+# Install dependencies
 RUN /home/user/.dev/bin/python -m pip install {{ dependencies }} || echo "$?"
 
 {% endif -%}
 
 
 {% if requirements -%}
-# Install dependecies
+# Install dependencies
 COPY requirements.txt _requirements.txt
 
 # Install from requirements.txt

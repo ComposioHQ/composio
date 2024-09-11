@@ -25,7 +25,7 @@ class Collection(t.Generic[ModelType], logging.WithLogger):
     _list_key: str = "items"
 
     def __init__(self, client: "BaseClient") -> None:
-        """Initialize conntected accounts models namespace."""
+        """Initialize connected accounts models namespace."""
         logging.WithLogger.__init__(self)
         self.client = client
 
@@ -50,7 +50,7 @@ class Collection(t.Generic[ModelType], logging.WithLogger):
         return response
 
     def _raise_if_empty(self, collection: CollectionType) -> CollectionType:
-        """Raise if provided colleciton is empty."""
+        """Raise if provided collection is empty."""
         if len(collection) > 0:
             return collection
         raise NoItemsFound(message="No items found")

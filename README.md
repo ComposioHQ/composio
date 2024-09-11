@@ -1,3 +1,16 @@
+<p align="center">
+  <a href="https://x.com/GanatraSoham/?utm_campaign=github-readme" target="_blank">
+    <img src="./python/docs/imgs/follow_x.png" width="100%" alt="Follow me" />
+  </a>
+  <br /> <br />
+</p>
+<p align="center">
+  <a href="https://app.composio.dev/?utm_campaign=github-readme" target="_blank">
+    <img src="./python/docs/imgs/try_hosted.png" width="100%" alt="Sign up" />
+  </a>
+
+  <br /> <br />
+</p>
 <p>
   <a href="https://github.com/composiohq/composio/blob/master/README.md">EN</a> | <a href="https://github.com/composiohq/composio/blob/master/README-CN.md">CN</a> | <a href="https://github.com/composiohq/composio/blob/master/README-JP.md">JP</a>
 </p>

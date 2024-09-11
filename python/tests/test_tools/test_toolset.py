@@ -8,7 +8,7 @@ from unittest import mock
 import pytest
 
 from composio import Action, App
-from composio.exceptions import ComposioSDKError
+from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.tools import ComposioToolSet
 from composio.tools.base.abs import action_registry, tool_registry
 
@@ -43,7 +43,7 @@ def test_find_actions_by_tags() -> None:
 
 
 def test_uninitialize_app() -> None:
-    """Test if the usage of an app without connected account raises erorr or not."""
+    """Test if the usage of an app without connected account raises error or not."""
     with pytest.raises(
         ComposioSDKError,
         match=(
@@ -98,3 +98,19 @@ class TestValidateTools:
             match=f"Error installing {self.package}",
         ):
             self.toolset.validate_tools(apps=[App.BROWSER_TOOL])
+<<<<<<< HEAD
+=======
+
+
+def test_api_key_missing() -> None:
+    toolset = ComposioToolSet()
+    toolset._api_key = None  # pylint: disable=protected-access
+    with pytest.raises(
+        ApiKeyNotProvidedError,
+        match=(
+            "API Key not provided, either provide API key or export it as "
+            "`COMPOSIO_API_KEY` or run `composio login`"
+        ),
+    ):
+        _ = toolset.workspace
+>>>>>>> master

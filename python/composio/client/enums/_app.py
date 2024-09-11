@@ -13,6 +13,7 @@ from composio.client.enums.base import APPS_CACHE, AppData, _AnnotatedEnum, enum
 @enum
 class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     """Class to represent `App` entity."""
+<<<<<<< HEAD
     APIFY: 'App'
     ASANA: 'App'
     ATTIO: 'App'
@@ -83,6 +84,79 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     YOUTUBE: 'App'
     ZENDESK: 'App'
     ZEPTOOL: 'App'
+=======
+
+    APIFY: "App"
+    ASANA: "App"
+    ATTIO: "App"
+    BROWSERBASE_TOOL: "App"
+    BROWSER_TOOL: "App"
+    CLICKUP: "App"
+    CODEINTERPRETER: "App"
+    CODE_ANALYSIS_TOOL: "App"
+    CODE_FORMAT_TOOL: "App"
+    CODE_GREP_TOOL: "App"
+    CODE_INDEX_TOOL: "App"
+    CODE_MAP_TOOL: "App"
+    COMPOSIO: "App"
+    DISCORD: "App"
+    DISCORDBOT: "App"
+    DROPBOX: "App"
+    ELEVENLABS: "App"
+    EMBED_TOOL: "App"
+    EXA: "App"
+    FIGMA: "App"
+    FILETOOL: "App"
+    FIRECRAWL: "App"
+    GIT: "App"
+    GITHUB: "App"
+    GMAIL: "App"
+    GOOGLECALENDAR: "App"
+    GOOGLEDOCS: "App"
+    GOOGLEDRIVE: "App"
+    GOOGLEMEET: "App"
+    GOOGLESHEETS: "App"
+    GOOGLETASKS: "App"
+    GREPTILE: "App"
+    HACKERNEWS: "App"
+    HISTORY_FETCHER: "App"
+    HUBSPOT: "App"
+    IMAGE_ANALYSER: "App"
+    INDUCED_AI: "App"
+    JIRA: "App"
+    KLAVIYO: "App"
+    LINEAR: "App"
+    LISTENNOTES: "App"
+    MAILCHIMP: "App"
+    MATHEMATICAL: "App"
+    MULTIONAI: "App"
+    NASA: "App"
+    NOTION: "App"
+    PERPLEXITYAI: "App"
+    PIPEDRIVE: "App"
+    RAGTOOL: "App"
+    SALESFORCE: "App"
+    SCHEDULER: "App"
+    SERPAPI: "App"
+    SHELLTOOL: "App"
+    SLACK: "App"
+    SLACKBOT: "App"
+    SNOWFLAKE: "App"
+    SPIDERTOOL: "App"
+    SQLTOOL: "App"
+    TASKADE: "App"
+    TAVILY: "App"
+    TRELLO: "App"
+    TWITTER: "App"
+    TYPEFORM: "App"
+    WEATHERMAP: "App"
+    WEBTOOL: "App"
+    WORKSPACE_TOOL: "App"
+    YOUSEARCH: "App"
+    YOUTUBE: "App"
+    ZENDESK: "App"
+    ZEPTOOL: "App"
+>>>>>>> master
 
     @property
     def is_local(self) -> bool:

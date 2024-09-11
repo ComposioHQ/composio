@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from composio.client.enums import Action as ActionEnum
 from composio.exceptions import ComposioSDKError
 from composio.utils.logging import WithLogger
+from composio.utils.pydantic import parse_pydantic_error
 
 
 GroupID = t.Literal["runtime", "local", "api"]
@@ -69,7 +70,7 @@ class ExecuteResponse(BaseModel):
 
 class _Attributes:
     name: str
-    """Name represenation."""
+    """Name representation."""
 
     enum: str
     """Enum key."""
@@ -79,6 +80,9 @@ class _Attributes:
 
     description: str
     """Description string."""
+
+    logo: str
+    """URL for the resource logo."""
 
 
 class _Request(t.Generic[ModelType]):
@@ -148,7 +152,7 @@ class _Response(t.Generic[ModelType]):
             )
             error: t.Optional[str] = Field(
                 None,
-                description="Error if any occured during the execution of the action",
+                description="Error if any occurred during the execution of the action",
             )
 
         return t.cast(t.Type[BaseModel], wrapper)
@@ -387,6 +391,9 @@ class ToolBuilder:
             obj._actions[action.enum] = action  # pylint: disable=protected-access
             action_registry[obj.gid][action.enum] = action  # type: ignore
 
+            if hasattr(obj, "logo"):
+                setattr(action, "logo", getattr(obj, "logo"))
+
         if not hasattr(obj, "triggers"):
             return
 
@@ -398,6 +405,9 @@ class ToolBuilder:
             trigger.enum = f"{obj.enum}_{trigger.name.upper()}"
             obj._triggers[trigger.enum] = trigger  # type: ignore  # pylint: disable=protected-access
             trigger_registry[obj.gid][trigger.enum] = trigger  # type: ignore
+
+            if hasattr(obj, "logo"):
+                setattr(trigger, "logo", getattr(obj, "logo"))
 
 
 class Tool(WithLogger, _Attributes):

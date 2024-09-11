@@ -20,7 +20,7 @@ llm = ChatGroq(model="llama3.1-70b-versatile", stop_sequences=["\n\n"])
 # Define the Email Fetcher Agent
 email_fetcher_agent = Agent(
     role="Email Fetcher Agent",
-    goal="Fetch recent newsletter emails from the inbox. Please look for labels 'newsletter' only for last 7 days. Don't add any other unncessary filters.",
+    goal="Fetch recent newsletter emails from the inbox. Please look for labels 'newsletter' only for last 7 days. Don't add any other unnecessary filters.",
     verbose=True,
     memory=True,
     backstory=f"You are an expert in retrieving and organizing email content, with a keen eye for identifying relevant newsletters. Today's date is {datetime.now().strftime('%B %d, %Y')}. You are writing an email to a reader who is interested in the stock market and trading.",

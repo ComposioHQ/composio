@@ -24,6 +24,11 @@ class BrowserTool(LocalTool, autoload=True):
 
     requires = ["playwright"]
 
+<<<<<<< HEAD
+=======
+    logo = "https://raw.githubusercontent.com/ComposioHQ/composio/master/python/docs/imgs/logos/browsertool.png"
+
+>>>>>>> master
     @classmethod
     def actions(cls) -> t.List[t.Type[LocalAction]]:
         """Return the list of actions."""

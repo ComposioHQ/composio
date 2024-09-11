@@ -278,7 +278,7 @@ class RemoteWorkspace(Workspace):
             return
 
         self.logger.debug(
-            f"Succesfully uploaded: {action.slug} - {response}",
+            f"Successfully uploaded: {action.slug} - {response}",
         )
         return
 
@@ -298,6 +298,7 @@ class RemoteWorkspace(Workspace):
             },
             timeout=600,
         )
+<<<<<<< HEAD
         if request.status_code != 200:
             raise ComposioSDKError(
                 f"Error installing dependencies: {request.text}"
@@ -308,6 +309,14 @@ class RemoteWorkspace(Workspace):
             raise ComposioSDKError(
                 f"Error installing dependencies: {response['error']}"
             )
+=======
+        response = request.json()
+        print(response)
+        # if response["error"] is not None:
+        #     raise ComposioSDKError(
+        #         f"Error installing dependencies: {response['error']}"
+        #     )
+>>>>>>> master
 
     def execute_action(
         self,

@@ -42,7 +42,7 @@ agent_executor = AgentExecutor(agent=query_agent, tools=composio_tools, verbose=
 # Callback function for handling new messages in a Slack channel
 @listener.callback(filters={"trigger_name": "slackbot_receive_message"})
 def callback_new_message(event: TriggerEventData) -> None:
-    print("Recieved new messsage")
+    print("Received new message")
     payload = event.payload
     user_id = payload.get("user", "")
 

@@ -18,7 +18,20 @@ from composio.utils.url import get_api_url_base
 from swebench.harness.run_evaluation import main as run_evaluation
 from composio_crewai import ComposioToolSet
 
+<<<<<<< HEAD
 DATASET_NAME = os.environ.get("DATASET_NAME", "princeton-nlp/SWE-bench_Verified")
+=======
+from swekit.benchmark.constants import MODEL_GPT4
+from swekit.benchmark.docker_utils.evaulate_on_docker import (
+    EvaluateOnDockerArgs,
+    evaluate,
+)
+from swekit.benchmark.get_score_card import generate_scorecard
+from swekit.benchmark.setup_test_bed import create_patches_file
+
+
+DATASET_NAME = os.environ.get("DATASET_NAME", "composio/swe-bench_Verified")
+>>>>>>> master
 PATH_TESTBED = "testbed/"
 
 
@@ -112,7 +125,7 @@ def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
         config=WorkspaceType.Docker(
             image=repo_to_image_id_map[repo],
             composio_api_key=composio_toolset.api_key,
-            composio_base_url=composio_toolset.base_url or get_api_url_base(),
+            composio_base_url=composio_toolset._base_url or get_api_url_base(),
             github_access_token=composio_toolset._try_get_github_access_token_for_current_entity(),
         ),
     )
@@ -160,7 +173,7 @@ def build_image_and_container(
             WorkspaceType.Docker(
                 image=image_name,
                 composio_api_key=composio_toolset.api_key,
-                composio_base_url=composio_toolset.base_url or get_api_url_base(),
+                composio_base_url=composio_toolset._base_url or get_api_url_base(),
                 github_access_token=composio_toolset._try_get_github_access_token_for_current_entity(),
             ),
         )
@@ -168,7 +181,7 @@ def build_image_and_container(
         workspace = WorkspaceFactory.new(
             config=WorkspaceType.E2B(
                 composio_api_key=composio_toolset.api_key,
-                composio_base_url=composio_toolset.base_url or get_api_url_base(),
+                composio_base_url=composio_toolset._base_url or get_api_url_base(),
             )
         )
     else:
@@ -289,4 +302,8 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     get_score(logs_dir="/Users/shrey/.composio_coder/logs/17258774764852/", run_id="langgraph_agent_temp")
+=======
+    get_score(logs_dir="/Users/shrey/.composio_coder/logs/1724766390")
+>>>>>>> master

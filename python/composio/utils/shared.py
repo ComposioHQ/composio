@@ -21,7 +21,7 @@ PYDANTIC_TYPE_TO_PYTHON_TYPE = {
     "null": t.Optional[t.Any],
 }
 
-# Should be depricated,
+# Should be deprecated,
 # required values will always be provided by users
 # Non-required values are nullable(None) if default value not provided.
 FALLBACK_VALUES = {
@@ -234,7 +234,7 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
 
 def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Parameter]:
     """
-    Get function paramters signature(with pydantic field definition as default values)
+    Get function parameters signature(with pydantic field definition as default values)
     from schema parameters. Works like:
 
     def demo_function(
@@ -242,7 +242,7 @@ def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Par
         repo: str),
     )
 
-    :param schema_params: A dictionary object containing schema params, with keys [properties, required ect.].
+    :param schema_params: A dictionary object containing schema params, with keys [properties, required etc.].
     :return: List of required and optional parameters
 
     Output Format:
@@ -307,7 +307,7 @@ def get_pydantic_signature_format_from_schema_params(
     schema_params: t.Dict,
 ) -> t.List[Parameter]:
     """
-    Get function paramters signature(with pydantic field definition as default values)
+    Get function parameters signature(with pydantic field definition as default values)
     from schema parameters. Works like:
 
     def demo_function(
@@ -315,7 +315,7 @@ def get_pydantic_signature_format_from_schema_params(
         repo: str=Field(..., description='The name of the repository without the `.git` extension.'),
     )
 
-    :param schema_params: A dictionary object containing schema params, with keys [properties, required ect.].
+    :param schema_params: A dictionary object containing schema params, with keys [properties, required etc.].
     :return: List of required and optional parameters
 
     Example Output Format:
