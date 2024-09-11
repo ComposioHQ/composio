@@ -19,6 +19,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 COMPOSIO_API_KEY = os.environ.get("COMPOSIO_API_KEY")
 JULEP_API_KEY = os.environ.get("JULEP_API_KEY")
 JULEP_API_URL = os.environ.get("JULEP_API_URL")
+LISTENNOTES_API_KEY = os.environ.get("LISTENNOTES_API_KEY")
 
 # Plugin test definitions
 EXAMPLES = {
@@ -145,6 +146,24 @@ EXAMPLES = {
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
         "cwd": EXAMPLES_PATH / "sql_agent" / "sql_agent_plotter_crewai",
+    },
+    "multi_entity_api_key": {
+        "plugin": "langchain",
+        "file": EXAMPLES_PATH / "miscellaneous" / "multi_entity.py",
+        "match": {
+            "type": "stdout",
+            "values": [
+                "Invoking: `LISTENNOTES_FETCH_A_LIST_OF_SUPPORTED_LANGUAGES_FOR_PODCASTS`",
+                "Any language",
+                "Abkhazian",
+                "Arabic",
+            ],
+        },
+        "env": {
+            "OPENAI_API_KEY": OPENAI_API_KEY,
+            "COMPOSIO_API_KEY": COMPOSIO_API_KEY,
+            "LISTENNOTES_API_KEY": LISTENNOTES_API_KEY,
+        },
     },
     # "praisonai": {
     #     "plugin": "praisonai",
