@@ -126,17 +126,11 @@ class EvaluationManager(WithLogger):
         if not patch:
             error = patch_data.get("error")
             if error:
-<<<<<<< HEAD
                 self.logger.error(f"Error in patch data: {error}")
                 return None
             else:
                 self.logger.error("No patch found in the response data")
                 return None
-=======
-                raise Exception(f"Error in patch data: {error}")
-            else:
-                raise Exception("No patch found in the response data")
->>>>>>> master
 
         self.logger.info(f"Final Patch: {patch}")
         return patch
