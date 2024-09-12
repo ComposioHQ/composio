@@ -40,6 +40,7 @@ def initialize_listennotes(entity_id: str, toolset: ComposioToolSet, listennotes
 
         listennotes_tool = toolset.get_tools(
             actions=[Action.LISTENNOTES_FETCH_A_LIST_OF_SUPPORTED_LANGUAGES_FOR_PODCASTS],
+            entity_id=entity_id,
         )
         return listennotes_tool
 
