@@ -1,7 +1,8 @@
-name: Publish JS SDK
+name: Release JS SDK
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
+  push:
     
 
 jobs:
