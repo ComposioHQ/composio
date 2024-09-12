@@ -1,11 +1,10 @@
 import chalk from "chalk";
 import { Command } from 'commander';
-
-import {  setAxiosForBEAPICall } from "../sdk/utils/config";
-import client from "../sdk/client/client";
 import { Composio } from "../sdk";
 import inquirer from "inquirer";
 import open from "open";
+import { GetConnectorListResDTO } from "../sdk/client";
+
 export default class AddCommand {
     private program: Command;
     private composioClient: Composio;
@@ -22,34 +21,36 @@ export default class AddCommand {
         this.composioClient = new Composio();
     }
 
-    private async handleAction(appName: string,options: any): Promise<void> {
-
-        let integration = null;
-        integration = await this.composioClient.integrations.list({
+    private async handleAction(appName: string, options: { force?: boolean }): Promise<void> {
+        let integration : GetConnectorListResDTO | undefined = await this.composioClient.integrations.list({
             // @ts-ignore
             appName: appName.toLowerCase()
-        })
+        });
         
-        if(!integration){
-            integration = await this.createIntegration(appName);
+        if (!integration) {
+            integration = await this.createIntegration(appName) as GetConnectorListResDTO;
         }
 
-        const firstIntegration = integration?.items[0];
+        const firstIntegration = (integration as GetConnectorListResDTO)?.items[0] 
+        if (!firstIntegration) {
+            console.log(chalk.red("No integration found or created"));
+            return;
+        }
+
+        
 
         const connection = await this.composioClient.connectedAccounts.list({
             // @ts-ignore
             integrationId: firstIntegration.id
         });
 
-        // @ts-ignore
-        if (connection.items.length > 0 && options.force !== true){
+        if (connection.items.length > 0 && !options.force) {
             console.log(chalk.green("Connection already exists for", appName));
             return;
         }
    
         // @ts-ignore
         await this.setupConnections(firstIntegration.id);
-      
     }   
 
     private async waitUntilConnected(connectedAccountId: string, timeout: number = 30000): Promise<void> {
@@ -60,9 +61,8 @@ export default class AddCommand {
             try {
                 const data = await this.composioClient.connectedAccounts.get({
                     connectedAccountId: connectedAccountId
-                });
+                }) as { status: string };
 
-                // @ts-ignore
                 if (data.status === "ACTIVE") {
                     return;
                 }
@@ -73,35 +73,25 @@ export default class AddCommand {
             await new Promise(resolve => setTimeout(resolve, pollInterval));
         }
 
-        throw new Error(`Connection did not become active within the specified timeout in ${timeout / 1000} seconds`);
+        throw new Error(`Connection did not become active within ${timeout / 1000} seconds`);
     }
 
-
-    private async setupConnections(integrationId: string){
-        const data = await this.composioClient.integrations.get({
-            integrationId: integrationId,
-            
-        });
-
-
-
+    private async setupConnections(integrationId: string): Promise<void> {
+        const data = await this.composioClient.integrations.get({ integrationId });
         const { expectedInputFields } = data;
 
-        const config = await this.collectInputFields(expectedInputFields);
-
+        const config = await this.collectInputFields(expectedInputFields, true);
 
         const connectionData = await this.composioClient.connectedAccounts.create({
-            integrationId: integrationId,
-            config: config,
+            integrationId,
+            data: config,
         });
 
-
-        if (connectionData.connectionStatus === "ACTIVE"){
+        if (connectionData.connectionStatus === "ACTIVE") {
             console.log(chalk.green("Connection created successfully"));
         }
 
-
-        if (connectionData.redirectUrl){
+        if (connectionData.redirectUrl) {
             console.log(chalk.white("Redirecting to the app"), chalk.blue(connectionData.redirectUrl));
             open(connectionData.redirectUrl);
             
@@ -110,64 +100,48 @@ export default class AddCommand {
             console.log(chalk.green("Connection is active"));
             process.exit(0);
         }
-        
     }
 
-
-    private async createIntegration(appName: string){
-
-
-        const app  = await this.composioClient.apps.get({
+    private async createIntegration(appName: string) {
+        const app = await this.composioClient.apps.get({
             appKey: appName.toLowerCase(),
         });
 
+        const config: Record<string, any> = {};
 
-        const config = {}
-
-        const integrationPrompt = await inquirer.prompt({
+        const { integrationName } = await inquirer.prompt({
             type: 'input',
             name: 'integrationName',
             message: 'Enter the app name',
         });
 
-        if(!integrationPrompt.integrationName){
+        if (!integrationName) {
             console.log(chalk.red("Integration name is required"));
-            return;
+            return null;
         }
 
+        config.name = integrationName;
         // @ts-ignore
-        config['name'] = integrationPrompt.integrationName;
-        // @ts-ignore
-        const authSchema = app.auth_schemes[0].auth_mode;
+        const authSchema = app.auth_schemes[0]?.auth_mode;
 
         // @ts-ignore
-        if (app?.testConnectors?.length > 0 || !!app.no_auth){
+        if (app?.testConnectors?.length > 0 || app.no_auth) {
             let useComposioAuth = false;
-            if(!app.no_auth){
-                const doYouWantToUseComposioAuth = await inquirer.prompt({
+            if (!app.no_auth) {
+                const { doYouWantToUseComposioAuth } = await inquirer.prompt({
                     type: 'confirm',
                     name: 'doYouWantToUseComposioAuth',
                     message: 'Do you want to use Composio Auth?',
                 });
-                useComposioAuth = doYouWantToUseComposioAuth.doYouWantToUseComposioAuth;
+                useComposioAuth = doYouWantToUseComposioAuth;
             }
             
-            if (useComposioAuth) {
-                // @ts-ignore
-                config['useComposioAuth'] = true;
-                return this.setupIntegration(app, authSchema, useComposioAuth, config);
-            }else{
-                // @ts-ignore
-                config['useComposioAuth'] = false;
-                return this.setupIntegration(app, authSchema, useComposioAuth, config);
-            }
+            config.useComposioAuth = useComposioAuth;
+            return this.setupIntegration(app, authSchema, useComposioAuth, config);
         }
-
-  
 
         // @ts-ignore
         const authConfig = await this.collectInputFields(app.auth_schemes[0].fields);
-
         return this.setupIntegration(app, authSchema, false, authConfig);
     }
 
@@ -178,47 +152,41 @@ export default class AddCommand {
         expected_from_customer: boolean,
         required: boolean,
         type: string,
-    }[]){
+    }[], isConnection = false): Promise<Record<string, any>> {
+        const config: Record<string, any> = {};
 
-        const config = {};
-
-        // Add inquirer, get all the field which are not expected_from_customer
-    
-        for(const field of fields){
-            if(!!field.expected_from_customer){
+        for (const field of fields) {
+            if (field.expected_from_customer && !isConnection) {
                 continue;
             }
 
-            const prompt = await inquirer.prompt({
+            const { [field.name]: value } = await inquirer.prompt({
                 type: 'input',
                 name: field.name,
-                message: field.displayName,
+                message: field.displayName || field.display_name,
             });
 
-            if(!!prompt[field.name]){
-                // @ts-ignore
-                config[field.name] = prompt[field.name];
+            if (value) {
+                config[field.name] = value;
             }
         }
 
+        console.log(config);
         return config;
     }
 
-    async setupIntegration(app: any, authMode: any, useComposioAuth: boolean, config: Record<string, any>){
-
-
+    async setupIntegration(app: any, authMode: any, useComposioAuth: boolean, config: Record<string, any>) {
         await this.composioClient.integrations.create({
             appId: app.id,
             authScheme: authMode,
-            useComposioAuth: useComposioAuth,
-            // @ts-ignore
-            config: config,
+            useComposioAuth,
+
+            authConfig: config 
         });
 
-        return await this.composioClient.integrations.list({
+        return this.composioClient.integrations.list({
             // @ts-ignore
-            appName: appName.toLowerCase()
+            appName: app.name.toLowerCase()
         });
     }
-
 }
