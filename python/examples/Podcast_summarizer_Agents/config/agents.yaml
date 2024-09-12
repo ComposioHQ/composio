@@ -4,7 +4,7 @@ Transcriber_summarizer:
   goal: >
     provide the summary of a Youtube Podcast {youtube_url}.
   backstory: >
-    You are an expert in sumarizing long text content into great meaningful summaries.
+    You are an expert in summarizing long text content into great meaningful summaries.
 
 slack_messenger:
   role: >

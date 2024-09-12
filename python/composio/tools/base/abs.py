@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from composio.client.enums import Action as ActionEnum
 from composio.exceptions import ComposioSDKError
 from composio.utils.logging import WithLogger
+from composio.utils.pydantic import parse_pydantic_error
 
 
 GroupID = t.Literal["runtime", "local", "api"]
@@ -68,7 +69,7 @@ class ExecuteResponse(BaseModel):
 
 class _Attributes:
     name: str
-    """Name represenation."""
+    """Name representation."""
 
     enum: str
     """Enum key."""
@@ -130,19 +131,7 @@ class _Request(t.Generic[ModelType]):
         try:
             return self.model(**request)
         except pydantic.ValidationError as e:
-            message = "Invalid request data provided"
-            missing = []
-            others = [""]
-            for error in e.errors():
-                param = ".".join(map(str, error["loc"]))
-                if error["type"] == "missing":
-                    missing.append(param)
-                    continue
-                others.append(error["msg"] + f" on parameter `{param}`")
-            if len(missing) > 0:
-                message += f"\n- Following fields are missing: {set(missing)}"
-            message += "\n- ".join(others)
-            raise ValueError(message) from e
+            raise ValueError(parse_pydantic_error(e)) from e
 
 
 class _Response(t.Generic[ModelType]):
@@ -162,7 +151,7 @@ class _Response(t.Generic[ModelType]):
             )
             error: t.Optional[str] = Field(
                 None,
-                description="Error if any occured during the execution of the action",
+                description="Error if any occurred during the execution of the action",
             )
 
         return t.cast(t.Type[BaseModel], wrapper)

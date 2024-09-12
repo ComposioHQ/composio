@@ -3,6 +3,8 @@ Host workspace.
 """
 
 import os
+import subprocess
+import sys
 import typing as t
 from dataclasses import dataclass
 
@@ -10,7 +12,8 @@ import paramiko
 import typing_extensions as te
 from paramiko.ssh_exception import NoValidConnectionsError, SSHException
 
-from composio.client.enums import Action
+from composio.client.enums import Action, ActionType, App, AppType, TagType
+from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import SessionFactory, Workspace, WorkspaceConfigType
 from composio.tools.env.browsermanager.manager import BrowserManager
 from composio.tools.env.filemanager.manager import FileManager
@@ -138,6 +141,91 @@ class HostWorkspace(Workspace):
         if self._browsers is None:
             self._browsers = Browsers(self._create_browsermanager)
         return self._browsers
+
+    def check_for_missing_dependencies(
+        self,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        tags: t.Optional[t.Sequence[TagType]] = None,
+    ) -> None:
+        from composio.tools.base.abs import (  # pylint: disable=import-outside-toplevel
+            action_registry,
+            tool_registry,
+        )
+        from composio.utils.pypi import (  # pylint: disable=import-outside-toplevel
+            check_if_package_is_intalled,
+        )
+
+        missing: t.Dict[str, t.Set[str]] = {}
+        apps = apps or []
+        for app in map(App, apps):
+            if not app.is_local:
+                continue
+
+            for dependency in tool_registry["local"][app.slug].requires or []:
+                if check_if_package_is_intalled(dependency):
+                    continue
+                if app.slug not in missing:
+                    missing[app.slug] = set()
+                missing[app.slug].add(dependency)
+
+        actions = actions or []
+        for action in map(Action, actions):
+            if not action.is_local or action.is_runtime:
+                continue
+
+            for dependency in action_registry["local"][action.slug].requires or []:
+                if check_if_package_is_intalled(dependency):
+                    continue
+                if action.slug not in missing:
+                    missing[action.slug] = set()
+                missing[action.slug].add(dependency)
+
+        # TODO: Create CRUD object
+        tags = tags or []
+        for action in map(Action, action_registry["local"]):
+            if not any(tag in action.tags for tag in tags):
+                continue
+            for dependency in action_registry["local"][action.slug].requires or []:
+                if check_if_package_is_intalled(dependency):
+                    continue
+                if action.slug not in missing:
+                    missing[action.slug] = set()
+                missing[action.slug].add(dependency)
+
+        if len(missing) == 0:
+            return
+
+        self.logger.info("Following apps/actions have missing dependencies")
+        for enum, dependencies in missing.items():
+            self.logger.info(f"• {enum}: {dependencies}")
+
+        installed = set()
+        self.logger.info("Installing dependencies...")
+        for dependencies in missing.values():
+            for dependency in dependencies:
+                if dependency in installed:
+                    continue
+                args = [
+                    sys.executable,
+                    "-m",
+                    "pip",
+                    "install",
+                    "--disable-pip-version-check",
+                    dependency,
+                ]
+                if "git+https" in dependency:
+                    args.append("--force-reinstall")
+
+                self.logger.info(f"Installing {dependency}")
+                output = subprocess.check_output(args=args).decode("utf-8")
+                if (
+                    "Successfully installed" not in output
+                    and "Requirement already satisfied" not in output
+                ):
+                    raise ComposioSDKError(message=f"Error installing {dependency}")
+                installed.add(dependency)
+                self.logger.info(f"Installed {dependency}")
 
     def execute_action(
         self,

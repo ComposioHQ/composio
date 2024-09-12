@@ -5,10 +5,10 @@ from inspect import Signature
 import typing_extensions as te
 from llama_index.core.tools import FunctionTool
 
-from composio import Action, ActionType, AppType, TagType
+from composio import Action, ActionType, AppType
+from composio import ComposioToolSet as BaseComposioToolSet
+from composio import TagType
 from composio.utils.shared import get_pydantic_signature_format_from_schema_params
-
-from composio_langchain import ComposioToolSet as BaseComposioToolSet
 
 
 class ComposioToolSet(
@@ -142,9 +142,13 @@ class ComposioToolSet(
 
         :return: Composio tools wrapped as `StructuredTool` objects
         """
-        return super().get_tools(  # type: ignore
-            actions=actions,
-            apps=apps,
-            tags=tags,
-            entity_id=entity_id,
-        )
+        self.validate_tools(apps=apps, actions=actions, tags=tags)
+        return [
+            self._wrap_tool(
+                schema=tool.model_dump(
+                    exclude_none=True,
+                ),
+                entity_id=entity_id or self.entity_id,
+            )
+            for tool in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
+        ]

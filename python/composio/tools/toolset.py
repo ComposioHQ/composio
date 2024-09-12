@@ -8,8 +8,6 @@ import hashlib
 import itertools
 import json
 import os
-import subprocess
-import sys
 import time
 import typing as t
 import warnings
@@ -42,7 +40,6 @@ from composio.constants import (
 )
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.storage.user import UserData
-from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.base.local import LocalAction
 from composio.tools.env.base import (
     ENV_GITHUB_ACCESS_TOKEN,
@@ -54,7 +51,6 @@ from composio.tools.local import load_local_tools
 from composio.tools.local.handler import LocalClient
 from composio.utils.enums import get_enum_key
 from composio.utils.logging import LogLevel, WithLogger
-from composio.utils.pypi import check_if_package_is_intalled
 from composio.utils.url import get_api_url_base
 
 
@@ -224,19 +220,20 @@ class ComposioToolSet(WithLogger):
         )
         self.entity_id = entity_id
         self.output_in_file = output_in_file
-        self.base_url = base_url or get_api_url_base()
         self.output_dir = (
             output_dir or LOCAL_CACHE_DIRECTORY / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
         )
         self._ensure_output_dir_exists()
 
+        self._base_url = base_url or get_api_url_base()
         try:
-            self.api_key = (
+            self._api_key = (
                 api_key
                 or os.environ.get(ENV_COMPOSIO_API_KEY)
                 or UserData.load(LOCAL_CACHE_DIRECTORY / USER_DATA_FILE_NAME).api_key
             )
         except FileNotFoundError:
+            self._api_key = None
             self.logger.debug("`api_key` is not set when initializing toolset.")
 
         self._processors = (
@@ -278,6 +275,23 @@ class ComposioToolSet(WithLogger):
             return None
 
     @property
+    def api_key(self) -> str:
+        if self._api_key is None:
+            raise ApiKeyNotProvidedError()
+        return self._api_key
+
+    @property
+    def client(self) -> Composio:
+        if self._remote_client is None:
+            self._remote_client = Composio(
+                api_key=self._api_key,
+                base_url=self._base_url,
+                runtime=self._runtime,
+            )
+        self._remote_client.local = self._local_client
+        return self._remote_client
+
+    @property
     def workspace(self) -> Workspace:
         """Workspace for this toolset instance."""
         if self._workspace is not None:
@@ -292,7 +306,7 @@ class ComposioToolSet(WithLogger):
             workspace_config.composio_api_key = self.api_key
 
         if workspace_config.composio_base_url is None:
-            workspace_config.composio_base_url = self.base_url
+            workspace_config.composio_base_url = self._base_url
 
         if workspace_config.github_access_token is None:
             workspace_config.github_access_token = (
@@ -306,21 +320,6 @@ class ComposioToolSet(WithLogger):
         self._workspace_id = workspace_id
         if self._workspace is not None:
             self._workspace = WorkspaceFactory.get(id=workspace_id)
-
-    @property
-    def client(self) -> Composio:
-        if self.api_key is None:
-            raise ApiKeyNotProvidedError()
-
-        if self._remote_client is None:
-            self._remote_client = Composio(
-                api_key=self.api_key,
-                base_url=self.base_url,
-                runtime=self._runtime,
-            )
-            self._remote_client.local = self._local_client
-
-        return self._remote_client
 
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
@@ -601,78 +600,16 @@ class ComposioToolSet(WithLogger):
         self,
         apps: t.Optional[t.Sequence[AppType]] = None,
         actions: t.Optional[t.Sequence[ActionType]] = None,
-        tags: t.Optional[t.List[TagType]] = None,
+        tags: t.Optional[t.Sequence[TagType]] = None,
     ) -> None:
         # NOTE: This an experimental, can convert to decorator for more convinience
-        missing: t.Dict[str, t.Set[str]] = {}
-        apps = apps or []
-        for app in map(App, apps):
-            if not app.is_local:
-                continue
-
-            for dependency in tool_registry["local"][app.slug].requires or []:
-                if check_if_package_is_intalled(dependency):
-                    continue
-                if app.slug not in missing:
-                    missing[app.slug] = set()
-                missing[app.slug].add(dependency)
-
-        actions = actions or []
-        for action in map(Action, actions):
-            if not action.is_local or action.is_runtime:
-                continue
-
-            for dependency in action_registry["local"][action.slug].requires or []:
-                if check_if_package_is_intalled(dependency):
-                    continue
-                if action.slug not in missing:
-                    missing[action.slug] = set()
-                missing[action.slug].add(dependency)
-
-        # TODO: Create CRUD object
-        tags = tags or []
-        for action in map(Action, action_registry["local"]):
-            if not any(tag in action.tags for tag in tags):
-                continue
-
-            for dependency in action_registry["local"][action.slug].requires or []:
-                if check_if_package_is_intalled(dependency):
-                    continue
-                if action.slug not in missing:
-                    missing[action.slug] = set()
-                missing[action.slug].add(dependency)
-
-        if len(missing) == 0:
+        if not apps and not actions and not tags:
             return
-
-        self.logger.info("Following apps/actions have missing dependencies")
-        for enum, dependencies in missing.items():
-            self.logger.info(f"• {enum}: {dependencies}")
-
-        installed = set()
-        self.logger.info("Installing dependencies...")
-        for dependencies in missing.values():
-            for dependency in dependencies:
-                if dependency in installed:
-                    continue
-                args = [
-                    sys.executable,
-                    "-m",
-                    "pip",
-                    "install",
-                    "--disable-pip-version-check",
-                    dependency,
-                ]
-                if "git+https" in dependency:
-                    args.append("--force-reinstall")
-                output = subprocess.check_output(args=args).decode("utf-8")
-                if (
-                    "Successfully installed" not in output
-                    and "Requirement already satisfied" not in output
-                ):
-                    raise ComposioSDKError(message=f"Error installing {dependency}")
-                installed.add(dependency)
-                self.logger.info(f"Installed {dependency}")
+        self.workspace.check_for_missing_dependencies(
+            apps=apps,
+            actions=actions,
+            tags=tags,
+        )
 
     def get_action_schemas(
         self,
@@ -732,7 +669,10 @@ class ComposioToolSet(WithLogger):
     def _process_schema(self, action_item: ActionModel) -> ActionModel:
         required_params = action_item.parameters.required or []
         for param_name, param_details in action_item.parameters.properties.items():
-            if param_details.get("properties") == FileType.schema().get("properties"):
+            if param_details.get("title") == "FileType" and all(
+                fprop in param_details.get("properties")
+                for fprop in ("name", "content")
+            ):
                 action_item.parameters.properties[param_name].pop("properties")
                 action_item.parameters.properties[param_name] = {
                     "default": param_details.get("default"),
@@ -740,9 +680,10 @@ class ComposioToolSet(WithLogger):
                     "format": "file-path",
                     "description": f"File path to {param_details.get('description', '')}",
                 }
-            elif param_details.get("allOf", [{}])[0].get(
-                "properties"
-            ) == FileType.schema().get("properties"):
+            elif param_details.get("allOf", [{}])[0].get("title") == "FileType" and all(
+                fprop in param_details.get("allOf", [{}])[0].get("properties", {})
+                for fprop in ("name", "content")
+            ):
                 action_item.parameters.properties[param_name].pop("allOf")
                 action_item.parameters.properties[param_name].update(
                     {

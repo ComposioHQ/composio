@@ -85,11 +85,26 @@ class ExecuteActionRequest(BaseModel):
     )
     entity_id: str = Field(
         None,
-        description="Entity ID assosiated with the account.",
+        description="Entity ID associated with the account.",
     )
     connected_account_id: str = Field(
         None,
         description="Connection ID to use for executing the action.",
+    )
+
+
+class ValidateToolsRequest(BaseModel):
+    apps: t.Optional[t.List[str]] = Field(
+        None,
+        description="Apps list.",
+    )
+    actions: t.Optional[t.List[str]] = Field(
+        None,
+        description="Actions list.",
+    )
+    tags: t.Optional[t.List[str]] = Field(
+        None,
+        description="Tags list.",
     )
 
 
@@ -208,6 +223,16 @@ def create_app() -> FastAPI:
             entity_id=request.entity_id,
             connected_account_id=request.connected_account_id,
         )
+
+    @app.post(path="/api/validate", response_model=APIResponse[t.Dict])
+    @with_exception_handling
+    def _validate_tools(request: ValidateToolsRequest) -> t.Dict:
+        get_context().toolset.validate_tools(
+            apps=request.apps,
+            actions=request.actions,
+            tags=request.tags,
+        )
+        return {"message": "validated"}
 
     @app.get("/api/workspace", response_model=APIResponse[t.Dict])
     @with_exception_handling

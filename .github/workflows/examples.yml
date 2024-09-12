@@ -6,6 +6,24 @@ on:
       working-directory:
         required: true
         type: string
+      api_key:
+        required: false
+        type: string
+      base_url:
+        required: false
+        type: string
+  workflow_dispatch:
+    inputs:
+      working-directory:
+        required: true
+        type: string
+      api_key:
+        required: false
+        type: string
+      base_url:
+        required: false
+        type: string
+
 
 jobs:
   run-tests:
@@ -29,7 +47,6 @@ jobs:
             llamaindex,
             lyzr,
             openai,
-            praisonai,
             langgraph,
             phidata,
           ]
@@ -45,7 +62,9 @@ jobs:
           OPENAI_API_KEY: ${{secrets.OPENAI_API_KEY}}
           JULEP_API_KEY: ${{secrets.JULEP_API_KEY}}
           JULEP_API_URL: ${{secrets.JULEP_API_URL}}
-          COMPOSIO_API_KEY: ${{secrets.COMPOSIO_API_KEY_RELEASE}}
+          LISTENNOTES_API_KEY: ${{secrets.LISTENNOTES_API_KEY}}
+          COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY_RELEASE }}
+          COMPOSIO_BASE_URL: ${{ inputs.base_url || secrets.COMPOSIO_BASE_URL || 'https://backend.composio.dev/api' }}
         run: |
           sudo apt-get update --fix-missing
           sudo apt-get autoremove
@@ -58,9 +77,10 @@ jobs:
           
           composio apps update
 
-          CI=false COMPOSIO_BASE_URL=https://backend.composio.dev/api PLUGIN_TO_TEST=${{matrix.package}} pytest -vv tests/test_example.py
+          CI=false COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} PLUGIN_TO_TEST=${{matrix.package}} pytest -vv tests/test_example.py
       - name: Slack Notification on Failure
-        if: ${{ failure() && !contains(github.event.pull_request.title, 'release') && !contains(github.event.pull_request.title, 'Release') }}
+        if: ${{ failure() && !contains(github.event.head_commit.message, 'release') && !contains(github.event.head_commit.message, 'Release') }}
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_TECH_WEBHOOK }}
+          SLACK_TITLE: "Example Tests Failed"

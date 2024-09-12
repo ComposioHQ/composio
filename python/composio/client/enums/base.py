@@ -36,9 +36,9 @@ class EnumStringNotFound(ComposioSDKError):
 
 
 class SentinalObject:
-    """Sentinal object."""
+    """Sentinel object."""
 
-    sentinal = None
+    sentinel = None
 
 
 class TagData(LocalStorage):
@@ -121,7 +121,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         warn: bool = True,
     ) -> None:
         """Create an Enum"""
-        if hasattr(value, "sentinal"):
+        if hasattr(value, "sentinel"):
             self._slug = value.enum  # type: ignore
             return
 
@@ -218,6 +218,9 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         if self._model is ActionData:
             request = client.http.get(url=str(client.actions.endpoint / self.slug))
             response = request.json()
+            if isinstance(response, list):
+                response, *_ = response
+
             if request.status_code == 404 or "Not Found" in response.get("message", ""):
                 raise ComposioSDKError(
                     message=(
@@ -227,9 +230,6 @@ class _AnnotatedEnum(t.Generic[EntityType]):
                         "and try again"
                     )
                 )
-
-            if isinstance(response, list):
-                response, *_ = response
 
             data = ActionData(
                 name=response["name"],
@@ -300,7 +300,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         return t.cast(str, self._slug)
 
     def __eq__(self, other: object) -> bool:
-        """Check equivilance of two objects."""
+        """Check equivalence of two objects."""
         if not isinstance(other, (str, _AnnotatedEnum)):
             return NotImplemented
         return str(self) == str(other)

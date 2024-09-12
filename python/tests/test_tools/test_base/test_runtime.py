@@ -49,11 +49,11 @@ def test_docstring_args() -> None:
     assert tool.gid == "runtime"
 
     response = tool.execute(action=multiply.enum, params={"a": 1, "b": 2})
-    assert not response["successfull"]
+    assert not response["successful"]
     assert "Following fields are missing: {'c'}" in response["error"]
 
     response = tool.execute(action=multiply.enum, params={"a": 1, "b": 2, "c": 3})
-    assert response["successfull"]
+    assert response["successful"]
     assert response["error"] is None
     assert response["data"]["result"] == 6
 
@@ -61,7 +61,7 @@ def test_docstring_args() -> None:
 def test_annotated_args() -> None:
     @action(toolname="math")
     def square(
-        number: te.Annotated[int, "Number to calculcate square"]
+        number: te.Annotated[int, "Number to calculate square"]
     ) -> te.Annotated[int, "Square of a number"]:
         """Calculate square of a number"""
         return number**2
@@ -70,7 +70,7 @@ def test_annotated_args() -> None:
         "properties": {
             "number": {
                 "default": None,
-                "description": "Number to calculcate square",
+                "description": "Number to calculate square",
                 "title": "Number",
                 "type": "integer",
             }
@@ -119,7 +119,7 @@ def test_tool_namespace() -> None:
 
     @action(toolname="maths")
     def square(
-        number: te.Annotated[int, "Number to calculcate square"]
+        number: te.Annotated[int, "Number to calculate square"]
     ) -> te.Annotated[int, "Square of a number"]:
         """Calculate square of a number"""
         return number**2

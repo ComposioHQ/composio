@@ -8,7 +8,7 @@ from uuid import uuid4
 
 import requests
 
-from composio.client.enums import Action
+from composio.client.enums import Action, ActionType, AppType, TagType
 from composio.constants import ENV_COMPOSIO_API_KEY, ENV_COMPOSIO_BASE_URL
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.id import generate_id
@@ -191,6 +191,15 @@ class Workspace(WithLogger, ABC):
         return WORKSPACE_PROMPT.format(ports=self.ports, host=self.host)
 
     @abstractmethod
+    def check_for_missing_dependencies(
+        self,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        tags: t.Optional[t.Sequence[TagType]] = None,
+    ) -> None:
+        """Install dependecies in the given workspace."""
+
+    @abstractmethod
     def setup(self) -> None:
         """Setup workspace."""
 
@@ -269,9 +278,32 @@ class RemoteWorkspace(Workspace):
             return
 
         self.logger.debug(
-            f"Succesfully uploaded: {action.slug} - {response}",
+            f"Successfully uploaded: {action.slug} - {response}",
         )
         return
+
+    def check_for_missing_dependencies(
+        self,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        tags: t.Optional[t.Sequence[TagType]] = None,
+    ) -> None:
+        request = self._request(
+            endpoint="/validate",
+            method="post",
+            json={
+                "apps": list(map(str, apps or [])),
+                "actions": list(map(str, actions or [])),
+                "tags": list(map(str, tags or [])),
+            },
+            timeout=600,
+        )
+        response = request.json()
+        print(response)
+        # if response["error"] is not None:
+        #     raise ComposioSDKError(
+        #         f"Error installing dependencies: {response['error']}"
+        #     )
 
     def execute_action(
         self,
