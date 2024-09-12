@@ -4,6 +4,7 @@ import { Command } from 'commander';
 import {  setAxiosForBEAPICall } from "../sdk/utils/config";
 import client from "../sdk/client/client";
 
+// @ts-ignore
 import resolvePackagePath from 'resolve-package-path';
 import fs from 'fs';
 import path from 'path';
