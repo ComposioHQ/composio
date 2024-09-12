@@ -47,16 +47,22 @@ export class VercelAIToolSet extends BaseComposioToolSet {
 
   // change this implementation
   async get_tools(filters: {
-    apps: Array<string>;
+    actions?: Array<string>
+    apps?: Array<string>;
     tags?: Optional<Array<string>>;
     useCase?: Optional<string>;
   }): Promise<{ [key: string]: any }> {
+
+
     const actionsList = await this.client.actions.list({
-      apps: filters.apps.join(","),
-      tags: filters.tags?.join(","),
-      filterImportantActions: !filters.tags && !filters.useCase,
-      useCase: filters.useCase || undefined,
+      ...(filters?.apps && { apps: filters?.apps?.join(",") }),
+      ...(filters?.tags && { tags: filters?.tags?.join(",") }),
+      ...(filters?.useCase && { useCase: filters?.useCase }),
+      ...(filters?.actions && { actions: filters?.actions?.join(",") }),
+      ...(filters?.actions && { actions: filters?.actions?.join(",") }),
     });
+
+    
 
     const tools = {};
     actionsList.items?.forEach(actionSchema => {
@@ -66,6 +72,15 @@ export class VercelAIToolSet extends BaseComposioToolSet {
 
     return tools;
   }
+
+  async getTools(filters: {
+    actions?: Sequence<string>
+    apps?: Array<string>;
+    tags?: Optional<Array<string>>;
+    useCase?: Optional<string>;
+  }): Promise<{ [key: string]: any }> {
+    return await this.get_tools(filters);
+  } 
 
   async execute_tool_call(
     tool: { name: string; arguments: unknown; },
