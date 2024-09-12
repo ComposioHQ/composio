@@ -1,0 +1,57 @@
+diff --git a/django/contrib/admin/options.py b/django/contrib/admin/options.py
+index 5f07a420..0fc81f4f 100644
+--- a/django/contrib/admin/options.py
++++ b/django/contrib/admin/options.py
+@@ -2010,26 +2010,32 @@ class ModelAdmin(BaseModelAdmin):
+                 request.POST, request.FILES, queryset=modified_objects
+             )
+             if formset.is_valid():
+-                changecount = 0
+-                for form in formset.forms:
+-                    if form.has_changed():
+-                        obj = self.save_form(request, form, change=True)
+-                        self.save_model(request, obj, form, change=True)
+-                        self.save_related(request, form, formsets=[], change=True)
+-                        change_msg = self.construct_change_message(request, form, None)
+-                        self.log_change(request, obj, change_msg)
+-                        changecount += 1
+-
+-                if changecount:
+-                    msg = ngettext(
+-                        "%(count)s %(name)s was changed successfully.",
+-                        "%(count)s %(name)s were changed successfully.",
+-                        changecount,
+-                    ) % {
+-                        "count": changecount,
+-                        "name": model_ngettext(self.opts, changecount),
+-                    }
+-                    self.message_user(request, msg, messages.SUCCESS)
++                try:
++                    with transaction.atomic():
++                        changecount = 0
++                        for form in formset.forms:
++                            if form.has_changed():
++                                obj = self.save_form(request, form, change=True)
++                                self.save_model(request, obj, form, change=True)
++                                self.save_related(request, form, formsets=[], change=True)
++                                change_msg = self.construct_change_message(request, form, None)
++                                self.log_change(request, obj, change_msg)
++                                changecount += 1
++
++                        if changecount:
++                            msg = ngettext(
++                                "%(count)s %(name)s was changed successfully.",
++                                "%(count)s %(name)s were changed successfully.",
++                                changecount,
++                            ) % {
++                                "count": changecount,
++                                "name": model_ngettext(self.opts, changecount),
++                            }
++                            self.message_user(request, msg, messages.SUCCESS)
++                except Exception as e:
++                    # If an error occurs during the transaction, roll back and display an error message
++                    self.message_user(request, f"An error occurred: {str(e)}", messages.ERROR)
++                    return HttpResponseRedirect(request.get_full_path())
+ 
+                 return HttpResponseRedirect(request.get_full_path())
+ 

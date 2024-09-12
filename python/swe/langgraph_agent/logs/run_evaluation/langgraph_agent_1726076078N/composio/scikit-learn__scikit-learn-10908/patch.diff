@@ -1,0 +1,43 @@
+diff --git a/sklearn/feature_extraction/text.py b/sklearn/feature_extraction/text.py
+index 9b1ebd6..1d600d1 100644
+--- a/sklearn/feature_extraction/text.py
++++ b/sklearn/feature_extraction/text.py
+@@ -271,8 +271,11 @@ class VectorizerMixin(object):
+                              self.analyzer)
+ 
+     def _validate_vocabulary(self):
+-        vocabulary = self.vocabulary
+-        if vocabulary is not None:
++        if self.vocabulary is not None:
++            if not self.fixed_vocabulary_:
++                self.vocabulary_ = self.vocabulary
++                self.fixed_vocabulary_ = True
++            vocabulary = self.vocabulary_
+             if isinstance(vocabulary, set):
+                 vocabulary = sorted(vocabulary)
+             if not isinstance(vocabulary, Mapping):
+@@ -281,8 +284,6 @@ class VectorizerMixin(object):
+                     if vocab.setdefault(t, i) != i:
+                         msg = "Duplicate term in vocabulary: %r" % t
+                         raise ValueError(msg)
+-                vocabulary = vocab
+-            else:
+                 indices = set(six.itervalues(vocabulary))
+                 if len(indices) != len(vocabulary):
+                     raise ValueError("Vocabulary contains repeated indices.")
+@@ -739,6 +740,15 @@ class CountVectorizer(BaseEstimator, VectorizerMixin):
+         self.binary = binary
+         self.dtype = dtype
+ 
++        # Add this line to set vocabulary_ if a vocabulary is provided
++        if self.vocabulary is not None:
++            self.vocabulary_ = self.vocabulary
++            self.fixed_vocabulary_ = True
++        self.ngram_range = ngram_range
++        self.vocabulary = vocabulary
++        self.binary = binary
++        self.dtype = dtype
++
+     def _sort_features(self, X, vocabulary):
+         """Sort features by name
+ 

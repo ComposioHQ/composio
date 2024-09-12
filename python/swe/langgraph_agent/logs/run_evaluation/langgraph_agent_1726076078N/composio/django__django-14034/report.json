@@ -1,0 +1,41 @@
+{
+    "django__django-14034": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "test_render_required_attributes (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest)"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "test_bad_choice (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest)",
+                    "test_clean (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest)",
+                    "test_clean_disabled_multivalue (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest)",
+                    "test_disabled_has_changed (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest)",
+                    "test_form_as_table (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest)",
+                    "test_form_as_table_data (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest)",
+                    "test_form_cleaned_data (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest)",
+                    "Test when the first widget's data has changed.",
+                    "Test when the last widget's data has changed. This ensures that it is",
+                    "test_has_changed_no_initial (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest)",
+                    "test_has_changed_same (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest)",
+                    "If insufficient data is provided, None is substituted."
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

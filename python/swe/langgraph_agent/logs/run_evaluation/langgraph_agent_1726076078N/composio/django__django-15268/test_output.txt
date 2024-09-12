@@ -1,0 +1,983 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/db/migrations/migration.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 0ab58c120939093fea90822f376e1866fc714d1f
+Author: Jacob Walls <jacobtylerwalls@gmail.com>
+Date:   Fri Dec 31 10:30:48 2021 -0500
+
+    Refs #29026 -- Allowed customizing InteractiveMigrationQuestioner's prompt destination.
+    
+    Previously, the questioner did not obey the value of stdout provided
+    to the command.
+
+diff --git a/django/core/management/commands/makemigrations.py b/django/core/management/commands/makemigrations.py
+index 9077660467..4d26bfe278 100644
+--- a/django/core/management/commands/makemigrations.py
++++ b/django/core/management/commands/makemigrations.py
+@@ -144,7 +144,11 @@ class Command(BaseCommand):
+             return self.handle_merge(loader, conflicts)
+ 
+         if self.interactive:
+-            questioner = InteractiveMigrationQuestioner(specified_apps=app_labels, dry_run=self.dry_run)
++            questioner = InteractiveMigrationQuestioner(
++                specified_apps=app_labels,
++                dry_run=self.dry_run,
++                prompt_output=self.stdout,
++            )
+         else:
+             questioner = NonInteractiveMigrationQuestioner(
+                 specified_apps=app_labels,
+@@ -250,7 +254,7 @@ class Command(BaseCommand):
+         if it's safe; otherwise, advises on how to fix it.
+         """
+         if self.interactive:
+-            questioner = InteractiveMigrationQuestioner()
++            questioner = InteractiveMigrationQuestioner(prompt_output=self.stdout)
+         else:
+             questioner = MigrationQuestioner(defaults={'ask_merge': True})
+ 
+diff --git a/django/db/migrations/questioner.py b/django/db/migrations/questioner.py
+index 17883ca76c..3460e2b3ab 100644
+--- a/django/db/migrations/questioner.py
++++ b/django/db/migrations/questioner.py
+@@ -4,6 +4,7 @@ import os
+ import sys
+ 
+ from django.apps import apps
++from django.core.management.base import OutputWrapper
+ from django.db.models import NOT_PROVIDED
+ from django.utils import timezone
+ from django.utils.version import get_docs_version
+@@ -87,20 +88,26 @@ class MigrationQuestioner:
+ 
+ 
+ class InteractiveMigrationQuestioner(MigrationQuestioner):
++    def __init__(self, defaults=None, specified_apps=None, dry_run=None, prompt_output=None):
++        super().__init__(defaults=defaults, specified_apps=specified_apps, dry_run=dry_run)
++        self.prompt_output = prompt_output or OutputWrapper(sys.stdout)
+ 
+     def _boolean_input(self, question, default=None):
+-        result = input("%s " % question)
++        self.prompt_output.write(f'{question} ', ending='')
++        result = input()
+         if not result and default is not None:
+             return default
+         while not result or result[0].lower() not in "yn":
+-            result = input("Please answer yes or no: ")
++            self.prompt_output.write('Please answer yes or no: ', ending='')
++            result = input()
+         return result[0].lower() == "y"
+ 
+     def _choice_input(self, question, choices):
+-        print(question)
++        self.prompt_output.write(f'{question}')
+         for i, choice in enumerate(choices):
+-            print(" %s) %s" % (i + 1, choice))
+-        result = input("Select an option: ")
++            self.prompt_output.write(' %s) %s' % (i + 1, choice))
++        self.prompt_output.write('Select an option: ', ending='')
++        result = input()
+         while True:
+             try:
+                 value = int(result)
+@@ -109,7 +116,8 @@ class InteractiveMigrationQuestioner(MigrationQuestioner):
+             else:
+                 if 0 < value <= len(choices):
+                     return value
+-            result = input("Please select a valid option: ")
++            self.prompt_output.write('Please select a valid option: ', ending='')
++            result = input()
+ 
+     def _ask_default(self, default=''):
+         """
+@@ -119,34 +127,35 @@ class InteractiveMigrationQuestioner(MigrationQuestioner):
+         string) which will be shown to the user and used as the return value
+         if the user doesn't provide any other input.
+         """
+-        print('Please enter the default value as valid Python.')
++        self.prompt_output.write('Please enter the default value as valid Python.')
+         if default:
+-            print(
++            self.prompt_output.write(
+                 f"Accept the default '{default}' by pressing 'Enter' or "
+                 f"provide another value."
+             )
+-        print(
++        self.prompt_output.write(
+             'The datetime and django.utils.timezone modules are available, so '
+             'it is possible to provide e.g. timezone.now as a value.'
+         )
+-        print("Type 'exit' to exit this prompt")
++        self.prompt_output.write("Type 'exit' to exit this prompt")
+         while True:
+             if default:
+                 prompt = "[default: {}] >>> ".format(default)
+             else:
+                 prompt = ">>> "
+-            code = input(prompt)
++            self.prompt_output.write(prompt, ending='')
++            code = input()
+             if not code and default:
+                 code = default
+             if not code:
+-                print("Please enter some code, or 'exit' (without quotes) to exit.")
++                self.prompt_output.write("Please enter some code, or 'exit' (without quotes) to exit.")
+             elif code == "exit":
+                 sys.exit(1)
+             else:
+                 try:
+                     return eval(code, {}, {'datetime': datetime, 'timezone': timezone})
+                 except (SyntaxError, NameError) as e:
+-                    print("Invalid input: %s" % e)
++                    self.prompt_output.write('Invalid input: %s' % e)
+ 
+     def ask_not_null_addition(self, field_name, model_name):
+         """Adding a NOT NULL field to a model."""
+diff --git a/tests/migrations/test_commands.py b/tests/migrations/test_commands.py
+index bf78b60a85..ef5db241d6 100644
+--- a/tests/migrations/test_commands.py
++++ b/tests/migrations/test_commands.py
+@@ -1304,7 +1304,15 @@ class MakeMigrationsTests(MigrationTestBase):
+         # Monkeypatch interactive questioner to auto reject
+         with mock.patch('builtins.input', mock.Mock(return_value='N')):
+             with self.temporary_migration_module(module="migrations.test_migrations_conflict") as migration_dir:
+-                call_command("makemigrations", "migrations", name="merge", merge=True, interactive=True, verbosity=0)
++                with captured_stdout():
++                    call_command(
++                        'makemigrations',
++                        'migrations',
++                        name='merge',
++                        merge=True,
++                        interactive=True,
++                        verbosity=0,
++                    )
+                 merge_file = os.path.join(migration_dir, '0003_merge.py')
+                 self.assertFalse(os.path.exists(merge_file))
+ 
+@@ -1766,6 +1774,10 @@ class MakeMigrationsTests(MigrationTestBase):
+                 '    - remove field silly_field from author\n'
+                 '    - add field rating to author\n'
+                 '    - create model book\n'
++                '\n'
++                'merging will only work if the operations printed above do not conflict\n'
++                'with each other (working on different fields or models)\n'
++                'should these migration branches be merged? [y/n] '
+             )
+ 
+     def test_makemigrations_with_custom_name(self):
+@@ -1886,30 +1898,25 @@ class MakeMigrationsTests(MigrationTestBase):
+             "It is impossible to add the field 'creation_date' with "
+             "'auto_now_add=True' to entry without providing a default. This "
+             "is because the database needs something to populate existing "
+-            "rows.\n\n"
++            "rows.\n"
+             " 1) Provide a one-off default now which will be set on all "
+             "existing rows\n"
+             " 2) Quit and manually define a default value in models.py."
+         )
+         # Monkeypatch interactive questioner to auto accept
+-        with mock.patch('django.db.migrations.questioner.sys.stdout', new_callable=io.StringIO) as prompt_stdout:
+-            out = io.StringIO()
+-            with self.temporary_migration_module(module='migrations.test_auto_now_add'):
+-                call_command('makemigrations', 'migrations', interactive=True, stdout=out)
+-            output = out.getvalue()
+-            prompt_output = prompt_stdout.getvalue()
+-            self.assertIn(input_msg, prompt_output)
+-            self.assertIn(
+-                'Please enter the default value as valid Python.',
+-                prompt_output,
+-            )
+-            self.assertIn(
+-                "Accept the default 'timezone.now' by pressing 'Enter' or "
+-                "provide another value.",
+-                prompt_output,
+-            )
+-            self.assertIn("Type 'exit' to exit this prompt", prompt_output)
+-            self.assertIn("Add field creation_date to entry", output)
++        prompt_stdout = io.StringIO()
++        with self.temporary_migration_module(module='migrations.test_auto_now_add'):
++            call_command('makemigrations', 'migrations', interactive=True, stdout=prompt_stdout)
++        prompt_output = prompt_stdout.getvalue()
++        self.assertIn(input_msg, prompt_output)
++        self.assertIn('Please enter the default value as valid Python.', prompt_output)
++        self.assertIn(
++            "Accept the default 'timezone.now' by pressing 'Enter' or provide "
++            "another value.",
++            prompt_output,
++        )
++        self.assertIn("Type 'exit' to exit this prompt", prompt_output)
++        self.assertIn("Add field creation_date to entry", prompt_output)
+ 
+     @mock.patch('builtins.input', return_value='2')
+     def test_makemigrations_auto_now_add_interactive_quit(self, mock_input):
+@@ -1960,7 +1967,7 @@ class MakeMigrationsTests(MigrationTestBase):
+         input_msg = (
+             f'Callable default on unique field book.created will not generate '
+             f'unique values upon migrating.\n'
+-            f'Please choose how to proceed:\n\n'
++            f'Please choose how to proceed:\n'
+             f' 1) Continue making this migration as the first step in writing '
+             f'a manual migration to generate unique values described here: '
+             f'https://docs.djangoproject.com/en/{version}/howto/'
+diff --git a/tests/migrations/test_questioner.py b/tests/migrations/test_questioner.py
+index c9690d0b99..472a3f248f 100644
+--- a/tests/migrations/test_questioner.py
++++ b/tests/migrations/test_questioner.py
+@@ -1,12 +1,14 @@
+ import datetime
++from io import StringIO
+ from unittest import mock
+ 
++from django.core.management.base import OutputWrapper
+ from django.db.migrations.questioner import (
+     InteractiveMigrationQuestioner, MigrationQuestioner,
+ )
+ from django.db.models import NOT_PROVIDED
+ from django.test import SimpleTestCase
+-from django.test.utils import captured_stdout, override_settings
++from django.test.utils import override_settings
+ 
+ 
+ class QuestionerTests(SimpleTestCase):
+@@ -24,65 +26,60 @@ class QuestionerTests(SimpleTestCase):
+ 
+     @mock.patch('builtins.input', return_value='2')
+     def test_ask_not_null_alteration_not_provided(self, mock):
+-        questioner = InteractiveMigrationQuestioner()
+-        with captured_stdout():
+-            question = questioner.ask_not_null_alteration('field_name', 'model_name')
++        questioner = InteractiveMigrationQuestioner(prompt_output=OutputWrapper(StringIO()))
++        question = questioner.ask_not_null_alteration('field_name', 'model_name')
+         self.assertEqual(question, NOT_PROVIDED)
+ 
+ 
+ class QuestionerHelperMethodsTests(SimpleTestCase):
+-    questioner = InteractiveMigrationQuestioner()
++    def setUp(self):
++        self.prompt = OutputWrapper(StringIO())
++        self.questioner = InteractiveMigrationQuestioner(prompt_output=self.prompt)
+ 
+     @mock.patch('builtins.input', return_value='datetime.timedelta(days=1)')
+     def test_questioner_default_timedelta(self, mock_input):
+-        questioner = InteractiveMigrationQuestioner()
+-        with captured_stdout():
+-            value = questioner._ask_default()
++        value = self.questioner._ask_default()
+         self.assertEqual(value, datetime.timedelta(days=1))
+ 
+     @mock.patch('builtins.input', return_value='')
+     def test_questioner_default_no_user_entry(self, mock_input):
+-        with captured_stdout():
+-            value = self.questioner._ask_default(default='datetime.timedelta(days=1)')
++        value = self.questioner._ask_default(default='datetime.timedelta(days=1)')
+         self.assertEqual(value, datetime.timedelta(days=1))
+ 
+     @mock.patch('builtins.input', side_effect=['', 'exit'])
+     def test_questioner_no_default_no_user_entry(self, mock_input):
+-        with captured_stdout() as stdout, self.assertRaises(SystemExit):
++        with self.assertRaises(SystemExit):
+             self.questioner._ask_default()
+         self.assertIn(
+             "Please enter some code, or 'exit' (without quotes) to exit.",
+-            stdout.getvalue(),
++            self.prompt.getvalue(),
+         )
+ 
+     @mock.patch('builtins.input', side_effect=['bad code', 'exit'])
+     def test_questioner_no_default_bad_user_entry_code(self, mock_input):
+-        with captured_stdout() as stdout, self.assertRaises(SystemExit):
++        with self.assertRaises(SystemExit):
+             self.questioner._ask_default()
+-        self.assertIn('Invalid input: ', stdout.getvalue())
++        self.assertIn('Invalid input: ', self.prompt.getvalue())
+ 
+     @mock.patch('builtins.input', side_effect=['', 'n'])
+     def test_questioner_no_default_no_user_entry_boolean(self, mock_input):
+-        with captured_stdout():
+-            value = self.questioner._boolean_input('Proceed?')
++        value = self.questioner._boolean_input('Proceed?')
+         self.assertIs(value, False)
+ 
+     @mock.patch('builtins.input', return_value='')
+     def test_questioner_default_no_user_entry_boolean(self, mock_input):
+-        with captured_stdout():
+-            value = self.questioner._boolean_input('Proceed?', default=True)
++        value = self.questioner._boolean_input('Proceed?', default=True)
+         self.assertIs(value, True)
+ 
+     @mock.patch('builtins.input', side_effect=[10, 'garbage', 1])
+     def test_questioner_bad_user_choice(self, mock_input):
+         question = 'Make a choice:'
+-        with captured_stdout() as stdout:
+-            value = self.questioner._choice_input(question, choices='abc')
++        value = self.questioner._choice_input(question, choices='abc')
+         expected_msg = (
+             f'{question}\n'
+             f' 1) a\n'
+             f' 2) b\n'
+             f' 3) c\n'
+         )
+-        self.assertIn(expected_msg, stdout.getvalue())
++        self.assertIn(expected_msg, self.prompt.getvalue())
+         self.assertEqual(value, 1)
++ git diff 0ab58c120939093fea90822f376e1866fc714d1f
+diff --git a/django/db/migrations/migration.py b/django/db/migrations/migration.py
+index 5ee0ae5191..7fb8ad13d5 100644
+--- a/django/db/migrations/migration.py
++++ b/django/db/migrations/migration.py
+@@ -57,6 +57,38 @@ class Migration:
+         self.dependencies = list(self.__class__.dependencies)
+         self.run_before = list(self.__class__.run_before)
+         self.replaces = list(self.__class__.replaces)
++        self.replaces = list(self.__class__.replaces)
++        self.optimize_operations()
++
++    def optimize_operations(self):
++        from django.db.migrations.operations.models import AlterUniqueTogether, AlterIndexTogether
++        optimized_operations = []
++        i = 0
++        while i < len(self.operations):
++            current_op = self.operations[i]
++            if isinstance(current_op, (AlterUniqueTogether, AlterIndexTogether)):
++                # Look ahead for the next operation of the same type on the same model
++                j = i + 1
++                while j < len(self.operations):
++                    next_op = self.operations[j]
++                    if (
++                        isinstance(next_op, type(current_op))
++                        and next_op.name == current_op.name
++                    ):
++                        # Merge the operations
++                        if isinstance(current_op, AlterUniqueTogether):
++                            current_op.unique_together = next_op.unique_together
++                        else:  # AlterIndexTogether
++                            current_op.index_together = next_op.index_together
++                        j += 1
++                    else:
++                        break
++                optimized_operations.append(current_op)
++                i = j
++            else:
++                optimized_operations.append(current_op)
++                i += 1
++        self.operations = optimized_operations
+ 
+     def __eq__(self, other):
+         return (
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.4.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.1.dev20220103113051) (3.8.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.1.dev20220103113051) (0.5.1)
+Requirement already satisfied: typing-extensions>=4 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from asgiref>=3.4.1->Django==4.1.dev20220103113051) (4.12.2)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-4.1.dev20220103113051-0.editable-py3-none-any.whl size=26873 sha256=a917ba57b9827d17233cbfb043c7502eb6b4a044cf071459fbe0cc6dc4628f39
+  Stored in directory: /tmp/pip-ephem-wheel-cache-r9hvvoyx/wheels/7d/66/67/70d1ee2124ccf21d601c352e25cdca10f611f7c8b3f9ffb9e4
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 4.1.dev20220103113051
+    Uninstalling Django-4.1.dev20220103113051:
+      Successfully uninstalled Django-4.1.dev20220103113051
+Successfully installed Django-4.1.dev20220103113051
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 0ab58c120939093fea90822f376e1866fc714d1f tests/migrations/test_autodetector.py
+Updated 0 paths from 83c0412efa
++ git apply -v -
+Checking patch tests/migrations/test_autodetector.py...
+Applied patch tests/migrations/test_autodetector.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 migrations.test_autodetector
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Testing against Django installed in '/testbed/django'
+Importing application migrations
+Found 140 test(s).
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, messages, migrations, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table migrations_modelwithcustombase
+    Creating table migrations_unmigratedmodel
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (0 silenced).
+test_add_alter_order_with_respect_to (migrations.test_autodetector.AutodetectorTests)
+Setting order_with_respect_to when adding the FK too does ... ok
+test_add_blank_textfield_and_charfield (migrations.test_autodetector.AutodetectorTests)
+#23405 - Adding a NOT NULL and blank `CharField` or `TextField` ... ok
+test_add_constraints (migrations.test_autodetector.AutodetectorTests)
+Test change detection of new constraints. ... ok
+test_add_custom_fk_with_hardcoded_to (migrations.test_autodetector.AutodetectorTests) ... ok
+test_add_date_fields_with_auto_now_add_asking_for_default (migrations.test_autodetector.AutodetectorTests) ... ok
+test_add_date_fields_with_auto_now_add_not_asking_for_null_addition (migrations.test_autodetector.AutodetectorTests) ... ok
+test_add_date_fields_with_auto_now_not_asking_for_default (migrations.test_autodetector.AutodetectorTests) ... ok
+test_add_field (migrations.test_autodetector.AutodetectorTests)
+Tests autodetection of new fields. ... ok
+test_add_field_and_foo_together (migrations.test_autodetector.AutodetectorTests)
+Added fields will be created before using them in index/unique_together. ... ok
+test_add_field_with_default (migrations.test_autodetector.AutodetectorTests)
+#22030 - Adding a field with a default should work. ... ok
+test_add_foo_together (migrations.test_autodetector.AutodetectorTests)
+Tests index/unique_together detection. ... ok
+test_add_indexes (migrations.test_autodetector.AutodetectorTests)
+Test change detection of new indexes. ... ok
+test_add_many_to_many (migrations.test_autodetector.AutodetectorTests)
+#22435 - Adding a ManyToManyField should not prompt for a default. ... ok
+test_add_model_order_with_respect_to (migrations.test_autodetector.AutodetectorTests)
+Setting order_with_respect_to when adding the whole model ... ok
+test_add_model_order_with_respect_to_index_constraint (migrations.test_autodetector.AutodetectorTests) ... ok
+test_add_model_order_with_respect_to_index_foo_together (migrations.test_autodetector.AutodetectorTests) ... ok
+test_add_model_with_field_removed_from_base_model (migrations.test_autodetector.AutodetectorTests)
+Removing a base field takes place before adding a new inherited model ... ok
+test_add_non_blank_textfield_and_charfield (migrations.test_autodetector.AutodetectorTests)
+#23405 - Adding a NOT NULL and non-blank `CharField` or `TextField` ... ok
+test_alter_db_table_add (migrations.test_autodetector.AutodetectorTests)
+Tests detection for adding db_table in model's options. ... ok
+test_alter_db_table_change (migrations.test_autodetector.AutodetectorTests)
+Tests detection for changing db_table in model's options'. ... ok
+test_alter_db_table_no_changes (migrations.test_autodetector.AutodetectorTests)
+Alter_db_table doesn't generate a migration if no changes have been made. ... ok
+test_alter_db_table_remove (migrations.test_autodetector.AutodetectorTests)
+Tests detection for removing db_table in model's options. ... ok
+test_alter_db_table_with_model_change (migrations.test_autodetector.AutodetectorTests)
+Tests when model and db_table changes, autodetector must create two ... ok
+test_alter_field (migrations.test_autodetector.AutodetectorTests)
+Tests autodetection of new fields. ... ok
+test_alter_field_and_foo_together (migrations.test_autodetector.AutodetectorTests)
+Fields are altered after deleting some index/unique_together. ... ok
+test_alter_field_to_fk_dependency_other_app (migrations.test_autodetector.AutodetectorTests) ... ok
+test_alter_field_to_not_null_oneoff_default (migrations.test_autodetector.AutodetectorTests)
+#23609 - Tests autodetection of nullable to non-nullable alterations. ... ok
+test_alter_field_to_not_null_with_default (migrations.test_autodetector.AutodetectorTests)
+#23609 - Tests autodetection of nullable to non-nullable alterations. ... ok
+test_alter_field_to_not_null_without_default (migrations.test_autodetector.AutodetectorTests)
+#23609 - Tests autodetection of nullable to non-nullable alterations. ... ok
+test_alter_fk_before_model_deletion (migrations.test_autodetector.AutodetectorTests)
+ForeignKeys are altered _before_ the model they used to ... ok
+test_alter_many_to_many (migrations.test_autodetector.AutodetectorTests) ... ok
+test_alter_model_managers (migrations.test_autodetector.AutodetectorTests)
+Changing the model managers adds a new operation. ... ok
+test_alter_model_options (migrations.test_autodetector.AutodetectorTests)
+Changing a model's options should make a change. ... ok
+test_alter_model_options_proxy (migrations.test_autodetector.AutodetectorTests)
+Changing a proxy model's options should also make a change. ... ok
+test_arrange_for_graph (migrations.test_autodetector.AutodetectorTests)
+Tests auto-naming of migrations for graph matching. ... ok
+test_arrange_for_graph_with_multiple_initial (migrations.test_autodetector.AutodetectorTests) ... ok
+test_bases_first (migrations.test_autodetector.AutodetectorTests)
+Bases of other models come first. ... ok
+test_bases_first_mixed_case_app_label (migrations.test_autodetector.AutodetectorTests) ... ok
+test_circular_dependency_mixed_addcreate (migrations.test_autodetector.AutodetectorTests)
+#23315 - The dependency resolver knows to put all CreateModel ... ok
+test_circular_dependency_swappable (migrations.test_autodetector.AutodetectorTests)
+#23322 - The dependency resolver knows to explicitly resolve ... ok
+test_circular_dependency_swappable2 (migrations.test_autodetector.AutodetectorTests)
+#23322 - The dependency resolver knows to explicitly resolve ... ok
+test_circular_dependency_swappable_self (migrations.test_autodetector.AutodetectorTests)
+#23322 - The dependency resolver knows to explicitly resolve ... ok
+test_circular_fk_dependency (migrations.test_autodetector.AutodetectorTests)
+Having a circular ForeignKey dependency automatically ... ok
+test_concrete_field_changed_to_many_to_many (migrations.test_autodetector.AutodetectorTests)
+#23938 - Changing a concrete field into a ManyToManyField ... ok
+test_create_model_and_unique_together (migrations.test_autodetector.AutodetectorTests) ... ok
+test_create_model_with_check_constraint (migrations.test_autodetector.AutodetectorTests)
+Test creation of new model with constraints already defined. ... ok
+test_create_model_with_indexes (migrations.test_autodetector.AutodetectorTests)
+Test creation of new model with indexes already defined. ... ok
+test_create_with_through_model (migrations.test_autodetector.AutodetectorTests)
+Adding a m2m with a through model and the models that use it should be ... ok
+test_custom_deconstructible (migrations.test_autodetector.AutodetectorTests)
+Two instances which deconstruct to the same value aren't considered a ... ok
+test_custom_migration_name (migrations.test_autodetector.AutodetectorTests)
+Tests custom naming of migrations for graph matching. ... ok
+test_deconstruct_field_kwarg (migrations.test_autodetector.AutodetectorTests)
+Field instances are handled correctly by nested deconstruction. ... ok
+test_deconstruct_type (migrations.test_autodetector.AutodetectorTests)
+#22951 -- Uninstantiated classes with deconstruct are correctly returned ... ok
+test_deconstructible_dict (migrations.test_autodetector.AutodetectorTests)
+Nested deconstruction descends into dict values. ... ok
+test_deconstructible_list (migrations.test_autodetector.AutodetectorTests)
+Nested deconstruction descends into lists. ... ok
+test_deconstructible_tuple (migrations.test_autodetector.AutodetectorTests)
+Nested deconstruction descends into tuples. ... ok
+test_default_related_name_option (migrations.test_autodetector.AutodetectorTests) ... ok
+test_different_regex_does_alter (migrations.test_autodetector.AutodetectorTests) ... ok
+test_empty_foo_together (migrations.test_autodetector.AutodetectorTests)
+#23452 - Empty unique/index_together shouldn't generate a migration. ... ok
+test_first_dependency (migrations.test_autodetector.AutodetectorTests)
+A dependency to an app with no migrations uses __first__. ... ok
+test_fk_dependency (migrations.test_autodetector.AutodetectorTests)
+Having a ForeignKey automatically adds a dependency. ... ok
+test_fk_dependency_other_app (migrations.test_autodetector.AutodetectorTests)
+#23100 - ForeignKeys correctly depend on other apps' models. ... ok
+test_foo_together_no_changes (migrations.test_autodetector.AutodetectorTests)
+index/unique_together doesn't generate a migration if no ... ok
+test_foo_together_ordering (migrations.test_autodetector.AutodetectorTests)
+index/unique_together also triggers on ordering changes. ... FAIL
+test_foo_together_remove_fk (migrations.test_autodetector.AutodetectorTests)
+Tests unique_together and field removal detection & ordering ... ok
+test_foreign_key_removed_before_target_model (migrations.test_autodetector.AutodetectorTests)
+Removing an FK and the model it targets in the same change must remove ... ok
+test_identical_regex_doesnt_alter (migrations.test_autodetector.AutodetectorTests) ... ok
+test_keep_db_table_with_model_change (migrations.test_autodetector.AutodetectorTests)
+Tests when model changes but db_table stays as-is, autodetector must not ... ok
+test_last_dependency (migrations.test_autodetector.AutodetectorTests)
+A dependency to an app with existing migrations uses the ... ok
+test_m2m_w_through_multistep_remove (migrations.test_autodetector.AutodetectorTests)
+A model with a m2m field that specifies a "through" model cannot be ... ok
+test_managed_to_unmanaged (migrations.test_autodetector.AutodetectorTests) ... ok
+test_many_to_many_changed_to_concrete_field (migrations.test_autodetector.AutodetectorTests)
+#23938 - Changing a ManyToManyField into a concrete field ... ok
+test_many_to_many_removed_before_through_model (migrations.test_autodetector.AutodetectorTests)
+Removing a ManyToManyField and the "through" model in the same change ... ok
+test_many_to_many_removed_before_through_model_2 (migrations.test_autodetector.AutodetectorTests)
+Removing a model that contains a ManyToManyField and the "through" model ... ok
+test_mti_inheritance_model_removal (migrations.test_autodetector.AutodetectorTests) ... ok
+test_multiple_bases (migrations.test_autodetector.AutodetectorTests)
+#23956 - Inheriting models doesn't move *_ptr fields into AddField operations. ... ok
+test_nested_deconstructible_objects (migrations.test_autodetector.AutodetectorTests)
+Nested deconstruction is applied recursively to the args/kwargs of ... ok
+test_new_model (migrations.test_autodetector.AutodetectorTests)
+Tests autodetection of new models. ... ok
+test_non_circular_foreignkey_dependency_removal (migrations.test_autodetector.AutodetectorTests)
+If two models with a ForeignKey from one to the other are removed at the ... ok
+test_old_model (migrations.test_autodetector.AutodetectorTests)
+Tests deletion of old models. ... ok
+test_order_fields_indexes (migrations.test_autodetector.AutodetectorTests)
+Test change detection of reordering of fields in indexes. ... ok
+test_parse_number (migrations.test_autodetector.AutodetectorTests) ... ok
+test_partly_alter_foo_together (migrations.test_autodetector.AutodetectorTests) ... ok
+test_pk_fk_included (migrations.test_autodetector.AutodetectorTests)
+A relation used as the primary key is kept as part of CreateModel. ... ok
+test_proxy (migrations.test_autodetector.AutodetectorTests)
+The autodetector correctly deals with proxy models. ... ok
+test_proxy_bases_first (migrations.test_autodetector.AutodetectorTests)
+Bases of proxies come first. ... ok
+test_proxy_custom_pk (migrations.test_autodetector.AutodetectorTests)
+#23415 - The autodetector must correctly deal with custom FK on proxy ... ok
+test_proxy_fk_dependency (migrations.test_autodetector.AutodetectorTests)
+FK dependencies still work on proxy models. ... ok
+test_proxy_non_model_parent (migrations.test_autodetector.AutodetectorTests) ... ok
+test_proxy_to_mti_with_fk_to_proxy (migrations.test_autodetector.AutodetectorTests) ... ok
+test_proxy_to_mti_with_fk_to_proxy_proxy (migrations.test_autodetector.AutodetectorTests) ... ok
+test_remove_alter_order_with_respect_to (migrations.test_autodetector.AutodetectorTests)
+Removing order_with_respect_to when removing the FK too does ... ok
+test_remove_constraints (migrations.test_autodetector.AutodetectorTests)
+Test change detection of removed constraints. ... ok
+test_remove_field (migrations.test_autodetector.AutodetectorTests)
+Tests autodetection of removed fields. ... ok
+test_remove_field_and_foo_together (migrations.test_autodetector.AutodetectorTests)
+Removed fields will be removed after updating index/unique_together. ... FAIL
+test_remove_foo_together (migrations.test_autodetector.AutodetectorTests)
+Tests index/unique_together detection. ... ok
+test_remove_indexes (migrations.test_autodetector.AutodetectorTests)
+Test change detection of removed indexes. ... ok
+test_rename_field (migrations.test_autodetector.AutodetectorTests)
+Tests autodetection of renamed fields. ... ok
+test_rename_field_and_foo_together (migrations.test_autodetector.AutodetectorTests)
+Fields are renamed before updating index/unique_together. ... FAIL
+test_rename_field_foreign_key_to_field (migrations.test_autodetector.AutodetectorTests) ... ok
+test_rename_field_preserved_db_column (migrations.test_autodetector.AutodetectorTests)
+RenameField is used if a field is renamed and db_column equal to the ... ok
+test_rename_foreign_object_fields (migrations.test_autodetector.AutodetectorTests) ... ok
+test_rename_m2m_through_model (migrations.test_autodetector.AutodetectorTests)
+Tests autodetection of renamed models that are used in M2M relations as ... ok
+test_rename_model (migrations.test_autodetector.AutodetectorTests)
+Tests autodetection of renamed models. ... ok
+test_rename_model_case (migrations.test_autodetector.AutodetectorTests)
+Model name is case-insensitive. Changing case doesn't lead to any ... ok
+test_rename_model_reverse_relation_dependencies (migrations.test_autodetector.AutodetectorTests)
+The migration to rename a model pointed to by a foreign key in another ... ok
+test_rename_model_with_fks_in_different_position (migrations.test_autodetector.AutodetectorTests)
+#24537 - The order of fields in a model does not influence ... ok
+test_rename_model_with_renamed_rel_field (migrations.test_autodetector.AutodetectorTests)
+Tests autodetection of renamed models while simultaneously renaming one ... ok
+test_rename_referenced_primary_key (migrations.test_autodetector.AutodetectorTests) ... ok
+test_rename_related_field_preserved_db_column (migrations.test_autodetector.AutodetectorTests) ... ok
+test_renamed_referenced_m2m_model_case (migrations.test_autodetector.AutodetectorTests) ... ok
+test_replace_string_with_foreignkey (migrations.test_autodetector.AutodetectorTests)
+#22300 - Adding an FK in the same "spot" as a deleted CharField should ... ok
+test_same_app_circular_fk_dependency (migrations.test_autodetector.AutodetectorTests)
+A migration with a FK between two models of the same app does ... ok
+test_same_app_circular_fk_dependency_with_unique_together_and_indexes (migrations.test_autodetector.AutodetectorTests)
+#22275 - A migration with circular FK dependency does not try ... ok
+test_same_app_no_fk_dependency (migrations.test_autodetector.AutodetectorTests)
+A migration with a FK between two models of the same app ... ok
+test_set_alter_order_with_respect_to (migrations.test_autodetector.AutodetectorTests)
+Setting order_with_respect_to adds a field. ... ok
+test_set_alter_order_with_respect_to_index_constraint_foo_together (migrations.test_autodetector.AutodetectorTests) ... ok
+test_supports_functools_partial (migrations.test_autodetector.AutodetectorTests) ... ok
+test_swappable (migrations.test_autodetector.AutodetectorTests) ... ok
+test_swappable_changed (migrations.test_autodetector.AutodetectorTests) ... ok
+test_swappable_circular_multi_mti (migrations.test_autodetector.AutodetectorTests) ... ok
+test_swappable_first_inheritance (migrations.test_autodetector.AutodetectorTests)
+Swappable models get their CreateModel first. ... ok
+test_swappable_first_setting (migrations.test_autodetector.AutodetectorTests)
+Swappable models get their CreateModel first. ... ok
+test_swappable_lowercase (migrations.test_autodetector.AutodetectorTests) ... ok
+test_trim_apps (migrations.test_autodetector.AutodetectorTests)
+Trim does not remove dependencies but does remove unwanted apps. ... ok
+test_unmanaged_create (migrations.test_autodetector.AutodetectorTests)
+The autodetector correctly deals with managed models. ... ok
+test_unmanaged_custom_pk (migrations.test_autodetector.AutodetectorTests)
+#23415 - The autodetector must correctly deal with custom FK on ... ok
+test_unmanaged_delete (migrations.test_autodetector.AutodetectorTests) ... ok
+test_unmanaged_to_managed (migrations.test_autodetector.AutodetectorTests) ... ok
+test_auto (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_many_operations_suffix (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_no_operations (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_no_operations_initial (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_none_name (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_none_name_with_initial_true (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_operation_with_no_suggested_name (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_single_operation (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_single_operation_long_name (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_two_create_models (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_two_create_models_with_initial_true (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_two_operations (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+
+======================================================================
+FAIL: test_foo_together_ordering (migrations.test_autodetector.AutodetectorTests)
+index/unique_together also triggers on ordering changes.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/migrations/test_autodetector.py", line 1573, in test_foo_together_ordering
+    self.assertOperationTypes(changes, 'otherapp', 0, [
+  File "/testbed/tests/migrations/test_autodetector.py", line 513, in assertOperationTypes
+    self.fail("Operation type mismatch for %s.%s (expected %s):\n%s" % (
+AssertionError: Operation type mismatch for otherapp.auto_1 (expected ['AlterUniqueTogether', 'AlterIndexTogether']):
+  otherapp:
+    auto_1
+      <AlterUniqueTogether  name='book', unique_together=set()>
+      <AlterIndexTogether  name='book', index_together=set()>
+      <AlterUniqueTogether  name='book', unique_together={('title', 'author')}>
+      <AlterIndexTogether  name='book', index_together={('title', 'author')}>
+
+
+======================================================================
+FAIL: test_remove_field_and_foo_together (migrations.test_autodetector.AutodetectorTests)
+Removed fields will be removed after updating index/unique_together.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/migrations/test_autodetector.py", line 1631, in test_remove_field_and_foo_together
+    self.assertOperationTypes(changes, 'otherapp', 0, [
+  File "/testbed/tests/migrations/test_autodetector.py", line 513, in assertOperationTypes
+    self.fail("Operation type mismatch for %s.%s (expected %s):\n%s" % (
+AssertionError: Operation type mismatch for otherapp.auto_1 (expected ['AlterUniqueTogether', 'AlterIndexTogether', 'RemoveField']):
+  otherapp:
+    auto_1
+      <AlterUniqueTogether  name='book', unique_together=set()>
+      <AlterIndexTogether  name='book', index_together=set()>
+      <AlterUniqueTogether  name='book', unique_together={('author', 'title')}>
+      <AlterIndexTogether  name='book', index_together={('author', 'title')}>
+      <RemoveField  model_name='book', name='newfield'>
+
+
+======================================================================
+FAIL: test_rename_field_and_foo_together (migrations.test_autodetector.AutodetectorTests)
+Fields are renamed before updating index/unique_together.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/migrations/test_autodetector.py", line 1727, in test_rename_field_and_foo_together
+    self.assertOperationTypes(changes, 'otherapp', 0, [
+  File "/testbed/tests/migrations/test_autodetector.py", line 513, in assertOperationTypes
+    self.fail("Operation type mismatch for %s.%s (expected %s):\n%s" % (
+AssertionError: Operation type mismatch for otherapp.auto_1 (expected ['RenameField', 'AlterUniqueTogether', 'AlterIndexTogether']):
+  otherapp:
+    auto_1
+      <RenameField  model_name='book', old_name='newfield', new_name='newfield2'>
+      <AlterUniqueTogether  name='book', unique_together=set()>
+      <AlterIndexTogether  name='book', index_together=set()>
+      <AlterUniqueTogether  name='book', unique_together={('title', 'newfield2')}>
+      <AlterIndexTogether  name='book', index_together={('title', 'newfield2')}>
+
+
+----------------------------------------------------------------------
+Ran 140 tests in 0.055s
+
+FAILED (failures=3)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout 0ab58c120939093fea90822f376e1866fc714d1f tests/migrations/test_autodetector.py
+Updated 1 path from 83c0412efa

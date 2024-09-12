@@ -1,4 +1,4 @@
-2024-09-11 15:29:39,555 - INFO - Building image sweb.eval.arm64.django__django-16612:latest
+2024-09-11 16:18:59,370 - INFO - Building image sweb.eval.arm64.django__django-16612:latest
 Using dockerfile:
 FROM --platform=linux/arm64/v8 sweb.env.arm64.c70909fdac4897d1c685df:latest
 
@@ -8,7 +8,7 @@ RUN /bin/bash /root/setup_repo.sh
 WORKDIR /testbed/
 
 Adding (1) setup scripts to image build repo
-2024-09-11 15:29:39,555 - INFO - [SETUP SCRIPT] setup_repo.sh:
+2024-09-11 16:18:59,370 - INFO - [SETUP SCRIPT] setup_repo.sh:
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/django/django /testbed
@@ -21,115 +21,91 @@ conda activate testbed
 echo "Current environment: $CONDA_DEFAULT_ENV"
 python -m pip install -e .
 
-2024-09-11 15:29:39,555 - INFO - Building docker image sweb.eval.arm64.django__django-16612:latest in logs/build_images/instances/sweb.eval.arm64.django__django-16612__latest with platform linux/arm64/v8
-2024-09-11 15:29:39,644 - INFO - Step 1/4 : FROM --platform=linux/arm64/v8 sweb.env.arm64.c70909fdac4897d1c685df:latest
-2024-09-11 15:29:39,644 - INFO - 
-2024-09-11 15:29:39,644 - INFO - ---> 024c751b9789
-2024-09-11 15:29:39,644 - INFO - Step 2/4 : COPY ./setup_repo.sh /root/
-2024-09-11 15:29:39,644 - INFO - 
-2024-09-11 15:29:39,688 - INFO - ---> a95db84bf4af
-2024-09-11 15:29:39,688 - INFO - Step 3/4 : RUN /bin/bash /root/setup_repo.sh
-2024-09-11 15:29:39,688 - INFO - 
-2024-09-11 15:29:39,708 - INFO - ---> Running in cfde7b82ed2e
-2024-09-11 15:29:39,952 - INFO - + git clone -o origin https://github.com/django/django /testbed
-2024-09-11 15:29:39,963 - INFO - Cloning into '/testbed'...
-2024-09-11 15:30:05,852 - INFO - Updating files:  41% (2805/6830)
-2024-09-11 15:30:05,868 - INFO - Updating files:  42% (2869/6830)
-2024-09-11 15:30:05,887 - INFO - Updating files:  43% (2937/6830)
-2024-09-11 15:30:05,904 - INFO - Updating files:  44% (3006/6830)
-2024-09-11 15:30:05,924 - INFO - Updating files:  45% (3074/6830)
-2024-09-11 15:30:05,967 - INFO - Updating files:  46% (3142/6830)
-2024-09-11 15:30:05,984 - INFO - Updating files:  47% (3211/6830)
-2024-09-11 15:30:06,007 - INFO - Updating files:  48% (3279/6830)
-2024-09-11 15:30:06,043 - INFO - Updating files:  49% (3347/6830)
-2024-09-11 15:30:06,082 - INFO - Updating files:  50% (3415/6830)
-2024-09-11 15:30:06,092 - INFO - Updating files:  51% (3484/6830)
-2024-09-11 15:30:06,101 - INFO - Updating files:  52% (3552/6830)
-2024-09-11 15:30:06,117 - INFO - Updating files:  53% (3620/6830)
-2024-09-11 15:30:06,130 - INFO - Updating files:  54% (3689/6830)
-2024-09-11 15:30:06,146 - INFO - Updating files:  55% (3757/6830)
-2024-09-11 15:30:06,192 - INFO - Updating files:  56% (3825/6830)
-2024-09-11 15:30:06,235 - INFO - Updating files:  57% (3894/6830)
-2024-09-11 15:30:06,290 - INFO - Updating files:  58% (3962/6830)
-2024-09-11 15:30:06,353 - INFO - Updating files:  59% (4030/6830)
-2024-09-11 15:30:06,417 - INFO - Updating files:  60% (4098/6830)
-2024-09-11 15:30:06,473 - INFO - Updating files:  61% (4167/6830)
-2024-09-11 15:30:06,497 - INFO - Updating files:  62% (4235/6830)
-2024-09-11 15:30:06,513 - INFO - Updating files:  63% (4303/6830)
-2024-09-11 15:30:06,535 - INFO - Updating files:  64% (4372/6830)
-2024-09-11 15:30:06,608 - INFO - Updating files:  65% (4440/6830)
-2024-09-11 15:30:06,643 - INFO - Updating files:  66% (4508/6830)
-2024-09-11 15:30:06,671 - INFO - Updating files:  67% (4577/6830)
-2024-09-11 15:30:06,688 - INFO - Updating files:  68% (4645/6830)
-2024-09-11 15:30:06,705 - INFO - Updating files:  69% (4713/6830)
-2024-09-11 15:30:06,716 - INFO - Updating files:  70% (4781/6830)
-2024-09-11 15:30:06,729 - INFO - Updating files:  71% (4850/6830)
-2024-09-11 15:30:06,748 - INFO - Updating files:  72% (4918/6830)
-2024-09-11 15:30:06,834 - INFO - Updating files:  73% (4986/6830)
-2024-09-11 15:30:06,841 - INFO - Updating files:  73% (5028/6830)
-2024-09-11 15:30:06,846 - INFO - Updating files:  74% (5055/6830)
-2024-09-11 15:30:06,865 - INFO - Updating files:  75% (5123/6830)
-2024-09-11 15:30:06,878 - INFO - Updating files:  76% (5191/6830)
-2024-09-11 15:30:06,902 - INFO - Updating files:  77% (5260/6830)
-2024-09-11 15:30:06,912 - INFO - Updating files:  78% (5328/6830)
-2024-09-11 15:30:06,926 - INFO - Updating files:  79% (5396/6830)
-2024-09-11 15:30:06,951 - INFO - Updating files:  80% (5464/6830)
-2024-09-11 15:30:07,028 - INFO - Updating files:  81% (5533/6830)
-2024-09-11 15:30:07,045 - INFO - Updating files:  82% (5601/6830)
-2024-09-11 15:30:07,057 - INFO - Updating files:  83% (5669/6830)
-2024-09-11 15:30:07,073 - INFO - Updating files:  84% (5738/6830)
-2024-09-11 15:30:07,084 - INFO - Updating files:  85% (5806/6830)
-2024-09-11 15:30:07,098 - INFO - Updating files:  86% (5874/6830)
-2024-09-11 15:30:07,113 - INFO - Updating files:  87% (5943/6830)
-2024-09-11 15:30:07,129 - INFO - Updating files:  88% (6011/6830)
-2024-09-11 15:30:07,180 - INFO - Updating files:  89% (6079/6830)
-2024-09-11 15:30:07,257 - INFO - Updating files:  90% (6147/6830)
-2024-09-11 15:30:07,279 - INFO - Updating files:  91% (6216/6830)
-2024-09-11 15:30:07,292 - INFO - Updating files:  92% (6284/6830)
-2024-09-11 15:30:07,302 - INFO - Updating files:  93% (6352/6830)
-2024-09-11 15:30:07,315 - INFO - Updating files:  94% (6421/6830)
-2024-09-11 15:30:07,323 - INFO - Updating files:  95% (6489/6830)
-2024-09-11 15:30:07,333 - INFO - Updating files:  96% (6557/6830)
-2024-09-11 15:30:07,347 - INFO - Updating files:  97% (6626/6830)
-2024-09-11 15:30:07,358 - INFO - Updating files:  98% (6694/6830)
-2024-09-11 15:30:07,370 - INFO - Updating files:  99% (6762/6830)
-2024-09-11 15:30:07,384 - INFO - Updating files: 100% (6830/6830)Updating files: 100% (6830/6830), done.
-2024-09-11 15:30:07,427 - INFO - + chmod -R 777 /testbed
-2024-09-11 15:30:07,469 - INFO - + cd /testbed
-2024-09-11 15:30:07,469 - INFO - + git reset --hard 55bcbd8d172b689811fae17cde2f09218dd74e9c
-2024-09-11 15:30:08,202 - INFO - HEAD is now at 55bcbd8d17 Fixed #34378 -- Made QuerySet.in_bulk() not clear odering when id_list is passed.
-2024-09-11 15:30:08,204 - INFO - + git remote remove origin
-2024-09-11 15:30:08,215 - INFO - + source /opt/miniconda3/bin/activate
-2024-09-11 15:30:08,216 - INFO - ++ _CONDA_ROOT=/opt/miniconda3
-2024-09-11 15:30:08,216 - INFO - ++ . /opt/miniconda3/etc/profile.d/conda.sh
-2024-09-11 15:30:08,216 - INFO - +++ export CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-11 16:18:59,370 - INFO - Building docker image sweb.eval.arm64.django__django-16612:latest in logs/build_images/instances/sweb.eval.arm64.django__django-16612__latest with platform linux/arm64/v8
+2024-09-11 16:18:59,438 - INFO - Step 1/4 : FROM --platform=linux/arm64/v8 sweb.env.arm64.c70909fdac4897d1c685df:latest
+2024-09-11 16:18:59,438 - INFO - 
+2024-09-11 16:18:59,438 - INFO - ---> 024c751b9789
+2024-09-11 16:18:59,438 - INFO - Step 2/4 : COPY ./setup_repo.sh /root/
+2024-09-11 16:18:59,438 - INFO - 
+2024-09-11 16:18:59,477 - INFO - ---> 4e42f95376ba
+2024-09-11 16:18:59,477 - INFO - Step 3/4 : RUN /bin/bash /root/setup_repo.sh
+2024-09-11 16:18:59,477 - INFO - 
+2024-09-11 16:18:59,491 - INFO - ---> Running in b63288ee221c
+2024-09-11 16:18:59,667 - INFO - + git clone -o origin https://github.com/django/django /testbed
+2024-09-11 16:18:59,669 - INFO - Cloning into '/testbed'...
+2024-09-11 16:19:20,473 - INFO - Updating files:  64% (4372/6830)
+2024-09-11 16:19:20,481 - INFO - Updating files:  65% (4440/6830)
+2024-09-11 16:19:20,490 - INFO - Updating files:  66% (4508/6830)
+2024-09-11 16:19:20,502 - INFO - Updating files:  67% (4577/6830)
+2024-09-11 16:19:20,516 - INFO - Updating files:  68% (4645/6830)
+2024-09-11 16:19:20,532 - INFO - Updating files:  69% (4713/6830)
+2024-09-11 16:19:20,540 - INFO - Updating files:  70% (4781/6830)
+2024-09-11 16:19:20,549 - INFO - Updating files:  71% (4850/6830)
+2024-09-11 16:19:20,557 - INFO - Updating files:  72% (4918/6830)
+2024-09-11 16:19:20,568 - INFO - Updating files:  73% (4986/6830)
+2024-09-11 16:19:20,576 - INFO - Updating files:  74% (5055/6830)
+2024-09-11 16:19:20,587 - INFO - Updating files:  75% (5123/6830)
+2024-09-11 16:19:20,592 - INFO - Updating files:  76% (5191/6830)
+2024-09-11 16:19:20,607 - INFO - Updating files:  77% (5260/6830)
+2024-09-11 16:19:20,632 - INFO - Updating files:  78% (5328/6830)
+2024-09-11 16:19:20,645 - INFO - Updating files:  79% (5396/6830)
+2024-09-11 16:19:20,654 - INFO - Updating files:  80% (5464/6830)
+2024-09-11 16:19:20,672 - INFO - Updating files:  81% (5533/6830)
+2024-09-11 16:19:20,683 - INFO - Updating files:  82% (5601/6830)
+2024-09-11 16:19:20,693 - INFO - Updating files:  83% (5669/6830)
+2024-09-11 16:19:20,704 - INFO - Updating files:  84% (5738/6830)
+2024-09-11 16:19:20,711 - INFO - Updating files:  85% (5806/6830)
+2024-09-11 16:19:20,720 - INFO - Updating files:  86% (5874/6830)
+2024-09-11 16:19:20,731 - INFO - Updating files:  87% (5943/6830)
+2024-09-11 16:19:20,741 - INFO - Updating files:  88% (6011/6830)
+2024-09-11 16:19:20,751 - INFO - Updating files:  89% (6079/6830)
+2024-09-11 16:19:20,764 - INFO - Updating files:  90% (6147/6830)
+2024-09-11 16:19:20,772 - INFO - Updating files:  91% (6216/6830)
+2024-09-11 16:19:20,782 - INFO - Updating files:  92% (6284/6830)
+2024-09-11 16:19:20,788 - INFO - Updating files:  93% (6352/6830)
+2024-09-11 16:19:20,794 - INFO - Updating files:  94% (6421/6830)
+2024-09-11 16:19:20,800 - INFO - Updating files:  95% (6489/6830)
+2024-09-11 16:19:20,807 - INFO - Updating files:  96% (6557/6830)
+2024-09-11 16:19:20,814 - INFO - Updating files:  97% (6626/6830)
+2024-09-11 16:19:20,821 - INFO - Updating files:  98% (6694/6830)
+2024-09-11 16:19:20,829 - INFO - Updating files:  99% (6762/6830)
+2024-09-11 16:19:20,839 - INFO - Updating files: 100% (6830/6830)Updating files: 100% (6830/6830), done.
+2024-09-11 16:19:20,864 - INFO - + chmod -R 777 /testbed
+2024-09-11 16:19:20,896 - INFO - + cd /testbed
+2024-09-11 16:19:20,896 - INFO - + git reset --hard 55bcbd8d172b689811fae17cde2f09218dd74e9c
+2024-09-11 16:19:22,039 - INFO - HEAD is now at 55bcbd8d17 Fixed #34378 -- Made QuerySet.in_bulk() not clear odering when id_list is passed.
+2024-09-11 16:19:22,084 - INFO - + git remote remove origin
+2024-09-11 16:19:22,109 - INFO - + source /opt/miniconda3/bin/activate
+2024-09-11 16:19:22,109 - INFO - ++ _CONDA_ROOT=/opt/miniconda3
+2024-09-11 16:19:22,109 - INFO - ++ . /opt/miniconda3/etc/profile.d/conda.sh
+2024-09-11 16:19:22,110 - INFO - +++ export CONDA_EXE=/opt/miniconda3/bin/conda
 +++ CONDA_EXE=/opt/miniconda3/bin/conda
-2024-09-11 15:30:08,216 - INFO - +++ export _CE_M=
++++ export _CE_M=
 +++ _CE_M=
 +++ export _CE_CONDA=
 +++ _CE_CONDA=
 +++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
 +++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
-2024-09-11 15:30:08,217 - INFO - +++ '[' -z '' ']'
-2024-09-11 15:30:08,217 - INFO - +++ export CONDA_SHLVL=0
+2024-09-11 16:19:22,110 - INFO - +++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
 +++ CONDA_SHLVL=0
-+++ '[' -n '' ']'
-2024-09-11 15:30:08,217 - INFO - +++++ dirname /opt/miniconda3/bin/conda
-2024-09-11 15:30:08,218 - INFO - ++++ dirname /opt/miniconda3/bin
-2024-09-11 15:30:08,219 - INFO - +++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-11 16:19:22,110 - INFO - +++ '[' -n '' ']'
+2024-09-11 16:19:22,111 - INFO - +++++ dirname /opt/miniconda3/bin/conda
+2024-09-11 16:19:22,112 - INFO - ++++ dirname /opt/miniconda3/bin
+2024-09-11 16:19:22,113 - INFO - +++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 +++ export PATH
 +++ '[' -z '' ']'
 +++ PS1=
-2024-09-11 15:30:08,219 - INFO - ++ conda activate
+2024-09-11 16:19:22,113 - INFO - ++ conda activate
 ++ local cmd=activate
-++ case "$cmd" in
-2024-09-11 15:30:08,219 - INFO - ++ __conda_activate activate
-++ '[' -n '' ']'
-++ local ask_conda
-2024-09-11 15:30:08,219 - INFO - +++ PS1=
+2024-09-11 16:19:22,113 - INFO - ++ case "$cmd" in
+++ __conda_activate activate
+2024-09-11 16:19:22,113 - INFO - ++ '[' -n '' ']'
+2024-09-11 16:19:22,113 - INFO - ++ local ask_conda
+2024-09-11 16:19:22,113 - INFO - +++ PS1=
 +++ __conda_exe shell.posix activate
-2024-09-11 15:30:08,219 - INFO - +++ /opt/miniconda3/bin/conda shell.posix activate
-2024-09-11 15:30:08,441 - INFO - ++ ask_conda='PS1='\''(base) '\''
+2024-09-11 16:19:22,114 - INFO - +++ /opt/miniconda3/bin/conda shell.posix activate
+2024-09-11 16:19:22,383 - INFO - ++ ask_conda='PS1='\''(base) '\''
 export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
 export CONDA_PREFIX='\''/opt/miniconda3'\''
 export CONDA_SHLVL='\''1'\''
@@ -172,16 +148,16 @@ export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
 ++ '[' -n '' ']'
 ++ '[' -n '' ']'
 ++ hash -r
-2024-09-11 15:30:08,441 - INFO - + conda activate testbed
++ conda activate testbed
 + local cmd=activate
 + case "$cmd" in
 + __conda_activate activate testbed
 + '[' -n '' ']'
 + local ask_conda
-2024-09-11 15:30:08,442 - INFO - ++ PS1='(base) '
+2024-09-11 16:19:22,383 - INFO - ++ PS1='(base) '
 ++ __conda_exe shell.posix activate testbed
-2024-09-11 15:30:08,442 - INFO - ++ /opt/miniconda3/bin/conda shell.posix activate testbed
-2024-09-11 15:30:08,597 - INFO - + ask_conda='PS1='\''(testbed) '\''
+2024-09-11 16:19:22,384 - INFO - ++ /opt/miniconda3/bin/conda shell.posix activate testbed
+2024-09-11 16:19:22,565 - INFO - + ask_conda='PS1='\''(testbed) '\''
 export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
 export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
 export CONDA_SHLVL='\''2'\''
@@ -220,44 +196,44 @@ export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
 ++ CONDA_EXE=/opt/miniconda3/bin/conda
 ++ export _CE_M=
 ++ _CE_M=
-++ export _CE_CONDA=
-++ _CE_CONDA=
-2024-09-11 15:30:08,597 - INFO - ++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+2024-09-11 16:19:22,566 - INFO - ++ export _CE_CONDA=
+2024-09-11 16:19:22,566 - INFO - ++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
 ++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
 + __conda_hashr
 + '[' -n '' ']'
 + '[' -n '' ']'
 + hash -r
-+ echo 'Current environment: testbed'
-2024-09-11 15:30:08,597 - INFO - Current environment: testbed
-2024-09-11 15:30:08,597 - INFO - + python -m pip install -e .
-2024-09-11 15:30:09,231 - INFO - Obtaining file:///testbed
-2024-09-11 15:30:09,232 - INFO - Installing build dependencies: started
-2024-09-11 15:30:10,298 - INFO - Installing build dependencies: finished with status 'done'
-2024-09-11 15:30:10,298 - INFO - Checking if build backend supports build_editable: started
-2024-09-11 15:30:10,389 - INFO - Checking if build backend supports build_editable: finished with status 'done'
-2024-09-11 15:30:10,390 - INFO - Getting requirements to build editable: started
-2024-09-11 15:30:10,626 - INFO - Getting requirements to build editable: finished with status 'done'
-2024-09-11 15:30:10,627 - INFO - Preparing editable metadata (pyproject.toml): started
-2024-09-11 15:30:10,864 - INFO - Preparing editable metadata (pyproject.toml): finished with status 'done'
-2024-09-11 15:30:10,866 - INFO - Requirement already satisfied: asgiref>=3.6.0 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from Django==5.0.dev20230303050010) (3.8.1)
-2024-09-11 15:30:10,866 - INFO - Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from Django==5.0.dev20230303050010) (0.5.1)
-2024-09-11 15:30:10,867 - INFO - Building wheels for collected packages: Django
-2024-09-11 15:30:10,868 - INFO - Building editable for Django (pyproject.toml): started
-2024-09-11 15:30:11,261 - INFO - Building editable for Django (pyproject.toml): finished with status 'done'
-2024-09-11 15:30:11,261 - INFO - Created wheel for Django: filename=Django-5.0.dev20230303050010-0.editable-py3-none-any.whl size=27354 sha256=bb614a2ea2df29043e0fa14d17265ce17da7391dbbd2e9837600dd567f072c7a
-2024-09-11 15:30:11,261 - INFO - Stored in directory: /tmp/pip-ephem-wheel-cache-p1n26zek/wheels/49/5f/4f/01b7d31ea6ddac9643da788242d33e5fd3467d95d17b032c6b
-2024-09-11 15:30:11,263 - INFO - Successfully built Django
-2024-09-11 15:30:11,282 - INFO - Installing collected packages: Django
-2024-09-11 15:30:11,300 - INFO - Successfully installed Django-5.0.dev20230303050010
-2024-09-11 15:30:11,300 - INFO - WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
-2024-09-11 15:30:16,088 - INFO - ---> Removed intermediate container cfde7b82ed2e
-2024-09-11 15:30:16,091 - INFO - ---> 21e7398797c8
-2024-09-11 15:30:16,092 - INFO - Step 4/4 : WORKDIR /testbed/
-2024-09-11 15:30:16,092 - INFO - 
-2024-09-11 15:30:16,144 - INFO - ---> Running in 1c7ff66186c2
-2024-09-11 15:30:16,229 - INFO - ---> Removed intermediate container 1c7ff66186c2
-2024-09-11 15:30:16,229 - INFO - ---> 41869cad7546
-2024-09-11 15:30:16,229 - INFO - Successfully built 41869cad7546
-2024-09-11 15:30:16,234 - INFO - Successfully tagged sweb.eval.arm64.django__django-16612:latest
-2024-09-11 15:30:16,243 - INFO - Image built successfully!
+2024-09-11 16:19:22,566 - INFO - + echo 'Current environment: testbed'
++ python -m pip install -e .
+2024-09-11 16:19:22,566 - INFO - Current environment: testbed
+2024-09-11 16:19:23,058 - INFO - Obtaining file:///testbed
+2024-09-11 16:19:23,060 - INFO - Installing build dependencies: started
+2024-09-11 16:19:24,743 - INFO - Installing build dependencies: finished with status 'done'
+2024-09-11 16:19:24,743 - INFO - Checking if build backend supports build_editable: started
+2024-09-11 16:19:24,844 - INFO - Checking if build backend supports build_editable: finished with status 'done'
+2024-09-11 16:19:24,844 - INFO - Getting requirements to build editable: started
+2024-09-11 16:19:25,289 - INFO - Getting requirements to build editable: finished with status 'done'
+2024-09-11 16:19:25,289 - INFO - Preparing editable metadata (pyproject.toml): started
+2024-09-11 16:19:25,497 - INFO - Preparing editable metadata (pyproject.toml): finished with status 'done'
+2024-09-11 16:19:25,500 - INFO - Requirement already satisfied: asgiref>=3.6.0 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from Django==5.0.dev20230303050010) (3.8.1)
+2024-09-11 16:19:25,500 - INFO - Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from Django==5.0.dev20230303050010) (0.5.1)
+2024-09-11 16:19:25,502 - INFO - Building wheels for collected packages: Django
+2024-09-11 16:19:25,503 - INFO - Building editable for Django (pyproject.toml): started
+2024-09-11 16:19:25,947 - INFO - Building editable for Django (pyproject.toml): finished with status 'done'
+2024-09-11 16:19:25,948 - INFO - Created wheel for Django: filename=Django-5.0.dev20230303050010-0.editable-py3-none-any.whl size=27354 sha256=84f4ed003141f8367adc57deed4f317436803b46d2874ab0c141040b9c35beb2
+2024-09-11 16:19:25,948 - INFO - Stored in directory: /tmp/pip-ephem-wheel-cache-87taurab/wheels/49/5f/4f/01b7d31ea6ddac9643da788242d33e5fd3467d95d17b032c6b
+2024-09-11 16:19:25,950 - INFO - Successfully built Django
+2024-09-11 16:19:25,971 - INFO - Installing collected packages: Django
+2024-09-11 16:19:25,987 - INFO - Successfully installed Django-5.0.dev20230303050010
+2024-09-11 16:19:25,987 - INFO - WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+2024-09-11 16:19:30,884 - INFO - ---> Removed intermediate container b63288ee221c
+2024-09-11 16:19:30,885 - INFO - ---> 1f420c2f5276
+2024-09-11 16:19:30,885 - INFO - Step 4/4 : WORKDIR /testbed/
+2024-09-11 16:19:30,885 - INFO - 
+2024-09-11 16:19:30,935 - INFO - ---> Running in ba762515eaf1
+2024-09-11 16:19:31,019 - INFO - ---> Removed intermediate container ba762515eaf1
+2024-09-11 16:19:31,019 - INFO - ---> b04ea8041730
+2024-09-11 16:19:31,019 - INFO - Successfully built b04ea8041730
+2024-09-11 16:19:31,022 - INFO - Successfully tagged sweb.eval.arm64.django__django-16612:latest
+2024-09-11 16:19:31,022 - INFO - Image built successfully!

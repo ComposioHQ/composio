@@ -1,0 +1,1491 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen
++ locale-gen
+Generating locales (this might take a while)...
+  en_US.UTF-8... done
+Generation complete.
++ export LANG=en_US.UTF-8
++ LANG=en_US.UTF-8
++ export LANGUAGE=en_US:en
++ LANGUAGE=en_US:en
++ export LC_ALL=en_US.UTF-8
++ LC_ALL=en_US.UTF-8
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/http/response.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 156a2138db20abc89933121e4ff2ee2ce56a173a
+Author: Simon Charette <charette.s@gmail.com>
+Date:   Sat Jun 6 14:34:38 2020 -0400
+
+    Refs #30446 -- Removed unnecessary Value(..., output_field) in docs and tests.
+
+diff --git a/docs/ref/models/conditional-expressions.txt b/docs/ref/models/conditional-expressions.txt
+index a1e2430ec1..546733dd8d 100644
+--- a/docs/ref/models/conditional-expressions.txt
++++ b/docs/ref/models/conditional-expressions.txt
+@@ -100,7 +100,7 @@ An example::
+ 
+     >>>
+     >>> from datetime import date, timedelta
+-    >>> from django.db.models import Case, CharField, Value, When
++    >>> from django.db.models import Case, Value, When
+     >>> Client.objects.create(
+     ...     name='Jane Doe',
+     ...     account_type=Client.REGULAR,
+@@ -119,7 +119,6 @@ An example::
+     ...         When(account_type=Client.GOLD, then=Value('5%')),
+     ...         When(account_type=Client.PLATINUM, then=Value('10%')),
+     ...         default=Value('0%'),
+-    ...         output_field=CharField(),
+     ...     ),
+     ... ).values_list('name', 'discount')
+     <QuerySet [('Jane Doe', '0%'), ('James Smith', '5%'), ('Jack Black', '10%')]>
+@@ -141,7 +140,6 @@ the ``Client`` has been with us, we could do so using lookups::
+     ...         When(registered_on__lte=a_year_ago, then=Value('10%')),
+     ...         When(registered_on__lte=a_month_ago, then=Value('5%')),
+     ...         default=Value('0%'),
+-    ...         output_field=CharField(),
+     ...     )
+     ... ).values_list('name', 'discount')
+     <QuerySet [('Jane Doe', '5%'), ('James Smith', '0%'), ('Jack Black', '10%')]>
+diff --git a/tests/aggregation/tests.py b/tests/aggregation/tests.py
+index da78b8d9a9..c738cbb27e 100644
+--- a/tests/aggregation/tests.py
++++ b/tests/aggregation/tests.py
+@@ -841,7 +841,7 @@ class AggregateTestCase(TestCase):
+             Book.objects.aggregate(fail=F('price'))
+ 
+     def test_nonfield_annotation(self):
+-        book = Book.objects.annotate(val=Max(Value(2, output_field=IntegerField()))).first()
++        book = Book.objects.annotate(val=Max(Value(2))).first()
+         self.assertEqual(book.val, 2)
+         book = Book.objects.annotate(val=Max(Value(2), output_field=IntegerField())).first()
+         self.assertEqual(book.val, 2)
+diff --git a/tests/aggregation_regress/tests.py b/tests/aggregation_regress/tests.py
+index b298a1f132..7604335257 100644
+--- a/tests/aggregation_regress/tests.py
++++ b/tests/aggregation_regress/tests.py
+@@ -374,7 +374,7 @@ class AggregationTests(TestCase):
+         # Conditional aggregation of a grouped queryset.
+         self.assertEqual(
+             Book.objects.annotate(c=Count('authors')).values('pk').aggregate(test=Sum(
+-                Case(When(c__gt=1, then=1), output_field=IntegerField())
++                Case(When(c__gt=1, then=1))
+             ))['test'],
+             3
+         )
+@@ -382,7 +382,7 @@ class AggregationTests(TestCase):
+     def test_sliced_conditional_aggregate(self):
+         self.assertEqual(
+             Author.objects.all()[:5].aggregate(test=Sum(Case(
+-                When(age__lte=35, then=1), output_field=IntegerField()
++                When(age__lte=35, then=1)
+             )))['test'],
+             3
+         )
+diff --git a/tests/annotations/tests.py b/tests/annotations/tests.py
+index aa3682b86b..5401cd9b21 100644
+--- a/tests/annotations/tests.py
++++ b/tests/annotations/tests.py
+@@ -5,9 +5,9 @@ from unittest import skipIf
+ from django.core.exceptions import FieldDoesNotExist, FieldError
+ from django.db import connection
+ from django.db.models import (
+-    BooleanField, Case, CharField, Count, DateTimeField, Exists,
+-    ExpressionWrapper, F, FloatField, Func, IntegerField, Max,
+-    NullBooleanField, OuterRef, Q, Subquery, Sum, Value, When,
++    BooleanField, Case, Count, DateTimeField, Exists, ExpressionWrapper, F,
++    FloatField, Func, IntegerField, Max, NullBooleanField, OuterRef, Q,
++    Subquery, Sum, Value, When,
+ )
+ from django.db.models.expressions import RawSQL
+ from django.db.models.functions import Length, Lower
+@@ -115,8 +115,7 @@ class NonAggregateAnnotationTestCase(TestCase):
+         s3.books.add(cls.b3, cls.b4, cls.b6)
+ 
+     def test_basic_annotation(self):
+-        books = Book.objects.annotate(
+-            is_book=Value(1, output_field=IntegerField()))
++        books = Book.objects.annotate(is_book=Value(1))
+         for book in books:
+             self.assertEqual(book.is_book, 1)
+ 
+@@ -163,9 +162,7 @@ class NonAggregateAnnotationTestCase(TestCase):
+         self.assertTrue(all(not book.selected for book in books))
+ 
+     def test_annotate_with_aggregation(self):
+-        books = Book.objects.annotate(
+-            is_book=Value(1, output_field=IntegerField()),
+-            rating_count=Count('rating'))
++        books = Book.objects.annotate(is_book=Value(1), rating_count=Count('rating'))
+         for book in books:
+             self.assertEqual(book.is_book, 1)
+             self.assertEqual(book.rating_count, 1)
+@@ -231,9 +228,7 @@ class NonAggregateAnnotationTestCase(TestCase):
+         self.assertCountEqual(lengths, [3, 7, 8])
+ 
+     def test_filter_annotation(self):
+-        books = Book.objects.annotate(
+-            is_book=Value(1, output_field=IntegerField())
+-        ).filter(is_book=1)
++        books = Book.objects.annotate(is_book=Value(1)).filter(is_book=1)
+         for book in books:
+             self.assertEqual(book.is_book, 1)
+ 
+@@ -469,7 +464,7 @@ class NonAggregateAnnotationTestCase(TestCase):
+         qs = Employee.objects.extra(
+             select={'random_value': '42'}
+         ).select_related('store').annotate(
+-            annotated_value=Value(17, output_field=IntegerField())
++            annotated_value=Value(17),
+         )
+ 
+         rows = [
+@@ -493,7 +488,7 @@ class NonAggregateAnnotationTestCase(TestCase):
+         qs = Employee.objects.extra(
+             select={'random_value': '42'}
+         ).select_related('store').annotate(
+-            annotated_value=Value(17, output_field=IntegerField())
++            annotated_value=Value(17),
+         )
+ 
+         rows = [
+@@ -554,7 +549,7 @@ class NonAggregateAnnotationTestCase(TestCase):
+                 function='COALESCE',
+             )
+         ).annotate(
+-            tagline_lower=Lower(F('tagline'), output_field=CharField())
++            tagline_lower=Lower(F('tagline')),
+         ).order_by('name')
+ 
+         # LOWER function supported by:
+@@ -661,7 +656,6 @@ class NonAggregateAnnotationTestCase(TestCase):
+             max_pages=Case(
+                 When(book_contact_set__isnull=True, then=Value(0)),
+                 default=Max(F('book__pages')),
+-                output_field=IntegerField(),
+             ),
+         ).values('name', 'max_pages')
+         self.assertCountEqual(qs, [
+diff --git a/tests/expressions/tests.py b/tests/expressions/tests.py
+index c89bb1d69e..2f392a51e6 100644
+--- a/tests/expressions/tests.py
++++ b/tests/expressions/tests.py
+@@ -729,7 +729,7 @@ class BasicExpressionsTests(TestCase):
+         self.assertEqual(qs.get().ceo_company, 'Test GmbH')
+ 
+     def test_pickle_expression(self):
+-        expr = Value(1, output_field=IntegerField())
++        expr = Value(1)
+         expr.convert_value  # populate cached property
+         self.assertEqual(pickle.loads(pickle.dumps(expr)), expr)
+ 
+@@ -1545,7 +1545,7 @@ class FTimeDeltaTests(TestCase):
+     def test_time_subtraction(self):
+         Time.objects.create(time=datetime.time(12, 30, 15, 2345))
+         queryset = Time.objects.annotate(
+-            difference=F('time') - Value(datetime.time(11, 15, 0), output_field=TimeField()),
++            difference=F('time') - Value(datetime.time(11, 15, 0)),
+         )
+         self.assertEqual(
+             queryset.get().difference,
+@@ -1631,7 +1631,7 @@ class FTimeDeltaTests(TestCase):
+ 
+     def test_date_minus_duration(self):
+         more_than_4_days = Experiment.objects.filter(
+-            assigned__lt=F('completed') - Value(datetime.timedelta(days=4), output_field=DurationField())
++            assigned__lt=F('completed') - Value(datetime.timedelta(days=4))
+         )
+         self.assertQuerysetEqual(more_than_4_days, ['e3', 'e4', 'e5'], lambda e: e.name)
+ 
+diff --git a/tests/expressions_case/tests.py b/tests/expressions_case/tests.py
+index 3778e32f1b..2a101eeee1 100644
+--- a/tests/expressions_case/tests.py
++++ b/tests/expressions_case/tests.py
+@@ -6,9 +6,9 @@ from uuid import UUID
+ 
+ from django.core.exceptions import FieldError
+ from django.db.models import (
+-    BinaryField, BooleanField, Case, CharField, Count, DecimalField,
+-    DurationField, F, GenericIPAddressField, IntegerField, Max, Min, Q, Sum,
+-    TextField, TimeField, UUIDField, Value, When,
++    BinaryField, BooleanField, Case, Count, DecimalField, F,
++    GenericIPAddressField, IntegerField, Max, Min, Q, Sum, TextField, Value,
++    When,
+ )
+ from django.test import SimpleTestCase, TestCase
+ 
+@@ -68,7 +68,6 @@ class CaseExpressionTests(TestCase):
+                 When(integer=1, then=Value('one')),
+                 When(integer=2, then=Value('two')),
+                 default=Value('other'),
+-                output_field=CharField(),
+             )).order_by('pk'),
+             [(1, 'one'), (2, 'two'), (3, 'other'), (2, 'two'), (3, 'other'), (3, 'other'), (4, 'other')],
+             transform=attrgetter('integer', 'test')
+@@ -79,7 +78,6 @@ class CaseExpressionTests(TestCase):
+             CaseTestModel.objects.annotate(test=Case(
+                 When(integer=1, then=1),
+                 When(integer=2, then=2),
+-                output_field=IntegerField(),
+             )).order_by('pk'),
+             [(1, 1), (2, 2), (3, None), (2, 2), (3, None), (3, None), (4, None)],
+             transform=attrgetter('integer', 'test')
+@@ -101,7 +99,6 @@ class CaseExpressionTests(TestCase):
+             CaseTestModel.objects.annotate(f_test=Case(
+                 When(integer2=F('integer'), then=Value('equal')),
+                 When(integer2=F('integer') + 1, then=Value('+1')),
+-                output_field=CharField(),
+             )).order_by('pk'),
+             [(1, 'equal'), (2, '+1'), (3, '+1'), (2, 'equal'), (3, '+1'), (3, 'equal'), (4, '+1')],
+             transform=attrgetter('integer', 'f_test')
+@@ -135,7 +132,6 @@ class CaseExpressionTests(TestCase):
+                 When(integer2=F('o2o_rel__integer'), then=Value('equal')),
+                 When(integer2=F('o2o_rel__integer') + 1, then=Value('+1')),
+                 default=Value('other'),
+-                output_field=CharField(),
+             )).order_by('pk'),
+             [(1, 'equal'), (2, '+1'), (3, '+1'), (2, 'equal'), (3, '+1'), (3, 'equal'), (4, 'other')],
+             transform=attrgetter('integer', 'join_test')
+@@ -148,7 +144,6 @@ class CaseExpressionTests(TestCase):
+                 When(o2o_rel__integer=2, then=Value('two')),
+                 When(o2o_rel__integer=3, then=Value('three')),
+                 default=Value('other'),
+-                output_field=CharField(),
+             )).order_by('pk'),
+             [(1, 'one'), (2, 'two'), (3, 'three'), (2, 'two'), (3, 'three'), (3, 'three'), (4, 'one')],
+             transform=attrgetter('integer', 'join_test')
+@@ -178,7 +173,6 @@ class CaseExpressionTests(TestCase):
+                 f_test=Case(
+                     When(integer2=F('integer'), then=Value('equal')),
+                     When(integer2=F('f_plus_1'), then=Value('+1')),
+-                    output_field=CharField(),
+                 ),
+             ).order_by('pk'),
+             [(1, 'equal'), (2, '+1'), (3, '+1'), (2, 'equal'), (3, '+1'), (3, 'equal'), (4, '+1')],
+@@ -195,7 +189,6 @@ class CaseExpressionTests(TestCase):
+                     When(f_minus_2=0, then=Value('zero')),
+                     When(f_minus_2=1, then=Value('one')),
+                     default=Value('other'),
+-                    output_field=CharField(),
+                 ),
+             ).order_by('pk'),
+             [(1, 'negative one'), (2, 'zero'), (3, 'one'), (2, 'zero'), (3, 'one'), (3, 'one'), (4, 'other')],
+@@ -226,7 +219,6 @@ class CaseExpressionTests(TestCase):
+                 test=Case(
+                     When(integer2=F('min'), then=Value('min')),
+                     When(integer2=F('max'), then=Value('max')),
+-                    output_field=CharField(),
+                 ),
+             ).order_by('pk'),
+             [(1, 1, 'min'), (2, 3, 'max'), (3, 4, 'max'), (2, 2, 'min'), (3, 4, 'max'), (3, 3, 'min'), (4, 5, 'min')],
+@@ -242,7 +234,6 @@ class CaseExpressionTests(TestCase):
+                     When(max=3, then=Value('max = 3')),
+                     When(max=4, then=Value('max = 4')),
+                     default=Value(''),
+-                    output_field=CharField(),
+                 ),
+             ).order_by('pk'),
+             [(1, 1, ''), (2, 3, 'max = 3'), (3, 4, 'max = 4'), (2, 3, 'max = 3'),
+@@ -256,7 +247,6 @@ class CaseExpressionTests(TestCase):
+                 When(integer=1, then=Value('one')),
+                 When(integer=2, then=Value('two')),
+                 default=Value('other'),
+-                output_field=CharField(),
+             )).exclude(test='other').order_by('pk'),
+             [(1, 'one'), (2, 'two'), (2, 'two')],
+             transform=attrgetter('integer', 'test')
+@@ -269,7 +259,6 @@ class CaseExpressionTests(TestCase):
+                 When(integer=2, then=Value('two')),
+                 When(integer=3, then=Value('three')),
+                 default=Value('other'),
+-                output_field=CharField(),
+             )).order_by('test').values_list('integer', flat=True)),
+             [1, 4, 3, 3, 3, 2, 2]
+         )
+@@ -278,7 +267,7 @@ class CaseExpressionTests(TestCase):
+         objects = CaseTestModel.objects.annotate(
+             selected=Case(
+                 When(pk__in=[], then=Value('selected')),
+-                default=Value('not selected'), output_field=CharField()
++                default=Value('not selected'),
+             )
+         )
+         self.assertEqual(len(objects), CaseTestModel.objects.count())
+@@ -291,7 +280,6 @@ class CaseExpressionTests(TestCase):
+                     When(integer=1, then=2),
+                     When(integer=2, then=1),
+                     default=3,
+-                    output_field=IntegerField(),
+                 ) + 1,
+             ).order_by('pk'),
+             [(1, 3), (2, 2), (3, 4), (2, 2), (3, 4), (3, 4), (4, 4)],
+@@ -305,7 +293,6 @@ class CaseExpressionTests(TestCase):
+                     test=Case(
+                         When(integer=F('integer2'), then='pk'),
+                         When(integer=4, then='pk'),
+-                        output_field=IntegerField(),
+                     ),
+                 ).values('test')).order_by('pk'),
+             [(1, 1), (2, 2), (3, 3), (4, 5)],
+@@ -327,7 +314,6 @@ class CaseExpressionTests(TestCase):
+         SOME_CASE = Case(
+             When(pk=0, then=Value('0')),
+             default=Value('1'),
+-            output_field=CharField(),
+         )
+         self.assertQuerysetEqual(
+             CaseTestModel.objects.annotate(somecase=SOME_CASE).order_by('pk'),
+@@ -340,19 +326,15 @@ class CaseExpressionTests(TestCase):
+             CaseTestModel.objects.aggregate(
+                 one=Sum(Case(
+                     When(integer=1, then=1),
+-                    output_field=IntegerField(),
+                 )),
+                 two=Sum(Case(
+                     When(integer=2, then=1),
+-                    output_field=IntegerField(),
+                 )),
+                 three=Sum(Case(
+                     When(integer=3, then=1),
+-                    output_field=IntegerField(),
+                 )),
+                 four=Sum(Case(
+                     When(integer=4, then=1),
+-                    output_field=IntegerField(),
+                 )),
+             ),
+             {'one': 1, 'two': 2, 'three': 3, 'four': 1}
+@@ -373,11 +355,9 @@ class CaseExpressionTests(TestCase):
+             CaseTestModel.objects.aggregate(
+                 equal=Sum(Case(
+                     When(integer2=F('integer'), then=1),
+-                    output_field=IntegerField(),
+                 )),
+                 plus_one=Sum(Case(
+                     When(integer2=F('integer') + 1, then=1),
+-                    output_field=IntegerField(),
+                 )),
+             ),
+             {'equal': 3, 'plus_one': 4}
+@@ -389,7 +369,6 @@ class CaseExpressionTests(TestCase):
+                 When(integer=2, then=3),
+                 When(integer=3, then=4),
+                 default=1,
+-                output_field=IntegerField(),
+             )).order_by('pk'),
+             [(1, 1), (2, 3), (3, 4), (3, 4)],
+             transform=attrgetter('integer', 'integer2')
+@@ -400,7 +379,6 @@ class CaseExpressionTests(TestCase):
+             CaseTestModel.objects.filter(integer2=Case(
+                 When(integer=2, then=3),
+                 When(integer=3, then=4),
+-                output_field=IntegerField(),
+             )).order_by('pk'),
+             [(2, 3), (3, 4), (3, 4)],
+             transform=attrgetter('integer', 'integer2')
+@@ -422,7 +400,6 @@ class CaseExpressionTests(TestCase):
+             CaseTestModel.objects.filter(string=Case(
+                 When(integer2=F('integer'), then=Value('2')),
+                 When(integer2=F('integer') + 1, then=Value('3')),
+-                output_field=CharField(),
+             )).order_by('pk'),
+             [(3, 4, '3'), (2, 2, '2'), (3, 4, '3')],
+             transform=attrgetter('integer', 'integer2', 'string')
+@@ -444,7 +421,6 @@ class CaseExpressionTests(TestCase):
+             CaseTestModel.objects.filter(integer=Case(
+                 When(integer2=F('o2o_rel__integer') + 1, then=2),
+                 When(integer2=F('o2o_rel__integer'), then=3),
+-                output_field=IntegerField(),
+             )).order_by('pk'),
+             [(2, 3), (3, 3)],
+             transform=attrgetter('integer', 'integer2')
+@@ -456,7 +432,6 @@ class CaseExpressionTests(TestCase):
+                 When(o2o_rel__integer=1, then=1),
+                 When(o2o_rel__integer=2, then=3),
+                 When(o2o_rel__integer=3, then=4),
+-                output_field=IntegerField(),
+             )).order_by('pk'),
+             [(1, 1), (2, 3), (3, 4), (3, 4)],
+             transform=attrgetter('integer', 'integer2')
+@@ -485,7 +460,6 @@ class CaseExpressionTests(TestCase):
+                 integer=Case(
+                     When(integer2=F('integer'), then=2),
+                     When(integer2=F('f_plus_1'), then=3),
+-                    output_field=IntegerField(),
+                 ),
+             ).order_by('pk'),
+             [(3, 4), (2, 2), (3, 4)],
+@@ -501,7 +475,6 @@ class CaseExpressionTests(TestCase):
+                     When(f_plus_1=3, then=3),
+                     When(f_plus_1=4, then=4),
+                     default=1,
+-                    output_field=IntegerField(),
+                 ),
+             ).order_by('pk'),
+             [(1, 1), (2, 3), (3, 4), (3, 4)],
+@@ -612,7 +585,6 @@ class CaseExpressionTests(TestCase):
+                 integer=Case(
+                     When(integer2=F('o2o_rel__integer') + 1, then=2),
+                     When(integer2=F('o2o_rel__integer'), then=3),
+-                    output_field=IntegerField(),
+                 ),
+             )
+ 
+@@ -624,7 +596,6 @@ class CaseExpressionTests(TestCase):
+                     When(o2o_rel__integer=2, then=Value('two')),
+                     When(o2o_rel__integer=3, then=Value('three')),
+                     default=Value('other'),
+-                    output_field=CharField(),
+                 ),
+             )
+ 
+@@ -644,9 +615,9 @@ class CaseExpressionTests(TestCase):
+     def test_update_binary(self):
+         CaseTestModel.objects.update(
+             binary=Case(
+-                When(integer=1, then=Value(b'one', output_field=BinaryField())),
+-                When(integer=2, then=Value(b'two', output_field=BinaryField())),
+-                default=Value(b'', output_field=BinaryField()),
++                When(integer=1, then=b'one'),
++                When(integer=2, then=b'two'),
++                default=b'',
+             ),
+         )
+         self.assertQuerysetEqual(
+@@ -725,10 +696,8 @@ class CaseExpressionTests(TestCase):
+     def test_update_duration(self):
+         CaseTestModel.objects.update(
+             duration=Case(
+-                # fails on sqlite if output_field is not set explicitly on all
+-                # Values containing timedeltas
+-                When(integer=1, then=Value(timedelta(1), output_field=DurationField())),
+-                When(integer=2, then=Value(timedelta(2), output_field=DurationField())),
++                When(integer=1, then=timedelta(1)),
++                When(integer=2, then=timedelta(2)),
+             ),
+         )
+         self.assertQuerysetEqual(
+@@ -808,7 +777,6 @@ class CaseExpressionTests(TestCase):
+     def test_update_generic_ip_address(self):
+         CaseTestModel.objects.update(
+             generic_ip_address=Case(
+-                # fails on postgresql if output_field is not set explicitly
+                 When(integer=1, then=Value('1.1.1.1')),
+                 When(integer=2, then=Value('2.2.2.2')),
+                 output_field=GenericIPAddressField(),
+@@ -915,8 +883,8 @@ class CaseExpressionTests(TestCase):
+     def test_update_string(self):
+         CaseTestModel.objects.filter(string__in=['1', '2']).update(
+             string=Case(
+-                When(integer=1, then=Value('1', output_field=CharField())),
+-                When(integer=2, then=Value('2', output_field=CharField())),
++                When(integer=1, then=Value('1')),
++                When(integer=2, then=Value('2')),
+             ),
+         )
+         self.assertQuerysetEqual(
+@@ -942,10 +910,8 @@ class CaseExpressionTests(TestCase):
+     def test_update_time(self):
+         CaseTestModel.objects.update(
+             time=Case(
+-                # fails on sqlite if output_field is not set explicitly on all
+-                # Values containing times
+-                When(integer=1, then=Value(time(1), output_field=TimeField())),
+-                When(integer=2, then=Value(time(2), output_field=TimeField())),
++                When(integer=1, then=time(1)),
++                When(integer=2, then=time(2)),
+             ),
+         )
+         self.assertQuerysetEqual(
+@@ -974,16 +940,8 @@ class CaseExpressionTests(TestCase):
+     def test_update_uuid(self):
+         CaseTestModel.objects.update(
+             uuid=Case(
+-                # fails on sqlite if output_field is not set explicitly on all
+-                # Values containing UUIDs
+-                When(integer=1, then=Value(
+-                    UUID('11111111111111111111111111111111'),
+-                    output_field=UUIDField(),
+-                )),
+-                When(integer=2, then=Value(
+-                    UUID('22222222222222222222222222222222'),
+-                    output_field=UUIDField(),
+-                )),
++                When(integer=1, then=UUID('11111111111111111111111111111111')),
++                When(integer=2, then=UUID('22222222222222222222222222222222')),
+             ),
+         )
+         self.assertQuerysetEqual(
+@@ -1022,7 +980,6 @@ class CaseExpressionTests(TestCase):
+                     When(integer__lt=2, then=Value('less than 2')),
+                     When(integer__gt=2, then=Value('greater than 2')),
+                     default=Value('equal to 2'),
+-                    output_field=CharField(),
+                 ),
+             ).order_by('pk'),
+             [
+@@ -1038,7 +995,6 @@ class CaseExpressionTests(TestCase):
+                 test=Case(
+                     When(integer=2, integer2=3, then=Value('when')),
+                     default=Value('default'),
+-                    output_field=CharField(),
+                 ),
+             ).order_by('pk'),
+             [
+@@ -1054,7 +1010,6 @@ class CaseExpressionTests(TestCase):
+                 test=Case(
+                     When(Q(integer=2) | Q(integer2=3), then=Value('when')),
+                     default=Value('default'),
+-                    output_field=CharField(),
+                 ),
+             ).order_by('pk'),
+             [
+@@ -1070,7 +1025,6 @@ class CaseExpressionTests(TestCase):
+                 When(integer=1, then=2),
+                 When(integer=2, then=1),
+                 default=3,
+-                output_field=IntegerField(),
+             )).order_by('test', 'pk'),
+             [(2, 1), (2, 1), (1, 2)],
+             transform=attrgetter('integer', 'test')
+@@ -1082,7 +1036,6 @@ class CaseExpressionTests(TestCase):
+                 When(integer=1, then=2),
+                 When(integer=2, then=1),
+                 default=3,
+-                output_field=IntegerField(),
+             )).order_by(F('test').asc(), 'pk'),
+             [(2, 1), (2, 1), (1, 2)],
+             transform=attrgetter('integer', 'test')
+@@ -1101,7 +1054,6 @@ class CaseExpressionTests(TestCase):
+                 foo=Case(
+                     When(fk_rel__pk=1, then=2),
+                     default=3,
+-                    output_field=IntegerField()
+                 ),
+             ),
+             [(o, 3)],
+@@ -1113,7 +1065,6 @@ class CaseExpressionTests(TestCase):
+                 foo=Case(
+                     When(fk_rel__isnull=True, then=2),
+                     default=3,
+-                    output_field=IntegerField()
+                 ),
+             ),
+             [(o, 2)],
+@@ -1133,12 +1084,10 @@ class CaseExpressionTests(TestCase):
+                 foo=Case(
+                     When(fk_rel__pk=1, then=2),
+                     default=3,
+-                    output_field=IntegerField()
+                 ),
+                 bar=Case(
+                     When(fk_rel__pk=1, then=4),
+                     default=5,
+-                    output_field=IntegerField()
+                 ),
+             ),
+             [(o, 3, 5)],
+@@ -1150,12 +1099,10 @@ class CaseExpressionTests(TestCase):
+                 foo=Case(
+                     When(fk_rel__isnull=True, then=2),
+                     default=3,
+-                    output_field=IntegerField()
+                 ),
+                 bar=Case(
+                     When(fk_rel__isnull=True, then=4),
+                     default=5,
+-                    output_field=IntegerField()
+                 ),
+             ),
+             [(o, 2, 4)],
+@@ -1167,7 +1114,6 @@ class CaseExpressionTests(TestCase):
+         qs = CaseTestModel.objects.values_list('id', 'integer').annotate(
+             cnt=Sum(
+                 Case(When(~Q(fk_rel__integer=1), then=1), default=2),
+-                output_field=IntegerField()
+             ),
+         ).order_by('integer')
+         # The first o has 2 as its fk_rel__integer=1, thus it hits the
+@@ -1189,12 +1135,10 @@ class CaseExpressionTests(TestCase):
+         qs = CaseTestModel.objects.values_list('id', 'integer').annotate(
+             cnt=Sum(
+                 Case(When(~Q(fk_rel__integer=1), then=1), default=2),
+-                output_field=IntegerField()
+             ),
+         ).annotate(
+             cnt2=Sum(
+                 Case(When(~Q(fk_rel__integer=1), then=1), default=2),
+-                output_field=IntegerField()
+             ),
+         ).order_by('integer')
+         self.assertEqual(str(qs.query).count(' JOIN '), 1)
+@@ -1231,7 +1175,6 @@ class CaseDocumentationExamples(TestCase):
+                     When(account_type=Client.GOLD, then=Value('5%')),
+                     When(account_type=Client.PLATINUM, then=Value('10%')),
+                     default=Value('0%'),
+-                    output_field=CharField(),
+                 ),
+             ).order_by('pk'),
+             [('Jane Doe', '0%'), ('James Smith', '5%'), ('Jack Black', '10%')],
+@@ -1247,7 +1190,6 @@ class CaseDocumentationExamples(TestCase):
+                     When(registered_on__lte=a_year_ago, then=Value('10%')),
+                     When(registered_on__lte=a_month_ago, then=Value('5%')),
+                     default=Value('0%'),
+-                    output_field=CharField(),
+                 ),
+             ).order_by('pk'),
+             [('Jane Doe', '5%'), ('James Smith', '0%'), ('Jack Black', '10%')],
+@@ -1299,15 +1241,12 @@ class CaseDocumentationExamples(TestCase):
+             Client.objects.aggregate(
+                 regular=Sum(Case(
+                     When(account_type=Client.REGULAR, then=1),
+-                    output_field=IntegerField(),
+                 )),
+                 gold=Sum(Case(
+                     When(account_type=Client.GOLD, then=1),
+-                    output_field=IntegerField(),
+                 )),
+                 platinum=Sum(Case(
+                     When(account_type=Client.PLATINUM, then=1),
+-                    output_field=IntegerField(),
+                 )),
+             ),
+             {'regular': 2, 'gold': 1, 'platinum': 3}
+@@ -1360,9 +1299,9 @@ class CaseWhenTests(SimpleTestCase):
+         with self.assertRaisesMessage(TypeError, msg):
+             When(condition=object())
+         with self.assertRaisesMessage(TypeError, msg):
+-            When(condition=Value(1, output_field=IntegerField()))
++            When(condition=Value(1))
+         with self.assertRaisesMessage(TypeError, msg):
+-            When(Value(1, output_field=IntegerField()), string='1')
++            When(Value(1), string='1')
+         with self.assertRaisesMessage(TypeError, msg):
+             When()
+ 
+diff --git a/tests/postgres_tests/test_ranges.py b/tests/postgres_tests/test_ranges.py
+index 7257d66505..14dc75c998 100644
+--- a/tests/postgres_tests/test_ranges.py
++++ b/tests/postgres_tests/test_ranges.py
+@@ -170,7 +170,7 @@ class TestRangeContainsLookup(PostgreSQLTestCase):
+             self.aware_timestamps[1],
+             (self.timestamps[1], self.timestamps[2]),
+             (self.aware_timestamps[1], self.aware_timestamps[2]),
+-            Value(self.dates[0], output_field=DateTimeField()),
++            Value(self.dates[0]),
+             Func(F('dates'), function='lower', output_field=DateTimeField()),
+             F('timestamps_inner'),
+         )
++ git diff 156a2138db20abc89933121e4ff2ee2ce56a173a
+diff --git a/django/http/response.py b/django/http/response.py
+index e00bcacefb..c8bc2421e6 100644
+--- a/django/http/response.py
++++ b/django/http/response.py
+@@ -210,13 +210,14 @@ class HttpResponseBase:
+         value = signing.get_cookie_signer(salt=key + salt).sign(value)
+         return self.set_cookie(key, value, **kwargs)
+ 
+-    def delete_cookie(self, key, path='/', domain=None):
++    def delete_cookie(self, key, path='/', domain=None, samesite=None):
+         # Most browsers ignore the Set-Cookie header if the cookie name starts
+         # with __Host- or __Secure- and the cookie doesn't use the secure flag.
+         secure = key.startswith(('__Secure-', '__Host-'))
+         self.set_cookie(
+             key, max_age=0, path=path, domain=domain, secure=secure,
+             expires='Thu, 01 Jan 1970 00:00:00 GMT',
++            samesite=samesite or settings.SESSION_COOKIE_SAMESITE,
+         )
+ 
+     # Common methods used by subclasses
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: asgiref>=3.2 in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.2) (3.4.1)
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.2) (2024.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.2) (0.4.4)
+Requirement already satisfied: typing-extensions in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from asgiref>=3.2->Django==3.2) (4.1.1)
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 3.2
+    Uninstalling Django-3.2:
+      Successfully uninstalled Django-3.2
+  Running setup.py develop for Django
+Successfully installed Django-3.2
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
++ git checkout 156a2138db20abc89933121e4ff2ee2ce56a173a tests/messages_tests/test_cookie.py tests/responses/test_cookie.py tests/sessions_tests/tests.py
+Updated 0 paths from 294047367a
++ git apply -v -
+Checking patch tests/messages_tests/test_cookie.py...
+Checking patch tests/responses/test_cookie.py...
+Checking patch tests/sessions_tests/tests.py...
+Applied patch tests/messages_tests/test_cookie.py cleanly.
+Applied patch tests/responses/test_cookie.py cleanly.
+Applied patch tests/sessions_tests/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 messages_tests.test_cookie responses.test_cookie sessions_tests.tests
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+test_actual_expiry (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_clear (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_custom_expiry_datetime (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_cycle (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_cycle_with_no_session_cache (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_decode (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_decode_failure_logged_to_security (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_decode_legacy (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_default_expiry (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_delete (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_exists_searches_cache_first (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_flush (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_get_empty (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_has_key (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_invalid_key (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_items (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_keys (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_load_overlong_key (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_new_session (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_non_default_cache (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_pop (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_pop_default (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_save (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_save_doesnt_clear_data (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_session_key_empty_string_invalid (sessions_tests.tests.CacheDBSessionTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.CacheDBSessionTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.CacheDBSessionTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_setdefault (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_store (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_update (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_values (sessions_tests.tests.CacheDBSessionTests) ... ok
+test_actual_expiry (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_clear (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_custom_expiry_datetime (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_cycle (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_cycle_with_no_session_cache (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_decode (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_decode_failure_logged_to_security (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_decode_legacy (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_default_expiry (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_delete (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_exists_searches_cache_first (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_flush (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_get_empty (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_has_key (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_invalid_key (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_items (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_keys (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_load_overlong_key (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_new_session (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_non_default_cache (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_pop (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_pop_default (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_save (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_save_doesnt_clear_data (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_session_key_empty_string_invalid (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.CacheDBSessionWithTimeZoneTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_setdefault (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_store (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_update (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_values (sessions_tests.tests.CacheDBSessionWithTimeZoneTests) ... ok
+test_actual_expiry (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_clear (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_clearsessions_command (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_custom_expiry_datetime (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_cycle (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_cycle_with_no_session_cache (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_decode (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_decode_failure_logged_to_security (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_decode_legacy (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_default_expiry (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_delete (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_extra_session_field (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_flush (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_get_empty (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_has_key (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_invalid_key (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_items (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_keys (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_new_session (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_pop (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_pop_default (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_save (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_save_doesnt_clear_data (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_session_get_decoded (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_session_key_empty_string_invalid (sessions_tests.tests.CustomDatabaseSessionTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.CustomDatabaseSessionTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.CustomDatabaseSessionTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_session_str (sessions_tests.tests.CustomDatabaseSessionTests)
+Session repr should be the session key. ... ok
+test_sessionmanager_save (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_setdefault (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_store (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_update (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_values (sessions_tests.tests.CustomDatabaseSessionTests) ... ok
+test_actual_expiry (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_clear (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_clearsessions_command (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_custom_expiry_datetime (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_cycle (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_cycle_with_no_session_cache (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_decode (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_decode_failure_logged_to_security (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_decode_legacy (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_default_expiry (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_delete (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_flush (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_get_empty (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_has_key (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_invalid_key (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_items (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_keys (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_new_session (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_pop (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_pop_default (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_save (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_save_doesnt_clear_data (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_session_get_decoded (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_session_key_empty_string_invalid (sessions_tests.tests.DatabaseSessionTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.DatabaseSessionTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.DatabaseSessionTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_session_str (sessions_tests.tests.DatabaseSessionTests)
+Session repr should be the session key. ... ok
+test_sessionmanager_save (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_setdefault (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_store (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_update (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_values (sessions_tests.tests.DatabaseSessionTests) ... ok
+test_actual_expiry (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_clear (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_clearsessions_command (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_custom_expiry_datetime (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_cycle (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_cycle_with_no_session_cache (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_decode (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_decode_failure_logged_to_security (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_decode_legacy (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_default_expiry (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_delete (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_flush (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_get_empty (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_has_key (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_invalid_key (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_items (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_keys (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_new_session (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_pop (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_pop_default (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_save (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_save_doesnt_clear_data (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_session_get_decoded (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_session_key_empty_string_invalid (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_session_str (sessions_tests.tests.DatabaseSessionWithTimeZoneTests)
+Session repr should be the session key. ... ok
+test_sessionmanager_save (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_setdefault (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_store (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_update (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_values (sessions_tests.tests.DatabaseSessionWithTimeZoneTests) ... ok
+test_empty_session_saved (sessions_tests.tests.SessionMiddlewareTests) ... ok
+test_flush_empty_without_session_cookie_doesnt_set_cookie (sessions_tests.tests.SessionMiddlewareTests) ... ok
+test_httponly_session_cookie (sessions_tests.tests.SessionMiddlewareTests) ... ok
+test_no_httponly_session_cookie (sessions_tests.tests.SessionMiddlewareTests) ... ok
+test_samesite_session_cookie (sessions_tests.tests.SessionMiddlewareTests) ... ok
+test_secure_session_cookie (sessions_tests.tests.SessionMiddlewareTests) ... ok
+test_session_delete_on_end (sessions_tests.tests.SessionMiddlewareTests) ... ok
+test_session_delete_on_end_with_custom_domain_and_path (sessions_tests.tests.SessionMiddlewareTests) ... ok
+test_session_save_on_500 (sessions_tests.tests.SessionMiddlewareTests) ... ok
+test_session_update_error_redirect (sessions_tests.tests.SessionMiddlewareTests) ... ok
+test_add (messages_tests.test_cookie.CookieTests) ... ok
+test_add_lazy_translation (messages_tests.test_cookie.CookieTests) ... ok
+test_add_update (messages_tests.test_cookie.CookieTests) ... ok
+test_context_processor_message_levels (messages_tests.test_cookie.CookieTests) ... ok
+test_cookie_setings (messages_tests.test_cookie.CookieTests) ... ok
+test_custom_tags (messages_tests.test_cookie.CookieTests) ... ok
+test_default_level (messages_tests.test_cookie.CookieTests) ... ok
+test_existing_add (messages_tests.test_cookie.CookieTests) ... ok
+test_existing_add_read_update (messages_tests.test_cookie.CookieTests) ... ok
+test_existing_read (messages_tests.test_cookie.CookieTests) ... ok
+test_existing_read_add_update (messages_tests.test_cookie.CookieTests) ... ok
+test_full_request_response_cycle (messages_tests.test_cookie.CookieTests) ... ok
+test_get (messages_tests.test_cookie.CookieTests) ... ok
+test_get_bad_cookie (messages_tests.test_cookie.CookieTests) ... ok
+test_high_level (messages_tests.test_cookie.CookieTests) ... ok
+test_json_encoder_decoder (messages_tests.test_cookie.CookieTests) ... ok
+test_legacy_hash_decode (messages_tests.test_cookie.CookieTests) ... ok
+test_level_tag (messages_tests.test_cookie.CookieTests) ... ok
+test_low_level (messages_tests.test_cookie.CookieTests) ... ok
+test_max_cookie_length (messages_tests.test_cookie.CookieTests) ... ok
+test_middleware_disabled (messages_tests.test_cookie.CookieTests) ... ok
+test_middleware_disabled_fail_silently (messages_tests.test_cookie.CookieTests) ... ok
+test_multiple_posts (messages_tests.test_cookie.CookieTests) ... ok
+test_no_update (messages_tests.test_cookie.CookieTests) ... ok
+test_safedata (messages_tests.test_cookie.CookieTests) ... ok
+test_settings_level (messages_tests.test_cookie.CookieTests) ... ok
+test_tags (messages_tests.test_cookie.CookieTests) ... ok
+test_with_template_response (messages_tests.test_cookie.CookieTests) ... ok
+test_default (responses.test_cookie.DeleteCookieTests) ... FAIL
+test_delete_cookie_samesite (responses.test_cookie.DeleteCookieTests) ... ok
+test_delete_cookie_secure_prefix (responses.test_cookie.DeleteCookieTests) ... ok
+test_delete_cookie_secure_samesite_none (responses.test_cookie.DeleteCookieTests) ... FAIL
+test_aware_expiration (responses.test_cookie.SetCookieTests)
+set_cookie() accepts an aware datetime as expiration time. ... ok
+test_create_cookie_after_deleting_cookie (responses.test_cookie.SetCookieTests)
+Setting a cookie after deletion clears the expiry date. ... ok
+test_far_expiration (responses.test_cookie.SetCookieTests)
+Cookie will expire when a distant expiration time is provided. ... ok
+test_httponly_cookie (responses.test_cookie.SetCookieTests) ... ok
+test_invalid_samesite (responses.test_cookie.SetCookieTests) ... ok
+test_max_age_expiration (responses.test_cookie.SetCookieTests)
+Cookie will expire if max_age is provided. ... ok
+test_near_expiration (responses.test_cookie.SetCookieTests)
+Cookie will expire when a near expiration time is provided. ... ok
+test_samesite (responses.test_cookie.SetCookieTests) ... ok
+test_unicode_cookie (responses.test_cookie.SetCookieTests)
+HttpResponse.set_cookie() works with Unicode data. ... ok
+test_actual_expiry (sessions_tests.tests.CacheSessionTests) ... ok
+test_clear (sessions_tests.tests.CacheSessionTests) ... ok
+test_create_and_save (sessions_tests.tests.CacheSessionTests) ... ok
+test_custom_expiry_datetime (sessions_tests.tests.CacheSessionTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.CacheSessionTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.CacheSessionTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.CacheSessionTests) ... ok
+test_cycle (sessions_tests.tests.CacheSessionTests) ... ok
+test_cycle_with_no_session_cache (sessions_tests.tests.CacheSessionTests) ... ok
+test_decode (sessions_tests.tests.CacheSessionTests) ... ok
+test_decode_failure_logged_to_security (sessions_tests.tests.CacheSessionTests) ... ok
+test_decode_legacy (sessions_tests.tests.CacheSessionTests) ... ok
+test_default_cache (sessions_tests.tests.CacheSessionTests) ... ok
+test_default_expiry (sessions_tests.tests.CacheSessionTests) ... ok
+test_delete (sessions_tests.tests.CacheSessionTests) ... ok
+test_flush (sessions_tests.tests.CacheSessionTests) ... ok
+test_get_empty (sessions_tests.tests.CacheSessionTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.CacheSessionTests) ... ok
+test_has_key (sessions_tests.tests.CacheSessionTests) ... ok
+test_invalid_key (sessions_tests.tests.CacheSessionTests) ... ok
+test_items (sessions_tests.tests.CacheSessionTests) ... ok
+test_keys (sessions_tests.tests.CacheSessionTests) ... ok
+test_load_overlong_key (sessions_tests.tests.CacheSessionTests) ... ok
+test_new_session (sessions_tests.tests.CacheSessionTests) ... ok
+test_non_default_cache (sessions_tests.tests.CacheSessionTests) ... ok
+test_pop (sessions_tests.tests.CacheSessionTests) ... ok
+test_pop_default (sessions_tests.tests.CacheSessionTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.CacheSessionTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.CacheSessionTests) ... ok
+test_save (sessions_tests.tests.CacheSessionTests) ... ok
+test_save_doesnt_clear_data (sessions_tests.tests.CacheSessionTests) ... ok
+test_session_key_empty_string_invalid (sessions_tests.tests.CacheSessionTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.CacheSessionTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.CacheSessionTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.CacheSessionTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.CacheSessionTests) ... ok
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.CacheSessionTests) ... ok
+test_setdefault (sessions_tests.tests.CacheSessionTests) ... ok
+test_store (sessions_tests.tests.CacheSessionTests) ... ok
+test_update (sessions_tests.tests.CacheSessionTests) ... ok
+test_values (sessions_tests.tests.CacheSessionTests) ... ok
+test_actual_expiry (sessions_tests.tests.CookieSessionTests) ... expected failure
+test_clear (sessions_tests.tests.CookieSessionTests) ... ok
+test_custom_expiry_datetime (sessions_tests.tests.CookieSessionTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.CookieSessionTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.CookieSessionTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.CookieSessionTests) ... ok
+test_cycle (sessions_tests.tests.CookieSessionTests) ... ok
+test_cycle_with_no_session_cache (sessions_tests.tests.CookieSessionTests) ... ok
+test_decode (sessions_tests.tests.CookieSessionTests) ... ok
+test_decode_failure_logged_to_security (sessions_tests.tests.CookieSessionTests) ... ok
+test_decode_legacy (sessions_tests.tests.CookieSessionTests) ... ok
+test_default_expiry (sessions_tests.tests.CookieSessionTests) ... ok
+test_delete (sessions_tests.tests.CookieSessionTests) ... ok
+test_flush (sessions_tests.tests.CookieSessionTests) ... ok
+test_get_empty (sessions_tests.tests.CookieSessionTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.CookieSessionTests) ... ok
+test_has_key (sessions_tests.tests.CookieSessionTests) ... ok
+test_invalid_key (sessions_tests.tests.CookieSessionTests) ... ok
+test_items (sessions_tests.tests.CookieSessionTests) ... ok
+test_keys (sessions_tests.tests.CookieSessionTests) ... ok
+test_new_session (sessions_tests.tests.CookieSessionTests) ... ok
+test_pop (sessions_tests.tests.CookieSessionTests) ... ok
+test_pop_default (sessions_tests.tests.CookieSessionTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.CookieSessionTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.CookieSessionTests) ... ok
+test_save (sessions_tests.tests.CookieSessionTests) ... ok
+test_save_doesnt_clear_data (sessions_tests.tests.CookieSessionTests) ... ok
+test_session_key_empty_string_invalid (sessions_tests.tests.CookieSessionTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.CookieSessionTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.CookieSessionTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.CookieSessionTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.CookieSessionTests) ... skipped "Cookie backend doesn't have an external store to create records in."
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.CookieSessionTests) ... skipped 'CookieSession is stored in the client and there is no way to query it.'
+test_setdefault (sessions_tests.tests.CookieSessionTests) ... ok
+test_store (sessions_tests.tests.CookieSessionTests) ... ok
+test_unpickling_exception (sessions_tests.tests.CookieSessionTests) ... ok
+test_update (sessions_tests.tests.CookieSessionTests) ... ok
+test_values (sessions_tests.tests.CookieSessionTests) ... ok
+test_actual_expiry (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_clear (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_clearsessions_command (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_configuration_check (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_custom_expiry_datetime (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_cycle (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_cycle_with_no_session_cache (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_decode (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_decode_failure_logged_to_security (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_decode_legacy (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_default_expiry (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_delete (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_flush (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_get_empty (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_has_key (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_invalid_key (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_invalid_key_backslash (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_invalid_key_forwardslash (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_items (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_keys (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_new_session (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_pop (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_pop_default (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_save (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_save_doesnt_clear_data (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_session_key_empty_string_invalid (sessions_tests.tests.FileSessionPathLibTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.FileSessionPathLibTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.FileSessionPathLibTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_setdefault (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_store (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_update (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_values (sessions_tests.tests.FileSessionPathLibTests) ... ok
+test_actual_expiry (sessions_tests.tests.FileSessionTests) ... ok
+test_clear (sessions_tests.tests.FileSessionTests) ... ok
+test_clearsessions_command (sessions_tests.tests.FileSessionTests) ... ok
+test_configuration_check (sessions_tests.tests.FileSessionTests) ... ok
+test_custom_expiry_datetime (sessions_tests.tests.FileSessionTests) ... ok
+test_custom_expiry_reset (sessions_tests.tests.FileSessionTests) ... ok
+test_custom_expiry_seconds (sessions_tests.tests.FileSessionTests) ... ok
+test_custom_expiry_timedelta (sessions_tests.tests.FileSessionTests) ... ok
+test_cycle (sessions_tests.tests.FileSessionTests) ... ok
+test_cycle_with_no_session_cache (sessions_tests.tests.FileSessionTests) ... ok
+test_decode (sessions_tests.tests.FileSessionTests) ... ok
+test_decode_failure_logged_to_security (sessions_tests.tests.FileSessionTests) ... ok
+test_decode_legacy (sessions_tests.tests.FileSessionTests) ... ok
+test_default_expiry (sessions_tests.tests.FileSessionTests) ... ok
+test_delete (sessions_tests.tests.FileSessionTests) ... ok
+test_flush (sessions_tests.tests.FileSessionTests) ... ok
+test_get_empty (sessions_tests.tests.FileSessionTests) ... ok
+test_get_expire_at_browser_close (sessions_tests.tests.FileSessionTests) ... ok
+test_has_key (sessions_tests.tests.FileSessionTests) ... ok
+test_invalid_key (sessions_tests.tests.FileSessionTests) ... ok
+test_invalid_key_backslash (sessions_tests.tests.FileSessionTests) ... ok
+test_invalid_key_forwardslash (sessions_tests.tests.FileSessionTests) ... ok
+test_items (sessions_tests.tests.FileSessionTests) ... ok
+test_keys (sessions_tests.tests.FileSessionTests) ... ok
+test_new_session (sessions_tests.tests.FileSessionTests) ... ok
+test_pop (sessions_tests.tests.FileSessionTests) ... ok
+test_pop_default (sessions_tests.tests.FileSessionTests) ... ok
+test_pop_default_named_argument (sessions_tests.tests.FileSessionTests) ... ok
+test_pop_no_default_keyerror_raised (sessions_tests.tests.FileSessionTests) ... ok
+test_save (sessions_tests.tests.FileSessionTests) ... ok
+test_save_doesnt_clear_data (sessions_tests.tests.FileSessionTests) ... ok
+test_session_key_empty_string_invalid (sessions_tests.tests.FileSessionTests)
+Falsey values (Such as an empty string) are rejected. ... ok
+test_session_key_is_read_only (sessions_tests.tests.FileSessionTests) ... ok
+test_session_key_too_short_invalid (sessions_tests.tests.FileSessionTests)
+Strings shorter than 8 characters are rejected. ... ok
+test_session_key_valid_string_saved (sessions_tests.tests.FileSessionTests)
+Strings of length 8 and up are accepted and stored. ... ok
+test_session_load_does_not_create_record (sessions_tests.tests.FileSessionTests) ... ok
+test_session_save_does_not_resurrect_session_logged_out_in_other_context (sessions_tests.tests.FileSessionTests) ... ok
+test_setdefault (sessions_tests.tests.FileSessionTests) ... ok
+test_store (sessions_tests.tests.FileSessionTests) ... ok
+test_update (sessions_tests.tests.FileSessionTests) ... ok
+test_values (sessions_tests.tests.FileSessionTests) ... Testing against Django installed in '/testbed/django'
+Importing application messages_tests
+Importing application responses
+Importing application sessions_tests
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, messages, messages_tests, responses, sessions, sessions_tests, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table sessions_tests_customsession
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (0 silenced).
+ok
+
+======================================================================
+FAIL: test_default (responses.test_cookie.DeleteCookieTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/responses/test_cookie.py", line 108, in test_default
+    self.assertEqual(cookie['samesite'], '')
+AssertionError: 'Lax' != ''
+- Lax
++ 
+
+
+======================================================================
+FAIL: test_delete_cookie_secure_samesite_none (responses.test_cookie.DeleteCookieTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/responses/test_cookie.py", line 127, in test_delete_cookie_secure_samesite_none
+    self.assertIs(response.cookies['c']['secure'], True)
+AssertionError: '' is not True
+
+----------------------------------------------------------------------
+Ran 416 tests in 0.230s
+
+FAILED (failures=2, skipped=2, expected failures=1)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout 156a2138db20abc89933121e4ff2ee2ce56a173a tests/messages_tests/test_cookie.py tests/responses/test_cookie.py tests/sessions_tests/tests.py
+Updated 3 paths from 294047367a

@@ -1,0 +1,2601 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh"'
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh"'
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh
++++ '[' -n '' ']'
++++ '[' -f /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh
++++ '[' -n /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export _CONDA_SET_ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ _CONDA_SET_ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ '[' -f /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh
++++ '[' -n '' ']'
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/gdal ']'
++++ export GDAL_DATA=/opt/miniconda3/envs/testbed/share/gdal
++++ GDAL_DATA=/opt/miniconda3/envs/testbed/share/gdal
++++ export GDAL_DRIVER_PATH=/opt/miniconda3/envs/testbed/lib/gdalplugins
++++ GDAL_DRIVER_PATH=/opt/miniconda3/envs/testbed/lib/gdalplugins
++++ '[' '!' -d /opt/miniconda3/envs/testbed/lib/gdalplugins ']'
++++ export CPL_ZIP_ENCODING=UTF-8
++++ CPL_ZIP_ENCODING=UTF-8
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/epsg_csv ']'
++++ '[' -d /opt/miniconda3/envs/testbed/Library/share/epsg_csv ']'
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh
++++ _la_log 'Beginning libarrow activation.'
++++ '[' '' = 1 ']'
++++ _la_gdb_prefix=/opt/miniconda3/envs/testbed/share/gdb/auto-load
++++ '[' '!' -w /opt/miniconda3/envs/testbed/share/gdb/auto-load ']'
++++ _la_placeholder=replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX
++++ _la_symlink_dir=/opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib
++++ _la_orig_install_dir=/opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib
++++ _la_log '          _la_gdb_prefix: /opt/miniconda3/envs/testbed/share/gdb/auto-load'
++++ '[' '' = 1 ']'
++++ _la_log '         _la_placeholder: replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX'
++++ '[' '' = 1 ']'
++++ _la_log '         _la_symlink_dir: /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib'
++++ '[' '' = 1 ']'
++++ _la_log '    _la_orig_install_dir: /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib'
++++ '[' '' = 1 ']'
++++ _la_log '  content of that folder:'
++++ '[' '' = 1 ']'
+++++ ls -al /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib
+++++ sed 's/^/      /'
++++ _la_log '      total 12
+      drwxr-xr-x 2 root root 4096 Sep  6 07:48 .
+      drwxr-xr-x 3 root root 4096 Sep  6 07:48 ..
+      -rw-r--r-- 1 root root  971 Sep  6 07:48 libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ for _la_target in "$_la_orig_install_dir/"*.py
++++ '[' '!' -e /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py ']'
+++++ basename /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py
++++ _la_symlink=/opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py
++++ _la_log '   _la_target: /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ _la_log '  _la_symlink: /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ '[' -L /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py ']'
+++++ readlink /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py
++++ '[' /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py = /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py ']'
++++ _la_log 'symlink $_la_symlink already exists and points to $_la_target, skipping.'
++++ '[' '' = 1 ']'
++++ continue
++++ _la_log 'Libarrow activation complete.'
++++ '[' '' = 1 ']'
++++ unset _la_gdb_prefix
++++ unset _la_log
++++ unset _la_orig_install_dir
++++ unset _la_placeholder
++++ unset _la_symlink
++++ unset _la_symlink_dir
++++ unset _la_target
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh
++++ export GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ export GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
++++ GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh
++++ test -n ''
++++ xml_catalog_files_libxml2=
++++ XML_CATALOG_FILES=
++++ conda_catalog_files=
++++ ifs_libxml2=' 	
+'
++++ IFS=' '
++++ rem=/opt/miniconda3/envs/testbed
++++ for pre in ${rem}
++++ test '' = /opt/miniconda3/envs/testbed
++++ conda_catalog_files=/opt/miniconda3/envs/testbed
++++ rem=
++++ IFS=' 	
+'
++++ conda_catalog_files='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ export 'XML_CATALOG_FILES=file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ XML_CATALOG_FILES='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ unset conda_catalog_files ifs_libxml2 rem
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/proj ']'
++++ export PROJ_DATA=/opt/miniconda3/envs/testbed/share/proj
++++ PROJ_DATA=/opt/miniconda3/envs/testbed/share/proj
++++ '[' -f /opt/miniconda3/envs/testbed/share/proj/copyright_and_licenses.csv ']'
++++ export PROJ_NETWORK=ON
++++ PROJ_NETWORK=ON
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/udunits ']'
++++ export UDUNITS2_XML_PATH=/opt/miniconda3/envs/testbed/share/udunits/udunits2.xml
++++ UDUNITS2_XML_PATH=/opt/miniconda3/envs/testbed/share/udunits/udunits2.xml
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   xarray/core/variable.py
+	modified:   xarray/tests/test_variable.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 1757dffac2fa493d7b9a074b84cf8c830a706688
+Author: crusaderky <crusaderky@gmail.com>
+Date:   Wed Jul 31 18:47:59 2019 +0100
+
+    More annotations in Dataset (#3112)
+    
+    * Let mypy discover xarray typing hints
+    
+    * Docs tweak
+    
+    * More annotations in Dataset
+    
+    * Fix Python 3.5-specific check for OrderedDict
+    
+    * typing in merge
+    
+    * broadcast_like typing tweaks
+    
+    * Changed redundant x: Optional[MyType] = None to x: MyType = None
+    
+    * flake8
+    
+    * What's New
+
+diff --git a/doc/whats-new.rst b/doc/whats-new.rst
+index be12961c..afb8a9b2 100644
+--- a/doc/whats-new.rst
++++ b/doc/whats-new.rst
+@@ -28,6 +28,15 @@ New functions/methods
+   By `Deepak Cherian <https://github.com/dcherian>`_ and `David Mertz 
+   <http://github.com/DavidMertz>`_.
+ 
++- The xarray package is now discoverably by mypy (although typing hints
++  coverage is not complete yet). mypy users can now remove from their setup.cfg
++  the lines::
++
++    [mypy-xarray]
++    ignore_missing_imports = True
++
++   By `Guido Imperiale <https://github.com/crusaderky>`_
++
+ Enhancements
+ ~~~~~~~~~~~~
+ 
+@@ -70,7 +79,6 @@ New functions/methods
+   (:issue:`3026`).
+   By `Julia Kent <https://github.com/jukent>`_.
+ 
+-
+ Enhancements
+ ~~~~~~~~~~~~
+ 
+diff --git a/setup.py b/setup.py
+index 6998f001..977ad2e1 100644
+--- a/setup.py
++++ b/setup.py
+@@ -104,4 +104,4 @@ setup(name=DISTNAME,
+       tests_require=TESTS_REQUIRE,
+       url=URL,
+       packages=find_packages(),
+-      package_data={'xarray': ['tests/data/*']})
++      package_data={'xarray': ['py.typed', 'tests/data/*']})
+diff --git a/xarray/core/alignment.py b/xarray/core/alignment.py
+index 6d7fcb98..711634a9 100644
+--- a/xarray/core/alignment.py
++++ b/xarray/core/alignment.py
+@@ -3,7 +3,16 @@ import operator
+ import warnings
+ from collections import OrderedDict, defaultdict
+ from contextlib import suppress
+-from typing import Any, Mapping, Optional, Tuple
++from typing import (
++    Any,
++    Dict,
++    Hashable,
++    Mapping,
++    Optional,
++    Tuple,
++    Union,
++    TYPE_CHECKING,
++)
+ 
+ import numpy as np
+ import pandas as pd
+@@ -13,6 +22,10 @@ from .indexing import get_indexer_nd
+ from .utils import is_dict_like, is_full_slice
+ from .variable import IndexVariable, Variable
+ 
++if TYPE_CHECKING:
++    from .dataarray import DataArray
++    from .dataset import Dataset
++
+ 
+ def _get_joiner(join):
+     if join == 'outer':
+@@ -169,8 +182,8 @@ def deep_align(objects, join='inner', copy=True, indexes=None,
+ 
+     This function is not public API.
+     """
+-    from .dataarray import DataArray
+-    from .dataset import Dataset
++    from .dataarray import DataArray  # noqa: F811
++    from .dataset import Dataset  # noqa: F811
+ 
+     if indexes is None:
+         indexes = {}
+@@ -222,7 +235,10 @@ def deep_align(objects, join='inner', copy=True, indexes=None,
+     return out
+ 
+ 
+-def reindex_like_indexers(target, other):
++def reindex_like_indexers(
++    target: Union['DataArray', 'Dataset'],
++    other: Union['DataArray', 'Dataset'],
++) -> Dict[Hashable, pd.Index]:
+     """Extract indexers to align target with other.
+ 
+     Not public API.
+@@ -236,7 +252,8 @@ def reindex_like_indexers(target, other):
+ 
+     Returns
+     -------
+-    Dict[Any, pandas.Index] providing indexes for reindex keyword arguments.
++    Dict[Hashable, pandas.Index] providing indexes for reindex keyword
++    arguments.
+ 
+     Raises
+     ------
+@@ -310,7 +327,7 @@ def reindex_variables(
+     new_indexes : OrderedDict
+         Dict of indexes associated with the reindexed variables.
+     """
+-    from .dataarray import DataArray
++    from .dataarray import DataArray  # noqa: F811
+ 
+     # create variables for the new dataset
+     reindexed = OrderedDict()  # type: OrderedDict[Any, Variable]
+@@ -407,8 +424,8 @@ def _get_broadcast_dims_map_common_coords(args, exclude):
+ 
+ def _broadcast_helper(arg, exclude, dims_map, common_coords):
+ 
+-    from .dataarray import DataArray
+-    from .dataset import Dataset
++    from .dataarray import DataArray  # noqa: F811
++    from .dataset import Dataset  # noqa: F811
+ 
+     def _set_dims(var):
+         # Add excluded dims to a copy of dims_map
+diff --git a/xarray/core/common.py b/xarray/core/common.py
+index c4b13b1a..bae3b6cd 100644
+--- a/xarray/core/common.py
++++ b/xarray/core/common.py
+@@ -3,7 +3,7 @@ from contextlib import suppress
+ from textwrap import dedent
+ from typing import (
+     Any, Callable, Hashable, Iterable, Iterator, List, Mapping, MutableMapping,
+-    Optional, Tuple, TypeVar, Union)
++    Tuple, TypeVar, Union)
+ 
+ import numpy as np
+ import pandas as pd
+@@ -101,7 +101,7 @@ class AbstractArray(ImplementsArrayReduce):
+     def __complex__(self: Any) -> complex:
+         return complex(self.values)
+ 
+-    def __array__(self: Any, dtype: Optional[DTypeLike] = None) -> np.ndarray:
++    def __array__(self: Any, dtype: DTypeLike = None) -> np.ndarray:
+         return np.asarray(self.values, dtype=dtype)
+ 
+     def __repr__(self) -> str:
+@@ -448,7 +448,7 @@ class DataWithCoords(SupportsArithmetic, AttrAccessMixin):
+             return func(self, *args, **kwargs)
+ 
+     def groupby(self, group, squeeze: bool = True,
+-                restore_coord_dims: Optional[bool] = None):
++                restore_coord_dims: bool = None):
+         """Returns a GroupBy object for performing grouped operations.
+ 
+         Parameters
+@@ -501,7 +501,7 @@ class DataWithCoords(SupportsArithmetic, AttrAccessMixin):
+     def groupby_bins(self, group, bins, right: bool = True, labels=None,
+                      precision: int = 3, include_lowest: bool = False,
+                      squeeze: bool = True,
+-                     restore_coord_dims: Optional[bool] = None):
++                     restore_coord_dims: bool = None):
+         """Returns a GroupBy object for performing grouped operations.
+ 
+         Rather than using all unique values of `group`, the values are discretized
+@@ -557,8 +557,8 @@ class DataWithCoords(SupportsArithmetic, AttrAccessMixin):
+                                              'include_lowest':
+                                                  include_lowest})
+ 
+-    def rolling(self, dim: Optional[Mapping[Hashable, int]] = None,
+-                min_periods: Optional[int] = None, center: bool = False,
++    def rolling(self, dim: Mapping[Hashable, int] = None,
++                min_periods: int = None, center: bool = False,
+                 **window_kwargs: int):
+         """
+         Rolling window object.
+@@ -621,7 +621,7 @@ class DataWithCoords(SupportsArithmetic, AttrAccessMixin):
+ 
+     def rolling_exp(
+         self,
+-        window: Optional[Mapping[Hashable, int]] = None,
++        window: Mapping[Hashable, int] = None,
+         window_type: str = 'span',
+         **window_kwargs
+     ):
+@@ -658,7 +658,7 @@ class DataWithCoords(SupportsArithmetic, AttrAccessMixin):
+ 
+         return self._rolling_exp_cls(self, window, window_type)
+ 
+-    def coarsen(self, dim: Optional[Mapping[Hashable, int]] = None,
++    def coarsen(self, dim: Mapping[Hashable, int] = None,
+                 boundary: str = 'exact',
+                 side: Union[str, Mapping[Hashable, str]] = 'left',
+                 coord_func: str = 'mean',
+@@ -721,11 +721,11 @@ class DataWithCoords(SupportsArithmetic, AttrAccessMixin):
+             self, dim, boundary=boundary, side=side,
+             coord_func=coord_func)
+ 
+-    def resample(self, indexer: Optional[Mapping[Hashable, str]] = None,
+-                 skipna=None, closed: Optional[str] = None,
+-                 label: Optional[str] = None,
+-                 base: int = 0, keep_attrs: Optional[bool] = None,
+-                 loffset=None, restore_coord_dims: Optional[bool] = None,
++    def resample(self, indexer: Mapping[Hashable, str] = None,
++                 skipna=None, closed: str = None,
++                 label: str = None,
++                 base: int = 0, keep_attrs: bool = None,
++                 loffset=None, restore_coord_dims: bool = None,
+                  **indexer_kwargs: str):
+         """Returns a Resample object for performing resampling operations.
+ 
+@@ -1003,7 +1003,7 @@ class DataWithCoords(SupportsArithmetic, AttrAccessMixin):
+         raise NotImplementedError
+ 
+ 
+-def full_like(other, fill_value, dtype: Optional[DTypeLike] = None):
++def full_like(other, fill_value, dtype: DTypeLike = None):
+     """Return a new object with the same shape and type as a given object.
+ 
+     Parameters
+@@ -1044,7 +1044,7 @@ def full_like(other, fill_value, dtype: Optional[DTypeLike] = None):
+ 
+ 
+ def _full_like_variable(other, fill_value,
+-                        dtype: Optional[DTypeLike] = None):
++                        dtype: DTypeLike = None):
+     """Inner function of full_like, where other must be a variable
+     """
+     from .variable import Variable
+@@ -1061,13 +1061,13 @@ def _full_like_variable(other, fill_value,
+     return Variable(dims=other.dims, data=data, attrs=other.attrs)
+ 
+ 
+-def zeros_like(other, dtype: Optional[DTypeLike] = None):
++def zeros_like(other, dtype: DTypeLike = None):
+     """Shorthand for full_like(other, 0, dtype)
+     """
+     return full_like(other, 0, dtype)
+ 
+ 
+-def ones_like(other, dtype: Optional[DTypeLike] = None):
++def ones_like(other, dtype: DTypeLike = None):
+     """Shorthand for full_like(other, 1, dtype)
+     """
+     return full_like(other, 1, dtype)
+diff --git a/xarray/core/computation.py b/xarray/core/computation.py
+index ef8a3e62..7ccfeae2 100644
+--- a/xarray/core/computation.py
++++ b/xarray/core/computation.py
+@@ -683,7 +683,7 @@ def apply_array_ufunc(func, *args, dask='forbidden'):
+ def apply_ufunc(
+     func: Callable,
+     *args: Any,
+-    input_core_dims: Optional[Sequence[Sequence]] = None,
++    input_core_dims: Sequence[Sequence] = None,
+     output_core_dims: Optional[Sequence[Sequence]] = ((),),
+     exclude_dims: AbstractSet = frozenset(),
+     vectorize: bool = False,
+@@ -693,8 +693,8 @@ def apply_ufunc(
+     keep_attrs: bool = False,
+     kwargs: Mapping = None,
+     dask: str = 'forbidden',
+-    output_dtypes: Optional[Sequence] = None,
+-    output_sizes: Optional[Mapping[Any, int]] = None
++    output_dtypes: Sequence = None,
++    output_sizes: Mapping[Any, int] = None
+ ) -> Any:
+     """Apply a vectorized function for unlabeled arrays on xarray objects.
+ 
+diff --git a/xarray/core/dataarray.py b/xarray/core/dataarray.py
+index 99014e9e..f993888c 100644
+--- a/xarray/core/dataarray.py
++++ b/xarray/core/dataarray.py
+@@ -197,8 +197,8 @@ class DataArray(AbstractArray, DataWithCoords):
+             None,
+         ] = None,
+         dims: Union[Hashable, Sequence[Hashable], None] = None,
+-        name: Optional[Hashable] = None,
+-        attrs: Optional[Mapping] = None,
++        name: Hashable = None,
++        attrs: Mapping = None,
+         # deprecated parameters
+         encoding=None,
+         # internal parameters
+@@ -298,7 +298,7 @@ class DataArray(AbstractArray, DataWithCoords):
+ 
+     def _replace(
+         self,
+-        variable: Optional[Variable] = None,
++        variable: Variable = None,
+         coords=None,
+         name: Union[Hashable, None, ReprObject] = __default,
+     ) -> 'DataArray':
+@@ -379,7 +379,7 @@ class DataArray(AbstractArray, DataWithCoords):
+ 
+     def _to_dataset_whole(
+             self,
+-            name: Optional[Hashable] = None,
++            name: Hashable = None,
+             shallow_copy: bool = True
+     ) -> Dataset:
+         if name is None:
+@@ -403,8 +403,8 @@ class DataArray(AbstractArray, DataWithCoords):
+ 
+     def to_dataset(
+         self,
+-        dim: Optional[Hashable] = None,
+-        name: Optional[Hashable] = None,
++        dim: Hashable = None,
++        name: Hashable = None,
+     ) -> Dataset:
+         """Convert a DataArray to a Dataset.
+ 
+@@ -636,7 +636,7 @@ class DataArray(AbstractArray, DataWithCoords):
+ 
+     def reset_coords(self,
+                      names: Union[Iterable[Hashable], Hashable, None] = None,
+-                     drop: bool = False, inplace: Optional[bool] = None
++                     drop: bool = False, inplace: bool = None
+                      ) -> Union[None, 'DataArray', Dataset]:
+         """Given names of coordinates, reset them to become variables.
+ 
+@@ -777,7 +777,7 @@ class DataArray(AbstractArray, DataWithCoords):
+     def copy(
+         self,
+         deep: bool = True,
+-        data: Optional[Any] = None,
++        data: Any = None,
+     ) -> 'DataArray':
+         """Returns a copy of this array.
+ 
+@@ -882,7 +882,7 @@ class DataArray(AbstractArray, DataWithCoords):
+             Mapping[Hashable, Union[None, Number, Tuple[Number, ...]]],
+         ] = None,
+         name_prefix: str = 'xarray-',
+-        token: Optional[str] = None,
++        token: str = None,
+         lock: bool = False
+     ) -> 'DataArray':
+         """Coerce this array's data into a dask arrays with the given chunks.
+@@ -921,7 +921,7 @@ class DataArray(AbstractArray, DataWithCoords):
+ 
+     def isel(
+         self,
+-        indexers: Optional[Mapping[Hashable, Any]] = None,
++        indexers: Mapping[Hashable, Any] = None,
+         drop: bool = False,
+         **indexers_kwargs: Any
+     ) -> 'DataArray':
+@@ -939,8 +939,8 @@ class DataArray(AbstractArray, DataWithCoords):
+ 
+     def sel(
+         self,
+-        indexers: Optional[Mapping[Hashable, Any]] = None,
+-        method: Optional[str] = None,
++        indexers: Mapping[Hashable, Any] = None,
++        method: str = None,
+         tolerance=None,
+         drop: bool = False,
+         **indexers_kwargs: Any
+@@ -997,8 +997,8 @@ class DataArray(AbstractArray, DataWithCoords):
+ 
+     def broadcast_like(self,
+                        other: Union['DataArray', Dataset],
+-                       exclude=None) -> 'DataArray':
+-        """Broadcast a DataArray to the shape of another DataArray or Dataset
++                       exclude: Iterable[Hashable] = None) -> 'DataArray':
++        """Broadcast this DataArray against another Dataset or DataArray.
+ 
+         This is equivalent to xr.broadcast(other, self)[1]
+ 
+@@ -1015,8 +1015,7 @@ class DataArray(AbstractArray, DataWithCoords):
+         ----------
+         other : Dataset or DataArray
+             Object against which to broadcast this array.
+-
+-        exclude : sequence of str, optional
++        exclude : iterable of hashable, optional
+             Dimensions that must not be broadcasted
+ 
+         Returns
+@@ -1052,6 +1051,8 @@ class DataArray(AbstractArray, DataWithCoords):
+         """
+         if exclude is None:
+             exclude = set()
++        else:
++            exclude = set(exclude)
+         args = align(other, self, join='outer', copy=False, exclude=exclude)
+ 
+         dims_map, common_coords = _get_broadcast_dims_map_common_coords(
+@@ -1060,7 +1061,7 @@ class DataArray(AbstractArray, DataWithCoords):
+         return _broadcast_helper(args[1], exclude, dims_map, common_coords)
+ 
+     def reindex_like(self, other: Union['DataArray', Dataset],
+-                     method: Optional[str] = None, tolerance=None,
++                     method: str = None, tolerance=None,
+                      copy: bool = True, fill_value=dtypes.NA) -> 'DataArray':
+         """Conform this object onto the indexes of another object, filling in
+         missing values with ``fill_value``. The default fill value is NaN.
+@@ -1107,11 +1108,16 @@ class DataArray(AbstractArray, DataWithCoords):
+         align
+         """
+         indexers = reindex_like_indexers(self, other)
+-        return self.reindex(method=method, tolerance=tolerance, copy=copy,
+-                            fill_value=fill_value, **indexers)
+-
+-    def reindex(self, indexers: Optional[Mapping[Hashable, Any]] = None,
+-                method: Optional[str] = None, tolerance=None,
++        return self.reindex(
++            indexers=indexers,
++            method=method,
++            tolerance=tolerance,
++            copy=copy,
++            fill_value=fill_value,
++        )
++
++    def reindex(self, indexers: Mapping[Hashable, Any] = None,
++                method: str = None, tolerance=None,
+                 copy: bool = True, fill_value=dtypes.NA, **indexers_kwargs: Any
+                 ) -> 'DataArray':
+         """Conform this object onto the indexes of another object, filling in
+@@ -1166,9 +1172,9 @@ class DataArray(AbstractArray, DataWithCoords):
+             fill_value=fill_value)
+         return self._from_temp_dataset(ds)
+ 
+-    def interp(self, coords: Optional[Mapping[Hashable, Any]] = None,
++    def interp(self, coords: Mapping[Hashable, Any] = None,
+                method: str = 'linear', assume_sorted: bool = False,
+-               kwargs: Optional[Mapping[str, Any]] = None,
++               kwargs: Mapping[str, Any] = None,
+                **coords_kwargs: Any) -> 'DataArray':
+         """ Multidimensional interpolation of variables.
+ 
+@@ -1223,7 +1229,7 @@ class DataArray(AbstractArray, DataWithCoords):
+ 
+     def interp_like(self, other: Union['DataArray', Dataset],
+                     method: str = 'linear', assume_sorted: bool = False,
+-                    kwargs: Optional[Mapping[str, Any]] = None) -> 'DataArray':
++                    kwargs: Mapping[str, Any] = None) -> 'DataArray':
+         """Interpolate this object onto the coordinates of another object,
+         filling out of range values with NaN.
+ 
+@@ -1272,7 +1278,7 @@ class DataArray(AbstractArray, DataWithCoords):
+     def rename(
+         self,
+         new_name_or_name_dict:
+-            Optional[Union[Hashable, Mapping[Hashable, Hashable]]] = None,
++            Union[Hashable, Mapping[Hashable, Hashable]] = None,
+         **names: Hashable
+     ) -> 'DataArray':
+         """Returns a new DataArray with renamed coordinates or a new name.
+@@ -1397,9 +1403,13 @@ class DataArray(AbstractArray, DataWithCoords):
+         ds = self._to_temp_dataset().expand_dims(dim, axis)
+         return self._from_temp_dataset(ds)
+ 
+-    def set_index(self, indexes: Optional[Mapping[Hashable, Any]] = None,
+-                  append: bool = False, inplace: Optional[bool] = None,
+-                  **indexes_kwargs: Any) -> Optional['DataArray']:
++    def set_index(
++        self,
++        indexes: Mapping[Hashable, Union[Hashable, Sequence[Hashable]]] = None,
++        append: bool = False,
++        inplace: bool = None,
++        **indexes_kwargs: Union[Hashable, Sequence[Hashable]]
++    ) -> Optional['DataArray']:
+         """Set DataArray (multi-)indexes using one or more existing
+         coordinates.
+ 
+@@ -1438,9 +1448,12 @@ class DataArray(AbstractArray, DataWithCoords):
+         else:
+             return self._replace(coords=coords)
+ 
+-    def reset_index(self, dims_or_levels: Union[Hashable, Sequence[Hashable]],
+-                    drop: bool = False, inplace: Optional[bool] = None
+-                    ) -> Optional['DataArray']:
++    def reset_index(
++        self,
++        dims_or_levels: Union[Hashable, Sequence[Hashable]],
++        drop: bool = False,
++        inplace: bool = None
++    ) -> Optional['DataArray']:
+         """Reset the specified index(es) or multi-index level(s).
+ 
+         Parameters
+@@ -1474,12 +1487,12 @@ class DataArray(AbstractArray, DataWithCoords):
+         else:
+             return self._replace(coords=coords)
+ 
+-    def reorder_levels(self,
+-                       dim_order: Optional[
+-                           Mapping[Hashable, Sequence[int]]] = None,
+-                       inplace: Optional[bool] = None,
+-                       **dim_order_kwargs: Sequence[int]
+-                       ) -> Optional['DataArray']:
++    def reorder_levels(
++        self,
++        dim_order: Mapping[Hashable, Sequence[int]] = None,
++        inplace: bool = None,
++        **dim_order_kwargs: Sequence[int]
++    ) -> Optional['DataArray']:
+         """Rearrange index levels using input order.
+ 
+         Parameters
+@@ -1520,9 +1533,11 @@ class DataArray(AbstractArray, DataWithCoords):
+         else:
+             return self._replace(coords=coords)
+ 
+-    def stack(self, dimensions: Optional[
+-            Mapping[Hashable, Sequence[Hashable]]] = None,
+-            **dimensions_kwargs: Sequence[Hashable]) -> 'DataArray':
++    def stack(
++        self,
++        dimensions: Mapping[Hashable, Sequence[Hashable]] = None,
++        **dimensions_kwargs: Sequence[Hashable]
++    ) -> 'DataArray':
+         """
+         Stack any number of existing dimensions into a single new dimension.
+ 
+@@ -1683,7 +1698,7 @@ class DataArray(AbstractArray, DataWithCoords):
+ 
+     def transpose(self,
+                   *dims: Hashable,
+-                  transpose_coords: Optional[bool] = None) -> 'DataArray':
++                  transpose_coords: bool = None) -> 'DataArray':
+         """Return a new DataArray object with transposed dimensions.
+ 
+         Parameters
+@@ -1739,7 +1754,7 @@ class DataArray(AbstractArray, DataWithCoords):
+ 
+     def drop(self,
+              labels: Union[Hashable, Sequence[Hashable]],
+-             dim: Optional[Hashable] = None,
++             dim: Hashable = None,
+              *,
+              errors: str = 'raise') -> 'DataArray':
+         """Drop coordinates or index labels from this DataArray.
+@@ -1766,7 +1781,7 @@ class DataArray(AbstractArray, DataWithCoords):
+         return self._from_temp_dataset(ds)
+ 
+     def dropna(self, dim: Hashable, how: str = 'any',
+-               thresh: Optional[int] = None) -> 'DataArray':
++               thresh: int = None) -> 'DataArray':
+         """Returns a new array with dropped labels for missing values along
+         the provided dimension.
+ 
+@@ -1814,7 +1829,7 @@ class DataArray(AbstractArray, DataWithCoords):
+         return out
+ 
+     def interpolate_na(self, dim=None, method: str = 'linear',
+-                       limit: Optional[int] = None,
++                       limit: int = None,
+                        use_coordinate: Union[bool, str] = True,
+                        **kwargs: Any) -> 'DataArray':
+         """Interpolate values according to different methods.
+@@ -1859,7 +1874,7 @@ class DataArray(AbstractArray, DataWithCoords):
+         return interp_na(self, dim=dim, method=method, limit=limit,
+                          use_coordinate=use_coordinate, **kwargs)
+ 
+-    def ffill(self, dim: Hashable, limit: Optional[int] = None) -> 'DataArray':
++    def ffill(self, dim: Hashable, limit: int = None) -> 'DataArray':
+         """Fill NaN values by propogating values forward
+ 
+         *Requires bottleneck.*
+@@ -1882,7 +1897,7 @@ class DataArray(AbstractArray, DataWithCoords):
+         from .missing import ffill
+         return ffill(self, dim, limit=limit)
+ 
+-    def bfill(self, dim: Hashable, limit: Optional[int] = None) -> 'DataArray':
++    def bfill(self, dim: Hashable, limit: int = None) -> 'DataArray':
+         """Fill NaN values by propogating values backward
+ 
+         *Requires bottleneck.*
+@@ -1926,7 +1941,7 @@ class DataArray(AbstractArray, DataWithCoords):
+     def reduce(self, func: Callable[..., Any],
+                dim: Union[None, Hashable, Sequence[Hashable]] = None,
+                axis: Union[None, int, Sequence[int]] = None,
+-               keep_attrs: Optional[bool] = None,
++               keep_attrs: bool = None,
+                keepdims: bool = False,
+                **kwargs: Any) -> 'DataArray':
+         """Reduce this array by applying `func` along some dimension(s).
+@@ -1997,7 +2012,7 @@ class DataArray(AbstractArray, DataWithCoords):
+ 
+     def to_dataframe(
+         self,
+-        name: Optional[Hashable] = None,
++        name: Hashable = None,
+     ) -> pd.DataFrame:
+         """Convert this array and its coordinates into a tidy pandas.DataFrame.
+ 
+@@ -2295,7 +2310,7 @@ class DataArray(AbstractArray, DataWithCoords):
+     @staticmethod
+     def _binary_op(f: Callable[..., Any],
+                    reflexive: bool = False,
+-                   join: Optional[str] = None,  # see xarray.align
++                   join: str = None,  # see xarray.align
+                    **ignored_kwargs
+                    ) -> Callable[..., 'DataArray']:
+         @functools.wraps(f)
+@@ -2429,7 +2444,7 @@ class DataArray(AbstractArray, DataWithCoords):
+         ds = self._to_temp_dataset().diff(n=n, dim=dim, label=label)
+         return self._from_temp_dataset(ds)
+ 
+-    def shift(self, shifts: Optional[Mapping[Hashable, int]] = None,
++    def shift(self, shifts: Mapping[Hashable, int] = None,
+               fill_value: Any = dtypes.NA, **shifts_kwargs: int
+               ) -> 'DataArray':
+         """Shift this array by an offset along one or more dimensions.
+@@ -2474,8 +2489,8 @@ class DataArray(AbstractArray, DataWithCoords):
+             shifts=shifts, fill_value=fill_value, **shifts_kwargs)
+         return self._replace(variable=variable)
+ 
+-    def roll(self, shifts: Optional[Mapping[Hashable, int]] = None,
+-             roll_coords: Optional[bool] = None,
++    def roll(self, shifts: Mapping[Hashable, int] = None,
++             roll_coords: bool = None,
+              **shifts_kwargs: int) -> 'DataArray':
+         """Roll this array by an offset along one or more dimensions.
+ 
+@@ -2635,7 +2650,7 @@ class DataArray(AbstractArray, DataWithCoords):
+     def quantile(self, q: Any,
+                  dim: Union[Hashable, Sequence[Hashable], None] = None,
+                  interpolation: str = 'linear',
+-                 keep_attrs: Optional[bool] = None) -> 'DataArray':
++                 keep_attrs: bool = None) -> 'DataArray':
+         """Compute the qth quantile of the data along the specified dimension.
+ 
+         Returns the qth quantiles(s) of the array elements.
+@@ -2723,7 +2738,7 @@ class DataArray(AbstractArray, DataWithCoords):
+         return self._from_temp_dataset(ds)
+ 
+     def differentiate(self, coord: Hashable, edge_order: int = 1,
+-                      datetime_unit: Optional[str] = None) -> 'DataArray':
++                      datetime_unit: str = None) -> 'DataArray':
+         """ Differentiate the array with the second order accurate central
+         differences.
+ 
+@@ -2779,7 +2794,7 @@ class DataArray(AbstractArray, DataWithCoords):
+         return self._from_temp_dataset(ds)
+ 
+     def integrate(self, dim: Union[Hashable, Sequence[Hashable]],
+-                  datetime_unit: Optional[str] = None) -> 'DataArray':
++                  datetime_unit: str = None) -> 'DataArray':
+         """ integrate the array with the trapezoidal rule.
+ 
+         .. note::
+diff --git a/xarray/core/dataset.py b/xarray/core/dataset.py
+index f37d87ac..b00dad96 100644
+--- a/xarray/core/dataset.py
++++ b/xarray/core/dataset.py
+@@ -40,6 +40,7 @@ from .variable import IndexVariable, Variable, as_variable, broadcast_variables
+ if TYPE_CHECKING:
+     from ..backends import AbstractDataStore, ZarrStore
+     from .dataarray import DataArray
++    from .merge import DatasetLike
+     try:
+         from dask.delayed import Delayed
+     except ImportError:
+@@ -54,8 +55,8 @@ _DATETIMEINDEX_COMPONENTS = ['year', 'month', 'day', 'hour', 'minute',
+ 
+ 
+ def _get_virtual_variable(variables, key: Hashable,
+-                          level_vars: Optional[Mapping] = None,
+-                          dim_sizes: Optional[Mapping] = None,
++                          level_vars: Mapping = None,
++                          dim_sizes: Mapping = None,
+                           ) -> Tuple[Hashable, Hashable, Variable]:
+     """Get a virtual variable (e.g., 'time.year' or a MultiIndex level)
+     from a dict of xarray.Variable objects (if possible)
+@@ -342,14 +343,14 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         self,
+         # could make a VariableArgs to use more generally, and refine these
+         # categories
+-        data_vars: Optional[Mapping[Hashable, Union[
++        data_vars: Mapping[Hashable, Union[
+             'DataArray',
+             Variable,
+             Tuple[Hashable, Any],
+             Tuple[Sequence[Hashable], Any],
+-        ]]] = None,
+-        coords: Optional[Mapping[Hashable, Any]] = None,
+-        attrs: Optional[Mapping] = None,
++        ]] = None,
++        coords: Mapping[Hashable, Any] = None,
++        attrs: Mapping = None,
+         compat=None,
+     ):
+         """To load data from a file or file-like object, use the `open_dataset`
+@@ -741,7 +742,7 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+     def _replace(  # type: ignore
+         self,
+         variables: 'OrderedDict[Any, Variable]' = None,
+-        coord_names: Optional[Set[Hashable]] = None,
++        coord_names: Set[Hashable] = None,
+         dims: Dict[Any, int] = None,
+         attrs: 'Optional[OrderedDict]' = __default,
+         indexes: 'Optional[OrderedDict[Any, pd.Index]]' = __default,
+@@ -791,8 +792,8 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         self,
+         variables: 'OrderedDict[Any, Variable]',
+         coord_names: set = None,
+-        attrs: 'Optional[OrderedDict]' = __default,
+-        indexes: 'Optional[OrderedDict[Any, pd.Index]]' = __default,
++        attrs: 'OrderedDict' = __default,
++        indexes: 'OrderedDict[Any, pd.Index]' = __default,
+         inplace: bool = False,
+     ) -> 'Dataset':
+         """Replace variables with recalculated dimensions."""
+@@ -804,8 +805,8 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         self,
+         variables: 'OrderedDict[Any, Variable]',
+         coord_names: set = None,
+-        dims: 'Optional[Dict[Any, int]]' = None,
+-        attrs: 'Optional[OrderedDict]' = __default,
++        dims: Dict[Any, int] = None,
++        attrs: 'OrderedDict' = __default,
+         inplace: bool = False,
+     ) -> 'Dataset':
+         """Deprecated version of _replace_with_new_dims().
+@@ -1685,7 +1686,12 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         )
+         return attached_coords, attached_indexes
+ 
+-    def isel(self, indexers=None, drop=False, **indexers_kwargs):
++    def isel(
++        self,
++        indexers: Mapping[Hashable, Any] = None,
++        drop: bool = False,
++        **indexers_kwargs: Any
++    ) -> 'Dataset':
+         """Returns a new dataset with each array indexed along the specified
+         dimension(s).
+ 
+@@ -1730,8 +1736,9 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+ 
+         indexers_list = self._validate_indexers(indexers)
+ 
+-        variables = OrderedDict()
+-        indexes = OrderedDict()
++        variables = OrderedDict()  # type: OrderedDict[Hashable, Variable]
++        indexes = OrderedDict()  # type: OrderedDict[Hashable, pd.Index]
++
+         for name, var in self.variables.items():
+             var_indexers = {k: v for k, v in indexers_list if k in var.dims}
+             if drop and name in var_indexers:
+@@ -1762,8 +1769,14 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         return self._replace_with_new_dims(
+             variables, coord_names, indexes=indexes)
+ 
+-    def sel(self, indexers=None, method=None, tolerance=None, drop=False,
+-            **indexers_kwargs):
++    def sel(
++        self,
++        indexers: Mapping[Hashable, Any] = None,
++        method: str = None,
++        tolerance: Number = None,
++        drop: bool = False,
++        **indexers_kwargs: Any
++    ) -> 'Dataset':
+         """Returns a new dataset with each array indexed by tick labels
+         along the specified dimension(s).
+ 
+@@ -1832,8 +1845,7 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         result = self.isel(indexers=pos_indexers, drop=drop)
+         return result._overwrite_indexes(new_indexes)
+ 
+-    def isel_points(self, dim='points', **indexers):
+-        # type: (...) -> Dataset
++    def isel_points(self, dim: Any = 'points', **indexers: Any) -> 'Dataset':
+         """Returns a new dataset with each array indexed pointwise along the
+         specified dimension(s).
+ 
+@@ -1843,9 +1855,10 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+ 
+         Parameters
+         ----------
+-        dim : str or DataArray or pandas.Index or other list-like object, optional
++        dim : hashable or DataArray or pandas.Index or other list-like object, 
++              optional
+             Name of the dimension to concatenate along. If dim is provided as a
+-            string, it must be a new dimension name, in which case it is added
++            hashable, it must be a new dimension name, in which case it is added
+             along axis=0. If dim is provided as a DataArray or Index or
+             list-like object, its name, which must not be present in the
+             dataset, is used as the dimension to concatenate along and the
+@@ -1970,8 +1983,9 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+             dset.coords[dim_name] = dim_coord
+         return dset
+ 
+-    def sel_points(self, dim='points', method=None, tolerance=None,
+-                   **indexers):
++    def sel_points(self, dim: Any = 'points', method: str = None,
++                   tolerance: Number = None,
++                   **indexers: Any):
+         """Returns a new dataset with each array indexed pointwise by tick
+         labels along the specified dimension(s).
+ 
+@@ -1983,9 +1997,10 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+ 
+         Parameters
+         ----------
+-        dim : str or DataArray or pandas.Index or other list-like object, optional
++        dim : hashable or DataArray or pandas.Index or other list-like object, 
++              optional
+             Name of the dimension to concatenate along. If dim is provided as a
+-            string, it must be a new dimension name, in which case it is added
++            hashable, it must be a new dimension name, in which case it is added
+             along axis=0. If dim is provided as a DataArray or Index or
+             list-like object, its name, which must not be present in the
+             dataset, is used as the dimension to concatenate along and the
+@@ -2032,7 +2047,7 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+ 
+     def broadcast_like(self,
+                        other: Union['Dataset', 'DataArray'],
+-                       exclude=None) -> 'Dataset':
++                       exclude: Iterable[Hashable] = None) -> 'Dataset':
+         """Broadcast this DataArray against another Dataset or DataArray.
+         This is equivalent to xr.broadcast(other, self)[1]
+ 
+@@ -2040,13 +2055,14 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         ----------
+         other : Dataset or DataArray
+             Object against which to broadcast this array.
+-        exclude : sequence of str, optional
++        exclude : iterable of hashable, optional
+             Dimensions that must not be broadcasted
+ 
+         """
+-
+         if exclude is None:
+             exclude = set()
++        else:
++            exclude = set(exclude)
+         args = align(other, self, join='outer', copy=False, exclude=exclude)
+ 
+         dims_map, common_coords = _get_broadcast_dims_map_common_coords(
+@@ -2054,8 +2070,14 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+ 
+         return _broadcast_helper(args[1], exclude, dims_map, common_coords)
+ 
+-    def reindex_like(self, other, method=None, tolerance=None, copy=True,
+-                     fill_value=dtypes.NA):
++    def reindex_like(
++            self,
++            other: Union['Dataset', 'DataArray'],
++            method: str = None,
++            tolerance: Number = None,
++            copy: bool = True,
++            fill_value: Any = dtypes.NA
++    ) -> 'Dataset':
+         """Conform this object onto the indexes of another object, filling in
+         missing values with ``fill_value``. The default fill value is NaN.
+ 
+@@ -2104,8 +2126,15 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         return self.reindex(indexers=indexers, method=method, copy=copy,
+                             fill_value=fill_value, tolerance=tolerance)
+ 
+-    def reindex(self, indexers=None, method=None, tolerance=None, copy=True,
+-                fill_value=dtypes.NA, **indexers_kwargs):
++    def reindex(
++        self,
++        indexers: Mapping[Hashable, Any] = None,
++        method: str = None,
++        tolerance: Number = None,
++        copy: bool = True,
++        fill_value: Any = dtypes.NA,
++        **indexers_kwargs: Any
++    ) -> 'Dataset':
+         """Conform this object onto a new set of indexes, filling in
+         missing values with ``fill_value``. The default fill value is NaN.
+ 
+@@ -2167,8 +2196,14 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         return self._replace_with_new_dims(
+             variables, coord_names, indexes=indexes)
+ 
+-    def interp(self, coords=None, method='linear', assume_sorted=False,
+-               kwargs=None, **coords_kwargs):
++    def interp(
++        self,
++        coords: Mapping[Hashable, Any] = None,
++        method: str = 'linear',
++        assume_sorted: bool = False,
++        kwargs: Mapping[str, Any] = None,
++        **coords_kwargs: Any
++    ) -> 'Dataset':
+         """ Multidimensional interpolation of Dataset.
+ 
+         Parameters
+@@ -2237,7 +2272,7 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+             else:
+                 return (x, new_x)
+ 
+-        variables = OrderedDict()
++        variables = OrderedDict()  # type: OrderedDict[Hashable, Variable]
+         for name, var in obj._variables.items():
+             if name not in indexers:
+                 if var.dtype.kind in 'uifc':
+@@ -2260,9 +2295,10 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+ 
+         # attach indexer as coordinate
+         variables.update(indexers)
+-        indexes.update(
+-            (k, v.to_index()) for k, v in indexers.items() if v.dims == (k,)
+-        )
++        for k, v in indexers.items():
++            assert isinstance(v, Variable)
++            if v.dims == (k,):
++                indexes[k] = v.to_index()
+ 
+         # Extract coordinates from indexers
+         coord_vars, new_indexes = (
+@@ -2276,8 +2312,13 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         return self._replace_with_new_dims(
+             variables, coord_names, indexes=indexes)
+ 
+-    def interp_like(self, other, method='linear', assume_sorted=False,
+-                    kwargs=None):
++    def interp_like(
++        self,
++        other: Union['Dataset', 'DataArray'],
++        method: str = 'linear',
++        assume_sorted: bool = False,
++        kwargs: Mapping[str, Any] = None
++    ) -> 'Dataset':
+         """Interpolate this object onto the coordinates of another object,
+         filling the out of range values with NaN.
+ 
+@@ -2320,8 +2361,8 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+             kwargs = {}
+         coords = alignment.reindex_like_indexers(self, other)
+ 
+-        numeric_coords = OrderedDict()
+-        object_coords = OrderedDict()
++        numeric_coords = OrderedDict()  # type: OrderedDict[Hashable, pd.Index]
++        object_coords = OrderedDict()  # type: OrderedDict[Hashable, pd.Index]
+         for k, v in coords.items():
+             if v.dtype.kind in 'uifcMm':
+                 numeric_coords[k] = v
+@@ -2374,7 +2415,12 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         indexes = self._rename_indexes(name_dict)
+         return variables, coord_names, dims, indexes
+ 
+-    def rename(self, name_dict=None, inplace=None, **names):
++    def rename(
++        self,
++        name_dict: Mapping[Hashable, Hashable] = None,
++        inplace: bool = None,
++        **names: Hashable
++    ) -> 'Dataset':
+         """Returns a new object with renamed variables and dimensions.
+ 
+         Parameters
+@@ -2413,7 +2459,11 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         return self._replace(variables, coord_names, dims=dims,
+                              indexes=indexes, inplace=inplace)
+ 
+-    def rename_dims(self, dims_dict=None, **dims):
++    def rename_dims(
++        self,
++        dims_dict: Mapping[Hashable, Hashable] = None,
++        **dims: Hashable
++    ) -> 'Dataset':
+         """Returns a new object with renamed dimensions only.
+ 
+         Parameters
+@@ -2443,12 +2493,16 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+                 raise ValueError("cannot rename %r because it is not a "
+                                  "dimension in this dataset" % k)
+ 
+-        variables, coord_names, dims, indexes = self._rename_all(
++        variables, coord_names, sizes, indexes = self._rename_all(
+             name_dict={}, dims_dict=dims_dict)
+-        return self._replace(variables, coord_names, dims=dims,
+-                             indexes=indexes)
++        return self._replace(
++            variables, coord_names, dims=sizes, indexes=indexes)
+ 
+-    def rename_vars(self, name_dict=None, **names):
++    def rename_vars(
++        self,
++        name_dict: Mapping[Hashable, Hashable] = None,
++        **names: Hashable
++    ) -> 'Dataset':
+         """Returns a new object with renamed variables including coordinates
+ 
+         Parameters
+@@ -2482,7 +2536,11 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         return self._replace(variables, coord_names, dims=dims,
+                              indexes=indexes)
+ 
+-    def swap_dims(self, dims_dict, inplace=None):
++    def swap_dims(
++        self,
++        dims_dict: Mapping[Hashable, Hashable],
++        inplace: bool = None
++    ) -> 'Dataset':
+         """Returns a new object with swapped dimensions.
+ 
+         Parameters
+@@ -2523,8 +2581,8 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         coord_names = self._coord_names.copy()
+         coord_names.update(dims_dict.values())
+ 
+-        variables = OrderedDict()
+-        indexes = OrderedDict()
++        variables = OrderedDict()  # type: OrderedDict[Hashable, Variable]
++        indexes = OrderedDict()  # type: OrderedDict[Hashable, pd.Index]
+         for k, v in self.variables.items():
+             dims = tuple(dims_dict.get(dim, dim) for dim in v.dims)
+             if k in result_dims:
+@@ -2541,7 +2599,13 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         return self._replace_with_new_dims(variables, coord_names,
+                                            indexes=indexes, inplace=inplace)
+ 
+-    def expand_dims(self, dim=None, axis=None, **dim_kwargs):
++    def expand_dims(
++        self,
++        dim: Union[None, Hashable, Sequence[Hashable],
++                   Mapping[Hashable, Any]] = None,
++        axis: Union[None, int, Sequence[int]] = None,
++        **dim_kwargs: Any
++    ) -> 'Dataset':
+         """Return a new object with an additional axis (or axes) inserted at
+         the corresponding position in the array shape.  The new object is a
+         view into the underlying array, not a copy.
+@@ -2551,16 +2615,21 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+ 
+         Parameters
+         ----------
+-        dim : str, sequence of str, dict, or None
+-            Dimensions to include on the new variable.
+-            If provided as str or sequence of str, then dimensions are inserted
+-            with length 1. If provided as a dict, then the keys are the new
+-            dimensions and the values are either integers (giving the length of
+-            the new dimensions) or sequence/ndarray (giving the coordinates of
+-            the new dimensions). **WARNING** for python 3.5, if ``dim`` is
+-            dict-like, then it must be an ``OrderedDict``. This is to ensure
+-            that the order in which the dims are given is maintained.
+-        axis : integer, list (or tuple) of integers, or None
++        dim : hashable, sequence of hashable, mapping, or None
++            Dimensions to include on the new variable. If provided as hashable
++            or sequence of hashable, then dimensions are inserted with length
++            1. If provided as a mapping, then the keys are the new dimensions
++            and the values are either integers (giving the length of the new
++            dimensions) or array-like (giving the coordinates of the new
++            dimensions).
++
++            .. note::
++
++               For Python 3.5, if ``dim`` is a mapping, then it must be an
++               ``OrderedDict``. This is to ensure that the order in which the
++               dims are given is maintained.
++
++        axis : integer, sequence of integers, or None
+             Axis position(s) where new axis is to be inserted (position(s) on
+             the result array). If a list (or tuple) of integers is passed,
+             multiple axes are inserted. In this case, dim arguments should be
+@@ -2570,39 +2639,49 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+             The keywords are arbitrary dimensions being inserted and the values
+             are either the lengths of the new dims (if int is given), or their
+             coordinates. Note, this is an alternative to passing a dict to the
+-            dim kwarg and will only be used if dim is None. **WARNING** for
+-            python 3.5 ``dim_kwargs`` is not available.
++            dim kwarg and will only be used if dim is None.
++
++            .. note::
++
++               For Python 3.5, ``dim_kwargs`` is not available.
+ 
+         Returns
+         -------
+         expanded : same type as caller
+             This object, but with an additional dimension(s).
+         """
+-        if isinstance(dim, int):
+-            raise TypeError('dim should be str or sequence of strs or dict')
+-        elif isinstance(dim, str):
++        # TODO: get rid of the below code block when python 3.5 is no longer
++        #   supported.
++        if sys.version < '3.6':
++            if isinstance(dim, Mapping) and not isinstance(dim, OrderedDict):
++                raise TypeError("dim must be an OrderedDict for python <3.6")
++            if dim_kwargs:
++                raise ValueError("dim_kwargs isn't available for python <3.6")
++
++        if dim is None:
++            pass
++        elif isinstance(dim, Mapping):
++            # We're later going to modify dim in place; don't tamper with
++            # the input
++            dim = OrderedDict(dim)
++        elif isinstance(dim, int):
++            raise TypeError(
++                "dim should be hashable or sequence of hashables or mapping"
++            )
++        elif isinstance(dim, str) or not isinstance(dim, Sequence):
+             dim = OrderedDict(((dim, 1),))
+-        elif isinstance(dim, (list, tuple)):
++        elif isinstance(dim, Sequence):
+             if len(dim) != len(set(dim)):
+                 raise ValueError('dims should not contain duplicate values.')
+             dim = OrderedDict(((d, 1) for d in dim))
+ 
+-        # TODO: get rid of the below code block when python 3.5 is no longer
+-        #   supported.
+-        python36_plus = sys.version_info[0] == 3 and sys.version_info[1] > 5
+-        not_ordereddict = dim is not None and not isinstance(dim, OrderedDict)
+-        if not python36_plus and not_ordereddict:
+-            raise TypeError("dim must be an OrderedDict for python <3.6")
+-        elif not python36_plus and dim_kwargs:
+-            raise ValueError("dim_kwargs isn't available for python <3.6")
+-
+         dim = either_dict_or_kwargs(dim, dim_kwargs, 'expand_dims')
+-
+-        if axis is not None and not isinstance(axis, (list, tuple)):
+-            axis = [axis]
++        assert isinstance(dim, MutableMapping)
+ 
+         if axis is None:
+             axis = list(range(len(dim)))
++        elif not isinstance(axis, Sequence):
++            axis = [axis]
+ 
+         if len(dim) != len(axis):
+             raise ValueError('lengths of dim and axis should be identical.')
+@@ -2616,7 +2695,7 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+                     '{dim} already exists as coordinate or'
+                     ' variable name.'.format(dim=d))
+ 
+-        variables = OrderedDict()
++        variables = OrderedDict()  # type: OrderedDict[Hashable, Variable]
+         coord_names = self._coord_names.copy()
+         # If dim is a dict, then ensure that the values are either integers
+         # or iterables.
+@@ -2660,9 +2739,7 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+                     all_dims = list(zip(v.dims, v.shape))
+                     for d, c in zip_axis_dim:
+                         all_dims.insert(d, c)
+-                    all_dims = OrderedDict(all_dims)
+-
+-                    variables[k] = v.set_dims(all_dims)
++                    variables[k] = v.set_dims(OrderedDict(all_dims))
+             else:
+                 # If dims includes a label of a non-dimension coordinate,
+                 # it will be promoted to a 1D coordinate with a single value.
+@@ -2674,8 +2751,13 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         return self._replace_vars_and_dims(
+             variables, dims=new_dims, coord_names=coord_names)
+ 
+-    def set_index(self, indexes=None, append=False, inplace=None,
+-                  **indexes_kwargs):
++    def set_index(
++        self,
++        indexes: Mapping[Hashable, Union[Hashable, Sequence[Hashable]]] = None,
++        append: bool = False,
++        inplace: bool = None,
++        **indexes_kwargs: Union[Hashable, Sequence[Hashable]]
++    ) -> 'Dataset':
+         """Set Dataset (multi-)indexes using one or more existing coordinates
+         or variables.
+ 
+@@ -2713,7 +2795,12 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         return self._replace_vars_and_dims(variables, coord_names=coord_names,
+                                            inplace=inplace)
+ 
+-    def reset_index(self, dims_or_levels, drop=False, inplace=None):
++    def reset_index(
++        self,
++        dims_or_levels: Union[Hashable, Sequence[Hashable]],
++        drop: bool = False,
++        inplace: bool = None,
++    ) -> 'Dataset':
+         """Reset the specified index(es) or multi-index level(s).
+ 
+         Parameters
+@@ -2738,14 +2825,22 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         Dataset.set_index
+         """
+         inplace = _check_inplace(inplace)
+-        variables, coord_names = split_indexes(dims_or_levels, self._variables,
+-                                               self._coord_names,
+-                                               self._level_coords, drop=drop)
++        variables, coord_names = split_indexes(
++            dims_or_levels,
++            self._variables,
++            self._coord_names,
++            cast(Mapping[Hashable, Hashable], self._level_coords),
++            drop=drop,
++        )
+         return self._replace_vars_and_dims(variables, coord_names=coord_names,
+                                            inplace=inplace)
+ 
+-    def reorder_levels(self, dim_order=None, inplace=None,
+-                       **dim_order_kwargs):
++    def reorder_levels(
++        self,
++        dim_order: Mapping[Hashable, Sequence[int]] = None,
++        inplace: bool = None,
++        **dim_order_kwargs: Sequence[int]
++    ) -> 'Dataset':
+         """Rearrange index levels using input order.
+ 
+         Parameters
+@@ -2818,7 +2913,11 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         return self._replace_with_new_dims(
+             variables, coord_names=coord_names, indexes=indexes)
+ 
+-    def stack(self, dimensions=None, **dimensions_kwargs):
++    def stack(
++        self,
++        dimensions: Mapping[Hashable, Sequence[Hashable]] = None,
++        **dimensions_kwargs: Sequence[Hashable]
++    ) -> 'Dataset':
+         """
+         Stack any number of existing dimensions into a single new dimension.
+ 
+@@ -2850,8 +2949,13 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+             result = result._stack_once(dims, new_dim)
+         return result
+ 
+-    def to_stacked_array(self, new_dim, sample_dims, variable_dim='variable',
+-                         name=None):
++    def to_stacked_array(
++        self,
++        new_dim: Hashable,
++        sample_dims: Sequence[Hashable],
++        variable_dim: str = 'variable',
++        name: Hashable = None
++    ) -> 'DataArray':
+         """Combine variables of differing dimensionality into a DataArray
+         without broadcasting.
+ 
+@@ -2860,9 +2964,9 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+ 
+         Parameters
+         ----------
+-        new_dim : str
++        new_dim : Hashable
+             Name of the new stacked coordinate
+-        sample_dims : Sequence[str]
++        sample_dims : Sequence[Hashable]
+             Dimensions that **will not** be stacked. Each array in the dataset
+             must share these dimensions. For machine learning applications,
+             these define the dimensions over which samples are drawn.
+@@ -2963,7 +3067,7 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+ 
+         return data_array
+ 
+-    def _unstack_once(self, dim):
++    def _unstack_once(self, dim: Hashable) -> 'Dataset':
+         index = self.get_index(dim)
+         # GH2619. For MultiIndex, we need to call remove_unused.
+         if LooseVersion(pd.__version__) >= "0.20":
+@@ -2982,7 +3086,7 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         new_dim_names = index.names
+         new_dim_sizes = [lev.size for lev in index.levels]
+ 
+-        variables = OrderedDict()
++        variables = OrderedDict()  # type: OrderedDict[Hashable, Variable]
+         indexes = OrderedDict(
+             (k, v) for k, v in self.indexes.items() if k != dim)
+ 
+@@ -3003,7 +3107,10 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         return self._replace_with_new_dims(
+             variables, coord_names=coord_names, indexes=indexes)
+ 
+-    def unstack(self, dim=None):
++    def unstack(
++        self,
++        dim: Union[Hashable, Iterable[Hashable]] = None
++    ) -> 'Dataset':
+         """
+         Unstack existing dimensions corresponding to MultiIndexes into
+         multiple new dimensions.
+@@ -3012,7 +3119,7 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+ 
+         Parameters
+         ----------
+-        dim : str or sequence of str, optional
++        dim : Hashable or iterable of Hashable, optional
+             Dimension(s) over which to unstack. By default unstacks all
+             MultiIndexes.
+ 
+@@ -3025,12 +3132,16 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         --------
+         Dataset.stack
+         """
+-
+         if dim is None:
+-            dims = [d for d in self.dims if isinstance(self.get_index(d),
+-                                                       pd.MultiIndex)]
++            dims = [
++                d for d in self.dims
++                if isinstance(self.get_index(d), pd.MultiIndex)
++            ]
+         else:
+-            dims = [dim] if isinstance(dim, str) else dim
++            if isinstance(dim, str) or not isinstance(dim, Iterable):
++                dims = [dim]
++            else:
++                dims = list(dim)
+ 
+             missing_dims = [d for d in dims if d not in self.dims]
+             if missing_dims:
+@@ -3048,19 +3159,7 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+             result = result._unstack_once(dim)
+         return result
+ 
+-    def update(
+-        self,
+-        other: Union[
+-            'Dataset',
+-            Mapping[Hashable, Union[
+-                'DataArray',
+-                Variable,
+-                Tuple[Hashable, Any],
+-                Tuple[Sequence[Hashable], Any],
+-            ]],
+-        ],
+-        inplace: bool = None
+-    ) -> 'Dataset':
++    def update(self, other: 'DatasetLike', inplace: bool = None) -> 'Dataset':
+         """Update this dataset's variables with those from another dataset.
+ 
+         Parameters
+@@ -3095,8 +3194,15 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         return self._replace_vars_and_dims(variables, coord_names, dims,
+                                            inplace=inplace)
+ 
+-    def merge(self, other, inplace=None, overwrite_vars=frozenset(),
+-              compat='no_conflicts', join='outer', fill_value=dtypes.NA):
++    def merge(
++        self,
++        other: 'DatasetLike',
++        inplace: bool = None,
++        overwrite_vars: Union[Hashable, Iterable[Hashable]] = frozenset(),
++        compat: str = 'no_conflicts',
++        join: str = 'outer',
++        fill_value: Any = dtypes.NA
++    ) -> 'Dataset':
+         """Merge the arrays of two datasets into a single dataset.
+ 
+         This method generally does not allow for overriding data, with the
+@@ -3111,7 +3217,7 @@ class Dataset(Mapping, ImplementsDatasetReduce, DataWithCoords):
+         inplace : bool, optional
+             If True, merge the other dataset into this dataset in-place.
+             Otherwise, return a new dataset object.
+-        overwrite_vars : str or sequence, optional
++        overwrite_vars : Hashable or iterable of Hashable, optional
+             If provided, update variables of these name(s) without checking for
+             conflicts in this dataset.
+         compat : {'broadcast_equals', 'equals', 'identical',
+diff --git a/xarray/core/merge.py b/xarray/core/merge.py
+index e71cf16a..9c909aa1 100644
+--- a/xarray/core/merge.py
++++ b/xarray/core/merge.py
+@@ -1,6 +1,18 @@
+ from collections import OrderedDict
+-from typing import (Any, Dict, Hashable, List, Mapping, Optional, Sequence,
+-                    Set, Tuple, Union, TYPE_CHECKING)
++from typing import (
++    Any,
++    Dict,
++    Hashable,
++    Iterable,
++    List,
++    Mapping,
++    MutableMapping,
++    Sequence,
++    Set,
++    Tuple,
++    Union,
++    TYPE_CHECKING
++)
+ 
+ import pandas as pd
+ 
+@@ -14,6 +26,21 @@ if TYPE_CHECKING:
+     from .dataarray import DataArray
+     from .dataset import Dataset
+ 
++    DatasetLikeValue = Union[
++        DataArray,
++        Variable,
++        Tuple[Hashable, Any],
++        Tuple[Sequence[Hashable], Any],
++    ]
++    DatasetLike = Union[Dataset, Mapping[Hashable, DatasetLikeValue]]
++    """Any object type that can be used on the rhs of Dataset.update,
++    Dataset.merge, etc.
++    """
++    MutableDatasetLike = Union[
++        Dataset,
++        MutableMapping[Hashable, DatasetLikeValue],
++    ]
++
+ 
+ PANDAS_TYPES = (pd.Series, pd.DataFrame, pdcompat.Panel)
+ 
+@@ -116,11 +143,10 @@ class OrderedDefaultDict(OrderedDict):
+ 
+ 
+ def merge_variables(
+-        list_of_variables_dicts,  # type: List[Mapping[Any, Variable]]
+-        priority_vars=None,       # type: Optional[Mapping[Any, Variable]]
+-        compat='minimal',         # type: str
+-):
+-    # type: (...) -> OrderedDict[Any, Variable]
++        list_of_variables_dicts: List[Mapping[Any, Variable]],
++        priority_vars: Mapping[Any, Variable] = None,
++        compat: str = 'minimal',
++) -> 'OrderedDict[Any, Variable]':
+     """Merge dicts of variables, while resolving conflicts appropriately.
+ 
+     Parameters
+@@ -228,8 +254,9 @@ def expand_variable_dicts(
+     return var_dicts
+ 
+ 
+-def determine_coords(list_of_variable_dicts):
+-    # type: (List[Dict]) -> Tuple[Set, Set]
++def determine_coords(
++    list_of_variable_dicts: Iterable['DatasetLike']
++) -> Tuple[Set[Hashable], Set[Hashable]]:
+     """Given a list of dicts with xarray object values, identify coordinates.
+ 
+     Parameters
+@@ -265,7 +292,9 @@ def determine_coords(list_of_variable_dicts):
+     return coord_names, noncoord_names
+ 
+ 
+-def coerce_pandas_values(objects):
++def coerce_pandas_values(
++    objects: Iterable['DatasetLike']
++) -> List['DatasetLike']:
+     """Convert pandas values found in a list of labeled objects.
+ 
+     Parameters
+@@ -285,7 +314,7 @@ def coerce_pandas_values(objects):
+     out = []
+     for obj in objects:
+         if isinstance(obj, Dataset):
+-            variables = obj
++            variables = obj  # type: DatasetLike
+         else:
+             variables = OrderedDict()
+             if isinstance(obj, PANDAS_TYPES):
+@@ -555,17 +584,28 @@ def merge(objects, compat='no_conflicts', join='outer', fill_value=dtypes.NA):
+     return merged
+ 
+ 
+-def dataset_merge_method(dataset, other, overwrite_vars, compat, join,
+-                         fill_value=dtypes.NA):
+-    """Guts of the Dataset.merge method."""
++def dataset_merge_method(
++    dataset: 'Dataset',
++    other: 'DatasetLike',
++    overwrite_vars: Union[Hashable, Iterable[Hashable]],
++    compat: str,
++    join: str,
++    fill_value: Any
++) -> Tuple['OrderedDict[Hashable, Variable]',
++           Set[Hashable],
++           Dict[Hashable, int]]:
++    """Guts of the Dataset.merge method.
++    """
+ 
+     # we are locked into supporting overwrite_vars for the Dataset.merge
+     # method due for backwards compatibility
+     # TODO: consider deprecating it?
+ 
+-    if isinstance(overwrite_vars, str):
+-        overwrite_vars = set([overwrite_vars])
+-    overwrite_vars = set(overwrite_vars)
++    if isinstance(overwrite_vars, Iterable) and not isinstance(
++            overwrite_vars, str):
++        overwrite_vars = set(overwrite_vars)
++    else:
++        overwrite_vars = {overwrite_vars}
+ 
+     if not overwrite_vars:
+         objs = [dataset, other]
+@@ -574,8 +614,8 @@ def dataset_merge_method(dataset, other, overwrite_vars, compat, join,
+         objs = [dataset, other]
+         priority_arg = 1
+     else:
+-        other_overwrite = OrderedDict()
+-        other_no_overwrite = OrderedDict()
++        other_overwrite = OrderedDict()  # type: MutableDatasetLike
++        other_no_overwrite = OrderedDict()  # type: MutableDatasetLike
+         for k, v in other.items():
+             if k in overwrite_vars:
+                 other_overwrite[k] = v
+@@ -590,15 +630,7 @@ def dataset_merge_method(dataset, other, overwrite_vars, compat, join,
+ 
+ def dataset_update_method(
+     dataset: 'Dataset',
+-    other: Union[
+-        'Dataset',
+-        Mapping[Hashable, Union[
+-            'DataArray',
+-            Variable,
+-            Tuple[Hashable, Any],
+-            Tuple[Sequence[Hashable], Any],
+-        ]],
+-    ],
++    other: 'DatasetLike',
+ ) -> Tuple['OrderedDict[Hashable, Variable]',
+            Set[Hashable],
+            Dict[Hashable, int]]:
+diff --git a/xarray/core/utils.py b/xarray/core/utils.py
+index 811d71b7..8ce30a3c 100644
+--- a/xarray/core/utils.py
++++ b/xarray/core/utils.py
+@@ -88,7 +88,7 @@ def safe_cast_to_index(array: Any) -> pd.Index:
+ 
+ 
+ def multiindex_from_product_levels(levels: Sequence[pd.Index],
+-                                   names: Optional[Sequence[str]] = None
++                                   names: Sequence[str] = None
+                                    ) -> pd.MultiIndex:
+     """Creating a MultiIndex from a product without refactorizing levels.
+ 
+@@ -351,7 +351,7 @@ class SortedKeysDict(MutableMapping[K, V]):
+     """
+     __slots__ = ['mapping']
+ 
+-    def __init__(self, mapping: Optional[MutableMapping[K, V]] = None):
++    def __init__(self, mapping: MutableMapping[K, V] = None):
+         self.mapping = {} if mapping is None else mapping
+ 
+     def __getitem__(self, key: K) -> V:
+@@ -382,7 +382,7 @@ class OrderedSet(MutableSet[T]):
+     The API matches the builtin set, but it preserves insertion order of
+     elements, like an OrderedDict.
+     """
+-    def __init__(self, values: Optional[AbstractSet[T]] = None):
++    def __init__(self, values: AbstractSet[T] = None):
+         self._ordered_dict = OrderedDict()  # type: MutableMapping[T, None]
+         if values is not None:
+             # Disable type checking - both mypy and PyCharm believes that
+diff --git a/xarray/py.typed b/xarray/py.typed
+new file mode 100644
+index 00000000..e69de29b
++ git diff 1757dffac2fa493d7b9a074b84cf8c830a706688
+diff --git a/xarray/core/variable.py b/xarray/core/variable.py
+index 379be8f5..87fec3c9 100644
+--- a/xarray/core/variable.py
++++ b/xarray/core/variable.py
+@@ -809,7 +809,7 @@ class Variable(common.AbstractArray, arithmetic.SupportsArithmetic,
+                     data = data.copy()
+                 elif not isinstance(data, PandasIndexAdapter):
+                     # pandas.Index is immutable
+-                    data = np.array(data)
++                    data = np.array(data, dtype=data.dtype)  # Preserve the original dtype
+         else:
+             data = as_compatible_data(data)
+             if self.shape != data.shape:
+diff --git a/xarray/tests/test_variable.py b/xarray/tests/test_variable.py
+index 73d2a40b..9dd4f886 100644
+--- a/xarray/tests/test_variable.py
++++ b/xarray/tests/test_variable.py
+@@ -2141,4 +2141,20 @@ class TestBackendIndexing:
+         v = Variable(dims=('x', 'y'),
+                      data=CopyOnWriteArray(DaskIndexingAdapter(da)))
+         self.check_orthogonal_indexing(v)
+-        self.check_vectorized_indexing(v)
++def test_copy_preserves_unicode_dtype():
++    var = Variable(['x'], ['foo', 'bar', 'baz'])
++    assert var.dtype == '<U3'
++    var_copy = var.copy(deep=True)
++    assert var_copy.dtype == '<U3'
++    assert_identical(var, var_copy)
++
++    # Test with a more complex structure
++    ds = Dataset(
++        coords={'x': ['foo'], 'y': ('x', ['bar'])},
++        data_vars={'z': ('x', ['baz'])}
++    )
++    ds_copy = ds.copy(deep=True)
++    assert ds_copy['x'].dtype == '<U3'
++    assert ds_copy['y'].dtype == '<U3'
++    assert ds_copy['z'].dtype == '<U3'
++    assert_identical(ds, ds_copy)
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/udunits2-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/proj4-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libxml2_deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libglib_deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/geotiff-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/gdal-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmpy-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmf-deactivate.sh"
+PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval '. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/udunits2-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/proj4-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libxml2_deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libglib_deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/geotiff-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/gdal-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmpy-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmf-deactivate.sh"
+PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/udunits2-deactivate.sh
+++++ unset UDUNITS2_XML_PATH
+++++ '[' -n '' ']'
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/proj4-deactivate.sh
+++++ unset PROJ_DATA
+++++ unset PROJ_NETWORK
+++++ '[' -n '' ']'
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libxml2_deactivate.sh
+++++ test -n ''
+++++ unset XML_CATALOG_FILES
+++++ unset xml_catalog_files_libxml2
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libglib_deactivate.sh
+++++ export GSETTINGS_SCHEMA_DIR=
+++++ GSETTINGS_SCHEMA_DIR=
+++++ unset GSETTINGS_SCHEMA_DIR_CONDA_BACKUP
+++++ '[' -z ']'
+++++ unset GSETTINGS_SCHEMA_DIR
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/geotiff-deactivate.sh
+++++ unset GEOTIFF_CSV
+++++ '[' -n '' ']'
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/gdal-deactivate.sh
+++++ unset GDAL_DATA
+++++ '[' -n '' ']'
+++++ unset GDAL_DRIVER_PATH
+++++ '[' -n '' ']'
+++++ unset CPL_ZIP_ENCODING
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmpy-deactivate.sh
+++++ unset ESMFMKFILE
+++++ '[' -n /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
+++++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++++ unset _CONDA_SET_ESMFMKFILE
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmf-deactivate.sh
+++++ unset ESMFMKFILE
+++++ '[' -n '' ']'
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh"'
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh"'
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh
++++ '[' -n '' ']'
++++ '[' -f /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh
++++ '[' -n /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export _CONDA_SET_ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ _CONDA_SET_ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ '[' -f /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh
++++ '[' -n '' ']'
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/gdal ']'
++++ export GDAL_DATA=/opt/miniconda3/envs/testbed/share/gdal
++++ GDAL_DATA=/opt/miniconda3/envs/testbed/share/gdal
++++ export GDAL_DRIVER_PATH=/opt/miniconda3/envs/testbed/lib/gdalplugins
++++ GDAL_DRIVER_PATH=/opt/miniconda3/envs/testbed/lib/gdalplugins
++++ '[' '!' -d /opt/miniconda3/envs/testbed/lib/gdalplugins ']'
++++ export CPL_ZIP_ENCODING=UTF-8
++++ CPL_ZIP_ENCODING=UTF-8
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/epsg_csv ']'
++++ '[' -d /opt/miniconda3/envs/testbed/Library/share/epsg_csv ']'
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh
++++ _la_log 'Beginning libarrow activation.'
++++ '[' '' = 1 ']'
++++ _la_gdb_prefix=/opt/miniconda3/envs/testbed/share/gdb/auto-load
++++ '[' '!' -w /opt/miniconda3/envs/testbed/share/gdb/auto-load ']'
++++ _la_placeholder=replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX
++++ _la_symlink_dir=/opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib
++++ _la_orig_install_dir=/opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib
++++ _la_log '          _la_gdb_prefix: /opt/miniconda3/envs/testbed/share/gdb/auto-load'
++++ '[' '' = 1 ']'
++++ _la_log '         _la_placeholder: replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX'
++++ '[' '' = 1 ']'
++++ _la_log '         _la_symlink_dir: /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib'
++++ '[' '' = 1 ']'
++++ _la_log '    _la_orig_install_dir: /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib'
++++ '[' '' = 1 ']'
++++ _la_log '  content of that folder:'
++++ '[' '' = 1 ']'
+++++ ls -al /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib
+++++ sed 's/^/      /'
++++ _la_log '      total 12
+      drwxr-xr-x 2 root root 4096 Sep  6 07:48 .
+      drwxr-xr-x 3 root root 4096 Sep  6 07:48 ..
+      -rw-r--r-- 1 root root  971 Sep  6 07:48 libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ for _la_target in "$_la_orig_install_dir/"*.py
++++ '[' '!' -e /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py ']'
+++++ basename /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py
++++ _la_symlink=/opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py
++++ _la_log '   _la_target: /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ _la_log '  _la_symlink: /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ '[' -L /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py ']'
+++++ readlink /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py
++++ '[' /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py = /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py ']'
++++ _la_log 'symlink $_la_symlink already exists and points to $_la_target, skipping.'
++++ '[' '' = 1 ']'
++++ continue
++++ _la_log 'Libarrow activation complete.'
++++ '[' '' = 1 ']'
++++ unset _la_gdb_prefix
++++ unset _la_log
++++ unset _la_orig_install_dir
++++ unset _la_placeholder
++++ unset _la_symlink
++++ unset _la_symlink_dir
++++ unset _la_target
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh
++++ export GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ export GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
++++ GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh
++++ test -n ''
++++ xml_catalog_files_libxml2=
++++ XML_CATALOG_FILES=
++++ conda_catalog_files=
++++ ifs_libxml2=' 	
+'
++++ IFS=' '
++++ rem=/opt/miniconda3/envs/testbed
++++ for pre in ${rem}
++++ test '' = /opt/miniconda3/envs/testbed
++++ conda_catalog_files=/opt/miniconda3/envs/testbed
++++ rem=
++++ IFS=' 	
+'
++++ conda_catalog_files='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ export 'XML_CATALOG_FILES=file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ XML_CATALOG_FILES='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ unset conda_catalog_files ifs_libxml2 rem
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/proj ']'
++++ export PROJ_DATA=/opt/miniconda3/envs/testbed/share/proj
++++ PROJ_DATA=/opt/miniconda3/envs/testbed/share/proj
++++ '[' -f /opt/miniconda3/envs/testbed/share/proj/copyright_and_licenses.csv ']'
++++ export PROJ_NETWORK=ON
++++ PROJ_NETWORK=ON
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/udunits ']'
++++ export UDUNITS2_XML_PATH=/opt/miniconda3/envs/testbed/share/udunits/udunits2.xml
++++ UDUNITS2_XML_PATH=/opt/miniconda3/envs/testbed/share/udunits/udunits2.xml
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: numpy>=1.12 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from xarray==0.12.3+27.g1757dffa.dirty) (1.23.0)
+Requirement already satisfied: pandas>=0.19.2 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from xarray==0.12.3+27.g1757dffa.dirty) (1.5.3)
+Requirement already satisfied: python-dateutil>=2.8.1 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from pandas>=0.19.2->xarray==0.12.3+27.g1757dffa.dirty) (2.8.2)
+Requirement already satisfied: pytz>=2020.1 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from pandas>=0.19.2->xarray==0.12.3+27.g1757dffa.dirty) (2023.3)
+Requirement already satisfied: six>=1.5 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from python-dateutil>=2.8.1->pandas>=0.19.2->xarray==0.12.3+27.g1757dffa.dirty) (1.16.0)
+Installing collected packages: xarray
+  Attempting uninstall: xarray
+    Found existing installation: xarray 0.12.3+27.g1757dffa
+    Uninstalling xarray-0.12.3+27.g1757dffa:
+      Successfully uninstalled xarray-0.12.3+27.g1757dffa
+  DEPRECATION: Legacy editable install of xarray==0.12.3+27.g1757dffa.dirty from file:///testbed (setup.py develop) is deprecated. pip 25.0 will enforce this behaviour change. A possible replacement is to add a pyproject.toml or enable --use-pep517, and use setuptools >= 64. If the resulting installation is not behaving as expected, try using --config-settings editable_mode=compat. Please consult the setuptools documentation for more information. Discussion can be found at https://github.com/pypa/pip/issues/11457
+  Running setup.py develop for xarray
+Successfully installed xarray
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 1757dffac2fa493d7b9a074b84cf8c830a706688 xarray/tests/test_variable.py
+Updated 1 path from 36547602
++ git apply -v -
+Checking patch xarray/tests/test_variable.py...
+Applied patch xarray/tests/test_variable.py cleanly.
++ pytest -rA xarray/tests/test_variable.py
+============================= test session starts ==============================
+platform linux -- Python 3.10.14, pytest-7.4.0, pluggy-1.5.0
+rootdir: /testbed
+configfile: setup.cfg
+plugins: cov-5.0.0, xdist-3.6.1, hypothesis-6.111.2, env-1.1.3
+collected 265 items
+
+xarray/tests/test_variable.py .......................................... [ 15%]
+........................................................................ [ 43%]
+........................................................xxxx............ [ 70%]
+...............................F.........................xxxxxxx........ [ 97%]
+.......                                                                  [100%]
+
+=================================== FAILURES ===================================
+____________________ TestIndexVariable.test_copy[str-True] _____________________
+
+self = <xarray.tests.test_variable.TestIndexVariable object at 0x2aab16196e30>
+deep = True, astype = <class 'str'>
+
+    @pytest.mark.parametrize('deep', [True, False])
+    @pytest.mark.parametrize('astype', [float, int, str])
+    def test_copy(self, deep, astype):
+        v = self.cls('x', (0.5 * np.arange(10)).astype(astype), {'foo': 'bar'})
+        w = v.copy(deep=deep)
+        assert type(v) is type(w)
+        assert_identical(v, w)
+>       assert v.dtype == w.dtype
+E       AssertionError: assert dtype('<U32') == dtype('O')
+E        +  where dtype('<U32') = <xarray.IndexVariable 'x' (x: 10)>\narray(['0.0', '0.5', '1.0', '1.5', '2.0', '2.5', '3.0', '3.5', '4.0', '4.5'],\n      dtype='<U32')\nAttributes:\n    foo:      bar.dtype
+E        +  and   dtype('O') = <xarray.IndexVariable 'x' (x: 10)>\narray(['0.0', '0.5', '1.0', '1.5', '2.0', '2.5', '3.0', '3.5', '4.0', '4.5'],\n      dtype=object)\nAttributes:\n    foo:      bar.dtype
+
+xarray/tests/test_variable.py:486: AssertionError
+=============================== warnings summary ===============================
+xarray/core/dask_array_ops.py:11
+xarray/core/dask_array_ops.py:11
+  /testbed/xarray/core/dask_array_ops.py:11: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if LooseVersion(dask.__version__) <= LooseVersion('0.18.2'):
+
+xarray/core/npcompat.py:135
+xarray/core/npcompat.py:135
+  /testbed/xarray/core/npcompat.py:135: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if LooseVersion(np.__version__) >= LooseVersion('1.13'):
+
+xarray/core/dask_array_compat.py:43
+xarray/core/dask_array_compat.py:43
+  /testbed/xarray/core/dask_array_compat.py:43: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if LooseVersion(dask_version) > LooseVersion('0.19.2'):
+
+xarray/plot/utils.py:17
+xarray/plot/utils.py:17
+  /testbed/xarray/plot/utils.py:17: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if LooseVersion(nc_time_axis.__version__) < LooseVersion('1.2.0'):
+
+xarray/plot/plot.py:243
+  /testbed/xarray/plot/plot.py:243: SyntaxWarning: "is" with a literal. Did you mean "=="?
+    if args is ():
+
+xarray/core/pdcompat.py:46
+  /testbed/xarray/core/pdcompat.py:46: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if LooseVersion(pd.__version__) < '0.25.0':
+
+../opt/miniconda3/envs/testbed/lib/python3.10/site-packages/setuptools/_distutils/version.py:345: 2 warnings
+xarray/tests/test_variable.py: 104 warnings
+  /opt/miniconda3/envs/testbed/lib/python3.10/site-packages/setuptools/_distutils/version.py:345: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    other = LooseVersion(other)
+
+xarray/tests/__init__.py:57: 15 warnings
+  /testbed/xarray/tests/__init__.py:57: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    return version.LooseVersion(vstring)
+
+xarray/tests/test_variable.py: 12 warnings
+  /testbed/xarray/core/variable.py:1596: DeprecationWarning: the `interpolation=` argument to nanpercentile was renamed to `method=`, which has additional options.
+  Users of the modes 'nearest', 'lower', 'higher', or 'midpoint' are encouraged to review the method they used. (Deprecated NumPy 1.22)
+    qs = np.nanpercentile(self.data, q * 100., axis=axis,
+
+xarray/tests/test_variable.py: 102 warnings
+  /testbed/xarray/core/variable.py:900: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if LooseVersion(dask.__version__) > '1.2.2':
+
+xarray/tests/test_variable.py::TestVariableWithDask::test_eq_all_dtypes
+  /opt/miniconda3/envs/testbed/lib/python3.10/site-packages/dask/core.py:119: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+    return func(*(_execute_task(a, cache) for a in args))
+
+xarray/tests/test_variable.py::TestVariableWithDask::test_equals_all_dtypes
+  /testbed/xarray/tests/test_variable.py:1803: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if '0.18.2' <= LooseVersion(dask.__version__) < '0.19.1':
+
+xarray/tests/test_variable.py::test_raise_no_warning_for_nan_in_binary_ops
+  /opt/miniconda3/envs/testbed/lib/python3.10/site-packages/_pytest/python.py:194: PytestRemovedIn8Warning: Passing None has been deprecated.
+  See https://docs.pytest.org/en/latest/how-to/capture-warnings.html#additional-use-cases-of-warnings-in-tests for alternatives in common use cases.
+    result = testfunction(**testargs)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+==================================== PASSES ====================================
+__________________ TestVariable.test_pandas_cateogrical_dtype __________________
+----------------------------- Captured stdout call -----------------------------
+<xarray.Variable (x: 10)>
+array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+_________________ TestVariable.test_pandas_datetime64_with_tz __________________
+----------------------------- Captured stdout call -----------------------------
+<xarray.Variable (x: 10)>
+array([946702800000000000, 946706400000000000, 946710000000000000,
+       946713600000000000, 946717200000000000, 946720800000000000,
+       946724400000000000, 946728000000000000, 946731600000000000,
+       946735200000000000], dtype=object)
+______________ TestVariableWithDask.test_pandas_cateogrical_dtype ______________
+----------------------------- Captured stdout call -----------------------------
+<xarray.Variable (x: 10)>
+dask.array<shape=(10,), dtype=int64, chunksize=(10,)>
+_____________ TestVariableWithDask.test_pandas_datetime64_with_tz ______________
+----------------------------- Captured stdout call -----------------------------
+<xarray.Variable (x: 10)>
+dask.array<shape=(10,), dtype=object, chunksize=(10,)>
+_______________ TestIndexVariable.test_pandas_cateogrical_dtype ________________
+----------------------------- Captured stdout call -----------------------------
+<xarray.IndexVariable 'x' (x: 10)>
+array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+_______________ TestIndexVariable.test_pandas_datetime64_with_tz _______________
+----------------------------- Captured stdout call -----------------------------
+<xarray.IndexVariable 'x' (x: 10)>
+array([946702800000000000, 946706400000000000, 946710000000000000,
+       946713600000000000, 946717200000000000, 946720800000000000,
+       946724400000000000, 946728000000000000, 946731600000000000,
+       946735200000000000], dtype=object)
+=========================== short test summary info ============================
+PASSED xarray/tests/test_variable.py::TestVariable::test_properties
+PASSED xarray/tests/test_variable.py::TestVariable::test_attrs
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_dict
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_1d
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_1d_fancy
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_with_mask
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_with_mask_size_zero
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_with_mask_nd_indexer
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_0d_int
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_0d_float
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_0d_string
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_0d_datetime
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_0d_timedelta64
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_0d_not_a_time
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_0d_object
+PASSED xarray/tests/test_variable.py::TestVariable::test_0d_object_array_with_list
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_and_concat_datetime
+PASSED xarray/tests/test_variable.py::TestVariable::test_0d_time_data
+PASSED xarray/tests/test_variable.py::TestVariable::test_datetime64_conversion
+PASSED xarray/tests/test_variable.py::TestVariable::test_timedelta64_conversion
+PASSED xarray/tests/test_variable.py::TestVariable::test_object_conversion
+PASSED xarray/tests/test_variable.py::TestVariable::test_pandas_data
+PASSED xarray/tests/test_variable.py::TestVariable::test_pandas_period_index
+PASSED xarray/tests/test_variable.py::TestVariable::test_1d_math
+PASSED xarray/tests/test_variable.py::TestVariable::test_1d_reduce
+PASSED xarray/tests/test_variable.py::TestVariable::test_array_interface
+PASSED xarray/tests/test_variable.py::TestVariable::test___array__
+PASSED xarray/tests/test_variable.py::TestVariable::test_equals_all_dtypes
+PASSED xarray/tests/test_variable.py::TestVariable::test_eq_all_dtypes
+PASSED xarray/tests/test_variable.py::TestVariable::test_encoding_preserved
+PASSED xarray/tests/test_variable.py::TestVariable::test_concat
+PASSED xarray/tests/test_variable.py::TestVariable::test_concat_attrs
+PASSED xarray/tests/test_variable.py::TestVariable::test_concat_fixed_len_str
+PASSED xarray/tests/test_variable.py::TestVariable::test_concat_number_strings
+PASSED xarray/tests/test_variable.py::TestVariable::test_concat_mixed_dtypes
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy[float-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy[float-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy[int-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy[int-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy[str-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy[str-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy_index
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy_with_data
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy_with_data_errors
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy_index_with_data
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy_index_with_data_errors
+PASSED xarray/tests/test_variable.py::TestVariable::test_real_and_imag
+PASSED xarray/tests/test_variable.py::TestVariable::test_aggregate_complex
+PASSED xarray/tests/test_variable.py::TestVariable::test_pandas_cateogrical_dtype
+PASSED xarray/tests/test_variable.py::TestVariable::test_pandas_datetime64_with_tz
+PASSED xarray/tests/test_variable.py::TestVariable::test_multiindex
+PASSED xarray/tests/test_variable.py::TestVariable::test_load
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_advanced
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_uint_1d
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_uint
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_0d_array
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_fancy
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_error
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad
+PASSED xarray/tests/test_variable.py::TestVariable::test_rolling_window
+PASSED xarray/tests/test_variable.py::TestVariable::test_data_and_values
+PASSED xarray/tests/test_variable.py::TestVariable::test_numpy_same_methods
+PASSED xarray/tests/test_variable.py::TestVariable::test_datetime64_conversion_scalar
+PASSED xarray/tests/test_variable.py::TestVariable::test_timedelta64_conversion_scalar
+PASSED xarray/tests/test_variable.py::TestVariable::test_0d_str
+PASSED xarray/tests/test_variable.py::TestVariable::test_0d_datetime
+PASSED xarray/tests/test_variable.py::TestVariable::test_0d_timedelta
+PASSED xarray/tests/test_variable.py::TestVariable::test_equals_and_identical
+PASSED xarray/tests/test_variable.py::TestVariable::test_broadcast_equals
+PASSED xarray/tests/test_variable.py::TestVariable::test_no_conflicts
+PASSED xarray/tests/test_variable.py::TestVariable::test_as_variable
+PASSED xarray/tests/test_variable.py::TestVariable::test_repr
+PASSED xarray/tests/test_variable.py::TestVariable::test_repr_lazy_data
+PASSED xarray/tests/test_variable.py::TestVariable::test_detect_indexer_type
+PASSED xarray/tests/test_variable.py::TestVariable::test_indexer_type
+PASSED xarray/tests/test_variable.py::TestVariable::test_items
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_basic
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_with_mask_2d_input
+PASSED xarray/tests/test_variable.py::TestVariable::test_isel
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_0d_numpy_string
+PASSED xarray/tests/test_variable.py::TestVariable::test_indexing_0d_unicode
+PASSED xarray/tests/test_variable.py::TestVariable::test_shift[fill_value0]
+PASSED xarray/tests/test_variable.py::TestVariable::test_shift[2]
+PASSED xarray/tests/test_variable.py::TestVariable::test_shift[2.0]
+PASSED xarray/tests/test_variable.py::TestVariable::test_shift2d
+PASSED xarray/tests/test_variable.py::TestVariable::test_roll
+PASSED xarray/tests/test_variable.py::TestVariable::test_roll_consistency
+PASSED xarray/tests/test_variable.py::TestVariable::test_transpose
+PASSED xarray/tests/test_variable.py::TestVariable::test_transpose_0d
+PASSED xarray/tests/test_variable.py::TestVariable::test_squeeze
+PASSED xarray/tests/test_variable.py::TestVariable::test_get_axis_num
+PASSED xarray/tests/test_variable.py::TestVariable::test_set_dims
+PASSED xarray/tests/test_variable.py::TestVariable::test_set_dims_object_dtype
+PASSED xarray/tests/test_variable.py::TestVariable::test_stack
+PASSED xarray/tests/test_variable.py::TestVariable::test_stack_errors
+PASSED xarray/tests/test_variable.py::TestVariable::test_unstack
+PASSED xarray/tests/test_variable.py::TestVariable::test_unstack_errors
+PASSED xarray/tests/test_variable.py::TestVariable::test_unstack_2d
+PASSED xarray/tests/test_variable.py::TestVariable::test_stack_unstack_consistency
+PASSED xarray/tests/test_variable.py::TestVariable::test_broadcasting_math
+PASSED xarray/tests/test_variable.py::TestVariable::test_broadcasting_failures
+PASSED xarray/tests/test_variable.py::TestVariable::test_inplace_math
+PASSED xarray/tests/test_variable.py::TestVariable::test_reduce
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile_dask_raises
+PASSED xarray/tests/test_variable.py::TestVariable::test_rank_dask_raises
+PASSED xarray/tests/test_variable.py::TestVariable::test_rank
+PASSED xarray/tests/test_variable.py::TestVariable::test_big_endian_reduce
+PASSED xarray/tests/test_variable.py::TestVariable::test_reduce_funcs
+PASSED xarray/tests/test_variable.py::TestVariable::test_reduce_keepdims
+PASSED xarray/tests/test_variable.py::TestVariable::test_reduce_keepdims_dask
+PASSED xarray/tests/test_variable.py::TestVariable::test_reduce_keep_attrs
+PASSED xarray/tests/test_variable.py::TestVariable::test_binary_ops_keep_attrs
+PASSED xarray/tests/test_variable.py::TestVariable::test_count
+PASSED xarray/tests/test_variable.py::TestVariable::test_setitem
+PASSED xarray/tests/test_variable.py::TestVariable::test_setitem_fancy
+PASSED xarray/tests/test_variable.py::TestVariable::test_coarsen
+PASSED xarray/tests/test_variable.py::TestVariable::test_coarsen_2d
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_properties
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_attrs
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_dict
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_1d
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_with_mask
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_with_mask_size_zero
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_index_0d_int
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_index_0d_float
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_index_0d_string
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_index_0d_datetime
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_index_0d_timedelta64
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_index_0d_not_a_time
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_index_0d_object
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_index_and_concat_datetime
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_0d_time_data
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_datetime64_conversion
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_timedelta64_conversion
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_object_conversion
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pandas_data
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pandas_period_index
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_1d_math
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_1d_reduce
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test___array__
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_encoding_preserved
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_concat
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_concat_attrs
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_concat_fixed_len_str
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_concat_number_strings
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_concat_mixed_dtypes
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy[float-True]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy[float-False]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy[int-True]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy[int-False]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy[str-True]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy[str-False]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy_with_data
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy_with_data_errors
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy_index_with_data
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy_index_with_data_errors
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_real_and_imag
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_aggregate_complex
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pandas_cateogrical_dtype
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pandas_datetime64_with_tz
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_multiindex
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_load
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_advanced
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_uint_1d
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_uint
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_0d_array
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_error
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_rolling_window
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_fancy
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_1d_fancy
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_equals_all_dtypes
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_with_mask_nd_indexer
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_properties
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_attrs
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_getitem_dict
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_getitem_1d
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_getitem_1d_fancy
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_getitem_with_mask
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_getitem_with_mask_size_zero
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_getitem_with_mask_nd_indexer
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_index_0d_int
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_index_0d_float
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_index_0d_string
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_index_0d_datetime
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_index_0d_timedelta64
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_index_0d_not_a_time
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_index_0d_object
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_0d_object_array_with_list
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_index_and_concat_datetime
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_0d_time_data
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_datetime64_conversion
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_timedelta64_conversion
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_object_conversion
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_pandas_data
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_pandas_period_index
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_1d_math
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_1d_reduce
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_array_interface
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test___array__
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_equals_all_dtypes
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_eq_all_dtypes
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_encoding_preserved
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_concat
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_concat_attrs
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_concat_fixed_len_str
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_concat_number_strings
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_concat_mixed_dtypes
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy[float-True]
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy[float-False]
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy[int-True]
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy[int-False]
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy[str-False]
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy_index
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy_with_data
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy_with_data_errors
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy_index_with_data
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy_index_with_data_errors
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_real_and_imag
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_aggregate_complex
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_pandas_cateogrical_dtype
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_pandas_datetime64_with_tz
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_multiindex
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_load
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_getitem_uint_1d
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_getitem_0d_array
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_init
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_to_index
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_multiindex_default_level_names
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_data
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_name
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_level_names
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_get_level_variable
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_concat_periods
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_concat_multiindex
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_coordinate_alias
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_datetime64
+PASSED xarray/tests/test_variable.py::TestAsCompatibleData::test_unchanged_types
+PASSED xarray/tests/test_variable.py::TestAsCompatibleData::test_converted_types
+PASSED xarray/tests/test_variable.py::TestAsCompatibleData::test_masked_array
+PASSED xarray/tests/test_variable.py::TestAsCompatibleData::test_datetime
+PASSED xarray/tests/test_variable.py::TestAsCompatibleData::test_full_like
+PASSED xarray/tests/test_variable.py::TestAsCompatibleData::test_full_like_dask
+PASSED xarray/tests/test_variable.py::TestAsCompatibleData::test_zeros_like
+PASSED xarray/tests/test_variable.py::TestAsCompatibleData::test_ones_like
+PASSED xarray/tests/test_variable.py::TestAsCompatibleData::test_unsupported_type
+PASSED xarray/tests/test_variable.py::test_raise_no_warning_for_nan_in_binary_ops
+PASSED xarray/tests/test_variable.py::TestBackendIndexing::test_NumpyIndexingAdapter
+PASSED xarray/tests/test_variable.py::TestBackendIndexing::test_LazilyOuterIndexedArray
+PASSED xarray/tests/test_variable.py::TestBackendIndexing::test_CopyOnWriteArray
+PASSED xarray/tests/test_variable.py::TestBackendIndexing::test_MemoryCachedArray
+PASSED xarray/tests/test_variable.py::TestBackendIndexing::test_DaskIndexingAdapter
+XFAIL xarray/tests/test_variable.py::TestVariableWithDask::test_0d_object_array_with_list
+XFAIL xarray/tests/test_variable.py::TestVariableWithDask::test_array_interface
+XFAIL xarray/tests/test_variable.py::TestVariableWithDask::test_copy_index
+XFAIL xarray/tests/test_variable.py::TestVariableWithDask::test_eq_all_dtypes
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_getitem_error
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_getitem_advanced
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_getitem_fancy
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_getitem_uint
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_rolling_window
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_coarsen_2d
+FAILED xarray/tests/test_variable.py::TestIndexVariable::test_copy[str-True]
+=========== 1 failed, 253 passed, 11 xfailed, 248 warnings in 22.32s ===========
++ git checkout 1757dffac2fa493d7b9a074b84cf8c830a706688 xarray/tests/test_variable.py
+Updated 1 path from 36547602

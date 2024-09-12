@@ -1,0 +1,631 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+nothing to commit, working tree clean
++ git show
+commit 2480554dc4ada4ecf3f6a08e318735a2e50783f3
+Author: Jan Pieter Waagmeester <jieter@jieter.nl>
+Date:   Thu Aug 25 09:41:33 2022 +0200
+
+    Fixed typo in django/db/models/fields/files.py comment.
+
+diff --git a/django/db/models/fields/files.py b/django/db/models/fields/files.py
+index 1a3a0ce5fc..3d1291a221 100644
+--- a/django/db/models/fields/files.py
++++ b/django/db/models/fields/files.py
+@@ -167,7 +167,7 @@ class FileDescriptor(DeferredAttribute):
+             return self
+ 
+         # This is slightly complicated, so worth an explanation.
+-        # instance.file`needs to ultimately return some instance of `File`,
++        # instance.file needs to ultimately return some instance of `File`,
+         # probably a subclass. Additionally, this returned object needs to have
+         # the FieldFile API so that users can easily do things like
+         # instance.file.path and have that delegated to the file storage engine.
++ git diff 2480554dc4ada4ecf3f6a08e318735a2e50783f3
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.5.2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.2.dev20220825074133) (3.8.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.2.dev20220825074133) (0.5.1)
+Requirement already satisfied: typing-extensions>=4 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from asgiref>=3.5.2->Django==4.2.dev20220825074133) (4.12.2)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-4.2.dev20220825074133-0.editable-py3-none-any.whl size=27152 sha256=8ff5b97d9833d358a733643d8b6afaa31f0aed789aa77ac55b8b56b4f4b28b19
+  Stored in directory: /tmp/pip-ephem-wheel-cache-4xqlzcv1/wheels/7d/66/67/70d1ee2124ccf21d601c352e25cdca10f611f7c8b3f9ffb9e4
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 4.2.dev20220825074133
+    Uninstalling Django-4.2.dev20220825074133:
+      Successfully uninstalled Django-4.2.dev20220825074133
+Successfully installed Django-4.2.dev20220825074133
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 2480554dc4ada4ecf3f6a08e318735a2e50783f3 tests/migrations/test_autodetector.py
+Updated 0 paths from b2b0ec8ad6
++ git apply -v -
+Checking patch tests/migrations/test_autodetector.py...
+Applied patch tests/migrations/test_autodetector.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 migrations.test_autodetector
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Testing against Django installed in '/testbed/django'
+Importing application migrations
+Found 165 test(s).
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, messages, migrations, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table migrations_modelwithcustombase
+    Creating table migrations_unmigratedmodel
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (0 silenced).
+test_add_field_and_index_together (migrations.test_autodetector.AutodetectorIndexTogetherTests)
+Added fields will be created before using them in index_together. ... ok
+test_add_index_together (migrations.test_autodetector.AutodetectorIndexTogetherTests) ... ok
+test_add_model_order_with_respect_to_index_together (migrations.test_autodetector.AutodetectorIndexTogetherTests) ... ok
+test_alter_field_and_index_together (migrations.test_autodetector.AutodetectorIndexTogetherTests)
+Fields are altered after deleting some index_together. ... ok
+test_create_model_and_index_together (migrations.test_autodetector.AutodetectorIndexTogetherTests) ... ok
+test_empty_index_together (migrations.test_autodetector.AutodetectorIndexTogetherTests)
+Empty index_together shouldn't generate a migration. ... ok
+test_index_together_no_changes (migrations.test_autodetector.AutodetectorIndexTogetherTests)
+index_together doesn't generate a migration if no changes have been ... ok
+test_index_together_ordering (migrations.test_autodetector.AutodetectorIndexTogetherTests)
+index_together triggers on ordering changes. ... ok
+test_index_together_remove_fk (migrations.test_autodetector.AutodetectorIndexTogetherTests) ... ok
+test_partly_alter_index_together_decrease (migrations.test_autodetector.AutodetectorIndexTogetherTests) ... ok
+test_partly_alter_index_together_increase (migrations.test_autodetector.AutodetectorIndexTogetherTests) ... ok
+test_remove_field_and_index_together (migrations.test_autodetector.AutodetectorIndexTogetherTests)
+Removed fields will be removed after updating index_together. ... ok
+test_remove_index_together (migrations.test_autodetector.AutodetectorIndexTogetherTests) ... ok
+test_rename_field_and_index_together (migrations.test_autodetector.AutodetectorIndexTogetherTests)
+Fields are renamed before updating index_together. ... ok
+test_rename_index_together_to_index (migrations.test_autodetector.AutodetectorIndexTogetherTests) ... ok
+test_rename_index_together_to_index_extra_options (migrations.test_autodetector.AutodetectorIndexTogetherTests) ... ok
+test_rename_index_together_to_index_order_fields (migrations.test_autodetector.AutodetectorIndexTogetherTests) ... ok
+test_set_alter_order_with_respect_to_index_together (migrations.test_autodetector.AutodetectorIndexTogetherTests) ... ok
+test_add_alter_order_with_respect_to (migrations.test_autodetector.AutodetectorTests)
+Setting order_with_respect_to when adding the FK too does ... ok
+test_add_blank_textfield_and_charfield (migrations.test_autodetector.AutodetectorTests)
+#23405 - Adding a NOT NULL and blank `CharField` or `TextField` ... ok
+test_add_constraints (migrations.test_autodetector.AutodetectorTests)
+Test change detection of new constraints. ... ok
+test_add_custom_fk_with_hardcoded_to (migrations.test_autodetector.AutodetectorTests) ... ok
+test_add_date_fields_with_auto_now_add_asking_for_default (migrations.test_autodetector.AutodetectorTests) ... ok
+test_add_date_fields_with_auto_now_add_not_asking_for_null_addition (migrations.test_autodetector.AutodetectorTests) ... ok
+test_add_date_fields_with_auto_now_not_asking_for_default (migrations.test_autodetector.AutodetectorTests) ... ok
+test_add_field (migrations.test_autodetector.AutodetectorTests)
+Tests autodetection of new fields. ... ok
+test_add_field_and_unique_together (migrations.test_autodetector.AutodetectorTests)
+Added fields will be created before using them in unique_together. ... ok
+test_add_field_with_default (migrations.test_autodetector.AutodetectorTests)
+#22030 - Adding a field with a default should work. ... ok
+test_add_indexes (migrations.test_autodetector.AutodetectorTests)
+Test change detection of new indexes. ... ok
+test_add_many_to_many (migrations.test_autodetector.AutodetectorTests)
+#22435 - Adding a ManyToManyField should not prompt for a default. ... ok
+test_add_model_order_with_respect_to (migrations.test_autodetector.AutodetectorTests)
+Setting order_with_respect_to when adding the whole model ... ok
+test_add_model_order_with_respect_to_index_constraint (migrations.test_autodetector.AutodetectorTests) ... ok
+test_add_model_order_with_respect_to_unique_together (migrations.test_autodetector.AutodetectorTests) ... ok
+test_add_model_with_field_removed_from_base_model (migrations.test_autodetector.AutodetectorTests)
+Removing a base field takes place before adding a new inherited model ... ok
+test_add_non_blank_textfield_and_charfield (migrations.test_autodetector.AutodetectorTests)
+#23405 - Adding a NOT NULL and non-blank `CharField` or `TextField` ... ok
+test_add_unique_together (migrations.test_autodetector.AutodetectorTests)
+Tests unique_together detection. ... ok
+test_alter_db_table_add (migrations.test_autodetector.AutodetectorTests)
+Tests detection for adding db_table in model's options. ... ok
+test_alter_db_table_change (migrations.test_autodetector.AutodetectorTests)
+Tests detection for changing db_table in model's options'. ... ok
+test_alter_db_table_no_changes (migrations.test_autodetector.AutodetectorTests)
+Alter_db_table doesn't generate a migration if no changes have been made. ... ok
+test_alter_db_table_remove (migrations.test_autodetector.AutodetectorTests)
+Tests detection for removing db_table in model's options. ... ok
+test_alter_db_table_with_model_change (migrations.test_autodetector.AutodetectorTests)
+Tests when model and db_table changes, autodetector must create two ... ok
+test_alter_field (migrations.test_autodetector.AutodetectorTests)
+Tests autodetection of new fields. ... ok
+test_alter_field_and_unique_together (migrations.test_autodetector.AutodetectorTests)
+Fields are altered after deleting some unique_together. ... ok
+test_alter_field_to_fk_dependency_other_app (migrations.test_autodetector.AutodetectorTests) ... ok
+test_alter_field_to_not_null_oneoff_default (migrations.test_autodetector.AutodetectorTests)
+#23609 - Tests autodetection of nullable to non-nullable alterations. ... ok
+test_alter_field_to_not_null_with_default (migrations.test_autodetector.AutodetectorTests)
+#23609 - Tests autodetection of nullable to non-nullable alterations. ... ok
+test_alter_field_to_not_null_without_default (migrations.test_autodetector.AutodetectorTests)
+#23609 - Tests autodetection of nullable to non-nullable alterations. ... ok
+test_alter_fk_before_model_deletion (migrations.test_autodetector.AutodetectorTests)
+ForeignKeys are altered _before_ the model they used to ... ok
+test_alter_many_to_many (migrations.test_autodetector.AutodetectorTests) ... ok
+test_alter_model_managers (migrations.test_autodetector.AutodetectorTests)
+Changing the model managers adds a new operation. ... ok
+test_alter_model_options (migrations.test_autodetector.AutodetectorTests)
+Changing a model's options should make a change. ... ok
+test_alter_model_options_proxy (migrations.test_autodetector.AutodetectorTests)
+Changing a proxy model's options should also make a change. ... ok
+test_alter_regex_string_to_compiled_regex (migrations.test_autodetector.AutodetectorTests) ... ok
+test_alter_unique_together_fk_to_m2m (migrations.test_autodetector.AutodetectorTests) ... ok
+test_arrange_for_graph (migrations.test_autodetector.AutodetectorTests)
+Tests auto-naming of migrations for graph matching. ... ok
+test_arrange_for_graph_with_multiple_initial (migrations.test_autodetector.AutodetectorTests) ... ok
+test_bases_first (migrations.test_autodetector.AutodetectorTests)
+Bases of other models come first. ... ok
+test_bases_first_mixed_case_app_label (migrations.test_autodetector.AutodetectorTests) ... ok
+test_circular_dependency_mixed_addcreate (migrations.test_autodetector.AutodetectorTests)
+#23315 - The dependency resolver knows to put all CreateModel ... ok
+test_circular_dependency_swappable (migrations.test_autodetector.AutodetectorTests)
+#23322 - The dependency resolver knows to explicitly resolve ... ok
+test_circular_dependency_swappable2 (migrations.test_autodetector.AutodetectorTests)
+#23322 - The dependency resolver knows to explicitly resolve ... ok
+test_circular_dependency_swappable_self (migrations.test_autodetector.AutodetectorTests)
+#23322 - The dependency resolver knows to explicitly resolve ... ok
+test_circular_fk_dependency (migrations.test_autodetector.AutodetectorTests)
+Having a circular ForeignKey dependency automatically ... ok
+test_concrete_field_changed_to_many_to_many (migrations.test_autodetector.AutodetectorTests)
+#23938 - Changing a concrete field into a ManyToManyField ... ok
+test_create_model_and_unique_together (migrations.test_autodetector.AutodetectorTests) ... ok
+test_create_model_with_check_constraint (migrations.test_autodetector.AutodetectorTests)
+Test creation of new model with constraints already defined. ... ok
+test_create_model_with_indexes (migrations.test_autodetector.AutodetectorTests)
+Test creation of new model with indexes already defined. ... ok
+test_create_with_through_model (migrations.test_autodetector.AutodetectorTests)
+Adding a m2m with a through model and the models that use it should be ... ok
+test_create_with_through_model_separate_apps (migrations.test_autodetector.AutodetectorTests) ... FAIL
+test_custom_deconstructible (migrations.test_autodetector.AutodetectorTests)
+Two instances which deconstruct to the same value aren't considered a ... ok
+test_custom_migration_name (migrations.test_autodetector.AutodetectorTests)
+Tests custom naming of migrations for graph matching. ... ok
+test_deconstruct_field_kwarg (migrations.test_autodetector.AutodetectorTests)
+Field instances are handled correctly by nested deconstruction. ... ok
+test_deconstruct_type (migrations.test_autodetector.AutodetectorTests)
+#22951 -- Uninstantiated classes with deconstruct are correctly returned ... ok
+test_deconstructible_dict (migrations.test_autodetector.AutodetectorTests)
+Nested deconstruction descends into dict values. ... ok
+test_deconstructible_list (migrations.test_autodetector.AutodetectorTests)
+Nested deconstruction descends into lists. ... ok
+test_deconstructible_tuple (migrations.test_autodetector.AutodetectorTests)
+Nested deconstruction descends into tuples. ... ok
+test_default_related_name_option (migrations.test_autodetector.AutodetectorTests) ... ok
+test_different_regex_does_alter (migrations.test_autodetector.AutodetectorTests) ... ok
+test_empty_unique_together (migrations.test_autodetector.AutodetectorTests)
+Empty unique_together shouldn't generate a migration. ... ok
+test_first_dependency (migrations.test_autodetector.AutodetectorTests)
+A dependency to an app with no migrations uses __first__. ... ok
+test_fk_dependency (migrations.test_autodetector.AutodetectorTests)
+Having a ForeignKey automatically adds a dependency. ... ok
+test_fk_dependency_other_app (migrations.test_autodetector.AutodetectorTests)
+#23100 - ForeignKeys correctly depend on other apps' models. ... ok
+test_foreign_key_removed_before_target_model (migrations.test_autodetector.AutodetectorTests)
+Removing an FK and the model it targets in the same change must remove ... ok
+test_identical_regex_doesnt_alter (migrations.test_autodetector.AutodetectorTests) ... ok
+test_keep_db_table_with_model_change (migrations.test_autodetector.AutodetectorTests)
+Tests when model changes but db_table stays as-is, autodetector must not ... ok
+test_last_dependency (migrations.test_autodetector.AutodetectorTests)
+A dependency to an app with existing migrations uses the ... ok
+test_m2m_w_through_multistep_remove (migrations.test_autodetector.AutodetectorTests)
+A model with a m2m field that specifies a "through" model cannot be ... ok
+test_managed_to_unmanaged (migrations.test_autodetector.AutodetectorTests) ... ok
+test_many_to_many_changed_to_concrete_field (migrations.test_autodetector.AutodetectorTests)
+#23938 - Changing a ManyToManyField into a concrete field ... ok
+test_many_to_many_removed_before_through_model (migrations.test_autodetector.AutodetectorTests)
+Removing a ManyToManyField and the "through" model in the same change ... ok
+test_many_to_many_removed_before_through_model_2 (migrations.test_autodetector.AutodetectorTests)
+Removing a model that contains a ManyToManyField and the "through" model ... ok
+test_mti_inheritance_model_removal (migrations.test_autodetector.AutodetectorTests) ... ok
+test_multiple_bases (migrations.test_autodetector.AutodetectorTests)
+Inheriting models doesn't move *_ptr fields into AddField operations. ... ok
+test_nested_deconstructible_objects (migrations.test_autodetector.AutodetectorTests)
+Nested deconstruction is applied recursively to the args/kwargs of ... ok
+test_new_model (migrations.test_autodetector.AutodetectorTests)
+Tests autodetection of new models. ... ok
+test_non_circular_foreignkey_dependency_removal (migrations.test_autodetector.AutodetectorTests)
+If two models with a ForeignKey from one to the other are removed at the ... ok
+test_old_model (migrations.test_autodetector.AutodetectorTests)
+Tests deletion of old models. ... ok
+test_order_fields_indexes (migrations.test_autodetector.AutodetectorTests)
+Test change detection of reordering of fields in indexes. ... ok
+test_parse_number (migrations.test_autodetector.AutodetectorTests) ... ok
+test_partly_alter_unique_together_decrease (migrations.test_autodetector.AutodetectorTests) ... ok
+test_partly_alter_unique_together_increase (migrations.test_autodetector.AutodetectorTests) ... ok
+test_pk_fk_included (migrations.test_autodetector.AutodetectorTests)
+A relation used as the primary key is kept as part of CreateModel. ... ok
+test_proxy (migrations.test_autodetector.AutodetectorTests)
+The autodetector correctly deals with proxy models. ... ok
+test_proxy_bases_first (migrations.test_autodetector.AutodetectorTests)
+Bases of proxies come first. ... ok
+test_proxy_custom_pk (migrations.test_autodetector.AutodetectorTests)
+#23415 - The autodetector must correctly deal with custom FK on proxy ... ok
+test_proxy_fk_dependency (migrations.test_autodetector.AutodetectorTests)
+FK dependencies still work on proxy models. ... ok
+test_proxy_non_model_parent (migrations.test_autodetector.AutodetectorTests) ... ok
+test_proxy_to_mti_with_fk_to_proxy (migrations.test_autodetector.AutodetectorTests) ... ok
+test_proxy_to_mti_with_fk_to_proxy_proxy (migrations.test_autodetector.AutodetectorTests) ... ok
+test_remove_alter_order_with_respect_to (migrations.test_autodetector.AutodetectorTests)
+Removing order_with_respect_to when removing the FK too does ... ok
+test_remove_constraints (migrations.test_autodetector.AutodetectorTests)
+Test change detection of removed constraints. ... ok
+test_remove_field (migrations.test_autodetector.AutodetectorTests)
+Tests autodetection of removed fields. ... ok
+test_remove_field_and_unique_together (migrations.test_autodetector.AutodetectorTests)
+Removed fields will be removed after updating unique_together. ... ok
+test_remove_indexes (migrations.test_autodetector.AutodetectorTests)
+Test change detection of removed indexes. ... ok
+test_remove_unique_together (migrations.test_autodetector.AutodetectorTests)
+Tests unique_together detection. ... ok
+test_rename_field (migrations.test_autodetector.AutodetectorTests)
+Tests autodetection of renamed fields. ... ok
+test_rename_field_and_unique_together (migrations.test_autodetector.AutodetectorTests)
+Fields are renamed before updating unique_together. ... ok
+test_rename_field_foreign_key_to_field (migrations.test_autodetector.AutodetectorTests) ... ok
+test_rename_field_preserved_db_column (migrations.test_autodetector.AutodetectorTests)
+RenameField is used if a field is renamed and db_column equal to the ... ok
+test_rename_field_with_renamed_model (migrations.test_autodetector.AutodetectorTests) ... ok
+test_rename_foreign_object_fields (migrations.test_autodetector.AutodetectorTests) ... ok
+test_rename_indexes (migrations.test_autodetector.AutodetectorTests) ... ok
+test_rename_m2m_through_model (migrations.test_autodetector.AutodetectorTests)
+Tests autodetection of renamed models that are used in M2M relations as ... ok
+test_rename_model (migrations.test_autodetector.AutodetectorTests)
+Tests autodetection of renamed models. ... ok
+test_rename_model_case (migrations.test_autodetector.AutodetectorTests)
+Model name is case-insensitive. Changing case doesn't lead to any ... ok
+test_rename_model_reverse_relation_dependencies (migrations.test_autodetector.AutodetectorTests)
+The migration to rename a model pointed to by a foreign key in another ... ok
+test_rename_model_with_fks_in_different_position (migrations.test_autodetector.AutodetectorTests)
+#24537 - The order of fields in a model does not influence ... ok
+test_rename_model_with_renamed_rel_field (migrations.test_autodetector.AutodetectorTests)
+Tests autodetection of renamed models while simultaneously renaming one ... ok
+test_rename_referenced_primary_key (migrations.test_autodetector.AutodetectorTests) ... ok
+test_rename_related_field_preserved_db_column (migrations.test_autodetector.AutodetectorTests) ... ok
+test_renamed_referenced_m2m_model_case (migrations.test_autodetector.AutodetectorTests) ... ok
+test_replace_string_with_foreignkey (migrations.test_autodetector.AutodetectorTests)
+#22300 - Adding an FK in the same "spot" as a deleted CharField should ... ok
+test_same_app_circular_fk_dependency (migrations.test_autodetector.AutodetectorTests)
+A migration with a FK between two models of the same app does ... ok
+test_same_app_circular_fk_dependency_with_unique_together_and_indexes (migrations.test_autodetector.AutodetectorTests)
+#22275 - A migration with circular FK dependency does not try ... ok
+test_same_app_no_fk_dependency (migrations.test_autodetector.AutodetectorTests)
+A migration with a FK between two models of the same app ... ok
+test_set_alter_order_with_respect_to (migrations.test_autodetector.AutodetectorTests)
+Setting order_with_respect_to adds a field. ... ok
+test_set_alter_order_with_respect_to_index_constraint_unique_together (migrations.test_autodetector.AutodetectorTests) ... ok
+test_supports_functools_partial (migrations.test_autodetector.AutodetectorTests) ... ok
+test_swappable (migrations.test_autodetector.AutodetectorTests) ... ok
+test_swappable_changed (migrations.test_autodetector.AutodetectorTests) ... ok
+test_swappable_circular_multi_mti (migrations.test_autodetector.AutodetectorTests) ... ok
+test_swappable_first_inheritance (migrations.test_autodetector.AutodetectorTests)
+Swappable models get their CreateModel first. ... ok
+test_swappable_first_setting (migrations.test_autodetector.AutodetectorTests)
+Swappable models get their CreateModel first. ... ok
+test_swappable_lowercase (migrations.test_autodetector.AutodetectorTests) ... ok
+test_swappable_many_to_many_model_case (migrations.test_autodetector.AutodetectorTests) ... ok
+test_trim_apps (migrations.test_autodetector.AutodetectorTests)
+Trim does not remove dependencies but does remove unwanted apps. ... ok
+test_unique_together_no_changes (migrations.test_autodetector.AutodetectorTests)
+unique_together doesn't generate a migration if no ... ok
+test_unique_together_ordering (migrations.test_autodetector.AutodetectorTests)
+unique_together also triggers on ordering changes. ... ok
+test_unique_together_remove_fk (migrations.test_autodetector.AutodetectorTests)
+Tests unique_together and field removal detection & ordering ... ok
+test_unmanaged_create (migrations.test_autodetector.AutodetectorTests)
+The autodetector correctly deals with managed models. ... ok
+test_unmanaged_custom_pk (migrations.test_autodetector.AutodetectorTests)
+#23415 - The autodetector must correctly deal with custom FK on ... ok
+test_unmanaged_delete (migrations.test_autodetector.AutodetectorTests) ... ok
+test_unmanaged_to_managed (migrations.test_autodetector.AutodetectorTests) ... ok
+test_auto (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_many_operations_suffix (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_no_operations (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_no_operations_initial (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_none_name (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_none_name_with_initial_true (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_operation_with_no_suggested_name (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_single_operation (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_single_operation_long_name (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_two_create_models (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_two_create_models_with_initial_true (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+test_two_operations (migrations.test_autodetector.MigrationSuggestNameTests) ... ok
+
+======================================================================
+FAIL: test_create_with_through_model_separate_apps (migrations.test_autodetector.AutodetectorTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/migrations/test_autodetector.py", line 3616, in test_create_with_through_model_separate_apps
+    self.assertNumberMigrations(changes, "authors", 2)
+  File "/testbed/tests/migrations/test_autodetector.py", line 55, in assertNumberMigrations
+    self.fail(
+AssertionError: Incorrect number of migrations (1) for authors (expected 2)
+  authors:
+    auto_1
+      <CreateModel 'Author' fields=[('id', <django.db.models.fields.AutoField: id>), ('publishers', <django.db.models.fields.related.ManyToManyField: publishers>)], options={}, bases=(<class 'django.db.models.base.Model'>,), managers=[]>
+  contract:
+    auto_1
+      <CreateModel 'Contract' fields=[('id', <django.db.models.fields.AutoField: id>), ('author', <django.db.models.fields.related.ForeignKey: author>), ('publisher', <django.db.models.fields.related.ForeignKey: publisher>)], options={}, bases=(<class 'django.db.models.base.Model'>,), managers=[]>
+  testapp:
+    auto_1
+      <CreateModel  name='Publisher', fields=[('id', <django.db.models.fields.AutoField: id>), ('name', <django.db.models.fields.CharField: name>)], options={}, bases=(<class 'django.db.models.base.Model'>,), managers=[]>
+
+
+----------------------------------------------------------------------
+Ran 165 tests in 0.062s
+
+FAILED (failures=1)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout 2480554dc4ada4ecf3f6a08e318735a2e50783f3 tests/migrations/test_autodetector.py
+Updated 1 path from b2b0ec8ad6

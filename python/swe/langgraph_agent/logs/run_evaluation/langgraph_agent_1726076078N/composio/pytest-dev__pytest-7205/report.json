@@ -1,0 +1,54 @@
+{
+    "pytest-dev__pytest-7205": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "testing/test_setuponly.py::test_show_fixtures_with_parameters[--setup-only]",
+                    "testing/test_setuponly.py::test_show_fixtures_with_parameter_ids[--setup-only]",
+                    "testing/test_setuponly.py::test_show_fixtures_with_parameter_ids_function[--setup-only]",
+                    "testing/test_setuponly.py::test_show_fixtures_with_parameters[--setup-plan]",
+                    "testing/test_setuponly.py::test_show_fixtures_with_parameter_ids[--setup-plan]",
+                    "testing/test_setuponly.py::test_show_fixtures_with_parameter_ids_function[--setup-plan]",
+                    "testing/test_setuponly.py::test_show_fixtures_with_parameters[--setup-show]",
+                    "testing/test_setuponly.py::test_show_fixtures_with_parameter_ids[--setup-show]",
+                    "testing/test_setuponly.py::test_show_fixtures_with_parameter_ids_function[--setup-show]",
+                    "testing/test_setuponly.py::test_show_fixture_action_with_bytes"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "testing/test_setuponly.py::test_show_only_active_fixtures[--setup-only]",
+                    "testing/test_setuponly.py::test_show_different_scopes[--setup-only]",
+                    "testing/test_setuponly.py::test_show_nested_fixtures[--setup-only]",
+                    "testing/test_setuponly.py::test_show_fixtures_with_autouse[--setup-only]",
+                    "testing/test_setuponly.py::test_show_only_active_fixtures[--setup-plan]",
+                    "testing/test_setuponly.py::test_show_different_scopes[--setup-plan]",
+                    "testing/test_setuponly.py::test_show_nested_fixtures[--setup-plan]",
+                    "testing/test_setuponly.py::test_show_fixtures_with_autouse[--setup-plan]",
+                    "testing/test_setuponly.py::test_show_only_active_fixtures[--setup-show]",
+                    "testing/test_setuponly.py::test_show_different_scopes[--setup-show]",
+                    "testing/test_setuponly.py::test_show_nested_fixtures[--setup-show]",
+                    "testing/test_setuponly.py::test_show_fixtures_with_autouse[--setup-show]",
+                    "testing/test_setuponly.py::test_dynamic_fixture_request",
+                    "testing/test_setuponly.py::test_capturing",
+                    "testing/test_setuponly.py::test_show_fixtures_and_execute_test",
+                    "testing/test_setuponly.py::test_setup_show_with_KeyboardInterrupt_in_test"
+                ]
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

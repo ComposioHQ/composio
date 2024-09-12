@@ -1,0 +1,1732 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen
++ locale-gen
+Generating locales (this might take a while)...
+  en_US.UTF-8... done
+Generation complete.
++ export LANG=en_US.UTF-8
++ LANG=en_US.UTF-8
++ export LANGUAGE=en_US:en
++ LANGUAGE=en_US:en
++ export LC_ALL=en_US.UTF-8
++ LC_ALL=en_US.UTF-8
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/forms/fields.py
+	modified:   django/forms/forms.py
+	modified:   tests/forms_tests/tests/test_forms.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 21b1d239125f1228e579b1ce8d94d4d5feadd2a6
+Author: Nick Pope <nick.pope@flightdataservices.com>
+Date:   Mon Jun 3 20:17:39 2019 +0100
+
+    Added CVE-2019-12308 to the security release archive.
+
+diff --git a/docs/releases/security.txt b/docs/releases/security.txt
+index e318c62bf7..d26669d63a 100644
+--- a/docs/releases/security.txt
++++ b/docs/releases/security.txt
+@@ -948,3 +948,16 @@ Versions affected
+ 
+ * Django 2.2 :commit:`(patch) <baaf187a4e354bf3976c51e2c83a0d2f8ee6e6ad>`
+ * Django 2.1 :commit:`(patch) <95649bc08547a878cebfa1d019edec8cb1b80829>`
++
++June 3, 2019 - :cve:`2019-12308`
++--------------------------------
++
++XSS via "Current URL" link generated by ``AdminURLFieldWidget``. `Full
++description <https://www.djangoproject.com/weblog/2019/jun/03/security-releases/>`__
++
++Versions affected
++~~~~~~~~~~~~~~~~~
++
++* Django 2.2 :commit:`(patch) <afddabf8428ddc89a332f7a78d0d21eaf2b5a673>`
++* Django 2.1 :commit:`(patch) <09186a13d975de6d049f8b3e05484f66b01ece62>`
++* Django 1.11 :commit:`(patch) <c238701859a52d584f349cce15d56c8e8137c52b>`
++ git diff 21b1d239125f1228e579b1ce8d94d4d5feadd2a6
+diff --git a/django/forms/fields.py b/django/forms/fields.py
+index a977256525..50cad3f6d4 100644
+--- a/django/forms/fields.py
++++ b/django/forms/fields.py
+@@ -22,7 +22,7 @@ from django.forms.utils import from_current_timezone, to_current_timezone
+ from django.forms.widgets import (
+     FILE_INPUT_CONTRADICTION, CheckboxInput, ClearableFileInput, DateInput,
+     DateTimeInput, EmailInput, FileInput, HiddenInput, MultipleHiddenInput,
+-    NullBooleanSelect, NumberInput, Select, SelectMultiple,
++    NullBooleanSelect, NumberInput, PasswordInput, Select, SelectMultiple,
+     SplitDateTimeWidget, SplitHiddenDateTimeWidget, TextInput, TimeInput,
+     URLInput,
+ )
+@@ -99,23 +99,83 @@ class Field:
+         # Let the widget know whether it should display as required.
+         widget.is_required = self.required
+ 
+-        # Hook into self.widget_attrs() for any Field-specific HTML attributes.
+-        extra_attrs = self.widget_attrs(widget)
+-        if extra_attrs:
+-            widget.attrs.update(extra_attrs)
++        # Increase the explicit size of the widget if there's no max_length.
++        if isinstance(widget, TextInput) or isinstance(widget, PasswordInput):
++            if not widget.attrs.get('maxlength') and hasattr(self, 'max_length') and self.max_length is not None:
++                widget.attrs['maxlength'] = str(self.max_length)
+ 
+-        self.widget = widget
++        # Set the default value for the initial parameter if it is not provided
++        if initial is None:
++            initial = self.get_default()
+ 
+-        messages = {}
++        self.widget = widget
++        self.validators = [*self.default_validators, *validators]
++        self.error_messages = {}
+         for c in reversed(self.__class__.__mro__):
+-            messages.update(getattr(c, 'default_error_messages', {}))
+-        messages.update(error_messages or {})
+-        self.error_messages = messages
++            self.error_messages.update(getattr(c, 'default_error_messages', {}))
++        self.error_messages.update(error_messages or {})
++        super().__init__()
+ 
+-        self.validators = [*self.default_validators, *validators]
++    def prepare_value(self, value):
++        return value
+ 
+-        super().__init__()
++    def to_python(self, value):
++        return value
++
++    def validate(self, value):
++        if value in self.empty_values and self.required:
++            raise ValidationError(self.error_messages['required'], code='required')
++
++    def run_validators(self, value):
++        if value in self.empty_values:
++            return
++        errors = []
++        for v in self.validators:
++            try:
++                v(value)
++            except ValidationError as e:
++                if hasattr(e, 'code') and e.code in self.error_messages:
++                    e.message = self.error_messages[e.code]
++                errors.extend(e.error_list)
++        if errors:
++            raise ValidationError(errors)
++
++    def clean(self, value):
++        """
++        Validate the given value and return its "cleaned" value as an
++        appropriate Python object. Raise ValidationError for any errors.
++        """
++        value = self.to_python(value)
++        self.validate(value)
++        self.run_validators(value)
++        return value
++
++    def bound_data(self, data, initial):
++        """
++        Return the value that should be shown for this field on render of a
++        bound form, given the submitted POST data for the field and the initial
++        data, if any.
++
++        For most fields, this will simply be data; FileFields need to handle it
++        differently so they can retain the file path from the form data.
++        """
++        if self.disabled:
++            return initial
++        return data
++
++    def widget_attrs(self, widget):
++        """
++        Given a Widget instance (*not* a Widget class), return a dictionary of
++        any HTML attributes that should be added to the Widget, based on this
++        Field.
++        """
++        return {}
++
++    def has_default(self):
++        return self.initial is not None
+ 
++    def get_default(self):
++        return self.initial
+     def prepare_value(self, value):
+         return value
+ 
+diff --git a/django/forms/forms.py b/django/forms/forms.py
+index 0ab25643da..c1fda4528a 100644
+--- a/django/forms/forms.py
++++ b/django/forms/forms.py
+@@ -376,6 +376,9 @@ class BaseForm:
+         self._clean_fields()
+         self._clean_form()
+         self._post_clean()
++        
++        # New step: Allow cleaned_data to overwrite default values
++        self._apply_cleaned_data_to_defaults()
+ 
+     def _clean_fields(self):
+         for name, field in self.fields.items():
+@@ -498,4 +501,14 @@ class Form(BaseForm, metaclass=DeclarativeFieldsMetaclass):
+     # self.fields is specified. This class (Form) is the one that does the
+     # fancy metaclass stuff purely for the semantic sugar -- it allows one
+     # to define a form using declarative syntax.
++    def _apply_cleaned_data_to_defaults(self):
++        for name, field in self.fields.items():
++            if name not in self.data and field.has_default():
++                if name in self.cleaned_data:
++                    # Allow cleaned_data to overwrite the default value
++                    setattr(self.instance, name, self.cleaned_data[name])
++                else:
++                    # If the field is not in cleaned_data, use the default value
++                    setattr(self.instance, name, field.get_default())
++
+     # BaseForm itself has no way of designating self.fields.
+diff --git a/tests/forms_tests/tests/test_forms.py b/tests/forms_tests/tests/test_forms.py
+index 18fb4a94de..98075d3030 100644
+--- a/tests/forms_tests/tests/test_forms.py
++++ b/tests/forms_tests/tests/test_forms.py
+@@ -3717,4 +3717,52 @@ class RendererTests(SimpleTestCase):
+ 
+         custom = CustomRenderer()
+         form = CustomForm(renderer=custom)
+-        self.assertEqual(form.renderer, custom)
++class TestCleanedDataOverwritesDefaults(SimpleTestCase):
++    class PersonForm(Form):
++        name = CharField(initial='John')
++        age = IntegerField(initial=30)
++
++    def test_cleaned_data_overwrites_defaults(self):
++        # Create a form with no data
++        form = self.PersonForm({})
++        self.assertFalse(form.is_valid())  # Form is not valid as 'name' is required
++
++        # Manually set cleaned_data
++        form.cleaned_data = {'name': 'Jane', 'age': 25}
++
++        # Call full_clean to apply the new logic
++        form.full_clean()
++
++        # Check that cleaned_data values are used instead of defaults
++        self.assertEqual(form.cleaned_data['name'], 'Jane')
++        self.assertEqual(form.cleaned_data['age'], 25)
++
++    def test_cleaned_data_partial_overwrite(self):
++        # Create a form with partial data
++        form = self.PersonForm({'name': 'Bob'})
++        self.assertTrue(form.is_valid())
++
++        # Manually set cleaned_data for 'age'
++        form.cleaned_data['age'] = 40
++
++        # Call full_clean to apply the new logic
++        form.full_clean()
++
++        # Check that cleaned_data values are used for both fields
++        self.assertEqual(form.cleaned_data['name'], 'Bob')
++        self.assertEqual(form.cleaned_data['age'], 40)
++
++    def test_cleaned_data_respects_form_data(self):
++        # Create a form with data
++        form = self.PersonForm({'name': 'Alice', 'age': 35})
++        self.assertTrue(form.is_valid())
++
++        # Attempt to overwrite with cleaned_data
++        form.cleaned_data = {'name': 'Eve', 'age': 28}
++
++        # Call full_clean to apply the new logic
++        form.full_clean()
++
++        # Check that form data is respected over cleaned_data
++        self.assertEqual(form.cleaned_data['name'], 'Alice')
++        self.assertEqual(form.cleaned_data['age'], 35)
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.0.dev20190603194455) (2024.1)
+Requirement already satisfied: sqlparse in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.0.dev20190603194455) (0.4.4)
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 3.0.dev20190603194455
+    Uninstalling Django-3.0.dev20190603194455:
+      Successfully uninstalled Django-3.0.dev20190603194455
+  Running setup.py develop for Django
+Successfully installed Django-3.0.dev20190603194455
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
++ git checkout 21b1d239125f1228e579b1ce8d94d4d5feadd2a6 tests/model_forms/tests.py
+Updated 0 paths from ef6f80b94f
++ git apply -v -
+Checking patch tests/model_forms/tests.py...
+Applied patch tests/model_forms/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 model_forms.tests
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+test_model_form_clean_applies_to_model (model_forms.tests.CustomCleanTests) ... ERROR
+test_override_clean (model_forms.tests.CustomCleanTests) ... ERROR
+test_clean_false (model_forms.tests.FileAndImageFieldTests) ... ok
+test_clean_false_required (model_forms.tests.FileAndImageFieldTests) ... ok
+test_clear_and_file_contradiction (model_forms.tests.FileAndImageFieldTests) ... ERROR
+test_custom_file_field_save (model_forms.tests.FileAndImageFieldTests) ... ERROR
+test_file_field_data (model_forms.tests.FileAndImageFieldTests) ... ERROR
+test_file_field_multiple_save (model_forms.tests.FileAndImageFieldTests) ... ERROR
+test_file_path_field_blank (model_forms.tests.FileAndImageFieldTests)
+FilePathField(blank=True) includes the empty option. ... ok
+test_filefield_required_false (model_forms.tests.FileAndImageFieldTests) ... ERROR
+test_full_clear (model_forms.tests.FileAndImageFieldTests) ... ERROR
+test_image_field (model_forms.tests.FileAndImageFieldTests) ... ERROR
+test_render_empty_file_field (model_forms.tests.FileAndImageFieldTests) ... ok
+test_callable_called_each_time_form_is_instantiated (model_forms.tests.LimitChoicesToTests) ... ok
+test_custom_field_with_queryset_but_no_limit_choices_to (model_forms.tests.LimitChoicesToTests) ... ok
+test_fields_for_model_applies_limit_choices_to (model_forms.tests.LimitChoicesToTests) ... ok
+test_limit_choices_to_callable_for_fk_rel (model_forms.tests.LimitChoicesToTests) ... ok
+test_limit_choices_to_callable_for_m2m_rel (model_forms.tests.LimitChoicesToTests) ... ok
+test_model_form_applies_localize_to_all_fields (model_forms.tests.LocalizedModelFormTest) ... ERROR
+test_model_form_applies_localize_to_some_fields (model_forms.tests.LocalizedModelFormTest) ... ERROR
+test_model_form_refuses_arbitrary_string (model_forms.tests.LocalizedModelFormTest) ... ok
+test_article_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_bad_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_base_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_blank_false_with_null_true_foreign_key_field (model_forms.tests.ModelFormBaseTest) ... ERROR
+test_blank_with_null_foreign_key_field (model_forms.tests.ModelFormBaseTest) ... ERROR
+test_confused_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_default_filefield (model_forms.tests.ModelFormBaseTest) ... ERROR
+test_default_not_populated_on_checkboxselectmultiple (model_forms.tests.ModelFormBaseTest) ... ERROR
+test_default_not_populated_on_non_empty_value_in_cleaned_data (model_forms.tests.ModelFormBaseTest) ... ERROR
+test_default_not_populated_on_optional_checkbox_input (model_forms.tests.ModelFormBaseTest) ... ERROR
+test_default_not_populated_on_selectmultiple (model_forms.tests.ModelFormBaseTest) ... ERROR
+test_default_populated_on_optional_field (model_forms.tests.ModelFormBaseTest) ... ERROR
+test_default_selectdatewidget (model_forms.tests.ModelFormBaseTest) ... ERROR
+test_default_splitdatetime_field (model_forms.tests.ModelFormBaseTest) ... ERROR
+test_empty_fields_on_modelform (model_forms.tests.ModelFormBaseTest) ... ok
+test_empty_fields_to_construct_instance (model_forms.tests.ModelFormBaseTest) ... ERROR
+test_empty_fields_to_fields_for_model (model_forms.tests.ModelFormBaseTest) ... ok
+test_exclude_and_validation (model_forms.tests.ModelFormBaseTest) ... ERROR
+test_exclude_fields (model_forms.tests.ModelFormBaseTest) ... ok
+test_exclude_fields_with_string (model_forms.tests.ModelFormBaseTest) ... ok
+test_exclude_nonexistent_field (model_forms.tests.ModelFormBaseTest) ... ok
+test_extra_declared_field_model_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_extra_field_model_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_extra_field_modelform_factory (model_forms.tests.ModelFormBaseTest) ... ok
+test_extra_fields (model_forms.tests.ModelFormBaseTest) ... ok
+test_invalid_meta_model (model_forms.tests.ModelFormBaseTest) ... ok
+test_limit_fields_with_string (model_forms.tests.ModelFormBaseTest) ... ok
+test_limit_nonexistent_field (model_forms.tests.ModelFormBaseTest) ... ok
+test_missing_fields_attribute (model_forms.tests.ModelFormBaseTest) ... ok
+test_mixmodel_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_no_model_class (model_forms.tests.ModelFormBaseTest) ... ok
+test_orderfields2_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_orderfields_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_override_field (model_forms.tests.ModelFormBaseTest) ... ERROR
+test_prefixed_form_with_default_field (model_forms.tests.ModelFormBaseTest) ... ERROR
+test_renderer_kwarg (model_forms.tests.ModelFormBaseTest) ... ok
+test_replace_field (model_forms.tests.ModelFormBaseTest) ... ok
+test_replace_field_variant_2 (model_forms.tests.ModelFormBaseTest) ... ok
+test_replace_field_variant_3 (model_forms.tests.ModelFormBaseTest) ... ok
+test_save_blank_false_with_required_false (model_forms.tests.ModelFormBaseTest) ... ERROR
+test_save_blank_null_unique_charfield_saves_null (model_forms.tests.ModelFormBaseTest) ... ERROR
+test_subcategory_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_subclassmeta_form (model_forms.tests.ModelFormBaseTest) ... ok
+test_auto_id (model_forms.tests.ModelFormBasicTests) ... ok
+test_base_form (model_forms.tests.ModelFormBasicTests) ... ok
+test_basic_creation (model_forms.tests.ModelFormBasicTests) ... ERROR
+test_custom_form_fields (model_forms.tests.ModelFormBasicTests) ... ERROR
+test_initial_values (model_forms.tests.ModelFormBasicTests) ... ERROR
+test_m2m_editing (model_forms.tests.ModelFormBasicTests) ... ERROR
+test_m2m_initial_callable (model_forms.tests.ModelFormBasicTests) ... ok
+test_multi_fields (model_forms.tests.ModelFormBasicTests) ... ok
+test_recleaning_model_form_instance (model_forms.tests.ModelFormBasicTests) ... ERROR
+test_runtime_choicefield_populated (model_forms.tests.ModelFormBasicTests) ... ok
+test_save_commit_false (model_forms.tests.ModelFormBasicTests) ... ERROR
+test_save_with_data_errors (model_forms.tests.ModelFormBasicTests) ... ERROR
+test_subset_fields (model_forms.tests.ModelFormBasicTests) ... ERROR
+test_clean_does_deduplicate_values (model_forms.tests.ModelMultipleChoiceFieldTests) ... ok
+test_model_multiple_choice_field (model_forms.tests.ModelMultipleChoiceFieldTests) ... ok
+test_model_multiple_choice_field_22745 (model_forms.tests.ModelMultipleChoiceFieldTests) ... ok
+test_model_multiple_choice_number_of_queries (model_forms.tests.ModelMultipleChoiceFieldTests) ... ok
+test_model_multiple_choice_required_false (model_forms.tests.ModelMultipleChoiceFieldTests) ... ok
+test_model_multiple_choice_run_validators (model_forms.tests.ModelMultipleChoiceFieldTests) ... ok
+test_model_multiple_choice_show_hidden_initial (model_forms.tests.ModelMultipleChoiceFieldTests) ... ok
+test_show_hidden_initial_changed_queries_efficiently (model_forms.tests.ModelMultipleChoiceFieldTests) ... ok
+test_to_field_name_with_initial_data (model_forms.tests.ModelMultipleChoiceFieldTests) ... ok
+test_assignment_of_none (model_forms.tests.ModelOneToOneFieldTests) ... ERROR
+test_assignment_of_none_null_false (model_forms.tests.ModelOneToOneFieldTests) ... ERROR
+test_modelform_onetoonefield (model_forms.tests.ModelOneToOneFieldTests) ... ok
+test_modelform_subclassed_model (model_forms.tests.ModelOneToOneFieldTests) ... ERROR
+test_onetoonefield (model_forms.tests.ModelOneToOneFieldTests) ... FAIL
+test_many_to_many (model_forms.tests.ModelToDictTests)
+Data for a ManyToManyField is a list rather than a lazy QuerySet. ... ok
+test_callable_field_default (model_forms.tests.OtherModelFormTests) ... ok
+test_choices_type (model_forms.tests.OtherModelFormTests) ... ok
+test_foreignkeys_which_use_to_field (model_forms.tests.OtherModelFormTests) ... ERROR
+test_iterable_model_m2m (model_forms.tests.OtherModelFormTests) ... ok
+test_media_on_modelform (model_forms.tests.OtherModelFormTests) ... ok
+test_model_field_that_returns_none_to_exclude_itself_with_explicit_fields (model_forms.tests.OtherModelFormTests) ... ok
+test_prefetch_related_queryset (model_forms.tests.OtherModelFormTests) ... ok
+test_abstract_inherited_unique (model_forms.tests.UniqueTest) ... ERROR
+test_abstract_inherited_unique_together (model_forms.tests.UniqueTest) ... ERROR
+test_explicitpk_unique (model_forms.tests.UniqueTest)
+Ensure keys and blank character strings are tested for uniqueness. ... ERROR
+test_explicitpk_unspecified (model_forms.tests.UniqueTest)
+Test for primary_key being in the form and failing validation. ... ERROR
+test_inherited_unique (model_forms.tests.UniqueTest) ... ERROR
+test_inherited_unique_for_date (model_forms.tests.UniqueTest) ... ERROR
+test_inherited_unique_together (model_forms.tests.UniqueTest) ... ERROR
+test_multiple_field_unique_together (model_forms.tests.UniqueTest) ... ERROR
+test_override_unique_for_date_message (model_forms.tests.UniqueTest) ... ERROR
+test_override_unique_message (model_forms.tests.UniqueTest) ... ERROR
+test_override_unique_together_message (model_forms.tests.UniqueTest) ... ERROR
+test_simple_unique (model_forms.tests.UniqueTest) ... ERROR
+test_unique_for_date (model_forms.tests.UniqueTest) ... ERROR
+test_unique_for_date_in_exclude (model_forms.tests.UniqueTest) ... ERROR
+test_unique_for_date_with_nullable_date (model_forms.tests.UniqueTest) ... ERROR
+test_unique_null (model_forms.tests.UniqueTest) ... ERROR
+test_unique_together (model_forms.tests.UniqueTest)
+ModelForm test of unique_together constraint ... ERROR
+test_unique_together_exclusion (model_forms.tests.UniqueTest) ... ERROR
+test_modelform_factory_metaclass (model_forms.tests.CustomMetaclassTestCase) ... ok
+test_bad_callback (model_forms.tests.FormFieldCallbackTests) ... ok
+test_baseform_with_widgets_in_meta (model_forms.tests.FormFieldCallbackTests)
+Regression for #13095: Using base forms with widgets defined in Meta should not raise errors. ... ok
+test_custom_callback (model_forms.tests.FormFieldCallbackTests)
+A custom formfield_callback is used if provided ... ok
+test_factory_with_widget_argument (model_forms.tests.FormFieldCallbackTests)
+Regression for #15315: modelform_factory should accept widgets ... ok
+test_inherit_after_custom_callback (model_forms.tests.FormFieldCallbackTests) ... ok
+test_modelform_factory_with_all_fields (model_forms.tests.FormFieldCallbackTests)
+Regression for #19733 ... ok
+test_modelform_factory_without_fields (model_forms.tests.FormFieldCallbackTests)
+Regression for #19733 ... ok
+test_custom_error_messages (model_forms.tests.ModelFormCustomErrorTests) ... ERROR
+test_model_clean_error_messages (model_forms.tests.ModelFormCustomErrorTests) ... ERROR
+test_field_removal (model_forms.tests.ModelFormInheritanceTests) ... ok
+test_field_removal_name_clashes (model_forms.tests.ModelFormInheritanceTests) ... ok
+test_form_subclass_inheritance (model_forms.tests.ModelFormInheritanceTests) ... ok
+test_big_integer_field (model_forms.tests.ModelOtherFieldTests) ... ERROR
+test_http_prefixing (model_forms.tests.ModelOtherFieldTests) ... ERROR
+test_modelform_non_editable_field (model_forms.tests.ModelOtherFieldTests) ... ok
+test_url_on_modelform (model_forms.tests.ModelOtherFieldTests)
+Check basic URL field validation on model forms ... ERROR
+test_setattr_raises_validation_error_field_specific (model_forms.tests.StrictAssignmentTests) ... ERROR
+test_setattr_raises_validation_error_non_field (model_forms.tests.StrictAssignmentTests) ... ERROR
+test_error_messages_overrides (model_forms.tests.TestFieldOverridesByFormMeta) ... ERROR
+test_field_type_overrides (model_forms.tests.TestFieldOverridesByFormMeta) ... ok
+test_help_text_overrides (model_forms.tests.TestFieldOverridesByFormMeta) ... ok
+test_label_overrides (model_forms.tests.TestFieldOverridesByFormMeta) ... ok
+test_widget_overrides (model_forms.tests.TestFieldOverridesByFormMeta) ... FAIL
+test_notrequired_overrides_notblank (model_forms.tests.ValidationTest) ... ERROR
+test_validates_with_replaced_field_excluded (model_forms.tests.ValidationTest) ... ERROR
+test_validates_with_replaced_field_not_specified (model_forms.tests.ValidationTest) ... ERROR
+
+======================================================================
+ERROR: test_model_form_clean_applies_to_model (model_forms.tests.CustomCleanTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 2616, in test_model_form_clean_applies_to_model
+    category = form.save()
+  File "/testbed/django/forms/models.py", line 447, in save
+    if self.errors:
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'CategoryForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_override_clean (model_forms.tests.CustomCleanTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 2595, in test_override_clean
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'TripleFormWithCleanOverride' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_clear_and_file_contradiction (model_forms.tests.FileAndImageFieldTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1984, in test_clear_and_file_contradiction
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'DocumentForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_custom_file_field_save (model_forms.tests.FileAndImageFieldTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 2112, in test_custom_file_field_save
+    form.save()
+  File "/testbed/django/forms/models.py", line 447, in save
+    if self.errors:
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'CFFForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_file_field_data (model_forms.tests.FileAndImageFieldTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 2014, in test_file_field_data
+    self.assertFalse(f.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'TextFileForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_file_field_multiple_save (model_forms.tests.FileAndImageFieldTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 2134, in test_file_field_multiple_save
+    p = form.save()
+  File "/testbed/django/forms/models.py", line 447, in save
+    if self.errors:
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'PhotoForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_filefield_required_false (model_forms.tests.FileAndImageFieldTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 2075, in test_filefield_required_false
+    self.assertTrue(f.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'TextFileForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_full_clear (model_forms.tests.FileAndImageFieldTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1963, in test_full_clear
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'DocumentForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_image_field (model_forms.tests.FileAndImageFieldTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 2169, in test_image_field
+    self.assertTrue(f.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'ImageFileForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_model_form_applies_localize_to_all_fields (model_forms.tests.LocalizedModelFormTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 2860, in test_model_form_applies_localize_to_all_fields
+    self.assertTrue(f.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'FullyLocalizedTripleForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_model_form_applies_localize_to_some_fields (model_forms.tests.LocalizedModelFormTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 2847, in test_model_form_applies_localize_to_some_fields
+    self.assertTrue(f.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'PartiallyLocalizedTripleForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_blank_false_with_null_true_foreign_key_field (model_forms.tests.ModelFormBaseTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 258, in test_blank_false_with_null_true_foreign_key_field
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'AwardForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_blank_with_null_foreign_key_field (model_forms.tests.ModelFormBaseTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 232, in test_blank_with_null_foreign_key_field
+    self.assertTrue(f1.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'FormForTestingIsValid' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_default_filefield (model_forms.tests.ModelFormBaseTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 706, in test_default_filefield
+    self.assertEqual(mf1.errors, {})
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'PubForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_default_not_populated_on_checkboxselectmultiple (model_forms.tests.ModelFormBaseTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 640, in test_default_not_populated_on_checkboxselectmultiple
+    self.assertEqual(mf1.errors, {})
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'PubForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_default_not_populated_on_non_empty_value_in_cleaned_data (model_forms.tests.ModelFormBaseTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 603, in test_default_not_populated_on_non_empty_value_in_cleaned_data
+    pub = pub_form.save(commit=False)
+  File "/testbed/django/forms/models.py", line 447, in save
+    if self.errors:
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'PubForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_default_not_populated_on_optional_checkbox_input (model_forms.tests.ModelFormBaseTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 623, in test_default_not_populated_on_optional_checkbox_input
+    self.assertEqual(mf1.errors, {})
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'PubForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_default_not_populated_on_selectmultiple (model_forms.tests.ModelFormBaseTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 656, in test_default_not_populated_on_selectmultiple
+    self.assertEqual(mf1.errors, {})
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'PubForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_default_populated_on_optional_field (model_forms.tests.ModelFormBaseTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 577, in test_default_populated_on_optional_field
+    self.assertEqual(mf1.errors, {})
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'PubForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_default_selectdatewidget (model_forms.tests.ModelFormBaseTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 724, in test_default_selectdatewidget
+    self.assertEqual(mf1.errors, {})
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'PubForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_default_splitdatetime_field (model_forms.tests.ModelFormBaseTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 690, in test_default_splitdatetime_field
+    self.assertEqual(mf1.errors, {})
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'PubForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_empty_fields_to_construct_instance (model_forms.tests.ModelFormBaseTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 208, in test_empty_fields_to_construct_instance
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'PersonForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_exclude_and_validation (model_forms.tests.ModelFormBaseTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 424, in test_exclude_and_validation
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'PriceFormWithoutQuantity' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_override_field (model_forms.tests.ModelFormBaseTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 372, in test_override_field
+    self.assertTrue(wf.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'WriterForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_prefixed_form_with_default_field (model_forms.tests.ModelFormBaseTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 673, in test_prefixed_form_with_default_field
+    self.assertEqual(mf1.errors, {})
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'PubForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_save_blank_false_with_required_false (model_forms.tests.ModelFormBaseTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 269, in test_save_blank_false_with_required_false
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'CustomWriterForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_save_blank_null_unique_charfield_saves_null (model_forms.tests.ModelFormBaseTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 278, in test_save_blank_null_unique_charfield_saves_null
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'NullableUniqueCharFieldModelForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_basic_creation (model_forms.tests.ModelFormBasicTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1331, in test_basic_creation
+    self.assertTrue(f.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'BaseCategoryForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_custom_form_fields (model_forms.tests.ModelFormBasicTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1541, in test_custom_form_fields
+    self.assertEqual(form.save().name, 'Third')
+  File "/testbed/django/forms/models.py", line 447, in save
+    if self.errors:
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'ShortCategory' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_initial_values (model_forms.tests.ModelFormBasicTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1285, in test_initial_values
+    self.assertEqual(f.errors, {})
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'ArticleForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_m2m_editing (model_forms.tests.ModelFormBasicTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1486, in test_m2m_editing
+    new_art = f.save()
+  File "/testbed/django/forms/models.py", line 447, in save
+    if self.errors:
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'ArticleForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_recleaning_model_form_instance (model_forms.tests.ModelFormBasicTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1612, in test_recleaning_model_form_instance
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'AuthorForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_save_commit_false (model_forms.tests.ModelFormBasicTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1348, in test_save_commit_false
+    self.assertTrue(f.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'BaseCategoryForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_save_with_data_errors (model_forms.tests.ModelFormBasicTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1358, in test_save_with_data_errors
+    self.assertEqual(f.errors['name'], ['This field is required.'])
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'BaseCategoryForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_subset_fields (model_forms.tests.ModelFormBasicTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1463, in test_subset_fields
+    f.as_ul(),
+  File "/testbed/django/forms/forms.py", line 289, in as_ul
+    errors_on_separate_row=False,
+  File "/testbed/django/forms/forms.py", line 197, in _html_output
+    top_errors = self.non_field_errors()  # Errors that should be displayed above all fields.
+  File "/testbed/django/forms/forms.py", line 308, in non_field_errors
+    return self.errors.get(NON_FIELD_ERRORS, self.error_class(error_class='nonfield'))
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'PartialArticleFormWithSlug' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_assignment_of_none (model_forms.tests.ModelOneToOneFieldTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1907, in test_assignment_of_none
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'AuthorForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_assignment_of_none_null_false (model_forms.tests.ModelOneToOneFieldTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1924, in test_assignment_of_none_null_false
+    self.assertFalse(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'AuthorForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_modelform_subclassed_model (model_forms.tests.ModelOneToOneFieldTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1849, in test_modelform_subclassed_model
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'BetterWriterForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_foreignkeys_which_use_to_field (model_forms.tests.OtherModelFormTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 2447, in test_foreignkeys_which_use_to_field
+    core = form.save()
+  File "/testbed/django/forms/models.py", line 447, in save
+    if self.errors:
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'InventoryForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_abstract_inherited_unique (model_forms.tests.UniqueTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 975, in test_abstract_inherited_unique
+    self.assertFalse(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'DerivedBookForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_abstract_inherited_unique_together (model_forms.tests.UniqueTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 990, in test_abstract_inherited_unique_together
+    self.assertFalse(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'DerivedBookForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_explicitpk_unique (model_forms.tests.UniqueTest)
+Ensure keys and blank character strings are tested for uniqueness.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1005, in test_explicitpk_unique
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'ExplicitPKForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_explicitpk_unspecified (model_forms.tests.UniqueTest)
+Test for primary_key being in the form and failing validation.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1000, in test_explicitpk_unspecified
+    self.assertFalse(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'ExplicitPKForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_inherited_unique (model_forms.tests.UniqueTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 953, in test_inherited_unique
+    self.assertFalse(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'DerivedBookForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_inherited_unique_for_date (model_forms.tests.UniqueTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1077, in test_inherited_unique_for_date
+    self.assertFalse(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'DerivedPostForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_inherited_unique_together (model_forms.tests.UniqueTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 960, in test_inherited_unique_together
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'BookForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_multiple_field_unique_together (model_forms.tests.UniqueTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 928, in test_multiple_field_unique_together
+    self.assertFalse(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'TripleForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_override_unique_for_date_message (model_forms.tests.UniqueTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1161, in test_override_unique_for_date_message
+    self.assertEqual(len(form.errors), 1)
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'CustomPostForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_override_unique_message (model_forms.tests.UniqueTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1127, in test_override_unique_message
+    self.assertEqual(len(form.errors), 1)
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'CustomProductForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_override_unique_together_message (model_forms.tests.UniqueTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1141, in test_override_unique_together_message
+    self.assertEqual(len(form.errors), 1)
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'CustomPriceForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_simple_unique (model_forms.tests.UniqueTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 867, in test_simple_unique
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'ProductForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_unique_for_date (model_forms.tests.UniqueTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1024, in test_unique_for_date
+    self.assertFalse(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'PostForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_unique_for_date_in_exclude (model_forms.tests.UniqueTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1063, in test_unique_for_date_in_exclude
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'DateTimePostForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_unique_for_date_with_nullable_date (model_forms.tests.UniqueTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1107, in test_unique_for_date_with_nullable_date
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'FlexDatePostForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_unique_null (model_forms.tests.UniqueTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/test/testcases.py", line 1229, in skip_wrapper
+    return test_func(*args, **kwargs)
+  File "/testbed/tests/model_forms/tests.py", line 937, in test_unique_null
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'BookForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_unique_together (model_forms.tests.UniqueTest)
+ModelForm test of unique_together constraint
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 878, in test_unique_together
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'PriceForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_unique_together_exclusion (model_forms.tests.UniqueTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 911, in test_unique_together_exclusion
+    self.assertTrue(form.is_valid(), form.errors)
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'BookForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_custom_error_messages (model_forms.tests.ModelFormCustomErrorTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 2547, in test_custom_error_messages
+    errors = CustomErrorMessageForm(data).errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'CustomErrorMessageForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_model_clean_error_messages (model_forms.tests.ModelFormCustomErrorTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 2560, in test_model_clean_error_messages
+    self.assertFalse(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'CustomErrorMessageForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_big_integer_field (model_forms.tests.ModelOtherFieldTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 2314, in test_big_integer_field
+    self.assertTrue(bif.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'BigIntForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_http_prefixing (model_forms.tests.ModelOtherFieldTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 2373, in test_http_prefixing
+    self.assertTrue(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'HomepageForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_url_on_modelform (model_forms.tests.ModelOtherFieldTests)
+Check basic URL field validation on model forms
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 2334, in test_url_on_modelform
+    self.assertFalse(HomepageForm({'url': 'foo'}).is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'HomepageForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_setattr_raises_validation_error_field_specific (model_forms.tests.StrictAssignmentTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 2910, in test_setattr_raises_validation_error_field_specific
+    self.assertFalse(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'StrictAssignmentFieldSpecificForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_setattr_raises_validation_error_non_field (model_forms.tests.StrictAssignmentTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 2925, in test_setattr_raises_validation_error_non_field
+    self.assertFalse(form.is_valid())
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'StrictAssignmentAllForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_error_messages_overrides (model_forms.tests.TestFieldOverridesByFormMeta)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 805, in test_error_messages_overrides
+    form.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'FieldOverridesByFormMetaForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_notrequired_overrides_notblank (model_forms.tests.ValidationTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 854, in test_notrequired_overrides_notblank
+    assert form.is_valid()
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'CustomWriterForm' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_validates_with_replaced_field_excluded (model_forms.tests.ValidationTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 850, in test_validates_with_replaced_field_excluded
+    assert form.is_valid()
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'IncompleteCategoryFormWithExclude' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+ERROR: test_validates_with_replaced_field_not_specified (model_forms.tests.ValidationTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 846, in test_validates_with_replaced_field_not_specified
+    assert form.is_valid()
+  File "/testbed/django/forms/forms.py", line 180, in is_valid
+    return self.is_bound and not self.errors
+  File "/testbed/django/forms/forms.py", line 175, in errors
+    self.full_clean()
+  File "/testbed/django/forms/forms.py", line 381, in full_clean
+    self._apply_cleaned_data_to_defaults()
+AttributeError: 'IncompleteCategoryFormWithFields' object has no attribute '_apply_cleaned_data_to_defaults'
+
+======================================================================
+FAIL: test_onetoonefield (model_forms.tests.ModelOneToOneFieldTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 1872, in test_onetoonefield
+    self.w_woodward.pk, self.w_royko.pk,
+  File "/testbed/django/test/testcases.py", line 778, in assertHTMLEqual
+    self.fail(self._formatMessage(msg, standardMsg))
+AssertionError: <p>
+<label for="id_writer">
+Writer:
+</label><select id="id_writer" name="writer" [truncated]... != <p>
+<label for="id_writer">
+Writer:
+</label><select id="id_writer" name="writer" [truncated]...
+  <p>
+  <label for="id_writer">
+  Writer:
+  </label><select id="id_writer" name="writer" required>
+  <option selected value>
+  ---------
+  </option><option value="2">
+  Bob Woodward
+  </option><option value="1">
+  Mike Royko
+  </option>
+  </select>
+  </p><p>
+  <label for="id_age">
+  Age:
+- </label><input id="id_age" name="age" required type="number">
++ </label><input id="id_age" min="0" name="age" required type="number">
+?                            ++++++++
+
+  </p>
+
+======================================================================
+FAIL: test_widget_overrides (model_forms.tests.TestFieldOverridesByFormMeta)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_forms/tests.py", line 766, in test_widget_overrides
+    '<textarea id="id_name" rows="10" cols="40" name="name" maxlength="20" required></textarea>',
+  File "/testbed/django/test/testcases.py", line 778, in assertHTMLEqual
+    self.fail(self._formatMessage(msg, standardMsg))
+AssertionError: <textarea cols="40" id="id_name" name="name" required rows="10"> != <textarea cols="40" id="id_name" maxlength="20" name="name" required rows="10">
+- <textarea cols="40" id="id_name" name="name" required rows="10">
++ <textarea cols="40" id="id_name" maxlength="20" name="name" required rows="10">
+?                                  +++++++++++++++
+
+
+----------------------------------------------------------------------
+Ran 144 tests in 0.162s
+
+FAILED (failures=2, errors=68)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Testing against Django installed in '/testbed/django'
+Importing application model_forms
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, messages, model_forms, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table model_forms_person
+    Creating table model_forms_category
+    Creating table model_forms_writer
+    Creating table model_forms_article
+    Creating table model_forms_improvedarticle
+    Creating table model_forms_improvedarticlewithparentlink
+    Creating table model_forms_betterwriter
+    Creating table model_forms_publication
+    Creating table model_forms_publicationdefaults
+    Creating table model_forms_author
+    Creating table model_forms_author1
+    Creating table model_forms_writerprofile
+    Creating table model_forms_document
+    Creating table model_forms_textfile
+    Creating table model_forms_customff
+    Creating table model_forms_filepathmodel
+    Creating table model_forms_imagefile
+    Creating table model_forms_optionalimagefile
+    Creating table model_forms_noextensionimagefile
+    Creating table model_forms_homepage
+    Creating table model_forms_product
+    Creating table model_forms_price
+    Creating table model_forms_triple
+    Creating table model_forms_articlestatus
+    Creating table model_forms_inventory
+    Creating table model_forms_book
+    Creating table model_forms_derivedbook
+    Creating table model_forms_explicitpk
+    Creating table model_forms_post
+    Creating table model_forms_datetimepost
+    Creating table model_forms_derivedpost
+    Creating table model_forms_bigint
+    Creating table model_forms_customfieldforexclusionmodel
+    Creating table model_forms_flexibledatepost
+    Creating table model_forms_colour
+    Creating table model_forms_colourfulitem
+    Creating table model_forms_customerrormessage
+    Creating table model_forms_character
+    Creating table model_forms_stumpjoke
+    Creating table model_forms_student
+    Creating table model_forms_photo
+    Creating table model_forms_uuidpk
+    Creating table model_forms_strictassignmentfieldspecific
+    Creating table model_forms_strictassignmentall
+    Creating table model_forms_award
+    Creating table model_forms_nullableuniquecharfieldmodel
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (0 silenced).
++ git checkout 21b1d239125f1228e579b1ce8d94d4d5feadd2a6 tests/model_forms/tests.py
+Updated 1 path from ef6f80b94f

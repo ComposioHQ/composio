@@ -1,0 +1,93 @@
+2024-09-11 20:18:42,993 - INFO - Environment image sweb.env.arm64.a18371b03f944585b4f08c:latest found for django__django-12262
+Building instance image sweb.eval.arm64.django__django-12262:latest for django__django-12262
+2024-09-11 20:19:06,730 - INFO - Creating container for django__django-12262...
+2024-09-11 20:19:06,757 - INFO - Container for django__django-12262 created: d6735060a26ed31a274f3233bb5251579f1873838cbd298273d443179990e0f3
+2024-09-11 20:19:06,845 - INFO - Container for django__django-12262 started: d6735060a26ed31a274f3233bb5251579f1873838cbd298273d443179990e0f3
+2024-09-11 20:19:06,846 - INFO - Intermediate patch for django__django-12262 written to logs/run_evaluation/langgraph_agent_1726065540N/composio/django__django-12262/patch.diff, now applying to container...
+2024-09-11 20:19:07,011 - INFO - Failed to apply patch to container, trying again...
+2024-09-11 20:19:07,050 - INFO - >>>>> Applied Patch:
+patching file django/template/library.py
+
+2024-09-11 20:19:07,365 - INFO - Git diff before:
+diff --git a/django/template/library.py b/django/template/library.py
+index 20bc86dac8..9c41b0f770 100644
+--- a/django/template/library.py
++++ b/django/template/library.py
+@@ -253,7 +253,7 @@ def parse_bits(parser, bits, params, varargs, varkw, defaults,
+     unhandled_params = list(params)
+     unhandled_kwargs = [
+         kwarg for kwarg in kwonly
+-        if not kwonly_defaults or kwarg not in kwonly_defaults
++        if kwarg not in kwonly_defaults
+     ]
+     for bit in bits:
+         # First we try to extract a potential kwarg from the bit
+@@ -261,7 +261,8 @@ def parse_bits(parser, bits, params, varargs, varkw, defaults,
+         if kwarg:
+             # The kwarg was successfully extracted
+             param, value = kwarg.popitem()
+-            if param not in params and param not in unhandled_kwargs and varkw is None:
++            if (param not in params and param not in unhandled_kwargs and
++                param not in kwonly_defaults and varkw is None):
+                 # An unexpected keyword argument was supplied
+                 raise TemplateSyntaxError(
+                     "'%s' received unexpected keyword argument '%s'" %
+@@ -301,11 +302,11 @@ def parse_bits(parser, bits, params, varargs, varkw, defaults,
+         # Consider the last n params handled, where n is the
+         # number of defaults.
+         unhandled_params = unhandled_params[:-len(defaults)]
+-    if unhandled_params or unhandled_kwargs:
++    if unhandled_params or [k for k in unhandled_kwargs if k not in kwonly_defaults]:
+         # Some positional arguments were not supplied
+         raise TemplateSyntaxError(
+             "'%s' did not receive value(s) for the argument(s): %s" %
+-            (name, ", ".join("'%s'" % p for p in unhandled_params + unhandled_kwargs)))
++            (name, ", ".join("'%s'" % p for p in unhandled_params + [k for k in unhandled_kwargs if k not in kwonly_defaults])))
+     return args, kwargs
+2024-09-11 20:19:07,366 - INFO - Eval script for django__django-12262 written to logs/run_evaluation/langgraph_agent_1726065540N/composio/django__django-12262/eval.sh; copying to container...
+2024-09-11 20:19:09,646 - INFO - Test runtime: 2.17 seconds
+2024-09-11 20:19:09,646 - INFO - Test output for django__django-12262 written to logs/run_evaluation/langgraph_agent_1726065540N/composio/django__django-12262/test_output.txt
+2024-09-11 20:19:09,688 - INFO - Git diff after:
+diff --git a/django/template/library.py b/django/template/library.py
+index 20bc86dac8..9c41b0f770 100644
+--- a/django/template/library.py
++++ b/django/template/library.py
+@@ -253,7 +253,7 @@ def parse_bits(parser, bits, params, varargs, varkw, defaults,
+     unhandled_params = list(params)
+     unhandled_kwargs = [
+         kwarg for kwarg in kwonly
+-        if not kwonly_defaults or kwarg not in kwonly_defaults
++        if kwarg not in kwonly_defaults
+     ]
+     for bit in bits:
+         # First we try to extract a potential kwarg from the bit
+@@ -261,7 +261,8 @@ def parse_bits(parser, bits, params, varargs, varkw, defaults,
+         if kwarg:
+             # The kwarg was successfully extracted
+             param, value = kwarg.popitem()
+-            if param not in params and param not in unhandled_kwargs and varkw is None:
++            if (param not in params and param not in unhandled_kwargs and
++                param not in kwonly_defaults and varkw is None):
+                 # An unexpected keyword argument was supplied
+                 raise TemplateSyntaxError(
+                     "'%s' received unexpected keyword argument '%s'" %
+@@ -301,11 +302,11 @@ def parse_bits(parser, bits, params, varargs, varkw, defaults,
+         # Consider the last n params handled, where n is the
+         # number of defaults.
+         unhandled_params = unhandled_params[:-len(defaults)]
+-    if unhandled_params or unhandled_kwargs:
++    if unhandled_params or [k for k in unhandled_kwargs if k not in kwonly_defaults]:
+         # Some positional arguments were not supplied
+         raise TemplateSyntaxError(
+             "'%s' did not receive value(s) for the argument(s): %s" %
+-            (name, ", ".join("'%s'" % p for p in unhandled_params + unhandled_kwargs)))
++            (name, ", ".join("'%s'" % p for p in unhandled_params + [k for k in unhandled_kwargs if k not in kwonly_defaults])))
+     return args, kwargs
+2024-09-11 20:19:09,688 - INFO - Grading answer for django__django-12262...
+2024-09-11 20:19:09,695 - INFO - report: {'django__django-12262': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': False, 'tests_status': {'FAIL_TO_PASS': {'success': [], 'failure': ['test_inclusion_tag_errors (template_tests.test_custom.InclusionTagTests)', 'test_inclusion_tags (template_tests.test_custom.InclusionTagTests)', 'test_simple_tag_errors (template_tests.test_custom.SimpleTagTests)', 'test_simple_tags (template_tests.test_custom.SimpleTagTests)']}, 'PASS_TO_PASS': {'success': ['test_decorated_filter (template_tests.test_custom.CustomFilterTests)', 'test_filter (template_tests.test_custom.CustomFilterTests)', 'test_15070_use_l10n (template_tests.test_custom.InclusionTagTests)', 'test_include_tag_missing_context (template_tests.test_custom.InclusionTagTests)', 'test_inclusion_tag_registration (template_tests.test_custom.InclusionTagTests)', 'test_inclusion_tags_from_template (template_tests.test_custom.InclusionTagTests)', 'test_no_render_side_effect (template_tests.test_custom.InclusionTagTests)', 'test_render_context_is_cleared (template_tests.test_custom.InclusionTagTests)', 'test_simple_tag_escaping_autoescape_off (template_tests.test_custom.SimpleTagTests)', 'test_simple_tag_explicit_escaping (template_tests.test_custom.SimpleTagTests)', 'test_simple_tag_format_html_escaping (template_tests.test_custom.SimpleTagTests)', 'test_simple_tag_missing_context (template_tests.test_custom.SimpleTagTests)', 'test_simple_tag_naive_escaping (template_tests.test_custom.SimpleTagTests)', 'test_simple_tag_registration (template_tests.test_custom.SimpleTagTests)', 'test_load_annotated_function (template_tests.test_custom.TemplateTagLoadingTests)', 'test_load_error (template_tests.test_custom.TemplateTagLoadingTests)', 'test_load_error_egg (template_tests.test_custom.TemplateTagLoadingTests)', 'test_load_working_egg (template_tests.test_custom.TemplateTagLoadingTests)'], 'failure': []}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for django__django-12262: resolved: False
+2024-09-11 20:19:09,696 - INFO - Attempting to stop container sweb.eval.django__django-12262.langgraph_agent_1726065540N...
+2024-09-11 20:19:25,190 - INFO - Attempting to remove container sweb.eval.django__django-12262.langgraph_agent_1726065540N...
+2024-09-11 20:19:25,278 - INFO - Container sweb.eval.django__django-12262.langgraph_agent_1726065540N removed.
+2024-09-11 20:19:25,278 - INFO - Attempting to remove image sweb.eval.arm64.django__django-12262:latest...
+2024-09-11 20:19:25,464 - INFO - Image sweb.eval.arm64.django__django-12262:latest removed.

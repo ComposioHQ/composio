@@ -1,0 +1,571 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/core/management/base.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 1250483ebf73f7a82ff820b94092c63ce4238264
+Author: skidipap <mad.skidipap@gmail.com>
+Date:   Wed Feb 1 17:18:35 2023 +0700
+
+    Fixed #34286 -- Fixed admindocs markups for case-sensitive template/view names.
+
+diff --git a/AUTHORS b/AUTHORS
+index 4e91d7b3f3..2cddbf9280 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -808,6 +808,7 @@ answer newbie questions, and generally made Django that much better:
+     Radek Švarz <https://www.svarz.cz/translate/>
+     Rafael Giebisch <rafael@giebisch-mail.de>
+     Raffaele Salmaso <raffaele@salmaso.org>
++    Rahmat Faisal <mad.skidipap@gmail.com>
+     Rajesh Dhawan <rajesh.dhawan@gmail.com>
+     Ramez Ashraf <ramezashraf@gmail.com>
+     Ramil Yanbulatov <rayman1104@gmail.com>
+diff --git a/django/contrib/admindocs/utils.py b/django/contrib/admindocs/utils.py
+index 6edff502ec..3708a32813 100644
+--- a/django/contrib/admindocs/utils.py
++++ b/django/contrib/admindocs/utils.py
+@@ -101,6 +101,9 @@ ROLES = {
+ 
+ 
+ def create_reference_role(rolename, urlbase):
++    # Views and template names are case-sensitive.
++    is_case_sensitive = rolename in ["template", "view"]
++
+     def _role(name, rawtext, text, lineno, inliner, options=None, content=None):
+         if options is None:
+             options = {}
+@@ -111,7 +114,7 @@ def create_reference_role(rolename, urlbase):
+                 urlbase
+                 % (
+                     inliner.document.settings.link_base,
+-                    text.lower(),
++                    text if is_case_sensitive else text.lower(),
+                 )
+             ),
+             **options,
+diff --git a/tests/admin_docs/test_utils.py b/tests/admin_docs/test_utils.py
+index 18c6769fad..8152857263 100644
+--- a/tests/admin_docs/test_utils.py
++++ b/tests/admin_docs/test_utils.py
+@@ -104,6 +104,22 @@ class TestUtils(AdminDocsSimpleTestCase):
+             self.assertEqual(parse_rst(body, ""), "<p>second line</p>\n")
+         self.assertEqual(stderr.getvalue(), "")
+ 
++    def test_parse_rst_view_case_sensitive(self):
++        source = ":view:`myapp.views.Index`"
++        rendered = (
++            '<p><a class="reference external" '
++            'href="/admindocs/views/myapp.views.Index/">myapp.views.Index</a></p>'
++        )
++        self.assertHTMLEqual(parse_rst(source, "view"), rendered)
++
++    def test_parse_rst_template_case_sensitive(self):
++        source = ":template:`Index.html`"
++        rendered = (
++            '<p><a class="reference external" href="/admindocs/templates/Index.html/">'
++            "Index.html</a></p>"
++        )
++        self.assertHTMLEqual(parse_rst(source, "template"), rendered)
++
+     def test_publish_parts(self):
+         """
+         Django shouldn't break the default role for interpreted text
++ git diff 1250483ebf73f7a82ff820b94092c63ce4238264
+diff --git a/django/core/management/base.py b/django/core/management/base.py
+index abc6f79a15..7c7287e8ab 100644
+--- a/django/core/management/base.py
++++ b/django/core/management/base.py
+@@ -71,6 +71,19 @@ class CommandParser(ArgumentParser):
+         else:
+             raise CommandError("Error: %s" % message)
+ 
++    def add_subparsers(self, **kwargs):
++        # Call the parent class's add_subparsers method
++        subparsers_action = super().add_subparsers(**kwargs)
++
++        # Override the add_parser method to use CommandParser
++        original_add_parser = subparsers_action.add_parser
++        def add_parser(name, **sub_kwargs):
++            sub_kwargs.setdefault('missing_args_message', self.missing_args_message)
++            sub_kwargs.setdefault('called_from_command_line', self.called_from_command_line)
++            return original_add_parser(name, parser_class=CommandParser, **sub_kwargs)
++
++        subparsers_action.add_parser = add_parser
++        return subparsers_action
+ 
+ def handle_default_options(options):
+     """
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.6.0 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from Django==5.0.dev20230202122108) (3.8.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from Django==5.0.dev20230202122108) (0.5.1)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-5.0.dev20230202122108-0.editable-py3-none-any.whl size=27341 sha256=9a7de97641fded8de66211e3b80c97747fa34ce0b69c797a01c36f0e61658e62
+  Stored in directory: /tmp/pip-ephem-wheel-cache-vakrhqvu/wheels/49/5f/4f/01b7d31ea6ddac9643da788242d33e5fd3467d95d17b032c6b
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 5.0.dev20230202122108
+    Uninstalling Django-5.0.dev20230202122108:
+      Successfully uninstalled Django-5.0.dev20230202122108
+Successfully installed Django-5.0.dev20230202122108
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 1250483ebf73f7a82ff820b94092c63ce4238264 tests/user_commands/tests.py
+Updated 0 paths from 5c4bf71a54
++ git apply -v -
+Checking patch tests/user_commands/management/commands/subparser_vanilla.py...
+Checking patch tests/user_commands/tests.py...
+Applied patch tests/user_commands/management/commands/subparser_vanilla.py cleanly.
+Applied patch tests/user_commands/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 user_commands.management.commands.subparser_vanilla user_commands.tests
+Testing against Django installed in '/testbed/django'
+Importing application user_commands
+Found 46 test(s).
+Skipping setup of unused database(s): default, other.
+System check identified no issues (0 silenced).
+test_disallowed_abbreviated_options (user_commands.tests.CommandRunTests.test_disallowed_abbreviated_options)
+To avoid conflicts with custom options, commands don't allow ... ok
+test_script_prefix_set_in_commands (user_commands.tests.CommandRunTests.test_script_prefix_set_in_commands) ... ok
+test_skip_checks (user_commands.tests.CommandRunTests.test_skip_checks) ... ok
+test_subparser_error_formatting (user_commands.tests.CommandRunTests.test_subparser_error_formatting) ... FAIL
+test_subparser_non_django_error_formatting (user_commands.tests.CommandRunTests.test_subparser_non_django_error_formatting) ... FAIL
+test_call_command_no_checks (user_commands.tests.CommandTests.test_call_command_no_checks)
+By default, call_command should not trigger the check framework, unless ... ok
+test_call_command_option_parsing (user_commands.tests.CommandTests.test_call_command_option_parsing)
+When passing the long option name to call_command, the available option ... ok
+test_call_command_option_parsing_non_string_arg (user_commands.tests.CommandTests.test_call_command_option_parsing_non_string_arg)
+It should be possible to pass non-string arguments to call_command. ... ok
+test_call_command_unrecognized_option (user_commands.tests.CommandTests.test_call_command_unrecognized_option) ... ok
+test_call_command_with_required_parameters_in_mixed_options (user_commands.tests.CommandTests.test_call_command_with_required_parameters_in_mixed_options) ... ok
+test_call_command_with_required_parameters_in_options (user_commands.tests.CommandTests.test_call_command_with_required_parameters_in_options) ... ok
+test_calling_a_command_with_no_app_labels_and_parameters_raise_command_error (user_commands.tests.CommandTests.test_calling_a_command_with_no_app_labels_and_parameters_raise_command_error) ... ok
+test_calling_a_command_with_only_empty_parameter_should_ends_gracefully (user_commands.tests.CommandTests.test_calling_a_command_with_only_empty_parameter_should_ends_gracefully) ... ok
+test_calling_command_with_app_labels_and_parameters_should_be_ok (user_commands.tests.CommandTests.test_calling_command_with_app_labels_and_parameters_should_be_ok) ... ok
+test_calling_command_with_parameters_and_app_labels_at_the_end_should_be_ok (user_commands.tests.CommandTests.test_calling_command_with_parameters_and_app_labels_at_the_end_should_be_ok) ... ok
+test_check_migrations (user_commands.tests.CommandTests.test_check_migrations) ... ok
+test_command (user_commands.tests.CommandTests.test_command) ... ok
+test_command_add_arguments_after_common_arguments (user_commands.tests.CommandTests.test_command_add_arguments_after_common_arguments) ... ok
+test_command_style (user_commands.tests.CommandTests.test_command_style) ... ok
+test_create_parser_kwargs (user_commands.tests.CommandTests.test_create_parser_kwargs)
+BaseCommand.create_parser() passes kwargs to CommandParser. ... ok
+test_discover_commands_in_eggs (user_commands.tests.CommandTests.test_discover_commands_in_eggs)
+Management commands can also be loaded from Python eggs. ... ok
+test_explode (user_commands.tests.CommandTests.test_explode)
+An unknown command raises CommandError ... ok
+test_find_command_without_PATH (user_commands.tests.CommandTests.test_find_command_without_PATH)
+find_command should still work when the PATH environment variable ... ok
+test_language_preserved (user_commands.tests.CommandTests.test_language_preserved) ... ok
+test_mutually_exclusive_group_required_const_options (user_commands.tests.CommandTests.test_mutually_exclusive_group_required_const_options) ... ok
+test_mutually_exclusive_group_required_options (user_commands.tests.CommandTests.test_mutually_exclusive_group_required_options) ... ok
+test_mutually_exclusive_group_required_with_same_dest_args (user_commands.tests.CommandTests.test_mutually_exclusive_group_required_with_same_dest_args) ... ok
+test_mutually_exclusive_group_required_with_same_dest_options (user_commands.tests.CommandTests.test_mutually_exclusive_group_required_with_same_dest_options) ... ok
+test_no_translations_deactivate_translations (user_commands.tests.CommandTests.test_no_translations_deactivate_translations)
+When the Command handle method is decorated with @no_translations, ... ok
+test_output_transaction (user_commands.tests.CommandTests.test_output_transaction) ... ok
+test_outputwrapper_flush (user_commands.tests.CommandTests.test_outputwrapper_flush) ... ok
+test_required_const_options (user_commands.tests.CommandTests.test_required_const_options) ... ok
+test_required_list_option (user_commands.tests.CommandTests.test_required_list_option) ... ok
+test_requires_system_checks_empty (user_commands.tests.CommandTests.test_requires_system_checks_empty) ... ok
+test_requires_system_checks_invalid (user_commands.tests.CommandTests.test_requires_system_checks_invalid) ... ok
+test_requires_system_checks_specific (user_commands.tests.CommandTests.test_requires_system_checks_specific) ... ok
+test_subparser (user_commands.tests.CommandTests.test_subparser) ... ERROR
+test_subparser_dest_args (user_commands.tests.CommandTests.test_subparser_dest_args) ... ERROR
+test_subparser_dest_required_args (user_commands.tests.CommandTests.test_subparser_dest_required_args) ... ERROR
+test_subparser_invalid_option (user_commands.tests.CommandTests.test_subparser_invalid_option) ... ERROR
+test_system_exit (user_commands.tests.CommandTests.test_system_exit)
+Exception raised in a command should raise CommandError with ... ok
+test_get_random_secret_key (user_commands.tests.UtilsTests.test_get_random_secret_key) ... ok
+test_is_ignored_path_false (user_commands.tests.UtilsTests.test_is_ignored_path_false) ... ok
+test_is_ignored_path_true (user_commands.tests.UtilsTests.test_is_ignored_path_true) ... ok
+test_no_existent_external_program (user_commands.tests.UtilsTests.test_no_existent_external_program) ... ok
+test_normalize_path_patterns_truncates_wildcard_base (user_commands.tests.UtilsTests.test_normalize_path_patterns_truncates_wildcard_base) ... ok
+
+======================================================================
+ERROR: test_subparser (user_commands.tests.CommandTests.test_subparser)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/user_commands/tests.py", line 386, in test_subparser
+    management.call_command("subparser", "foo", 12, stdout=out)
+  File "/testbed/django/core/management/__init__.py", line 121, in call_command
+    parser = command.create_parser("", command_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/django/core/management/base.py", line 370, in create_parser
+    self.add_arguments(parser)
+  File "/testbed/tests/user_commands/management/commands/subparser.py", line 7, in add_arguments
+    parser_foo = subparsers.add_parser("foo")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/django/core/management/base.py", line 83, in add_parser
+    return original_add_parser(name, parser_class=CommandParser, **sub_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/testbed/lib/python3.11/argparse.py", line 1210, in add_parser
+    parser = self._parser_class(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/django/core/management/base.py", line 58, in __init__
+    super().__init__(**kwargs)
+TypeError: ArgumentParser.__init__() got an unexpected keyword argument 'parser_class'
+
+======================================================================
+ERROR: test_subparser_dest_args (user_commands.tests.CommandTests.test_subparser_dest_args)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/user_commands/tests.py", line 391, in test_subparser_dest_args
+    management.call_command("subparser_dest", "foo", bar=12, stdout=out)
+  File "/testbed/django/core/management/__init__.py", line 121, in call_command
+    parser = command.create_parser("", command_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/django/core/management/base.py", line 370, in create_parser
+    self.add_arguments(parser)
+  File "/testbed/tests/user_commands/management/commands/subparser_dest.py", line 7, in add_arguments
+    parser_foo = subparsers.add_parser("foo")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/django/core/management/base.py", line 83, in add_parser
+    return original_add_parser(name, parser_class=CommandParser, **sub_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/testbed/lib/python3.11/argparse.py", line 1210, in add_parser
+    parser = self._parser_class(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/django/core/management/base.py", line 58, in __init__
+    super().__init__(**kwargs)
+TypeError: ArgumentParser.__init__() got an unexpected keyword argument 'parser_class'
+
+======================================================================
+ERROR: test_subparser_dest_required_args (user_commands.tests.CommandTests.test_subparser_dest_required_args)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/user_commands/tests.py", line 396, in test_subparser_dest_required_args
+    management.call_command(
+  File "/testbed/django/core/management/__init__.py", line 121, in call_command
+    parser = command.create_parser("", command_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/django/core/management/base.py", line 370, in create_parser
+    self.add_arguments(parser)
+  File "/testbed/tests/user_commands/management/commands/subparser_required.py", line 7, in add_arguments
+    parser_foo_1 = subparsers_1.add_parser("foo_1")
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/django/core/management/base.py", line 83, in add_parser
+    return original_add_parser(name, parser_class=CommandParser, **sub_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/testbed/lib/python3.11/argparse.py", line 1210, in add_parser
+    parser = self._parser_class(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/django/core/management/base.py", line 58, in __init__
+    super().__init__(**kwargs)
+TypeError: ArgumentParser.__init__() got an unexpected keyword argument 'parser_class'
+
+======================================================================
+ERROR: test_subparser_invalid_option (user_commands.tests.CommandTests.test_subparser_invalid_option)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/user_commands/tests.py", line 404, in test_subparser_invalid_option
+    management.call_command("subparser", "test", 12)
+  File "/testbed/django/core/management/__init__.py", line 121, in call_command
+    parser = command.create_parser("", command_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/django/core/management/base.py", line 370, in create_parser
+    self.add_arguments(parser)
+  File "/testbed/tests/user_commands/management/commands/subparser.py", line 7, in add_arguments
+    parser_foo = subparsers.add_parser("foo")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/django/core/management/base.py", line 83, in add_parser
+    return original_add_parser(name, parser_class=CommandParser, **sub_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/miniconda3/envs/testbed/lib/python3.11/argparse.py", line 1210, in add_parser
+    parser = self._parser_class(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/django/core/management/base.py", line 58, in __init__
+    super().__init__(**kwargs)
+TypeError: ArgumentParser.__init__() got an unexpected keyword argument 'parser_class'
+
+======================================================================
+FAIL: test_subparser_error_formatting (user_commands.tests.CommandRunTests.test_subparser_error_formatting)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/user_commands/tests.py", line 477, in test_subparser_error_formatting
+    self.assertEqual(len(err_lines), 2)
+AssertionError: 26 != 2
+
+======================================================================
+FAIL: test_subparser_non_django_error_formatting (user_commands.tests.CommandRunTests.test_subparser_non_django_error_formatting)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/user_commands/tests.py", line 488, in test_subparser_non_django_error_formatting
+    self.assertEqual(len(err_lines), 2)
+AssertionError: 24 != 2
+
+----------------------------------------------------------------------
+Ran 46 tests in 0.476s
+
+FAILED (failures=2, errors=4)
++ git checkout 1250483ebf73f7a82ff820b94092c63ce4238264 tests/user_commands/tests.py
+Updated 1 path from 5c4bf71a54

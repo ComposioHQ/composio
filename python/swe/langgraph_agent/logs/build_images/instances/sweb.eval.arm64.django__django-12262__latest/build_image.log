@@ -1,0 +1,42 @@
+2024-09-12 01:18:20,379 - INFO - Building image sweb.eval.arm64.django__django-12262:latest
+Using dockerfile:
+FROM --platform=linux/arm64/v8 sweb.env.arm64.a18371b03f944585b4f08c:latest
+
+COPY ./setup_repo.sh /root/
+RUN /bin/bash /root/setup_repo.sh
+
+WORKDIR /testbed/
+
+Adding (1) setup scripts to image build repo
+2024-09-12 01:18:20,379 - INFO - [SETUP SCRIPT] setup_repo.sh:
+#!/bin/bash
+set -euxo pipefail
+git clone -o origin https://github.com/django/django /testbed
+chmod -R 777 /testbed
+cd /testbed
+git reset --hard 69331bb851c34f05bc77e9fc24020fe6908b9cd5
+git remote remove origin
+source /opt/miniconda3/bin/activate
+conda activate testbed
+echo "Current environment: $CONDA_DEFAULT_ENV"
+python -m pip install -e .
+
+2024-09-12 01:18:20,380 - INFO - Building docker image sweb.eval.arm64.django__django-12262:latest in logs/build_images/instances/sweb.eval.arm64.django__django-12262__latest with platform linux/arm64/v8
+2024-09-12 01:18:20,587 - INFO - Step 1/4 : FROM --platform=linux/arm64/v8 sweb.env.arm64.a18371b03f944585b4f08c:latest
+2024-09-12 01:18:20,587 - INFO - 
+2024-09-12 01:18:20,587 - INFO - ---> 3bfefd5313f1
+2024-09-12 01:18:20,587 - INFO - Step 2/4 : COPY ./setup_repo.sh /root/
+2024-09-12 01:18:20,587 - INFO - 
+2024-09-12 01:18:20,609 - INFO - ---> e59046a0aa67
+2024-09-12 01:18:20,609 - INFO - Step 3/4 : RUN /bin/bash /root/setup_repo.sh
+2024-09-12 01:18:20,610 - INFO - 
+2024-09-12 01:18:20,619 - INFO - ---> Running in d7cb1950b6ca
+2024-09-12 01:18:20,756 - INFO - + git clone -o origin https://github.com/django/django /testbed
+2024-09-12 01:18:20,759 - INFO - Cloning into '/testbed'...
+2024-09-12 01:19:28,287 - INFO - error: 3862 bytes of body are still expected
+2024-09-12 01:19:28,289 - INFO - fetch-pack: unexpected disconnect while reading sideband packet
+2024-09-12 01:19:28,289 - INFO - fatal: early EOF
+2024-09-12 01:19:28,290 - INFO - fatal: fetch-pack: invalid index-pack output
+2024-09-12 01:19:28,376 - INFO - ---> Removed intermediate container d7cb1950b6ca
+2024-09-12 01:19:28,376 - ERROR - Error: The command '/bin/sh -c /bin/bash /root/setup_repo.sh' returned a non-zero code: 128
+2024-09-12 01:19:28,395 - ERROR - docker.errors.BuildError during sweb.eval.arm64.django__django-12262:latest: The command '/bin/sh -c /bin/bash /root/setup_repo.sh' returned a non-zero code: 128

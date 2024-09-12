@@ -1,0 +1,67 @@
+{
+    "django__django-16819": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "test_add_remove_index (migrations.test_optimizer.OptimizerTests.test_add_remove_index)"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "AlterField should optimize into AddField.",
+                    "RemoveField should cancel AddField",
+                    "RenameField should optimize into AddField",
+                    "test_alter_alter_field (migrations.test_optimizer.OptimizerTests.test_alter_alter_field)",
+                    "test_alter_alter_index_model (migrations.test_optimizer.OptimizerTests.test_alter_alter_index_model)",
+                    "test_alter_alter_owrt_model (migrations.test_optimizer.OptimizerTests.test_alter_alter_owrt_model)",
+                    "test_alter_alter_table_model (migrations.test_optimizer.OptimizerTests.test_alter_alter_table_model)",
+                    "test_alter_alter_unique_model (migrations.test_optimizer.OptimizerTests.test_alter_alter_unique_model)",
+                    "RemoveField should absorb AlterField",
+                    "RenameField should optimize to the other side of AlterField,",
+                    "test_create_alter_index_delete_model (migrations.test_optimizer.OptimizerTests.test_create_alter_index_delete_model)",
+                    "test_create_alter_index_field (migrations.test_optimizer.OptimizerTests.test_create_alter_index_field)",
+                    "test_create_alter_model_managers (migrations.test_optimizer.OptimizerTests.test_create_alter_model_managers)",
+                    "test_create_alter_model_options (migrations.test_optimizer.OptimizerTests.test_create_alter_model_options)",
+                    "test_create_alter_owrt_delete_model (migrations.test_optimizer.OptimizerTests.test_create_alter_owrt_delete_model)",
+                    "test_create_alter_owrt_field (migrations.test_optimizer.OptimizerTests.test_create_alter_owrt_field)",
+                    "test_create_alter_unique_delete_model (migrations.test_optimizer.OptimizerTests.test_create_alter_unique_delete_model)",
+                    "test_create_alter_unique_field (migrations.test_optimizer.OptimizerTests.test_create_alter_unique_field)",
+                    "CreateModel and DeleteModel should collapse into nothing.",
+                    "AddField should optimize into CreateModel.",
+                    "AddField should NOT optimize into CreateModel if it's an M2M using a",
+                    "AlterField should optimize into CreateModel.",
+                    "test_create_model_and_remove_model_options (migrations.test_optimizer.OptimizerTests.test_create_model_and_remove_model_options)",
+                    "CreateModel order remains unchanged if the later AddField operation",
+                    "A CreateModel that inherits from another isn't reordered to avoid",
+                    "RemoveField should optimize into CreateModel.",
+                    "RenameField should optimize into CreateModel.",
+                    "AddField optimizes into CreateModel if it's a FK to a model that's",
+                    "CreateModel reordering behavior doesn't result in an infinite loop if",
+                    "CreateModel should absorb RenameModels.",
+                    "test_none_app_label (migrations.test_optimizer.OptimizerTests.test_none_app_label)",
+                    "test_optimize_elidable_operation (migrations.test_optimizer.OptimizerTests.test_optimize_elidable_operation)",
+                    "We should be able to optimize away create/delete through a create or",
+                    "field-level through checking is working. This should manage to collapse",
+                    "test_rename_index (migrations.test_optimizer.OptimizerTests.test_rename_index)",
+                    "RenameModels should absorb themselves.",
+                    "The optimizer does nothing on a single operation,",
+                    "test_swapping_fields_names (migrations.test_optimizer.OptimizerTests.test_swapping_fields_names)"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

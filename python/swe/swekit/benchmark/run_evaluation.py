@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from composio import Action, WorkspaceConfigType, WorkspaceFactory, WorkspaceType
 from composio.utils.logging import WithLogger
-
+from swebench.harness.test_spec import make_test_spec, TestSpec
 from composio_crewai import ComposioToolSet
 
 from swekit.benchmark.utils import (
@@ -21,6 +21,8 @@ from swekit.benchmark.utils import (
 from swekit.config.constants import LOCAL_CACHE_DIRECTORY_NAME, LOGS_DIR
 from swekit.config.store import IssueConfig
 import random
+import time
+
 
 def _get_logs_dir() -> Path:
     """Logs dir factory."""
@@ -66,6 +68,10 @@ class EvaluationConfig(BaseModel):
         default=None,
         description="image name",
     )
+    num_instances: int = Field(
+        default=1,
+        description="number of instances to run",
+    )
 
 
 class EvaluationManager(WithLogger):
@@ -85,6 +91,7 @@ class EvaluationManager(WithLogger):
         self.repo_to_workspace_map = {}
         self.repo_to_image_id_map = {}
         self.image_name = config.image_name
+        self.num_instances = config.num_instances
         self.workspace_env = config.workspace_type
         logs_dir = Path(config.logs_dir)
         if not logs_dir.exists():
@@ -94,11 +101,16 @@ class EvaluationManager(WithLogger):
         issue_description = build_issue_description(
             issue["hints_text"], issue["problem_statement"], self.include_hints
         )
+        test_spec = make_test_spec(issue)
+        eval_script = test_spec.eval_script
+        test_command = eval_script.splitlines()[-2]
+
         return IssueConfig(
             repo_name=issue["repo"],
             issue_id=issue["instance_id"],
             base_commit_id=issue["base_commit"],
             issue_desc=issue_description,
+            test_command=test_command,
         )
 
     def get_patch_for_issue(self, workspace_id: str, issue):
@@ -208,19 +220,27 @@ class EvaluationManager(WithLogger):
                 image_name = self.image_name or f"composio/swe:{tag}"
                 self.logger.info(f"Using image: {image_name}")
 
-                try:
-                    workspace_ids = setup_workspace(
-                        repo,
-                        self.repo_to_workspace_map,
-                        self.repo_to_image_id_map,
-                        issue["base_commit"],
-                        self.workspace_env,
-                        image_name,
-                        num_instances=2,
-                    )
-                except Exception as e:
-                    self.logger.error(f"Error setting up workspace: {e}")
-                    continue
+                for attempt in range(3):
+                    try:
+                        workspace_ids = setup_workspace(
+                            repo,
+                            self.repo_to_workspace_map,
+                            self.repo_to_image_id_map,
+                            issue["base_commit"],
+                            self.workspace_env,
+                            image_name,
+                            num_instances=self.num_instances,
+                        )
+                        break  # If successful, exit the retry loop
+                    except Exception as e:
+                        self.logger.error(f"Error setting up workspace (attempt {attempt + 1}/3): {e}")
+                        if attempt < 2:  # If this wasn't the last attempt
+                            self.logger.info(f"Retrying in 5 seconds...")
+                            time.sleep(5)  # Wait for 5 seconds before retrying
+                        else:
+                            self.logger.error("All attempts to set up workspace failed. Skipping this issue.")
+                else:
+                    continue  # Skip to the next iteration of the outer loop if all attempts failed
                 issue_config = self.get_issue_config(issue)
                 self.logger.debug(
                     "found patch-id: %s and install_commit_id: %s",
@@ -252,8 +272,10 @@ def evaluate(
     test_instance_ids: t.List[str] = [],
     image_name: t.Optional[str] = None,
     run_id: str = "temp",
+    num_instances: int = 1,
 ) -> None:
     """Evaluate a callable."""
+    print("Inside the evaluate function")
     if not os.path.exists(logs_dir):
         os.makedirs(logs_dir)
 
@@ -267,6 +289,7 @@ def evaluate(
             test_instance_ids=test_instance_ids,
             workspace_type=workspace_type,
             image_name=image_name,
+            num_instances=num_instances,
         )
     )
     manager.run(runnable)

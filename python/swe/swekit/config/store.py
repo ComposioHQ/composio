@@ -37,3 +37,4 @@ class IssueConfig(LocalStorage):
     issue_id: t.Optional[str] = None
     base_commit_id: t.Optional[str] = None
     issue_desc: t.Optional[str] = None
+    test_command: t.Optional[str] = None

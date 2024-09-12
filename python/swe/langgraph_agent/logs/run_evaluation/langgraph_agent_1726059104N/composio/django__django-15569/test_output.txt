@@ -1,0 +1,796 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/db/models/query_utils.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	tests/lookup/test_unregister_lookup.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 884b4c27f506b3c29d58509fc83a35c30ea10d94
+Author: Mateo Radman <radmanmateo@gmail.com>
+Date:   Thu Apr 7 14:24:38 2022 +0200
+
+    Fixed #32604 -- Made file upload respect group id when uploading to a temporary file.
+
+diff --git a/django/core/files/storage.py b/django/core/files/storage.py
+index 71cbb93cb6..2eb8d08236 100644
+--- a/django/core/files/storage.py
++++ b/django/core/files/storage.py
+@@ -339,9 +339,21 @@ class FileSystemStorage(Storage):
+ 
+         # Ensure the saved path is always relative to the storage root.
+         name = os.path.relpath(full_path, self.location)
++        # Ensure the moved file has the same gid as the storage root.
++        self._ensure_location_group_id(full_path)
+         # Store filenames with forward slashes, even on Windows.
+         return str(name).replace("\\", "/")
+ 
++    def _ensure_location_group_id(self, full_path):
++        if os.name == "posix":
++            file_gid = os.stat(full_path).st_gid
++            location_gid = os.stat(self.location).st_gid
++            if file_gid != location_gid:
++                try:
++                    os.chown(full_path, uid=-1, gid=location_gid)
++                except PermissionError:
++                    pass
++
+     def delete(self, name):
+         if not name:
+             raise ValueError("The name must be given to delete().")
++ git diff 884b4c27f506b3c29d58509fc83a35c30ea10d94
+diff --git a/django/db/models/query_utils.py b/django/db/models/query_utils.py
+index 0caa165e15..d240bda42c 100644
+--- a/django/db/models/query_utils.py
++++ b/django/db/models/query_utils.py
+@@ -217,6 +217,7 @@ class RegisterLookupMixin:
+         if lookup_name is None:
+             lookup_name = lookup.lookup_name
+         del cls.class_lookups[lookup_name]
++        cls._clear_cached_lookups()  # Add this line to clear the lookup cache
+ 
+ 
+ def select_related_descend(field, restricted, requested, load_fields, reverse=False):
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.4.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.1.dev20220411113227) (3.8.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.1.dev20220411113227) (0.5.1)
+Requirement already satisfied: typing-extensions>=4 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from asgiref>=3.4.1->Django==4.1.dev20220411113227) (4.12.2)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-4.1.dev20220411113227-0.editable-py3-none-any.whl size=26946 sha256=5a603a91c97531e8d3ed9abf32da96b7a646e3d488d3964ef78bceb049b4aaff
+  Stored in directory: /tmp/pip-ephem-wheel-cache-7brpstc4/wheels/7d/66/67/70d1ee2124ccf21d601c352e25cdca10f611f7c8b3f9ffb9e4
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 4.1.dev20220411113227
+    Uninstalling Django-4.1.dev20220411113227:
+      Successfully uninstalled Django-4.1.dev20220411113227
+Successfully installed Django-4.1.dev20220411113227
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 884b4c27f506b3c29d58509fc83a35c30ea10d94 tests/custom_lookups/tests.py tests/model_fields/test_jsonfield.py tests/schema/tests.py
+Updated 0 paths from 5a345ced69
++ git apply -v -
+Checking patch tests/custom_lookups/tests.py...
+Checking patch tests/model_fields/test_jsonfield.py...
+Checking patch tests/schema/tests.py...
+Applied patch tests/custom_lookups/tests.py cleanly.
+Applied patch tests/model_fields/test_jsonfield.py cleanly.
+Applied patch tests/schema/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 custom_lookups.tests model_fields.test_jsonfield schema.tests
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Testing against Django installed in '/testbed/django'
+Importing application schema
+Importing application custom_lookups
+Importing application model_fields
+Found 290 test(s).
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, custom_lookups, messages, model_fields, schema, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table custom_lookups_author
+    Creating table custom_lookups_article
+    Creating table custom_lookups_mysqlunixtimestamp
+    Creating table custom_lookups_custommodel
+    Creating table model_fields_foo
+    Creating table model_fields_bar
+    Creating table model_fields_whiz
+    Creating table model_fields_whizdelayed
+    Creating table model_fields_whiziter
+    Creating table model_fields_whiziterempty
+    Creating table model_fields_choiceful
+    Creating table model_fields_bigd
+    Creating table model_fields_floatmodel
+    Creating table model_fields_bigs
+    Creating table model_fields_unicodeslugfield
+    Creating table model_fields_automodel
+    Creating table model_fields_bigautomodel
+    Creating table model_fields_smallautomodel
+    Creating table model_fields_smallintegermodel
+    Creating table model_fields_integermodel
+    Creating table model_fields_bigintegermodel
+    Creating table model_fields_positivebigintegermodel
+    Creating table model_fields_positivesmallintegermodel
+    Creating table model_fields_positiveintegermodel
+    Creating table model_fields_post
+    Creating table model_fields_nullbooleanmodel
+    Creating table model_fields_booleanmodel
+    Creating table model_fields_datetimemodel
+    Creating table model_fields_durationmodel
+    Creating table model_fields_nulldurationmodel
+    Creating table model_fields_primarykeycharmodel
+    Creating table model_fields_fkstobooleans
+    Creating table model_fields_fktochar
+    Creating table model_fields_renamedfield
+    Creating table model_fields_verbosenamefield
+    Creating table model_fields_genericipaddress
+    Creating table model_fields_decimallessthanone
+    Creating table model_fields_fieldclassattributemodel
+    Creating table model_fields_datamodel
+    Creating table model_fields_document
+    Creating table model_fields_person
+    Creating table model_fields_personwithheight
+    Creating table model_fields_personwithheightandwidth
+    Creating table model_fields_persondimensionsfirst
+    Creating table model_fields_persontwoimages
+    Creating table model_fields_jsonmodel
+    Creating table model_fields_nullablejsonmodel
+    Creating table model_fields_relatedjsonmodel
+    Creating table model_fields_allfieldsmodel
+    Creating table model_fields_manytomany
+    Creating table model_fields_uuidmodel
+    Creating table model_fields_nullableuuidmodel
+    Creating table model_fields_primarykeyuuidmodel
+    Creating table model_fields_relatedtouuidmodel
+    Creating table model_fields_uuidchild
+    Creating table model_fields_uuidgrandchild
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (0 silenced).
+test_bilateral_fexpr (custom_lookups.tests.BilateralTransformTests) ... ok
+test_bilateral_inner_qs (custom_lookups.tests.BilateralTransformTests) ... ok
+test_bilateral_multi_value (custom_lookups.tests.BilateralTransformTests) ... ok
+test_bilateral_order (custom_lookups.tests.BilateralTransformTests) ... ok
+test_bilateral_upper (custom_lookups.tests.BilateralTransformTests) ... ok
+test_div3_bilateral_extract (custom_lookups.tests.BilateralTransformTests) ... ok
+test_transform_order_by (custom_lookups.tests.BilateralTransformTests) ... ok
+test_datetime_output_field (custom_lookups.tests.DateTimeLookupTests) ... skipped 'MySQL specific SQL used'
+test_basic_lookup (custom_lookups.tests.LookupTests) ... ok
+test_birthdate_month (custom_lookups.tests.LookupTests) ... skipped 'PostgreSQL specific SQL used'
+test_custom_exact_lookup_none_rhs (custom_lookups.tests.LookupTests)
+__exact=None is transformed to __isnull=True if a custom lookup class ... ok
+test_custom_name_lookup (custom_lookups.tests.LookupTests) ... ok
+test_div3_extract (custom_lookups.tests.LookupTests) ... ok
+test_foreignobject_lookup_registration (custom_lookups.tests.LookupTests) ... ok
+test_lookups_caching (custom_lookups.tests.LookupTests) ... ok
+test_subquery_usage (custom_lookups.tests.SubqueryTransformTests) ... ok
+test_custom_implementation_year_exact (custom_lookups.tests.YearLteTests) ... ok
+test_postgres_year_exact (custom_lookups.tests.YearLteTests) ... ok
+test_year_lte (custom_lookups.tests.YearLteTests) ... skipped 'PostgreSQL specific SQL used'
+test_year_lte_fexpr (custom_lookups.tests.YearLteTests) ... skipped 'PostgreSQL specific SQL used'
+test_year_lte_sql (custom_lookups.tests.YearLteTests) ... ok
+test_custom_encoder_decoder (model_fields.test_jsonfield.JSONFieldTests) ... ok
+test_db_check_constraints (model_fields.test_jsonfield.JSONFieldTests) ... ok
+test_invalid_value (model_fields.test_jsonfield.JSONFieldTests) ... ok
+test_array_key_contains (model_fields.test_jsonfield.TestQuerying) ... skipped "Database doesn't support feature(s): supports_json_field_contains"
+test_contained_by (model_fields.test_jsonfield.TestQuerying) ... skipped "Database doesn't support feature(s): supports_json_field_contains"
+test_contained_by_unsupported (model_fields.test_jsonfield.TestQuerying) ... ok
+test_contains (model_fields.test_jsonfield.TestQuerying) ... skipped "Database doesn't support feature(s): supports_json_field_contains"
+test_contains_contained_by_with_key_transform (model_fields.test_jsonfield.TestQuerying) ... skipped "Database doesn't support feature(s): supports_json_field_contains"
+test_contains_primitives (model_fields.test_jsonfield.TestQuerying) ... skipped "Database doesn't support feature(s): supports_primitives_in_json_field, supports_json_field_contains"
+test_contains_unsupported (model_fields.test_jsonfield.TestQuerying) ... ok
+test_deep_distinct (model_fields.test_jsonfield.TestQuerying) ... skipped "Database doesn't support feature(s): can_distinct_on_fields"
+test_deep_lookup_array (model_fields.test_jsonfield.TestQuerying) ... ok
+test_deep_lookup_mixed (model_fields.test_jsonfield.TestQuerying) ... ok
+test_deep_lookup_objs (model_fields.test_jsonfield.TestQuerying) ... ok
+test_deep_lookup_transform (model_fields.test_jsonfield.TestQuerying) ... ok
+test_deep_values (model_fields.test_jsonfield.TestQuerying) ... ok
+test_exact (model_fields.test_jsonfield.TestQuerying) ... ok
+test_exact_complex (model_fields.test_jsonfield.TestQuerying) ... ok
+test_expression_wrapper_key_transform (model_fields.test_jsonfield.TestQuerying) ... ok
+test_has_any_keys (model_fields.test_jsonfield.TestQuerying) ... ok
+test_has_key (model_fields.test_jsonfield.TestQuerying) ... ok
+test_has_key_deep (model_fields.test_jsonfield.TestQuerying) ... ok
+test_has_key_list (model_fields.test_jsonfield.TestQuerying) ... ok
+test_has_key_null_value (model_fields.test_jsonfield.TestQuerying) ... ok
+test_has_key_number (model_fields.test_jsonfield.TestQuerying) ... ok
+test_has_keys (model_fields.test_jsonfield.TestQuerying) ... ok
+test_icontains (model_fields.test_jsonfield.TestQuerying) ... ok
+test_isnull (model_fields.test_jsonfield.TestQuerying) ... ok
+test_isnull_key (model_fields.test_jsonfield.TestQuerying) ... ok
+test_isnull_key_or_none (model_fields.test_jsonfield.TestQuerying) ... ok
+test_join_key_transform_annotation_expression (model_fields.test_jsonfield.TestQuerying) ... ok
+test_key_contains (model_fields.test_jsonfield.TestQuerying) ... skipped "Database doesn't support feature(s): supports_json_field_contains"
+test_key_endswith (model_fields.test_jsonfield.TestQuerying) ... ok
+test_key_escape (model_fields.test_jsonfield.TestQuerying) ... ok
+test_key_icontains (model_fields.test_jsonfield.TestQuerying) ... ok
+test_key_iendswith (model_fields.test_jsonfield.TestQuerying) ... ok
+test_key_iexact (model_fields.test_jsonfield.TestQuerying) ... ok
+test_key_in (model_fields.test_jsonfield.TestQuerying) ... ok
+test_key_iregex (model_fields.test_jsonfield.TestQuerying) ... ok
+test_key_istartswith (model_fields.test_jsonfield.TestQuerying) ... ok
+test_key_quoted_string (model_fields.test_jsonfield.TestQuerying) ... ok
+test_key_regex (model_fields.test_jsonfield.TestQuerying) ... ok
+test_key_sql_injection (model_fields.test_jsonfield.TestQuerying) ... skipped "Database doesn't support feature(s): has_json_operators"
+test_key_sql_injection_escape (model_fields.test_jsonfield.TestQuerying) ... ok
+test_key_startswith (model_fields.test_jsonfield.TestQuerying) ... ok
+test_key_transform_annotation_expression (model_fields.test_jsonfield.TestQuerying) ... ok
+test_key_transform_expression (model_fields.test_jsonfield.TestQuerying) ... ok
+test_key_transform_raw_expression (model_fields.test_jsonfield.TestQuerying) ... ok
+test_key_values (model_fields.test_jsonfield.TestQuerying) ... ok
+test_key_values_boolean (model_fields.test_jsonfield.TestQuerying) ... ok
+test_lookup_exclude (model_fields.test_jsonfield.TestQuerying) ... ok
+test_lookup_exclude_nonexistent_key (model_fields.test_jsonfield.TestQuerying) ... ok
+test_lookups_with_key_transform (model_fields.test_jsonfield.TestQuerying) ... ok
+test_nested_key_transform_annotation_expression (model_fields.test_jsonfield.TestQuerying) ... ok
+test_nested_key_transform_expression (model_fields.test_jsonfield.TestQuerying) ... ok
+test_nested_key_transform_on_subquery (model_fields.test_jsonfield.TestQuerying) ... ok
+test_nested_key_transform_raw_expression (model_fields.test_jsonfield.TestQuerying) ... ok
+test_none_key (model_fields.test_jsonfield.TestQuerying) ... ok
+test_none_key_and_exact_lookup (model_fields.test_jsonfield.TestQuerying) ... ok
+test_none_key_exclude (model_fields.test_jsonfield.TestQuerying) ... ok
+test_obj_subquery_lookup (model_fields.test_jsonfield.TestQuerying) ... ok
+test_order_grouping_custom_decoder (model_fields.test_jsonfield.TestQuerying) ... ok
+test_ordering_by_transform (model_fields.test_jsonfield.TestQuerying) ... ok
+test_ordering_grouping_by_count (model_fields.test_jsonfield.TestQuerying) ... ok
+test_ordering_grouping_by_key_transform (model_fields.test_jsonfield.TestQuerying) ... ok
+test_shallow_list_lookup (model_fields.test_jsonfield.TestQuerying) ... ok
+test_shallow_lookup_obj_target (model_fields.test_jsonfield.TestQuerying) ... ok
+test_shallow_obj_lookup (model_fields.test_jsonfield.TestQuerying) ... ok
+test_usage_in_subquery (model_fields.test_jsonfield.TestQuerying) ... ok
+test_dict (model_fields.test_jsonfield.TestSaveLoad) ... ok
+test_json_null_different_from_sql_null (model_fields.test_jsonfield.TestSaveLoad) ... ok
+test_list (model_fields.test_jsonfield.TestSaveLoad) ... ok
+test_null (model_fields.test_jsonfield.TestSaveLoad) ... ok
+test_primitives (model_fields.test_jsonfield.TestSaveLoad) ... ok
+test_realistic_object (model_fields.test_jsonfield.TestSaveLoad) ... ok
+test_overridden_get_lookup (custom_lookups.tests.CustomisedMethodsTests) ... ok
+test_overridden_get_lookup_chain (custom_lookups.tests.CustomisedMethodsTests) ... ok
+test_overridden_get_transform (custom_lookups.tests.CustomisedMethodsTests) ... ok
+test_overridden_get_transform_chain (custom_lookups.tests.CustomisedMethodsTests) ... ok
+test_call_order (custom_lookups.tests.LookupTransformCallOrderTests) ... ok
+test_formfield (model_fields.test_jsonfield.TestFormField) ... ok
+test_formfield_custom_encoder_decoder (model_fields.test_jsonfield.TestFormField) ... ok
+test_deconstruct (model_fields.test_jsonfield.TestMethods) ... ok
+test_deconstruct_custom_encoder_decoder (model_fields.test_jsonfield.TestMethods) ... ok
+test_get_transforms (model_fields.test_jsonfield.TestMethods) ... ok
+test_key_transform_text_lookup_mixin_non_key_transform (model_fields.test_jsonfield.TestMethods) ... ok
+test_dumping (model_fields.test_jsonfield.TestSerialization) ... ok
+test_loading (model_fields.test_jsonfield.TestSerialization) ... ok
+test_xml_serialization (model_fields.test_jsonfield.TestSerialization) ... ok
+test_custom_encoder (model_fields.test_jsonfield.TestValidation) ... ok
+test_invalid_decoder (model_fields.test_jsonfield.TestValidation) ... ok
+test_invalid_encoder (model_fields.test_jsonfield.TestValidation) ... ok
+test_validation_error (model_fields.test_jsonfield.TestValidation) ... ok
+test_add_binaryfield_mediumblob (schema.tests.SchemaTests)
+Test adding a custom-sized binary field on MySQL (#24846). ... skipped 'MySQL specific'
+test_add_datefield_and_datetimefield_use_effective_default (schema.tests.SchemaTests)
+effective_default() should be used for DateField, DateTimeField, and ... ok
+test_add_field (schema.tests.SchemaTests)
+Tests adding fields to models ... ok
+test_add_field_binary (schema.tests.SchemaTests)
+Tests binary fields get a sane default (#22851) ... ok
+test_add_field_db_collation (schema.tests.SchemaTests) ... ok
+test_add_field_default_dropped (schema.tests.SchemaTests) ... ok
+test_add_field_default_nullable (schema.tests.SchemaTests) ... ok
+test_add_field_default_transform (schema.tests.SchemaTests)
+Tests adding fields to models with a default that is not directly ... ok
+test_add_field_durationfield_with_default (schema.tests.SchemaTests) ... ok
+test_add_field_o2o_nullable (schema.tests.SchemaTests) ... ok
+test_add_field_remove_field (schema.tests.SchemaTests)
+Adding a field and removing it removes all deferred sql referring to it. ... ok
+test_add_field_temp_default (schema.tests.SchemaTests)
+Tests adding fields to models with a temporary default ... ok
+test_add_field_temp_default_boolean (schema.tests.SchemaTests)
+Tests adding fields to models with a temporary default where ... ok
+test_add_field_use_effective_default (schema.tests.SchemaTests)
+#23987 - effective_default() should be used as the field default when ... ok
+test_add_foreign_key_long_names (schema.tests.SchemaTests)
+Regression test for #23009. ... ok
+test_add_foreign_key_quoted_db_table (schema.tests.SchemaTests) ... ok
+test_add_foreign_object (schema.tests.SchemaTests) ... ok
+test_add_indexed_charfield (schema.tests.SchemaTests) ... skipped 'PostgreSQL specific'
+test_add_inline_fk_index_update_data (schema.tests.SchemaTests) ... skipped "Database doesn't support feature(s): can_create_inline_fk, allows_multiple_constraints_on_same_fields"
+test_add_inline_fk_update_data (schema.tests.SchemaTests) ... skipped "Database doesn't support feature(s): can_create_inline_fk"
+test_add_remove_index (schema.tests.SchemaTests)
+Tests index addition and removal ... ok
+test_add_textfield_default_nullable (schema.tests.SchemaTests) ... ok
+test_add_textfield_unhashable_default (schema.tests.SchemaTests) ... ok
+test_add_unique_charfield (schema.tests.SchemaTests) ... skipped 'PostgreSQL specific'
+test_alter (schema.tests.SchemaTests)
+Tests simple altering of fields ... ok
+test_alter_array_field_decrease_base_field_length (schema.tests.SchemaTests) ... skipped 'PostgreSQL specific'
+test_alter_array_field_decrease_nested_base_field_length (schema.tests.SchemaTests) ... skipped 'PostgreSQL specific'
+test_alter_auto_field_quoted_db_column (schema.tests.SchemaTests) ... ok
+test_alter_auto_field_to_char_field (schema.tests.SchemaTests) ... ok
+test_alter_auto_field_to_integer_field (schema.tests.SchemaTests) ... ok
+test_alter_autofield_pk_to_bigautofield_pk_sequence_owner (schema.tests.SchemaTests)
+Converting an implicit PK to BigAutoField(primary_key=True) should keep ... ok
+test_alter_autofield_pk_to_smallautofield_pk_sequence_owner (schema.tests.SchemaTests)
+Converting an implicit PK to SmallAutoField(primary_key=True) should ... ok
+test_alter_char_field_decrease_length (schema.tests.SchemaTests) ... skipped 'PostgreSQL specific'
+test_alter_charfield_to_null (schema.tests.SchemaTests)
+#24307 - Should skip an alter statement on databases with ... ok
+test_alter_db_table_case (schema.tests.SchemaTests) ... ok
+test_alter_field_add_db_index_to_charfield_with_unique (schema.tests.SchemaTests) ... skipped 'PostgreSQL specific'
+test_alter_field_add_index_to_charfield (schema.tests.SchemaTests) ... skipped 'PostgreSQL specific'
+test_alter_field_add_index_to_integerfield (schema.tests.SchemaTests) ... ok
+test_alter_field_add_index_to_textfield (schema.tests.SchemaTests) ... skipped 'PostgreSQL specific'
+test_alter_field_add_unique_to_charfield (schema.tests.SchemaTests) ... skipped 'PostgreSQL specific'
+test_alter_field_add_unique_to_charfield_with_db_index (schema.tests.SchemaTests) ... skipped 'PostgreSQL specific'
+test_alter_field_choices_noop (schema.tests.SchemaTests) ... ok
+test_alter_field_db_collation (schema.tests.SchemaTests) ... ok
+test_alter_field_default_doesnt_perform_queries (schema.tests.SchemaTests)
+No queries are performed if a field default changes and the field's ... skipped 'SQLite naively remakes the table on field alteration.'
+test_alter_field_default_dropped (schema.tests.SchemaTests) ... ok
+test_alter_field_fk_attributes_noop (schema.tests.SchemaTests)
+No queries are performed when changing field attributes that don't ... ok
+test_alter_field_fk_keeps_index (schema.tests.SchemaTests) ... ok
+test_alter_field_fk_to_o2o (schema.tests.SchemaTests) ... ok
+test_alter_field_o2o_keeps_unique (schema.tests.SchemaTests) ... ok
+test_alter_field_o2o_to_fk (schema.tests.SchemaTests) ... ok
+test_alter_field_remove_unique_and_db_index_from_charfield (schema.tests.SchemaTests) ... skipped 'PostgreSQL specific'
+test_alter_field_swap_unique_and_db_index_with_charfield (schema.tests.SchemaTests) ... skipped 'PostgreSQL specific'
+test_alter_field_type_and_db_collation (schema.tests.SchemaTests) ... ok
+test_alter_field_with_custom_db_type (schema.tests.SchemaTests) ... skipped 'PostgreSQL specific'
+test_alter_fk (schema.tests.SchemaTests)
+Tests altering of FKs ... ok
+test_alter_fk_checks_deferred_constraints (schema.tests.SchemaTests)
+#25492 - Altering a foreign key's structure and data in the same ... ok
+test_alter_fk_to_o2o (schema.tests.SchemaTests)
+#24163 - Tests altering of ForeignKey to OneToOneField ... ok
+test_alter_implicit_id_to_explicit (schema.tests.SchemaTests)
+Should be able to convert an implicit "id" field to an explicit "id" ... ok
+test_alter_int_pk_to_autofield_pk (schema.tests.SchemaTests)
+Should be able to rename an IntegerField(primary_key=True) to ... ok
+test_alter_int_pk_to_bigautofield_pk (schema.tests.SchemaTests)
+Should be able to rename an IntegerField(primary_key=True) to ... ok
+test_alter_int_pk_to_int_unique (schema.tests.SchemaTests)
+Should be able to rename an IntegerField(primary_key=True) to ... ok
+test_alter_not_unique_field_to_primary_key (schema.tests.SchemaTests) ... ok
+test_alter_null_to_not_null (schema.tests.SchemaTests)
+#23609 - Tests handling of default values when altering from NULL to NOT NULL. ... ok
+test_alter_null_to_not_null_keeping_default (schema.tests.SchemaTests)
+#23738 - Can change a nullable field with default to non-nullable ... ok
+test_alter_numeric_field_keep_null_status (schema.tests.SchemaTests)
+Changing a field type shouldn't affect the not null status. ... ok
+test_alter_o2o_to_fk (schema.tests.SchemaTests)
+#24163 - Tests altering of OneToOneField to ForeignKey ... ok
+test_alter_pk_with_self_referential_field (schema.tests.SchemaTests)
+Changing the primary key field name of a model with a self-referential ... ok
+test_alter_primary_key_quoted_db_table (schema.tests.SchemaTests) ... ok
+test_alter_smallint_pk_to_smallautofield_pk (schema.tests.SchemaTests)
+Should be able to rename an SmallIntegerField(primary_key=True) to ... ok
+test_alter_text_field (schema.tests.SchemaTests) ... ok
+test_alter_text_field_to_date_field (schema.tests.SchemaTests)
+#25002 - Test conversion of text field to date field. ... ok
+test_alter_text_field_to_datetime_field (schema.tests.SchemaTests)
+#25002 - Test conversion of text field to datetime field. ... ok
+test_alter_text_field_to_not_null_with_default_value (schema.tests.SchemaTests) ... ok
+test_alter_text_field_to_time_field (schema.tests.SchemaTests)
+#25002 - Test conversion of text field to time field. ... ok
+test_alter_textfield_to_null (schema.tests.SchemaTests)
+#24307 - Should skip an alter statement on databases with ... ok
+test_alter_textual_field_keep_null_status (schema.tests.SchemaTests)
+Changing a field type shouldn't affect the not null status. ... ok
+test_alter_textual_field_not_null_to_null (schema.tests.SchemaTests)
+Nullability for textual fields is preserved on databases that ... skipped "Database doesn't support feature(s): interprets_empty_strings_as_nulls"
+test_alter_to_fk (schema.tests.SchemaTests)
+#24447 - Tests adding a FK constraint for an existing column ... ok
+test_char_field_pk_to_auto_field (schema.tests.SchemaTests) ... ok
+test_char_field_with_db_index_to_fk (schema.tests.SchemaTests) ... ok
+test_check_constraint_timedelta_param (schema.tests.SchemaTests) ... ok
+test_check_constraints (schema.tests.SchemaTests)
+Tests creating/deleting CHECK constraints ... ok
+test_ci_cs_db_collation (schema.tests.SchemaTests) ... ok
+test_composite_func_index (schema.tests.SchemaTests) ... ok
+test_composite_func_index_field_and_expression (schema.tests.SchemaTests) ... ok
+test_composite_func_unique_constraint (schema.tests.SchemaTests) ... ok
+test_context_manager_exit (schema.tests.SchemaTests)
+Ensures transaction is correctly closed when an error occurs ... ok
+test_create_index_together (schema.tests.SchemaTests)
+Tests creating models with index_together already defined ... ok
+test_creation_deletion (schema.tests.SchemaTests)
+Tries creating a model's table, and then deleting it. ... ok
+test_creation_deletion_reserved_names (schema.tests.SchemaTests)
+Tries creating a model's table, and then deleting it when it has a ... ok
+test_creation_with_db_table_double_quotes (schema.tests.SchemaTests) ... skipped 'Oracle specific db_table syntax'
+test_db_collation_charfield (schema.tests.SchemaTests) ... ok
+test_db_collation_textfield (schema.tests.SchemaTests) ... ok
+test_db_table (schema.tests.SchemaTests)
+Tests renaming of the table ... ok
+test_fk (schema.tests.SchemaTests)
+Creating tables out of FK order, then repointing, works ... ok
+test_fk_db_constraint (schema.tests.SchemaTests)
+The db_constraint parameter is respected ... ok
+test_fk_to_proxy (schema.tests.SchemaTests)
+Creating a FK to a proxy model creates database constraints. ... ok
+test_foreign_key_index_long_names_regression (schema.tests.SchemaTests)
+Regression test for #21497. ... ok
+test_func_index (schema.tests.SchemaTests) ... ok
+test_func_index_calc (schema.tests.SchemaTests) ... ok
+test_func_index_cast (schema.tests.SchemaTests) ... ok
+test_func_index_collate (schema.tests.SchemaTests) ... ok
+test_func_index_collate_f_ordered (schema.tests.SchemaTests) ... ok
+test_func_index_f (schema.tests.SchemaTests) ... ok
+test_func_index_f_decimalfield (schema.tests.SchemaTests) ... ok
+test_func_index_invalid_topmost_expressions (schema.tests.SchemaTests) ... ok
+test_func_index_json_key_transform (schema.tests.SchemaTests) ... ok
+test_func_index_json_key_transform_cast (schema.tests.SchemaTests) ... ok
+test_func_index_lookups (schema.tests.SchemaTests) ... ok
+test_func_index_multiple_wrapper_references (schema.tests.SchemaTests) ... ok
+test_func_index_nondeterministic (schema.tests.SchemaTests) ... ok
+test_func_index_nonexistent_field (schema.tests.SchemaTests) ... ok
+test_func_index_unsupported (schema.tests.SchemaTests) ... skipped 'Database has feature(s) supports_expression_indexes'
+test_func_unique_constraint (schema.tests.SchemaTests) ... ok
+test_func_unique_constraint_collate (schema.tests.SchemaTests) ... ok
+test_func_unique_constraint_covering (schema.tests.SchemaTests) ... skipped "Database doesn't support feature(s): supports_expression_indexes, supports_covering_indexes"
+test_func_unique_constraint_lookups (schema.tests.SchemaTests) ... ok
+test_func_unique_constraint_nondeterministic (schema.tests.SchemaTests) ... ok
+test_func_unique_constraint_nonexistent_field (schema.tests.SchemaTests) ... ok
+test_func_unique_constraint_partial (schema.tests.SchemaTests) ... ok
+test_func_unique_constraint_unsupported (schema.tests.SchemaTests) ... skipped 'Database has feature(s) supports_expression_indexes'
+test_index_together (schema.tests.SchemaTests)
+Tests removing and adding index_together constraints on a model. ... ok
+test_index_together_with_fk (schema.tests.SchemaTests)
+Tests removing and adding index_together constraints that include ... ok
+test_indexes (schema.tests.SchemaTests)
+Tests creation/altering of indexes ... ok
+test_inline_fk (schema.tests.SchemaTests) ... skipped "Database doesn't support feature(s): can_create_inline_fk"
+test_m2m (schema.tests.SchemaTests) ... ok
+test_m2m_create (schema.tests.SchemaTests) ... ok
+test_m2m_create_custom (schema.tests.SchemaTests) ... ok
+test_m2m_create_inherited (schema.tests.SchemaTests) ... ok
+test_m2m_create_through (schema.tests.SchemaTests) ... ok
+test_m2m_create_through_custom (schema.tests.SchemaTests) ... ok
+test_m2m_create_through_inherited (schema.tests.SchemaTests) ... ok
+test_m2m_custom (schema.tests.SchemaTests) ... ok
+test_m2m_db_constraint (schema.tests.SchemaTests) ... ok
+test_m2m_db_constraint_custom (schema.tests.SchemaTests) ... ok
+test_m2m_db_constraint_inherited (schema.tests.SchemaTests) ... ok
+test_m2m_inherited (schema.tests.SchemaTests) ... ok
+test_m2m_rename_field_in_target_model (schema.tests.SchemaTests) ... ok
+test_m2m_repoint (schema.tests.SchemaTests) ... ok
+test_m2m_repoint_custom (schema.tests.SchemaTests) ... ok
+test_m2m_repoint_inherited (schema.tests.SchemaTests) ... ok
+test_m2m_through_alter (schema.tests.SchemaTests) ... ok
+test_m2m_through_alter_custom (schema.tests.SchemaTests) ... ok
+test_m2m_through_alter_inherited (schema.tests.SchemaTests) ... ok
+test_m2m_through_remove (schema.tests.SchemaTests) ... ok
+test_namespaced_db_table_create_index_name (schema.tests.SchemaTests)
+Table names are stripped of their namespace/schema before being used to ... ok
+test_namespaced_db_table_foreign_key_reference (schema.tests.SchemaTests) ... skipped 'PostgreSQL specific db_table syntax.'
+test_no_db_constraint_added_during_primary_key_change (schema.tests.SchemaTests)
+When a primary key that's pointed to by a ForeignKey with ... ok
+test_order_index (schema.tests.SchemaTests)
+Indexes defined with ordering (ASC/DESC) defined on column ... ok
+test_primary_key (schema.tests.SchemaTests)
+Tests altering of the primary key ... ok
+test_referenced_field_without_constraint_rename_inside_atomic_block (schema.tests.SchemaTests)
+Foreign keys without database level constraint don't prevent the field ... ok
+test_referenced_table_without_constraint_rename_inside_atomic_block (schema.tests.SchemaTests)
+Foreign keys without database level constraint don't prevent the table ... ok
+test_remove_constraints_capital_letters (schema.tests.SchemaTests)
+#23065 - Constraint names must be quoted if they contain capital letters. ... ok
+test_remove_db_index_doesnt_remove_custom_indexes (schema.tests.SchemaTests)
+Changing db_index to False doesn't remove indexes from Meta.indexes. ... ok
+test_remove_field (schema.tests.SchemaTests) ... ok
+test_remove_field_check_does_not_remove_meta_constraints (schema.tests.SchemaTests) ... ok
+test_remove_field_unique_does_not_remove_meta_constraints (schema.tests.SchemaTests) ... ok
+test_remove_index_together_does_not_remove_meta_indexes (schema.tests.SchemaTests) ... ok
+test_remove_unique_together_does_not_remove_meta_constraints (schema.tests.SchemaTests) ... ok
+test_rename (schema.tests.SchemaTests)
+Tests simple altering of fields ... ok
+test_rename_column_renames_deferred_sql_references (schema.tests.SchemaTests) ... skipped 'SQLite naively remakes the table on field alteration.'
+test_rename_keep_null_status (schema.tests.SchemaTests)
+Renaming a field shouldn't affect the not null status. ... ok
+test_rename_referenced_field (schema.tests.SchemaTests) ... ok
+test_rename_table_renames_deferred_sql_references (schema.tests.SchemaTests) ... ok
+test_text_field_with_db_index (schema.tests.SchemaTests) ... ok
+test_text_field_with_db_index_to_fk (schema.tests.SchemaTests) ... ok
+test_unique (schema.tests.SchemaTests)
+Tests removing and adding unique constraints to a single column. ... ok
+test_unique_and_reverse_m2m (schema.tests.SchemaTests)
+AlterField can modify a unique field when there's a reverse M2M ... skipped 'SQLite naively remakes the table on field alteration.'
+test_unique_constraint (schema.tests.SchemaTests) ... ok
+test_unique_constraint_field_and_expression (schema.tests.SchemaTests) ... ok
+test_unique_name_quoting (schema.tests.SchemaTests) ... ok
+test_unique_no_unnecessary_fk_drops (schema.tests.SchemaTests)
+If AlterField isn't selective about dropping foreign key constraints ... skipped 'SQLite naively remakes the table on field alteration.'
+test_unique_together (schema.tests.SchemaTests)
+Tests removing and adding unique_together constraints on a model. ... ok
+test_unique_together_with_fk (schema.tests.SchemaTests)
+Tests removing and adding unique_together constraints that include ... ok
+test_unique_together_with_fk_with_existing_index (schema.tests.SchemaTests)
+Tests removing and adding unique_together constraints that include ... ok
+test_unsupported_transactional_ddl_disallowed (schema.tests.SchemaTests) ... skipped 'Database has feature(s) can_rollback_ddl'
+
+----------------------------------------------------------------------
+Ran 290 tests in 0.733s
+
+OK (skipped=40)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout 884b4c27f506b3c29d58509fc83a35c30ea10d94 tests/custom_lookups/tests.py tests/model_fields/test_jsonfield.py tests/schema/tests.py
+Updated 3 paths from 5a345ced69

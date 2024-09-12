@@ -1,0 +1,1494 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh"'
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh"'
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh
++++ '[' -n '' ']'
++++ '[' -f /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh
++++ '[' -n /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export _CONDA_SET_ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ _CONDA_SET_ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ '[' -f /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh
++++ '[' -n '' ']'
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/gdal ']'
++++ export GDAL_DATA=/opt/miniconda3/envs/testbed/share/gdal
++++ GDAL_DATA=/opt/miniconda3/envs/testbed/share/gdal
++++ export GDAL_DRIVER_PATH=/opt/miniconda3/envs/testbed/lib/gdalplugins
++++ GDAL_DRIVER_PATH=/opt/miniconda3/envs/testbed/lib/gdalplugins
++++ '[' '!' -d /opt/miniconda3/envs/testbed/lib/gdalplugins ']'
++++ export CPL_ZIP_ENCODING=UTF-8
++++ CPL_ZIP_ENCODING=UTF-8
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/epsg_csv ']'
++++ '[' -d /opt/miniconda3/envs/testbed/Library/share/epsg_csv ']'
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh
++++ _la_log 'Beginning libarrow activation.'
++++ '[' '' = 1 ']'
++++ _la_gdb_prefix=/opt/miniconda3/envs/testbed/share/gdb/auto-load
++++ '[' '!' -w /opt/miniconda3/envs/testbed/share/gdb/auto-load ']'
++++ _la_placeholder=replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX
++++ _la_symlink_dir=/opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib
++++ _la_orig_install_dir=/opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib
++++ _la_log '          _la_gdb_prefix: /opt/miniconda3/envs/testbed/share/gdb/auto-load'
++++ '[' '' = 1 ']'
++++ _la_log '         _la_placeholder: replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX'
++++ '[' '' = 1 ']'
++++ _la_log '         _la_symlink_dir: /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib'
++++ '[' '' = 1 ']'
++++ _la_log '    _la_orig_install_dir: /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib'
++++ '[' '' = 1 ']'
++++ _la_log '  content of that folder:'
++++ '[' '' = 1 ']'
+++++ ls -al /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib
+++++ sed 's/^/      /'
++++ _la_log '      total 12
+      drwxr-xr-x 2 root root 4096 Sep  6 07:48 .
+      drwxr-xr-x 3 root root 4096 Sep  6 07:48 ..
+      -rw-r--r-- 1 root root  971 Sep  6 07:48 libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ for _la_target in "$_la_orig_install_dir/"*.py
++++ '[' '!' -e /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py ']'
+++++ basename /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py
++++ _la_symlink=/opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py
++++ _la_log '   _la_target: /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ _la_log '  _la_symlink: /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ '[' -L /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py ']'
+++++ readlink /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py
++++ '[' /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py = /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py ']'
++++ _la_log 'symlink $_la_symlink already exists and points to $_la_target, skipping.'
++++ '[' '' = 1 ']'
++++ continue
++++ _la_log 'Libarrow activation complete.'
++++ '[' '' = 1 ']'
++++ unset _la_gdb_prefix
++++ unset _la_log
++++ unset _la_orig_install_dir
++++ unset _la_placeholder
++++ unset _la_symlink
++++ unset _la_symlink_dir
++++ unset _la_target
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh
++++ export GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ export GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
++++ GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh
++++ test -n ''
++++ xml_catalog_files_libxml2=
++++ XML_CATALOG_FILES=
++++ conda_catalog_files=
++++ ifs_libxml2=' 	
+'
++++ IFS=' '
++++ rem=/opt/miniconda3/envs/testbed
++++ for pre in ${rem}
++++ test '' = /opt/miniconda3/envs/testbed
++++ conda_catalog_files=/opt/miniconda3/envs/testbed
++++ rem=
++++ IFS=' 	
+'
++++ conda_catalog_files='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ export 'XML_CATALOG_FILES=file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ XML_CATALOG_FILES='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ unset conda_catalog_files ifs_libxml2 rem
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/proj ']'
++++ export PROJ_DATA=/opt/miniconda3/envs/testbed/share/proj
++++ PROJ_DATA=/opt/miniconda3/envs/testbed/share/proj
++++ '[' -f /opt/miniconda3/envs/testbed/share/proj/copyright_and_licenses.csv ']'
++++ export PROJ_NETWORK=ON
++++ PROJ_NETWORK=ON
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/udunits ']'
++++ export UDUNITS2_XML_PATH=/opt/miniconda3/envs/testbed/share/udunits/udunits2.xml
++++ UDUNITS2_XML_PATH=/opt/miniconda3/envs/testbed/share/udunits/udunits2.xml
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   xarray/core/variable.py
+	modified:   xarray/tests/test_variable.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 7c4e2ac83f7b4306296ff9b7b51aaf016e5ad614
+Author: Alessandro Amici <a.amici@bopen.eu>
+Date:   Wed Feb 17 19:12:34 2021 +0100
+
+    Revert defaults of beckends' open_datasets to prepare the switch to APIv2 #4309 (#4899)
+
+diff --git a/xarray/backends/cfgrib_.py b/xarray/backends/cfgrib_.py
+index 65c5bc2a..d582af82 100644
+--- a/xarray/backends/cfgrib_.py
++++ b/xarray/backends/cfgrib_.py
+@@ -99,9 +99,9 @@ class CfgribfBackendEntrypoint(BackendEntrypoint):
+         filename_or_obj,
+         *,
+         mask_and_scale=True,
+-        decode_times=None,
+-        concat_characters=None,
+-        decode_coords=None,
++        decode_times=True,
++        concat_characters=True,
++        decode_coords=True,
+         drop_variables=None,
+         use_cftime=None,
+         decode_timedelta=None,
+diff --git a/xarray/backends/h5netcdf_.py b/xarray/backends/h5netcdf_.py
+index 5766b34d..ca531af8 100644
+--- a/xarray/backends/h5netcdf_.py
++++ b/xarray/backends/h5netcdf_.py
+@@ -352,9 +352,9 @@ class H5netcdfBackendEntrypoint(BackendEntrypoint):
+         filename_or_obj,
+         *,
+         mask_and_scale=True,
+-        decode_times=None,
+-        concat_characters=None,
+-        decode_coords=None,
++        decode_times=True,
++        concat_characters=True,
++        decode_coords=True,
+         drop_variables=None,
+         use_cftime=None,
+         decode_timedelta=None,
+diff --git a/xarray/backends/netCDF4_.py b/xarray/backends/netCDF4_.py
+index e3d87aaf..78ad1a4c 100644
+--- a/xarray/backends/netCDF4_.py
++++ b/xarray/backends/netCDF4_.py
+@@ -526,9 +526,9 @@ class NetCDF4BackendEntrypoint(BackendEntrypoint):
+         self,
+         filename_or_obj,
+         mask_and_scale=True,
+-        decode_times=None,
+-        concat_characters=None,
+-        decode_coords=None,
++        decode_times=True,
++        concat_characters=True,
++        decode_coords=True,
+         drop_variables=None,
+         use_cftime=None,
+         decode_timedelta=None,
+diff --git a/xarray/backends/pseudonetcdf_.py b/xarray/backends/pseudonetcdf_.py
+index 80485fce..a9d7f0bb 100644
+--- a/xarray/backends/pseudonetcdf_.py
++++ b/xarray/backends/pseudonetcdf_.py
+@@ -121,9 +121,9 @@ class PseudoNetCDFBackendEntrypoint(BackendEntrypoint):
+         self,
+         filename_or_obj,
+         mask_and_scale=False,
+-        decode_times=None,
+-        concat_characters=None,
+-        decode_coords=None,
++        decode_times=True,
++        concat_characters=True,
++        decode_coords=True,
+         drop_variables=None,
+         use_cftime=None,
+         decode_timedelta=None,
+diff --git a/xarray/backends/pydap_.py b/xarray/backends/pydap_.py
+index 7f8622ca..09bff9ac 100644
+--- a/xarray/backends/pydap_.py
++++ b/xarray/backends/pydap_.py
+@@ -115,9 +115,9 @@ class PydapBackendEntrypoint(BackendEntrypoint):
+         self,
+         filename_or_obj,
+         mask_and_scale=True,
+-        decode_times=None,
+-        concat_characters=None,
+-        decode_coords=None,
++        decode_times=True,
++        concat_characters=True,
++        decode_coords=True,
+         drop_variables=None,
+         use_cftime=None,
+         decode_timedelta=None,
+diff --git a/xarray/backends/pynio_.py b/xarray/backends/pynio_.py
+index 41c99efd..8ace5697 100644
+--- a/xarray/backends/pynio_.py
++++ b/xarray/backends/pynio_.py
+@@ -101,9 +101,9 @@ class PynioBackendEntrypoint(BackendEntrypoint):
+     def open_dataset(
+         filename_or_obj,
+         mask_and_scale=True,
+-        decode_times=None,
+-        concat_characters=None,
+-        decode_coords=None,
++        decode_times=True,
++        concat_characters=True,
++        decode_coords=True,
+         drop_variables=None,
+         use_cftime=None,
+         decode_timedelta=None,
+diff --git a/xarray/backends/scipy_.py b/xarray/backends/scipy_.py
+index ddc157ed..b98515c7 100644
+--- a/xarray/backends/scipy_.py
++++ b/xarray/backends/scipy_.py
+@@ -249,9 +249,9 @@ class ScipyBackendEntrypoint(BackendEntrypoint):
+         self,
+         filename_or_obj,
+         mask_and_scale=True,
+-        decode_times=None,
+-        concat_characters=None,
+-        decode_coords=None,
++        decode_times=True,
++        concat_characters=True,
++        decode_coords=True,
+         drop_variables=None,
+         use_cftime=None,
+         decode_timedelta=None,
+diff --git a/xarray/backends/zarr.py b/xarray/backends/zarr.py
+index 07457216..d740b207 100644
+--- a/xarray/backends/zarr.py
++++ b/xarray/backends/zarr.py
+@@ -687,9 +687,9 @@ class ZarrBackendEntrypoint(BackendEntrypoint):
+         self,
+         filename_or_obj,
+         mask_and_scale=True,
+-        decode_times=None,
+-        concat_characters=None,
+-        decode_coords=None,
++        decode_times=True,
++        concat_characters=True,
++        decode_coords=True,
+         drop_variables=None,
+         use_cftime=None,
+         decode_timedelta=None,
++ git diff 7c4e2ac83f7b4306296ff9b7b51aaf016e5ad614
+diff --git a/xarray/core/variable.py b/xarray/core/variable.py
+index 45553eb9..419303be 100644
+--- a/xarray/core/variable.py
++++ b/xarray/core/variable.py
+@@ -185,6 +185,10 @@ def _possibly_convert_objects(values):
+     """
+     return np.asarray(pd.Series(values.ravel())).reshape(values.shape)
+ 
++class PreserveObject:
++    """A wrapper class to indicate that an object should be preserved as-is."""
++    def __init__(self, obj):
++        self.obj = obj
+ 
+ def as_compatible_data(data, fastpath=False):
+     """Prepare and wrap data to put in a Variable.
+@@ -194,8 +198,27 @@ def as_compatible_data(data, fastpath=False):
+       pandas.Timestamp, convert it to datetime64.
+     - If data is already a pandas or xarray object (other than an Index), just
+       use the values.
++    - If data is wrapped with PreserveObject, it will be returned as-is without
++      any conversion or extraction of the 'values' attribute.
+ 
+     Finally, wrap it up with an adapter if necessary.
++
++    Parameters
++    ----------
++    data : object
++        Data to be put in a Variable.
++    fastpath : bool, optional
++        If True, use a faster path for processing data, by default False.
++
++    Returns
++    -------
++    object
++        Processed data ready to be put in a Variable.
++
++    Notes
++    -----
++    To preserve objects with 'values' properties without extracting the 'values'
++    attribute, wrap the object with PreserveObject before passing it to this function.
+     """
+     if fastpath and getattr(data, "ndim", 0) > 0:
+         # can't use fastpath (yet) for scalars
+@@ -217,6 +240,10 @@ def as_compatible_data(data, fastpath=False):
+     if isinstance(data, timedelta):
+         data = np.timedelta64(getattr(data, "value", data), "ns")
+ 
++    # New check for PreserveObject
++    if isinstance(data, PreserveObject):
++        return data.obj
++
+     # we don't want nested self-described arrays
+     data = getattr(data, "values", data)
+ 
+@@ -855,6 +882,8 @@ class Variable(
+         dims, index_tuple, new_order = self._broadcast_indexes(key)
+ 
+         if not isinstance(value, Variable):
++            if hasattr(value, 'values') and not isinstance(value, (Variable,) + NON_NUMPY_SUPPORTED_ARRAY_TYPES):
++                value = PreserveObject(value)
+             value = as_compatible_data(value)
+             if value.ndim > len(dims):
+                 raise ValueError(
+@@ -865,7 +894,7 @@ class Variable(
+             if value.ndim == 0:
+                 value = Variable((), value)
+             else:
+-                value = Variable(dims[-value.ndim :], value)
++                value = Variable(dims[-value.ndim:], value)
+         # broadcast to become assignable
+         value = value.set_dims(dims).data
+ 
+@@ -873,6 +902,7 @@ class Variable(
+             value = duck_array_ops.asarray(value)
+             value = value[(len(dims) - value.ndim) * (np.newaxis,) + (Ellipsis,)]
+             value = duck_array_ops.moveaxis(value, new_order, range(len(new_order)))
++            value = duck_array_ops.moveaxis(value, new_order, range(len(new_order)))
+ 
+         indexable = as_indexable(self._data)
+         indexable[index_tuple] = value
+diff --git a/xarray/tests/test_variable.py b/xarray/tests/test_variable.py
+index e1ae3e1f..f102951f 100644
+--- a/xarray/tests/test_variable.py
++++ b/xarray/tests/test_variable.py
+@@ -2387,4 +2387,45 @@ class TestBackendIndexing:
+         # doubly wrapping
+         v = Variable(dims=("x", "y"), data=CopyOnWriteArray(DaskIndexingAdapter(da)))
+         self.check_orthogonal_indexing(v)
+-        self.check_vectorized_indexing(v)
++
++def test_preserve_object():
++    from xarray.core.variable import PreserveObject, as_compatible_data
++
++    class HasValues:
++        values = 5
++
++    # Test that PreserveObject preserves the original object
++    obj = HasValues()
++    preserved = PreserveObject(obj)
++    result = as_compatible_data(preserved)
++    assert result is obj
++    assert isinstance(result, HasValues)
++    assert result.values == 5
++
++    # Test that without PreserveObject, the 'values' attribute is extracted
++    result = as_compatible_data(obj)
++    assert result == 5
++    assert not isinstance(result, HasValues)
++
++    # Test with a more complex object
++    class ComplexObject:
++        def __init__(self):
++            self.values = np.array([1, 2, 3])
++            self.other_attr = "test"
++
++    complex_obj = ComplexObject()
++    preserved = PreserveObject(complex_obj)
++    result = as_compatible_data(preserved)
++    assert result is complex_obj
++    assert isinstance(result, ComplexObject)
++    assert_array_equal(result.values, np.array([1, 2, 3]))
++    assert result.other_attr == "test"
++
++    # Test without PreserveObject
++    result = as_compatible_data(complex_obj)
++    assert_array_equal(result, np.array([1, 2, 3]))
++    assert not isinstance(result, ComplexObject)
++    with pytest.raises(AttributeError):
++        result.other_attr
++
++print("Added test_preserve_object to test_variable.py")
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/udunits2-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/proj4-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libxml2_deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libglib_deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/geotiff-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/gdal-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmpy-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmf-deactivate.sh"
+PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval '. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/udunits2-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/proj4-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libxml2_deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libglib_deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/geotiff-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/gdal-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmpy-deactivate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmf-deactivate.sh"
+PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/udunits2-deactivate.sh
+++++ unset UDUNITS2_XML_PATH
+++++ '[' -n '' ']'
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/proj4-deactivate.sh
+++++ unset PROJ_DATA
+++++ unset PROJ_NETWORK
+++++ '[' -n '' ']'
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libxml2_deactivate.sh
+++++ test -n ''
+++++ unset XML_CATALOG_FILES
+++++ unset xml_catalog_files_libxml2
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/libglib_deactivate.sh
+++++ export GSETTINGS_SCHEMA_DIR=
+++++ GSETTINGS_SCHEMA_DIR=
+++++ unset GSETTINGS_SCHEMA_DIR_CONDA_BACKUP
+++++ '[' -z ']'
+++++ unset GSETTINGS_SCHEMA_DIR
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/geotiff-deactivate.sh
+++++ unset GEOTIFF_CSV
+++++ '[' -n '' ']'
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/gdal-deactivate.sh
+++++ unset GDAL_DATA
+++++ '[' -n '' ']'
+++++ unset GDAL_DRIVER_PATH
+++++ '[' -n '' ']'
+++++ unset CPL_ZIP_ENCODING
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmpy-deactivate.sh
+++++ unset ESMFMKFILE
+++++ '[' -n /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
+++++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++++ unset _CONDA_SET_ESMFMKFILE
++++ . /opt/miniconda3/envs/testbed/etc/conda/deactivate.d/esmf-deactivate.sh
+++++ unset ESMFMKFILE
+++++ '[' -n '' ']'
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh"'
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh"'
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh
++++ '[' -n '' ']'
++++ '[' -f /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh
++++ '[' -n /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export _CONDA_SET_ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ _CONDA_SET_ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ '[' -f /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
++++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh
++++ '[' -n '' ']'
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/gdal ']'
++++ export GDAL_DATA=/opt/miniconda3/envs/testbed/share/gdal
++++ GDAL_DATA=/opt/miniconda3/envs/testbed/share/gdal
++++ export GDAL_DRIVER_PATH=/opt/miniconda3/envs/testbed/lib/gdalplugins
++++ GDAL_DRIVER_PATH=/opt/miniconda3/envs/testbed/lib/gdalplugins
++++ '[' '!' -d /opt/miniconda3/envs/testbed/lib/gdalplugins ']'
++++ export CPL_ZIP_ENCODING=UTF-8
++++ CPL_ZIP_ENCODING=UTF-8
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/epsg_csv ']'
++++ '[' -d /opt/miniconda3/envs/testbed/Library/share/epsg_csv ']'
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh
++++ _la_log 'Beginning libarrow activation.'
++++ '[' '' = 1 ']'
++++ _la_gdb_prefix=/opt/miniconda3/envs/testbed/share/gdb/auto-load
++++ '[' '!' -w /opt/miniconda3/envs/testbed/share/gdb/auto-load ']'
++++ _la_placeholder=replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX
++++ _la_symlink_dir=/opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib
++++ _la_orig_install_dir=/opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib
++++ _la_log '          _la_gdb_prefix: /opt/miniconda3/envs/testbed/share/gdb/auto-load'
++++ '[' '' = 1 ']'
++++ _la_log '         _la_placeholder: replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX'
++++ '[' '' = 1 ']'
++++ _la_log '         _la_symlink_dir: /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib'
++++ '[' '' = 1 ']'
++++ _la_log '    _la_orig_install_dir: /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib'
++++ '[' '' = 1 ']'
++++ _la_log '  content of that folder:'
++++ '[' '' = 1 ']'
+++++ ls -al /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib
+++++ sed 's/^/      /'
++++ _la_log '      total 12
+      drwxr-xr-x 2 root root 4096 Sep  6 07:48 .
+      drwxr-xr-x 3 root root 4096 Sep  6 07:48 ..
+      -rw-r--r-- 1 root root  971 Sep  6 07:48 libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ for _la_target in "$_la_orig_install_dir/"*.py
++++ '[' '!' -e /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py ']'
+++++ basename /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py
++++ _la_symlink=/opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py
++++ _la_log '   _la_target: /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ _la_log '  _la_symlink: /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py'
++++ '[' '' = 1 ']'
++++ '[' -L /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py ']'
+++++ readlink /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py
++++ '[' /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py = /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py ']'
++++ _la_log 'symlink $_la_symlink already exists and points to $_la_target, skipping.'
++++ '[' '' = 1 ']'
++++ continue
++++ _la_log 'Libarrow activation complete.'
++++ '[' '' = 1 ']'
++++ unset _la_gdb_prefix
++++ unset _la_log
++++ unset _la_orig_install_dir
++++ unset _la_placeholder
++++ unset _la_symlink
++++ unset _la_symlink_dir
++++ unset _la_target
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh
++++ export GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ export GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
++++ GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh
++++ test -n ''
++++ xml_catalog_files_libxml2=
++++ XML_CATALOG_FILES=
++++ conda_catalog_files=
++++ ifs_libxml2=' 	
+'
++++ IFS=' '
++++ rem=/opt/miniconda3/envs/testbed
++++ for pre in ${rem}
++++ test '' = /opt/miniconda3/envs/testbed
++++ conda_catalog_files=/opt/miniconda3/envs/testbed
++++ rem=
++++ IFS=' 	
+'
++++ conda_catalog_files='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ export 'XML_CATALOG_FILES=file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ XML_CATALOG_FILES='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ unset conda_catalog_files ifs_libxml2 rem
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/proj ']'
++++ export PROJ_DATA=/opt/miniconda3/envs/testbed/share/proj
++++ PROJ_DATA=/opt/miniconda3/envs/testbed/share/proj
++++ '[' -f /opt/miniconda3/envs/testbed/share/proj/copyright_and_licenses.csv ']'
++++ export PROJ_NETWORK=ON
++++ PROJ_NETWORK=ON
+++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh
++++ '[' -n '' ']'
++++ '[' -d /opt/miniconda3/envs/testbed/share/udunits ']'
++++ export UDUNITS2_XML_PATH=/opt/miniconda3/envs/testbed/share/udunits/udunits2.xml
++++ UDUNITS2_XML_PATH=/opt/miniconda3/envs/testbed/share/udunits/udunits2.xml
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: numpy>=1.15 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from xarray==0.16.3.dev122+g7c4e2ac8.d20240912) (1.23.0)
+Requirement already satisfied: pandas>=0.25 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from xarray==0.16.3.dev122+g7c4e2ac8.d20240912) (1.5.3)
+Requirement already satisfied: setuptools>=40.4 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from xarray==0.16.3.dev122+g7c4e2ac8.d20240912) (68.0.0)
+Requirement already satisfied: python-dateutil>=2.8.1 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from pandas>=0.25->xarray==0.16.3.dev122+g7c4e2ac8.d20240912) (2.8.2)
+Requirement already satisfied: pytz>=2020.1 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from pandas>=0.25->xarray==0.16.3.dev122+g7c4e2ac8.d20240912) (2023.3)
+Requirement already satisfied: six>=1.5 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from python-dateutil>=2.8.1->pandas>=0.25->xarray==0.16.3.dev122+g7c4e2ac8.d20240912) (1.16.0)
+Installing collected packages: xarray
+  Attempting uninstall: xarray
+    Found existing installation: xarray 0.16.3.dev122+g7c4e2ac8
+    Uninstalling xarray-0.16.3.dev122+g7c4e2ac8:
+      Successfully uninstalled xarray-0.16.3.dev122+g7c4e2ac8
+  DEPRECATION: Legacy editable install of xarray==0.16.3.dev122+g7c4e2ac8.d20240912 from file:///testbed (setup.py develop) is deprecated. pip 25.0 will enforce this behaviour change. A possible replacement is to add a pyproject.toml or enable --use-pep517, and use setuptools >= 64. If the resulting installation is not behaving as expected, try using --config-settings editable_mode=compat. Please consult the setuptools documentation for more information. Discussion can be found at https://github.com/pypa/pip/issues/11457
+  Running setup.py develop for xarray
+Successfully installed xarray
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 7c4e2ac83f7b4306296ff9b7b51aaf016e5ad614 xarray/tests/test_variable.py
+Updated 1 path from 10c729d1
++ git apply -v -
+Checking patch xarray/tests/test_variable.py...
+Applied patch xarray/tests/test_variable.py cleanly.
++ pytest -rA xarray/tests/test_variable.py
+============================= test session starts ==============================
+platform linux -- Python 3.10.14, pytest-7.4.0, pluggy-1.5.0
+rootdir: /testbed
+configfile: setup.cfg
+plugins: cov-5.0.0, xdist-3.6.1, hypothesis-6.111.2, env-1.1.3
+collected 458 items
+
+xarray/tests/test_variable.py ......................x................... [  9%]
+....................XX.X.....XX.X.....XX.X.....XX.X.....XX.X............ [ 24%]
+........................................................................ [ 40%]
+.....................................x.................................. [ 56%]
+.xX.X.....xX.X.....xx.X.....xx.X.....xx.X..........xxxx................. [ 72%]
+.........x...............................................xxxxxxxxxxxxxxx [ 87%]
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx........F......                 [100%]
+
+=================================== FAILURES ===================================
+__________________ TestAsCompatibleData.test_unsupported_type __________________
+
+self = <xarray.tests.test_variable.TestAsCompatibleData object at 0x2aab1710ff10>
+
+    def test_unsupported_type(self):
+        # Non indexable type
+        class CustomArray(NDArrayMixin):
+            def __init__(self, array):
+                self.array = array
+    
+        class CustomIndexable(CustomArray, indexing.ExplicitlyIndexed):
+            pass
+    
+        # Type with data stored in values attribute
+        class CustomWithValuesAttr:
+            def __init__(self, array):
+                self.values = array
+    
+        array = CustomArray(np.arange(3))
+        orig = Variable(dims=("x"), data=array, attrs={"foo": "bar"})
+        assert isinstance(orig._data, np.ndarray)  # should not be CustomArray
+    
+        array = CustomIndexable(np.arange(3))
+        orig = Variable(dims=("x"), data=array, attrs={"foo": "bar"})
+        assert isinstance(orig._data, CustomIndexable)
+    
+        array = CustomWithValuesAttr(np.arange(3))
+>       orig = Variable(dims=(), data=array)
+
+/testbed/xarray/tests/test_variable.py:2317: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/testbed/xarray/core/variable.py:358: in __init__
+    self._dims = self._parse_dimensions(dims)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <[AttributeError("'Variable' object has no attribute '_dims'") raised in repr()] Variable object at 0x2aab17d70ec0>
+dims = ()
+
+    def _parse_dimensions(self, dims):
+        if isinstance(dims, str):
+            dims = (dims,)
+        dims = tuple(dims)
+        if len(dims) != self.ndim:
+>           raise ValueError(
+                "dimensions %s must have the same length as the "
+                "number of data dimensions, ndim=%s" % (dims, self.ndim)
+            )
+E           ValueError: dimensions () must have the same length as the number of data dimensions, ndim=1
+
+/testbed/xarray/core/variable.py:619: ValueError
+=============================== warnings summary ===============================
+xarray/__init__.py:1
+  /testbed/xarray/__init__.py:1: DeprecationWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html
+    import pkg_resources
+
+xarray/core/dask_array_compat.py:61
+xarray/core/dask_array_compat.py:61
+  /testbed/xarray/core/dask_array_compat.py:61: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if LooseVersion(dask_version) > LooseVersion("2.9.0"):
+
+xarray/core/pdcompat.py:45
+  /testbed/xarray/core/pdcompat.py:45: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if LooseVersion(pd.__version__) < "0.25.0":
+
+../opt/miniconda3/envs/testbed/lib/python3.10/site-packages/setuptools/_distutils/version.py:345: 1 warning
+xarray/tests/test_variable.py: 13 warnings
+  /opt/miniconda3/envs/testbed/lib/python3.10/site-packages/setuptools/_distutils/version.py:345: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    other = LooseVersion(other)
+
+xarray/tests/__init__.py:59
+xarray/tests/__init__.py:59
+xarray/tests/__init__.py:59
+xarray/tests/__init__.py:59
+xarray/tests/__init__.py:59
+xarray/tests/__init__.py:59
+  /testbed/xarray/tests/__init__.py:59: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    return version.LooseVersion(vstring)
+
+xarray/tests/test_variable.py: 46 warnings
+  /testbed/xarray/core/variable.py:1969: DeprecationWarning: the `interpolation=` argument to nanquantile was renamed to `method=`, which has additional options.
+  Users of the modes 'nearest', 'lower', 'higher', or 'midpoint' are encouraged to review the method they used. (Deprecated NumPy 1.22)
+    return np.moveaxis(_quantile_func(npa, **kwargs), 0, -1)
+
+xarray/tests/test_variable.py: 12 warnings
+  /testbed/xarray/core/variable.py:1969: DeprecationWarning: the `interpolation=` argument to quantile was renamed to `method=`, which has additional options.
+  Users of the modes 'nearest', 'lower', 'higher', or 'midpoint' are encouraged to review the method they used. (Deprecated NumPy 1.22)
+    return np.moveaxis(_quantile_func(npa, **kwargs), 0, -1)
+
+xarray/tests/test_variable.py: 12 warnings
+  /testbed/xarray/core/computation.py:705: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if LooseVersion(dask_version) < LooseVersion("2.17.0"):
+
+xarray/tests/test_variable.py: 13 warnings
+  /testbed/xarray/core/variable.py:1106: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+    if LooseVersion(dask.__version__) < "2.0.0":
+
+xarray/tests/test_variable.py::TestVariableWithDask::test_eq_all_dtypes
+xarray/tests/test_variable.py::TestVariableWithDask::test_eq_all_dtypes
+xarray/tests/test_variable.py::TestVariableWithDask::test_eq_all_dtypes
+xarray/tests/test_variable.py::TestVariableWithDask::test_eq_all_dtypes
+  /opt/miniconda3/envs/testbed/lib/python3.10/site-packages/dask/core.py:119: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+    return func(*(_execute_task(a, cache) for a in args))
+
+xarray/tests/test_variable.py::test_raise_no_warning_for_nan_in_binary_ops
+  /opt/miniconda3/envs/testbed/lib/python3.10/site-packages/_pytest/python.py:194: PytestRemovedIn8Warning: Passing None has been deprecated.
+  See https://docs.pytest.org/en/latest/how-to/capture-warnings.html#additional-use-cases-of-warnings-in-tests for alternatives in common use cases.
+    result = testfunction(**testargs)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+==================================== PASSES ====================================
+__________________ TestVariable.test_pandas_cateogrical_dtype __________________
+----------------------------- Captured stdout call -----------------------------
+<xarray.Variable (x: 10)>
+array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+_________________ TestVariable.test_pandas_datetime64_with_tz __________________
+----------------------------- Captured stdout call -----------------------------
+<xarray.Variable (x: 10)>
+array([946702800000000000, 946706400000000000, 946710000000000000,
+       946713600000000000, 946717200000000000, 946720800000000000,
+       946724400000000000, 946728000000000000, 946731600000000000,
+       946735200000000000], dtype=object)
+______________ TestVariableWithDask.test_pandas_cateogrical_dtype ______________
+----------------------------- Captured stdout call -----------------------------
+<xarray.Variable (x: 10)>
+dask.array<array, shape=(10,), dtype=int64, chunksize=(10,), chunktype=numpy.ndarray>
+_____________ TestVariableWithDask.test_pandas_datetime64_with_tz ______________
+----------------------------- Captured stdout call -----------------------------
+<xarray.Variable (x: 10)>
+dask.array<array, shape=(10,), dtype=object, chunksize=(10,), chunktype=numpy.ndarray>
+_______________ TestIndexVariable.test_pandas_cateogrical_dtype ________________
+----------------------------- Captured stdout call -----------------------------
+<xarray.IndexVariable 'x' (x: 10)>
+array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+_______________ TestIndexVariable.test_pandas_datetime64_with_tz _______________
+----------------------------- Captured stdout call -----------------------------
+<xarray.IndexVariable 'x' (x: 10)>
+array([946702800000000000, 946706400000000000, 946710000000000000,
+       946713600000000000, 946717200000000000, 946720800000000000,
+       946724400000000000, 946728000000000000, 946731600000000000,
+       946735200000000000], dtype=object)
+=========================== short test summary info ============================
+PASSED xarray/tests/test_variable.py::TestVariable::test_properties
+PASSED xarray/tests/test_variable.py::TestVariable::test_attrs
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_dict
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_1d
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_1d_fancy
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_with_mask
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_with_mask_size_zero
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_with_mask_nd_indexer
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_0d_int
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_0d_float
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_0d_string
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_0d_datetime
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_0d_timedelta64
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_0d_not_a_time
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_0d_object
+PASSED xarray/tests/test_variable.py::TestVariable::test_0d_object_array_with_list
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_and_concat_datetime
+PASSED xarray/tests/test_variable.py::TestVariable::test_0d_time_data
+PASSED xarray/tests/test_variable.py::TestVariable::test_datetime64_conversion
+PASSED xarray/tests/test_variable.py::TestVariable::test_timedelta64_conversion
+PASSED xarray/tests/test_variable.py::TestVariable::test_object_conversion
+PASSED xarray/tests/test_variable.py::TestVariable::test_datetime64_valid_range
+PASSED xarray/tests/test_variable.py::TestVariable::test_pandas_data
+PASSED xarray/tests/test_variable.py::TestVariable::test_pandas_period_index
+PASSED xarray/tests/test_variable.py::TestVariable::test_1d_math
+PASSED xarray/tests/test_variable.py::TestVariable::test_1d_reduce
+PASSED xarray/tests/test_variable.py::TestVariable::test_array_interface
+PASSED xarray/tests/test_variable.py::TestVariable::test___array__
+PASSED xarray/tests/test_variable.py::TestVariable::test_equals_all_dtypes
+PASSED xarray/tests/test_variable.py::TestVariable::test_eq_all_dtypes
+PASSED xarray/tests/test_variable.py::TestVariable::test_encoding_preserved
+PASSED xarray/tests/test_variable.py::TestVariable::test_concat
+PASSED xarray/tests/test_variable.py::TestVariable::test_concat_attrs
+PASSED xarray/tests/test_variable.py::TestVariable::test_concat_fixed_len_str
+PASSED xarray/tests/test_variable.py::TestVariable::test_concat_number_strings
+PASSED xarray/tests/test_variable.py::TestVariable::test_concat_mixed_dtypes
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy[float-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy[float-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy[int-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy[int-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy[str-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy[str-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy_index
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy_with_data
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy_with_data_errors
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy_index_with_data
+PASSED xarray/tests/test_variable.py::TestVariable::test_copy_index_with_data_errors
+PASSED xarray/tests/test_variable.py::TestVariable::test_replace
+PASSED xarray/tests/test_variable.py::TestVariable::test_real_and_imag
+PASSED xarray/tests/test_variable.py::TestVariable::test_aggregate_complex
+PASSED xarray/tests/test_variable.py::TestVariable::test_pandas_cateogrical_dtype
+PASSED xarray/tests/test_variable.py::TestVariable::test_pandas_datetime64_with_tz
+PASSED xarray/tests/test_variable.py::TestVariable::test_multiindex
+PASSED xarray/tests/test_variable.py::TestVariable::test_load
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_advanced
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_uint_1d
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_uint
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_0d_array
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_fancy
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_error
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg0-np_arg0-mean]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg0-np_arg0-edge]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg0-np_arg0-maximum]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg0-np_arg0-minimum]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg0-np_arg0-symmetric]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg0-np_arg0-wrap]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg1-np_arg1-mean]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg1-np_arg1-edge]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg1-np_arg1-maximum]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg1-np_arg1-minimum]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg1-np_arg1-symmetric]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg1-np_arg1-wrap]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg2-np_arg2-mean]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg2-np_arg2-edge]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg2-np_arg2-maximum]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg2-np_arg2-minimum]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg2-np_arg2-symmetric]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg2-np_arg2-wrap]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg3-np_arg3-mean]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg3-np_arg3-edge]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg3-np_arg3-maximum]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg3-np_arg3-minimum]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg3-np_arg3-symmetric]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg3-np_arg3-wrap]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg4-np_arg4-mean]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg4-np_arg4-edge]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg4-np_arg4-maximum]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg4-np_arg4-minimum]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg4-np_arg4-symmetric]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg4-np_arg4-wrap]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad_constant_values[xr_arg0-np_arg0]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad_constant_values[xr_arg1-np_arg1]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad_constant_values[xr_arg2-np_arg2]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad_constant_values[xr_arg3-np_arg3]
+PASSED xarray/tests/test_variable.py::TestVariable::test_pad_constant_values[xr_arg4-np_arg4]
+PASSED xarray/tests/test_variable.py::TestVariable::test_rolling_window
+PASSED xarray/tests/test_variable.py::TestVariable::test_data_and_values
+PASSED xarray/tests/test_variable.py::TestVariable::test_numpy_same_methods
+PASSED xarray/tests/test_variable.py::TestVariable::test_datetime64_conversion_scalar
+PASSED xarray/tests/test_variable.py::TestVariable::test_timedelta64_conversion_scalar
+PASSED xarray/tests/test_variable.py::TestVariable::test_0d_str
+PASSED xarray/tests/test_variable.py::TestVariable::test_0d_datetime
+PASSED xarray/tests/test_variable.py::TestVariable::test_0d_timedelta
+PASSED xarray/tests/test_variable.py::TestVariable::test_equals_and_identical
+PASSED xarray/tests/test_variable.py::TestVariable::test_broadcast_equals
+PASSED xarray/tests/test_variable.py::TestVariable::test_no_conflicts
+PASSED xarray/tests/test_variable.py::TestVariable::test_as_variable
+PASSED xarray/tests/test_variable.py::TestVariable::test_repr
+PASSED xarray/tests/test_variable.py::TestVariable::test_repr_lazy_data
+PASSED xarray/tests/test_variable.py::TestVariable::test_detect_indexer_type
+PASSED xarray/tests/test_variable.py::TestVariable::test_indexer_type
+PASSED xarray/tests/test_variable.py::TestVariable::test_items
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_basic
+PASSED xarray/tests/test_variable.py::TestVariable::test_getitem_with_mask_2d_input
+PASSED xarray/tests/test_variable.py::TestVariable::test_isel
+PASSED xarray/tests/test_variable.py::TestVariable::test_index_0d_numpy_string
+PASSED xarray/tests/test_variable.py::TestVariable::test_indexing_0d_unicode
+PASSED xarray/tests/test_variable.py::TestVariable::test_shift[fill_value0]
+PASSED xarray/tests/test_variable.py::TestVariable::test_shift[2]
+PASSED xarray/tests/test_variable.py::TestVariable::test_shift[2.0]
+PASSED xarray/tests/test_variable.py::TestVariable::test_shift2d
+PASSED xarray/tests/test_variable.py::TestVariable::test_roll
+PASSED xarray/tests/test_variable.py::TestVariable::test_roll_consistency
+PASSED xarray/tests/test_variable.py::TestVariable::test_transpose
+PASSED xarray/tests/test_variable.py::TestVariable::test_transpose_0d
+PASSED xarray/tests/test_variable.py::TestVariable::test_squeeze
+PASSED xarray/tests/test_variable.py::TestVariable::test_get_axis_num
+PASSED xarray/tests/test_variable.py::TestVariable::test_set_dims
+PASSED xarray/tests/test_variable.py::TestVariable::test_set_dims_object_dtype
+PASSED xarray/tests/test_variable.py::TestVariable::test_stack
+PASSED xarray/tests/test_variable.py::TestVariable::test_stack_errors
+PASSED xarray/tests/test_variable.py::TestVariable::test_unstack
+PASSED xarray/tests/test_variable.py::TestVariable::test_unstack_errors
+PASSED xarray/tests/test_variable.py::TestVariable::test_unstack_2d
+PASSED xarray/tests/test_variable.py::TestVariable::test_stack_unstack_consistency
+PASSED xarray/tests/test_variable.py::TestVariable::test_broadcasting_math
+PASSED xarray/tests/test_variable.py::TestVariable::test_broadcasting_failures
+PASSED xarray/tests/test_variable.py::TestVariable::test_inplace_math
+PASSED xarray/tests/test_variable.py::TestVariable::test_reduce
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[None-None-0.25-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[None-None-0.25-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[None-None-q1-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[None-None-q1-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[None-None-q2-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[None-None-q2-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[0-x-0.25-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[0-x-0.25-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[0-x-q1-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[0-x-q1-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[0-x-q2-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[0-x-q2-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[axis2-dim2-0.25-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[axis2-dim2-0.25-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[axis2-dim2-q1-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[axis2-dim2-q1-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[axis2-dim2-q2-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[axis2-dim2-q2-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[axis3-dim3-0.25-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[axis3-dim3-0.25-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[axis3-dim3-q1-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[axis3-dim3-q1-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[axis3-dim3-q2-True]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile[axis3-dim3-q2-False]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile_dask[1-y-0.25]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile_dask[1-y-q1]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile_dask[1-y-q2]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile_dask[axis1-dim1-0.25]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile_dask[axis1-dim1-q1]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile_dask[axis1-dim1-q2]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile_chunked_dim_error
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile_out_of_bounds[-0.1]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile_out_of_bounds[1.1]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile_out_of_bounds[q2]
+PASSED xarray/tests/test_variable.py::TestVariable::test_quantile_out_of_bounds[q3]
+PASSED xarray/tests/test_variable.py::TestVariable::test_rank_dask_raises
+PASSED xarray/tests/test_variable.py::TestVariable::test_rank
+PASSED xarray/tests/test_variable.py::TestVariable::test_big_endian_reduce
+PASSED xarray/tests/test_variable.py::TestVariable::test_reduce_funcs
+PASSED xarray/tests/test_variable.py::TestVariable::test_reduce_keepdims
+PASSED xarray/tests/test_variable.py::TestVariable::test_reduce_keepdims_dask
+PASSED xarray/tests/test_variable.py::TestVariable::test_reduce_keep_attrs
+PASSED xarray/tests/test_variable.py::TestVariable::test_binary_ops_keep_attrs
+PASSED xarray/tests/test_variable.py::TestVariable::test_count
+PASSED xarray/tests/test_variable.py::TestVariable::test_setitem
+PASSED xarray/tests/test_variable.py::TestVariable::test_setitem_fancy
+PASSED xarray/tests/test_variable.py::TestVariable::test_coarsen
+PASSED xarray/tests/test_variable.py::TestVariable::test_coarsen_2d
+PASSED xarray/tests/test_variable.py::TestVariable::test_coarsen_keep_attrs
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_properties
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_attrs
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_dict
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_1d
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_with_mask
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_with_mask_size_zero
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_index_0d_int
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_index_0d_float
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_index_0d_string
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_index_0d_datetime
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_index_0d_timedelta64
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_index_0d_not_a_time
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_index_0d_object
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_index_and_concat_datetime
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_0d_time_data
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_datetime64_conversion
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_timedelta64_conversion
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_object_conversion
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_datetime64_valid_range
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pandas_data
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pandas_period_index
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_1d_math
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_1d_reduce
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test___array__
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_equals_all_dtypes
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_encoding_preserved
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_concat
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_concat_attrs
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_concat_fixed_len_str
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_concat_number_strings
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_concat_mixed_dtypes
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy[float-True]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy[float-False]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy[int-True]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy[int-False]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy[str-True]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy[str-False]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy_with_data
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy_with_data_errors
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy_index_with_data
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_copy_index_with_data_errors
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_replace
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_real_and_imag
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_aggregate_complex
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pandas_cateogrical_dtype
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pandas_datetime64_with_tz
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_multiindex
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_load
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_advanced
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_uint_1d
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_uint
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_0d_array
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_error
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg0-np_arg0-mean]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg0-np_arg0-edge]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg0-np_arg0-maximum]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg0-np_arg0-minimum]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg0-np_arg0-symmetric]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg0-np_arg0-wrap]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg1-np_arg1-mean]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg1-np_arg1-edge]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg1-np_arg1-maximum]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg1-np_arg1-minimum]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg1-np_arg1-symmetric]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg1-np_arg1-wrap]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg2-np_arg2-mean]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg2-np_arg2-edge]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg2-np_arg2-maximum]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg2-np_arg2-minimum]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg2-np_arg2-symmetric]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg2-np_arg2-wrap]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg3-np_arg3-mean]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg3-np_arg3-edge]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg3-np_arg3-maximum]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg3-np_arg3-minimum]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg3-np_arg3-symmetric]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg3-np_arg3-wrap]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg4-np_arg4-mean]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg4-np_arg4-edge]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg4-np_arg4-maximum]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg4-np_arg4-minimum]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg4-np_arg4-symmetric]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg4-np_arg4-wrap]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad_constant_values[xr_arg0-np_arg0]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad_constant_values[xr_arg1-np_arg1]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad_constant_values[xr_arg2-np_arg2]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad_constant_values[xr_arg3-np_arg3]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_pad_constant_values[xr_arg4-np_arg4]
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_rolling_window
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_fancy
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_1d_fancy
+PASSED xarray/tests/test_variable.py::TestVariableWithDask::test_getitem_with_mask_nd_indexer
+PASSED xarray/tests/test_variable.py::TestVariableWithSparse::test_as_sparse
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_properties
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_attrs
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_getitem_dict
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_getitem_1d
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_getitem_1d_fancy
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_getitem_with_mask
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_getitem_with_mask_size_zero
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_getitem_with_mask_nd_indexer
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_index_0d_int
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_index_0d_float
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_index_0d_string
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_index_0d_datetime
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_index_0d_timedelta64
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_index_0d_not_a_time
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_index_0d_object
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_0d_object_array_with_list
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_index_and_concat_datetime
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_0d_time_data
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_datetime64_conversion
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_timedelta64_conversion
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_object_conversion
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_datetime64_valid_range
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_pandas_data
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_pandas_period_index
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_1d_math
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_1d_reduce
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_array_interface
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test___array__
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_equals_all_dtypes
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_eq_all_dtypes
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_encoding_preserved
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_concat
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_concat_attrs
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_concat_fixed_len_str
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_concat_number_strings
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_concat_mixed_dtypes
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy[float-True]
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy[float-False]
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy[int-True]
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy[int-False]
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy[str-True]
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy[str-False]
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy_index
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy_with_data
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy_with_data_errors
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy_index_with_data
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_copy_index_with_data_errors
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_replace
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_real_and_imag
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_aggregate_complex
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_pandas_cateogrical_dtype
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_pandas_datetime64_with_tz
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_multiindex
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_load
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_getitem_uint_1d
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_getitem_0d_array
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_init
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_to_index
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_multiindex_default_level_names
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_data
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_name
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_level_names
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_get_level_variable
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_concat_periods
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_concat_multiindex
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_concat_str_dtype[str]
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_concat_str_dtype[bytes]
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_coordinate_alias
+PASSED xarray/tests/test_variable.py::TestIndexVariable::test_datetime64
+PASSED xarray/tests/test_variable.py::TestAsCompatibleData::test_unchanged_types
+PASSED xarray/tests/test_variable.py::TestAsCompatibleData::test_converted_types
+PASSED xarray/tests/test_variable.py::TestAsCompatibleData::test_masked_array
+PASSED xarray/tests/test_variable.py::TestAsCompatibleData::test_datetime
+PASSED xarray/tests/test_variable.py::TestAsCompatibleData::test_full_like
+PASSED xarray/tests/test_variable.py::TestAsCompatibleData::test_full_like_dask
+PASSED xarray/tests/test_variable.py::TestAsCompatibleData::test_zeros_like
+PASSED xarray/tests/test_variable.py::TestAsCompatibleData::test_ones_like
+PASSED xarray/tests/test_variable.py::test_raise_no_warning_for_nan_in_binary_ops
+PASSED xarray/tests/test_variable.py::TestBackendIndexing::test_NumpyIndexingAdapter
+PASSED xarray/tests/test_variable.py::TestBackendIndexing::test_LazilyOuterIndexedArray
+PASSED xarray/tests/test_variable.py::TestBackendIndexing::test_CopyOnWriteArray
+PASSED xarray/tests/test_variable.py::TestBackendIndexing::test_MemoryCachedArray
+PASSED xarray/tests/test_variable.py::TestBackendIndexing::test_DaskIndexingAdapter
+XFAIL xarray/tests/test_variable.py::TestVariable::test_timedelta64_valid_range - pandas issue 36615
+XFAIL xarray/tests/test_variable.py::TestVariableWithDask::test_timedelta64_valid_range - pandas issue 36615
+XFAIL xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg0-np_arg0-median] - median is not implemented by Dask
+XFAIL xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg1-np_arg1-median] - median is not implemented by Dask
+XFAIL xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg2-np_arg2-median] - median is not implemented by Dask
+XFAIL xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg2-np_arg2-reflect] - dask.array.pad bug
+XFAIL xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg3-np_arg3-median] - median is not implemented by Dask
+XFAIL xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg3-np_arg3-reflect] - dask.array.pad bug
+XFAIL xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg4-np_arg4-median] - median is not implemented by Dask
+XFAIL xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg4-np_arg4-reflect] - dask.array.pad bug
+XFAIL xarray/tests/test_variable.py::TestVariableWithDask::test_0d_object_array_with_list
+XFAIL xarray/tests/test_variable.py::TestVariableWithDask::test_array_interface
+XFAIL xarray/tests/test_variable.py::TestVariableWithDask::test_copy_index
+XFAIL xarray/tests/test_variable.py::TestVariableWithDask::test_eq_all_dtypes
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_timedelta64_valid_range - pandas issue 36615
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_getitem_error
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_getitem_advanced
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_getitem_fancy
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_getitem_uint
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg0-np_arg0-mean]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg0-np_arg0-median]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg0-np_arg0-reflect]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg0-np_arg0-edge]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg0-np_arg0-linear_ramp]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg0-np_arg0-maximum]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg0-np_arg0-minimum]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg0-np_arg0-symmetric]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg0-np_arg0-wrap]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg1-np_arg1-mean]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg1-np_arg1-median]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg1-np_arg1-reflect]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg1-np_arg1-edge]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg1-np_arg1-linear_ramp]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg1-np_arg1-maximum]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg1-np_arg1-minimum]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg1-np_arg1-symmetric]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg1-np_arg1-wrap]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg2-np_arg2-mean]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg2-np_arg2-median]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg2-np_arg2-reflect]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg2-np_arg2-edge]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg2-np_arg2-linear_ramp]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg2-np_arg2-maximum]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg2-np_arg2-minimum]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg2-np_arg2-symmetric]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg2-np_arg2-wrap]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg3-np_arg3-mean]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg3-np_arg3-median]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg3-np_arg3-reflect]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg3-np_arg3-edge]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg3-np_arg3-linear_ramp]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg3-np_arg3-maximum]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg3-np_arg3-minimum]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg3-np_arg3-symmetric]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg3-np_arg3-wrap]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg4-np_arg4-mean]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg4-np_arg4-median]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg4-np_arg4-reflect]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg4-np_arg4-edge]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg4-np_arg4-linear_ramp]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg4-np_arg4-maximum]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg4-np_arg4-minimum]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg4-np_arg4-symmetric]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad[xr_arg4-np_arg4-wrap]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad_constant_values[xr_arg0-np_arg0]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad_constant_values[xr_arg1-np_arg1]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad_constant_values[xr_arg2-np_arg2]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad_constant_values[xr_arg3-np_arg3]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_pad_constant_values[xr_arg4-np_arg4]
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_rolling_window
+XFAIL xarray/tests/test_variable.py::TestIndexVariable::test_coarsen_2d
+XPASS xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg0-np_arg0-median] median is not implemented by Dask
+XPASS xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg0-np_arg0-reflect] dask.array.pad bug
+XPASS xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg0-np_arg0-linear_ramp] pint bug: https://github.com/hgrecco/pint/issues/1026
+XPASS xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg1-np_arg1-median] median is not implemented by Dask
+XPASS xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg1-np_arg1-reflect] dask.array.pad bug
+XPASS xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg1-np_arg1-linear_ramp] pint bug: https://github.com/hgrecco/pint/issues/1026
+XPASS xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg2-np_arg2-median] median is not implemented by Dask
+XPASS xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg2-np_arg2-reflect] dask.array.pad bug
+XPASS xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg2-np_arg2-linear_ramp] pint bug: https://github.com/hgrecco/pint/issues/1026
+XPASS xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg3-np_arg3-median] median is not implemented by Dask
+XPASS xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg3-np_arg3-reflect] dask.array.pad bug
+XPASS xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg3-np_arg3-linear_ramp] pint bug: https://github.com/hgrecco/pint/issues/1026
+XPASS xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg4-np_arg4-median] median is not implemented by Dask
+XPASS xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg4-np_arg4-reflect] dask.array.pad bug
+XPASS xarray/tests/test_variable.py::TestVariable::test_pad[xr_arg4-np_arg4-linear_ramp] pint bug: https://github.com/hgrecco/pint/issues/1026
+XPASS xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg0-np_arg0-reflect] dask.array.pad bug
+XPASS xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg0-np_arg0-linear_ramp] pint bug: https://github.com/hgrecco/pint/issues/1026
+XPASS xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg1-np_arg1-reflect] dask.array.pad bug
+XPASS xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg1-np_arg1-linear_ramp] pint bug: https://github.com/hgrecco/pint/issues/1026
+XPASS xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg2-np_arg2-linear_ramp] pint bug: https://github.com/hgrecco/pint/issues/1026
+XPASS xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg3-np_arg3-linear_ramp] pint bug: https://github.com/hgrecco/pint/issues/1026
+XPASS xarray/tests/test_variable.py::TestVariableWithDask::test_pad[xr_arg4-np_arg4-linear_ramp] pint bug: https://github.com/hgrecco/pint/issues/1026
+FAILED xarray/tests/test_variable.py::TestAsCompatibleData::test_unsupported_type
+= 1 failed, 364 passed, 71 xfailed, 22 xpassed, 112 warnings in 74.61s (0:01:14) =
++ git checkout 7c4e2ac83f7b4306296ff9b7b51aaf016e5ad614 xarray/tests/test_variable.py
+Updated 1 path from 10c729d1

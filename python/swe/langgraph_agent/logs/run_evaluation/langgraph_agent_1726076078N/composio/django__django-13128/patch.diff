@@ -1,0 +1,24 @@
+diff --git a/docs/ref/models/database-functions.txt b/docs/ref/models/database-functions.txt
+index da67d9e3..0fcd0b91 100644
+--- a/docs/ref/models/database-functions.txt
++++ b/docs/ref/models/database-functions.txt
+@@ -258,13 +258,13 @@ Usage example::
+     ...    start_datetime=start, start_date=start.date(),
+     ...    end_datetime=end, end_date=end.date())
+     >>> # Add the experiment start year as a field in the QuerySet.
++    >>> from django.db.models import F, DurationField
++    >>> from django.db.models.functions import Cast
+     >>> experiment = Experiment.objects.annotate(
+-    ...    start_year=Extract('start_datetime', 'year')).get()
+-    >>> experiment.start_year
+-    2015
+-    >>> # How many experiments completed in the same year in which they started?
+-    >>> Experiment.objects.filter(
+-    ...    start_datetime__year=Extract('end_datetime', 'year')).count()
++    ...     duration=Cast(F('end') - F('start'), output_field=DurationField())
++    ... ).get()
++    >>> print(experiment.duration)
++    14 days, 7:30:00
+     1
+ 
+ ``DateField`` extracts

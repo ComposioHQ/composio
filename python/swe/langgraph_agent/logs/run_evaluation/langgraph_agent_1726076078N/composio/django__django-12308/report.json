@@ -1,0 +1,50 @@
+{
+    "django__django-12308": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "test_json_display_for_field (admin_utils.tests.UtilsTests)",
+                    "test_label_for_field (admin_utils.tests.UtilsTests)"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "test_cyclic (admin_utils.tests.NestedObjectsTests)",
+                    "test_non_added_parent (admin_utils.tests.NestedObjectsTests)",
+                    "test_on_delete_do_nothing (admin_utils.tests.NestedObjectsTests)",
+                    "test_queries (admin_utils.tests.NestedObjectsTests)",
+                    "test_relation_on_abstract (admin_utils.tests.NestedObjectsTests)",
+                    "test_siblings (admin_utils.tests.NestedObjectsTests)",
+                    "test_unrelated_roots (admin_utils.tests.NestedObjectsTests)",
+                    "test_flatten (admin_utils.tests.UtilsTests)",
+                    "test_flatten_fieldsets (admin_utils.tests.UtilsTests)",
+                    "test_label_for_field_form_argument (admin_utils.tests.UtilsTests)",
+                    "test_label_for_property (admin_utils.tests.UtilsTests)",
+                    "test_list_display_for_value (admin_utils.tests.UtilsTests)",
+                    "test_list_display_for_value_boolean (admin_utils.tests.UtilsTests)",
+                    "test_null_display_for_field (admin_utils.tests.UtilsTests)",
+                    "test_number_formats_display_for_field (admin_utils.tests.UtilsTests)",
+                    "test_number_formats_with_thousand_separator_display_for_field (admin_utils.tests.UtilsTests)",
+                    "test_quote (admin_utils.tests.UtilsTests)",
+                    "test_related_name (admin_utils.tests.UtilsTests)",
+                    "test_safestring_in_field_label (admin_utils.tests.UtilsTests)",
+                    "test_values_from_lookup_field (admin_utils.tests.UtilsTests)"
+                ]
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

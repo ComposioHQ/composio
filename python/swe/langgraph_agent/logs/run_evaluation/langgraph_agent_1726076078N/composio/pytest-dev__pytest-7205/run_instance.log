@@ -1,0 +1,59 @@
+2024-09-12 09:43:45,232 - INFO - Environment image sweb.env.arm64.5d1fda9d55d65d8a4e5bdb:latest found for pytest-dev__pytest-7205
+Building instance image sweb.eval.arm64.pytest-dev__pytest-7205:latest for pytest-dev__pytest-7205
+2024-09-12 09:43:57,364 - INFO - Creating container for pytest-dev__pytest-7205...
+2024-09-12 09:43:57,384 - INFO - Container for pytest-dev__pytest-7205 created: bc7df2a5a7dd13fef3d9d6072473385641152dc54dfe12bbae3c852077dfe0ed
+2024-09-12 09:43:57,486 - INFO - Container for pytest-dev__pytest-7205 started: bc7df2a5a7dd13fef3d9d6072473385641152dc54dfe12bbae3c852077dfe0ed
+2024-09-12 09:43:57,487 - INFO - Intermediate patch for pytest-dev__pytest-7205 written to logs/run_evaluation/langgraph_agent_1726076078N/composio/pytest-dev__pytest-7205/patch.diff, now applying to container...
+2024-09-12 09:43:57,609 - INFO - Failed to apply patch to container, trying again...
+2024-09-12 09:43:57,624 - INFO - >>>>> Applied Patch:
+patching file src/_pytest/setuponly.py
+
+2024-09-12 09:43:57,671 - INFO - Git diff before:
+diff --git a/src/_pytest/setuponly.py b/src/_pytest/setuponly.py
+index c9cc589ff..b09cbc7e1 100644
+--- a/src/_pytest/setuponly.py
++++ b/src/_pytest/setuponly.py
+@@ -1,4 +1,5 @@
+ import pytest
++from _pytest.util import saferepr
+ 
+ 
+ def pytest_addoption(parser):
+@@ -66,7 +67,7 @@ def _show_fixture_action(fixturedef, msg):
+             tw.write(" (fixtures used: {})".format(", ".join(deps)))
+ 
+     if hasattr(fixturedef, "cached_param"):
+-        tw.write("[{}]".format(fixturedef.cached_param))
++        tw.write("[{}]".format(saferepr(fixturedef.cached_param)))
+ 
+     tw.flush()
+2024-09-12 09:43:57,671 - INFO - Eval script for pytest-dev__pytest-7205 written to logs/run_evaluation/langgraph_agent_1726076078N/composio/pytest-dev__pytest-7205/eval.sh; copying to container...
+2024-09-12 09:43:59,555 - INFO - Test runtime: 1.80 seconds
+2024-09-12 09:43:59,556 - INFO - Test output for pytest-dev__pytest-7205 written to logs/run_evaluation/langgraph_agent_1726076078N/composio/pytest-dev__pytest-7205/test_output.txt
+2024-09-12 09:43:59,596 - INFO - Git diff after:
+diff --git a/src/_pytest/setuponly.py b/src/_pytest/setuponly.py
+index c9cc589ff..b09cbc7e1 100644
+--- a/src/_pytest/setuponly.py
++++ b/src/_pytest/setuponly.py
+@@ -1,4 +1,5 @@
+ import pytest
++from _pytest.util import saferepr
+ 
+ 
+ def pytest_addoption(parser):
+@@ -66,7 +67,7 @@ def _show_fixture_action(fixturedef, msg):
+             tw.write(" (fixtures used: {})".format(", ".join(deps)))
+ 
+     if hasattr(fixturedef, "cached_param"):
+-        tw.write("[{}]".format(fixturedef.cached_param))
++        tw.write("[{}]".format(saferepr(fixturedef.cached_param)))
+ 
+     tw.flush()
+2024-09-12 09:43:59,597 - INFO - Grading answer for pytest-dev__pytest-7205...
+2024-09-12 09:43:59,601 - INFO - report: {'pytest-dev__pytest-7205': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': False, 'tests_status': {'FAIL_TO_PASS': {'success': [], 'failure': ['testing/test_setuponly.py::test_show_fixtures_with_parameters[--setup-only]', 'testing/test_setuponly.py::test_show_fixtures_with_parameter_ids[--setup-only]', 'testing/test_setuponly.py::test_show_fixtures_with_parameter_ids_function[--setup-only]', 'testing/test_setuponly.py::test_show_fixtures_with_parameters[--setup-plan]', 'testing/test_setuponly.py::test_show_fixtures_with_parameter_ids[--setup-plan]', 'testing/test_setuponly.py::test_show_fixtures_with_parameter_ids_function[--setup-plan]', 'testing/test_setuponly.py::test_show_fixtures_with_parameters[--setup-show]', 'testing/test_setuponly.py::test_show_fixtures_with_parameter_ids[--setup-show]', 'testing/test_setuponly.py::test_show_fixtures_with_parameter_ids_function[--setup-show]', 'testing/test_setuponly.py::test_show_fixture_action_with_bytes']}, 'PASS_TO_PASS': {'success': [], 'failure': ['testing/test_setuponly.py::test_show_only_active_fixtures[--setup-only]', 'testing/test_setuponly.py::test_show_different_scopes[--setup-only]', 'testing/test_setuponly.py::test_show_nested_fixtures[--setup-only]', 'testing/test_setuponly.py::test_show_fixtures_with_autouse[--setup-only]', 'testing/test_setuponly.py::test_show_only_active_fixtures[--setup-plan]', 'testing/test_setuponly.py::test_show_different_scopes[--setup-plan]', 'testing/test_setuponly.py::test_show_nested_fixtures[--setup-plan]', 'testing/test_setuponly.py::test_show_fixtures_with_autouse[--setup-plan]', 'testing/test_setuponly.py::test_show_only_active_fixtures[--setup-show]', 'testing/test_setuponly.py::test_show_different_scopes[--setup-show]', 'testing/test_setuponly.py::test_show_nested_fixtures[--setup-show]', 'testing/test_setuponly.py::test_show_fixtures_with_autouse[--setup-show]', 'testing/test_setuponly.py::test_dynamic_fixture_request', 'testing/test_setuponly.py::test_capturing', 'testing/test_setuponly.py::test_show_fixtures_and_execute_test', 'testing/test_setuponly.py::test_setup_show_with_KeyboardInterrupt_in_test']}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for pytest-dev__pytest-7205: resolved: False
+2024-09-12 09:43:59,602 - INFO - Attempting to stop container sweb.eval.pytest-dev__pytest-7205.langgraph_agent_1726076078N...
+2024-09-12 09:44:14,799 - INFO - Attempting to remove container sweb.eval.pytest-dev__pytest-7205.langgraph_agent_1726076078N...
+2024-09-12 09:44:14,810 - INFO - Container sweb.eval.pytest-dev__pytest-7205.langgraph_agent_1726076078N removed.
+2024-09-12 09:44:14,810 - INFO - Attempting to remove image sweb.eval.arm64.pytest-dev__pytest-7205:latest...
+2024-09-12 09:44:14,867 - INFO - Image sweb.eval.arm64.pytest-dev__pytest-7205:latest removed.

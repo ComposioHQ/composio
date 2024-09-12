@@ -1,0 +1,64 @@
+diff --git a/django/forms/fields.py b/django/forms/fields.py
+index 65d6a9ec..0b71c667 100644
+--- a/django/forms/fields.py
++++ b/django/forms/fields.py
+@@ -965,7 +965,7 @@ class ComboField(Field):
+ 
+ class MultiValueField(Field):
+     """
+-    Aggregate the logic of multiple Fields.
++    Aggregate the logic of multiple fields.
+ 
+     Its clean() method takes a "decompressed" list of values, which are then
+     cleaned into a single value according to self.fields. Each value in
+@@ -979,12 +979,17 @@ class MultiValueField(Field):
+     "compressed" version of those values -- a single value.
+ 
+     You'll probably want to use this with MultiWidget.
++
++    When require_all_fields is set to False, individual field validation is
++    respected even if not all fields are filled. This means that if a field
++    is marked as required, it will raise a ValidationError if it's empty,
++    regardless of the value of require_all_fields.
+     """
++
+     default_error_messages = {
+         'invalid': _('Enter a list of values.'),
+         'incomplete': _('Enter a complete value.'),
+     }
+-
+     def __init__(self, fields, *, require_all_fields=True, **kwargs):
+         self.require_all_fields = require_all_fields
+         super().__init__(**kwargs)
+@@ -1036,24 +1041,16 @@ class MultiValueField(Field):
+                 field_value = None
+             if field_value in self.empty_values:
+                 if self.require_all_fields:
+-                    # Raise a 'required' error if the MultiValueField is
+-                    # required and any field is empty.
+                     if self.required:
+                         raise ValidationError(self.error_messages['required'], code='required')
+                 elif field.required:
+-                    # Otherwise, add an 'incomplete' error to the list of
+-                    # collected errors and skip field cleaning, if a required
+-                    # field is empty.
+-                    if field.error_messages['incomplete'] not in errors:
+-                        errors.append(field.error_messages['incomplete'])
+-                    continue
+-            try:
+-                clean_data.append(field.clean(field_value))
+-            except ValidationError as e:
+-                # Collect all validation errors in a single list, which we'll
+-                # raise at the end of clean(), rather than raising a single
+-                # exception for the first error we encounter. Skip duplicates.
+-                errors.extend(m for m in e.error_list if m not in errors)
++                    # Raise a 'required' error if the field is required
++                    raise ValidationError(field.error_messages['required'], code='required')
++            if field_value not in self.empty_values or field.required:
++                try:
++                    clean_data.append(field.clean(field_value))
++                except ValidationError as e:
++                    errors.extend(m for m in e.error_list if m not in errors)
+         if errors:
+             raise ValidationError(errors)
+ 

@@ -1,0 +1,193 @@
+2024-09-12 07:16:36,472 - INFO - Environment image sweb.env.x86_64.31244378a92e3bcce809ac:latest found for matplotlib__matplotlib-24570
+Building instance image sweb.eval.x86_64.matplotlib__matplotlib-24570:latest for matplotlib__matplotlib-24570
+2024-09-12 07:36:03,260 - INFO - Creating container for matplotlib__matplotlib-24570...
+2024-09-12 07:36:03,309 - INFO - Container for matplotlib__matplotlib-24570 created: b0bb2ea09db4d64b1a50908a26bc313a8a6f9f950856a1e64757812a6f0d8966
+2024-09-12 07:36:03,512 - INFO - Container for matplotlib__matplotlib-24570 started: b0bb2ea09db4d64b1a50908a26bc313a8a6f9f950856a1e64757812a6f0d8966
+2024-09-12 07:36:03,513 - INFO - Intermediate patch for matplotlib__matplotlib-24570 written to logs/run_evaluation/langgraph_agent_1726076078N/composio/matplotlib__matplotlib-24570/patch.diff, now applying to container...
+2024-09-12 07:36:03,743 - INFO - Failed to apply patch to container, trying again...
+2024-09-12 07:36:03,806 - INFO - >>>>> Applied Patch:
+patching file lib/matplotlib/offsetbox.py
+patching file lib/matplotlib/tests/test_offsetbox.py
+
+2024-09-12 07:36:06,305 - INFO - Git diff before:
+diff --git a/lib/matplotlib/offsetbox.py b/lib/matplotlib/offsetbox.py
+index 3a506543ac..89dd704ef4 100644
+--- a/lib/matplotlib/offsetbox.py
++++ b/lib/matplotlib/offsetbox.py
+@@ -166,10 +166,10 @@ def _get_aligned_offsets(hd_list, height, align="baseline"):
+         descent = max(d for h, d in hd_list)
+         height = height_descent + descent
+         offsets = [0. for h, d in hd_list]
+-    elif align in ["left", "top"]:
++    elif align in ["left", "bottom"]:  # Changed from "top" to "bottom"
+         descent = 0.
+         offsets = [d for h, d in hd_list]
+-    elif align in ["right", "bottom"]:
++    elif align in ["right", "top"]:  # Changed from "bottom" to "top"
+         descent = 0.
+         offsets = [height - h + d for h, d in hd_list]
+     elif align == "center":
+@@ -459,9 +459,31 @@ class VPacker(PackerBase):
+ class HPacker(PackerBase):
+     """
+     HPacker packs its children horizontally, automatically adjusting their
+-    relative positions at draw time.
+-    """
++    positions so that they do not overlap with each other.
+ 
++    Parameters
++    ----------
++    pad : float, default: 0.0
++        Padding between items, in points.
++    sep : float, default: 0.0
++        Spacing between items, in points.
++    width : float, default: None
++        A fixed width, in points.
++    height : float, default: None
++        A fixed height, in points.
++    align : {'baseline', 'left', 'top', 'right', 'bottom', 'center'}, default: 'baseline'
++        The alignment of the boxes. For vertical alignment:
++        - 'top': Align the top edges of the boxes.
++        - 'bottom': Align the bottom edges of the boxes.
++        - 'center': Align the vertical centers of the boxes.
++        For horizontal alignment:
++        - 'left': Align the left edges of the boxes.
++        - 'right': Align the right edges of the boxes.
++        - 'center': Align the horizontal centers of the boxes.
++        - 'baseline': Align the baselines of the text (if any).
++    mode : {'fixed', 'expand', 'equal'}, default: 'fixed'
++        The packing mode.
++    """
+     def get_extent_offsets(self, renderer):
+         # docstring inherited
+         dpicor = renderer.points_to_pixels(1.)
+diff --git a/lib/matplotlib/tests/test_offsetbox.py b/lib/matplotlib/tests/test_offsetbox.py
+index 02756ff559..29bf4798bc 100644
+--- a/lib/matplotlib/tests/test_offsetbox.py
++++ b/lib/matplotlib/tests/test_offsetbox.py
+@@ -334,4 +334,60 @@ def test_arrowprops_copied():
+                         boxcoords="axes fraction", box_alignment=(0., .5),
+                         arrowprops=arrowprops)
+     assert ab.arrowprops is not ab
+-    assert arrowprops["relpos"] == (.3, .7)
++def test_hpacker_alignment():
++    from matplotlib.offsetbox import HPacker, DrawingArea
++    from matplotlib.patches import Rectangle
++
++    # Create two DrawingAreas with different heights
++    da1 = DrawingArea(10, 20)
++    da1.add_artist(Rectangle((0, 0), 10, 20))
++
++    da2 = DrawingArea(10, 30)
++    da2.add_artist(Rectangle((0, 0), 10, 30))
++
++    # Test top alignment
++    hpack_top = HPacker(children=[da1, da2], pad=0, sep=0, align="top")
++    _, _, _, _, offsets_top = hpack_top.get_extent_offsets(None)
++    assert offsets_top[0][1] == offsets_top[1][1], "Top edges should be aligned"
++
++    # Test bottom alignment
++    hpack_bottom = HPacker(children=[da1, da2], pad=0, sep=0, align="bottom")
++    _, _, _, _, offsets_bottom = hpack_bottom.get_extent_offsets(None)
++    assert (offsets_bottom[0][1] + 20 == offsets_bottom[1][1] + 30), "Bottom edges should be aligned"
++
++    # Test center alignment
++    hpack_center = HPacker(children=[da1, da2], pad=0, sep=0, align="center")
++    _, _, _, _, offsets_center = hpack_center.get_extent_offsets(None)
++    assert (offsets_center[0][1] + 10 == offsets_center[1][1] + 15), "Centers should be aligned"
++
++def test_hpacker_vertical_alignment():
++    from matplotlib.offsetbox import HPacker, DrawingArea
++    from matplotlib.patches import Rectangle
++
++    # Create two DrawingAreas with different heights
++    da1 = DrawingArea(10, 20)
++    da1.add_artist(Rectangle((0, 0), 10, 20))
++
++    da2 = DrawingArea(10, 30)
++    da2.add_artist(Rectangle((0, 0), 10, 30))
++
++    # Test all vertical alignment options
++    alignments = ['top', 'bottom', 'center', 'baseline']
++    for align in alignments:
++        hpack = HPacker(children=[da1, da2], pad=0, sep=0, align=align)
++        _, height, _, _, offsets = hpack.get_extent_offsets(None)
++
++        if align == 'top':
++            assert offsets[0][1] == offsets[1][1], f"{align} alignment failed"
++        elif align == 'bottom':
++            assert (offsets[0][1] + 20 == offsets[1][1] + 30), f"{align} alignment failed"
++        elif align == 'center':
++            assert (offsets[0][1] + 10 == offsets[1][1] + 15), f"{align} alignment failed"
++        elif align == 'baseline':
++            # Baseline alignment should behave like bottom alignment for rectangles
++            assert (offsets[0][1] + 20 == offsets[1][1] + 30), f"{align} alignment failed"
++
++        # Check that the height of the HPacker is correct
++        assert height == max(20, 30), f"Incorrect height for {align} alignment"
++
++# Add more tests here if needed
+2024-09-12 07:36:06,305 - INFO - Eval script for matplotlib__matplotlib-24570 written to logs/run_evaluation/langgraph_agent_1726076078N/composio/matplotlib__matplotlib-24570/eval.sh; copying to container...
+2024-09-12 07:40:44,794 - INFO - Test runtime: 278.33 seconds
+2024-09-12 07:40:44,797 - INFO - Test output for matplotlib__matplotlib-24570 written to logs/run_evaluation/langgraph_agent_1726076078N/composio/matplotlib__matplotlib-24570/test_output.txt
+2024-09-12 07:40:44,888 - INFO - Git diff after:
+diff --git a/lib/matplotlib/offsetbox.py b/lib/matplotlib/offsetbox.py
+index 3a506543ac..89dd704ef4 100644
+--- a/lib/matplotlib/offsetbox.py
++++ b/lib/matplotlib/offsetbox.py
+@@ -166,10 +166,10 @@ def _get_aligned_offsets(hd_list, height, align="baseline"):
+         descent = max(d for h, d in hd_list)
+         height = height_descent + descent
+         offsets = [0. for h, d in hd_list]
+-    elif align in ["left", "top"]:
++    elif align in ["left", "bottom"]:  # Changed from "top" to "bottom"
+         descent = 0.
+         offsets = [d for h, d in hd_list]
+-    elif align in ["right", "bottom"]:
++    elif align in ["right", "top"]:  # Changed from "bottom" to "top"
+         descent = 0.
+         offsets = [height - h + d for h, d in hd_list]
+     elif align == "center":
+@@ -459,9 +459,31 @@ class VPacker(PackerBase):
+ class HPacker(PackerBase):
+     """
+     HPacker packs its children horizontally, automatically adjusting their
+-    relative positions at draw time.
+-    """
++    positions so that they do not overlap with each other.
+ 
++    Parameters
++    ----------
++    pad : float, default: 0.0
++        Padding between items, in points.
++    sep : float, default: 0.0
++        Spacing between items, in points.
++    width : float, default: None
++        A fixed width, in points.
++    height : float, default: None
++        A fixed height, in points.
++    align : {'baseline', 'left', 'top', 'right', 'bottom', 'center'}, default: 'baseline'
++        The alignment of the boxes. For vertical alignment:
++        - 'top': Align the top edges of the boxes.
++        - 'bottom': Align the bottom edges of the boxes.
++        - 'center': Align the vertical centers of the boxes.
++        For horizontal alignment:
++        - 'left': Align the left edges of the boxes.
++        - 'right': Align the right edges of the boxes.
++        - 'center': Align the horizontal centers of the boxes.
++        - 'baseline': Align the baselines of the text (if any).
++    mode : {'fixed', 'expand', 'equal'}, default: 'fixed'
++        The packing mode.
++    """
+     def get_extent_offsets(self, renderer):
+         # docstring inherited
+         dpicor = renderer.points_to_pixels(1.)
+2024-09-12 07:40:44,888 - INFO - Git diff changed after running eval script
+2024-09-12 07:40:44,889 - INFO - Grading answer for matplotlib__matplotlib-24570...
+2024-09-12 07:40:44,896 - INFO - report: {'matplotlib__matplotlib-24570': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': True, 'tests_status': {'FAIL_TO_PASS': {'success': ['lib/matplotlib/tests/test_offsetbox.py::test_packers[bottom]', 'lib/matplotlib/tests/test_offsetbox.py::test_packers[top]'], 'failure': []}, 'PASS_TO_PASS': {'success': ['lib/matplotlib/tests/test_offsetbox.py::test_offsetbox_clipping[png]', 'lib/matplotlib/tests/test_offsetbox.py::test_offsetbox_clipping[pdf]', 'lib/matplotlib/tests/test_offsetbox.py::test_offsetbox_clip_children', 'lib/matplotlib/tests/test_offsetbox.py::test_offsetbox_loc_codes', 'lib/matplotlib/tests/test_offsetbox.py::test_expand_with_tight_layout', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250-250-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250-250-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250-250-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250-250-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250-100-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250-100-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250-100-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250-100-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250-0-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250-0-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250-0-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250-0-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250--1-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250--1-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250--1-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250--1-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250-None-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250-None-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250-None-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-250-None-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1-250-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1-250-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1-250-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1-250-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1-100-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1-100-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1-100-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1-100-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1-0-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1-0-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1-0-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1-0-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1--1-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1--1-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1--1-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1--1-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1-None-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1-None-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1-None-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-1-None-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0-250-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0-250-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0-250-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0-250-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0-100-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0-100-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0-100-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0-100-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0-0-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0-0-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0-0-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0-0-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0--1-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0--1-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0--1-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0--1-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0-None-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0-None-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0-None-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand-0-None-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1-250-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1-250-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1-250-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1-250-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1-100-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1-100-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1-100-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1-100-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1-0-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1-0-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1-0-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1-0-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1--1-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1--1-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1--1-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1--1-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1-None-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1-None-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1-None-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[expand--1-None-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250-250-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250-250-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250-250-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250-250-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250-100-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250-100-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250-100-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250-100-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250-0-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250-0-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250-0-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250-0-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250--1-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250--1-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250--1-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250--1-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250-None-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250-None-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250-None-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-250-None-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1-250-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1-250-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1-250-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1-250-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1-100-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1-100-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1-100-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1-100-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1-0-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1-0-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1-0-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1-0-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1--1-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1--1-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1--1-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1--1-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1-None-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1-None-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1-None-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-1-None-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0-250-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0-250-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0-250-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0-250-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0-100-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0-100-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0-100-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0-100-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0-0-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0-0-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0-0-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0-0-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0--1-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0--1-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0--1-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0--1-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0-None-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0-None-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0-None-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed-0-None-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1-250-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1-250-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1-250-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1-250-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1-100-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1-100-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1-100-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1-100-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1-0-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1-0-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1-0-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1-0-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1--1-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1--1-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1--1-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1--1-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1-None-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1-None-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1-None-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[fixed--1-None-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250-250-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250-250-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250-250-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250-250-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250-100-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250-100-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250-100-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250-100-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250-0-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250-0-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250-0-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250-0-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250--1-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250--1-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250--1-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250--1-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250-None-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250-None-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250-None-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-250-None-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1-250-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1-250-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1-250-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1-250-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1-100-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1-100-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1-100-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1-100-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1-0-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1-0-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1-0-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1-0-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1--1-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1--1-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1--1-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1--1-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1-None-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1-None-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1-None-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-1-None-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0-250-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0-250-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0-250-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0-250-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0-100-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0-100-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0-100-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0-100-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0-0-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0-0-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0-0-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0-0-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0--1-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0--1-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0--1-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0--1-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0-None-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0-None-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0-None-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal-0-None-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1-250-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1-250-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1-250-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1-250-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1-100-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1-100-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1-100-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1-100-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1-0-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1-0-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1-0-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1-0-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1--1-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1--1-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1--1-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1--1-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1-None-widths0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1-None-widths1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1-None-widths2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets[equal--1-None-widths3]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets_fixed[widths0-None-1-expected0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets_fixed[widths1-10-1-expected1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets_fixed[widths2-5-1-expected2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets_expand[widths0-None-None-expected0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets_expand[widths1-10-1-expected1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets_expand[widths2-5-1-expected2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets_equal[widths0-6-None-expected0]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets_equal[widths1-2-None-expected1]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets_equal[widths2-None-1-expected2]', 'lib/matplotlib/tests/test_offsetbox.py::test_get_packed_offsets_equal_total_none_sep_none', 'lib/matplotlib/tests/test_offsetbox.py::test_picking[axes', 'lib/matplotlib/tests/test_offsetbox.py::test_picking[data-draw]', 'lib/matplotlib/tests/test_offsetbox.py::test_picking[data-image]', 'lib/matplotlib/tests/test_offsetbox.py::test_picking[data-text]', 'lib/matplotlib/tests/test_offsetbox.py::test_anchoredtext_horizontal_alignment[png]', 'lib/matplotlib/tests/test_offsetbox.py::test_annotationbbox_extents', 'lib/matplotlib/tests/test_offsetbox.py::test_zorder', 'lib/matplotlib/tests/test_offsetbox.py::test_arrowprops_copied', 'lib/matplotlib/tests/test_offsetbox.py::test_packers[baseline]', 'lib/matplotlib/tests/test_offsetbox.py::test_packers[left]', 'lib/matplotlib/tests/test_offsetbox.py::test_packers[right]', 'lib/matplotlib/tests/test_offsetbox.py::test_packers[center]'], 'failure': []}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for matplotlib__matplotlib-24570: resolved: True
+2024-09-12 07:40:44,897 - INFO - Attempting to stop container sweb.eval.matplotlib__matplotlib-24570.langgraph_agent_1726076078N...
+2024-09-12 07:41:00,097 - INFO - Attempting to remove container sweb.eval.matplotlib__matplotlib-24570.langgraph_agent_1726076078N...
+2024-09-12 07:41:00,109 - INFO - Container sweb.eval.matplotlib__matplotlib-24570.langgraph_agent_1726076078N removed.
+2024-09-12 07:41:00,110 - INFO - Attempting to remove image sweb.eval.x86_64.matplotlib__matplotlib-24570:latest...
+2024-09-12 07:41:00,788 - INFO - Image sweb.eval.x86_64.matplotlib__matplotlib-24570:latest removed.

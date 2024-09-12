@@ -1,0 +1,60 @@
+diff --git a/src/_pytest/pathlib.py b/src/_pytest/pathlib.py
+index f0bdb14..52b116a 100644
+--- a/src/_pytest/pathlib.py
++++ b/src/_pytest/pathlib.py
+@@ -549,25 +549,23 @@ def resolve_package_path(path: Path) -> Optional[Path]:
+ 
+ 
+ def visit(
+-    path: str, recurse: Callable[["os.DirEntry[str]"], bool]
+-) -> Iterator["os.DirEntry[str]"]:
+-    """Walk a directory recursively, in breadth-first order.
+-
+-    Entries at each directory level are sorted.
+-    """
+-    entries = sorted(os.scandir(path), key=lambda entry: entry.name)
+-    yield from entries
+-    for entry in entries:
+-        if entry.is_dir(follow_symlinks=False) and recurse(entry):
+-            yield from visit(entry.path, recurse)
+-
+-
+-def absolutepath(path: Union[Path, str]) -> Path:
+-    """Convert a path to an absolute path using os.path.abspath.
+-
+-    Prefer this over Path.resolve() (see #6523).
+-    Prefer this over Path.absolute() (not public, doesn't normalize).
+-    """
++    path: Union[str, os.PathLike[str]],
++    recurse: Callable[[str], bool] = lambda _: True,
++    follow_symlinks: bool = True,
++) -> Iterator[os.DirEntry[str]]:
++    """Recursively yield DirEntry objects for given path."""
++    try:
++        for entry in os.scandir(path):
++            if recurse(entry.name):
++                if entry.is_dir(follow_symlinks=follow_symlinks):
++                    yield from visit(entry.path, recurse, follow_symlinks)
++                else:
++                    yield entry
++            else:
++                yield entry
++    except PermissionError:
++        # Ignore permission errors when traversing directories.
++        pass
+     return Path(os.path.abspath(str(path)))
+ 
+ 
+diff --git a/src/_pytest/python.py b/src/_pytest/python.py
+index 35797cc..dc5fbb1 100644
+--- a/src/_pytest/python.py
++++ b/src/_pytest/python.py
+@@ -705,7 +705,7 @@ class Package(Module):
+         ):
+             yield Module.from_parent(self, fspath=init_module)
+         pkg_prefixes: Set[py.path.local] = set()
+-        for direntry in visit(str(this_path), recurse=self._recurse):
++        for direntry in visit(str(this_path), recurse=self._recurse, follow_symlinks=True):
+             path = py.path.local(direntry.path)
+ 
+             # We will visit our own __init__.py file, in which case we skip it.

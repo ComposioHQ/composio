@@ -1,0 +1,95 @@
+diff --git a/django/db/models/query.py b/django/db/models/query.py
+index b48d0df9..04ada8b7 100644
+--- a/django/db/models/query.py
++++ b/django/db/models/query.py
+@@ -238,7 +238,10 @@ class QuerySet:
+     def __getstate__(self):
+         # Force the cache to be fully populated.
+         self._fetch_all()
+-        return {**self.__dict__, DJANGO_VERSION_PICKLE_KEY: django.__version__}
++        obj_dict = self.__dict__.copy()
++        obj_dict[DJANGO_VERSION_PICKLE_KEY] = django.__version__
++        obj_dict['_iterable_class'] = self._iterable_class
++        return obj_dict
+ 
+     def __setstate__(self, state):
+         pickled_version = state.get(DJANGO_VERSION_PICKLE_KEY)
+@@ -251,12 +254,10 @@ class QuerySet:
+                     RuntimeWarning,
+                     stacklevel=2,
+                 )
+-        else:
+-            warnings.warn(
+-                "Pickled queryset instance's Django version is not specified.",
+-                RuntimeWarning,
+-                stacklevel=2,
+-            )
++        # Don't need to retain the pickled version, we've already handled it
++        state.pop(DJANGO_VERSION_PICKLE_KEY, None)
++        # Restore the _iterable_class if it was pickled
++        self._iterable_class = state.pop('_iterable_class', ModelIterable)
+         self.__dict__.update(state)
+ 
+     def __repr__(self):
+@@ -1291,7 +1292,7 @@ class QuerySet:
+         Return a copy of the current QuerySet. A lightweight alternative
+         to deepcopy().
+         """
+-        c = self.__class__(model=self.model, query=self.query.chain(), using=self._db, hints=self._hints)
++        c = self.__class__(model=self.model, query=self.query.clone(sql=None, chunked_fetch=self.chunked_fetch, _result_cache=None))
+         c._sticky_filter = self._sticky_filter
+         c._for_write = self._for_write
+         c._prefetch_related_lookups = self._prefetch_related_lookups[:]
+@@ -1299,6 +1300,12 @@ class QuerySet:
+         c._iterable_class = self._iterable_class
+         c._fields = self._fields
+         return c
++        c._for_write = self._for_write
++        c._prefetch_related_lookups = self._prefetch_related_lookups[:]
++        c._known_related_objects = self._known_related_objects
++        c._iterable_class = self._iterable_class
++        c._fields = self._fields
++        return c
+ 
+     def _fetch_all(self):
+         if self._result_cache is None:
+diff --git a/django/db/models/sql/query.py b/django/db/models/sql/query.py
+index 4648daf3..343d1563 100644
+--- a/django/db/models/sql/query.py
++++ b/django/db/models/sql/query.py
+@@ -152,6 +152,7 @@ class Query(BaseExpression):
+         self.alias_map = {}
+         # Whether to provide alias to columns during reference resolving.
+         self.alias_cols = alias_cols
++        self.iterable_class = None  # Added to store the iterable class
+         # Sometimes the query contains references to aliases in outer queries (as
+         # a result of split_exclude). Correct alias quoting needs to know these
+         # aliases too.
+@@ -288,20 +289,21 @@ class Query(BaseExpression):
+     def clone(self):
+         """
+         Return a copy of the current Query. A lightweight alternative to
+-        to deepcopy().
++        deepcopy() that also allows a query to reset its state.
+         """
+         obj = Empty()
+         obj.__class__ = self.__class__
+-        # Copy references to everything.
+         obj.__dict__ = self.__dict__.copy()
+-        # Clone attributes that can't use shallow copy.
+         obj.alias_refcount = self.alias_refcount.copy()
+         obj.alias_map = self.alias_map.copy()
+-        obj.external_aliases = self.external_aliases.copy()
+         obj.table_map = self.table_map.copy()
+         obj.where = self.where.clone()
+-        obj.annotations = self.annotations.copy()
+-        if self.annotation_select_mask is None:
++        obj.having = self.having.clone()
++        obj.iterable_class = self.iterable_class  # Preserve the iterable_class
++        if hasattr(self, 'annotations'):
++            obj.annotations = self.annotations.copy()
++        if hasattr(self, 'annotation_select_mask'):
++            obj.annotation_select_mask = self.annotation_select_mask.copy()
+             obj.annotation_select_mask = None
+         else:
+             obj.annotation_select_mask = self.annotation_select_mask.copy()

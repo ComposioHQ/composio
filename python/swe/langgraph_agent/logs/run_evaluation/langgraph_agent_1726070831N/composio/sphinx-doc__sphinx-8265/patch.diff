@@ -1,0 +1,45 @@
+diff --git a/sphinx/ext/autodoc/__init__.py b/sphinx/ext/autodoc/__init__.py
+index d7c5d22..4ed804d 100644
+--- a/sphinx/ext/autodoc/__init__.py
++++ b/sphinx/ext/autodoc/__init__.py
+@@ -467,10 +467,14 @@ class Documenter:
+                 retann = None
+                 args = self._call_format_args(**kwargs)
+                 if args:
+-                    matched = re.match(r'^(\(.*\))\s+->\s+(.*)$', args)
++                    # Modify this regex to better handle default arguments
++                    matched = re.match(r'^(\(.*?\))\s*->\s*(.*)$', args)
+                     if matched:
+                         args = matched.group(1)
+                         retann = matched.group(2)
++                    
++                    # Add logic here to preserve tuple default arguments
++                    args = re.sub(r'=\((.*?)\)', lambda m: '=(' + m.group(1).replace(',', '|') + ')', args)
+             except Exception as exc:
+                 logger.warning(__('error while formatting arguments for %s: %s'),
+                                self.fullname, exc, type='autodoc')
+diff --git a/sphinx/writers/html.py b/sphinx/writers/html.py
+index 8813c2d..13270a9 100644
+--- a/sphinx/writers/html.py
++++ b/sphinx/writers/html.py
+@@ -194,6 +194,20 @@ class HTMLTranslator(SphinxTranslator, BaseTranslator):
+         if self.optional_param_level == 0:
+             self.required_params_left -= 1
+         if not node.hasattr('noemph'):
++            self.body.append('<em class="sig-param">')
++        
++        # Add logic here to properly render default arguments
++        if '=' in node.astext():
++            name, default = node.astext().split('=', 1)
++            self.body.append(name + '=')
++            # Replace | with , to restore tuple syntax
++            default = default.replace('|', ',')
++            self.body.append('<span class="default_value">' + default + '</span>')
++        else:
++            self.body.append(node.astext())
++        
++        if not node.hasattr('noemph'):
++            self.body.append('</em>')
+             self.body.append('<em>')
+ 
+     def depart_desc_parameter(self, node: Element) -> None:

@@ -1,0 +1,734 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen
++ locale-gen
+Generating locales (this might take a while)...
+  en_US.UTF-8... done
+Generation complete.
++ export LANG=en_US.UTF-8
++ LANG=en_US.UTF-8
++ export LANGUAGE=en_US:en
++ LANGUAGE=en_US:en
++ export LC_ALL=en_US.UTF-8
++ LC_ALL=en_US.UTF-8
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/contrib/admin/filters.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 1f8382d34d54061eddc41df6994e20ee38c60907
+Author: Mariusz Felisiak <felisiak.mariusz@gmail.com>
+Date:   Wed Aug 14 15:25:35 2019 +0200
+
+    Fixed #30672 -- Fixed crash of JSONField/HStoreField key transforms on expressions with params.
+    
+    Regression in 4f5b58f5cd3c57fee9972ab074f8dc6895d8f387.
+    
+    Thanks Florian Apolloner for the report and helping with tests.
+
+diff --git a/django/contrib/postgres/fields/hstore.py b/django/contrib/postgres/fields/hstore.py
+index 52cdd21507..9548d180c9 100644
+--- a/django/contrib/postgres/fields/hstore.py
++++ b/django/contrib/postgres/fields/hstore.py
+@@ -86,7 +86,7 @@ class KeyTransform(Transform):
+ 
+     def as_sql(self, compiler, connection):
+         lhs, params = compiler.compile(self.lhs)
+-        return '(%s -> %%s)' % lhs, [self.key_name] + params
++        return '(%s -> %%s)' % lhs, params + [self.key_name]
+ 
+ 
+ class KeyTransformFactory:
+diff --git a/django/contrib/postgres/fields/jsonb.py b/django/contrib/postgres/fields/jsonb.py
+index 7d88579ecd..821a747b9c 100644
+--- a/django/contrib/postgres/fields/jsonb.py
++++ b/django/contrib/postgres/fields/jsonb.py
+@@ -112,7 +112,7 @@ class KeyTransform(Transform):
+             lookup = int(self.key_name)
+         except ValueError:
+             lookup = self.key_name
+-        return '(%s %s %%s)' % (lhs, self.operator), [lookup] + params
++        return '(%s %s %%s)' % (lhs, self.operator), params + [lookup]
+ 
+ 
+ class KeyTextTransform(KeyTransform):
+diff --git a/docs/releases/1.11.24.txt b/docs/releases/1.11.24.txt
+new file mode 100644
+index 0000000000..3013c866d0
+--- /dev/null
++++ b/docs/releases/1.11.24.txt
+@@ -0,0 +1,15 @@
++============================
++Django 1.11.24 release notes
++============================
++
++*Expected September 2, 2019*
++
++Django 1.11.24 fixes a regression in 1.11.23.
++
++Bugfixes
++========
++
++* Fixed crash of ``KeyTransform()`` for
++  :class:`~django.contrib.postgres.fields.JSONField` and
++  :class:`~django.contrib.postgres.fields.HStoreField` when using on
++  expressions with params (:ticket:`30672`).
+diff --git a/docs/releases/2.1.12.txt b/docs/releases/2.1.12.txt
+new file mode 100644
+index 0000000000..696a6c4890
+--- /dev/null
++++ b/docs/releases/2.1.12.txt
+@@ -0,0 +1,15 @@
++===========================
++Django 2.1.12 release notes
++===========================
++
++*Expected September 2, 2019*
++
++Django 2.1.12 fixes a regression in 2.1.11.
++
++Bugfixes
++========
++
++* Fixed crash of ``KeyTransform()`` for
++  :class:`~django.contrib.postgres.fields.JSONField` and
++  :class:`~django.contrib.postgres.fields.HStoreField` when using on
++  expressions with params (:ticket:`30672`).
+diff --git a/docs/releases/2.2.5.txt b/docs/releases/2.2.5.txt
+index 718ec8d888..0b9310a344 100644
+--- a/docs/releases/2.2.5.txt
++++ b/docs/releases/2.2.5.txt
+@@ -12,3 +12,8 @@ Bugfixes
+ * Relaxed the system check added in Django 2.2 for models to reallow use of the
+   same ``db_table`` by multiple models when database routers are installed
+   (:ticket:`30673`).
++
++* Fixed crash of ``KeyTransform()`` for
++  :class:`~django.contrib.postgres.fields.JSONField` and
++  :class:`~django.contrib.postgres.fields.HStoreField` when using on
++  expressions with params (:ticket:`30672`).
+diff --git a/docs/releases/index.txt b/docs/releases/index.txt
+index c1f9a864c8..d9db32ee4f 100644
+--- a/docs/releases/index.txt
++++ b/docs/releases/index.txt
+@@ -44,6 +44,7 @@ versions of the documentation contain the release notes for any later releases.
+ .. toctree::
+    :maxdepth: 1
+ 
++   2.1.12
+    2.1.11
+    2.1.10
+    2.1.9
+@@ -82,6 +83,7 @@ versions of the documentation contain the release notes for any later releases.
+ .. toctree::
+    :maxdepth: 1
+ 
++   1.11.24
+    1.11.23
+    1.11.22
+    1.11.21
+diff --git a/tests/postgres_tests/test_hstore.py b/tests/postgres_tests/test_hstore.py
+index 4229517209..502c8447fc 100644
+--- a/tests/postgres_tests/test_hstore.py
++++ b/tests/postgres_tests/test_hstore.py
+@@ -2,6 +2,7 @@ import json
+ 
+ from django.core import checks, exceptions, serializers
+ from django.db import connection
++from django.db.models.expressions import RawSQL
+ from django.forms import Form
+ from django.test.utils import CaptureQueriesContext, isolate_apps
+ 
+@@ -11,6 +12,7 @@ from .models import HStoreModel, PostgreSQLModel
+ try:
+     from django.contrib.postgres import forms
+     from django.contrib.postgres.fields import HStoreField
++    from django.contrib.postgres.fields.hstore import KeyTransform
+     from django.contrib.postgres.validators import KeysValidator
+ except ImportError:
+     pass
+@@ -127,6 +129,13 @@ class TestQuerying(PostgreSQLTestCase):
+             self.objs[:2]
+         )
+ 
++    def test_key_transform_raw_expression(self):
++        expr = RawSQL('%s::hstore', ['x => b, y => c'])
++        self.assertSequenceEqual(
++            HStoreModel.objects.filter(field__a=KeyTransform('x', expr)),
++            self.objs[:2]
++        )
++
+     def test_keys(self):
+         self.assertSequenceEqual(
+             HStoreModel.objects.filter(field__keys=['a']),
+diff --git a/tests/postgres_tests/test_json.py b/tests/postgres_tests/test_json.py
+index d00f97c36e..333ed46bf1 100644
+--- a/tests/postgres_tests/test_json.py
++++ b/tests/postgres_tests/test_json.py
+@@ -188,6 +188,23 @@ class TestQuerying(PostgreSQLTestCase):
+             operator.itemgetter('key', 'count'),
+         )
+ 
++    def test_key_transform_raw_expression(self):
++        expr = RawSQL('%s::jsonb', ['{"x": "bar"}'])
++        self.assertSequenceEqual(
++            JSONModel.objects.filter(field__foo=KeyTransform('x', expr)),
++            [self.objs[-1]],
++        )
++
++    def test_key_transform_expression(self):
++        self.assertSequenceEqual(
++            JSONModel.objects.filter(field__d__0__isnull=False).annotate(
++                key=KeyTransform('d', 'field'),
++                chain=KeyTransform('0', 'key'),
++                expr=KeyTransform('0', Cast('key', JSONField())),
++            ).filter(chain=F('expr')),
++            [self.objs[8]],
++        )
++
+     def test_nested_key_transform_raw_expression(self):
+         expr = RawSQL('%s::jsonb', ['{"x": {"y": "bar"}}'])
+         self.assertSequenceEqual(
++ git diff 1f8382d34d54061eddc41df6994e20ee38c60907
+diff --git a/django/contrib/admin/filters.py b/django/contrib/admin/filters.py
+index d65e01d5e2..1a54f77275 100644
+--- a/django/contrib/admin/filters.py
++++ b/django/contrib/admin/filters.py
+@@ -194,10 +194,18 @@ class RelatedFieldListFilter(FieldListFilter):
+         return [self.lookup_kwarg, self.lookup_kwarg_isnull]
+ 
+     def field_choices(self, field, request, model_admin):
+-        ordering = ()
+         related_admin = model_admin.admin_site._registry.get(field.remote_field.model)
+         if related_admin is not None:
+             ordering = related_admin.get_ordering(request)
++        else:
++            ordering = None
++        
++        if not ordering:
++            if field.remote_field.model._meta.ordering:
++                ordering = field.remote_field.model._meta.ordering
++            else:
++                ordering = ('pk',)
++        
+         return field.get_choices(include_blank=False, ordering=ordering)
+ 
+     def choices(self, changelist):
+@@ -408,7 +416,6 @@ class AllValuesFieldListFilter(FieldListFilter):
+         if include_none:
+             yield {
+                 'selected': bool(self.lookup_val_isnull),
+-                'query_string': changelist.get_query_string({self.lookup_kwarg_isnull: 'True'}, [self.lookup_kwarg]),
+                 'display': self.empty_value_display,
+             }
+ 
+@@ -419,4 +426,16 @@ FieldListFilter.register(lambda f: True, AllValuesFieldListFilter)
+ class RelatedOnlyFieldListFilter(RelatedFieldListFilter):
+     def field_choices(self, field, request, model_admin):
+         pk_qs = model_admin.get_queryset(request).distinct().values_list('%s__pk' % self.field_path, flat=True)
+-        return field.get_choices(include_blank=False, limit_choices_to={'pk__in': pk_qs})
++        related_admin = model_admin.admin_site._registry.get(field.remote_field.model)
++        if related_admin is not None:
++            ordering = related_admin.get_ordering(request)
++        else:
++            ordering = None
++        
++        if not ordering:
++            if field.remote_field.model._meta.ordering:
++                ordering = field.remote_field.model._meta.ordering
++            else:
++                ordering = ('pk',)
++        
++        return field.get_choices(include_blank=False, limit_choices_to={'pk__in': pk_qs}, ordering=ordering)
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.0.dev20190814132535) (2024.1)
+Requirement already satisfied: sqlparse in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.0.dev20190814132535) (0.4.4)
+Requirement already satisfied: asgiref in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.0.dev20190814132535) (3.4.1)
+Requirement already satisfied: typing-extensions in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from asgiref->Django==3.0.dev20190814132535) (4.1.1)
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 3.0.dev20190814132535
+    Uninstalling Django-3.0.dev20190814132535:
+      Successfully uninstalled Django-3.0.dev20190814132535
+  Running setup.py develop for Django
+Successfully installed Django-3.0.dev20190814132535
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
++ git checkout 1f8382d34d54061eddc41df6994e20ee38c60907 tests/admin_filters/tests.py tests/model_fields/tests.py
+Updated 0 paths from 392c51868b
++ git apply -v -
+Checking patch tests/admin_filters/tests.py...
+Checking patch tests/model_fields/tests.py...
+Applied patch tests/admin_filters/tests.py cleanly.
+Applied patch tests/model_fields/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 admin_filters.tests model_fields.tests
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+test_allvaluesfieldlistfilter (admin_filters.tests.ListFiltersTests) ... ERROR
+test_allvaluesfieldlistfilter_custom_qs (admin_filters.tests.ListFiltersTests) ... ok
+test_booleanfieldlistfilter (admin_filters.tests.ListFiltersTests) ... ok
+test_booleanfieldlistfilter_nullbooleanfield (admin_filters.tests.ListFiltersTests) ... ok
+test_booleanfieldlistfilter_tuple (admin_filters.tests.ListFiltersTests) ... ok
+test_choicesfieldlistfilter_has_none_choice (admin_filters.tests.ListFiltersTests) ... ok
+test_datefieldlistfilter (admin_filters.tests.ListFiltersTests) ... ok
+test_datefieldlistfilter_with_time_zone_support (admin_filters.tests.ListFiltersTests) ... ok
+test_fieldlistfilter_invalid_lookup_parameters (admin_filters.tests.ListFiltersTests)
+Filtering by an invalid value. ... ok
+test_fieldlistfilter_underscorelookup_tuple (admin_filters.tests.ListFiltersTests) ... ok
+test_filter_with_failing_queryset (admin_filters.tests.ListFiltersTests) ... ok
+test_fk_with_to_field (admin_filters.tests.ListFiltersTests) ... ok
+test_list_filter_queryset_filtered_by_default (admin_filters.tests.ListFiltersTests) ... ok
+test_listfilter_genericrelation (admin_filters.tests.ListFiltersTests) ... ok
+test_listfilter_without_title (admin_filters.tests.ListFiltersTests) ... ok
+test_lookup_with_dynamic_value (admin_filters.tests.ListFiltersTests) ... ok
+test_lookup_with_non_string_value (admin_filters.tests.ListFiltersTests) ... ok
+test_lookup_with_non_string_value_underscored (admin_filters.tests.ListFiltersTests) ... ok
+test_parameter_ends_with__in__or__isnull (admin_filters.tests.ListFiltersTests) ... ok
+test_relatedfieldlistfilter_foreignkey (admin_filters.tests.ListFiltersTests) ... ok
+test_relatedfieldlistfilter_foreignkey_default_ordering (admin_filters.tests.ListFiltersTests)
+RelatedFieldListFilter ordering respects Model.ordering. ... ok
+test_relatedfieldlistfilter_foreignkey_ordering (admin_filters.tests.ListFiltersTests)
+RelatedFieldListFilter ordering respects ModelAdmin.ordering. ... ok
+test_relatedfieldlistfilter_foreignkey_ordering_reverse (admin_filters.tests.ListFiltersTests) ... ok
+test_relatedfieldlistfilter_manytomany (admin_filters.tests.ListFiltersTests) ... ok
+test_relatedfieldlistfilter_reverse_relationships (admin_filters.tests.ListFiltersTests) ... ok
+test_relatedfieldlistfilter_reverse_relationships_default_ordering (admin_filters.tests.ListFiltersTests) ... ok
+test_relatedonlyfieldlistfilter_foreignkey (admin_filters.tests.ListFiltersTests) ... ok
+test_relatedonlyfieldlistfilter_foreignkey_default_ordering (admin_filters.tests.ListFiltersTests)
+RelatedOnlyFieldListFilter ordering respects Meta.ordering. ... ok
+test_relatedonlyfieldlistfilter_foreignkey_ordering (admin_filters.tests.ListFiltersTests)
+RelatedOnlyFieldListFilter ordering respects ModelAdmin.ordering. ... ok
+test_relatedonlyfieldlistfilter_manytomany (admin_filters.tests.ListFiltersTests) ... ok
+test_relatedonlyfieldlistfilter_underscorelookup_foreignkey (admin_filters.tests.ListFiltersTests) ... ok
+test_simplelistfilter (admin_filters.tests.ListFiltersTests) ... ok
+test_simplelistfilter_with_none_returning_lookups (admin_filters.tests.ListFiltersTests) ... ok
+test_simplelistfilter_with_queryset_based_lookups (admin_filters.tests.ListFiltersTests) ... ok
+test_simplelistfilter_without_parameter (admin_filters.tests.ListFiltersTests) ... ok
+test_two_characters_long_field (admin_filters.tests.ListFiltersTests) ... ok
+test_get_choices (model_fields.tests.GetChoicesOrderingTests) ... ok
+test_get_choices_default_ordering (model_fields.tests.GetChoicesOrderingTests) ... FAIL
+test_get_choices_reverse_related_field (model_fields.tests.GetChoicesOrderingTests) ... ok
+test_get_choices_reverse_related_field_default_ordering (model_fields.tests.GetChoicesOrderingTests) ... FAIL
+test_choices_form_class (model_fields.tests.BasicFieldTests)
+Can supply a custom choices form class to Field.formfield() ... ok
+test_deconstruct_nested_field (model_fields.tests.BasicFieldTests)
+deconstruct() uses __qualname__ for nested class support. ... ok
+test_field_instance_is_picklable (model_fields.tests.BasicFieldTests)
+Field instances can be pickled. ... ok
+test_field_name (model_fields.tests.BasicFieldTests) ... ok
+test_field_ordering (model_fields.tests.BasicFieldTests)
+Fields are ordered based on their creation. ... ok
+test_field_repr (model_fields.tests.BasicFieldTests) ... ok
+test_field_repr_nested (model_fields.tests.BasicFieldTests)
+__repr__() uses __qualname__ for nested class support. ... ok
+test_field_str (model_fields.tests.BasicFieldTests) ... ok
+test_field_verbose_name (model_fields.tests.BasicFieldTests) ... ok
+test_formfield_disabled (model_fields.tests.BasicFieldTests)
+Field.formfield() sets disabled for fields with choices. ... ok
+test_show_hidden_initial (model_fields.tests.BasicFieldTests) ... ok
+test_check (model_fields.tests.ChoicesTests) ... ok
+test_choices (model_fields.tests.ChoicesTests) ... ok
+test_flatchoices (model_fields.tests.ChoicesTests) ... ok
+test_formfield (model_fields.tests.ChoicesTests) ... ok
+test_invalid_choice (model_fields.tests.ChoicesTests) ... ok
+test_blank_in_choices (model_fields.tests.GetChoicesTests) ... ok
+test_blank_in_grouped_choices (model_fields.tests.GetChoicesTests) ... ok
+test_empty_choices (model_fields.tests.GetChoicesTests) ... ok
+test_lazy_strings_not_evaluated (model_fields.tests.GetChoicesTests) ... ok
+test_choices_and_field_display (model_fields.tests.GetFieldDisplayTests) ... ok
+test_empty_iterator_choices (model_fields.tests.GetFieldDisplayTests) ... ok
+test_get_FIELD_display_translated (model_fields.tests.GetFieldDisplayTests)
+A translated display value is coerced to str. ... ok
+test_iterator_choices (model_fields.tests.GetFieldDisplayTests) ... Testing against Django installed in '/testbed/django'
+Importing application model_fields
+Importing application admin_filters
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: admin_filters, auth, contenttypes, messages, model_fields, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table model_fields_foo
+    Creating table model_fields_bar
+    Creating table model_fields_whiz
+    Creating table model_fields_whizdelayed
+    Creating table model_fields_whiziter
+    Creating table model_fields_whiziterempty
+    Creating table model_fields_choiceful
+    Creating table model_fields_bigd
+    Creating table model_fields_floatmodel
+    Creating table model_fields_bigs
+    Creating table model_fields_unicodeslugfield
+    Creating table model_fields_automodel
+    Creating table model_fields_bigautomodel
+    Creating table model_fields_smallautomodel
+    Creating table model_fields_smallintegermodel
+    Creating table model_fields_integermodel
+    Creating table model_fields_bigintegermodel
+    Creating table model_fields_positivesmallintegermodel
+    Creating table model_fields_positiveintegermodel
+    Creating table model_fields_post
+    Creating table model_fields_nullbooleanmodel
+    Creating table model_fields_booleanmodel
+    Creating table model_fields_datetimemodel
+    Creating table model_fields_durationmodel
+    Creating table model_fields_nulldurationmodel
+    Creating table model_fields_primarykeycharmodel
+    Creating table model_fields_fkstobooleans
+    Creating table model_fields_fktochar
+    Creating table model_fields_renamedfield
+    Creating table model_fields_verbosenamefield
+    Creating table model_fields_genericipaddress
+    Creating table model_fields_decimallessthanone
+    Creating table model_fields_fieldclassattributemodel
+    Creating table model_fields_datamodel
+    Creating table model_fields_document
+    Creating table model_fields_person
+    Creating table model_fields_personwithheight
+    Creating table model_fields_personwithheightandwidth
+    Creating table model_fields_persondimensionsfirst
+    Creating table model_fields_persontwoimages
+    Creating table model_fields_allfieldsmodel
+    Creating table model_fields_manytomany
+    Creating table model_fields_uuidmodel
+    Creating table model_fields_nullableuuidmodel
+    Creating table model_fields_primarykeyuuidmodel
+    Creating table model_fields_relatedtouuidmodel
+    Creating table model_fields_uuidchild
+    Creating table model_fields_uuidgrandchild
+    Creating table admin_filters_book
+    Creating table admin_filters_department
+    Creating table admin_filters_employee
+    Creating table admin_filters_taggeditem
+    Creating table admin_filters_bookmark
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (0 silenced).
+ok
+
+======================================================================
+ERROR: test_allvaluesfieldlistfilter (admin_filters.tests.ListFiltersTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/admin_filters/tests.py", line 488, in test_allvaluesfieldlistfilter
+    self.assertEqual(choices[-1]['query_string'], '?year__isnull=True')
+KeyError: 'query_string'
+
+======================================================================
+FAIL: test_get_choices_default_ordering (model_fields.tests.GetChoicesOrderingTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_fields/tests.py", line 249, in test_get_choices_default_ordering
+    [self.foo2, self.foo1]
+  File "/testbed/tests/model_fields/tests.py", line 232, in assertChoicesEqual
+    self.assertEqual(choices, [(obj.pk, str(obj)) for obj in objs])
+AssertionError: Lists differ: [(1, 'Foo object (1)'), (2, 'Foo object (2)')] != [(2, 'Foo object (2)'), (1, 'Foo object (1)')]
+
+First differing element 0:
+(1, 'Foo object (1)')
+(2, 'Foo object (2)')
+
+- [(1, 'Foo object (1)'), (2, 'Foo object (2)')]
+?   ^               ^      ^               ^
+
++ [(2, 'Foo object (2)'), (1, 'Foo object (1)')]
+?   ^               ^      ^               ^
+
+
+======================================================================
+FAIL: test_get_choices_reverse_related_field_default_ordering (model_fields.tests.GetChoicesOrderingTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/model_fields/tests.py", line 267, in test_get_choices_reverse_related_field_default_ordering
+    [self.bar2, self.bar1]
+  File "/testbed/tests/model_fields/tests.py", line 232, in assertChoicesEqual
+    self.assertEqual(choices, [(obj.pk, str(obj)) for obj in objs])
+AssertionError: Lists differ: [(1, 'Bar object (1)'), (2, 'Bar object (2)')] != [(2, 'Bar object (2)'), (1, 'Bar object (1)')]
+
+First differing element 0:
+(1, 'Bar object (1)')
+(2, 'Bar object (2)')
+
+- [(1, 'Bar object (1)'), (2, 'Bar object (2)')]
+?   ^               ^      ^               ^
+
++ [(2, 'Bar object (2)'), (1, 'Bar object (1)')]
+?   ^               ^      ^               ^
+
+
+----------------------------------------------------------------------
+Ran 64 tests in 0.142s
+
+FAILED (failures=2, errors=1)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout 1f8382d34d54061eddc41df6994e20ee38c60907 tests/admin_filters/tests.py tests/model_fields/tests.py
+Updated 2 paths from 392c51868b

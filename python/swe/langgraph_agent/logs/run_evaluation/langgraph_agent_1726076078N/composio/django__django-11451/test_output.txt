@@ -1,0 +1,553 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen
++ locale-gen
+Generating locales (this might take a while)...
+  en_US.UTF-8... done
+Generation complete.
++ export LANG=en_US.UTF-8
++ LANG=en_US.UTF-8
++ export LANGUAGE=en_US:en
++ LANGUAGE=en_US:en
++ export LC_ALL=en_US.UTF-8
++ LC_ALL=en_US.UTF-8
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/contrib/auth/backends.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit e065b293878b1e3ea56655aa9d33e87576cd77ff
+Author: Jon Dufresne <jon.dufresne@gmail.com>
+Date:   Sun Jun 9 16:07:19 2019 -0700
+
+    Refs #27804 -- Used subTest() in filesizeformat tests and HumanizeTests.
+
+diff --git a/tests/humanize_tests/tests.py b/tests/humanize_tests/tests.py
+index 16e8fa6bfd..7396c417ab 100644
+--- a/tests/humanize_tests/tests.py
++++ b/tests/humanize_tests/tests.py
+@@ -31,10 +31,14 @@ class HumanizeTests(SimpleTestCase):
+ 
+     def humanize_tester(self, test_list, result_list, method, normalize_result_func=escape):
+         for test_content, result in zip(test_list, result_list):
+-            t = Template('{%% load humanize %%}{{ test_content|%s }}' % method)
+-            rendered = t.render(Context(locals())).strip()
+-            self.assertEqual(rendered, normalize_result_func(result),
+-                             msg="%s test failed, produced '%s', should've produced '%s'" % (method, rendered, result))
++            with self.subTest(test_content):
++                t = Template('{%% load humanize %%}{{ test_content|%s }}' % method)
++                rendered = t.render(Context(locals())).strip()
++                self.assertEqual(
++                    rendered,
++                    normalize_result_func(result),
++                    msg="%s test failed, produced '%s', should've produced '%s'" % (method, rendered, result)
++                )
+ 
+     def test_ordinal(self):
+         test_list = ('1', '2', '3', '4', '11', '12',
+@@ -289,9 +293,10 @@ class HumanizeTests(SimpleTestCase):
+         humanize.datetime = DocumentedMockDateTime
+         try:
+             for test_time_string, expected_natural_time in test_data:
+-                test_time = datetime.datetime.strptime(test_time_string, time_format)
+-                natural_time = humanize.naturaltime(test_time).replace('\xa0', ' ')
+-                self.assertEqual(expected_natural_time, natural_time)
++                with self.subTest(test_time_string):
++                    test_time = datetime.datetime.strptime(test_time_string, time_format)
++                    natural_time = humanize.naturaltime(test_time).replace('\xa0', ' ')
++                    self.assertEqual(expected_natural_time, natural_time)
+         finally:
+             humanize.datetime = orig_humanize_datetime
+ 
+diff --git a/tests/template_tests/filter_tests/test_filesizeformat.py b/tests/template_tests/filter_tests/test_filesizeformat.py
+index 2e425af8ac..2d2aa6743c 100644
+--- a/tests/template_tests/filter_tests/test_filesizeformat.py
++++ b/tests/template_tests/filter_tests/test_filesizeformat.py
+@@ -6,38 +6,53 @@ from django.utils import translation
+ class FunctionTests(SimpleTestCase):
+ 
+     def test_formats(self):
+-        self.assertEqual(filesizeformat(1023), '1023\xa0bytes')
+-        self.assertEqual(filesizeformat(1024), '1.0\xa0KB')
+-        self.assertEqual(filesizeformat(10 * 1024), '10.0\xa0KB')
+-        self.assertEqual(filesizeformat(1024 * 1024 - 1), '1024.0\xa0KB')
+-        self.assertEqual(filesizeformat(1024 * 1024), '1.0\xa0MB')
+-        self.assertEqual(filesizeformat(1024 * 1024 * 50), '50.0\xa0MB')
+-        self.assertEqual(filesizeformat(1024 * 1024 * 1024 - 1), '1024.0\xa0MB')
+-        self.assertEqual(filesizeformat(1024 * 1024 * 1024), '1.0\xa0GB')
+-        self.assertEqual(filesizeformat(1024 * 1024 * 1024 * 1024), '1.0\xa0TB')
+-        self.assertEqual(filesizeformat(1024 * 1024 * 1024 * 1024 * 1024), '1.0\xa0PB')
+-        self.assertEqual(filesizeformat(1024 * 1024 * 1024 * 1024 * 1024 * 2000), '2000.0\xa0PB')
+-        self.assertEqual(filesizeformat(complex(1, -1)), '0\xa0bytes')
+-        self.assertEqual(filesizeformat(""), '0\xa0bytes')
+-        self.assertEqual(filesizeformat("\N{GREEK SMALL LETTER ALPHA}"), '0\xa0bytes')
++        tests = [
++            (1023, '1023\xa0bytes'),
++            (1024, '1.0\xa0KB'),
++            (10 * 1024, '10.0\xa0KB'),
++            (1024 * 1024 - 1, '1024.0\xa0KB'),
++            (1024 * 1024, '1.0\xa0MB'),
++            (1024 * 1024 * 50, '50.0\xa0MB'),
++            (1024 * 1024 * 1024 - 1, '1024.0\xa0MB'),
++            (1024 * 1024 * 1024, '1.0\xa0GB'),
++            (1024 * 1024 * 1024 * 1024, '1.0\xa0TB'),
++            (1024 * 1024 * 1024 * 1024 * 1024, '1.0\xa0PB'),
++            (1024 * 1024 * 1024 * 1024 * 1024 * 2000, '2000.0\xa0PB'),
++            (complex(1, -1), '0\xa0bytes'),
++            ('', '0\xa0bytes'),
++            ('\N{GREEK SMALL LETTER ALPHA}', '0\xa0bytes'),
++        ]
++        for value, expected in tests:
++            with self.subTest(value=value):
++                self.assertEqual(filesizeformat(value), expected)
+ 
+     def test_localized_formats(self):
++        tests = [
++            (1023, '1023\xa0Bytes'),
++            (1024, '1,0\xa0KB'),
++            (10 * 1024, '10,0\xa0KB'),
++            (1024 * 1024 - 1, '1024,0\xa0KB'),
++            (1024 * 1024, '1,0\xa0MB'),
++            (1024 * 1024 * 50, '50,0\xa0MB'),
++            (1024 * 1024 * 1024 - 1, '1024,0\xa0MB'),
++            (1024 * 1024 * 1024, '1,0\xa0GB'),
++            (1024 * 1024 * 1024 * 1024, '1,0\xa0TB'),
++            (1024 * 1024 * 1024 * 1024 * 1024, '1,0\xa0PB'),
++            (1024 * 1024 * 1024 * 1024 * 1024 * 2000, '2000,0\xa0PB'),
++            (complex(1, -1), '0\xa0Bytes'),
++            ('', '0\xa0Bytes'),
++            ('\N{GREEK SMALL LETTER ALPHA}', '0\xa0Bytes'),
++        ]
+         with self.settings(USE_L10N=True), translation.override('de'):
+-            self.assertEqual(filesizeformat(1023), '1023\xa0Bytes')
+-            self.assertEqual(filesizeformat(1024), '1,0\xa0KB')
+-            self.assertEqual(filesizeformat(10 * 1024), '10,0\xa0KB')
+-            self.assertEqual(filesizeformat(1024 * 1024 - 1), '1024,0\xa0KB')
+-            self.assertEqual(filesizeformat(1024 * 1024), '1,0\xa0MB')
+-            self.assertEqual(filesizeformat(1024 * 1024 * 50), '50,0\xa0MB')
+-            self.assertEqual(filesizeformat(1024 * 1024 * 1024 - 1), '1024,0\xa0MB')
+-            self.assertEqual(filesizeformat(1024 * 1024 * 1024), '1,0\xa0GB')
+-            self.assertEqual(filesizeformat(1024 * 1024 * 1024 * 1024), '1,0\xa0TB')
+-            self.assertEqual(filesizeformat(1024 * 1024 * 1024 * 1024 * 1024), '1,0\xa0PB')
+-            self.assertEqual(filesizeformat(1024 * 1024 * 1024 * 1024 * 1024 * 2000), '2000,0\xa0PB')
+-            self.assertEqual(filesizeformat(complex(1, -1)), '0\xa0Bytes')
+-            self.assertEqual(filesizeformat(""), '0\xa0Bytes')
+-            self.assertEqual(filesizeformat("\N{GREEK SMALL LETTER ALPHA}"), '0\xa0Bytes')
++            for value, expected in tests:
++                with self.subTest(value=value):
++                    self.assertEqual(filesizeformat(value), expected)
+ 
+     def test_negative_numbers(self):
+-        self.assertEqual(filesizeformat(-100), '-100\xa0bytes')
+-        self.assertEqual(filesizeformat(-1024 * 1024 * 50), '-50.0\xa0MB')
++        tests = [
++            (-100, '-100\xa0bytes'),
++            (-1024 * 1024 * 50, '-50.0\xa0MB'),
++        ]
++        for value, expected in tests:
++            with self.subTest(value=value):
++                self.assertEqual(filesizeformat(value), expected)
++ git diff e065b293878b1e3ea56655aa9d33e87576cd77ff
+diff --git a/django/contrib/auth/backends.py b/django/contrib/auth/backends.py
+index f4b1722757..1c1cec8b33 100644
+--- a/django/contrib/auth/backends.py
++++ b/django/contrib/auth/backends.py
+@@ -39,6 +39,8 @@ class ModelBackend(BaseBackend):
+     def authenticate(self, request, username=None, password=None, **kwargs):
+         if username is None:
+             username = kwargs.get(UserModel.USERNAME_FIELD)
++        if username is None or password is None:
++            return None
+         try:
+             user = UserModel._default_manager.get_by_natural_key(username)
+         except UserModel.DoesNotExist:
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.0.dev20190610064611) (2024.1)
+Requirement already satisfied: sqlparse in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.0.dev20190610064611) (0.4.4)
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 3.0.dev20190610064611
+    Uninstalling Django-3.0.dev20190610064611:
+      Successfully uninstalled Django-3.0.dev20190610064611
+  Running setup.py develop for Django
+Successfully installed Django-3.0.dev20190610064611
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
++ git checkout e065b293878b1e3ea56655aa9d33e87576cd77ff tests/auth_tests/test_auth_backends.py
+Updated 0 paths from 7d0bfab0a0
++ git apply -v -
+Checking patch tests/auth_tests/test_auth_backends.py...
+Applied patch tests/auth_tests/test_auth_backends.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 auth_tests.test_auth_backends
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+test_authenticate (auth_tests.test_auth_backends.AllowAllUsersModelBackendTest) ... ok
+test_get_user (auth_tests.test_auth_backends.AllowAllUsersModelBackendTest) ... ok
+test_skips_backends_without_arguments (auth_tests.test_auth_backends.AuthenticateTests) ... ok
+test_type_error_raised (auth_tests.test_auth_backends.AuthenticateTests)
+A TypeError within a backend is propagated properly (#18171). ... ok
+test_get_all_permissions (auth_tests.test_auth_backends.BaseBackendTest) ... ok
+test_get_group_permissions (auth_tests.test_auth_backends.BaseBackendTest) ... ok
+test_get_user_permissions (auth_tests.test_auth_backends.BaseBackendTest) ... ok
+test_has_perm (auth_tests.test_auth_backends.BaseBackendTest) ... ok
+test_changed_backend_settings (auth_tests.test_auth_backends.ChangedBackendSettingsTest) ... ok
+test_anonymous_has_no_permissions (auth_tests.test_auth_backends.CustomPermissionsUserModelBackendTest) ... ok
+test_authentication_timing (auth_tests.test_auth_backends.CustomPermissionsUserModelBackendTest)
+Hasher is run once regardless of whether the user exists. Refs #20760. ... ok
+test_authentication_without_credentials (auth_tests.test_auth_backends.CustomPermissionsUserModelBackendTest) ... ok
+test_custom_perms (auth_tests.test_auth_backends.CustomPermissionsUserModelBackendTest) ... ok
+test_get_all_superuser_permissions (auth_tests.test_auth_backends.CustomPermissionsUserModelBackendTest)
+A superuser has all permissions. Refs #14795. ... ok
+test_has_no_object_perm (auth_tests.test_auth_backends.CustomPermissionsUserModelBackendTest)
+Regressiontest for #12462 ... ok
+test_has_perm (auth_tests.test_auth_backends.CustomPermissionsUserModelBackendTest) ... ok
+test_inactive_has_no_permissions (auth_tests.test_auth_backends.CustomPermissionsUserModelBackendTest) ... ok
+test_authenticate (auth_tests.test_auth_backends.CustomUserModelBackendAuthenticateTest) ... ok
+test_anonymous_has_no_permissions (auth_tests.test_auth_backends.ExtensionUserModelBackendTest) ... ok
+test_authentication_timing (auth_tests.test_auth_backends.ExtensionUserModelBackendTest)
+Hasher is run once regardless of whether the user exists. Refs #20760. ... ok
+test_authentication_without_credentials (auth_tests.test_auth_backends.ExtensionUserModelBackendTest) ... ok
+test_custom_perms (auth_tests.test_auth_backends.ExtensionUserModelBackendTest) ... ok
+test_get_all_superuser_permissions (auth_tests.test_auth_backends.ExtensionUserModelBackendTest)
+A superuser has all permissions. Refs #14795. ... ok
+test_has_no_object_perm (auth_tests.test_auth_backends.ExtensionUserModelBackendTest)
+Regressiontest for #12462 ... ok
+test_has_perm (auth_tests.test_auth_backends.ExtensionUserModelBackendTest) ... ok
+test_inactive_has_no_permissions (auth_tests.test_auth_backends.ExtensionUserModelBackendTest) ... ok
+test_backend_path (auth_tests.test_auth_backends.ImportedBackendTests) ... ok
+test_does_not_shadow_exception (auth_tests.test_auth_backends.ImproperlyConfiguredUserModelTest) ... ok
+test_has_module_perms (auth_tests.test_auth_backends.InActiveUserBackendTest) ... ok
+test_has_perm (auth_tests.test_auth_backends.InActiveUserBackendTest) ... ok
+test_anonymous_has_no_permissions (auth_tests.test_auth_backends.ModelBackendTest) ... ok
+test_authenticate_inactive (auth_tests.test_auth_backends.ModelBackendTest) ... ok
+test_authenticate_user_without_is_active_field (auth_tests.test_auth_backends.ModelBackendTest) ... ok
+test_authentication_timing (auth_tests.test_auth_backends.ModelBackendTest)
+Hasher is run once regardless of whether the user exists. Refs #20760. ... ok
+test_authentication_without_credentials (auth_tests.test_auth_backends.ModelBackendTest) ... ok
+test_custom_perms (auth_tests.test_auth_backends.ModelBackendTest) ... ok
+test_get_all_superuser_permissions (auth_tests.test_auth_backends.ModelBackendTest)
+A superuser has all permissions. Refs #14795. ... ok
+test_has_no_object_perm (auth_tests.test_auth_backends.ModelBackendTest)
+Regressiontest for #12462 ... ok
+test_has_perm (auth_tests.test_auth_backends.ModelBackendTest) ... ok
+test_inactive_has_no_permissions (auth_tests.test_auth_backends.ModelBackendTest) ... ok
+test_raises_exception (auth_tests.test_auth_backends.NoBackendsTest) ... ok
+test_authenticates (auth_tests.test_auth_backends.PermissionDeniedBackendTest) ... ok
+test_has_perm (auth_tests.test_auth_backends.PermissionDeniedBackendTest) ... ok
+test_has_perm_denied (auth_tests.test_auth_backends.PermissionDeniedBackendTest) ... ok
+test_permission_denied (auth_tests.test_auth_backends.PermissionDeniedBackendTest)
+user is not authenticated after a backend raises permission denied #2550 ... ok
+test_get_all_permissions (auth_tests.test_auth_backends.RowlevelBackendTest) ... ok
+test_get_group_permissions (auth_tests.test_auth_backends.RowlevelBackendTest) ... ok
+test_has_perm (auth_tests.test_auth_backends.RowlevelBackendTest) ... ok
+test_backend_path_login_with_explicit_backends (auth_tests.test_auth_backends.SelectingBackendTests) ... ok
+test_backend_path_login_without_authenticate_multiple_backends (auth_tests.test_auth_backends.SelectingBackendTests) ... ok
+test_backend_path_login_without_authenticate_single_backend (auth_tests.test_auth_backends.SelectingBackendTests) ... ok
+test_non_string_backend (auth_tests.test_auth_backends.SelectingBackendTests) ... ok
+test_login (auth_tests.test_auth_backends.UUIDUserTests) ... ok
+test_get_all_permissions (auth_tests.test_auth_backends.AnonymousUserBackendTest) ... ok
+test_has_module_perms (auth_tests.test_auth_backends.AnonymousUserBackendTest) ... ok
+test_has_perm (auth_tests.test_auth_backends.AnonymousUserBackendTest) ... ok
+test_has_perms (auth_tests.test_auth_backends.AnonymousUserBackendTest) ... ok
+
+----------------------------------------------------------------------
+Ran 57 tests in 0.077s
+
+OK
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Testing against Django installed in '/testbed/django'
+Importing application auth_tests
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: auth, auth_tests, contenttypes, messages, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table auth_tests_customuser
+    Creating table auth_tests_customuserwithoutisactivefield
+    Creating table auth_tests_extensionuser
+    Creating table auth_tests_custompermissionsuser
+    Creating table auth_tests_customusernonuniqueusername
+    Creating table auth_tests_isactivetestuser1
+    Creating table auth_tests_minimaluser
+    Creating table auth_tests_nopassworduser
+    Creating table auth_tests_concrete
+    Creating table auth_tests_uuiduser
+    Creating table auth_tests_email
+    Creating table auth_tests_customuserwithfk
+    Creating table auth_tests_integerusernameuser
+    Creating table auth_tests_userwithdisabledlastloginfield
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (0 silenced).
++ git checkout e065b293878b1e3ea56655aa9d33e87576cd77ff tests/auth_tests/test_auth_backends.py
+Updated 1 path from 7d0bfab0a0

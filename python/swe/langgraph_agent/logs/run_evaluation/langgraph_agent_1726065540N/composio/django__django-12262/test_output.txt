@@ -1,0 +1,497 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen
++ locale-gen
+Generating locales (this might take a while)...
+  en_US.UTF-8... done
+Generation complete.
++ export LANG=en_US.UTF-8
++ LANG=en_US.UTF-8
++ export LANGUAGE=en_US:en
++ LANGUAGE=en_US:en
++ export LC_ALL=en_US.UTF-8
++ LC_ALL=en_US.UTF-8
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/template/library.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 69331bb851c34f05bc77e9fc24020fe6908b9cd5
+Author: Mariusz Felisiak <felisiak.mariusz@gmail.com>
+Date:   Thu Jan 2 08:35:55 2020 +0100
+
+    Added stub release notes for 3.0.3.
+
+diff --git a/docs/releases/3.0.3.txt b/docs/releases/3.0.3.txt
+new file mode 100644
+index 0000000000..db9f0fd562
+--- /dev/null
++++ b/docs/releases/3.0.3.txt
+@@ -0,0 +1,12 @@
++==========================
++Django 3.0.3 release notes
++==========================
++
++*Expected February 3, 2020*
++
++Django 3.0.3 fixes several bugs in 3.0.2.
++
++Bugfixes
++========
++
++* ...
+diff --git a/docs/releases/index.txt b/docs/releases/index.txt
+index 86257bc4b9..411ca4805c 100644
+--- a/docs/releases/index.txt
++++ b/docs/releases/index.txt
+@@ -32,6 +32,7 @@ versions of the documentation contain the release notes for any later releases.
+ .. toctree::
+    :maxdepth: 1
+ 
++   3.0.3
+    3.0.2
+    3.0.1
+    3.0
++ git diff 69331bb851c34f05bc77e9fc24020fe6908b9cd5
+diff --git a/django/template/library.py b/django/template/library.py
+index 20bc86dac8..9c41b0f770 100644
+--- a/django/template/library.py
++++ b/django/template/library.py
+@@ -253,7 +253,7 @@ def parse_bits(parser, bits, params, varargs, varkw, defaults,
+     unhandled_params = list(params)
+     unhandled_kwargs = [
+         kwarg for kwarg in kwonly
+-        if not kwonly_defaults or kwarg not in kwonly_defaults
++        if kwarg not in kwonly_defaults
+     ]
+     for bit in bits:
+         # First we try to extract a potential kwarg from the bit
+@@ -261,7 +261,8 @@ def parse_bits(parser, bits, params, varargs, varkw, defaults,
+         if kwarg:
+             # The kwarg was successfully extracted
+             param, value = kwarg.popitem()
+-            if param not in params and param not in unhandled_kwargs and varkw is None:
++            if (param not in params and param not in unhandled_kwargs and
++                param not in kwonly_defaults and varkw is None):
+                 # An unexpected keyword argument was supplied
+                 raise TemplateSyntaxError(
+                     "'%s' received unexpected keyword argument '%s'" %
+@@ -301,11 +302,11 @@ def parse_bits(parser, bits, params, varargs, varkw, defaults,
+         # Consider the last n params handled, where n is the
+         # number of defaults.
+         unhandled_params = unhandled_params[:-len(defaults)]
+-    if unhandled_params or unhandled_kwargs:
++    if unhandled_params or [k for k in unhandled_kwargs if k not in kwonly_defaults]:
+         # Some positional arguments were not supplied
+         raise TemplateSyntaxError(
+             "'%s' did not receive value(s) for the argument(s): %s" %
+-            (name, ", ".join("'%s'" % p for p in unhandled_params + unhandled_kwargs)))
++            (name, ", ".join("'%s'" % p for p in unhandled_params + [k for k in unhandled_kwargs if k not in kwonly_defaults])))
+     return args, kwargs
+ 
+ 
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: asgiref>=3.2 in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.1) (3.4.1)
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.1) (2024.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.1) (0.4.4)
+Requirement already satisfied: typing-extensions in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from asgiref>=3.2->Django==3.1) (4.1.1)
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 3.1
+    Uninstalling Django-3.1:
+      Successfully uninstalled Django-3.1
+  Running setup.py develop for Django
+Successfully installed Django-3.1
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
++ git checkout 69331bb851c34f05bc77e9fc24020fe6908b9cd5 tests/template_tests/templatetags/inclusion.py tests/template_tests/test_custom.py
+Updated 0 paths from 88307fafa4
++ git apply -v -
+Checking patch tests/template_tests/templatetags/inclusion.py...
+Checking patch tests/template_tests/test_custom.py...
+Applied patch tests/template_tests/templatetags/inclusion.py cleanly.
+Applied patch tests/template_tests/test_custom.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 template_tests.templatetags.inclusion template_tests.test_custom
+test_decorated_filter (template_tests.test_custom.CustomFilterTests) ... ok
+test_filter (template_tests.test_custom.CustomFilterTests) ... ok
+test_15070_use_l10n (template_tests.test_custom.InclusionTagTests) ... ok
+test_include_tag_missing_context (template_tests.test_custom.InclusionTagTests) ... ok
+test_inclusion_tag_errors (template_tests.test_custom.InclusionTagTests) ... ERROR
+test_inclusion_tag_registration (template_tests.test_custom.InclusionTagTests) ... ok
+test_inclusion_tags (template_tests.test_custom.InclusionTagTests) ... ERROR
+test_inclusion_tags_from_template (template_tests.test_custom.InclusionTagTests) ... ok
+test_no_render_side_effect (template_tests.test_custom.InclusionTagTests) ... ok
+test_render_context_is_cleared (template_tests.test_custom.InclusionTagTests) ... ok
+test_simple_tag_errors (template_tests.test_custom.SimpleTagTests) ... ERROR
+test_simple_tag_escaping_autoescape_off (template_tests.test_custom.SimpleTagTests) ... ok
+test_simple_tag_explicit_escaping (template_tests.test_custom.SimpleTagTests) ... ok
+test_simple_tag_format_html_escaping (template_tests.test_custom.SimpleTagTests) ... ok
+test_simple_tag_missing_context (template_tests.test_custom.SimpleTagTests) ... ok
+test_simple_tag_naive_escaping (template_tests.test_custom.SimpleTagTests) ... ok
+test_simple_tag_registration (template_tests.test_custom.SimpleTagTests) ... ok
+test_simple_tags (template_tests.test_custom.SimpleTagTests) ... ERROR
+test_load_annotated_function (template_tests.test_custom.TemplateTagLoadingTests) ... ok
+test_load_error (template_tests.test_custom.TemplateTagLoadingTests) ... ok
+test_load_error_egg (template_tests.test_custom.TemplateTagLoadingTests) ... ok
+test_load_working_egg (template_tests.test_custom.TemplateTagLoadingTests) ... ok
+
+======================================================================
+ERROR: test_inclusion_tag_errors (template_tests.test_custom.InclusionTagTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/template_tests/test_custom.py", line 248, in test_inclusion_tag_errors
+    self.engine.from_string(entry[1])
+  File "/testbed/django/template/engine.py", line 136, in from_string
+    return Template(template_code, engine=self)
+  File "/testbed/django/template/base.py", line 155, in __init__
+    self.nodelist = self.compile_nodelist()
+  File "/testbed/django/template/base.py", line 193, in compile_nodelist
+    return parser.parse()
+  File "/testbed/django/template/base.py", line 478, in parse
+    raise self.error(token, e)
+  File "/testbed/django/template/base.py", line 476, in parse
+    compiled_result = compile_func(self, token)
+  File "/testbed/django/template/library.py", line 154, in compile_func
+    kwonly, kwonly_defaults, takes_context, function_name,
+  File "/testbed/django/template/library.py", line 265, in parse_bits
+    param not in kwonly_defaults and varkw is None):
+TypeError: argument of type 'NoneType' is not iterable
+
+======================================================================
+ERROR: test_inclusion_tags (template_tests.test_custom.InclusionTagTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/template_tests/test_custom.py", line 216, in test_inclusion_tags
+    t = self.engine.from_string(entry[0])
+  File "/testbed/django/template/engine.py", line 136, in from_string
+    return Template(template_code, engine=self)
+  File "/testbed/django/template/base.py", line 155, in __init__
+    self.nodelist = self.compile_nodelist()
+  File "/testbed/django/template/base.py", line 193, in compile_nodelist
+    return parser.parse()
+  File "/testbed/django/template/base.py", line 478, in parse
+    raise self.error(token, e)
+  File "/testbed/django/template/base.py", line 476, in parse
+    compiled_result = compile_func(self, token)
+  File "/testbed/django/template/library.py", line 154, in compile_func
+    kwonly, kwonly_defaults, takes_context, function_name,
+  File "/testbed/django/template/library.py", line 265, in parse_bits
+    param not in kwonly_defaults and varkw is None):
+TypeError: argument of type 'NoneType' is not iterable
+
+======================================================================
+ERROR: test_simple_tag_errors (template_tests.test_custom.SimpleTagTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/template_tests/test_custom.py", line 124, in test_simple_tag_errors
+    self.engine.from_string(entry[1])
+  File "/testbed/django/template/engine.py", line 136, in from_string
+    return Template(template_code, engine=self)
+  File "/testbed/django/template/base.py", line 155, in __init__
+    self.nodelist = self.compile_nodelist()
+  File "/testbed/django/template/base.py", line 193, in compile_nodelist
+    return parser.parse()
+  File "/testbed/django/template/base.py", line 478, in parse
+    raise self.error(token, e)
+  File "/testbed/django/template/base.py", line 476, in parse
+    compiled_result = compile_func(self, token)
+  File "/testbed/django/template/library.py", line 121, in compile_func
+    kwonly, kwonly_defaults, takes_context, function_name,
+  File "/testbed/django/template/library.py", line 265, in parse_bits
+    param not in kwonly_defaults and varkw is None):
+TypeError: argument of type 'NoneType' is not iterable
+
+======================================================================
+ERROR: test_simple_tags (template_tests.test_custom.SimpleTagTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/template_tests/test_custom.py", line 87, in test_simple_tags
+    t = self.engine.from_string(entry[0])
+  File "/testbed/django/template/engine.py", line 136, in from_string
+    return Template(template_code, engine=self)
+  File "/testbed/django/template/base.py", line 155, in __init__
+    self.nodelist = self.compile_nodelist()
+  File "/testbed/django/template/base.py", line 193, in compile_nodelist
+    return parser.parse()
+  File "/testbed/django/template/base.py", line 478, in parse
+    raise self.error(token, e)
+  File "/testbed/django/template/base.py", line 476, in parse
+    compiled_result = compile_func(self, token)
+  File "/testbed/django/template/library.py", line 121, in compile_func
+    kwonly, kwonly_defaults, takes_context, function_name,
+  File "/testbed/django/template/library.py", line 255, in parse_bits
+    kwarg for kwarg in kwonly
+  File "/testbed/django/template/library.py", line 256, in <listcomp>
+    if kwarg not in kwonly_defaults
+TypeError: argument of type 'NoneType' is not iterable
+
+----------------------------------------------------------------------
+Ran 22 tests in 0.008s
+
+FAILED (errors=4)
+Testing against Django installed in '/testbed/django'
+Importing application template_tests
+Skipping setup of unused database(s): default, other.
+System check identified no issues (0 silenced).
++ git checkout 69331bb851c34f05bc77e9fc24020fe6908b9cd5 tests/template_tests/templatetags/inclusion.py tests/template_tests/test_custom.py
+Updated 2 paths from 88307fafa4

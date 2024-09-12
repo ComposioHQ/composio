@@ -8,6 +8,7 @@ import json
 import typing as t
 
 import docker
+import concurrent.futures
 from datasets import Dataset, load_dataset
 from docker import errors as docker_errors
 
@@ -18,20 +19,7 @@ from composio.utils.url import get_api_url_base
 from swebench.harness.run_evaluation import main as run_evaluation
 from composio_crewai import ComposioToolSet
 
-<<<<<<< HEAD
 DATASET_NAME = os.environ.get("DATASET_NAME", "princeton-nlp/SWE-bench_Verified")
-=======
-from swekit.benchmark.constants import MODEL_GPT4
-from swekit.benchmark.docker_utils.evaulate_on_docker import (
-    EvaluateOnDockerArgs,
-    evaluate,
-)
-from swekit.benchmark.get_score_card import generate_scorecard
-from swekit.benchmark.setup_test_bed import create_patches_file
-
-
-DATASET_NAME = os.environ.get("DATASET_NAME", "composio/swe-bench_Verified")
->>>>>>> master
 PATH_TESTBED = "testbed/"
 
 
@@ -71,6 +59,24 @@ def get_score(logs_dir, run_id):
             })
     with open(f"{logs_dir}/predictions.json", "w") as f:
         json.dump(temp, f, indent=4)
+    
+    # Remove dangling Docker images
+    import subprocess
+
+    try:
+        subprocess.run(
+            "docker rmi $(docker images -f \"dangling=true\" -q)",
+            shell=True,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        logger.info("Successfully removed dangling Docker images")
+    except subprocess.CalledProcessError as e:
+        logger.warning(f"Failed to remove dangling Docker images: {e.stderr.decode().strip()}")
+    except Exception as e:
+        logger.error(f"An error occurred while trying to remove dangling Docker images: {str(e)}")
+        
     run_evaluation(
         dataset_name=DATASET_NAME,
         split="test",
@@ -249,14 +255,18 @@ def setup_workspace(
     num_instances=1,
 ):
     workspace_ids = []
-    for _ in range(num_instances):
-        workspace_id = build_image_and_container(
-            repo=repo,
-            base_commit=base_commit,
-            workspace_env=workspace_env,
-            image_name=image_name,
-        )
-        workspace_ids.append(workspace_id)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_instances) as executor:
+        futures = [
+            executor.submit(
+                build_image_and_container,
+                repo=repo,
+                base_commit=base_commit,
+                workspace_env=workspace_env,
+                image_name=image_name,
+            )
+            for _ in range(num_instances)
+        ]
+        workspace_ids = [future.result() for future in concurrent.futures.as_completed(futures)]
     repo_to_workspace_map[repo] = workspace_ids
     return workspace_ids
 
@@ -302,8 +312,4 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-<<<<<<< HEAD
-    get_score(logs_dir="/Users/shrey/.composio_coder/logs/17258774764852/", run_id="langgraph_agent_temp")
-=======
-    get_score(logs_dir="/Users/shrey/.composio_coder/logs/1724766390")
->>>>>>> master
+    get_score(logs_dir="/Users/shrey/.composio_coder/logs/17260697863768/", run_id="langgraph_agent_temp")

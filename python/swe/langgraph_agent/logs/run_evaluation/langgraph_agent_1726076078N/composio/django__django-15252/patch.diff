@@ -1,0 +1,51 @@
+diff --git a/django/db/migrations/recorder.py b/django/db/migrations/recorder.py
+index 1a37c6b7..de7f29dd 100644
+--- a/django/db/migrations/recorder.py
++++ b/django/db/migrations/recorder.py
+@@ -1,5 +1,5 @@
+ from django.apps.registry import Apps
+-from django.db import DatabaseError, models
++from django.db import DatabaseError, models, router
+ from django.utils.functional import classproperty
+ from django.utils.timezone import now
+ 
+@@ -62,6 +62,9 @@ class MigrationRecorder:
+         # in the codebase.
+         if self.has_table():
+             return
++        # Check if migration is allowed for this connection
++        if not router.allow_migrate(self.connection.alias, self.Migration):
++            return
+         # Make the table
+         try:
+             with self.connection.schema_editor() as editor:
+@@ -74,6 +77,8 @@ class MigrationRecorder:
+         Return a dict mapping (app_name, migration_name) to Migration instances
+         for all applied migrations.
+         """
++        if not router.allow_migrate(self.connection.alias, self.Migration):
++            return {}
+         if self.has_table():
+             return {(migration.app, migration.name): migration for migration in self.migration_qs}
+         else:
+@@ -83,14 +88,19 @@ class MigrationRecorder:
+ 
+     def record_applied(self, app, name):
+         """Record that a migration was applied."""
++        if not router.allow_migrate(self.connection.alias, self.Migration):
++            return
+         self.ensure_schema()
+         self.migration_qs.create(app=app, name=name)
+ 
+     def record_unapplied(self, app, name):
+         """Record that a migration was unapplied."""
++        if not router.allow_migrate(self.connection.alias, self.Migration):
++            return
+         self.ensure_schema()
+         self.migration_qs.filter(app=app, name=name).delete()
+-
+     def flush(self):
+         """Delete all migration records. Useful for testing migrations."""
++        if not router.allow_migrate(self.connection.alias, self.Migration):
++            return
+         self.migration_qs.all().delete()

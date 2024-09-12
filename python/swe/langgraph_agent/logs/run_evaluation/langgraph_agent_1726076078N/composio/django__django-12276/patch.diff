@@ -1,0 +1,39 @@
+diff --git a/django/forms/widgets.py b/django/forms/widgets.py
+index 338d54d7..c738f71c 100644
+--- a/django/forms/widgets.py
++++ b/django/forms/widgets.py
+@@ -377,7 +377,7 @@ class FileInput(Input):
+     template_name = 'django/forms/widgets/file.html'
+ 
+     def format_value(self, value):
+-        """File input never renders a value."""
++        """File inputs never render a value."""
+         return
+ 
+     def value_from_datadict(self, data, files, name):
+@@ -387,6 +387,8 @@ class FileInput(Input):
+     def value_omitted_from_data(self, data, files, name):
+         return name not in files
+ 
++    def use_required_attribute(self, initial):
++        return super().use_required_attribute(initial) and not initial
+ 
+ FILE_INPUT_CONTRADICTION = object()
+ 
+@@ -451,16 +453,12 @@ class ClearableFileInput(FileInput):
+             return False
+         return upload
+ 
+-    def use_required_attribute(self, initial):
+-        return super().use_required_attribute(initial) and not initial
+-
+     def value_omitted_from_data(self, data, files, name):
+         return (
+             super().value_omitted_from_data(data, files, name) and
+             self.clear_checkbox_name(name) not in data
+         )
+ 
+-
+ class Textarea(Widget):
+     template_name = 'django/forms/widgets/textarea.html'
+ 

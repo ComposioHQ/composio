@@ -1,0 +1,54 @@
+{
+    "django__django-14559": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "test_empty_objects (queries.test_bulk_update.BulkUpdateTests)",
+                    "test_large_batch (queries.test_bulk_update.BulkUpdateTests)",
+                    "test_updated_rows_when_passing_duplicates (queries.test_bulk_update.BulkUpdateTests)"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "test_batch_size (queries.test_bulk_update.BulkUpdateNoteTests)",
+                    "test_foreign_keys_do_not_lookup (queries.test_bulk_update.BulkUpdateNoteTests)",
+                    "test_functions (queries.test_bulk_update.BulkUpdateNoteTests)",
+                    "test_multiple_fields (queries.test_bulk_update.BulkUpdateNoteTests)",
+                    "test_set_field_to_null (queries.test_bulk_update.BulkUpdateNoteTests)",
+                    "test_set_mixed_fields_to_null (queries.test_bulk_update.BulkUpdateNoteTests)",
+                    "test_simple (queries.test_bulk_update.BulkUpdateNoteTests)",
+                    "test_unsaved_models (queries.test_bulk_update.BulkUpdateNoteTests)",
+                    "test_booleanfield (queries.test_bulk_update.BulkUpdateTests)",
+                    "test_custom_db_columns (queries.test_bulk_update.BulkUpdateTests)",
+                    "test_custom_pk (queries.test_bulk_update.BulkUpdateTests)",
+                    "test_datetime_field (queries.test_bulk_update.BulkUpdateTests)",
+                    "test_falsey_pk_value (queries.test_bulk_update.BulkUpdateTests)",
+                    "test_field_references (queries.test_bulk_update.BulkUpdateTests)",
+                    "test_inherited_fields (queries.test_bulk_update.BulkUpdateTests)",
+                    "test_invalid_batch_size (queries.test_bulk_update.BulkUpdateTests)",
+                    "test_ipaddressfield (queries.test_bulk_update.BulkUpdateTests)",
+                    "test_json_field (queries.test_bulk_update.BulkUpdateTests)",
+                    "test_no_fields (queries.test_bulk_update.BulkUpdateTests)",
+                    "test_nonexistent_field (queries.test_bulk_update.BulkUpdateTests)",
+                    "test_only_concrete_fields_allowed (queries.test_bulk_update.BulkUpdateTests)",
+                    "test_update_custom_primary_key (queries.test_bulk_update.BulkUpdateTests)",
+                    "test_update_primary_key (queries.test_bulk_update.BulkUpdateTests)"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

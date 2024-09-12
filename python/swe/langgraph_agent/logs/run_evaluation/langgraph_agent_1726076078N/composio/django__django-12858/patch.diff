@@ -1,0 +1,188 @@
+diff --git a/django/core/checks/model_checks.py b/django/core/checks/model_checks.py
+index 7b156fce..c4c2a5cf 100644
+--- a/django/core/checks/model_checks.py
++++ b/django/core/checks/model_checks.py
+@@ -1,3 +1,183 @@
++import functools
++import inspect
++import types
++from collections import defaultdict
++from itertools import chain
++
++from django.apps import apps
++from django.conf import settings
++from django.core.checks import Error, Tags, Warning, register
++from django.core.exceptions import FieldDoesNotExist
++
++@register(Tags.models)
++def check_all_models(app_configs=None, **kwargs):
++    db_table_models = defaultdict(list)
++    indexes = defaultdict(list)
++    constraints = defaultdict(list)
++    errors = []
++    if app_configs is None:
++        models = apps.get_models()
++    else:
++        models = chain.from_iterable(app_config.get_models() for app_config in app_configs)
++    for model in models:
++        if model._meta.managed and not model._meta.proxy:
++            db_table_models[model._meta.db_table].append(model._meta.label)
++        if not inspect.ismethod(model.check):
++            errors.append(
++                Error(
++                    "The '%s.check()' class method is currently overridden by %r."
++                    % (model.__name__, model.check),
++                    obj=model,
++                    id='models.E020'
++                )
++            )
++        else:
++            errors.extend(model.check(**kwargs))
++        errors.extend(check_model_ordering(model))
++        for model_index in model._meta.indexes:
++            indexes[model_index.name].append(model._meta.label)
++        for model_constraint in model._meta.constraints:
++            constraints[model_constraint.name].append(model._meta.label)
++    if settings.DATABASE_ROUTERS:
++        error_class, error_id = Warning, 'models.W035'
++        error_hint = (
++            'You have configured settings.DATABASE_ROUTERS. Verify that %s '
++            'are correctly routed to separate databases.'
++        )
++    else:
++        error_class, error_id = Error, 'models.E028'
++        error_hint = None
++    for db_table, model_labels in db_table_models.items():
++        if len(model_labels) != 1:
++            model_labels_str = ', '.join(model_labels)
++            errors.append(
++                error_class(
++                    "db_table '%s' is used by multiple models: %s."
++                    % (db_table, model_labels_str),
++                    obj=db_table,
++                    hint=(error_hint % model_labels_str) if error_hint else None,
++                    id=error_id,
++                )
++            )
++    for index_name, model_labels in indexes.items():
++        if len(model_labels) > 1:
++            model_labels = set(model_labels)
++            errors.append(
++                Error(
++                    "index name '%s' is not unique %s %s." % (
++                        index_name,
++                        'for model' if len(model_labels) == 1 else 'amongst models:',
++                        ', '.join(sorted(model_labels)),
++                    ),
++                    id='models.E029' if len(model_labels) == 1 else 'models.E030',
++                ),
++            )
++    for constraint_name, model_labels in constraints.items():
++        if len(model_labels) > 1:
++            model_labels = set(model_labels)
++            errors.append(
++                Error(
++                    "constraint name '%s' is not unique %s %s." % (
++                        constraint_name,
++                        'for model' if len(model_labels) == 1 else 'amongst models:',
++                        ', '.join(sorted(model_labels)),
++                    ),
++                    id='models.E031' if len(model_labels) == 1 else 'models.E032',
++                ),
++            )
++    return errors
++
++
++def check_model_ordering(model):
++    """
++    Check that model's ordering is valid.
++    """
++    errors = []
++    for field_name in model._meta.ordering:
++        if field_name == '?':
++            continue  # Random ordering is always valid
++        if field_name.startswith('-'):
++            field_name = field_name[1:]
++        try:
++            field_name_parts = field_name.split('__')
++            current_field = model._meta.get_field(field_name_parts[0])
++            for part in field_name_parts[1:]:
++                if part == 'isnull':
++                    break  # 'isnull' is valid at the end of the chain
++                if hasattr(current_field, 'remote_field'):
++                    current_field = current_field.remote_field.model._meta.get_field(part)
++                else:
++                    raise FieldDoesNotExist
++        except FieldDoesNotExist:
++            errors.append(
++                Error(
++                    "The ordering '%s' refers to the nonexistent field, "
++                    "related field, or lookup '%s'." % (field_name, field_name),
++                    obj=model,
++                    id='models.E015',
++                )
++            )
++    return errors
++
++
++def _check_lazy_references(apps, ignore=None):
++    """
++    Ensure all lazy (i.e. string) model references have been resolved.
++
++    Lazy references are used in various places throughout Django, primarily in
++    related fields and model signals. Identify those common cases and provide
++    more helpful error messages for them.
++
++    The ignore parameter is used by StateApps to exclude swappable models from
++    this check.
++    """
++    pending_models = set(apps._pending_operations) - (ignore or set())
++
++    # Short circuit if there aren't any pending operations.
++    if not pending_models:
++        return []
++
++    from django.db import models
++    from django.db.models import signals
++
++    model_name = lambda m: '%s.%s' % (m._meta.app_label, m._meta.object_name)
++    errors = []
++    for model in pending_models:
++        # Skip lazy models
++        if isinstance(model, str):
++            continue
++        elif not isinstance(model, type) or not issubclass(model, models.Model):
++            errors.append(
++                Error(
++                    "'%s' must be a Model." % model_name(model),
++                    obj=model,
++                    id='models.E023',
++                )
++            )
++            continue
++
++        # Check signals.
++        for name, signal in vars(signals).items():
++            if not isinstance(signal, signals.ModelSignal):
++                continue
++            for receiver in signal._live_receivers(model):
++                func = receiver
++                while isinstance(func, functools.partial):
++                    func = func.func
++                if isinstance(func, types.FunctionType) and func.__globals__.get(model.__name__) is model:
++                    errors.append(
++                        Error(
++                            "'%s' refers to model '%s' which has not been "
++                            "installed, or is abstract." % (
++                                name,
++                                model_name(model),
++                            ),
++                            obj=func,
++                            id='models.E021',
++                        )
++                    )
++
++    return errors
+ import inspect
+ import types
+ from collections import defaultdict

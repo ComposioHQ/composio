@@ -1,0 +1,13 @@
+diff --git a/django/db/migrations/executor.py b/django/db/migrations/executor.py
+index 57042a86..d0a50fd4 100644
+--- a/django/db/migrations/executor.py
++++ b/django/db/migrations/executor.py
+@@ -254,6 +254,8 @@ class MigrationExecutor:
+         if migration.replaces:
+             for app_label, name in migration.replaces:
+                 self.recorder.record_unapplied(app_label, name)
++            # Ensure the squashed migration itself is still marked as applied
++            self.recorder.record_applied(migration.app_label, migration.name)
+         else:
+             self.recorder.record_unapplied(migration.app_label, migration.name)
+         # Report progress

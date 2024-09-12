@@ -1,0 +1,265 @@
+2024-09-12 15:50:08,708 - INFO - Environment image sweb.env.x86_64.aa92880033da20ca313928:latest found for scikit-learn__scikit-learn-10908
+Building instance image sweb.eval.x86_64.scikit-learn__scikit-learn-10908:latest for scikit-learn__scikit-learn-10908
+2024-09-12 16:03:23,565 - INFO - Creating container for scikit-learn__scikit-learn-10908...
+2024-09-12 16:03:23,589 - INFO - Container for scikit-learn__scikit-learn-10908 created: 57ba9399f8c7bc19029e0777cb5d61c91def66e8a1d748a8507498ac7004bf87
+2024-09-12 16:03:23,692 - INFO - Container for scikit-learn__scikit-learn-10908 started: 57ba9399f8c7bc19029e0777cb5d61c91def66e8a1d748a8507498ac7004bf87
+2024-09-12 16:03:23,693 - INFO - Intermediate patch for scikit-learn__scikit-learn-10908 written to logs/run_evaluation/langgraph_agent_1726133791N/composio/scikit-learn__scikit-learn-10908/patch.diff, now applying to container...
+2024-09-12 16:03:23,944 - INFO - Failed to apply patch to container, trying again...
+2024-09-12 16:03:24,011 - INFO - >>>>> Applied Patch:
+patching file sklearn/feature_extraction/text.py
+
+2024-09-12 16:03:24,547 - INFO - Git diff before:
+diff --git a/sklearn/feature_extraction/text.py b/sklearn/feature_extraction/text.py
+index 9b1ebd632..fa6c6c848 100644
+--- a/sklearn/feature_extraction/text.py
++++ b/sklearn/feature_extraction/text.py
+@@ -272,32 +272,41 @@ class VectorizerMixin(object):
+ 
+     def _validate_vocabulary(self):
+         vocabulary = self.vocabulary
+-        if vocabulary is not None:
+-            if isinstance(vocabulary, set):
+-                vocabulary = sorted(vocabulary)
+-            if not isinstance(vocabulary, Mapping):
+-                vocab = {}
+-                for i, t in enumerate(vocabulary):
+-                    if vocab.setdefault(t, i) != i:
+-                        msg = "Duplicate term in vocabulary: %r" % t
+-                        raise ValueError(msg)
+-                vocabulary = vocab
+-            else:
+-                indices = set(six.itervalues(vocabulary))
+-                if len(indices) != len(vocabulary):
+-                    raise ValueError("Vocabulary contains repeated indices.")
+-                for i in xrange(len(vocabulary)):
+-                    if i not in indices:
+-                        msg = ("Vocabulary of size %d doesn't contain index "
+-                               "%d." % (len(vocabulary), i))
+-                        raise ValueError(msg)
+-            if not vocabulary:
+-                raise ValueError("empty vocabulary passed to fit")
+-            self.fixed_vocabulary_ = True
+-            self.vocabulary_ = dict(vocabulary)
+-        else:
++        if vocabulary is None:
+             self.fixed_vocabulary_ = False
+-
++            return None
++        if isinstance(vocabulary, set):
++            vocabulary = sorted(vocabulary)
++        if isinstance(vocabulary, Mapping):
++            vocab = {}
++            for k, i in vocabulary.items():
++                if not isinstance(i, numbers.Integral):
++                    raise ValueError("Vocabulary values should be integers.")
++                vocab[k] = int(i)
++            vocabulary = vocab
++        elif isinstance(vocabulary, (list, tuple)):
++            vocab = {}
++            for i, t in enumerate(vocabulary):
++                if vocab.setdefault(t, i) != i:
++                    msg = "Duplicate term in vocabulary: %r" % t
++                    raise ValueError(msg)
++            vocabulary = vocab
++        else:
++            raise ValueError("Vocabulary should be either a dictionary or an iterable")
++        
++        indices = set(six.itervalues(vocabulary))
++        if len(indices) != len(vocabulary):
++            raise ValueError("Vocabulary contains repeated indices.")
++        for i in xrange(len(vocabulary)):
++            if i not in indices:
++                msg = ("Vocabulary of size %d doesn't contain index "
++                       "%d." % (len(vocabulary), i))
++                raise ValueError(msg)
++        if not vocabulary:
++            raise ValueError("empty vocabulary passed to fit")
++        self.fixed_vocabulary_ = True
++        self.vocabulary_ = dict(vocabulary)
++        return vocabulary
+     def _check_vocabulary(self):
+         """Check if vocabulary is empty or missing (not fit-ed)"""
+         msg = "%(name)s - Vocabulary wasn't fitted."
+@@ -469,8 +478,8 @@ class HashingVectorizer(BaseEstimator, VectorizerMixin, TransformerMixin):
+                  lowercase=True, preprocessor=None, tokenizer=None,
+                  stop_words=None, token_pattern=r"(?u)\b\w\w+\b",
+                  ngram_range=(1, 1), analyzer='word', n_features=(2 ** 20),
+-                 binary=False, norm='l2', alternate_sign=True,
+-                 non_negative=False, dtype=np.float64):
++                 binary=False, dtype=np.int64, max_df=1.0, min_df=1,
++                 max_features=None, vocabulary=None):
+         self.input = input
+         self.encoding = encoding
+         self.decode_error = decode_error
+@@ -484,10 +493,16 @@ class HashingVectorizer(BaseEstimator, VectorizerMixin, TransformerMixin):
+         self.n_features = n_features
+         self.ngram_range = ngram_range
+         self.binary = binary
+-        self.norm = norm
+-        self.alternate_sign = alternate_sign
+-        self.non_negative = non_negative
+         self.dtype = dtype
++        self.max_df = max_df
++        self.min_df = min_df
++        self.max_features = max_features
++        self.vocabulary = vocabulary
++        self.fixed_vocabulary_ = False
++        self.vocabulary_ = None
++        if self.vocabulary is not None:
++            self.fixed_vocabulary_ = True
++            self.vocabulary_ = self._validate_vocabulary()
+ 
+     def partial_fit(self, X, y=None):
+         """Does nothing: this transformer is stateless.
+@@ -993,10 +1008,14 @@ class CountVectorizer(BaseEstimator, VectorizerMixin):
+ 
+     def get_feature_names(self):
+         """Array mapping from feature integer indices to feature name"""
+-        self._check_vocabulary()
+-
+-        return [t for t, i in sorted(six.iteritems(self.vocabulary_),
+-                                     key=itemgetter(1))]
++        if self.vocabulary_ is not None:
++            return [t for t, i in sorted(six.iteritems(self.vocabulary_),
++                                         key=itemgetter(1))]
++        elif self.vocabulary is not None:
++            return [t for t, i in sorted(six.iteritems(self.vocabulary),
++                                         key=itemgetter(1))]
++        else:
++            raise ValueError("Vocabulary wasn't fitted or provided.")
+ 
+ 
+ def _make_int_array():
+2024-09-12 16:03:24,548 - INFO - Eval script for scikit-learn__scikit-learn-10908 written to logs/run_evaluation/langgraph_agent_1726133791N/composio/scikit-learn__scikit-learn-10908/eval.sh; copying to container...
+2024-09-12 16:03:41,196 - INFO - Test runtime: 16.49 seconds
+2024-09-12 16:03:41,200 - INFO - Test output for scikit-learn__scikit-learn-10908 written to logs/run_evaluation/langgraph_agent_1726133791N/composio/scikit-learn__scikit-learn-10908/test_output.txt
+2024-09-12 16:03:41,281 - INFO - Git diff after:
+diff --git a/sklearn/feature_extraction/text.py b/sklearn/feature_extraction/text.py
+index 9b1ebd632..fa6c6c848 100644
+--- a/sklearn/feature_extraction/text.py
++++ b/sklearn/feature_extraction/text.py
+@@ -272,32 +272,41 @@ class VectorizerMixin(object):
+ 
+     def _validate_vocabulary(self):
+         vocabulary = self.vocabulary
+-        if vocabulary is not None:
+-            if isinstance(vocabulary, set):
+-                vocabulary = sorted(vocabulary)
+-            if not isinstance(vocabulary, Mapping):
+-                vocab = {}
+-                for i, t in enumerate(vocabulary):
+-                    if vocab.setdefault(t, i) != i:
+-                        msg = "Duplicate term in vocabulary: %r" % t
+-                        raise ValueError(msg)
+-                vocabulary = vocab
+-            else:
+-                indices = set(six.itervalues(vocabulary))
+-                if len(indices) != len(vocabulary):
+-                    raise ValueError("Vocabulary contains repeated indices.")
+-                for i in xrange(len(vocabulary)):
+-                    if i not in indices:
+-                        msg = ("Vocabulary of size %d doesn't contain index "
+-                               "%d." % (len(vocabulary), i))
+-                        raise ValueError(msg)
+-            if not vocabulary:
+-                raise ValueError("empty vocabulary passed to fit")
+-            self.fixed_vocabulary_ = True
+-            self.vocabulary_ = dict(vocabulary)
+-        else:
++        if vocabulary is None:
+             self.fixed_vocabulary_ = False
+-
++            return None
++        if isinstance(vocabulary, set):
++            vocabulary = sorted(vocabulary)
++        if isinstance(vocabulary, Mapping):
++            vocab = {}
++            for k, i in vocabulary.items():
++                if not isinstance(i, numbers.Integral):
++                    raise ValueError("Vocabulary values should be integers.")
++                vocab[k] = int(i)
++            vocabulary = vocab
++        elif isinstance(vocabulary, (list, tuple)):
++            vocab = {}
++            for i, t in enumerate(vocabulary):
++                if vocab.setdefault(t, i) != i:
++                    msg = "Duplicate term in vocabulary: %r" % t
++                    raise ValueError(msg)
++            vocabulary = vocab
++        else:
++            raise ValueError("Vocabulary should be either a dictionary or an iterable")
++        
++        indices = set(six.itervalues(vocabulary))
++        if len(indices) != len(vocabulary):
++            raise ValueError("Vocabulary contains repeated indices.")
++        for i in xrange(len(vocabulary)):
++            if i not in indices:
++                msg = ("Vocabulary of size %d doesn't contain index "
++                       "%d." % (len(vocabulary), i))
++                raise ValueError(msg)
++        if not vocabulary:
++            raise ValueError("empty vocabulary passed to fit")
++        self.fixed_vocabulary_ = True
++        self.vocabulary_ = dict(vocabulary)
++        return vocabulary
+     def _check_vocabulary(self):
+         """Check if vocabulary is empty or missing (not fit-ed)"""
+         msg = "%(name)s - Vocabulary wasn't fitted."
+@@ -469,8 +478,8 @@ class HashingVectorizer(BaseEstimator, VectorizerMixin, TransformerMixin):
+                  lowercase=True, preprocessor=None, tokenizer=None,
+                  stop_words=None, token_pattern=r"(?u)\b\w\w+\b",
+                  ngram_range=(1, 1), analyzer='word', n_features=(2 ** 20),
+-                 binary=False, norm='l2', alternate_sign=True,
+-                 non_negative=False, dtype=np.float64):
++                 binary=False, dtype=np.int64, max_df=1.0, min_df=1,
++                 max_features=None, vocabulary=None):
+         self.input = input
+         self.encoding = encoding
+         self.decode_error = decode_error
+@@ -484,10 +493,16 @@ class HashingVectorizer(BaseEstimator, VectorizerMixin, TransformerMixin):
+         self.n_features = n_features
+         self.ngram_range = ngram_range
+         self.binary = binary
+-        self.norm = norm
+-        self.alternate_sign = alternate_sign
+-        self.non_negative = non_negative
+         self.dtype = dtype
++        self.max_df = max_df
++        self.min_df = min_df
++        self.max_features = max_features
++        self.vocabulary = vocabulary
++        self.fixed_vocabulary_ = False
++        self.vocabulary_ = None
++        if self.vocabulary is not None:
++            self.fixed_vocabulary_ = True
++            self.vocabulary_ = self._validate_vocabulary()
+ 
+     def partial_fit(self, X, y=None):
+         """Does nothing: this transformer is stateless.
+@@ -993,10 +1008,14 @@ class CountVectorizer(BaseEstimator, VectorizerMixin):
+ 
+     def get_feature_names(self):
+         """Array mapping from feature integer indices to feature name"""
+-        self._check_vocabulary()
+-
+-        return [t for t, i in sorted(six.iteritems(self.vocabulary_),
+-                                     key=itemgetter(1))]
++        if self.vocabulary_ is not None:
++            return [t for t, i in sorted(six.iteritems(self.vocabulary_),
++                                         key=itemgetter(1))]
++        elif self.vocabulary is not None:
++            return [t for t, i in sorted(six.iteritems(self.vocabulary),
++                                         key=itemgetter(1))]
++        else:
++            raise ValueError("Vocabulary wasn't fitted or provided.")
+ 
+ 
+ def _make_int_array():
+2024-09-12 16:03:41,281 - INFO - Grading answer for scikit-learn__scikit-learn-10908...
+2024-09-12 16:03:41,285 - INFO - report: {'scikit-learn__scikit-learn-10908': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': False, 'tests_status': {'FAIL_TO_PASS': {'success': [], 'failure': ['sklearn/feature_extraction/tests/test_text.py::test_feature_names']}, 'PASS_TO_PASS': {'success': ['sklearn/feature_extraction/tests/test_text.py::test_strip_accents', 'sklearn/feature_extraction/tests/test_text.py::test_to_ascii', 'sklearn/feature_extraction/tests/test_text.py::test_word_analyzer_unigrams', 'sklearn/feature_extraction/tests/test_text.py::test_word_analyzer_unigrams_and_bigrams', 'sklearn/feature_extraction/tests/test_text.py::test_unicode_decode_error', 'sklearn/feature_extraction/tests/test_text.py::test_char_ngram_analyzer', 'sklearn/feature_extraction/tests/test_text.py::test_char_wb_ngram_analyzer', 'sklearn/feature_extraction/tests/test_text.py::test_word_ngram_analyzer', 'sklearn/feature_extraction/tests/test_text.py::test_countvectorizer_custom_vocabulary_pipeline', 'sklearn/feature_extraction/tests/test_text.py::test_countvectorizer_custom_vocabulary_repeated_indices', 'sklearn/feature_extraction/tests/test_text.py::test_countvectorizer_custom_vocabulary_gap_index', 'sklearn/feature_extraction/tests/test_text.py::test_countvectorizer_stop_words', 'sklearn/feature_extraction/tests/test_text.py::test_countvectorizer_empty_vocabulary', 'sklearn/feature_extraction/tests/test_text.py::test_fit_countvectorizer_twice', 'sklearn/feature_extraction/tests/test_text.py::test_tf_idf_smoothing', 'sklearn/feature_extraction/tests/test_text.py::test_tfidf_no_smoothing', 'sklearn/feature_extraction/tests/test_text.py::test_sublinear_tf', 'sklearn/feature_extraction/tests/test_text.py::test_vectorizer', 'sklearn/feature_extraction/tests/test_text.py::test_tfidf_vectorizer_setters', 'sklearn/feature_extraction/tests/test_text.py::test_vectorizer_max_features', 'sklearn/feature_extraction/tests/test_text.py::test_count_vectorizer_max_features', 'sklearn/feature_extraction/tests/test_text.py::test_vectorizer_max_df', 'sklearn/feature_extraction/tests/test_text.py::test_vectorizer_min_df', 'sklearn/feature_extraction/tests/test_text.py::test_count_binary_occurrences', 'sklearn/feature_extraction/tests/test_text.py::test_vectorizer_inverse_transform', 'sklearn/feature_extraction/tests/test_text.py::test_count_vectorizer_pipeline_grid_selection', 'sklearn/feature_extraction/tests/test_text.py::test_vectorizer_pipeline_grid_selection', 'sklearn/feature_extraction/tests/test_text.py::test_vectorizer_pipeline_cross_validation', 'sklearn/feature_extraction/tests/test_text.py::test_tfidf_vectorizer_with_fixed_vocabulary', 'sklearn/feature_extraction/tests/test_text.py::test_countvectorizer_vocab_sets_when_pickling', 'sklearn/feature_extraction/tests/test_text.py::test_countvectorizer_vocab_dicts_when_pickling', 'sklearn/feature_extraction/tests/test_text.py::test_stop_words_removal', 'sklearn/feature_extraction/tests/test_text.py::test_pickling_transformer', 'sklearn/feature_extraction/tests/test_text.py::test_non_unique_vocab', 'sklearn/feature_extraction/tests/test_text.py::test_tfidfvectorizer_binary', 'sklearn/feature_extraction/tests/test_text.py::test_tfidfvectorizer_export_idf', 'sklearn/feature_extraction/tests/test_text.py::test_vectorizer_vocab_clone', 'sklearn/feature_extraction/tests/test_text.py::test_vectorizer_string_object_as_input', 'sklearn/feature_extraction/tests/test_text.py::test_vectorizers_invalid_ngram_range[vec0]', 'sklearn/feature_extraction/tests/test_text.py::test_vectorizers_invalid_ngram_range[vec1]', 'sklearn/feature_extraction/tests/test_text.py::test_vectorizers_invalid_ngram_range[vec2]'], 'failure': ['sklearn/feature_extraction/tests/test_text.py::test_countvectorizer_custom_vocabulary', 'sklearn/feature_extraction/tests/test_text.py::test_hashing_vectorizer', 'sklearn/feature_extraction/tests/test_text.py::test_hashed_binary_occurrences', 'sklearn/feature_extraction/tests/test_text.py::test_vectorizer_unicode', 'sklearn/feature_extraction/tests/test_text.py::test_pickling_vectorizer', 'sklearn/feature_extraction/tests/test_text.py::test_hashingvectorizer_nan_in_docs']}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for scikit-learn__scikit-learn-10908: resolved: False
+2024-09-12 16:03:41,286 - INFO - Attempting to stop container sweb.eval.scikit-learn__scikit-learn-10908.langgraph_agent_1726133791N...
+2024-09-12 16:03:56,471 - INFO - Attempting to remove container sweb.eval.scikit-learn__scikit-learn-10908.langgraph_agent_1726133791N...
+2024-09-12 16:03:56,487 - INFO - Container sweb.eval.scikit-learn__scikit-learn-10908.langgraph_agent_1726133791N removed.
+2024-09-12 16:03:56,488 - INFO - Attempting to remove image sweb.eval.x86_64.scikit-learn__scikit-learn-10908:latest...
+2024-09-12 16:03:56,557 - INFO - Image sweb.eval.x86_64.scikit-learn__scikit-learn-10908:latest removed.

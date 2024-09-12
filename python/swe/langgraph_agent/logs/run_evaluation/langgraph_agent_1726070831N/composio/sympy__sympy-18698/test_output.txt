@@ -1,0 +1,540 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   sympy/polys/sqfreetools.py
+	modified:   sympy/polys/tests/test_sqfreetools.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 3dff1b98a78f28c953ae2140b69356b8391e399c
+Merge: 70bf1f88ff 0bbbc7738f
+Author: S.Y. Lee <sylee957@gmail.com>
+Date:   Fri Feb 21 12:04:16 2020 +0900
+
+    Merge pull request #18690 from mohitacecode/issue_18666_2
+    
+    migrate all the eigen-related test to test_eigen.py
+
++ git diff 3dff1b98a78f28c953ae2140b69356b8391e399c
+diff --git a/sympy/polys/sqfreetools.py b/sympy/polys/sqfreetools.py
+index 1783a7744a..218d507ab7 100644
+--- a/sympy/polys/sqfreetools.py
++++ b/sympy/polys/sqfreetools.py
+@@ -5,7 +5,7 @@
+ from sympy.polys.densearith import (
+     dup_neg, dmp_neg,
+     dup_sub, dmp_sub,
+-    dup_mul,
++    dup_mul, dmp_mul,
+     dup_quo, dmp_quo,
+     dup_mul_ground, dmp_mul_ground)
+ from sympy.polys.densebasic import (
+@@ -420,7 +420,26 @@ def dmp_sqf_list(f, u, K, all=False):
+ 
+         i += 1
+ 
+-    return coeff, result
++    # Combine factors with the same multiplicity
++    combined_result = []
++    current_factor = None
++    current_multiplicity = 0
++
++    for factor, multiplicity in result:
++        if current_factor is None:
++            current_factor = factor
++            current_multiplicity = multiplicity
++        elif multiplicity == current_multiplicity:
++            current_factor = dmp_mul(current_factor, factor, u, K)
++        else:
++            combined_result.append((current_factor, current_multiplicity))
++            current_factor = factor
++            current_multiplicity = multiplicity
++
++    if current_factor is not None:
++        combined_result.append((current_factor, current_multiplicity))
++
++    return coeff, combined_result
+ 
+ 
+ def dmp_sqf_list_include(f, u, K, all=False):
+diff --git a/sympy/polys/tests/test_sqfreetools.py b/sympy/polys/tests/test_sqfreetools.py
+index abe229e713..57149e5d19 100644
+--- a/sympy/polys/tests/test_sqfreetools.py
++++ b/sympy/polys/tests/test_sqfreetools.py
+@@ -146,4 +146,18 @@ def test_dup_gff_list():
+     g = x**9 - 20*x**8 + 166*x**7 - 744*x**6 + 1965*x**5 - 3132*x**4 + 2948*x**3 - 1504*x**2 + 320*x
+     assert R.dup_gff_list(g) == [(x**2 - 5*x + 4, 1), (x**2 - 5*x + 4, 2), (x, 3)]
+ 
++def test_dmp_sqf_list_combined_factors():
++    R, x, y = ring("x,y", ZZ)
++    
++    # Test case for combining factors with the same multiplicity
++    f = (x**2 + 1) * (x - 1)**2 * (x - 2)**3 * (x - 3)**3
++    assert R.dmp_sqf_list(f) == (1, [(x**2 + 1, 1), (x - 1, 2), ((x - 2)*(x - 3), 3)])
++
++    # Test case for not combining factors with different multiplicities
++    g = x**5 - 2*x**4 - 2*x**3 + 4*x**2 + x - 2
++    assert R.dmp_sqf_list(g) == (1, [(x - 2, 1), (x**2 - 1, 2)])
++
++    # Additional test case
++    h = (x**2 + y)**2 * (x - y)**3 * (x + y)**3
++    assert R.dmp_sqf_list(h) == (1, [(x**2 + y, 2), ((x - y)*(x + y), 3)])
+     raises(ValueError, lambda: R.dup_gff_list(0))
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: mpmath>=0.19 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from sympy==1.6.dev0) (1.3.0)
+Installing collected packages: sympy
+  Attempting uninstall: sympy
+    Found existing installation: sympy 1.6.dev0
+    Uninstalling sympy-1.6.dev0:
+      Successfully uninstalled sympy-1.6.dev0
+  DEPRECATION: Legacy editable install of sympy==1.6.dev0 from file:///testbed (setup.py develop) is deprecated. pip 25.0 will enforce this behaviour change. A possible replacement is to add a pyproject.toml or enable --use-pep517, and use setuptools >= 64. If the resulting installation is not behaving as expected, try using --config-settings editable_mode=compat. Please consult the setuptools documentation for more information. Discussion can be found at https://github.com/pypa/pip/issues/11457
+  Running setup.py develop for sympy
+Successfully installed sympy
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 3dff1b98a78f28c953ae2140b69356b8391e399c sympy/polys/tests/test_polytools.py
+Updated 0 paths from 98178a19ee
++ git apply -v -
+Checking patch sympy/polys/tests/test_polytools.py...
+Applied patch sympy/polys/tests/test_polytools.py cleanly.
++ PYTHONWARNINGS=ignore::UserWarning,ignore::SyntaxWarning
++ bin/test -C --verbose sympy/polys/tests/test_polytools.py
+============================= test process starts ==============================
+executable:         /opt/miniconda3/envs/testbed/bin/python  (3.9.19-final-0) [CPython]
+architecture:       64-bit
+cache:              no
+ground types:       python 
+numpy:              None
+random seed:        42220192
+hash randomization: on (PYTHONHASHSEED=3486648247)
+
+sympy/polys/tests/test_polytools.py[150] 
+test_Poly_mixed_operations ok
+test_Poly_from_dict ok
+test_Poly_from_list ok
+test_Poly_from_poly ok
+test_Poly_from_expr ok
+test_Poly__new__ ok
+test_Poly__args ok
+test_Poly__gens ok
+test_Poly_zero ok
+test_Poly_one ok
+test_Poly__unify ok
+test_Poly_free_symbols ok
+test_PurePoly_free_symbols ok
+test_Poly__eq__ ok
+test_PurePoly__eq__ ok
+test_PurePoly_Poly ok
+test_Poly_get_domain ok
+test_Poly_set_domain ok
+test_Poly_get_modulus ok
+test_Poly_set_modulus ok
+test_Poly_add_ground ok
+test_Poly_sub_ground ok
+test_Poly_mul_ground ok
+test_Poly_quo_ground ok
+test_Poly_exquo_ground ok
+test_Poly_abs ok
+test_Poly_neg ok
+test_Poly_add ok
+test_Poly_sub ok
+test_Poly_mul ok
+test_issue_13079 ok
+test_Poly_sqr ok
+test_Poly_pow ok
+test_Poly_divmod ok
+test_Poly_eq_ne ok
+test_Poly_nonzero ok
+test_Poly_properties ok
+test_Poly_is_irreducible ok
+test_Poly_subs ok
+test_Poly_replace ok
+test_Poly_reorder ok
+test_Poly_ltrim ok
+test_Poly_has_only_gens ok
+test_Poly_to_ring ok
+test_Poly_to_field ok
+test_Poly_to_exact ok
+test_Poly_retract ok
+test_Poly_slice ok
+test_Poly_coeffs ok
+test_Poly_monoms ok
+test_Poly_terms ok
+test_Poly_all_coeffs ok
+test_Poly_all_monoms ok
+test_Poly_all_terms ok
+test_Poly_termwise ok
+test_Poly_length ok
+test_Poly_as_dict ok
+test_Poly_as_expr ok
+test_Poly_lift ok
+test_Poly_deflate ok
+test_Poly_inject ok
+test_Poly_eject ok
+test_Poly_exclude ok
+test_Poly__gen_to_level ok
+test_Poly_degree ok
+test_Poly_degree_list ok
+test_Poly_total_degree ok
+test_Poly_homogenize ok
+test_Poly_homogeneous_order ok
+test_Poly_LC ok
+test_Poly_TC ok
+test_Poly_EC ok
+test_Poly_coeff ok
+test_Poly_nth ok
+test_Poly_LM ok
+test_Poly_LM_custom_order ok
+test_Poly_EM ok
+test_Poly_LT ok
+test_Poly_ET ok
+test_Poly_max_norm ok
+test_Poly_l1_norm ok
+test_Poly_clear_denoms ok
+test_Poly_rat_clear_denoms ok
+test_Poly_integrate ok
+test_Poly_diff ok
+test_issue_9585 ok
+test_Poly_eval ok
+test_Poly___call__ ok
+test_parallel_poly_from_expr ok
+test_pdiv ok
+test_div ok
+test_issue_7864 ok
+test_gcdex ok
+test_revert ok
+test_subresultants ok
+test_resultant ok
+test_discriminant ok
+test_dispersion ok
+test_gcd_list ok
+test_lcm_list ok
+test_gcd ok
+test_gcd_numbers_vs_polys ok
+test_terms_gcd ok
+test_trunc ok
+test_monic ok
+test_content ok
+test_primitive ok
+test_compose ok
+test_shift ok
+test_transform ok
+test_sturm ok
+test_gff ok
+test_norm ok
+test_sqf_norm ok
+test_sqf ok
+test_factor ok
+test_factor_large ok
+test_factor_noeval ok
+test_intervals ok
+test_refine_root ok
+test_count_roots ok
+test_Poly_root ok
+test_real_roots ok
+test_all_roots ok
+test_nroots ok
+test_ground_roots ok
+test_nth_power_roots_poly ok
+test_torational_factor_list ok
+test_cancel ok
+test_reduced ok
+test_groebner ok
+test_fglm ok
+test_is_zero_dimensional ok
+test_GroebnerBasis ok
+test_poly ok
+test_keep_coeff ok
+test_poly_matching_consistency ok
+test_issue_5786 f
+test_noncommutative ok
+test_to_rational_coeffs ok
+test_factor_terms F
+test_as_list ok
+test_issue_11198 ok
+test_Poly_precision ok
+test_issue_12400 ok
+test_issue_14364 ok
+test_issue_15669 ok
+test_issue_17988 ok
+test_issue_18205 ok
+test_issue_8695 F                                                         [FAIL]
+
+
+________________________________________________________________________________
+____________ sympy/polys/tests/test_polytools.py:test_factor_terms _____________
+Traceback (most recent call last):
+  File "/testbed/sympy/polys/tests/test_polytools.py", line 3276, in test_factor_terms
+    assert sqf_list(x*(x + y)) == (1, [(x**2 + x*y, 1)])
+AssertionError
+________________________________________________________________________________
+_____________ sympy/polys/tests/test_polytools.py:test_issue_8695 ______________
+Traceback (most recent call last):
+  File "/testbed/sympy/polys/tests/test_polytools.py", line 3340, in test_issue_8695
+    assert sqf_list(p) == result
+AssertionError
+
+== tests finished: 147 passed, 2 failed, 1 expected to fail, in 6.50 seconds ===
+DO *NOT* COMMIT!
++ git checkout 3dff1b98a78f28c953ae2140b69356b8391e399c sympy/polys/tests/test_polytools.py
+Updated 1 path from 98178a19ee

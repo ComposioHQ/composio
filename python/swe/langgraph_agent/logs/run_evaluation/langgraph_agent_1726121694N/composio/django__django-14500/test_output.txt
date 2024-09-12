@@ -1,0 +1,699 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/db/migrations/executor.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 8c3bd0b708b488a1f6e8bd8cc6b96569904605be
+Author: Sanskar Jaiswal <jaiswalsanskar078@gmail.com>
+Date:   Sat Oct 17 00:47:13 2020 +0530
+
+    Fixed #31653 -- Added AddConstraintNotValid()/ValidateConstraint() operations for PostgreSQL.
+
+diff --git a/django/contrib/postgres/operations.py b/django/contrib/postgres/operations.py
+index e5f2b9e92f..037bb4ec22 100644
+--- a/django/contrib/postgres/operations.py
++++ b/django/contrib/postgres/operations.py
+@@ -2,8 +2,9 @@ from django.contrib.postgres.signals import (
+     get_citext_oids, get_hstore_oids, register_type_handlers,
+ )
+ from django.db import NotSupportedError, router
+-from django.db.migrations import AddIndex, RemoveIndex
++from django.db.migrations import AddConstraint, AddIndex, RemoveIndex
+ from django.db.migrations.operations.base import Operation
++from django.db.models.constraints import CheckConstraint
+ 
+ 
+ class CreateExtension(Operation):
+@@ -256,3 +257,73 @@ class RemoveCollation(CollationOperation):
+     @property
+     def migration_name_fragment(self):
+         return 'remove_collation_%s' % self.name.lower()
++
++
++class AddConstraintNotValid(AddConstraint):
++    """
++    Add a table constraint without enforcing validation, using PostgreSQL's
++    NOT VALID syntax.
++    """
++
++    def __init__(self, model_name, constraint):
++        if not isinstance(constraint, CheckConstraint):
++            raise TypeError(
++                'AddConstraintNotValid.constraint must be a check constraint.'
++            )
++        super().__init__(model_name, constraint)
++
++    def describe(self):
++        return 'Create not valid constraint %s on model %s' % (
++            self.constraint.name,
++            self.model_name,
++        )
++
++    def database_forwards(self, app_label, schema_editor, from_state, to_state):
++        model = from_state.apps.get_model(app_label, self.model_name)
++        if self.allow_migrate_model(schema_editor.connection.alias, model):
++            constraint_sql = self.constraint.create_sql(model, schema_editor)
++            if constraint_sql:
++                # Constraint.create_sql returns interpolated SQL which makes
++                # params=None a necessity to avoid escaping attempts on
++                # execution.
++                schema_editor.execute(str(constraint_sql) + ' NOT VALID', params=None)
++
++    @property
++    def migration_name_fragment(self):
++        return super().migration_name_fragment + '_not_valid'
++
++
++class ValidateConstraint(Operation):
++    """Validate a table NOT VALID constraint."""
++
++    def __init__(self, model_name, name):
++        self.model_name = model_name
++        self.name = name
++
++    def describe(self):
++        return 'Validate constraint %s on model %s' % (self.name, self.model_name)
++
++    def database_forwards(self, app_label, schema_editor, from_state, to_state):
++        model = from_state.apps.get_model(app_label, self.model_name)
++        if self.allow_migrate_model(schema_editor.connection.alias, model):
++            schema_editor.execute('ALTER TABLE %s VALIDATE CONSTRAINT %s' % (
++                schema_editor.quote_name(model._meta.db_table),
++                schema_editor.quote_name(self.name),
++            ))
++
++    def database_backwards(self, app_label, schema_editor, from_state, to_state):
++        # PostgreSQL does not provide a way to make a constraint invalid.
++        pass
++
++    def state_forwards(self, app_label, state):
++        pass
++
++    @property
++    def migration_name_fragment(self):
++        return '%s_validate_%s' % (self.model_name.lower(), self.name.lower())
++
++    def deconstruct(self):
++        return self.__class__.__name__, [], {
++            'model_name': self.model_name,
++            'name': self.name,
++        }
+diff --git a/docs/ref/contrib/postgres/operations.txt b/docs/ref/contrib/postgres/operations.txt
+index dc9faebcdb..4a0ef7a6b8 100644
+--- a/docs/ref/contrib/postgres/operations.txt
++++ b/docs/ref/contrib/postgres/operations.txt
+@@ -188,3 +188,39 @@ database.
+ 
+     The ``CONCURRENTLY`` option is not supported inside a transaction (see
+     :ref:`non-atomic migration <non-atomic-migrations>`).
++
++Adding constraints without enforcing validation
++===============================================
++
++.. versionadded:: 4.0
++
++PostgreSQL supports the ``NOT VALID`` option with the ``ADD CONSTRAINT``
++statement to add check constraints without enforcing validation on existing
++rows. This option is useful if you want to skip the potentially lengthy scan of
++the table to verify that all existing rows satisfy the constraint.
++
++To validate check constraints created with the ``NOT VALID`` option at a later
++point of time, use the
++:class:`~django.contrib.postgres.operations.ValidateConstraint` operation.
++
++See `the PostgreSQL documentation <https://www.postgresql.org/docs/current/
++sql-altertable.html#SQL-ALTERTABLE-NOTES>`__ for more details.
++
++.. class:: AddConstraintNotValid(model_name, constraint)
++
++    Like :class:`~django.db.migrations.operations.AddConstraint`, but avoids
++    validating the constraint on existing rows.
++
++.. class:: ValidateConstraint(model_name, name)
++
++    Scans through the table and validates the given check constraint on
++    existing rows.
++
++.. note::
++
++    ``AddConstraintNotValid`` and ``ValidateConstraint`` operations should be
++    performed in two separate migrations. Performing both operations in the
++    same atomic migration has the same effect as
++    :class:`~django.db.migrations.operations.AddConstraint`, whereas performing
++    them in a single non-atomic migration, may leave your database in an
++    inconsistent state if the ``ValidateConstraint`` operation fails.
+diff --git a/docs/releases/4.0.txt b/docs/releases/4.0.txt
+index 60c449bc88..2bdb76ef3d 100644
+--- a/docs/releases/4.0.txt
++++ b/docs/releases/4.0.txt
+@@ -122,6 +122,15 @@ Minor features
+ * The PostgreSQL backend now supports connecting by a service name. See
+   :ref:`postgresql-connection-settings` for more details.
+ 
++* The new :class:`~django.contrib.postgres.operations.AddConstraintNotValid`
++  operation allows creating check constraints on PostgreSQL without verifying
++  that all existing rows satisfy the new constraint.
++
++* The new :class:`~django.contrib.postgres.operations.ValidateConstraint`
++  operation allows validating check constraints which were created using
++  :class:`~django.contrib.postgres.operations.AddConstraintNotValid` on
++  PostgreSQL.
++
+ :mod:`django.contrib.redirects`
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
+diff --git a/tests/postgres_tests/test_operations.py b/tests/postgres_tests/test_operations.py
+index 9faf938c55..1464f3177e 100644
+--- a/tests/postgres_tests/test_operations.py
++++ b/tests/postgres_tests/test_operations.py
+@@ -3,9 +3,11 @@ from unittest import mock
+ 
+ from migrations.test_base import OperationTestBase
+ 
+-from django.db import NotSupportedError, connection
++from django.db import (
++    IntegrityError, NotSupportedError, connection, transaction,
++)
+ from django.db.migrations.state import ProjectState
+-from django.db.models import Index
++from django.db.models import CheckConstraint, Index, Q, UniqueConstraint
+ from django.db.utils import ProgrammingError
+ from django.test import modify_settings, override_settings, skipUnlessDBFeature
+ from django.test.utils import CaptureQueriesContext
+@@ -15,8 +17,9 @@ from . import PostgreSQLTestCase
+ try:
+     from django.contrib.postgres.indexes import BrinIndex, BTreeIndex
+     from django.contrib.postgres.operations import (
+-        AddIndexConcurrently, BloomExtension, CreateCollation, CreateExtension,
+-        RemoveCollation, RemoveIndexConcurrently,
++        AddConstraintNotValid, AddIndexConcurrently, BloomExtension,
++        CreateCollation, CreateExtension, RemoveCollation,
++        RemoveIndexConcurrently, ValidateConstraint,
+     )
+ except ImportError:
+     pass
+@@ -392,3 +395,102 @@ class RemoveCollationTests(PostgreSQLTestCase):
+         self.assertEqual(name, 'RemoveCollation')
+         self.assertEqual(args, [])
+         self.assertEqual(kwargs, {'name': 'C_test', 'locale': 'C'})
++
++
++@unittest.skipUnless(connection.vendor == 'postgresql', 'PostgreSQL specific tests.')
++@modify_settings(INSTALLED_APPS={'append': 'migrations'})
++class AddConstraintNotValidTests(OperationTestBase):
++    app_label = 'test_add_constraint_not_valid'
++
++    def test_non_check_constraint_not_supported(self):
++        constraint = UniqueConstraint(fields=['pink'], name='pony_pink_uniq')
++        msg = 'AddConstraintNotValid.constraint must be a check constraint.'
++        with self.assertRaisesMessage(TypeError, msg):
++            AddConstraintNotValid(model_name='pony', constraint=constraint)
++
++    def test_add(self):
++        table_name = f'{self.app_label}_pony'
++        constraint_name = 'pony_pink_gte_check'
++        constraint = CheckConstraint(check=Q(pink__gte=4), name=constraint_name)
++        operation = AddConstraintNotValid('Pony', constraint=constraint)
++        project_state, new_state = self.make_test_state(self.app_label, operation)
++        self.assertEqual(
++            operation.describe(),
++            f'Create not valid constraint {constraint_name} on model Pony',
++        )
++        self.assertEqual(
++            operation.migration_name_fragment,
++            f'pony_{constraint_name}_not_valid',
++        )
++        self.assertEqual(
++            len(new_state.models[self.app_label, 'pony'].options['constraints']),
++            1,
++        )
++        self.assertConstraintNotExists(table_name, constraint_name)
++        Pony = new_state.apps.get_model(self.app_label, 'Pony')
++        self.assertEqual(len(Pony._meta.constraints), 1)
++        Pony.objects.create(pink=2, weight=1.0)
++        # Add constraint.
++        with connection.schema_editor(atomic=True) as editor:
++            operation.database_forwards(self.app_label, editor, project_state, new_state)
++        msg = f'check constraint "{constraint_name}"'
++        with self.assertRaisesMessage(IntegrityError, msg), transaction.atomic():
++            Pony.objects.create(pink=3, weight=1.0)
++        self.assertConstraintExists(table_name, constraint_name)
++        # Reversal.
++        with connection.schema_editor(atomic=True) as editor:
++            operation.database_backwards(self.app_label, editor, project_state, new_state)
++        self.assertConstraintNotExists(table_name, constraint_name)
++        Pony.objects.create(pink=3, weight=1.0)
++        # Deconstruction.
++        name, args, kwargs = operation.deconstruct()
++        self.assertEqual(name, 'AddConstraintNotValid')
++        self.assertEqual(args, [])
++        self.assertEqual(kwargs, {'model_name': 'Pony', 'constraint': constraint})
++
++
++@unittest.skipUnless(connection.vendor == 'postgresql', 'PostgreSQL specific tests.')
++@modify_settings(INSTALLED_APPS={'append': 'migrations'})
++class ValidateConstraintTests(OperationTestBase):
++    app_label = 'test_validate_constraint'
++
++    def test_validate(self):
++        constraint_name = 'pony_pink_gte_check'
++        constraint = CheckConstraint(check=Q(pink__gte=4), name=constraint_name)
++        operation = AddConstraintNotValid('Pony', constraint=constraint)
++        project_state, new_state = self.make_test_state(self.app_label, operation)
++        Pony = new_state.apps.get_model(self.app_label, 'Pony')
++        obj = Pony.objects.create(pink=2, weight=1.0)
++        # Add constraint.
++        with connection.schema_editor(atomic=True) as editor:
++            operation.database_forwards(self.app_label, editor, project_state, new_state)
++        project_state = new_state
++        new_state = new_state.clone()
++        operation = ValidateConstraint('Pony', name=constraint_name)
++        operation.state_forwards(self.app_label, new_state)
++        self.assertEqual(
++            operation.describe(),
++            f'Validate constraint {constraint_name} on model Pony',
++        )
++        self.assertEqual(
++            operation.migration_name_fragment,
++            f'pony_validate_{constraint_name}',
++        )
++        # Validate constraint.
++        with connection.schema_editor(atomic=True) as editor:
++            msg = f'check constraint "{constraint_name}"'
++            with self.assertRaisesMessage(IntegrityError, msg):
++                operation.database_forwards(self.app_label, editor, project_state, new_state)
++        obj.pink = 5
++        obj.save()
++        with connection.schema_editor(atomic=True) as editor:
++            operation.database_forwards(self.app_label, editor, project_state, new_state)
++        # Reversal is a noop.
++        with connection.schema_editor() as editor:
++            with self.assertNumQueries(0):
++                operation.database_backwards(self.app_label, editor, new_state, project_state)
++        # Deconstruction.
++        name, args, kwargs = operation.deconstruct()
++        self.assertEqual(name, 'ValidateConstraint')
++        self.assertEqual(args, [])
++        self.assertEqual(kwargs, {'model_name': 'Pony', 'name': constraint_name})
++ git diff 8c3bd0b708b488a1f6e8bd8cc6b96569904605be
+diff --git a/django/db/migrations/executor.py b/django/db/migrations/executor.py
+index 57042a8690..6a8200ddfa 100644
+--- a/django/db/migrations/executor.py
++++ b/django/db/migrations/executor.py
+@@ -254,6 +254,8 @@ class MigrationExecutor:
+         if migration.replaces:
+             for app_label, name in migration.replaces:
+                 self.recorder.record_unapplied(app_label, name)
++            # Also mark the squashed migration itself as unapplied
++            self.recorder.record_unapplied(migration.app_label, migration.name)
+         else:
+             self.recorder.record_unapplied(migration.app_label, migration.name)
+         # Report progress
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.3.2 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210608054651) (3.8.1)
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210608054651) (2024.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210608054651) (0.5.1)
+Requirement already satisfied: typing-extensions>=4 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from asgiref>=3.3.2->Django==4.0.dev20210608054651) (4.12.2)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-4.0.dev20210608054651-0.editable-py3-none-any.whl size=26172 sha256=f4497e0269509de8e1260e1debe1c09286231cbae929cfacf5f7721f86b43e24
+  Stored in directory: /tmp/pip-ephem-wheel-cache-depzgquu/wheels/b2/50/f1/218f2e9962a80d01a4b1297698978f9fb3b60056aa24343f24
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 4.0.dev20210608054651
+    Uninstalling Django-4.0.dev20210608054651:
+      Successfully uninstalled Django-4.0.dev20210608054651
+Successfully installed Django-4.0.dev20210608054651
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 8c3bd0b708b488a1f6e8bd8cc6b96569904605be tests/migrations/test_executor.py
+Updated 0 paths from 4e6717eecc
++ git apply -v -
+Checking patch tests/migrations/test_executor.py...
+Applied patch tests/migrations/test_executor.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 migrations.test_executor
+Testing against Django installed in '/testbed/django'
+Importing application migrations
+Found 22 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, messages, migrations, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table migrations_modelwithcustombase
+    Creating table migrations_unmigratedmodel
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, messages, migrations, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table migrations_modelwithcustombase
+    Creating table migrations_unmigratedmodel
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+Creating test database for alias 'other' ('file:memorydb_other?mode=memory&cache=shared')...
+System check identified no issues (0 silenced).
+test_alter_id_type_with_fk (migrations.test_executor.ExecutorTests) ... ok
+test_apply_all_replaced_marks_replacement_as_applied (migrations.test_executor.ExecutorTests)
+Applying all replaced migrations marks replacement as applied (#24628). ... ok
+test_atomic_operation_in_non_atomic_migration (migrations.test_executor.ExecutorTests)
+An atomic operation is properly rolled back inside a non-atomic ... ok
+test_custom_user (migrations.test_executor.ExecutorTests)
+Regression test for #22325 - references to a custom user model defined in the ... ok
+test_detect_soft_applied_add_field_manytomanyfield (migrations.test_executor.ExecutorTests)
+executor.detect_soft_applied() detects ManyToManyField tables from an ... ok
+test_empty_plan (migrations.test_executor.ExecutorTests)
+Re-planning a full migration of a fully-migrated set doesn't ... ok
+test_migrate_marks_replacement_applied_even_if_it_did_nothing (migrations.test_executor.ExecutorTests)
+A new squash migration will be marked as applied even if all its ... ok
+test_migrate_marks_replacement_unapplied (migrations.test_executor.ExecutorTests) ... ok
+test_migrations_applied_and_recorded_atomically (migrations.test_executor.ExecutorTests)
+Migrations are applied and recorded atomically. ... ok
+test_migrations_not_applied_on_deferred_sql_failure (migrations.test_executor.ExecutorTests)
+Migrations are not recorded if deferred SQL application fails. ... ok
+test_mixed_plan_not_supported (migrations.test_executor.ExecutorTests)
+Although the MigrationExecutor interfaces allows for mixed migration ... ok
+test_non_atomic_migration (migrations.test_executor.ExecutorTests)
+Applying a non-atomic migration works as expected. ... ok
+test_process_callback (migrations.test_executor.ExecutorTests)
+#24129 - Tests callback process ... ok
+test_run (migrations.test_executor.ExecutorTests)
+Tests running a simple set of migrations. ... ok
+test_run_with_squashed (migrations.test_executor.ExecutorTests)
+Tests running a squashed migration from zero (should ignore what it replaces) ... ok
+test_soft_apply (migrations.test_executor.ExecutorTests)
+Tests detection of initial migrations already having been applied. ... ok
+test_unrelated_applied_migrations_mutate_state (migrations.test_executor.ExecutorTests)
+#26647 - Unrelated applied migrations should be part of the final ... ok
+test_unrelated_model_lookups_backwards (migrations.test_executor.ExecutorTests)
+#24123 - All models of apps being unapplied which are ... ok
+test_unrelated_model_lookups_forwards (migrations.test_executor.ExecutorTests)
+#24123 - All models of apps already applied which are ... ok
+test_backwards_nothing_to_do (migrations.test_executor.ExecutorUnitTests)
+If the current state satisfies the given target, do nothing. ... ok
+test_minimize_rollbacks (migrations.test_executor.ExecutorUnitTests)
+Minimize unnecessary rollbacks in connected apps. ... ok
+test_minimize_rollbacks_branchy (migrations.test_executor.ExecutorUnitTests)
+Minimize rollbacks when target has multiple in-app children. ... ok
+
+----------------------------------------------------------------------
+Ran 22 tests in 0.387s
+
+OK
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Destroying test database for alias 'other' ('file:memorydb_other?mode=memory&cache=shared')...
++ git checkout 8c3bd0b708b488a1f6e8bd8cc6b96569904605be tests/migrations/test_executor.py
+Updated 1 path from 4e6717eecc

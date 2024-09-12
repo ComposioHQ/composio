@@ -1,0 +1,156 @@
+diff --git a/django/contrib/admin/options.py b/django/contrib/admin/options.py
+index 5f07a420..9ee15713 100644
+--- a/django/contrib/admin/options.py
++++ b/django/contrib/admin/options.py
+@@ -2010,26 +2010,31 @@ class ModelAdmin(BaseModelAdmin):
+                 request.POST, request.FILES, queryset=modified_objects
+             )
+             if formset.is_valid():
+-                changecount = 0
+-                for form in formset.forms:
+-                    if form.has_changed():
+-                        obj = self.save_form(request, form, change=True)
+-                        self.save_model(request, obj, form, change=True)
+-                        self.save_related(request, form, formsets=[], change=True)
+-                        change_msg = self.construct_change_message(request, form, None)
+-                        self.log_change(request, obj, change_msg)
+-                        changecount += 1
+-
+-                if changecount:
+-                    msg = ngettext(
+-                        "%(count)s %(name)s was changed successfully.",
+-                        "%(count)s %(name)s were changed successfully.",
+-                        changecount,
+-                    ) % {
+-                        "count": changecount,
+-                        "name": model_ngettext(self.opts, changecount),
+-                    }
+-                    self.message_user(request, msg, messages.SUCCESS)
++                try:
++                    with transaction.atomic():
++                        changecount = 0
++                        for form in formset.forms:
++                            if form.has_changed():
++                                obj = self.save_form(request, form, change=True)
++                                self.save_model(request, obj, form, change=True)
++                                self.save_related(request, form, formsets=[], change=True)
++                                change_msg = self.construct_change_message(request, form, None)
++                                self.log_change(request, obj, change_msg)
++                                changecount += 1
++
++                        if changecount:
++                            msg = ngettext(
++                                "%(count)s %(name)s was changed successfully.",
++                                "%(count)s %(name)s were changed successfully.",
++                                changecount,
++                            ) % {
++                                "count": changecount,
++                                "name": model_ngettext(self.opts, changecount),
++                            }
++                            self.message_user(request, msg, messages.SUCCESS)
++                except Exception as e:
++                    self.message_user(request, f"An error occurred: {str(e)}", messages.ERROR)
++                    return HttpResponseRedirect(request.get_full_path())
+ 
+                 return HttpResponseRedirect(request.get_full_path())
+ 
+diff --git a/tests/admin_views/test_changelist_transactions.py b/tests/admin_views/test_changelist_transactions.py
+new file mode 100644
+index 00000000..afd059a4
+--- /dev/null
++++ b/tests/admin_views/test_changelist_transactions.py
+@@ -0,0 +1,93 @@
++from django.contrib.admin.models import LogEntry
++from django.contrib.auth.models import User
++from django.test import TestCase, TransactionTestCase
++from django.urls import reverse
++
++from .models import Book
++
++
++class ChangelistTransactionTests(TransactionTestCase):
++    @classmethod
++    def setUpTestData(cls):
++        cls.superuser = User.objects.create_superuser(
++            username='super', email='super@example.com', password='secret'
++        )
++        cls.book1 = Book.objects.create(name='Book 1', author='Author 1', pages=100)
++        cls.book2 = Book.objects.create(name='Book 2', author='Author 2', pages=200)
++
++    def setUp(self):
++        self.client.force_login(self.superuser)
++
++    def test_changelist_edit_transaction(self):
++        """Test that edits in the changelist view are wrapped in a transaction."""
++        url = reverse('admin:admin_views_book_changelist')
++        post_data = {
++            'form-TOTAL_FORMS': '2',
++            'form-INITIAL_FORMS': '2',
++            'form-MIN_NUM_FORMS': '0',
++            'form-MAX_NUM_FORMS': '1000',
++            'form-0-id': str(self.book1.pk),
++            'form-0-name': 'Updated Book 1',
++            'form-0-author': 'Updated Author 1',
++            'form-0-pages': '150',
++            'form-1-id': str(self.book2.pk),
++            'form-1-name': 'Updated Book 2',
++            'form-1-author': 'Updated Author 2',
++            'form-1-pages': 'invalid',  # This should cause a validation error
++            '_save': 'Save',
++        }
++
++        response = self.client.post(url, post_data)
++
++        # Check that the response is a redirect (which would indicate a successful save)
++        self.assertEqual(response.status_code, 302)
++
++        # Verify that no changes were made due to the transaction rollback
++        self.book1.refresh_from_db()
++        self.book2.refresh_from_db()
++        self.assertEqual(self.book1.name, 'Book 1')
++        self.assertEqual(self.book1.author, 'Author 1')
++        self.assertEqual(self.book1.pages, 100)
++        self.assertEqual(self.book2.name, 'Book 2')
++        self.assertEqual(self.book2.author, 'Author 2')
++        self.assertEqual(self.book2.pages, 200)
++
++        # Verify that no log entries were created
++        self.assertEqual(LogEntry.objects.count(), 0)
++
++    def test_successful_changelist_edit(self):
++        """Test that successful edits in the changelist view are committed."""
++        url = reverse('admin:admin_views_book_changelist')
++        post_data = {
++            'form-TOTAL_FORMS': '2',
++            'form-INITIAL_FORMS': '2',
++            'form-MIN_NUM_FORMS': '0',
++            'form-MAX_NUM_FORMS': '1000',
++            'form-0-id': str(self.book1.pk),
++            'form-0-name': 'Updated Book 1',
++            'form-0-author': 'Updated Author 1',
++            'form-0-pages': '150',
++            'form-1-id': str(self.book2.pk),
++            'form-1-name': 'Updated Book 2',
++            'form-1-author': 'Updated Author 2',
++            'form-1-pages': '250',
++            '_save': 'Save',
++        }
++
++        response = self.client.post(url, post_data)
++
++        # Check that the response is a redirect (which would indicate a successful save)
++        self.assertEqual(response.status_code, 302)
++
++        # Verify that changes were made
++        self.book1.refresh_from_db()
++        self.book2.refresh_from_db()
++        self.assertEqual(self.book1.name, 'Updated Book 1')
++        self.assertEqual(self.book1.author, 'Updated Author 1')
++        self.assertEqual(self.book1.pages, 150)
++        self.assertEqual(self.book2.name, 'Updated Book 2')
++        self.assertEqual(self.book2.author, 'Updated Author 2')
++        self.assertEqual(self.book2.pages, 250)
++
++        # Verify that log entries were created
++        self.assertEqual(LogEntry.objects.count(), 2)
+\ No newline at end of file

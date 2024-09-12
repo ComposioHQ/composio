@@ -1,0 +1,550 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen
++ locale-gen
+Generating locales (this might take a while)...
+  en_US.UTF-8... done
+Generation complete.
++ export LANG=en_US.UTF-8
++ LANG=en_US.UTF-8
++ export LANGUAGE=en_US:en
++ LANGUAGE=en_US:en
++ export LC_ALL=en_US.UTF-8
++ LC_ALL=en_US.UTF-8
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/core/files/locks.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 580a4341cb0b4cbfc215a70afc004875a7e815f4
+Author: manav014 <dpsman13016@gmail.com>
+Date:   Sun Sep 13 18:13:21 2020 -0700
+
+    Fixed #31636 -- Made BooleanFieldListFilter respect Field.choices.
+
+diff --git a/django/contrib/admin/filters.py b/django/contrib/admin/filters.py
+index 3e02cd89d7..7f4690806b 100644
+--- a/django/contrib/admin/filters.py
++++ b/django/contrib/admin/filters.py
+@@ -244,10 +244,12 @@ class BooleanFieldListFilter(FieldListFilter):
+         return [self.lookup_kwarg, self.lookup_kwarg2]
+ 
+     def choices(self, changelist):
++        field_choices = dict(self.field.flatchoices)
+         for lookup, title in (
+-                (None, _('All')),
+-                ('1', _('Yes')),
+-                ('0', _('No'))):
++            (None, _('All')),
++            ('1', field_choices.get(True, _('Yes'))),
++            ('0', field_choices.get(False, _('No'))),
++        ):
+             yield {
+                 'selected': self.lookup_val == lookup and not self.lookup_val2,
+                 'query_string': changelist.get_query_string({self.lookup_kwarg: lookup}, [self.lookup_kwarg2]),
+@@ -257,7 +259,7 @@ class BooleanFieldListFilter(FieldListFilter):
+             yield {
+                 'selected': self.lookup_val2 == 'True',
+                 'query_string': changelist.get_query_string({self.lookup_kwarg2: 'True'}, [self.lookup_kwarg]),
+-                'display': _('Unknown'),
++                'display': field_choices.get(None, _('Unknown')),
+             }
+ 
+ 
+diff --git a/tests/admin_filters/models.py b/tests/admin_filters/models.py
+index cee3af5b90..f286e641de 100644
+--- a/tests/admin_filters/models.py
++++ b/tests/admin_filters/models.py
+@@ -31,6 +31,11 @@ class Book(models.Model):
+     is_best_seller = models.BooleanField(default=0, null=True)
+     is_best_seller2 = models.NullBooleanField(default=0)
+     date_registered = models.DateField(null=True)
++    availability = models.BooleanField(choices=(
++        (False, 'Paid'),
++        (True, 'Free'),
++        (None, 'Obscure'),
++    ), null=True)
+     # This field name is intentionally 2 characters long (#16080).
+     no = models.IntegerField(verbose_name='number', blank=True, null=True)
+ 
+diff --git a/tests/admin_filters/tests.py b/tests/admin_filters/tests.py
+index 16a7ce495c..6986afb64a 100644
+--- a/tests/admin_filters/tests.py
++++ b/tests/admin_filters/tests.py
+@@ -140,7 +140,7 @@ class CustomUserAdmin(UserAdmin):
+ 
+ 
+ class BookAdmin(ModelAdmin):
+-    list_filter = ('year', 'author', 'contributors', 'is_best_seller', 'date_registered', 'no')
++    list_filter = ('year', 'author', 'contributors', 'is_best_seller', 'date_registered', 'no', 'availability')
+     ordering = ('-id',)
+ 
+ 
+@@ -156,6 +156,7 @@ class BookAdminWithTupleBooleanFilter(BookAdmin):
+         ('is_best_seller', BooleanFieldListFilter),
+         'date_registered',
+         'no',
++        ('availability', BooleanFieldListFilter),
+     )
+ 
+ 
+@@ -288,22 +289,22 @@ class ListFiltersTests(TestCase):
+         cls.djangonaut_book = Book.objects.create(
+             title='Djangonaut: an art of living', year=2009,
+             author=cls.alfred, is_best_seller=True, date_registered=cls.today,
+-            is_best_seller2=True,
++            is_best_seller2=True, availability=True,
+         )
+         cls.bio_book = Book.objects.create(
+             title='Django: a biography', year=1999, author=cls.alfred,
+             is_best_seller=False, no=207,
+-            is_best_seller2=False,
++            is_best_seller2=False, availability=False,
+         )
+         cls.django_book = Book.objects.create(
+             title='The Django Book', year=None, author=cls.bob,
+             is_best_seller=None, date_registered=cls.today, no=103,
+-            is_best_seller2=None,
++            is_best_seller2=None, availability=True,
+         )
+         cls.guitar_book = Book.objects.create(
+             title='Guitar for dummies', year=2002, is_best_seller=True,
+             date_registered=cls.one_week_ago,
+-            is_best_seller2=True,
++            is_best_seller2=True, availability=None,
+         )
+         cls.guitar_book.contributors.set([cls.bob, cls.lisa])
+ 
+@@ -956,6 +957,63 @@ class ListFiltersTests(TestCase):
+         self.assertIs(choice['selected'], True)
+         self.assertEqual(choice['query_string'], '?is_best_seller__isnull=True')
+ 
++    def test_booleanfieldlistfilter_choices(self):
++        modeladmin = BookAdmin(Book, site)
++        self.verify_booleanfieldlistfilter_choices(modeladmin)
++
++    def test_booleanfieldlistfilter_tuple_choices(self):
++        modeladmin = BookAdminWithTupleBooleanFilter(Book, site)
++        self.verify_booleanfieldlistfilter_choices(modeladmin)
++
++    def verify_booleanfieldlistfilter_choices(self, modeladmin):
++        # False.
++        request = self.request_factory.get('/', {'availability__exact': 0})
++        request.user = self.alfred
++        changelist = modeladmin.get_changelist_instance(request)
++        queryset = changelist.get_queryset(request)
++        self.assertEqual(list(queryset), [self.bio_book])
++        filterspec = changelist.get_filters(request)[0][6]
++        self.assertEqual(filterspec.title, 'availability')
++        choice = select_by(filterspec.choices(changelist), 'display', 'Paid')
++        self.assertIs(choice['selected'], True)
++        self.assertEqual(choice['query_string'], '?availability__exact=0')
++        # True.
++        request = self.request_factory.get('/', {'availability__exact': 1})
++        request.user = self.alfred
++        changelist = modeladmin.get_changelist_instance(request)
++        queryset = changelist.get_queryset(request)
++        self.assertEqual(list(queryset), [self.django_book, self.djangonaut_book])
++        filterspec = changelist.get_filters(request)[0][6]
++        self.assertEqual(filterspec.title, 'availability')
++        choice = select_by(filterspec.choices(changelist), 'display', 'Free')
++        self.assertIs(choice['selected'], True)
++        self.assertEqual(choice['query_string'], '?availability__exact=1')
++        # None.
++        request = self.request_factory.get('/', {'availability__isnull': 'True'})
++        request.user = self.alfred
++        changelist = modeladmin.get_changelist_instance(request)
++        queryset = changelist.get_queryset(request)
++        self.assertEqual(list(queryset), [self.guitar_book])
++        filterspec = changelist.get_filters(request)[0][6]
++        self.assertEqual(filterspec.title, 'availability')
++        choice = select_by(filterspec.choices(changelist), 'display', 'Obscure')
++        self.assertIs(choice['selected'], True)
++        self.assertEqual(choice['query_string'], '?availability__isnull=True')
++        # All.
++        request = self.request_factory.get('/')
++        request.user = self.alfred
++        changelist = modeladmin.get_changelist_instance(request)
++        queryset = changelist.get_queryset(request)
++        self.assertEqual(
++            list(queryset),
++            [self.guitar_book, self.django_book, self.bio_book, self.djangonaut_book],
++        )
++        filterspec = changelist.get_filters(request)[0][6]
++        self.assertEqual(filterspec.title, 'availability')
++        choice = select_by(filterspec.choices(changelist), 'display', 'All')
++        self.assertIs(choice['selected'], True)
++        self.assertEqual(choice['query_string'], '?')
++
+     def test_booleanfieldlistfilter_nullbooleanfield(self):
+         modeladmin = BookAdmin2(Book, site)
+ 
+@@ -1212,7 +1270,7 @@ class ListFiltersTests(TestCase):
+         queryset = changelist.get_queryset(request)
+         self.assertEqual(list(queryset), [self.bio_book])
+ 
+-        filterspec = changelist.get_filters(request)[0][-1]
++        filterspec = changelist.get_filters(request)[0][5]
+         self.assertEqual(filterspec.title, 'number')
+         choices = list(filterspec.choices(changelist))
+         self.assertIs(choices[2]['selected'], True)
++ git diff 580a4341cb0b4cbfc215a70afc004875a7e815f4
+diff --git a/django/core/files/locks.py b/django/core/files/locks.py
+index c46b00b905..4938347ea7 100644
+--- a/django/core/files/locks.py
++++ b/django/core/files/locks.py
+@@ -107,9 +107,15 @@ else:
+             return True
+     else:
+         def lock(f, flags):
+-            ret = fcntl.flock(_fd(f), flags)
+-            return ret == 0
++            try:
++                fcntl.flock(_fd(f), flags)
++                return True
++            except OSError:
++                return False
+ 
+         def unlock(f):
+-            ret = fcntl.flock(_fd(f), fcntl.LOCK_UN)
+-            return ret == 0
++            try:
++                fcntl.flock(_fd(f), fcntl.LOCK_UN)
++                return True
++            except OSError:
++                return False
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: asgiref>=3.2.10 in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.2) (3.4.1)
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.2) (2024.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.2) (0.4.4)
+Requirement already satisfied: typing-extensions in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from asgiref>=3.2.10->Django==3.2) (4.1.1)
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 3.2
+    Uninstalling Django-3.2:
+      Successfully uninstalled Django-3.2
+  Running setup.py develop for Django
+Successfully installed Django-3.2
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
++ git checkout 580a4341cb0b4cbfc215a70afc004875a7e815f4 tests/files/tests.py
+Updated 0 paths from aa00c53929
++ git apply -v -
+Checking patch tests/files/tests.py...
+Applied patch tests/files/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 files.tests
+test_content_file_custom_name (files.tests.ContentFileTestCase) ... ok
+test_content_file_default_name (files.tests.ContentFileTestCase) ... ok
+test_content_file_input_type (files.tests.ContentFileTestCase) ... ok
+test_open_resets_file_to_start_and_returns_context_manager (files.tests.ContentFileTestCase) ... ok
+test_size_changing_after_writing (files.tests.ContentFileTestCase)
+ContentFile.size changes after a write(). ... ok
+test_closing_of_filenames (files.tests.DimensionClosingBug) ... ok
+test_not_closing_of_files (files.tests.DimensionClosingBug) ... ok
+test_file_move_copystat_cifs (files.tests.FileMoveSafeTests) ... ok
+test_file_move_overwrite (files.tests.FileMoveSafeTests) ... ok
+test_context_manager (files.tests.FileTests) ... ok
+test_exclusive_lock (files.tests.FileTests) ... ok
+test_file_iteration (files.tests.FileTests) ... ok
+test_file_iteration_mac_newlines (files.tests.FileTests) ... ok
+test_file_iteration_mixed_newlines (files.tests.FileTests) ... ok
+test_file_iteration_windows_newlines (files.tests.FileTests) ... ok
+test_file_iteration_with_mac_newline_at_chunk_boundary (files.tests.FileTests) ... ok
+test_file_iteration_with_text (files.tests.FileTests) ... ok
+test_file_iteration_with_unix_newline_at_chunk_boundary (files.tests.FileTests) ... ok
+test_file_iteration_with_windows_newline_at_chunk_boundary (files.tests.FileTests) ... ok
+test_file_mode (files.tests.FileTests) ... ok
+test_io_wrapper (files.tests.FileTests) ... ok
+test_namedtemporaryfile_closes (files.tests.FileTests) ... ok
+test_open_reopens_closed_file_and_returns_context_manager (files.tests.FileTests) ... ok
+test_open_resets_opened_file_to_start_and_returns_context_manager (files.tests.FileTests) ... ok
+test_readable (files.tests.FileTests) ... ok
+test_seekable (files.tests.FileTests) ... ok
+test_shared_lock (files.tests.FileTests) ... ok
+test_unicode_file_name (files.tests.FileTests) ... ok
+test_unicode_uploadedfile_name (files.tests.FileTests) ... ok
+test_writable (files.tests.FileTests) ... ok
+test_invalid_image (files.tests.GetImageDimensionsTests) ... ok
+test_valid_image (files.tests.GetImageDimensionsTests) ... ok
+test_webp (files.tests.GetImageDimensionsTests) ... ok
+test_open_resets_file_to_start_and_returns_context_manager (files.tests.InMemoryUploadedFileTests) ... ok
+test_bug_19457 (files.tests.InconsistentGetImageDimensionsBug) ... ok
+test_multiple_calls (files.tests.InconsistentGetImageDimensionsBug) ... ok
+test_noname_file_default_name (files.tests.NoNameFileTestCase) ... ok
+test_noname_file_get_size (files.tests.NoNameFileTestCase) ... ok
+test_in_memory_spooled_temp (files.tests.SpooledTempTests) ... ok
+test_written_spooled_temp (files.tests.SpooledTempTests) ... ok
+test_extension_kept (files.tests.TemporaryUploadedFileTests)
+The temporary file name has the same suffix as the original file. ... ok
+test_file_upload_temp_dir_pathlib (files.tests.TemporaryUploadedFileTests) ... ok
+
+----------------------------------------------------------------------
+Ran 42 tests in 0.015s
+
+OK
+Testing against Django installed in '/testbed/django'
+Importing application files
+Skipping setup of unused database(s): default, other.
+System check identified no issues (0 silenced).
++ git checkout 580a4341cb0b4cbfc215a70afc004875a7e815f4 tests/files/tests.py
+Updated 1 path from aa00c53929

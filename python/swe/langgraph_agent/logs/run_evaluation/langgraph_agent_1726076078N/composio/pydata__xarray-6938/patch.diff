@@ -1,0 +1,82 @@
+diff --git a/xarray/core/dataset.py b/xarray/core/dataset.py
+index c775d05..f13b640 100644
+--- a/xarray/core/dataset.py
++++ b/xarray/core/dataset.py
+@@ -3688,7 +3688,7 @@ class Dataset(
+     def swap_dims(
+         self: T_Dataset, dims_dict: Mapping[Any, Hashable] = None, **dims_kwargs
+     ) -> T_Dataset:
+-        """Returns a new object with swapped dimensions.
++        """Returns a new Dataset object with swapped dimensions.
+ 
+         Parameters
+         ----------
+@@ -3702,7 +3702,12 @@ class Dataset(
+         Returns
+         -------
+         swapped : Dataset
+-            Dataset with swapped dimensions.
++            A new Dataset with swapped dimensions.
++
++        Notes
++        -----
++        This method always returns a new Dataset object, even if no swapping
++        is performed. The original Dataset remains unmodified.
+ 
+         Examples
+         --------
+@@ -3720,7 +3725,8 @@ class Dataset(
+             a        (x) int64 5 7
+             b        (x) float64 0.1 2.4
+ 
+-        >>> ds.swap_dims({"x": "y"})
++        >>> ds_swapped = ds.swap_dims({"x": "y"})
++        >>> ds_swapped
+         <xarray.Dataset>
+         Dimensions:  (y: 2)
+         Coordinates:
+@@ -3730,7 +3736,8 @@ class Dataset(
+             a        (y) int64 5 7
+             b        (y) float64 0.1 2.4
+ 
+-        >>> ds.swap_dims({"x": "z"})
++        >>> ds_swapped2 = ds.swap_dims({"x": "z"})
++        >>> ds_swapped2
+         <xarray.Dataset>
+         Dimensions:  (z: 2)
+         Coordinates:
+@@ -3772,22 +3779,28 @@ class Dataset(
+         for k, v in self.variables.items():
+             dims = tuple(dims_dict.get(dim, dim) for dim in v.dims)
+             if k in result_dims:
+-                var = v.to_index_variable()
++                var = v.to_index_variable().copy(deep=True)
+                 var.dims = dims
+                 if k in self._indexes:
+-                    indexes[k] = self._indexes[k]
++                    indexes[k] = self._indexes[k].copy()
+                     variables[k] = var
+                 else:
+                     index, index_vars = create_default_index_implicit(var)
+-                    indexes.update({name: index for name in index_vars})
+-                    variables.update(index_vars)
++                    indexes.update({name: index.copy() for name in index_vars})
++                    variables.update({name: var.copy(deep=True) for name, var in index_vars.items()})
+                     coord_names.update(index_vars)
+             else:
+-                var = v.to_base_variable()
++                var = v.copy(deep=True)
+                 var.dims = dims
+                 variables[k] = var
+ 
+-        return self._replace_with_new_dims(variables, coord_names, indexes=indexes)
++        return self._replace_with_new_dims(
++            variables,
++            coord_names=coord_names,
++            indexes=indexes,
++            attrs=self.attrs.copy(),
++            inplace=False
++        )
+ 
+     # change type of self and return to T_Dataset once
+     # https://github.com/python/mypy/issues/12846 is resolved

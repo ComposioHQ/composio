@@ -1,0 +1,64 @@
+diff --git a/sympy/polys/sqfreetools.py b/sympy/polys/sqfreetools.py
+index 1783a77..218d507 100644
+--- a/sympy/polys/sqfreetools.py
++++ b/sympy/polys/sqfreetools.py
+@@ -5,7 +5,7 @@
+ from sympy.polys.densearith import (
+     dup_neg, dmp_neg,
+     dup_sub, dmp_sub,
+-    dup_mul,
++    dup_mul, dmp_mul,
+     dup_quo, dmp_quo,
+     dup_mul_ground, dmp_mul_ground)
+ from sympy.polys.densebasic import (
+@@ -420,7 +420,26 @@ def dmp_sqf_list(f, u, K, all=False):
+ 
+         i += 1
+ 
+-    return coeff, result
++    # Combine factors with the same multiplicity
++    combined_result = []
++    current_factor = None
++    current_multiplicity = 0
++
++    for factor, multiplicity in result:
++        if current_factor is None:
++            current_factor = factor
++            current_multiplicity = multiplicity
++        elif multiplicity == current_multiplicity:
++            current_factor = dmp_mul(current_factor, factor, u, K)
++        else:
++            combined_result.append((current_factor, current_multiplicity))
++            current_factor = factor
++            current_multiplicity = multiplicity
++
++    if current_factor is not None:
++        combined_result.append((current_factor, current_multiplicity))
++
++    return coeff, combined_result
+ 
+ 
+ def dmp_sqf_list_include(f, u, K, all=False):
+diff --git a/sympy/polys/tests/test_sqfreetools.py b/sympy/polys/tests/test_sqfreetools.py
+index abe229e..57149e5 100644
+--- a/sympy/polys/tests/test_sqfreetools.py
++++ b/sympy/polys/tests/test_sqfreetools.py
+@@ -146,4 +146,18 @@ def test_dup_gff_list():
+     g = x**9 - 20*x**8 + 166*x**7 - 744*x**6 + 1965*x**5 - 3132*x**4 + 2948*x**3 - 1504*x**2 + 320*x
+     assert R.dup_gff_list(g) == [(x**2 - 5*x + 4, 1), (x**2 - 5*x + 4, 2), (x, 3)]
+ 
++def test_dmp_sqf_list_combined_factors():
++    R, x, y = ring("x,y", ZZ)
++    
++    # Test case for combining factors with the same multiplicity
++    f = (x**2 + 1) * (x - 1)**2 * (x - 2)**3 * (x - 3)**3
++    assert R.dmp_sqf_list(f) == (1, [(x**2 + 1, 1), (x - 1, 2), ((x - 2)*(x - 3), 3)])
++
++    # Test case for not combining factors with different multiplicities
++    g = x**5 - 2*x**4 - 2*x**3 + 4*x**2 + x - 2
++    assert R.dmp_sqf_list(g) == (1, [(x - 2, 1), (x**2 - 1, 2)])
++
++    # Additional test case
++    h = (x**2 + y)**2 * (x - y)**3 * (x + y)**3
++    assert R.dmp_sqf_list(h) == (1, [(x**2 + y, 2), ((x - y)*(x + y), 3)])
+     raises(ValueError, lambda: R.dup_gff_list(0))

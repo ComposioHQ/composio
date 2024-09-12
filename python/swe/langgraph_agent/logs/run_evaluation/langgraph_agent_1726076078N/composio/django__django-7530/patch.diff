@@ -1,0 +1,63 @@
+diff --git a/django/core/management/commands/migrate.py b/django/core/management/commands/migrate.py
+index 6846b33d..519a6958 100644
+--- a/django/core/management/commands/migrate.py
++++ b/django/core/management/commands/migrate.py
+@@ -85,6 +85,58 @@ class Command(BaseCommand):
+         # Raise an error if any migrations are applied before their dependencies.
+         executor.loader.check_consistent_history(connection)
+ 
++        # Perform consistency check with correct allow_migrate() calls
++        self.check_migrations_consistency(connection, executor)
++
++        # Before anything else, see if there's conflicting apps and drop out
++        # hard if there are any
++        conflicts = executor.loader.detect_conflicts()
++        if conflicts:
++            name_str = "; ".join(
++                "%s in %s" % (", ".join(names), app)
++                for app, names in conflicts.items()
++            )
++            raise CommandError(
++                "Conflicting migrations detected; multiple leaf nodes in the "
++                "migration graph: (%s).\nTo fix them run "
++                "'python manage.py makemigrations --merge'" % name_str
++            )
++
++        # Rest of the handle method...
++
++    def check_migrations_consistency(self, connection, executor):
++        """
++        Check consistency of migrations with correct allow_migrate() calls.
++        """
++        for app_config in apps.get_app_configs():
++            app_label = app_config.label
++            for model in app_config.get_models():
++                if router.allow_migrate(connection.alias, app_label, model_name=model._meta.model_name):
++                    executor.loader.check_consistent_history(connection)
++                    break
++    def handle(self, *args, **options):
++
++        self.verbosity = options['verbosity']
++        self.interactive = options['interactive']
++
++        # Import the 'management' module within each installed app, to register
++        # dispatcher events.
++        for app_config in apps.get_app_configs():
++            if module_has_submodule(app_config.module, "management"):
++                import_module('.management', app_config.name)
++
++        # Get the database we're operating from
++        db = options['database']
++        connection = connections[db]
++
++        # Hook for backends needing any database preparation
++        connection.prepare_database()
++        # Work out which apps have migrations and which do not
++        executor = MigrationExecutor(connection, self.migration_progress_callback)
++
++        # Raise an error if any migrations are applied before their dependencies.
++        executor.loader.check_consistent_history(connection)
++
+         # Before anything else, see if there's conflicting apps and drop out
+         # hard if there are any
+         conflicts = executor.loader.detect_conflicts()

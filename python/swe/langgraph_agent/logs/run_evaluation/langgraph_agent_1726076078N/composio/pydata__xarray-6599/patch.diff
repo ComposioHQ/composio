@@ -1,0 +1,40 @@
+diff --git a/xarray/core/computation.py b/xarray/core/computation.py
+index 823cbe0..05b40c8 100644
+--- a/xarray/core/computation.py
++++ b/xarray/core/computation.py
+@@ -1916,24 +1916,30 @@ def polyval(
+ 
+     return res
+ 
+-
++# This function was modified to explicitly handle timedelta64 data types
++# in addition to datetime64. This change resolves issues with polyval
++# when using timedelta64 coordinates.
+ def _ensure_numeric(data: T_Xarray) -> T_Xarray:
+-    """Converts all datetime64 variables to float64
++    """Converts all datetime64 and timedelta64 variables to float64
+ 
+     Parameters
+     ----------
+     data : DataArray or Dataset
+-        Variables with possible datetime dtypes.
++        Variables with possible datetime or timedelta dtypes.
+ 
+     Returns
+     -------
+     DataArray or Dataset
+-        Variables with datetime64 dtypes converted to float64.
++        Variables with datetime64 or timedelta64 dtypes converted to float64.
+     """
+     from .dataset import Dataset
+ 
+     def to_floatable(x: DataArray) -> DataArray:
+-        if x.dtype.kind in "mM":
++        if x.dtype.kind == 'm':  # timedelta64
++            return x.copy(
++                data=x.data.astype('timedelta64[ns]').astype(np.float64)
++            )
++        elif x.dtype.kind == 'M':  # datetime64
+             return x.copy(
+                 data=datetime_to_numeric(
+                     x.data,

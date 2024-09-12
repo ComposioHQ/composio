@@ -1,0 +1,829 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   sklearn/feature_extraction/text.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 67d06b18c68ee4452768f8a1e868565dd4354abf
+Author: pietruh <micp0@op.pl>
+Date:   Tue Apr 3 03:37:16 2018 +0200
+
+    DOC Mentioned that Calinski-Harabasz score is also known as Variance Rati… (#10893)
+
+diff --git a/doc/modules/clustering.rst b/doc/modules/clustering.rst
+index df2e890af..80b640621 100644
+--- a/doc/modules/clustering.rst
++++ b/doc/modules/clustering.rst
+@@ -1527,9 +1527,9 @@ Calinski-Harabaz Index
+ ----------------------
+ 
+ If the ground truth labels are not known, the Calinski-Harabaz index
+-(:func:`sklearn.metrics.calinski_harabaz_score`) can be used to evaluate the
+-model, where a higher Calinski-Harabaz score relates to a model with better
+-defined clusters.
++(:func:`sklearn.metrics.calinski_harabaz_score`) - also known as the Variance 
++Ratio Criterion - can be used to evaluate the model, where a higher 
++Calinski-Harabaz score relates to a model with better defined clusters.
+ 
+ For :math:`k` clusters, the Calinski-Harabaz score :math:`s` is given as the
+ ratio of the between-clusters dispersion mean and the within-cluster
+diff --git a/sklearn/metrics/cluster/unsupervised.py b/sklearn/metrics/cluster/unsupervised.py
+index f4da109f1..635aa42b0 100644
+--- a/sklearn/metrics/cluster/unsupervised.py
++++ b/sklearn/metrics/cluster/unsupervised.py
+@@ -211,6 +211,8 @@ def silhouette_samples(X, labels, metric='euclidean', **kwds):
+ def calinski_harabaz_score(X, labels):
+     """Compute the Calinski and Harabaz score.
+ 
++    It is also known as the Variance Ratio Criterion.
++
+     The score is defined as ratio between the within-cluster dispersion and
+     the between-cluster dispersion.
+ 
++ git diff 67d06b18c68ee4452768f8a1e868565dd4354abf
+diff --git a/sklearn/feature_extraction/text.py b/sklearn/feature_extraction/text.py
+index 9b1ebd632..fa6c6c848 100644
+--- a/sklearn/feature_extraction/text.py
++++ b/sklearn/feature_extraction/text.py
+@@ -272,32 +272,41 @@ class VectorizerMixin(object):
+ 
+     def _validate_vocabulary(self):
+         vocabulary = self.vocabulary
+-        if vocabulary is not None:
+-            if isinstance(vocabulary, set):
+-                vocabulary = sorted(vocabulary)
+-            if not isinstance(vocabulary, Mapping):
+-                vocab = {}
+-                for i, t in enumerate(vocabulary):
+-                    if vocab.setdefault(t, i) != i:
+-                        msg = "Duplicate term in vocabulary: %r" % t
+-                        raise ValueError(msg)
+-                vocabulary = vocab
+-            else:
+-                indices = set(six.itervalues(vocabulary))
+-                if len(indices) != len(vocabulary):
+-                    raise ValueError("Vocabulary contains repeated indices.")
+-                for i in xrange(len(vocabulary)):
+-                    if i not in indices:
+-                        msg = ("Vocabulary of size %d doesn't contain index "
+-                               "%d." % (len(vocabulary), i))
+-                        raise ValueError(msg)
+-            if not vocabulary:
+-                raise ValueError("empty vocabulary passed to fit")
+-            self.fixed_vocabulary_ = True
+-            self.vocabulary_ = dict(vocabulary)
+-        else:
++        if vocabulary is None:
+             self.fixed_vocabulary_ = False
+-
++            return None
++        if isinstance(vocabulary, set):
++            vocabulary = sorted(vocabulary)
++        if isinstance(vocabulary, Mapping):
++            vocab = {}
++            for k, i in vocabulary.items():
++                if not isinstance(i, numbers.Integral):
++                    raise ValueError("Vocabulary values should be integers.")
++                vocab[k] = int(i)
++            vocabulary = vocab
++        elif isinstance(vocabulary, (list, tuple)):
++            vocab = {}
++            for i, t in enumerate(vocabulary):
++                if vocab.setdefault(t, i) != i:
++                    msg = "Duplicate term in vocabulary: %r" % t
++                    raise ValueError(msg)
++            vocabulary = vocab
++        else:
++            raise ValueError("Vocabulary should be either a dictionary or an iterable")
++        
++        indices = set(six.itervalues(vocabulary))
++        if len(indices) != len(vocabulary):
++            raise ValueError("Vocabulary contains repeated indices.")
++        for i in xrange(len(vocabulary)):
++            if i not in indices:
++                msg = ("Vocabulary of size %d doesn't contain index "
++                       "%d." % (len(vocabulary), i))
++                raise ValueError(msg)
++        if not vocabulary:
++            raise ValueError("empty vocabulary passed to fit")
++        self.fixed_vocabulary_ = True
++        self.vocabulary_ = dict(vocabulary)
++        return vocabulary
+     def _check_vocabulary(self):
+         """Check if vocabulary is empty or missing (not fit-ed)"""
+         msg = "%(name)s - Vocabulary wasn't fitted."
+@@ -469,8 +478,8 @@ class HashingVectorizer(BaseEstimator, VectorizerMixin, TransformerMixin):
+                  lowercase=True, preprocessor=None, tokenizer=None,
+                  stop_words=None, token_pattern=r"(?u)\b\w\w+\b",
+                  ngram_range=(1, 1), analyzer='word', n_features=(2 ** 20),
+-                 binary=False, norm='l2', alternate_sign=True,
+-                 non_negative=False, dtype=np.float64):
++                 binary=False, dtype=np.int64, max_df=1.0, min_df=1,
++                 max_features=None, vocabulary=None):
+         self.input = input
+         self.encoding = encoding
+         self.decode_error = decode_error
+@@ -484,10 +493,16 @@ class HashingVectorizer(BaseEstimator, VectorizerMixin, TransformerMixin):
+         self.n_features = n_features
+         self.ngram_range = ngram_range
+         self.binary = binary
+-        self.norm = norm
+-        self.alternate_sign = alternate_sign
+-        self.non_negative = non_negative
+         self.dtype = dtype
++        self.max_df = max_df
++        self.min_df = min_df
++        self.max_features = max_features
++        self.vocabulary = vocabulary
++        self.fixed_vocabulary_ = False
++        self.vocabulary_ = None
++        if self.vocabulary is not None:
++            self.fixed_vocabulary_ = True
++            self.vocabulary_ = self._validate_vocabulary()
+ 
+     def partial_fit(self, X, y=None):
+         """Does nothing: this transformer is stateless.
+@@ -993,10 +1008,14 @@ class CountVectorizer(BaseEstimator, VectorizerMixin):
+ 
+     def get_feature_names(self):
+         """Array mapping from feature integer indices to feature name"""
+-        self._check_vocabulary()
+-
+-        return [t for t, i in sorted(six.iteritems(self.vocabulary_),
+-                                     key=itemgetter(1))]
++        if self.vocabulary_ is not None:
++            return [t for t, i in sorted(six.iteritems(self.vocabulary_),
++                                         key=itemgetter(1))]
++        elif self.vocabulary is not None:
++            return [t for t, i in sorted(six.iteritems(self.vocabulary),
++                                         key=itemgetter(1))]
++        else:
++            raise ValueError("Vocabulary wasn't fitted or provided.")
+ 
+ 
+ def _make_int_array():
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -v --no-use-pep517 --no-build-isolation -e .
+Using pip 21.2.2 from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/pip (python 3.6)
+Obtaining file:///testbed
+    Running command python setup.py egg_info
+    running egg_info
+    creating /tmp/pip-pip-egg-info-t9fb34qe/scikit_learn.egg-info
+    writing /tmp/pip-pip-egg-info-t9fb34qe/scikit_learn.egg-info/PKG-INFO
+    writing dependency_links to /tmp/pip-pip-egg-info-t9fb34qe/scikit_learn.egg-info/dependency_links.txt
+    writing requirements to /tmp/pip-pip-egg-info-t9fb34qe/scikit_learn.egg-info/requires.txt
+    writing top-level names to /tmp/pip-pip-egg-info-t9fb34qe/scikit_learn.egg-info/top_level.txt
+    writing manifest file '/tmp/pip-pip-egg-info-t9fb34qe/scikit_learn.egg-info/SOURCES.txt'
+    reading manifest file '/tmp/pip-pip-egg-info-t9fb34qe/scikit_learn.egg-info/SOURCES.txt'
+    reading manifest template 'MANIFEST.in'
+    adding license file 'COPYING'
+    adding license file 'AUTHORS.rst'
+    writing manifest file '/tmp/pip-pip-egg-info-t9fb34qe/scikit_learn.egg-info/SOURCES.txt'
+    Partial import of sklearn during the build process.
+Requirement already satisfied: numpy>=1.8.2 in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from scikit-learn==0.20.dev0) (1.19.2)
+Requirement already satisfied: scipy>=0.13.3 in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from scikit-learn==0.20.dev0) (1.5.2)
+Installing collected packages: scikit-learn
+  Attempting uninstall: scikit-learn
+    Found existing installation: scikit-learn 0.20.dev0
+    Uninstalling scikit-learn-0.20.dev0:
+      Removing file or directory /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/scikit-learn.egg-link
+      Removing pth entries from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/easy-install.pth:
+      Removing entry: /testbed
+      Successfully uninstalled scikit-learn-0.20.dev0
+  Running setup.py develop for scikit-learn
+    Running command /opt/miniconda3/envs/testbed/bin/python -c 'import io, os, sys, setuptools, tokenize; sys.argv[0] = '"'"'/testbed/setup.py'"'"'; __file__='"'"'/testbed/setup.py'"'"';f = getattr(tokenize, '"'"'open'"'"', open)(__file__) if os.path.exists(__file__) else io.StringIO('"'"'from setuptools import setup; setup()'"'"');code = f.read().replace('"'"'\r\n'"'"', '"'"'\n'"'"');f.close();exec(compile(code, __file__, '"'"'exec'"'"'))' develop --no-deps
+    blas_opt_info:
+    blas_mkl_info:
+    customize UnixCCompiler
+      libraries mkl_rt not found in ['/opt/miniconda3/envs/testbed/lib', '/usr/local/lib', '/usr/lib64', '/usr/lib', '/usr/lib/x86_64-linux-gnu']
+      NOT AVAILABLE
+
+    blis_info:
+      libraries blis not found in ['/opt/miniconda3/envs/testbed/lib', '/usr/local/lib', '/usr/lib64', '/usr/lib', '/usr/lib/x86_64-linux-gnu']
+      NOT AVAILABLE
+
+    openblas_info:
+    C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+
+    creating /tmp/tmpd14s0viy/tmp
+    creating /tmp/tmpd14s0viy/tmp/tmpd14s0viy
+    compile options: '-c'
+    gcc: /tmp/tmpd14s0viy/source.c
+    gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ /tmp/tmpd14s0viy/tmp/tmpd14s0viy/source.o -L/opt/miniconda3/envs/testbed/lib -lopenblas -o /tmp/tmpd14s0viy/a.out
+      FOUND:
+        libraries = ['openblas', 'openblas']
+        library_dirs = ['/opt/miniconda3/envs/testbed/lib']
+        language = c
+        define_macros = [('HAVE_CBLAS', None)]
+
+      FOUND:
+        libraries = ['openblas', 'openblas']
+        library_dirs = ['/opt/miniconda3/envs/testbed/lib']
+        language = c
+        define_macros = [('HAVE_CBLAS', None)]
+
+    running develop
+    running build_scripts
+    running egg_info
+    running build_src
+    build_src
+    building library "libsvm-skl" sources
+    building extension "sklearn.__check_build._check_build" sources
+    building extension "sklearn.cluster._dbscan_inner" sources
+    building extension "sklearn.cluster._hierarchical" sources
+    building extension "sklearn.cluster._k_means_elkan" sources
+    building extension "sklearn.cluster._k_means" sources
+    building extension "sklearn.datasets._svmlight_format" sources
+    building extension "sklearn.decomposition._online_lda" sources
+    building extension "sklearn.decomposition.cdnmf_fast" sources
+    building extension "sklearn.ensemble._gradient_boosting" sources
+    building extension "sklearn.feature_extraction._hashing" sources
+    building extension "sklearn.manifold._utils" sources
+    building extension "sklearn.manifold._barnes_hut_tsne" sources
+    building extension "sklearn.metrics.cluster.expected_mutual_info_fast" sources
+    building extension "sklearn.metrics.pairwise_fast" sources
+    building extension "sklearn.neighbors.ball_tree" sources
+    building extension "sklearn.neighbors.kd_tree" sources
+    building extension "sklearn.neighbors.dist_metrics" sources
+    building extension "sklearn.neighbors.typedefs" sources
+    building extension "sklearn.neighbors.quad_tree" sources
+    building extension "sklearn.tree._tree" sources
+    building extension "sklearn.tree._splitter" sources
+    building extension "sklearn.tree._criterion" sources
+    building extension "sklearn.tree._utils" sources
+    building extension "sklearn.svm.libsvm" sources
+    building extension "sklearn.svm.liblinear" sources
+    building extension "sklearn.svm.libsvm_sparse" sources
+    building extension "sklearn._isotonic" sources
+    building extension "sklearn.linear_model.cd_fast" sources
+    building extension "sklearn.linear_model.sgd_fast" sources
+    building extension "sklearn.linear_model.sag_fast" sources
+    building extension "sklearn.utils.sparsefuncs_fast" sources
+    building extension "sklearn.utils.arrayfuncs" sources
+    building extension "sklearn.utils.murmurhash" sources
+    building extension "sklearn.utils.lgamma" sources
+    building extension "sklearn.utils.graph_shortest_path" sources
+    building extension "sklearn.utils.fast_dict" sources
+    building extension "sklearn.utils.seq_dataset" sources
+    building extension "sklearn.utils.weight_vector" sources
+    building extension "sklearn.utils._random" sources
+    building extension "sklearn.utils._logistic_sigmoid" sources
+    building data_files sources
+    build_src: building npy-pkg config files
+    writing scikit_learn.egg-info/PKG-INFO
+    writing dependency_links to scikit_learn.egg-info/dependency_links.txt
+    writing requirements to scikit_learn.egg-info/requires.txt
+    writing top-level names to scikit_learn.egg-info/top_level.txt
+    reading manifest file 'scikit_learn.egg-info/SOURCES.txt'
+    reading manifest template 'MANIFEST.in'
+    adding license file 'COPYING'
+    adding license file 'AUTHORS.rst'
+    writing manifest file 'scikit_learn.egg-info/SOURCES.txt'
+    running build_ext
+    customize UnixCCompiler
+    customize UnixCCompiler using build_clib
+    customize UnixCCompiler
+    customize UnixCCompiler using build_ext
+    resetting extension 'sklearn.svm.liblinear' language from 'c' to 'c++'.
+    customize UnixCCompiler
+    customize UnixCCompiler using build_ext
+    Creating /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/scikit-learn.egg-link (link to .)
+    Adding scikit-learn 0.20.dev0 to easy-install.pth file
+
+    Installed /testbed
+    Partial import of sklearn during the build process.
+Successfully installed scikit-learn-0.20.dev0
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
++ git checkout 67d06b18c68ee4452768f8a1e868565dd4354abf sklearn/feature_extraction/tests/test_text.py
+Updated 0 paths from d7e9da7c1
++ git apply -v -
+Checking patch sklearn/feature_extraction/tests/test_text.py...
+Hunk #1 succeeded at 270 (offset 1 line).
+Hunk #2 succeeded at 544 (offset 1 line).
+Hunk #3 succeeded at 560 (offset 1 line).
+Applied patch sklearn/feature_extraction/tests/test_text.py cleanly.
++ pytest -rA sklearn/feature_extraction/tests/test_text.py
+============================= test session starts ==============================
+platform linux -- Python 3.6.13, pytest-6.2.4, py-1.11.0, pluggy-0.13.1
+rootdir: /testbed, configfile: setup.cfg
+collected 48 items
+
+sklearn/feature_extraction/tests/test_text.py ........F...........FF.... [ 54%]
+.F....F.F.....F.......                                                   [100%]
+
+=================================== FAILURES ===================================
+____________________ test_countvectorizer_custom_vocabulary ____________________
+
+    def test_countvectorizer_custom_vocabulary():
+        vocab = {"pizza": 0, "beer": 1}
+        terms = set(vocab.keys())
+    
+        # Try a few of the supported types.
+        for typ in [dict, list, iter, partial(defaultdict, int)]:
+            v = typ(vocab)
+            vect = CountVectorizer(vocabulary=v)
+>           vect.fit(JUNK_FOOD_DOCS)
+
+sklearn/feature_extraction/tests/test_text.py:253: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+sklearn/feature_extraction/text.py:886: in fit
+    self.fit_transform(raw_documents)
+sklearn/feature_extraction/text.py:914: in fit_transform
+    self._validate_vocabulary()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = CountVectorizer(analyzer='word', binary=False, decode_error='strict',
+        dtype=<class 'numpy.int64'>, encoding='u...en_pattern='(?u)\\b\\w\\w+\\b',
+        tokenizer=None,
+        vocabulary=<dict_keyiterator object at 0x2aab0a1adbd8>)
+
+    def _validate_vocabulary(self):
+        vocabulary = self.vocabulary
+        if vocabulary is None:
+            self.fixed_vocabulary_ = False
+            return None
+        if isinstance(vocabulary, set):
+            vocabulary = sorted(vocabulary)
+        if isinstance(vocabulary, Mapping):
+            vocab = {}
+            for k, i in vocabulary.items():
+                if not isinstance(i, numbers.Integral):
+                    raise ValueError("Vocabulary values should be integers.")
+                vocab[k] = int(i)
+            vocabulary = vocab
+        elif isinstance(vocabulary, (list, tuple)):
+            vocab = {}
+            for i, t in enumerate(vocabulary):
+                if vocab.setdefault(t, i) != i:
+                    msg = "Duplicate term in vocabulary: %r" % t
+                    raise ValueError(msg)
+            vocabulary = vocab
+        else:
+>           raise ValueError("Vocabulary should be either a dictionary or an iterable")
+E           ValueError: Vocabulary should be either a dictionary or an iterable
+
+sklearn/feature_extraction/text.py:295: ValueError
+___________________________ test_hashing_vectorizer ____________________________
+
+    @ignore_warnings(category=DeprecationWarning)
+    def test_hashing_vectorizer():
+        v = HashingVectorizer()
+>       X = v.transform(ALL_FOOD_DOCS)
+
+sklearn/feature_extraction/tests/test_text.py:506: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+sklearn/feature_extraction/text.py:552: in transform
+    X = self._get_hasher().transform(analyzer(doc) for doc in X)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = HashingVectorizer(analyzer='word', binary=False, decode_error='strict',
+         dtype=<class 'numpy.int64'>, encoding...p_words=None, strip_accents=None,
+         token_pattern='(?u)\\b\\w\\w+\\b', tokenizer=None,
+         vocabulary=None)
+
+    def _get_hasher(self):
+        return FeatureHasher(n_features=self.n_features,
+                             input_type='string', dtype=self.dtype,
+>                            alternate_sign=self.alternate_sign,
+                             non_negative=self.non_negative)
+E       AttributeError: 'HashingVectorizer' object has no attribute 'alternate_sign'
+
+sklearn/feature_extraction/text.py:562: AttributeError
+______________________________ test_feature_names ______________________________
+
+    def test_feature_names():
+        cv = CountVectorizer(max_df=0.5)
+    
+        # test for Value error on unfitted/empty vocabulary
+>       assert_raises(ValueError, cv.get_feature_names)
+
+sklearn/feature_extraction/tests/test_text.py:546: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+sklearn/utils/_unittest_backport.py:204: in assertRaises
+    return context.handle('assertRaises', args, kwargs)
+sklearn/utils/_unittest_backport.py:113: in handle
+    callable_obj(*args, **kwargs)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = CountVectorizer(analyzer='word', binary=False, decode_error='strict',
+        dtype=<class 'numpy.int64'>, encoding='u...top_words=None,
+        strip_accents=None, token_pattern='(?u)\\b\\w\\w+\\b',
+        tokenizer=None, vocabulary=None)
+
+    def get_feature_names(self):
+        """Array mapping from feature integer indices to feature name"""
+>       if self.vocabulary_ is not None:
+E       AttributeError: 'CountVectorizer' object has no attribute 'vocabulary_'
+
+sklearn/feature_extraction/text.py:1011: AttributeError
+________________________ test_hashed_binary_occurrences ________________________
+
+    @ignore_warnings(category=DeprecationWarning)
+    def test_hashed_binary_occurrences():
+        # by default multiple occurrences are counted as longs
+        test_data = ['aaabc', 'abbde']
+        vect = HashingVectorizer(analyzer='char', non_negative=True,
+>                                norm=None)
+E       TypeError: __init__() got an unexpected keyword argument 'non_negative'
+
+sklearn/feature_extraction/tests/test_text.py:695: TypeError
+___________________________ test_vectorizer_unicode ____________________________
+
+    @ignore_warnings(category=DeprecationWarning)
+    def test_vectorizer_unicode():
+        # tests that the count vectorizer works with cyrillic.
+        document = (
+            "\xd0\x9c\xd0\xb0\xd1\x88\xd0\xb8\xd0\xbd\xd0\xbd\xd0\xbe\xd0"
+            "\xb5 \xd0\xbe\xd0\xb1\xd1\x83\xd1\x87\xd0\xb5\xd0\xbd\xd0\xb8\xd0"
+            "\xb5 \xe2\x80\x94 \xd0\xbe\xd0\xb1\xd1\x88\xd0\xb8\xd1\x80\xd0\xbd"
+            "\xd1\x8b\xd0\xb9 \xd0\xbf\xd0\xbe\xd0\xb4\xd1\x80\xd0\xb0\xd0\xb7"
+            "\xd0\xb4\xd0\xb5\xd0\xbb \xd0\xb8\xd1\x81\xd0\xba\xd1\x83\xd1\x81"
+            "\xd1\x81\xd1\x82\xd0\xb2\xd0\xb5\xd0\xbd\xd0\xbd\xd0\xbe\xd0\xb3"
+            "\xd0\xbe \xd0\xb8\xd0\xbd\xd1\x82\xd0\xb5\xd0\xbb\xd0\xbb\xd0"
+            "\xb5\xd0\xba\xd1\x82\xd0\xb0, \xd0\xb8\xd0\xb7\xd1\x83\xd1\x87"
+            "\xd0\xb0\xd1\x8e\xd1\x89\xd0\xb8\xd0\xb9 \xd0\xbc\xd0\xb5\xd1\x82"
+            "\xd0\xbe\xd0\xb4\xd1\x8b \xd0\xbf\xd0\xbe\xd1\x81\xd1\x82\xd1\x80"
+            "\xd0\xbe\xd0\xb5\xd0\xbd\xd0\xb8\xd1\x8f \xd0\xb0\xd0\xbb\xd0\xb3"
+            "\xd0\xbe\xd1\x80\xd0\xb8\xd1\x82\xd0\xbc\xd0\xbe\xd0\xb2, \xd1\x81"
+            "\xd0\xbf\xd0\xbe\xd1\x81\xd0\xbe\xd0\xb1\xd0\xbd\xd1\x8b\xd1\x85 "
+            "\xd0\xbe\xd0\xb1\xd1\x83\xd1\x87\xd0\xb0\xd1\x82\xd1\x8c\xd1\x81\xd1"
+            "\x8f.")
+    
+        vect = CountVectorizer()
+        X_counted = vect.fit_transform([document])
+        assert_equal(X_counted.shape, (1, 15))
+    
+>       vect = HashingVectorizer(norm=None, non_negative=True)
+E       TypeError: __init__() got an unexpected keyword argument 'norm'
+
+sklearn/feature_extraction/tests/test_text.py:848: TypeError
+___________________________ test_pickling_vectorizer ___________________________
+
+    def test_pickling_vectorizer():
+        instances = [
+            HashingVectorizer(),
+>           HashingVectorizer(norm='l1'),
+            HashingVectorizer(binary=True),
+            HashingVectorizer(ngram_range=(1, 2)),
+            CountVectorizer(),
+            CountVectorizer(preprocessor=strip_tags),
+            CountVectorizer(analyzer=lazy_analyze),
+            CountVectorizer(preprocessor=strip_tags).fit(JUNK_FOOD_DOCS),
+            CountVectorizer(strip_accents=strip_eacute).fit(JUNK_FOOD_DOCS),
+            TfidfVectorizer(),
+            TfidfVectorizer(analyzer=lazy_analyze),
+            TfidfVectorizer().fit(JUNK_FOOD_DOCS),
+        ]
+E       TypeError: __init__() got an unexpected keyword argument 'norm'
+
+sklearn/feature_extraction/tests/test_text.py:873: TypeError
+______________________ test_hashingvectorizer_nan_in_docs ______________________
+
+    def test_hashingvectorizer_nan_in_docs():
+        # np.nan can appear when using pandas to load text fields from a csv file
+        # with missing values.
+        message = "np.nan is an invalid document, expected byte or unicode string."
+        exception = ValueError
+    
+        def func():
+            hv = HashingVectorizer()
+            hv.fit_transform(['hello world', np.nan, 'hello hello'])
+    
+>       assert_raise_message(exception, message, func)
+
+sklearn/feature_extraction/tests/test_text.py:976: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+sklearn/utils/testing.py:387: in assert_raise_message
+    function(*args, **kwargs)
+sklearn/feature_extraction/tests/test_text.py:974: in func
+    hv.fit_transform(['hello world', np.nan, 'hello hello'])
+sklearn/base.py:503: in fit_transform
+    return self.fit(X, **fit_params).transform(X)
+sklearn/feature_extraction/text.py:526: in fit
+    self._get_hasher().fit(X, y=y)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = HashingVectorizer(analyzer='word', binary=False, decode_error='strict',
+         dtype=<class 'numpy.int64'>, encoding...p_words=None, strip_accents=None,
+         token_pattern='(?u)\\b\\w\\w+\\b', tokenizer=None,
+         vocabulary=None)
+
+    def _get_hasher(self):
+        return FeatureHasher(n_features=self.n_features,
+                             input_type='string', dtype=self.dtype,
+>                            alternate_sign=self.alternate_sign,
+                             non_negative=self.non_negative)
+E       AttributeError: 'HashingVectorizer' object has no attribute 'alternate_sign'
+
+sklearn/feature_extraction/text.py:562: AttributeError
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED sklearn/feature_extraction/tests/test_text.py::test_strip_accents
+PASSED sklearn/feature_extraction/tests/test_text.py::test_to_ascii
+PASSED sklearn/feature_extraction/tests/test_text.py::test_word_analyzer_unigrams
+PASSED sklearn/feature_extraction/tests/test_text.py::test_word_analyzer_unigrams_and_bigrams
+PASSED sklearn/feature_extraction/tests/test_text.py::test_unicode_decode_error
+PASSED sklearn/feature_extraction/tests/test_text.py::test_char_ngram_analyzer
+PASSED sklearn/feature_extraction/tests/test_text.py::test_char_wb_ngram_analyzer
+PASSED sklearn/feature_extraction/tests/test_text.py::test_word_ngram_analyzer
+PASSED sklearn/feature_extraction/tests/test_text.py::test_countvectorizer_custom_vocabulary_pipeline
+PASSED sklearn/feature_extraction/tests/test_text.py::test_countvectorizer_custom_vocabulary_repeated_indices
+PASSED sklearn/feature_extraction/tests/test_text.py::test_countvectorizer_custom_vocabulary_gap_index
+PASSED sklearn/feature_extraction/tests/test_text.py::test_countvectorizer_stop_words
+PASSED sklearn/feature_extraction/tests/test_text.py::test_countvectorizer_empty_vocabulary
+PASSED sklearn/feature_extraction/tests/test_text.py::test_fit_countvectorizer_twice
+PASSED sklearn/feature_extraction/tests/test_text.py::test_tf_idf_smoothing
+PASSED sklearn/feature_extraction/tests/test_text.py::test_tfidf_no_smoothing
+PASSED sklearn/feature_extraction/tests/test_text.py::test_sublinear_tf
+PASSED sklearn/feature_extraction/tests/test_text.py::test_vectorizer
+PASSED sklearn/feature_extraction/tests/test_text.py::test_tfidf_vectorizer_setters
+PASSED sklearn/feature_extraction/tests/test_text.py::test_vectorizer_max_features
+PASSED sklearn/feature_extraction/tests/test_text.py::test_count_vectorizer_max_features
+PASSED sklearn/feature_extraction/tests/test_text.py::test_vectorizer_max_df
+PASSED sklearn/feature_extraction/tests/test_text.py::test_vectorizer_min_df
+PASSED sklearn/feature_extraction/tests/test_text.py::test_count_binary_occurrences
+PASSED sklearn/feature_extraction/tests/test_text.py::test_vectorizer_inverse_transform
+PASSED sklearn/feature_extraction/tests/test_text.py::test_count_vectorizer_pipeline_grid_selection
+PASSED sklearn/feature_extraction/tests/test_text.py::test_vectorizer_pipeline_grid_selection
+PASSED sklearn/feature_extraction/tests/test_text.py::test_vectorizer_pipeline_cross_validation
+PASSED sklearn/feature_extraction/tests/test_text.py::test_tfidf_vectorizer_with_fixed_vocabulary
+PASSED sklearn/feature_extraction/tests/test_text.py::test_countvectorizer_vocab_sets_when_pickling
+PASSED sklearn/feature_extraction/tests/test_text.py::test_countvectorizer_vocab_dicts_when_pickling
+PASSED sklearn/feature_extraction/tests/test_text.py::test_stop_words_removal
+PASSED sklearn/feature_extraction/tests/test_text.py::test_pickling_transformer
+PASSED sklearn/feature_extraction/tests/test_text.py::test_non_unique_vocab
+PASSED sklearn/feature_extraction/tests/test_text.py::test_tfidfvectorizer_binary
+PASSED sklearn/feature_extraction/tests/test_text.py::test_tfidfvectorizer_export_idf
+PASSED sklearn/feature_extraction/tests/test_text.py::test_vectorizer_vocab_clone
+PASSED sklearn/feature_extraction/tests/test_text.py::test_vectorizer_string_object_as_input
+PASSED sklearn/feature_extraction/tests/test_text.py::test_vectorizers_invalid_ngram_range[vec0]
+PASSED sklearn/feature_extraction/tests/test_text.py::test_vectorizers_invalid_ngram_range[vec1]
+PASSED sklearn/feature_extraction/tests/test_text.py::test_vectorizers_invalid_ngram_range[vec2]
+FAILED sklearn/feature_extraction/tests/test_text.py::test_countvectorizer_custom_vocabulary
+FAILED sklearn/feature_extraction/tests/test_text.py::test_hashing_vectorizer
+FAILED sklearn/feature_extraction/tests/test_text.py::test_feature_names - At...
+FAILED sklearn/feature_extraction/tests/test_text.py::test_hashed_binary_occurrences
+FAILED sklearn/feature_extraction/tests/test_text.py::test_vectorizer_unicode
+FAILED sklearn/feature_extraction/tests/test_text.py::test_pickling_vectorizer
+FAILED sklearn/feature_extraction/tests/test_text.py::test_hashingvectorizer_nan_in_docs
+=================== 7 failed, 41 passed, 4 warnings in 5.21s ===================
++ git checkout 67d06b18c68ee4452768f8a1e868565dd4354abf sklearn/feature_extraction/tests/test_text.py
+Updated 1 path from d7e9da7c1

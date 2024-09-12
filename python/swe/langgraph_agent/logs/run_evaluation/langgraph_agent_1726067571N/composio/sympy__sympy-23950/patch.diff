@@ -1,0 +1,19 @@
+diff --git a/sympy/sets/contains.py b/sympy/sets/contains.py
+index b2d4268..4c182ce 100644
+--- a/sympy/sets/contains.py
++++ b/sympy/sets/contains.py
+@@ -2,7 +2,7 @@
+ from sympy.core.relational import Eq, Ne
+ from sympy.logic.boolalg import BooleanFunction
+ from sympy.utilities.misc import func_name
+-from .sets import Set
++from .sets import Set, FiniteSet
+ 
+ 
+ class Contains(BooleanFunction):
+@@ -45,4 +45,4 @@ def binary_symbols(self):
+             isinstance(i, (Eq, Ne))])
+ 
+     def as_set(self):
+-        raise NotImplementedError()
++        return self.args[1].intersect(FiniteSet(self.args[0]))

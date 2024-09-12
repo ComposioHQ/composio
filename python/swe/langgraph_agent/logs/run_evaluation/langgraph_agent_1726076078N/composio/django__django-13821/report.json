@@ -1,0 +1,43 @@
+{
+    "django__django-13821": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "test_check_sqlite_version (backends.sqlite.tests.Tests)"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "test_parameter_escaping (backends.sqlite.tests.EscapingChecksDebug)",
+                    "test_parameter_escaping (backends.sqlite.tests.EscapingChecks)",
+                    "test_no_interpolation (backends.sqlite.tests.LastExecutedQueryTest)",
+                    "test_parameter_quoting (backends.sqlite.tests.LastExecutedQueryTest)",
+                    "Raise NotSupportedError when aggregating on date/time fields.",
+                    "test_distinct_aggregation (backends.sqlite.tests.Tests)",
+                    "test_distinct_aggregation_multiple_args_no_distinct (backends.sqlite.tests.Tests)",
+                    "A named in-memory db should be allowed where supported.",
+                    "test_pathlib_name (backends.sqlite.tests.Tests)",
+                    "test_regexp_function (backends.sqlite.tests.Tests)",
+                    "test_database_sharing_in_threads (backends.sqlite.tests.ThreadSharing)",
+                    "test_autoincrement (backends.sqlite.tests.SchemaTests)",
+                    "test_constraint_checks_disabled_atomic_allowed (backends.sqlite.tests.SchemaTests)",
+                    "test_disable_constraint_checking_failure_disallowed (backends.sqlite.tests.SchemaTests)"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

@@ -1,0 +1,47 @@
+2024-09-12 01:31:46,904 - INFO - Environment image sweb.env.arm64.a18371b03f944585b4f08c:latest found for django__django-12304
+Building instance image sweb.eval.arm64.django__django-12304:latest for django__django-12304
+2024-09-12 01:34:29,951 - INFO - Creating container for django__django-12304...
+2024-09-12 01:34:29,982 - INFO - Container for django__django-12304 created: eb8b3289016d4d359352417de3edd01e2962155a25a5d058ab85f79ec140e316
+2024-09-12 01:34:30,085 - INFO - Container for django__django-12304 started: eb8b3289016d4d359352417de3edd01e2962155a25a5d058ab85f79ec140e316
+2024-09-12 01:34:30,085 - INFO - Intermediate patch for django__django-12304 written to logs/run_evaluation/langgraph_agent_1726076078N/composio/django__django-12304/patch.diff, now applying to container...
+2024-09-12 01:34:30,238 - INFO - Failed to apply patch to container, trying again...
+2024-09-12 01:34:30,272 - INFO - >>>>> Applied Patch:
+patching file django/db/models/enums.py
+
+2024-09-12 01:34:30,574 - INFO - Git diff before:
+diff --git a/django/db/models/enums.py b/django/db/models/enums.py
+index f48143ddaf..51821a2b45 100644
+--- a/django/db/models/enums.py
++++ b/django/db/models/enums.py
+@@ -31,6 +31,7 @@ class ChoicesMeta(enum.EnumMeta):
+         # that is passed in as "self" as the value to use when looking up the
+         # label in the choices.
+         cls.label = property(lambda self: cls._value2label_map_.get(self.value))
++        cls.do_not_call_in_templates = True
+         return enum.unique(cls)
+ 
+     def __contains__(cls, member):
+2024-09-12 01:34:30,575 - INFO - Eval script for django__django-12304 written to logs/run_evaluation/langgraph_agent_1726076078N/composio/django__django-12304/eval.sh; copying to container...
+2024-09-12 01:34:32,846 - INFO - Test runtime: 2.14 seconds
+2024-09-12 01:34:32,847 - INFO - Test output for django__django-12304 written to logs/run_evaluation/langgraph_agent_1726076078N/composio/django__django-12304/test_output.txt
+2024-09-12 01:34:32,890 - INFO - Git diff after:
+diff --git a/django/db/models/enums.py b/django/db/models/enums.py
+index f48143ddaf..51821a2b45 100644
+--- a/django/db/models/enums.py
++++ b/django/db/models/enums.py
+@@ -31,6 +31,7 @@ class ChoicesMeta(enum.EnumMeta):
+         # that is passed in as "self" as the value to use when looking up the
+         # label in the choices.
+         cls.label = property(lambda self: cls._value2label_map_.get(self.value))
++        cls.do_not_call_in_templates = True
+         return enum.unique(cls)
+ 
+     def __contains__(cls, member):
+2024-09-12 01:34:32,890 - INFO - Grading answer for django__django-12304...
+2024-09-12 01:34:32,897 - INFO - report: {'django__django-12304': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': True, 'tests_status': {'FAIL_TO_PASS': {'success': ['test_templates (model_enums.tests.ChoicesTests)'], 'failure': []}, 'PASS_TO_PASS': {'success': ['test_integerchoices (model_enums.tests.ChoicesTests)', 'test_integerchoices_auto_label (model_enums.tests.ChoicesTests)', 'test_integerchoices_containment (model_enums.tests.ChoicesTests)', 'test_integerchoices_empty_label (model_enums.tests.ChoicesTests)', 'test_integerchoices_functional_api (model_enums.tests.ChoicesTests)', 'test_invalid_definition (model_enums.tests.ChoicesTests)', 'test_str (model_enums.tests.ChoicesTests)', 'test_textchoices (model_enums.tests.ChoicesTests)', 'test_textchoices_auto_label (model_enums.tests.ChoicesTests)', 'test_textchoices_blank_value (model_enums.tests.ChoicesTests)', 'test_textchoices_containment (model_enums.tests.ChoicesTests)', 'test_textchoices_empty_label (model_enums.tests.ChoicesTests)', 'test_textchoices_functional_api (model_enums.tests.ChoicesTests)', 'test_bool_unsupported (model_enums.tests.CustomChoicesTests)', 'test_labels_valid (model_enums.tests.CustomChoicesTests)', 'test_timezone_unsupported (model_enums.tests.CustomChoicesTests)', 'test_uuid_unsupported (model_enums.tests.CustomChoicesTests)'], 'failure': []}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for django__django-12304: resolved: True
+2024-09-12 01:34:32,898 - INFO - Attempting to stop container sweb.eval.django__django-12304.langgraph_agent_1726076078N...
+2024-09-12 01:34:48,060 - INFO - Attempting to remove container sweb.eval.django__django-12304.langgraph_agent_1726076078N...
+2024-09-12 01:34:48,079 - INFO - Container sweb.eval.django__django-12304.langgraph_agent_1726076078N removed.
+2024-09-12 01:34:48,079 - INFO - Attempting to remove image sweb.eval.arm64.django__django-12304:latest...
+2024-09-12 01:34:48,168 - INFO - Image sweb.eval.arm64.django__django-12304:latest removed.

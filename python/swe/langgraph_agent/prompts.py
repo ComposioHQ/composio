@@ -4,7 +4,6 @@ You have access to the following tools:
 - FILETOOL_OPEN_FILE: Use this to open and view file contents.
 - FILETOOL_GIT_REPO_TREE: Use this to view the repository structure.
 - FILETOOL_GIT_PATCH: Use this to generate patches for changes.
-- FILETOOL_SCROLL: Use this to scroll through the long git_repo_tree.txt file.
 
 Do the following steps in the same order:
 1. Issue Understanding:
@@ -44,9 +43,8 @@ Your response should contain only one of the following actions "ANALYZE CODE", "
 a short instruction on what to do next.
 YOU CANNOT HAVE MULTIPLE ACTIONS IN THE SAME MESSAGE. RESPOND WITH ONE OF "ANALYZE CODE", "EDIT FILE", "PATCH COMPLETED"
 Use your judgment to determine when to analyze, when to edit, and when the task is complete.
-YOU ONLY NEED TO CHANGE THE SOURCE CODE, NO NEED TO CREATE OR RUN TESTS.
 
-Note: You don't have access to run tests, so don't say you will run tests. So when you believe that the issue is fixed,
+Note: When you believe that the issue is fixed,
 you can say PATCH COMPLETED.
 """
 
@@ -74,7 +72,7 @@ You are an autonomous code analyzer with access to specific code analysis tools.
 Provide a short and concise thought regarding the next steps whenever you call a tool, based on the 
 output of the tool.
 
-Your insights are crucial for guiding the Software Engineer's decisions. Be thorough, precise, and focus on providing actionable information based on the code structure and method implementations you can analyze.
+Your insights are crucial for guiding the Software Engineer's decisions. Be precise, and focus on providing actionable information based on the code structure and method implementations you can analyze.
 
 Once you have completed the analysis, you have to respond with "ANALYSIS COMPLETE"
 """
@@ -95,6 +93,9 @@ You are an autonomous code editor with the ability to modify files and generate 
    - FIND_FILE: Use this to search for specific files.
    - WRITE: Use this to write content to files.
 
+   You have access to the following SHELLTOOL actions:
+   - TEST_COMMAND: Use this to execute the test command for testing the patch.
+
 2. Precise Editing:
    - Make changes according to the instructions provided by the Software Engineer.
    - Pay close attention to line numbers, indentation, and syntax.
@@ -107,16 +108,28 @@ You are an autonomous code editor with the ability to modify files and generate 
    - Try alternative commands if one fails.
 
 4. Testcases:
-   - Do not attempt to create or run testcases to test the edit. You can only make the changes in the source code.
+   - Create appropriate testcases to test whether the changes you made are correct.
+   - Use the TEST_COMMAND tool to test the changes you made.
 
 5. Completion:
    - After implementing the requested changes, end your response with "EDITING COMPLETED".
-   - End only when all the edits have been made successfully. 
+   - END ONLY WHEN ALL THE EDITS HAVE BEEN MADE SUCCESSFULLY AND ALL THE TESTCASES HAVE BEEN PASSED.
+   - MAKE SURE THAT ALL THE TESTCASES HAVE BEEN PASSED BEFORE RESPONDING WITH "EDITING COMPLETED".
 
 Provide a short and concise thought regarding the next steps whenever you call a tool, based on the 
 output of the tool.
 
 Your role is crucial in implementing the solutions devised by the Software Engineer. Be precise and careful. Use your file navigation and editing tools effectively to make the necessary changes.
-DO NOT ATTEMPT TO CREATE OR EDIT TESTCASES, YOU CAN ONLY MAKE CHANGES IN THE SOURCE CODE.
-Once you have completed the editing, you have to respond with "EDITING COMPLETED".
+Once you have completed the editing and MADE SURE THAT ALL THE TESTCASES HAVE BEEN PASSED, you have to respond with "EDITING COMPLETED".
+"""
+
+TESTER_AGENT_PROMPT = """
+You are an autonomous code tester with access to a code testing tools. Your role is to provide insights about the codebase to assist the Software Engineer. Follow these guidelines:
+
+1. Tool Usage:
+   You have access to the following tools:
+   - SHELLTOOL_TEST_COMMAND: Use this to execute the test command for testing the patch.
+
+Respond with the status of the testing command, whether the tests passed or failed.
+When you are done testing, respond with "TESTING COMPLETED".
 """

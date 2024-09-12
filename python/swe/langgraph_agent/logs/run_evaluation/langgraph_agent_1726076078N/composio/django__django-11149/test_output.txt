@@ -1,0 +1,519 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen
++ locale-gen
+Generating locales (this might take a while)...
+  en_US.UTF-8... done
+Generation complete.
++ export LANG=en_US.UTF-8
++ LANG=en_US.UTF-8
++ export LANGUAGE=en_US:en
++ LANGUAGE=en_US:en
++ export LC_ALL=en_US.UTF-8
++ LC_ALL=en_US.UTF-8
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/contrib/admin/options.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit e245046bb6e8b32360aa48b8a41fb7050f0fc730
+Author: Tim Graham <timograham@gmail.com>
+Date:   Sat Mar 30 12:55:30 2019 -0400
+
+    Added stub 2.1.8 release notes.
+
+diff --git a/docs/releases/2.1.8.txt b/docs/releases/2.1.8.txt
+new file mode 100644
+index 0000000000..dc6d2f7b44
+--- /dev/null
++++ b/docs/releases/2.1.8.txt
+@@ -0,0 +1,12 @@
++==========================
++Django 2.1.8 release notes
++==========================
++
++*April 1, 2019*
++
++Django 2.1.8 fixes a bug in 2.1.7.
++
++Bugfixes
++========
++
++*
+diff --git a/docs/releases/index.txt b/docs/releases/index.txt
+index b2292b244c..e48b2e8980 100644
+--- a/docs/releases/index.txt
++++ b/docs/releases/index.txt
+@@ -39,6 +39,7 @@ versions of the documentation contain the release notes for any later releases.
+ .. toctree::
+    :maxdepth: 1
+ 
++   2.1.8
+    2.1.7
+    2.1.6
+    2.1.5
++ git diff e245046bb6e8b32360aa48b8a41fb7050f0fc730
+diff --git a/django/contrib/admin/options.py b/django/contrib/admin/options.py
+index 880a2cc17b..1f58824753 100644
+--- a/django/contrib/admin/options.py
++++ b/django/contrib/admin/options.py
+@@ -2047,6 +2047,7 @@ class InlineModelAdmin(BaseModelAdmin):
+         base_model_form = defaults['form']
+         can_change = self.has_change_permission(request, obj) if request else True
+         can_add = self.has_add_permission(request, obj) if request else True
++        can_view_only = self.has_view_permission(request, obj) and not can_change
+ 
+         class DeleteProtectedModelForm(base_model_form):
+ 
+@@ -2089,6 +2090,8 @@ class InlineModelAdmin(BaseModelAdmin):
+ 
+             def has_changed(self):
+                 # Protect against unauthorized edits.
++                if can_view_only:
++                    return False
+                 if not can_change and not self.instance._state.adding:
+                     return False
+                 if not can_add and self.instance._state.adding:
+@@ -2097,6 +2100,9 @@ class InlineModelAdmin(BaseModelAdmin):
+ 
+         defaults['form'] = DeleteProtectedModelForm
+ 
++        defaults['can_delete'] = can_delete and not can_view_only
++        defaults['can_order'] = not can_view_only
++
+         if defaults['fields'] is None and not modelform_defines_fields(defaults['form']):
+             defaults['fields'] = forms.ALL_FIELDS
+ 
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.0.dev20190330165530) (2024.1)
+Requirement already satisfied: sqlparse in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.0.dev20190330165530) (0.4.4)
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 3.0.dev20190330165530
+    Uninstalling Django-3.0.dev20190330165530:
+      Successfully uninstalled Django-3.0.dev20190330165530
+  Running setup.py develop for Django
+Successfully installed Django-3.0.dev20190330165530
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
++ git checkout e245046bb6e8b32360aa48b8a41fb7050f0fc730 tests/admin_inlines/models.py tests/admin_inlines/tests.py
+Updated 0 paths from 5e1b3bb770
++ git apply -v -
+Checking patch tests/admin_inlines/models.py...
+Checking patch tests/admin_inlines/tests.py...
+Applied patch tests/admin_inlines/models.py cleanly.
+Applied patch tests/admin_inlines/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 admin_inlines.models admin_inlines.tests
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+test_callable_lookup (admin_inlines.tests.TestInline)
+Admin inline should invoke local callable when its name is listed in readonly_fields ... ok
+test_can_delete (admin_inlines.tests.TestInline) ... ok
+test_create_inlines_on_inherited_model (admin_inlines.tests.TestInline) ... ok
+test_custom_form_tabular_inline_label (admin_inlines.tests.TestInline) ... ok
+test_custom_form_tabular_inline_overridden_label (admin_inlines.tests.TestInline) ... ok
+test_custom_get_extra_form (admin_inlines.tests.TestInline) ... ok
+test_custom_min_num (admin_inlines.tests.TestInline) ... ok
+test_custom_pk_shortcut (admin_inlines.tests.TestInline) ... ok
+test_help_text (admin_inlines.tests.TestInline) ... ok
+test_inline_editable_pk (admin_inlines.tests.TestInline) ... ok
+test_inline_hidden_field_no_column (admin_inlines.tests.TestInline)
+#18263 -- Make sure hidden fields don't get a column in tabular inlines ... ok
+test_inline_nonauto_noneditable_inherited_pk (admin_inlines.tests.TestInline) ... ok
+test_inline_nonauto_noneditable_pk (admin_inlines.tests.TestInline) ... ok
+test_inline_primary (admin_inlines.tests.TestInline) ... ok
+test_inlines_show_change_link_registered (admin_inlines.tests.TestInline)
+Inlines `show_change_link` for registered models when enabled. ... ok
+test_inlines_show_change_link_unregistered (admin_inlines.tests.TestInline)
+Inlines `show_change_link` disabled for unregistered models. ... ok
+test_localize_pk_shortcut (admin_inlines.tests.TestInline) ... ok
+test_many_to_many_inlines (admin_inlines.tests.TestInline)
+Autogenerated many-to-many inlines are displayed correctly (#13407) ... ok
+test_min_num (admin_inlines.tests.TestInline) ... ok
+test_no_parent_callable_lookup (admin_inlines.tests.TestInline)
+Admin inline `readonly_field` shouldn't invoke parent ModelAdmin callable ... ok
+test_non_related_name_inline (admin_inlines.tests.TestInline) ... ok
+test_noneditable_inline_has_field_inputs (admin_inlines.tests.TestInline)
+Inlines without change permission shows field inputs on add form. ... ok
+test_readonly_stacked_inline_label (admin_inlines.tests.TestInline)
+Bug #13174. ... ok
+test_stacked_inline_edit_form_contains_has_original_class (admin_inlines.tests.TestInline) ... ok
+test_tabular_inline_column_css_class (admin_inlines.tests.TestInline) ... ok
+test_tabular_inline_show_change_link_false_registered (admin_inlines.tests.TestInline)
+Inlines `show_change_link` disabled by default. ... ok
+test_tabular_model_form_meta_readonly_field (admin_inlines.tests.TestInline) ... ok
+test_tabular_non_field_errors (admin_inlines.tests.TestInline) ... ok
+test_immutable_content_type (admin_inlines.tests.TestInlineAdminForm)
+Regression for #9362 ... ok
+test_all_inline_media (admin_inlines.tests.TestInlineMedia) ... ok
+test_inline_media_only_base (admin_inlines.tests.TestInlineMedia) ... ok
+test_inline_media_only_inline (admin_inlines.tests.TestInlineMedia) ... ok
+test_inline_add_fk_add_perm (admin_inlines.tests.TestInlinePermissions) ... ok
+test_inline_add_fk_noperm (admin_inlines.tests.TestInlinePermissions) ... ok
+test_inline_add_m2m_add_perm (admin_inlines.tests.TestInlinePermissions) ... ok
+test_inline_add_m2m_noperm (admin_inlines.tests.TestInlinePermissions) ... ok
+test_inline_add_m2m_view_only_perm (admin_inlines.tests.TestInlinePermissions) ... FAIL
+test_inline_change_fk_add_change_perm (admin_inlines.tests.TestInlinePermissions) ... ok
+test_inline_change_fk_add_perm (admin_inlines.tests.TestInlinePermissions) ... ok
+test_inline_change_fk_all_perms (admin_inlines.tests.TestInlinePermissions) ... ok
+test_inline_change_fk_change_del_perm (admin_inlines.tests.TestInlinePermissions) ... ok
+test_inline_change_fk_change_perm (admin_inlines.tests.TestInlinePermissions) ... ok
+test_inline_change_fk_noperm (admin_inlines.tests.TestInlinePermissions) ... ok
+test_inline_change_m2m_add_perm (admin_inlines.tests.TestInlinePermissions) ... ok
+test_inline_change_m2m_change_perm (admin_inlines.tests.TestInlinePermissions) ... ok
+test_inline_change_m2m_noperm (admin_inlines.tests.TestInlinePermissions) ... ok
+test_inline_change_m2m_view_only_perm (admin_inlines.tests.TestInlinePermissions) ... FAIL
+test_deleting_inline_with_protected_delete_does_not_validate (admin_inlines.tests.TestInlineProtectedOnDelete) ... ok
+test_add_inlines (admin_inlines.tests.SeleniumTests) ... skipped 'No browsers specified.'
+test_add_stackeds (admin_inlines.tests.SeleniumTests) ... skipped 'No browsers specified.'
+test_alternating_rows (admin_inlines.tests.SeleniumTests) ... skipped 'No browsers specified.'
+test_collapsed_inlines (admin_inlines.tests.SeleniumTests) ... skipped 'No browsers specified.'
+test_delete_inlines (admin_inlines.tests.SeleniumTests) ... skipped 'No browsers specified.'
+test_delete_stackeds (admin_inlines.tests.SeleniumTests) ... skipped 'No browsers specified.'
+
+======================================================================
+FAIL: test_inline_add_m2m_view_only_perm (admin_inlines.tests.TestInlinePermissions)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/admin_inlines/tests.py", line 646, in test_inline_add_m2m_view_only_perm
+    self.assertIs(response.context['inline_admin_formset'].has_add_permission, False)
+AssertionError: True is not False
+
+======================================================================
+FAIL: test_inline_change_m2m_view_only_perm (admin_inlines.tests.TestInlinePermissions)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/admin_inlines/tests.py", line 693, in test_inline_change_m2m_view_only_perm
+    self.assertIs(response.context['inline_admin_formset'].has_add_permission, False)
+AssertionError: True is not False
+
+----------------------------------------------------------------------
+Ran 54 tests in 0.889s
+
+FAILED (failures=2, skipped=6)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Testing against Django installed in '/testbed/django'
+Importing application admin_inlines
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: admin_inlines, auth, contenttypes, messages, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table admin_inlines_parent
+    Creating table admin_inlines_teacher
+    Creating table admin_inlines_child
+    Creating table admin_inlines_book
+    Creating table admin_inlines_author
+    Creating table admin_inlines_nonautopkbook
+    Creating table admin_inlines_nonautopkbookchild
+    Creating table admin_inlines_editablepkbook
+    Creating table admin_inlines_holder
+    Creating table admin_inlines_inner
+    Creating table admin_inlines_holder2
+    Creating table admin_inlines_inner2
+    Creating table admin_inlines_holder3
+    Creating table admin_inlines_inner3
+    Creating table admin_inlines_holder4
+    Creating table admin_inlines_inner4stacked
+    Creating table admin_inlines_inner4tabular
+    Creating table admin_inlines_person
+    Creating table admin_inlines_outfititem
+    Creating table admin_inlines_fashionista
+    Creating table admin_inlines_shoppingweakness
+    Creating table admin_inlines_titlecollection
+    Creating table admin_inlines_title
+    Creating table admin_inlines_poll
+    Creating table admin_inlines_question
+    Creating table admin_inlines_novel
+    Creating table admin_inlines_chapter
+    Creating table admin_inlines_footnote
+    Creating table admin_inlines_capofamiglia
+    Creating table admin_inlines_consigliere
+    Creating table admin_inlines_sottocapo
+    Creating table admin_inlines_readonlyinline
+    Creating table admin_inlines_parentmodelwithcustompk
+    Creating table admin_inlines_childmodel1
+    Creating table admin_inlines_childmodel2
+    Creating table admin_inlines_binarytree
+    Creating table admin_inlines_lifeform
+    Creating table admin_inlines_extraterrestrial
+    Creating table admin_inlines_sighting
+    Creating table admin_inlines_someparentmodel
+    Creating table admin_inlines_somechildmodel
+    Creating table admin_inlines_profilecollection
+    Creating table admin_inlines_profile
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (0 silenced).
++ git checkout e245046bb6e8b32360aa48b8a41fb7050f0fc730 tests/admin_inlines/models.py tests/admin_inlines/tests.py
+Updated 2 paths from 5e1b3bb770

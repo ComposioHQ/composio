@@ -1,0 +1,899 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen
++ locale-gen
+Generating locales (this might take a while)...
+  en_US.UTF-8... done
+Generation complete.
++ export LANG=en_US.UTF-8
++ LANG=en_US.UTF-8
++ export LANGUAGE=en_US:en
++ LANGUAGE=en_US:en
++ export LC_ALL=en_US.UTF-8
++ LC_ALL=en_US.UTF-8
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/db/models/query_utils.py
+	modified:   django/db/models/sql/compiler.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 999891bd80b3d02dd916731a7a239e1036174885
+Author: Nick Pope <nick.pope@flightdataservices.com>
+Date:   Mon Sep 2 09:50:56 2019 +0100
+
+    Refs #29379 -- Moved autocomplete attribute to UsernameField.
+    
+    Moving the autocomplete attribute into UsernameField allows this to work
+    for custom forms making use of UsernameField, removes some duplication
+    in the code, and keeps consistency with the autocapitalize attribute
+    that is already defined on UsernameField.
+
+diff --git a/django/contrib/auth/forms.py b/django/contrib/auth/forms.py
+index 7fbe674948..a0cfed0995 100644
+--- a/django/contrib/auth/forms.py
++++ b/django/contrib/auth/forms.py
+@@ -62,9 +62,11 @@ class UsernameField(forms.CharField):
+         return unicodedata.normalize('NFKC', super().to_python(value))
+ 
+     def widget_attrs(self, widget):
+-        attrs = super().widget_attrs(widget)
+-        attrs['autocapitalize'] = 'none'
+-        return attrs
++        return {
++            **super().widget_attrs(widget),
++            'autocapitalize': 'none',
++            'autocomplete': 'username',
++        }
+ 
+ 
+ class UserCreationForm(forms.ModelForm):
+@@ -96,10 +98,7 @@ class UserCreationForm(forms.ModelForm):
+     def __init__(self, *args, **kwargs):
+         super().__init__(*args, **kwargs)
+         if self._meta.model.USERNAME_FIELD in self.fields:
+-            self.fields[self._meta.model.USERNAME_FIELD].widget.attrs.update({
+-                'autocomplete': 'username',
+-                'autofocus': True,
+-            })
++            self.fields[self._meta.model.USERNAME_FIELD].widget.attrs['autofocus'] = True
+ 
+     def clean_password2(self):
+         password1 = self.cleaned_data.get("password1")
+@@ -166,7 +165,7 @@ class AuthenticationForm(forms.Form):
+     Base class for authenticating users. Extend this to get a form that accepts
+     username/password logins.
+     """
+-    username = UsernameField(widget=forms.TextInput(attrs={'autocomplete': 'username', 'autofocus': True}))
++    username = UsernameField(widget=forms.TextInput(attrs={'autofocus': True}))
+     password = forms.CharField(
+         label=_("Password"),
+         strip=False,
++ git diff 999891bd80b3d02dd916731a7a239e1036174885
+diff --git a/django/db/models/query_utils.py b/django/db/models/query_utils.py
+index 7a667814f4..44bc79ab93 100644
+--- a/django/db/models/query_utils.py
++++ b/django/db/models/query_utils.py
+@@ -82,9 +82,22 @@ class Q(tree.Node):
+         return self._combine(other, self.AND)
+ 
+     def __invert__(self):
++        from django.db.models.expressions import OuterRef, ResolvedOuterRef
++
+         obj = type(self)()
+         obj.add(self, self.AND)
+         obj.negate()
++
++        def handle_outer_ref(node):
++            if isinstance(node, ResolvedOuterRef):
++                return OuterRef(node.name)
++            elif isinstance(node, dict):
++                return {k: handle_outer_ref(v) for k, v in node.items()}
++            elif isinstance(node, (list, tuple)):
++                return type(node)(handle_outer_ref(v) for v in node)
++            return node
++
++        obj.children = [handle_outer_ref(child) for child in obj.children]
+         return obj
+ 
+     def resolve_expression(self, query=None, allow_joins=True, reuse=None, summarize=False, for_save=False):
+diff --git a/django/db/models/sql/compiler.py b/django/db/models/sql/compiler.py
+index 77e023b92f..24d47be1df 100644
+--- a/django/db/models/sql/compiler.py
++++ b/django/db/models/sql/compiler.py
+@@ -18,6 +18,46 @@ from django.utils.deprecation import RemovedInDjango31Warning
+ from django.utils.hashable import make_hashable
+ 
+ 
++class SQLCompiler:
++    def __init__(self, query, connection, using):
++        self.query = query
++        self.connection = connection
++        self.using = using
++        self.quote_cache = {'*': '*'}
++        # The select, klass_info, and annotations are needed by QuerySet.iterator()
++        # these are set as a side-effect of executing the query. Note that we calculate
++        # separately a list of extra select columns needed for grammatical correctness
++        # of the query, but these columns are not included in self.select.
++        self.select = None
++        self.annotation_col_map = None
++        self.klass_info = None
++        # Multiline ordering SQL clause may appear from RawSQL.
++        self.ordering_parts = re.compile(r'^(.*)\\s(ASC|DESC)(.*)', re.MULTILINE | re.DOTALL)
++        self._meta_ordering = None
++
++    # ... (existing methods) ...
++
++    def compile(self, node):
++        from django.db.models.expressions import OuterRef
++
++        if isinstance(node, OuterRef):
++            if self.query.negated:
++                return self.compile_negated_outer_ref(node)
++            else:
++                return self.compile_outer_ref(node)
++        # ... (rest of the compile method)
++
++    def compile_negated_outer_ref(self, node):
++        # Logic to handle negated OuterRef
++        # This might involve modifying the SQL generation to properly
++        # negate the outer reference while maintaining its connection
++        # to the outer query
++        outer_ref_sql, params = self.compile_outer_ref(node)
++        return f"NOT ({outer_ref_sql})", params
++
++    def compile_outer_ref(self, node):
++        # Existing OuterRef handling
++        return super().compile(node)
+ class SQLCompiler:
+     def __init__(self, query, connection, using):
+         self.query = query
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.0) (2024.1)
+Requirement already satisfied: sqlparse in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.0) (0.4.4)
+Requirement already satisfied: asgiref in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.0) (3.4.1)
+Requirement already satisfied: typing-extensions in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from asgiref->Django==3.0) (4.1.1)
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 3.0
+    Uninstalling Django-3.0:
+      Successfully uninstalled Django-3.0
+  Running setup.py develop for Django
+Successfully installed Django-3.0
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
++ git checkout 999891bd80b3d02dd916731a7a239e1036174885 tests/queries/tests.py
+Updated 0 paths from 5bc06ca2be
++ git apply -v -
+Checking patch tests/queries/tests.py...
+Applied patch tests/queries/tests.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 queries.tests
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+test_evaluated_queryset_as_argument (queries.tests.CloneTests)
+#13227 -- If a queryset is already evaluated, it can still be used as a query arg ... ok
+test_no_fields_cloning (queries.tests.CloneTests) ... ok
+test_no_model_options_cloning (queries.tests.CloneTests) ... ok
+test_ticket8597 (queries.tests.ComparisonTests) ... ok
+test_in_list_limit (queries.tests.ConditionalTests) ... ok
+test_infinite_loop (queries.tests.ConditionalTests) ... ok
+test_null_ordering_added (queries.tests.ConditionalTests) ... skipped "Database doesn't support feature(s): requires_explicit_null_ordering_when_grouping"
+test_ticket7371 (queries.tests.CustomPkTests) ... ok
+test_no_extra_params (queries.tests.DefaultValuesInsertTest) ... ok
+test_disjunction_promotion1 (queries.tests.DisjunctionPromotionTests) ... ok
+test_disjunction_promotion2 (queries.tests.DisjunctionPromotionTests) ... ok
+test_disjunction_promotion3 (queries.tests.DisjunctionPromotionTests) ... ok
+test_disjunction_promotion3_demote (queries.tests.DisjunctionPromotionTests) ... ok
+test_disjunction_promotion4 (queries.tests.DisjunctionPromotionTests) ... ok
+test_disjunction_promotion4_demote (queries.tests.DisjunctionPromotionTests) ... ok
+test_disjunction_promotion5_demote (queries.tests.DisjunctionPromotionTests) ... ok
+test_disjunction_promotion6 (queries.tests.DisjunctionPromotionTests) ... ok
+test_disjunction_promotion7 (queries.tests.DisjunctionPromotionTests) ... ok
+test_disjunction_promotion_fexpression (queries.tests.DisjunctionPromotionTests) ... ok
+test_disjunction_promotion_select_related (queries.tests.DisjunctionPromotionTests) ... ok
+test_ticket7872 (queries.tests.DisjunctiveFilterTests) ... ok
+test_ticket8283 (queries.tests.DisjunctiveFilterTests) ... ok
+test_double_subquery_in (queries.tests.DoubleInSubqueryTests) ... ok
+test_21001 (queries.tests.EmptyStringsAsNullTest) ... ok
+test_direct_exclude (queries.tests.EmptyStringsAsNullTest) ... ok
+test_joined_exclude (queries.tests.EmptyStringsAsNullTest) ... ok
+test_ticket_7302 (queries.tests.EscapingTests) ... ok
+test_ticket15786 (queries.tests.Exclude15786) ... ok
+test_exclude_plain (queries.tests.ExcludeTest17600) ... ok
+test_exclude_plain_distinct (queries.tests.ExcludeTest17600) ... ok
+test_exclude_with_q_is_equal_to_plain_exclude (queries.tests.ExcludeTest17600) ... ok
+test_exclude_with_q_is_equal_to_plain_exclude_variation (queries.tests.ExcludeTest17600) ... ok
+test_exclude_with_q_object_distinct (queries.tests.ExcludeTest17600) ... ok
+test_exclude_with_q_object_no_distinct (queries.tests.ExcludeTest17600) ... ok
+test_only_orders_with_all_items_having_status_1 (queries.tests.ExcludeTest17600) ... expected failure
+test_exclude_reverse_fk_field_ref (queries.tests.ExcludeTests) ... ok
+test_exclude_with_circular_fk_relation (queries.tests.ExcludeTests) ... ok
+test_subquery_exclude_outerref (queries.tests.ExcludeTests) ... ERROR
+test_ticket14511 (queries.tests.ExcludeTests) ... ok
+test_to_field (queries.tests.ExcludeTests) ... ok
+test_exists (queries.tests.ExistsSql) ... ok
+test_ticket_18414 (queries.tests.ExistsSql) ... ok
+test_ticket_18414_distinct_on (queries.tests.ExistsSql) ... skipped "Database doesn't support feature(s): can_distinct_on_fields"
+test_ticket_21787 (queries.tests.ForeignKeyToBaseExcludeTests) ... ok
+test_primary_key (queries.tests.IsNullTests) ... ok
+test_to_field (queries.tests.IsNullTests) ... ok
+test_fk_reuse (queries.tests.JoinReuseTest) ... ok
+test_fk_reuse_annotation (queries.tests.JoinReuseTest) ... ok
+test_fk_reuse_disjunction (queries.tests.JoinReuseTest) ... ok
+test_fk_reuse_order_by (queries.tests.JoinReuseTest) ... ok
+test_fk_reuse_select_related (queries.tests.JoinReuseTest) ... ok
+test_inverted_q_across_relations (queries.tests.JoinReuseTest) ... ok
+test_revfk_noreuse (queries.tests.JoinReuseTest) ... ok
+test_revo2o_reuse (queries.tests.JoinReuseTest) ... ok
+test_exclude_many_to_many (queries.tests.ManyToManyExcludeTest) ... ok
+test_ticket_12823 (queries.tests.ManyToManyExcludeTest) ... ok
+test_col_not_in_list_containing_null (queries.tests.NullInExcludeTest) ... expected failure
+test_double_exclude (queries.tests.NullInExcludeTest) ... ok
+test_null_in_exclude_qs (queries.tests.NullInExcludeTest) ... ok
+test_isnull_filter_promotion (queries.tests.NullJoinPromotionOrTest) ... ok
+test_null_join_demotion (queries.tests.NullJoinPromotionOrTest) ... ok
+test_ticket_17886 (queries.tests.NullJoinPromotionOrTest) ... ok
+test_ticket_21366 (queries.tests.NullJoinPromotionOrTest) ... ok
+test_ticket_21748 (queries.tests.NullJoinPromotionOrTest) ... ok
+test_ticket_21748_complex_filter (queries.tests.NullJoinPromotionOrTest) ... ok
+test_ticket_21748_double_negated_and (queries.tests.NullJoinPromotionOrTest) ... ok
+test_ticket_21748_double_negated_or (queries.tests.NullJoinPromotionOrTest) ... ok
+test_join_already_in_query (queries.tests.NullableRelOrderingTests) ... ok
+test_ticket10028 (queries.tests.NullableRelOrderingTests) ... ok
+test_evaluated_proxy_count (queries.tests.ProxyQueryCleanupTest) ... ok
+test_avoid_infinite_loop_on_too_many_subqueries (queries.tests.Queries1Tests) ... ok
+test_common_mixed_case_foreign_keys (queries.tests.Queries1Tests) ... ok
+test_deferred_load_qs_pickling (queries.tests.Queries1Tests) ... ok
+test_double_exclude (queries.tests.Queries1Tests) ... ok
+test_error_raised_on_filter_with_dictionary (queries.tests.Queries1Tests) ... ok
+test_exclude (queries.tests.Queries1Tests) ... ok
+test_exclude_in (queries.tests.Queries1Tests) ... ok
+test_excluded_intermediary_m2m_table_joined (queries.tests.Queries1Tests) ... ok
+test_get_clears_ordering (queries.tests.Queries1Tests) ... ok
+test_heterogeneous_qs_combination (queries.tests.Queries1Tests) ... ok
+test_lookup_constraint_fielderror (queries.tests.Queries1Tests) ... ok
+test_nested_exclude (queries.tests.Queries1Tests) ... ok
+test_order_by_join_unref (queries.tests.Queries1Tests) ... ok
+test_order_by_tables (queries.tests.Queries1Tests) ... ok
+test_reasonable_number_of_subq_aliases (queries.tests.Queries1Tests) ... ok
+test_subquery_condition (queries.tests.Queries1Tests) ... ok
+test_ticket10205 (queries.tests.Queries1Tests) ... ok
+test_ticket10432 (queries.tests.Queries1Tests) ... ok
+test_ticket1050 (queries.tests.Queries1Tests) ... ok
+test_ticket10742 (queries.tests.Queries1Tests) ... ok
+test_ticket17429 (queries.tests.Queries1Tests) ... ok
+test_ticket1801 (queries.tests.Queries1Tests) ... ok
+test_ticket19672 (queries.tests.Queries1Tests) ... ok
+test_ticket2091 (queries.tests.Queries1Tests) ... ok
+test_ticket2253 (queries.tests.Queries1Tests) ... ok
+test_ticket2306 (queries.tests.Queries1Tests) ... ok
+test_ticket2400 (queries.tests.Queries1Tests) ... ok
+test_ticket2496 (queries.tests.Queries1Tests) ... ok
+test_ticket3037 (queries.tests.Queries1Tests) ... ok
+test_ticket3141 (queries.tests.Queries1Tests) ... ok
+test_ticket4358 (queries.tests.Queries1Tests) ... ok
+test_ticket4464 (queries.tests.Queries1Tests) ... ok
+test_ticket4510 (queries.tests.Queries1Tests) ... ok
+test_ticket6074 (queries.tests.Queries1Tests) ... ok
+test_ticket6154 (queries.tests.Queries1Tests) ... ok
+test_ticket6981 (queries.tests.Queries1Tests) ... ok
+test_ticket7076 (queries.tests.Queries1Tests) ... ok
+test_ticket7096 (queries.tests.Queries1Tests) ... ok
+test_ticket7098 (queries.tests.Queries1Tests) ... ok
+test_ticket7155 (queries.tests.Queries1Tests) ... ok
+test_ticket7181 (queries.tests.Queries1Tests) ... ok
+test_ticket7235 (queries.tests.Queries1Tests) ... ok
+test_ticket7277 (queries.tests.Queries1Tests) ... ok
+test_ticket7323 (queries.tests.Queries1Tests) ... ok
+test_ticket7378 (queries.tests.Queries1Tests) ... ok
+test_ticket7791 (queries.tests.Queries1Tests) ... ok
+test_ticket7813 (queries.tests.Queries1Tests) ... ok
+test_ticket8439 (queries.tests.Queries1Tests) ... ok
+test_ticket9411 (queries.tests.Queries1Tests) ... ok
+test_ticket9926 (queries.tests.Queries1Tests) ... ok
+test_ticket9985 (queries.tests.Queries1Tests) ... ok
+test_ticket9997 (queries.tests.Queries1Tests) ... ok
+test_ticket_10790_1 (queries.tests.Queries1Tests) ... ok
+test_ticket_10790_2 (queries.tests.Queries1Tests) ... ok
+test_ticket_10790_3 (queries.tests.Queries1Tests) ... ok
+test_ticket_10790_4 (queries.tests.Queries1Tests) ... ok
+test_ticket_10790_5 (queries.tests.Queries1Tests) ... ok
+test_ticket_10790_6 (queries.tests.Queries1Tests) ... ok
+test_ticket_10790_7 (queries.tests.Queries1Tests) ... ok
+test_ticket_10790_8 (queries.tests.Queries1Tests) ... ok
+test_ticket_10790_combine (queries.tests.Queries1Tests) ... ok
+test_ticket_20250 (queries.tests.Queries1Tests) ... ok
+test_tickets_1878_2939 (queries.tests.Queries1Tests) ... ok
+test_tickets_2076_7256 (queries.tests.Queries1Tests) ... ok
+test_tickets_2080_3592 (queries.tests.Queries1Tests) ... ok
+test_tickets_2874_3002 (queries.tests.Queries1Tests) ... ok
+test_tickets_4088_4306 (queries.tests.Queries1Tests) ... ok
+test_tickets_5321_7070 (queries.tests.Queries1Tests) ... ok
+test_tickets_5324_6704 (queries.tests.Queries1Tests) ... ok
+test_tickets_6180_6203 (queries.tests.Queries1Tests) ... ok
+test_tickets_7087_12242 (queries.tests.Queries1Tests) ... ok
+test_tickets_7204_7506 (queries.tests.Queries1Tests) ... ok
+test_tickets_7448_7707 (queries.tests.Queries1Tests) ... ok
+test_ticket12239 (queries.tests.Queries2Tests) ... ok
+test_ticket4289 (queries.tests.Queries2Tests) ... ok
+test_ticket7759 (queries.tests.Queries2Tests) ... ok
+test_ticket22023 (queries.tests.Queries3Tests) ... ok
+test_ticket7107 (queries.tests.Queries3Tests) ... ok
+test_ticket8683 (queries.tests.Queries3Tests) ... ok
+test_combine_join_reuse (queries.tests.Queries4Tests) ... ok
+test_filter_reverse_non_integer_pk (queries.tests.Queries4Tests) ... ok
+test_join_reuse_order (queries.tests.Queries4Tests) ... ok
+test_order_by_resetting (queries.tests.Queries4Tests) ... ok
+test_order_by_reverse_fk (queries.tests.Queries4Tests) ... ok
+test_ticket10181 (queries.tests.Queries4Tests) ... ok
+test_ticket11811 (queries.tests.Queries4Tests) ... ok
+test_ticket14876 (queries.tests.Queries4Tests) ... ok
+test_ticket15316_exclude_false (queries.tests.Queries4Tests) ... ok
+test_ticket15316_exclude_true (queries.tests.Queries4Tests) ... ok
+test_ticket15316_filter_false (queries.tests.Queries4Tests) ... ok
+test_ticket15316_filter_true (queries.tests.Queries4Tests) ... ok
+test_ticket15316_one2one_exclude_false (queries.tests.Queries4Tests) ... ok
+test_ticket15316_one2one_exclude_true (queries.tests.Queries4Tests) ... ok
+test_ticket15316_one2one_filter_false (queries.tests.Queries4Tests) ... ok
+test_ticket15316_one2one_filter_true (queries.tests.Queries4Tests) ... ok
+test_ticket24525 (queries.tests.Queries4Tests) ... ok
+test_ticket7095 (queries.tests.Queries4Tests) ... ok
+test_extra_select_literal_percent_s (queries.tests.Queries5Tests) ... ok
+test_ordering (queries.tests.Queries5Tests) ... ok
+test_ticket5261 (queries.tests.Queries5Tests) ... ok
+test_ticket7045 (queries.tests.Queries5Tests) ... ok
+test_ticket7256 (queries.tests.Queries5Tests) ... ok
+test_ticket9848 (queries.tests.Queries5Tests) ... ok
+test_distinct_ordered_sliced_subquery_aggregation (queries.tests.Queries6Tests) ... ok
+test_multiple_columns_with_the_same_name_slice (queries.tests.Queries6Tests) ... ok
+test_nested_queries_sql (queries.tests.Queries6Tests) ... ok
+test_parallel_iterators (queries.tests.Queries6Tests) ... ok
+test_ticket3739 (queries.tests.Queries6Tests) ... ok
+test_ticket_11320 (queries.tests.Queries6Tests) ... ok
+test_tickets_8921_9188 (queries.tests.Queries6Tests) ... ok
+test_or_with_both_slice (queries.tests.QuerySetBitwiseOperationTests) ... ok
+test_or_with_both_slice_and_ordering (queries.tests.QuerySetBitwiseOperationTests) ... ok
+test_or_with_lhs_slice (queries.tests.QuerySetBitwiseOperationTests) ... ok
+test_or_with_rhs_slice (queries.tests.QuerySetBitwiseOperationTests) ... ok
+test_can_combine_queries_using_and_and_or_operators (queries.tests.QuerySetSupportsPythonIdioms) ... ok
+test_can_get_items_using_index_and_slice_notation (queries.tests.QuerySetSupportsPythonIdioms) ... ok
+test_can_get_number_of_items_in_queryset_using_standard_len (queries.tests.QuerySetSupportsPythonIdioms) ... ok
+test_invalid_index (queries.tests.QuerySetSupportsPythonIdioms) ... ok
+test_slicing_can_slice_again_after_slicing (queries.tests.QuerySetSupportsPythonIdioms) ... ok
+test_slicing_cannot_combine_queries_once_sliced (queries.tests.QuerySetSupportsPythonIdioms) ... ok
+test_slicing_cannot_filter_queryset_once_sliced (queries.tests.QuerySetSupportsPythonIdioms) ... ok
+test_slicing_cannot_reorder_queryset_once_sliced (queries.tests.QuerySetSupportsPythonIdioms) ... ok
+test_slicing_negative_indexing_not_supported_for_range (queries.tests.QuerySetSupportsPythonIdioms)
+hint: inverting your ordering might do what you need ... ok
+test_slicing_negative_indexing_not_supported_for_single_element (queries.tests.QuerySetSupportsPythonIdioms)
+hint: inverting your ordering might do what you need ... ok
+test_slicing_with_steps_can_be_used (queries.tests.QuerySetSupportsPythonIdioms) ... ok
+test_slicing_with_tests_is_not_lazy (queries.tests.QuerySetSupportsPythonIdioms) ... ok
+test_slicing_without_step_is_lazy (queries.tests.QuerySetSupportsPythonIdioms) ... ok
+test_ticket14729 (queries.tests.RawQueriesTests) ... ok
+test_ticket_19964 (queries.tests.RelabelCloneTest) ... ok
+test_correct_lookup (queries.tests.RelatedLookupTypeTests) ... ok
+test_values_queryset_lookup (queries.tests.RelatedLookupTypeTests) ... ok
+test_wrong_backward_lookup (queries.tests.RelatedLookupTypeTests) ... ok
+test_wrong_type_lookup (queries.tests.RelatedLookupTypeTests) ... ok
+test_reverse_trimming (queries.tests.ReverseJoinTrimmingTest) ... ok
+test_ticket_21879 (queries.tests.ReverseM2MCustomPkTests) ... ok
+test_tickets_3045_3288 (queries.tests.SelectRelatedTests) ... ok
+test_ticket7778 (queries.tests.SubclassFKTests) ... ok
+test_distinct_ordered_sliced_subquery (queries.tests.SubqueryTests) ... ok
+test_ordered_subselect (queries.tests.SubqueryTests)
+Subselects honor any manual ordering ... ok
+test_related_sliced_subquery (queries.tests.SubqueryTests) ... ok
+test_slice_subquery_and_query (queries.tests.SubqueryTests) ... ok
+test_sliced_delete (queries.tests.SubqueryTests)
+Delete queries can safely contain sliced subqueries ... ok
+test_ticket_24278 (queries.tests.TestTicket24279) ... ok
+test_ticket_24605 (queries.tests.TestTicket24605) ... ok
+test_ticket_12807 (queries.tests.Ticket12807Tests) ... ok
+test_ticket_14056 (queries.tests.Ticket14056Tests) ... ok
+test_ticket_20101 (queries.tests.Ticket20101Tests) ... ok
+test_ticket_20788 (queries.tests.Ticket20788Tests) ... ok
+test_ticket_20955 (queries.tests.Ticket20955Tests) ... ok
+test_ticket_21203 (queries.tests.Ticket21203Tests) ... ok
+test_ticket_22429 (queries.tests.Ticket22429Tests) ... ok
+test_ticket_23605 (queries.tests.Ticket23605Tests) ... ok
+test_ticket_23622 (queries.tests.Ticket23622Tests) ... skipped "Database doesn't support feature(s): can_distinct_on_fields"
+test_in_query (queries.tests.ToFieldTests) ... ok
+test_in_subquery (queries.tests.ToFieldTests) ... ok
+test_nested_in_subquery (queries.tests.ToFieldTests) ... ok
+test_recursive_fk (queries.tests.ToFieldTests) ... ok
+test_recursive_fk_reverse (queries.tests.ToFieldTests) ... ok
+test_reverse_in (queries.tests.ToFieldTests) ... ok
+test_single_object (queries.tests.ToFieldTests) ... ok
+test_single_object_reverse (queries.tests.ToFieldTests) ... ok
+test_non_nullable_fk_not_promoted (queries.tests.ValuesJoinPromotionTests) ... ok
+test_ticket_21376 (queries.tests.ValuesJoinPromotionTests) ... ok
+test_values_no_promotion_for_existing (queries.tests.ValuesJoinPromotionTests) ... ok
+test_extra_multiple_select_params_values_order_by (queries.tests.ValuesQuerysetTests) ... ok
+test_extra_select_params_values_order_in_extra (queries.tests.ValuesQuerysetTests) ... ok
+test_extra_values (queries.tests.ValuesQuerysetTests) ... ok
+test_extra_values_list (queries.tests.ValuesQuerysetTests) ... ok
+test_extra_values_order_in_extra (queries.tests.ValuesQuerysetTests) ... ok
+test_extra_values_order_multiple (queries.tests.ValuesQuerysetTests) ... ok
+test_extra_values_order_twice (queries.tests.ValuesQuerysetTests) ... ok
+test_field_error_values_list (queries.tests.ValuesQuerysetTests) ... ok
+test_flat_extra_values_list (queries.tests.ValuesQuerysetTests) ... ok
+test_flat_values_list (queries.tests.ValuesQuerysetTests) ... ok
+test_named_values_list_bad_field_name (queries.tests.ValuesQuerysetTests) ... ok
+test_named_values_list_expression (queries.tests.ValuesQuerysetTests) ... ok
+test_named_values_list_expression_with_default_alias (queries.tests.ValuesQuerysetTests) ... ok
+test_named_values_list_flat (queries.tests.ValuesQuerysetTests) ... ok
+test_named_values_list_with_fields (queries.tests.ValuesQuerysetTests) ... ok
+test_named_values_list_without_fields (queries.tests.ValuesQuerysetTests) ... ok
+test_values_in_subquery (queries.tests.ValuesSubqueryTests) ... ok
+test_empty_resultset_sql (queries.tests.WeirdQuerysetSlicingTests) ... ok
+test_empty_sliced_subquery (queries.tests.WeirdQuerysetSlicingTests) ... ok
+test_empty_sliced_subquery_exclude (queries.tests.WeirdQuerysetSlicingTests) ... ok
+test_tickets_7698_10202 (queries.tests.WeirdQuerysetSlicingTests) ... ok
+test_zero_length_values_slicing (queries.tests.WeirdQuerysetSlicingTests) ... ok
+test_emptyqueryset_values (queries.tests.EmptyQuerySetTests) ... ok
+test_ticket_19151 (queries.tests.EmptyQuerySetTests) ... ok
+test_values_subquery (queries.tests.EmptyQuerySetTests) ... ok
+test_empty_string_promotion (queries.tests.EmptyStringPromotionTests) ... ok
+test_ticket10432 (queries.tests.GeneratorExpressionTests) ... ok
+test_invalid_order_by (queries.tests.QuerySetExceptionTests) ... ok
+test_invalid_qs_list (queries.tests.QuerySetExceptionTests) ... ok
+test_invalid_queryset_model (queries.tests.QuerySetExceptionTests) ... ok
+test_iter_exceptions (queries.tests.QuerySetExceptionTests) ... ok
+test_invalid_values (queries.tests.TestInvalidValuesRelation) ... ok
+test_ticket_18785 (queries.tests.Ticket18785Tests) ... ok
+test_empty_full_handling_conjunction (queries.tests.WhereNodeTest) ... ok
+test_empty_full_handling_disjunction (queries.tests.WhereNodeTest) ... ok
+test_empty_nodes (queries.tests.WhereNodeTest) ... ok
+test_annotated_ordering (queries.tests.QuerysetOrderedTests) ... ok
+test_cleared_default_ordering (queries.tests.QuerysetOrderedTests) ... ok
+test_empty_queryset (queries.tests.QuerysetOrderedTests) ... ok
+test_explicit_ordering (queries.tests.QuerysetOrderedTests) ... ok
+test_no_default_or_explicit_ordering (queries.tests.QuerysetOrderedTests) ... ok
+test_order_by_extra (queries.tests.QuerysetOrderedTests) ... ok
+test_AB_ACB (queries.tests.UnionTests) ... ok
+test_A_AB (queries.tests.UnionTests) ... ok
+test_A_AB2 (queries.tests.UnionTests) ... ok
+test_BAB_BAC (queries.tests.UnionTests) ... ok
+test_BAB_BACB (queries.tests.UnionTests) ... ok
+test_BA_BCA__BAB_BAC_BCA (queries.tests.UnionTests) ... Testing against Django installed in '/testbed/django'
+Importing application queries
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, messages, queries, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table queries_dumbcategory
+    Creating table queries_namedcategory
+    Creating table queries_tag
+    Creating table queries_note
+    Creating table queries_annotation
+    Creating table queries_datetimepk
+    Creating table queries_extrainfo
+    Creating table queries_author
+    Creating table queries_item
+    Creating table queries_report
+    Creating table queries_reportcomment
+    Creating table queries_ranking
+    Creating table queries_cover
+    Creating table queries_number
+    Creating table queries_valid
+    Creating table queries_x
+    Creating table queries_y
+    Creating table queries_loopx
+    Creating table queries_loopy
+    Creating table queries_loopz
+    Creating table queries_managedmodel
+    Creating table queries_detail
+    Creating table queries_member
+    Creating table queries_child
+    Creating table queries_custompk
+    Creating table queries_related
+    Creating table queries_custompktag
+    Creating table queries_celebrity
+    Creating table queries_tvchef
+    Creating table queries_fan
+    Creating table queries_leafa
+    Creating table queries_leafb
+    Creating table queries_join
+    Creating table queries_reservedname
+    Creating table queries_sharedconnection
+    Creating table queries_pointera
+    Creating table queries_pointerb
+    Creating table queries_singleobject
+    Creating table queries_relatedobject
+    Creating table queries_plaything
+    Creating table queries_article
+    Creating table queries_food
+    Creating table queries_eaten
+    Creating table queries_node
+    Creating table queries_objecta
+    Creating table queries_childobjecta
+    Creating table queries_objectb
+    Creating table queries_objectc
+    Creating table queries_simplecategory
+    Creating table queries_specialcategory
+    Creating table queries_categoryitem
+    Creating table queries_mixedcasefieldcategoryitem
+    Creating table queries_mixedcasedbcolumncategoryitem
+    Creating table queries_onetoonecategory
+    Creating table queries_categoryrelationship
+    Creating table queries_commonmixedcaseforeignkeys
+    Creating table queries_nullablename
+    Creating table queries_modeld
+    Creating table queries_modelc
+    Creating table queries_modelb
+    Creating table queries_modela
+    Creating table queries_job
+    Creating table queries_jobresponsibilities
+    Creating table queries_responsibility
+    Creating table queries_fk1
+    Creating table queries_fk2
+    Creating table queries_fk3
+    Creating table queries_basea
+    Creating table queries_identifier
+    Creating table queries_program
+    Creating table queries_channel
+    Creating table queries_book
+    Creating table queries_chapter
+    Creating table queries_paragraph
+    Creating table queries_page
+    Creating table queries_myobject
+    Creating table queries_order
+    Creating table queries_orderitem
+    Creating table queries_baseuser
+    Creating table queries_task
+    Creating table queries_staff
+    Creating table queries_staffuser
+    Creating table queries_ticket21203parent
+    Creating table queries_ticket21203child
+    Creating table queries_person
+    Creating table queries_company
+    Creating table queries_employment
+    Creating table queries_school
+    Creating table queries_student
+    Creating table queries_classroom
+    Creating table queries_teacher
+    Creating table queries_ticket23605aparent
+    Creating table queries_ticket23605a
+    Creating table queries_ticket23605b
+    Creating table queries_ticket23605c
+    Creating table Individual
+    Creating table RelatedIndividual
+    Creating table queries_customdbcolumn
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (1 silenced).
+ok
+
+======================================================================
+ERROR: test_subquery_exclude_outerref (queries.tests.ExcludeTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/db/models/sql/query.py", line 1271, in build_filter
+    reuse_with_filtered_relation=reuse_with_filtered_relation,
+  File "/testbed/django/db/models/sql/query.py", line 1557, in setup_joins
+    names[:pivot], opts, allow_many, fail_on_missing=True,
+  File "/testbed/django/db/models/sql/query.py", line 1491, in names_to_path
+    raise MultiJoin(pos + 1, names_with_path)
+django.db.models.sql.datastructures.MultiJoin: (1, [('jobs', [PathInfo(from_opts=<Options for Responsibility>, to_opts=<Options for JobResponsibilities>, target_fields=(<django.db.models.fields.AutoField: id>,), join_field=<ManyToOneRel: queries.jobresponsibilities>, m2m=True, direct=False, filtered_relation=None)])])
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/testbed/tests/queries/tests.py", line 2815, in test_subquery_exclude_outerref
+    Exists(Responsibility.objects.exclude(jobs=OuterRef('job'))),
+  File "/testbed/django/db/models/manager.py", line 82, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+  File "/testbed/django/db/models/query.py", line 902, in exclude
+    return self._filter_or_exclude(True, *args, **kwargs)
+  File "/testbed/django/db/models/query.py", line 911, in _filter_or_exclude
+    clone.query.add_q(~Q(*args, **kwargs))
+  File "/testbed/django/db/models/sql/query.py", line 1343, in add_q
+    clause, _ = self._add_q(q_object, self.used_aliases)
+  File "/testbed/django/db/models/sql/query.py", line 1371, in _add_q
+    split_subq=split_subq, simple_col=simple_col,
+  File "/testbed/django/db/models/sql/query.py", line 1283, in build_filter
+    return self.split_exclude(filter_expr, can_reuse, e.names_with_path)
+  File "/testbed/django/db/models/sql/query.py", line 1742, in split_exclude
+    current_negated=True, branch_negated=True, can_reuse=can_reuse)
+  File "/testbed/django/db/models/sql/query.py", line 1253, in build_filter
+    value = self.resolve_lookup_value(value, can_reuse, allow_joins, simple_col)
+  File "/testbed/django/db/models/sql/query.py", line 1053, in resolve_lookup_value
+    value = value.resolve_expression(self, **kwargs)
+  File "/testbed/django/db/models/sql/query.py", line 1025, in resolve_expression
+    clone.where.resolve_expression(query, *args, **kwargs)
+  File "/testbed/django/db/models/sql/where.py", line 204, in resolve_expression
+    clone._resolve_node(clone, *args, **kwargs)
+  File "/testbed/django/db/models/sql/where.py", line 196, in _resolve_node
+    cls._resolve_node(child, query, *args, **kwargs)
+  File "/testbed/django/db/models/sql/where.py", line 200, in _resolve_node
+    node.rhs = cls._resolve_leaf(node.rhs, query, *args, **kwargs)
+  File "/testbed/django/db/models/sql/where.py", line 189, in _resolve_leaf
+    expr = expr.resolve_expression(query, *args, **kwargs)
+  File "/testbed/django/db/models/expressions.py", line 531, in resolve_expression
+    return query.resolve_ref(self.name, allow_joins, reuse, summarize, simple_col)
+  File "/testbed/django/db/models/sql/query.py", line 1670, in resolve_ref
+    join_info = self.setup_joins(field_list, self.get_meta(), self.get_initial_alias(), can_reuse=reuse)
+  File "/testbed/django/db/models/sql/query.py", line 1557, in setup_joins
+    names[:pivot], opts, allow_many, fail_on_missing=True,
+  File "/testbed/django/db/models/sql/query.py", line 1473, in names_to_path
+    "Choices are: %s" % (name, ", ".join(available)))
+django.core.exceptions.FieldError: Cannot resolve keyword 'job' into field. Choices are: description, id, jobresponsibilities, jobs
+
+----------------------------------------------------------------------
+Ran 282 tests in 0.360s
+
+FAILED (errors=1, skipped=3, expected failures=2)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout 999891bd80b3d02dd916731a7a239e1036174885 tests/queries/tests.py
+Updated 1 path from 5bc06ca2be

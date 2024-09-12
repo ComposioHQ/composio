@@ -1,0 +1,23 @@
+diff --git a/requests/sessions.py b/requests/sessions.py
+index 3f59cab..67e8620 100644
+--- a/requests/sessions.py
++++ b/requests/sessions.py
+@@ -714,6 +714,18 @@ class Session(SessionRedirectMixin):
+         verify = merge_setting(verify, self.verify)
+         cert = merge_setting(cert, self.cert)
+ 
++        # Debug information
++        print(f"Debug: Merged proxy settings: {proxies}")
++        print(f"Debug: URL being accessed: {url}")
++
++        # Ensure proxy authentication is correctly set
++        if proxies:
++            for protocol, proxy_url in proxies.items():
++                if proxy_url and '@' not in proxy_url:
++                    proxy_auth = get_auth_from_url(proxy_url)
++                    if proxy_auth:
++                        proxies[protocol] = proxy_url.replace('://', f'://{proxy_auth[0]}:{proxy_auth[1]}@')
++
+         return {'verify': verify, 'proxies': proxies, 'stream': stream,
+                 'cert': cert}
+ 

@@ -1,0 +1,189 @@
+diff --git a/django/db/migrations/autodetector.py b/django/db/migrations/autodetector.py
+index 23c97e54..56ce4929 100644
+--- a/django/db/migrations/autodetector.py
++++ b/django/db/migrations/autodetector.py
+@@ -1771,4 +1771,58 @@ class MigrationAutodetector:
+         match = re.match(r"^\d+", name)
+         if match:
+             return int(match[0])
++    def _optimize_index_operations(self, changes):
++        """
++        Optimize AddIndex and RemoveIndex operations by combining them when possible.
++        """
++        optimized_changes = {}
++        for app_label, app_changes in changes.items():
++            optimized_app_changes = []
++            index_operations = defaultdict(list)
++
++            for change in app_changes:
++                if isinstance(change, operations.AddIndex) or isinstance(change, operations.RemoveIndex):
++                    index_operations[change.model_name].append(change)
++                else:
++                    optimized_app_changes.append(change)
++
++            for model_name, model_index_operations in index_operations.items():
++                add_indexes = [op for op in model_index_operations if isinstance(op, operations.AddIndex)]
++                remove_indexes = [op for op in model_index_operations if isinstance(op, operations.RemoveIndex)]
++
++                # Combine AddIndex and RemoveIndex operations for the same index
++                for add_op in add_indexes[:]:
++                    for remove_op in remove_indexes[:]:
++                        if add_op.index.name == remove_op.name:
++                            # Replace with AlterIndex operation
++                            optimized_app_changes.append(
++                                operations.AlterIndex(
++                                    model_name=model_name,
++                                    old_index=remove_op.index,
++                                    new_index=add_op.index
++                                )
++                            )
++                            add_indexes.remove(add_op)
++                            remove_indexes.remove(remove_op)
++
++                # Add remaining index operations
++                optimized_app_changes.extend(add_indexes)
++                optimized_app_changes.extend(remove_indexes)
++
++            optimized_changes[app_label] = optimized_app_changes
++
++        return optimized_changes
++
++    def changes(self, graph, trim_to_apps=None, convert_apps=None, migration_name=None):
++        """
++        Main entry point to produce a list of applicable changes.
++        Take a graph to base names on and an optional set of apps
++        to try and restrict to (restriction is not guaranteed)
++        """
++        changes = self._detect_changes(convert_apps, graph)
++        changes = self._optimize_index_operations(changes)
++        changes = self.arrange_for_graph(changes, graph, migration_name)
++        if trim_to_apps:
++            changes = self._trim_to_apps(changes, trim_to_apps)
++        return changes
+         return None
+diff --git a/tests/migrations/test_autodetector.py b/tests/migrations/test_autodetector.py
+index 44923a3c..6ec0a325 100644
+--- a/tests/migrations/test_autodetector.py
++++ b/tests/migrations/test_autodetector.py
+@@ -5467,3 +5467,121 @@ class MigrationSuggestNameTests(SimpleTestCase):
+         migration = migrations.Migration("0001_initial", "test_app")
+         suggest_name = migration.suggest_name()
+         self.assertIs(suggest_name.startswith("auto_"), True)
++    def test_optimize_index_operations(self):
++        """
++        Tests that AddIndex and RemoveIndex operations are optimized into AlterIndex operations when possible.
++        """
++        # Set up initial state
++        before = ProjectState()
++        before.add_model(ModelState(
++            "testapp",
++            "TestModel",
++            [
++                ("id", models.AutoField(primary_key=True)),
++                ("name", models.CharField(max_length=100)),
++                ("age", models.IntegerField()),
++            ],
++            options={
++                "indexes": [models.Index(fields=["name"], name="name_idx")],
++            },
++        ))
++
++        # Set up desired state
++        after = ProjectState()
++        after.add_model(ModelState(
++            "testapp",
++            "TestModel",
++            [
++                ("id", models.AutoField(primary_key=True)),
++                ("name", models.CharField(max_length=100)),
++                ("age", models.IntegerField()),
++            ],
++            options={
++                "indexes": [models.Index(fields=["name", "age"], name="name_idx")],
++            },
++        ))
++
++        # Run autodetector
++        autodetector = MigrationAutodetector(before, after)
++        changes = autodetector.changes()
++
++        # Check that we get an AlterIndex operation instead of separate RemoveIndex and AddIndex operations
++        self.assertNumberMigrations(changes, "testapp", 1)
++        self.assertOperationTypes(changes, "testapp", 0, ["AlterIndex"])
++
++        # Check the AlterIndex operation details
++        alter_index_op = changes["testapp"][0].operations[0]
++        self.assertEqual(alter_index_op.model_name, "TestModel")
++        self.assertEqual(alter_index_op.old_index.fields, ["name"])
++        self.assertEqual(alter_index_op.new_index.fields, ["name", "age"])
++        self.assertEqual(alter_index_op.old_index.name, "name_idx")
++        self.assertEqual(alter_index_op.new_index.name, "name_idx")
++
++    def test_optimize_index_operations_multiple(self):
++        """
++        Tests that multiple AddIndex and RemoveIndex operations are optimized correctly.
++        """
++        # Set up initial state
++        before = ProjectState()
++        before.add_model(ModelState(
++            "testapp",
++            "TestModel",
++            [
++                ("id", models.AutoField(primary_key=True)),
++                ("name", models.CharField(max_length=100)),
++                ("age", models.IntegerField()),
++                ("email", models.EmailField()),
++            ],
++            options={
++                "indexes": [
++                    models.Index(fields=["name"], name="name_idx"),
++                    models.Index(fields=["age"], name="age_idx"),
++                ],
++            },
++        ))
++
++        # Set up desired state
++        after = ProjectState()
++        after.add_model(ModelState(
++            "testapp",
++            "TestModel",
++            [
++                ("id", models.AutoField(primary_key=True)),
++                ("name", models.CharField(max_length=100)),
++                ("age", models.IntegerField()),
++                ("email", models.EmailField()),
++            ],
++            options={
++                "indexes": [
++                    models.Index(fields=["name", "age"], name="name_idx"),
++                    models.Index(fields=["email"], name="email_idx"),
++                ],
++            },
++        ))
++
++        # Run autodetector
++        autodetector = MigrationAutodetector(before, after)
++        changes = autodetector.changes()
++
++        # Check that we get the correct number of operations
++        self.assertNumberMigrations(changes, "testapp", 1)
++        self.assertOperationTypes(changes, "testapp", 0, ["AlterIndex", "RemoveIndex", "AddIndex"])
++
++        # Check the AlterIndex operation details
++        alter_index_op = changes["testapp"][0].operations[0]
++        self.assertEqual(alter_index_op.model_name, "TestModel")
++        self.assertEqual(alter_index_op.old_index.fields, ["name"])
++        self.assertEqual(alter_index_op.new_index.fields, ["name", "age"])
++        self.assertEqual(alter_index_op.old_index.name, "name_idx")
++        self.assertEqual(alter_index_op.new_index.name, "name_idx")
++
++        # Check the RemoveIndex operation details
++        remove_index_op = changes["testapp"][0].operations[1]
++        self.assertEqual(remove_index_op.model_name, "TestModel")
++        self.assertEqual(remove_index_op.name, "age_idx")
++
++        # Check the AddIndex operation details
++        add_index_op = changes["testapp"][0].operations[2]
++        self.assertEqual(add_index_op.model_name, "TestModel")
++        self.assertEqual(add_index_op.index.fields, ["email"])
++        self.assertEqual(add_index_op.index.name, "email_idx")

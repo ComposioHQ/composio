@@ -1,0 +1,332 @@
+2024-09-12 08:21:25,908 - INFO - Building image sweb.eval.x86_64.pydata__xarray-2905:latest
+Using dockerfile:
+FROM --platform=linux/x86_64 sweb.env.x86_64.502d8fc6ebccd881244091:latest
+
+COPY ./setup_repo.sh /root/
+RUN /bin/bash /root/setup_repo.sh
+
+WORKDIR /testbed/
+
+Adding (1) setup scripts to image build repo
+2024-09-12 08:21:25,908 - INFO - [SETUP SCRIPT] setup_repo.sh:
+#!/bin/bash
+set -euxo pipefail
+git clone -o origin https://github.com/pydata/xarray /testbed
+chmod -R 777 /testbed
+cd /testbed
+git reset --hard 7c4e2ac83f7b4306296ff9b7b51aaf016e5ad614
+git remote remove origin
+source /opt/miniconda3/bin/activate
+conda activate testbed
+echo "Current environment: $CONDA_DEFAULT_ENV"
+python -m pip install -e .
+
+2024-09-12 08:21:25,909 - INFO - Building docker image sweb.eval.x86_64.pydata__xarray-2905:latest in logs/build_images/instances/sweb.eval.x86_64.pydata__xarray-2905__latest with platform linux/x86_64
+2024-09-12 08:21:26,110 - INFO - Step 1/4 : FROM --platform=linux/x86_64 sweb.env.x86_64.502d8fc6ebccd881244091:latest
+2024-09-12 08:21:26,110 - INFO - 
+2024-09-12 08:21:26,110 - INFO - ---> 328048cca45d
+2024-09-12 08:21:26,110 - INFO - Step 2/4 : COPY ./setup_repo.sh /root/
+2024-09-12 08:21:26,110 - INFO - 
+2024-09-12 08:21:26,140 - INFO - ---> 65f547b9b91b
+2024-09-12 08:21:26,141 - INFO - Step 3/4 : RUN /bin/bash /root/setup_repo.sh
+2024-09-12 08:21:26,141 - INFO - 
+2024-09-12 08:21:26,151 - INFO - ---> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+2024-09-12 08:21:26,151 - INFO - ---> Running in 510fac803583
+2024-09-12 08:21:26,383 - INFO - + git clone -o origin https://github.com/pydata/xarray /testbed
+2024-09-12 08:21:26,402 - INFO - Cloning into '/testbed'...
+2024-09-12 08:21:40,189 - INFO - + chmod -R 777 /testbed
+2024-09-12 08:21:40,202 - INFO - + cd /testbed
+2024-09-12 08:21:40,203 - INFO - + git reset --hard 7c4e2ac83f7b4306296ff9b7b51aaf016e5ad614
+2024-09-12 08:21:40,328 - INFO - HEAD is now at 7c4e2ac8 Revert defaults of beckends' open_datasets to prepare the switch to APIv2 #4309 (#4899)
+2024-09-12 08:21:40,329 - INFO - + git remote remove origin
+2024-09-12 08:21:40,354 - INFO - + source /opt/miniconda3/bin/activate
+2024-09-12 08:21:40,356 - INFO - ++ _CONDA_ROOT=/opt/miniconda3
+2024-09-12 08:21:40,357 - INFO - ++ . /opt/miniconda3/etc/profile.d/conda.sh
+2024-09-12 08:21:40,357 - INFO - +++ export CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-12 08:21:40,357 - INFO - +++ CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-12 08:21:40,358 - INFO - +++ export _CE_M=
++++ _CE_M=
+2024-09-12 08:21:40,358 - INFO - +++ export _CE_CONDA=
++++ _CE_CONDA=
+2024-09-12 08:21:40,358 - INFO - +++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+2024-09-12 08:21:40,361 - INFO - +++ '[' -z '' ']'
+2024-09-12 08:21:40,361 - INFO - +++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
+2024-09-12 08:21:40,361 - INFO - +++ '[' -n '' ']'
+2024-09-12 08:21:40,364 - INFO - +++++ dirname /opt/miniconda3/bin/conda
+2024-09-12 08:21:40,374 - INFO - ++++ dirname /opt/miniconda3/bin
+2024-09-12 08:21:40,385 - INFO - +++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-12 08:21:40,385 - INFO - +++ export PATH
+2024-09-12 08:21:40,385 - INFO - +++ '[' -z '' ']'
+2024-09-12 08:21:40,386 - INFO - +++ PS1=
+2024-09-12 08:21:40,386 - INFO - ++ conda activate
+2024-09-12 08:21:40,387 - INFO - ++ local cmd=activate
+2024-09-12 08:21:40,387 - INFO - ++ case "$cmd" in
+2024-09-12 08:21:40,387 - INFO - ++ __conda_activate activate
+2024-09-12 08:21:40,388 - INFO - ++ '[' -n '' ']'
+2024-09-12 08:21:40,388 - INFO - ++ local ask_conda
+2024-09-12 08:21:40,390 - INFO - +++ PS1=
+2024-09-12 08:21:40,390 - INFO - +++ __conda_exe shell.posix activate
+2024-09-12 08:21:40,391 - INFO - +++ /opt/miniconda3/bin/conda shell.posix activate
+2024-09-12 08:21:40,867 - INFO - ++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+2024-09-12 08:21:40,867 - INFO - ++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+2024-09-12 08:21:40,867 - INFO - +++ PS1='(base) '
+2024-09-12 08:21:40,867 - INFO - +++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-12 08:21:40,867 - INFO - +++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-12 08:21:40,867 - INFO - +++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
+2024-09-12 08:21:40,868 - INFO - +++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
+2024-09-12 08:21:40,868 - INFO - +++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
+2024-09-12 08:21:40,868 - INFO - +++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
+2024-09-12 08:21:40,868 - INFO - +++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-12 08:21:40,868 - INFO - +++ export _CE_M=
++++ _CE_M=
+2024-09-12 08:21:40,868 - INFO - +++ export _CE_CONDA=
++++ _CE_CONDA=
+2024-09-12 08:21:40,868 - INFO - +++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+2024-09-12 08:21:40,868 - INFO - ++ __conda_hashr
+2024-09-12 08:21:40,868 - INFO - ++ '[' -n '' ']'
+2024-09-12 08:21:40,868 - INFO - ++ '[' -n '' ']'
+2024-09-12 08:21:40,868 - INFO - ++ hash -r
+2024-09-12 08:21:40,868 - INFO - + conda activate testbed
+2024-09-12 08:21:40,869 - INFO - + local cmd=activate
+2024-09-12 08:21:40,869 - INFO - + case "$cmd" in
+2024-09-12 08:21:40,869 - INFO - + __conda_activate activate testbed
+2024-09-12 08:21:40,869 - INFO - + '[' -n '' ']'
++ local ask_conda
+2024-09-12 08:21:40,870 - INFO - ++ PS1='(base) '
+2024-09-12 08:21:40,870 - INFO - ++ __conda_exe shell.posix activate testbed
+2024-09-12 08:21:40,871 - INFO - ++ /opt/miniconda3/bin/conda shell.posix activate testbed
+2024-09-12 08:21:41,297 - INFO - + ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh"'
+2024-09-12 08:21:41,297 - INFO - + eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh"'
+2024-09-12 08:21:41,298 - INFO - ++ PS1='(testbed) '
+2024-09-12 08:21:41,298 - INFO - ++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-12 08:21:41,298 - INFO - ++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+2024-09-12 08:21:41,298 - INFO - ++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+2024-09-12 08:21:41,298 - INFO - ++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+2024-09-12 08:21:41,298 - INFO - ++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+2024-09-12 08:21:41,298 - INFO - ++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+2024-09-12 08:21:41,298 - INFO - ++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+2024-09-12 08:21:41,298 - INFO - ++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-12 08:21:41,298 - INFO - ++ export _CE_M=
+++ _CE_M=
+2024-09-12 08:21:41,298 - INFO - ++ export _CE_CONDA=
+++ _CE_CONDA=
+2024-09-12 08:21:41,299 - INFO - ++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+2024-09-12 08:21:41,299 - INFO - ++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh
+2024-09-12 08:21:41,299 - INFO - +++ '[' -n '' ']'
+2024-09-12 08:21:41,299 - INFO - +++ '[' -f /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
+2024-09-12 08:21:41,300 - INFO - +++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+2024-09-12 08:21:41,300 - INFO - ++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh
+2024-09-12 08:21:41,300 - INFO - +++ '[' -n /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
+2024-09-12 08:21:41,300 - INFO - +++ export _CONDA_SET_ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ _CONDA_SET_ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+2024-09-12 08:21:41,301 - INFO - +++ '[' -f /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
+2024-09-12 08:21:41,301 - INFO - +++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+2024-09-12 08:21:41,301 - INFO - ++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh
+2024-09-12 08:21:41,301 - INFO - +++ '[' -n '' ']'
+2024-09-12 08:21:41,301 - INFO - +++ '[' -n '' ']'
+2024-09-12 08:21:41,301 - INFO - +++ '[' -d /opt/miniconda3/envs/testbed/share/gdal ']'
+2024-09-12 08:21:41,302 - INFO - +++ export GDAL_DATA=/opt/miniconda3/envs/testbed/share/gdal
++++ GDAL_DATA=/opt/miniconda3/envs/testbed/share/gdal
+2024-09-12 08:21:41,303 - INFO - +++ export GDAL_DRIVER_PATH=/opt/miniconda3/envs/testbed/lib/gdalplugins
++++ GDAL_DRIVER_PATH=/opt/miniconda3/envs/testbed/lib/gdalplugins
+2024-09-12 08:21:41,303 - INFO - +++ '[' '!' -d /opt/miniconda3/envs/testbed/lib/gdalplugins ']'
+2024-09-12 08:21:41,303 - INFO - +++ export CPL_ZIP_ENCODING=UTF-8
++++ CPL_ZIP_ENCODING=UTF-8
+2024-09-12 08:21:41,303 - INFO - ++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh
+2024-09-12 08:21:41,303 - INFO - +++ '[' -n '' ']'
+2024-09-12 08:21:41,303 - INFO - +++ '[' -d /opt/miniconda3/envs/testbed/share/epsg_csv ']'
+2024-09-12 08:21:41,303 - INFO - +++ '[' -d /opt/miniconda3/envs/testbed/Library/share/epsg_csv ']'
+2024-09-12 08:21:41,304 - INFO - ++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libarrow_activate.sh
+2024-09-12 08:21:41,304 - INFO - +++ _la_log 'Beginning libarrow activation.'
+2024-09-12 08:21:41,304 - INFO - +++ '[' '' = 1 ']'
+2024-09-12 08:21:41,304 - INFO - +++ _la_gdb_prefix=/opt/miniconda3/envs/testbed/share/gdb/auto-load
+2024-09-12 08:21:41,304 - INFO - +++ '[' '!' -w /opt/miniconda3/envs/testbed/share/gdb/auto-load ']'
+2024-09-12 08:21:41,305 - INFO - +++ _la_placeholder=replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX
+2024-09-12 08:21:41,305 - INFO - +++ _la_symlink_dir=/opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib
+2024-09-12 08:21:41,305 - INFO - +++ _la_orig_install_dir=/opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib
+2024-09-12 08:21:41,305 - INFO - +++ _la_log '          _la_gdb_prefix: /opt/miniconda3/envs/testbed/share/gdb/auto-load'
+2024-09-12 08:21:41,305 - INFO - +++ '[' '' = 1 ']'
+2024-09-12 08:21:41,305 - INFO - +++ _la_log '         _la_placeholder: replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX'
+2024-09-12 08:21:41,305 - INFO - +++ '[' '' = 1 ']'
+2024-09-12 08:21:41,305 - INFO - +++ _la_log '         _la_symlink_dir: /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib'
+2024-09-12 08:21:41,306 - INFO - +++ '[' '' = 1 ']'
+2024-09-12 08:21:41,306 - INFO - +++ _la_log '    _la_orig_install_dir: /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib'
+2024-09-12 08:21:41,306 - INFO - +++ '[' '' = 1 ']'
+2024-09-12 08:21:41,306 - INFO - +++ _la_log '  content of that folder:'
+2024-09-12 08:21:41,306 - INFO - +++ '[' '' = 1 ']'
+2024-09-12 08:21:41,307 - INFO - ++++ ls -al /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib
+2024-09-12 08:21:41,307 - INFO - ++++ sed 's/^/      /'
+2024-09-12 08:21:41,328 - INFO - +++ _la_log '      total 12
+      drwxr-xr-x 2 root root 4096 Sep  6 07:48 .
+      drwxr-xr-x 3 root root 4096 Sep  6 07:48 ..
+      -rw-r--r-- 1 root root  971 Sep  6 07:48 libarrow.so.1700.0.0-gdb.py'
+2024-09-12 08:21:41,328 - INFO - +++ '[' '' = 1 ']'
+2024-09-12 08:21:41,329 - INFO - +++ for _la_target in "$_la_orig_install_dir/"*.py
+2024-09-12 08:21:41,329 - INFO - +++ '[' '!' -e /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py ']'
+2024-09-12 08:21:41,330 - INFO - ++++ basename /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py
+2024-09-12 08:21:41,340 - INFO - +++ _la_symlink=/opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py
+2024-09-12 08:21:41,340 - INFO - +++ _la_log '   _la_target: /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py'
+2024-09-12 08:21:41,341 - INFO - +++ '[' '' = 1 ']'
+2024-09-12 08:21:41,341 - INFO - +++ _la_log '  _la_symlink: /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py'
+2024-09-12 08:21:41,341 - INFO - +++ '[' '' = 1 ']'
+2024-09-12 08:21:41,341 - INFO - +++ '[' -L /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py ']'
+2024-09-12 08:21:41,342 - INFO - ++++ readlink /opt/miniconda3/envs/testbed/share/gdb/auto-load//opt/miniconda3/envs/testbed/lib/libarrow.so.1700.0.0-gdb.py
+2024-09-12 08:21:41,352 - INFO - +++ '[' /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py = /opt/miniconda3/envs/testbed/share/gdb/auto-load/replace_this_section_with_absolute_slashed_path_to_CONDA_PREFIX/lib/libarrow.so.1700.0.0-gdb.py ']'
+2024-09-12 08:21:41,352 - INFO - +++ _la_log 'symlink $_la_symlink already exists and points to $_la_target, skipping.'
+2024-09-12 08:21:41,352 - INFO - +++ '[' '' = 1 ']'
+2024-09-12 08:21:41,353 - INFO - +++ continue
+2024-09-12 08:21:41,353 - INFO - +++ _la_log 'Libarrow activation complete.'
+2024-09-12 08:21:41,353 - INFO - +++ '[' '' = 1 ']'
+2024-09-12 08:21:41,353 - INFO - +++ unset _la_gdb_prefix
+2024-09-12 08:21:41,353 - INFO - +++ unset _la_log
+2024-09-12 08:21:41,353 - INFO - +++ unset _la_orig_install_dir
+2024-09-12 08:21:41,353 - INFO - +++ unset _la_placeholder
+2024-09-12 08:21:41,353 - INFO - +++ unset _la_symlink
+2024-09-12 08:21:41,353 - INFO - +++ unset _la_symlink_dir
+2024-09-12 08:21:41,353 - INFO - +++ unset _la_target
+2024-09-12 08:21:41,353 - INFO - ++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh
+2024-09-12 08:21:41,354 - INFO - +++ export GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
+2024-09-12 08:21:41,354 - INFO - +++ export GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
++++ GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
+2024-09-12 08:21:41,354 - INFO - ++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh
+2024-09-12 08:21:41,354 - INFO - +++ test -n ''
+2024-09-12 08:21:41,354 - INFO - +++ xml_catalog_files_libxml2=
+2024-09-12 08:21:41,354 - INFO - +++ XML_CATALOG_FILES=
+2024-09-12 08:21:41,354 - INFO - +++ conda_catalog_files=
+2024-09-12 08:21:41,355 - INFO - +++ ifs_libxml2=' 	
+'
+2024-09-12 08:21:41,355 - INFO - +++ IFS=' '
+2024-09-12 08:21:41,355 - INFO - +++ rem=/opt/miniconda3/envs/testbed
+2024-09-12 08:21:41,355 - INFO - +++ for pre in ${rem}
+2024-09-12 08:21:41,355 - INFO - +++ test '' = /opt/miniconda3/envs/testbed
+2024-09-12 08:21:41,356 - INFO - +++ conda_catalog_files=/opt/miniconda3/envs/testbed
+2024-09-12 08:21:41,356 - INFO - +++ rem=
+2024-09-12 08:21:41,356 - INFO - +++ IFS=' 	
+'
+2024-09-12 08:21:41,356 - INFO - +++ conda_catalog_files='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
+2024-09-12 08:21:41,356 - INFO - +++ export 'XML_CATALOG_FILES=file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
+2024-09-12 08:21:41,356 - INFO - +++ XML_CATALOG_FILES='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
+2024-09-12 08:21:41,356 - INFO - +++ unset conda_catalog_files ifs_libxml2 rem
+2024-09-12 08:21:41,356 - INFO - ++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh
+2024-09-12 08:21:41,356 - INFO - +++ '[' -n '' ']'
+2024-09-12 08:21:41,356 - INFO - +++ '[' -d /opt/miniconda3/envs/testbed/share/proj ']'
+2024-09-12 08:21:41,356 - INFO - +++ export PROJ_DATA=/opt/miniconda3/envs/testbed/share/proj
++++ PROJ_DATA=/opt/miniconda3/envs/testbed/share/proj
+2024-09-12 08:21:41,356 - INFO - +++ '[' -f /opt/miniconda3/envs/testbed/share/proj/copyright_and_licenses.csv ']'
+2024-09-12 08:21:41,357 - INFO - +++ export PROJ_NETWORK=ON
++++ PROJ_NETWORK=ON
+2024-09-12 08:21:41,357 - INFO - ++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh
+2024-09-12 08:21:41,357 - INFO - +++ '[' -n '' ']'
+2024-09-12 08:21:41,357 - INFO - +++ '[' -d /opt/miniconda3/envs/testbed/share/udunits ']'
+2024-09-12 08:21:41,357 - INFO - +++ export UDUNITS2_XML_PATH=/opt/miniconda3/envs/testbed/share/udunits/udunits2.xml
++++ UDUNITS2_XML_PATH=/opt/miniconda3/envs/testbed/share/udunits/udunits2.xml
+2024-09-12 08:21:41,358 - INFO - + __conda_hashr
+2024-09-12 08:21:41,358 - INFO - + '[' -n '' ']'
+2024-09-12 08:21:41,358 - INFO - + '[' -n '' ']'
++ hash -r
+2024-09-12 08:21:41,358 - INFO - + echo 'Current environment: testbed'
+2024-09-12 08:21:41,358 - INFO - Current environment: testbed
+2024-09-12 08:21:41,358 - INFO - + python -m pip install -e .
+2024-09-12 08:21:42,972 - INFO - Obtaining file:///testbed
+2024-09-12 08:21:42,976 - INFO - Preparing metadata (setup.py): started
+2024-09-12 08:21:47,511 - INFO - Preparing metadata (setup.py): finished with status 'done'
+2024-09-12 08:21:47,540 - INFO - Requirement already satisfied: numpy>=1.15 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from xarray==0.16.3.dev122+g7c4e2ac8) (1.23.0)
+2024-09-12 08:21:47,542 - INFO - Requirement already satisfied: pandas>=0.25 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from xarray==0.16.3.dev122+g7c4e2ac8) (1.5.3)
+2024-09-12 08:21:47,544 - INFO - Requirement already satisfied: setuptools>=40.4 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from xarray==0.16.3.dev122+g7c4e2ac8) (68.0.0)
+2024-09-12 08:21:47,558 - INFO - Requirement already satisfied: python-dateutil>=2.8.1 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from pandas>=0.25->xarray==0.16.3.dev122+g7c4e2ac8) (2.8.2)
+2024-09-12 08:21:47,560 - INFO - Requirement already satisfied: pytz>=2020.1 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from pandas>=0.25->xarray==0.16.3.dev122+g7c4e2ac8) (2023.3)
+2024-09-12 08:21:47,601 - INFO - Requirement already satisfied: six>=1.5 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from python-dateutil>=2.8.1->pandas>=0.25->xarray==0.16.3.dev122+g7c4e2ac8) (1.16.0)
+2024-09-12 08:21:48,678 - INFO - Installing collected packages: xarray
+2024-09-12 08:21:48,678 - INFO - Attempting uninstall: xarray
+2024-09-12 08:21:48,684 - INFO - Found existing installation: xarray 2024.7.0
+2024-09-12 08:21:48,755 - INFO - Uninstalling xarray-2024.7.0:
+2024-09-12 08:21:48,899 - INFO - Successfully uninstalled xarray-2024.7.0
+2024-09-12 08:21:48,903 - INFO - DEPRECATION: Legacy editable install of xarray==0.16.3.dev122+g7c4e2ac8 from file:///testbed (setup.py develop) is deprecated. pip 25.0 will enforce this behaviour change. A possible replacement is to add a pyproject.toml or enable --use-pep517, and use setuptools >= 64. If the resulting installation is not behaving as expected, try using --config-settings editable_mode=compat. Please consult the setuptools documentation for more information. Discussion can be found at https://github.com/pypa/pip/issues/11457
+2024-09-12 08:21:48,903 - INFO - Running setup.py develop for xarray
+2024-09-12 08:21:51,450 - INFO - Successfully installed xarray
+2024-09-12 08:21:51,451 - INFO - WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+2024-09-12 08:21:51,955 - INFO - ---> Removed intermediate container 510fac803583
+2024-09-12 08:21:51,955 - INFO - ---> 7967e705b60d
+2024-09-12 08:21:51,955 - INFO - Step 4/4 : WORKDIR /testbed/
+2024-09-12 08:21:51,955 - INFO - 
+2024-09-12 08:21:52,003 - INFO - ---> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+2024-09-12 08:21:52,004 - INFO - ---> Running in 03d3db25720c
+2024-09-12 08:21:52,021 - INFO - ---> Removed intermediate container 03d3db25720c
+2024-09-12 08:21:52,021 - INFO - ---> a6488601d817
+2024-09-12 08:21:52,021 - INFO - Successfully built a6488601d817
+2024-09-12 08:21:52,024 - INFO - Successfully tagged sweb.eval.x86_64.pydata__xarray-2905:latest
+2024-09-12 08:21:52,024 - INFO - Image built successfully!

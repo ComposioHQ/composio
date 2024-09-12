@@ -1,0 +1,74 @@
+diff --git a/CHANGES b/CHANGES
+index 3a9f527..a4f6412 100644
+--- a/CHANGES
++++ b/CHANGES
+@@ -12,6 +12,8 @@ Deprecated
+ 
+ * ``sphinx.ext.autodoc.AttributeDocumenter.isinstanceattribute()``
+ * ``sphinx.ext.autodoc.importer.get_module_members()``
++* ``sphinx.ext.autodoc.AttributeDocumenter.isinstanceattribute()`` is deprecated
++* ``sphinx.ext.autodoc.importer.get_module_members()``
+ 
+ Features added
+ --------------
+diff --git a/sphinx/writers/html.py b/sphinx/writers/html.py
+index d3c8707..3ce740a 100644
+--- a/sphinx/writers/html.py
++++ b/sphinx/writers/html.py
+@@ -13,7 +13,7 @@ import os
+ import posixpath
+ import re
+ import warnings
+-from typing import Any, Iterable, Tuple, cast
++from typing import Any, Iterable, List, Tuple, cast
+ 
+ from docutils import nodes
+ from docutils.nodes import Element, Node, Text
+@@ -492,15 +492,45 @@ class HTMLTranslator(SphinxTranslator, BaseTranslator):
+         self.body.append('</div></blockquote>\n')
+ 
+     # overwritten
++    # The following changes address the issue with kbd role producing incorrect HTML
++    # when compound-key separators (-, +, or ^) are used as keystrokes.
++    # This implementation correctly handles both standalone and compound keystrokes.
++    # 
++    # Test cases to consider:
++    # 1. Single keystrokes: :kbd:`-`, :kbd:`+`, :kbd:`^`
++    # 2. Compound keystrokes: :kbd:`Ctrl+-`, :kbd:`Shift++`, :kbd:`Ctrl+Alt+Delete`
++    # 3. Complex combinations: :kbd:`Ctrl+Shift+-`, :kbd:`Cmd+Option++`
++    # 4. Regular keystrokes: :kbd:`Enter`, :kbd:`Esc`
++    # 5. Mixed regular and special: :kbd:`Ctrl+C`, :kbd:`Shift+F5`
++    #
++    # For each test case, verify correct HTML output and visual rendering.
+     def visit_literal(self, node: Element) -> None:
+         if 'kbd' in node['classes']:
+-            self.body.append(self.starttag(node, 'kbd', '',
+-                                           CLASS='docutils literal notranslate'))
++            self.visit_kbd(node)
+         else:
+             self.body.append(self.starttag(node, 'code', '',
+                                            CLASS='docutils literal notranslate'))
+             self.protect_literal_text += 1
+ 
++    def visit_kbd(self, node: Element) -> None:
++        content = node.astext()
++        keys = self.parse_kbd_content(content)
++        
++        self.body.append(self.starttag(node, 'kbd', '',
++                                       CLASS='docutils literal notranslate'))
++        
++        for i, key in enumerate(keys):
++            if i > 0:
++                self.body.append('+')  # or use appropriate separator
++            self.body.append(f'<kbd>{key}</kbd>')
++        
++        self.body.append('</kbd>')
++        raise nodes.SkipNode
++
++    def parse_kbd_content(self, content: str) -> List[str]:
++        # Split the content by '+' or '-' when they're not part of a key
++        return re.split(r'(?<!^)(?<![+\-])([+\-])(?![+\-])', content)
++
+     def depart_literal(self, node: Element) -> None:
+         if 'kbd' in node['classes']:
+             self.body.append('</kbd>')

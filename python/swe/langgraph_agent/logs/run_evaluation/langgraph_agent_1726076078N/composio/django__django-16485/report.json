@@ -1,0 +1,38 @@
+{
+    "django__django-16485": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "test_zero_values (template_tests.filter_tests.test_floatformat.FunctionTests.test_zero_values)"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "test_floatformat01 (template_tests.filter_tests.test_floatformat.FloatformatTests.test_floatformat01)",
+                    "test_floatformat02 (template_tests.filter_tests.test_floatformat.FloatformatTests.test_floatformat02)",
+                    "test_float_dunder_method (template_tests.filter_tests.test_floatformat.FunctionTests.test_float_dunder_method)",
+                    "test_force_grouping (template_tests.filter_tests.test_floatformat.FunctionTests.test_force_grouping)",
+                    "test_infinity (template_tests.filter_tests.test_floatformat.FunctionTests.test_infinity)",
+                    "test_inputs (template_tests.filter_tests.test_floatformat.FunctionTests.test_inputs)",
+                    "#15789",
+                    "test_negative_zero_values (template_tests.filter_tests.test_floatformat.FunctionTests.test_negative_zero_values)",
+                    "test_unlocalize (template_tests.filter_tests.test_floatformat.FunctionTests.test_unlocalize)"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

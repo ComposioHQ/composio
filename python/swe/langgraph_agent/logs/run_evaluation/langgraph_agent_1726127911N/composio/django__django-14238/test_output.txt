@@ -1,0 +1,736 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/db/models/fields/__init__.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 30e123ed351317b7527f632b3b7dc4e81e850449
+Author: Claude Paroz <claude@2xlibre.net>
+Date:   Sat Apr 3 16:23:19 2021 +0200
+
+    Fixed #32575 -- Added support for SpatiaLite 5.
+
+diff --git a/django/contrib/gis/db/backends/spatialite/base.py b/django/contrib/gis/db/backends/spatialite/base.py
+index 1afba58706..fef7de62af 100644
+--- a/django/contrib/gis/db/backends/spatialite/base.py
++++ b/django/contrib/gis/db/backends/spatialite/base.py
+@@ -71,4 +71,7 @@ class DatabaseWrapper(SQLiteDatabaseWrapper):
+         with self.cursor() as cursor:
+             cursor.execute("PRAGMA table_info(geometry_columns);")
+             if cursor.fetchall() == []:
+-                cursor.execute("SELECT InitSpatialMetaData(1)")
++                if self.ops.spatial_version < (5,):
++                    cursor.execute('SELECT InitSpatialMetaData(1)')
++                else:
++                    cursor.execute('SELECT InitSpatialMetaDataFull(1)')
+diff --git a/django/contrib/gis/db/backends/spatialite/features.py b/django/contrib/gis/db/backends/spatialite/features.py
+index 947d874b30..b6c1746c07 100644
+--- a/django/contrib/gis/db/backends/spatialite/features.py
++++ b/django/contrib/gis/db/backends/spatialite/features.py
+@@ -11,7 +11,7 @@ class DatabaseFeatures(BaseSpatialFeatures, SQLiteDatabaseFeatures):
+ 
+     @cached_property
+     def supports_area_geodetic(self):
+-        return bool(self.connection.ops.lwgeom_version())
++        return bool(self.connection.ops.geom_lib_version())
+ 
+     @cached_property
+     def django_test_skips(self):
+diff --git a/django/contrib/gis/db/backends/spatialite/operations.py b/django/contrib/gis/db/backends/spatialite/operations.py
+index 8fd95d414e..8dcd62de9b 100644
+--- a/django/contrib/gis/db/backends/spatialite/operations.py
++++ b/django/contrib/gis/db/backends/spatialite/operations.py
+@@ -81,7 +81,7 @@ class SpatiaLiteOperations(BaseSpatialOperations, DatabaseOperations):
+     @cached_property
+     def unsupported_functions(self):
+         unsupported = {'BoundingCircle', 'GeometryDistance', 'MemSize'}
+-        if not self.lwgeom_version():
++        if not self.geom_lib_version():
+             unsupported |= {'Azimuth', 'GeoHash', 'MakeValid'}
+         return unsupported
+ 
+@@ -167,6 +167,20 @@ class SpatiaLiteOperations(BaseSpatialOperations, DatabaseOperations):
+         """Return the version of LWGEOM library used by SpatiaLite."""
+         return self._get_spatialite_func('lwgeom_version()')
+ 
++    def rttopo_version(self):
++        """Return the version of RTTOPO library used by SpatiaLite."""
++        return self._get_spatialite_func('rttopo_version()')
++
++    def geom_lib_version(self):
++        """
++        Return the version of the version-dependant geom library used by
++        SpatiaLite.
++        """
++        if self.spatial_version >= (5,):
++            return self.rttopo_version()
++        else:
++            return self.lwgeom_version()
++
+     def spatialite_version(self):
+         "Return the SpatiaLite library version as a string."
+         return self._get_spatialite_func('spatialite_version()')
+diff --git a/docs/ref/contrib/gis/db-api.txt b/docs/ref/contrib/gis/db-api.txt
+index 7921d53a8a..af2c1c04a0 100644
+--- a/docs/ref/contrib/gis/db-api.txt
++++ b/docs/ref/contrib/gis/db-api.txt
+@@ -344,9 +344,9 @@ functions are available on each spatial backend.
+ 
+ .. currentmodule:: django.contrib.gis.db.models.functions
+ 
+-====================================  =======  ============== ============ =========== ==========
++====================================  =======  ============== ============ =========== =================
+ Function                              PostGIS  Oracle         MariaDB      MySQL       SpatiaLite
+-====================================  =======  ============== ============ =========== ==========
++====================================  =======  ============== ============ =========== =================
+ :class:`Area`                         X        X              X            X           X
+ :class:`AsGeoJSON`                    X        X              X (≥ 10.2.4) X (≥ 5.7.5) X
+ :class:`AsGML`                        X        X                                       X
+@@ -354,19 +354,19 @@ Function                              PostGIS  Oracle         MariaDB      MySQL
+ :class:`AsSVG`                        X                                                X
+ :class:`AsWKB`                        X        X              X            X           X
+ :class:`AsWKT`                        X        X              X            X           X
+-:class:`Azimuth`                      X                                                X (LWGEOM)
++:class:`Azimuth`                      X                                                X (LWGEOM/RTTOPO)
+ :class:`BoundingCircle`               X        X
+ :class:`Centroid`                     X        X              X            X           X
+ :class:`Difference`                   X        X              X            X           X
+ :class:`Distance`                     X        X              X            X           X
+ :class:`Envelope`                     X        X              X            X           X
+ :class:`ForcePolygonCW`               X                                                X
+-:class:`GeoHash`                      X                                    X (≥ 5.7.5) X (LWGEOM)
++:class:`GeoHash`                      X                                    X (≥ 5.7.5) X (LWGEOM/RTTOPO)
+ :class:`Intersection`                 X        X              X            X           X
+ :class:`IsValid`                      X        X                           X (≥ 5.7.5) X
+ :class:`Length`                       X        X              X            X           X
+ :class:`LineLocatePoint`              X                                                X
+-:class:`MakeValid`                    X                                                X (LWGEOM)
++:class:`MakeValid`                    X                                                X (LWGEOM/RTTOPO)
+ :class:`MemSize`                      X
+ :class:`NumGeometries`                X        X              X            X           X
+ :class:`NumPoints`                    X        X              X            X           X
+@@ -379,7 +379,7 @@ Function                              PostGIS  Oracle         MariaDB      MySQL
+ :class:`Transform`                    X        X                                       X
+ :class:`Translate`                    X                                                X
+ :class:`Union`                        X        X              X            X           X
+-====================================  =======  ============== ============ =========== ==========
++====================================  =======  ============== ============ =========== =================
+ 
+ Aggregate Functions
+ -------------------
+diff --git a/docs/ref/contrib/gis/functions.txt b/docs/ref/contrib/gis/functions.txt
+index cf2c3217e4..82aaf1196d 100644
+--- a/docs/ref/contrib/gis/functions.txt
++++ b/docs/ref/contrib/gis/functions.txt
+@@ -44,7 +44,7 @@ Oracle, `PostGIS <https://postgis.net/docs/ST_Area.html>`__, SpatiaLite
+ Accepts a single geographic field or expression and returns the area of the
+ field as an :class:`~django.contrib.gis.measure.Area` measure.
+ 
+-MySQL and SpatiaLite without LWGEOM don't support area calculations on
++MySQL and SpatiaLite without LWGEOM/RTTOPO don't support area calculations on
+ geographic SRSes.
+ 
+ ``AsGeoJSON``
+@@ -208,7 +208,7 @@ __ https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry
+ .. class:: Azimuth(point_a, point_b, **extra)
+ 
+ *Availability*: `PostGIS <https://postgis.net/docs/ST_Azimuth.html>`__,
+-SpatiaLite (LWGEOM)
++SpatiaLite (LWGEOM/RTTOPO)
+ 
+ Returns the azimuth in radians of the segment defined by the given point
+ geometries, or ``None`` if the two points are coincident. The azimuth is angle
+@@ -334,7 +334,8 @@ are returned unchanged.
+ 
+ *Availability*: `MySQL
+ <https://dev.mysql.com/doc/refman/en/spatial-geohash-functions.html#function_st-geohash>`__ (≥ 5.7.5),
+-`PostGIS <https://postgis.net/docs/ST_GeoHash.html>`__, SpatiaLite (LWGEOM)
++`PostGIS <https://postgis.net/docs/ST_GeoHash.html>`__, SpatiaLite
++(LWGEOM/RTTOPO)
+ 
+ Accepts a single geographic field or expression and returns a `GeoHash`__
+ representation of the geometry.
+@@ -416,7 +417,7 @@ Returns a float between 0 and 1 representing the location of the closest point o
+ .. class:: MakeValid(expr)
+ 
+ *Availability*: `PostGIS <https://postgis.net/docs/ST_MakeValid.html>`__,
+-SpatiaLite (LWGEOM)
++SpatiaLite (LWGEOM/RTTOPO)
+ 
+ Accepts a geographic field or expression and attempts to convert the value into
+ a valid geometry without losing any of the input vertices. Geometries that are
+diff --git a/docs/ref/contrib/gis/install/geolibs.txt b/docs/ref/contrib/gis/install/geolibs.txt
+index 058653c7d2..d24caec57f 100644
+--- a/docs/ref/contrib/gis/install/geolibs.txt
++++ b/docs/ref/contrib/gis/install/geolibs.txt
+@@ -13,7 +13,7 @@ Program                   Description                           Required
+ :doc:`GDAL <../gdal>`     Geospatial Data Abstraction Library   Yes                               3.2, 3.1, 3.0, 2.4, 2.3, 2.2, 2.1
+ :doc:`GeoIP <../geoip2>`  IP-based geolocation library          No                                2
+ `PostGIS`__               Spatial extensions for PostgreSQL     Yes (PostgreSQL only)             3.0, 2.5, 2.4
+-`SpatiaLite`__            Spatial extensions for SQLite         Yes (SQLite only)                 4.3
++`SpatiaLite`__            Spatial extensions for SQLite         Yes (SQLite only)                 5.0, 4.3
+ ========================  ====================================  ================================  =================================
+ 
+ Note that older or more recent versions of these libraries *may* also work
+@@ -36,6 +36,7 @@ totally fine with GeoDjango. Your mileage may vary.
+     PostGIS 2.5.0 2018-09-23
+     PostGIS 3.0.0 2019-10-20
+     SpatiaLite 4.3.0 2015-09-07
++    SpatiaLite 5.0.0 2020-08-23
+ 
+ .. note::
+ 
+diff --git a/docs/releases/4.0.txt b/docs/releases/4.0.txt
+index ab06cbb40f..3792c4b716 100644
+--- a/docs/releases/4.0.txt
++++ b/docs/releases/4.0.txt
+@@ -100,7 +100,7 @@ Minor features
+ :mod:`django.contrib.gis`
+ ~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
+-* ...
++* Added support for SpatiaLite 5.
+ 
+ :mod:`django.contrib.messages`
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+diff --git a/tests/gis_tests/distapp/tests.py b/tests/gis_tests/distapp/tests.py
+index bb03fc20c3..244c99a1d7 100644
+--- a/tests/gis_tests/distapp/tests.py
++++ b/tests/gis_tests/distapp/tests.py
+@@ -367,16 +367,12 @@ class DistanceFunctionsTests(FuncTestMixin, TestCase):
+         dist2 = SouthTexasCityFt.objects.annotate(distance=Distance('point', lagrange)).order_by('id')
+         dist_qs = [dist1, dist2]
+ 
+-        # Original query done on PostGIS, have to adjust AlmostEqual tolerance
+-        # for Oracle.
+-        tol = 2 if connection.ops.oracle else 5
+-
+         # Ensuring expected distances are returned for each distance queryset.
+         for qs in dist_qs:
+             for i, c in enumerate(qs):
+                 with self.subTest(c=c):
+-                    self.assertAlmostEqual(m_distances[i], c.distance.m, tol)
+-                    self.assertAlmostEqual(ft_distances[i], c.distance.survey_ft, tol)
++                    self.assertAlmostEqual(m_distances[i], c.distance.m, -1)
++                    self.assertAlmostEqual(ft_distances[i], c.distance.survey_ft, -1)
+ 
+     @skipUnlessDBFeature("has_Distance_function", "supports_distance_geodetic")
+     def test_distance_geodetic(self):
+diff --git a/tests/gis_tests/geoapp/test_functions.py b/tests/gis_tests/geoapp/test_functions.py
+index 22d40a4400..a1b1f48e02 100644
+--- a/tests/gis_tests/geoapp/test_functions.py
++++ b/tests/gis_tests/geoapp/test_functions.py
+@@ -183,7 +183,11 @@ class GISFunctionsTests(FuncTestMixin, TestCase):
+     def test_azimuth(self):
+         # Returns the azimuth in radians.
+         azimuth_expr = functions.Azimuth(Point(0, 0, srid=4326), Point(1, 1, srid=4326))
+-        self.assertAlmostEqual(City.objects.annotate(azimuth=azimuth_expr).first().azimuth, math.pi / 4)
++        self.assertAlmostEqual(
++            City.objects.annotate(azimuth=azimuth_expr).first().azimuth,
++            math.pi / 4,
++            places=2,
++        )
+         # Returns None if the two points are coincident.
+         azimuth_expr = functions.Azimuth(Point(0, 0, srid=4326), Point(0, 0, srid=4326))
+         self.assertIsNone(City.objects.annotate(azimuth=azimuth_expr).first().azimuth)
+diff --git a/tests/gis_tests/geogapp/tests.py b/tests/gis_tests/geogapp/tests.py
+index 53852517e8..7f465f5753 100644
+--- a/tests/gis_tests/geogapp/tests.py
++++ b/tests/gis_tests/geogapp/tests.py
+@@ -111,9 +111,12 @@ class GeographyFunctionTests(FuncTestMixin, TestCase):
+         if connection.ops.oracle:
+             ref_dists = [0, 4899.68, 8081.30, 9115.15]
+         elif connection.ops.spatialite:
+-            # SpatiaLite returns non-zero distance for polygons and points
+-            # covered by that polygon.
+-            ref_dists = [326.61, 4899.68, 8081.30, 9115.15]
++            if connection.ops.spatial_version < (5,):
++                # SpatiaLite < 5 returns non-zero distance for polygons and points
++                # covered by that polygon.
++                ref_dists = [326.61, 4899.68, 8081.30, 9115.15]
++            else:
++                ref_dists = [0, 4899.68, 8081.30, 9115.15]
+         else:
+             ref_dists = [0, 4891.20, 8071.64, 9123.95]
+         htown = City.objects.get(name='Houston')
++ git diff 30e123ed351317b7527f632b3b7dc4e81e850449
+diff --git a/django/db/models/fields/__init__.py b/django/db/models/fields/__init__.py
+index 0f53d9c30b..63fab9ec6e 100644
+--- a/django/db/models/fields/__init__.py
++++ b/django/db/models/fields/__init__.py
+@@ -2524,7 +2524,12 @@ class AutoFieldMeta(type):
+         return isinstance(instance, self._subclasses) or super().__instancecheck__(instance)
+ 
+     def __subclasscheck__(self, subclass):
+-        return subclass in self._subclasses or super().__subclasscheck__(subclass)
++        return (
++            subclass in self._subclasses
++            or issubclass(subclass, BigAutoField)
++            or issubclass(subclass, SmallAutoField)
++            or super().__subclasscheck__(subclass)
++        )
+ 
+ 
+ class AutoField(AutoFieldMixin, IntegerField, metaclass=AutoFieldMeta):
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.3.2 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210408073629) (3.8.1)
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210408073629) (2024.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210408073629) (0.5.1)
+Requirement already satisfied: typing-extensions>=4 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from asgiref>=3.3.2->Django==4.0.dev20210408073629) (4.12.2)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-4.0.dev20210408073629-0.editable-py3-none-any.whl size=26052 sha256=9fda220eafb056770fbf6e5e6c313fbd7308238ea7da75263f51e0da988a4afe
+  Stored in directory: /tmp/pip-ephem-wheel-cache-agggpz35/wheels/b2/50/f1/218f2e9962a80d01a4b1297698978f9fb3b60056aa24343f24
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 4.0.dev20210408073629
+    Uninstalling Django-4.0.dev20210408073629:
+      Successfully uninstalled Django-4.0.dev20210408073629
+Successfully installed Django-4.0.dev20210408073629
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 30e123ed351317b7527f632b3b7dc4e81e850449 tests/model_fields/test_autofield.py tests/model_options/test_default_pk.py
+Updated 0 paths from 4294ff86fa
++ git apply -v -
+Checking patch tests/model_fields/test_autofield.py...
+Checking patch tests/model_options/test_default_pk.py...
+Applied patch tests/model_fields/test_autofield.py cleanly.
+Applied patch tests/model_options/test_default_pk.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 model_fields.test_autofield model_options.test_default_pk
+Testing against Django installed in '/testbed/django'
+Importing application model_options
+Importing application model_fields
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, messages, model_fields, model_options, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table model_fields_foo
+    Creating table model_fields_bar
+    Creating table model_fields_whiz
+    Creating table model_fields_whizdelayed
+    Creating table model_fields_whiziter
+    Creating table model_fields_whiziterempty
+    Creating table model_fields_choiceful
+    Creating table model_fields_bigd
+    Creating table model_fields_floatmodel
+    Creating table model_fields_bigs
+    Creating table model_fields_unicodeslugfield
+    Creating table model_fields_automodel
+    Creating table model_fields_bigautomodel
+    Creating table model_fields_smallautomodel
+    Creating table model_fields_smallintegermodel
+    Creating table model_fields_integermodel
+    Creating table model_fields_bigintegermodel
+    Creating table model_fields_positivebigintegermodel
+    Creating table model_fields_positivesmallintegermodel
+    Creating table model_fields_positiveintegermodel
+    Creating table model_fields_post
+    Creating table model_fields_nullbooleanmodel
+    Creating table model_fields_booleanmodel
+    Creating table model_fields_datetimemodel
+    Creating table model_fields_durationmodel
+    Creating table model_fields_nulldurationmodel
+    Creating table model_fields_primarykeycharmodel
+    Creating table model_fields_fkstobooleans
+    Creating table model_fields_fktochar
+    Creating table model_fields_renamedfield
+    Creating table model_fields_verbosenamefield
+    Creating table model_fields_genericipaddress
+    Creating table model_fields_decimallessthanone
+    Creating table model_fields_fieldclassattributemodel
+    Creating table model_fields_datamodel
+    Creating table model_fields_document
+    Creating table model_fields_person
+    Creating table model_fields_personwithheight
+    Creating table model_fields_personwithheightandwidth
+    Creating table model_fields_persondimensionsfirst
+    Creating table model_fields_persontwoimages
+    Creating table model_fields_jsonmodel
+    Creating table model_fields_nullablejsonmodel
+    Creating table model_fields_relatedjsonmodel
+    Creating table model_fields_allfieldsmodel
+    Creating table model_fields_manytomany
+    Creating table model_fields_uuidmodel
+    Creating table model_fields_nullableuuidmodel
+    Creating table model_fields_primarykeyuuidmodel
+    Creating table model_fields_relatedtouuidmodel
+    Creating table model_fields_uuidchild
+    Creating table model_fields_uuidgrandchild
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+System check identified no issues (0 silenced).
+test_backend_range_save (model_fields.test_autofield.AutoFieldTests)
+Backend specific ranges can be saved without corruption. ... ok
+test_backend_range_validation (model_fields.test_autofield.AutoFieldTests)
+Backend specific ranges are enforced at the model validation level ... ok
+test_coercing (model_fields.test_autofield.AutoFieldTests) ... ok
+test_documented_range (model_fields.test_autofield.AutoFieldTests)
+Values within the documented safe range pass validation, and can be ... ok
+test_invalid_value (model_fields.test_autofield.AutoFieldTests) ... ok
+test_redundant_backend_range_validators (model_fields.test_autofield.AutoFieldTests)
+If there are stricter validators than the ones from the database ... ok
+test_rel_db_type (model_fields.test_autofield.AutoFieldTests) ... ok
+test_types (model_fields.test_autofield.AutoFieldTests) ... ok
+test_backend_range_save (model_fields.test_autofield.BigAutoFieldTests)
+Backend specific ranges can be saved without corruption. ... ok
+test_backend_range_validation (model_fields.test_autofield.BigAutoFieldTests)
+Backend specific ranges are enforced at the model validation level ... ok
+test_coercing (model_fields.test_autofield.BigAutoFieldTests) ... ok
+test_documented_range (model_fields.test_autofield.BigAutoFieldTests)
+Values within the documented safe range pass validation, and can be ... ok
+test_invalid_value (model_fields.test_autofield.BigAutoFieldTests) ... ok
+test_redundant_backend_range_validators (model_fields.test_autofield.BigAutoFieldTests)
+If there are stricter validators than the ones from the database ... ok
+test_rel_db_type (model_fields.test_autofield.BigAutoFieldTests) ... ok
+test_types (model_fields.test_autofield.BigAutoFieldTests) ... ok
+test_backend_range_save (model_fields.test_integerfield.BigIntegerFieldTests)
+Backend specific ranges can be saved without corruption. ... ok
+test_backend_range_validation (model_fields.test_integerfield.BigIntegerFieldTests)
+Backend specific ranges are enforced at the model validation level ... ok
+test_coercing (model_fields.test_integerfield.BigIntegerFieldTests) ... ok
+test_documented_range (model_fields.test_integerfield.BigIntegerFieldTests)
+Values within the documented safe range pass validation, and can be ... ok
+test_invalid_value (model_fields.test_integerfield.BigIntegerFieldTests) ... ok
+test_redundant_backend_range_validators (model_fields.test_integerfield.BigIntegerFieldTests)
+If there are stricter validators than the ones from the database ... ok
+test_rel_db_type (model_fields.test_integerfield.BigIntegerFieldTests) ... ok
+test_types (model_fields.test_integerfield.BigIntegerFieldTests) ... ok
+test_backend_range_save (model_fields.test_integerfield.IntegerFieldTests)
+Backend specific ranges can be saved without corruption. ... ok
+test_backend_range_validation (model_fields.test_integerfield.IntegerFieldTests)
+Backend specific ranges are enforced at the model validation level ... ok
+test_coercing (model_fields.test_integerfield.IntegerFieldTests) ... ok
+test_documented_range (model_fields.test_integerfield.IntegerFieldTests)
+Values within the documented safe range pass validation, and can be ... ok
+test_invalid_value (model_fields.test_integerfield.IntegerFieldTests) ... ok
+test_redundant_backend_range_validators (model_fields.test_integerfield.IntegerFieldTests)
+If there are stricter validators than the ones from the database ... ok
+test_rel_db_type (model_fields.test_integerfield.IntegerFieldTests) ... ok
+test_types (model_fields.test_integerfield.IntegerFieldTests) ... ok
+test_backend_range_save (model_fields.test_autofield.SmallAutoFieldTests)
+Backend specific ranges can be saved without corruption. ... ok
+test_backend_range_validation (model_fields.test_autofield.SmallAutoFieldTests)
+Backend specific ranges are enforced at the model validation level ... ok
+test_coercing (model_fields.test_autofield.SmallAutoFieldTests) ... ok
+test_documented_range (model_fields.test_autofield.SmallAutoFieldTests)
+Values within the documented safe range pass validation, and can be ... ok
+test_invalid_value (model_fields.test_autofield.SmallAutoFieldTests) ... ok
+test_redundant_backend_range_validators (model_fields.test_autofield.SmallAutoFieldTests)
+If there are stricter validators than the ones from the database ... ok
+test_rel_db_type (model_fields.test_autofield.SmallAutoFieldTests) ... ok
+test_types (model_fields.test_autofield.SmallAutoFieldTests) ... ok
+test_backend_range_save (model_fields.test_integerfield.SmallIntegerFieldTests)
+Backend specific ranges can be saved without corruption. ... ok
+test_backend_range_validation (model_fields.test_integerfield.SmallIntegerFieldTests)
+Backend specific ranges are enforced at the model validation level ... ok
+test_coercing (model_fields.test_integerfield.SmallIntegerFieldTests) ... ok
+test_documented_range (model_fields.test_integerfield.SmallIntegerFieldTests)
+Values within the documented safe range pass validation, and can be ... ok
+test_invalid_value (model_fields.test_integerfield.SmallIntegerFieldTests) ... ok
+test_redundant_backend_range_validators (model_fields.test_integerfield.SmallIntegerFieldTests)
+If there are stricter validators than the ones from the database ... ok
+test_rel_db_type (model_fields.test_integerfield.SmallIntegerFieldTests) ... ok
+test_types (model_fields.test_integerfield.SmallIntegerFieldTests) ... ok
+test_isinstance_of_autofield (model_fields.test_autofield.AutoFieldInheritanceTests) ... ok
+test_issubclass_of_autofield (model_fields.test_autofield.AutoFieldInheritanceTests) ... ok
+test_app_default_auto_field (model_options.test_default_pk.TestDefaultPK) ... ok
+test_app_default_auto_field_non_auto (model_options.test_default_pk.TestDefaultPK) ... ok
+test_app_default_auto_field_none (model_options.test_default_pk.TestDefaultPK) ... ok
+test_app_default_auto_field_nonexistent (model_options.test_default_pk.TestDefaultPK) ... ok
+test_default_auto_field_setting (model_options.test_default_pk.TestDefaultPK) ... ok
+test_default_auto_field_setting_bigautofield_subclass (model_options.test_default_pk.TestDefaultPK) ... ok
+test_default_auto_field_setting_non_auto (model_options.test_default_pk.TestDefaultPK) ... ok
+test_default_auto_field_setting_none (model_options.test_default_pk.TestDefaultPK) ... ok
+test_default_auto_field_setting_nonexistent (model_options.test_default_pk.TestDefaultPK) ... ok
+test_m2m_app_default_auto_field (model_options.test_default_pk.TestDefaultPK) ... ok
+test_m2m_default_auto_field_setting (model_options.test_default_pk.TestDefaultPK) ... ok
+
+----------------------------------------------------------------------
+Ran 61 tests in 0.025s
+
+OK
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout 30e123ed351317b7527f632b3b7dc4e81e850449 tests/model_fields/test_autofield.py tests/model_options/test_default_pk.py
+Updated 2 paths from 4294ff86fa

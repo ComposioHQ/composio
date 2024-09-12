@@ -1,0 +1,78 @@
+diff --git a/django/db/models/query_utils.py b/django/db/models/query_utils.py
+index 7a667814..44bc79ab 100644
+--- a/django/db/models/query_utils.py
++++ b/django/db/models/query_utils.py
+@@ -82,9 +82,22 @@ class Q(tree.Node):
+         return self._combine(other, self.AND)
+ 
+     def __invert__(self):
++        from django.db.models.expressions import OuterRef, ResolvedOuterRef
++
+         obj = type(self)()
+         obj.add(self, self.AND)
+         obj.negate()
++
++        def handle_outer_ref(node):
++            if isinstance(node, ResolvedOuterRef):
++                return OuterRef(node.name)
++            elif isinstance(node, dict):
++                return {k: handle_outer_ref(v) for k, v in node.items()}
++            elif isinstance(node, (list, tuple)):
++                return type(node)(handle_outer_ref(v) for v in node)
++            return node
++
++        obj.children = [handle_outer_ref(child) for child in obj.children]
+         return obj
+ 
+     def resolve_expression(self, query=None, allow_joins=True, reuse=None, summarize=False, for_save=False):
+diff --git a/django/db/models/sql/compiler.py b/django/db/models/sql/compiler.py
+index 77e023b9..24d47be1 100644
+--- a/django/db/models/sql/compiler.py
++++ b/django/db/models/sql/compiler.py
+@@ -18,6 +18,46 @@ from django.utils.deprecation import RemovedInDjango31Warning
+ from django.utils.hashable import make_hashable
+ 
+ 
++class SQLCompiler:
++    def __init__(self, query, connection, using):
++        self.query = query
++        self.connection = connection
++        self.using = using
++        self.quote_cache = {'*': '*'}
++        # The select, klass_info, and annotations are needed by QuerySet.iterator()
++        # these are set as a side-effect of executing the query. Note that we calculate
++        # separately a list of extra select columns needed for grammatical correctness
++        # of the query, but these columns are not included in self.select.
++        self.select = None
++        self.annotation_col_map = None
++        self.klass_info = None
++        # Multiline ordering SQL clause may appear from RawSQL.
++        self.ordering_parts = re.compile(r'^(.*)\\s(ASC|DESC)(.*)', re.MULTILINE | re.DOTALL)
++        self._meta_ordering = None
++
++    # ... (existing methods) ...
++
++    def compile(self, node):
++        from django.db.models.expressions import OuterRef
++
++        if isinstance(node, OuterRef):
++            if self.query.negated:
++                return self.compile_negated_outer_ref(node)
++            else:
++                return self.compile_outer_ref(node)
++        # ... (rest of the compile method)
++
++    def compile_negated_outer_ref(self, node):
++        # Logic to handle negated OuterRef
++        # This might involve modifying the SQL generation to properly
++        # negate the outer reference while maintaining its connection
++        # to the outer query
++        outer_ref_sql, params = self.compile_outer_ref(node)
++        return f"NOT ({outer_ref_sql})", params
++
++    def compile_outer_ref(self, node):
++        # Existing OuterRef handling
++        return super().compile(node)
+ class SQLCompiler:
+     def __init__(self, query, connection, using):
+         self.query = query

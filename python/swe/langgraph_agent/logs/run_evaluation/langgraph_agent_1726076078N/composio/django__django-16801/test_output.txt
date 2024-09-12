@@ -1,0 +1,548 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/db/models/fields/files.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 3b62d8c83e3e48d2ed61cfa32a61c56d9e030293
+Author: Paul Brown <paul90brown@gmail.com>
+Date:   Tue May 2 18:42:11 2023 +0000
+
+    Refs #31369 -- Improved hint message in NullBooleanField's deprecation warning.
+
+diff --git a/django/db/models/fields/__init__.py b/django/db/models/fields/__init__.py
+index ab4c094c1c..7ea2fd59aa 100644
+--- a/django/db/models/fields/__init__.py
++++ b/django/db/models/fields/__init__.py
+@@ -2248,7 +2248,7 @@ class NullBooleanField(BooleanField):
+             "NullBooleanField is removed except for support in historical "
+             "migrations."
+         ),
+-        "hint": "Use BooleanField(null=True) instead.",
++        "hint": "Use BooleanField(null=True, blank=True) instead.",
+         "id": "fields.E903",
+     }
+ 
+diff --git a/docs/releases/3.1.txt b/docs/releases/3.1.txt
+index 50430ec1be..789a65efaa 100644
+--- a/docs/releases/3.1.txt
++++ b/docs/releases/3.1.txt
+@@ -821,7 +821,7 @@ Miscellaneous
+   :class:`~django.db.models.expressions.RawSQL` instead beforehand.
+ 
+ * The ``NullBooleanField`` model field is deprecated in favor of
+-  ``BooleanField(null=True)``.
++  ``BooleanField(null=True, blank=True)``.
+ 
+ * ``django.conf.urls.url()`` alias of :func:`django.urls.re_path` is
+   deprecated.
+diff --git a/tests/invalid_models_tests/test_deprecated_fields.py b/tests/invalid_models_tests/test_deprecated_fields.py
+index 7b1e3fb7ac..429e15febc 100644
+--- a/tests/invalid_models_tests/test_deprecated_fields.py
++++ b/tests/invalid_models_tests/test_deprecated_fields.py
+@@ -59,7 +59,7 @@ class DeprecatedFieldsTests(SimpleTestCase):
+                 checks.Error(
+                     "NullBooleanField is removed except for support in historical "
+                     "migrations.",
+-                    hint="Use BooleanField(null=True) instead.",
++                    hint="Use BooleanField(null=True, blank=True) instead.",
+                     obj=NullBooleanFieldModel._meta.get_field("nb"),
+                     id="fields.E903",
+                 ),
++ git diff 3b62d8c83e3e48d2ed61cfa32a61c56d9e030293
+diff --git a/django/db/models/fields/files.py b/django/db/models/fields/files.py
+index 7f8eb128e1..a1d4c4e344 100644
+--- a/django/db/models/fields/files.py
++++ b/django/db/models/fields/files.py
+@@ -441,9 +441,11 @@ class ImageField(FileField):
+         # after their corresponding image field don't stay cleared by
+         # Model.__init__, see bug #11196.
+         # Only run post-initialization dimension update on non-abstract models
+-        if not cls._meta.abstract:
++        # and only if width_field or height_field is set.
++        # This optimization prevents unnecessary signal connections and method calls
++        # when dimension fields are not used, improving model initialization performance.
++        if not cls._meta.abstract and (self.width_field or self.height_field):
+             signals.post_init.connect(self.update_dimension_fields, sender=cls)
+-
+     def update_dimension_fields(self, instance, force=False, *args, **kwargs):
+         """
+         Update field's width and height fields, if defined.
+@@ -457,11 +459,16 @@ class ImageField(FileField):
+         Dimensions can be forced to update with force=True, which is how
+         ImageFileDescriptor.__set__ calls this method.
+         """
++        # Return early if both width_field and height_field are None
++        if not self.width_field and not self.height_field:
++            return
++
+         # Nothing to update if the field doesn't have dimension fields or if
+         # the field is deferred.
+         has_dimension_fields = self.width_field or self.height_field
+         if not has_dimension_fields or self.attname not in instance.__dict__:
+             return
++            return
+ 
+         # getattr will call the ImageFileDescriptor's __get__ method, which
+         # coerces the assigned value into an instance of self.attr_class
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.6.0 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from Django==5.0.dev20230502184211) (3.8.1)
+Requirement already satisfied: sqlparse>=0.3.1 in /opt/miniconda3/envs/testbed/lib/python3.11/site-packages (from Django==5.0.dev20230502184211) (0.5.1)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-5.0.dev20230502184211-0.editable-py3-none-any.whl size=27362 sha256=e0d4ffafb8585d6fe8d1ea6ce26ead48270e88bd3bc69d2bbd7fd427d6270f68
+  Stored in directory: /tmp/pip-ephem-wheel-cache-_0idkphy/wheels/49/5f/4f/01b7d31ea6ddac9643da788242d33e5fd3467d95d17b032c6b
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 5.0.dev20230502184211
+    Uninstalling Django-5.0.dev20230502184211:
+      Successfully uninstalled Django-5.0.dev20230502184211
+Successfully installed Django-5.0.dev20230502184211
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 3b62d8c83e3e48d2ed61cfa32a61c56d9e030293 tests/model_fields/test_imagefield.py
+Updated 0 paths from 0c85149497
++ git apply -v -
+Checking patch tests/model_fields/test_imagefield.py...
+Applied patch tests/model_fields/test_imagefield.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 model_fields.test_imagefield
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Testing against Django installed in '/testbed/django'
+Importing application model_fields
+Found 47 test(s).
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, messages, model_fields, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table model_fields_foo
+    Creating table model_fields_bar
+    Creating table model_fields_whiz
+    Creating table model_fields_whizdelayed
+    Creating table model_fields_whiziter
+    Creating table model_fields_whiziterempty
+    Creating table model_fields_choiceful
+    Creating table model_fields_bigd
+    Creating table model_fields_floatmodel
+    Creating table model_fields_bigs
+    Creating table model_fields_unicodeslugfield
+    Creating table model_fields_automodel
+    Creating table model_fields_bigautomodel
+    Creating table model_fields_smallautomodel
+    Creating table model_fields_smallintegermodel
+    Creating table model_fields_integermodel
+    Creating table model_fields_bigintegermodel
+    Creating table model_fields_positivebigintegermodel
+    Creating table model_fields_positivesmallintegermodel
+    Creating table model_fields_positiveintegermodel
+    Creating table model_fields_post
+    Creating table model_fields_nullbooleanmodel
+    Creating table model_fields_booleanmodel
+    Creating table model_fields_datetimemodel
+    Creating table model_fields_durationmodel
+    Creating table model_fields_nulldurationmodel
+    Creating table model_fields_primarykeycharmodel
+    Creating table model_fields_fkstobooleans
+    Creating table model_fields_fktochar
+    Creating table model_fields_renamedfield
+    Creating table model_fields_verbosenamefield
+    Creating table model_fields_genericipaddress
+    Creating table model_fields_decimallessthanone
+    Creating table model_fields_fieldclassattributemodel
+    Creating table model_fields_datamodel
+    Creating table model_fields_document
+    Creating table model_fields_person
+    Creating table model_fields_personwithheight
+    Creating table model_fields_personwithheightandwidth
+    Creating table model_fields_persondimensionsfirst
+    Creating table model_fields_persontwoimages
+    Creating table model_fields_jsonmodel
+    Creating table model_fields_nullablejsonmodel
+    Creating table model_fields_relatedjsonmodel
+    Creating table model_fields_allfieldsmodel
+    Creating table model_fields_manytomany
+    Creating table model_fields_uuidmodel
+    Creating table model_fields_nullableuuidmodel
+    Creating table model_fields_primarykeyuuidmodel
+    Creating table model_fields_relatedtouuidmodel
+    Creating table model_fields_uuidchild
+    Creating table model_fields_uuidgrandchild
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (0 silenced).
+test_assignment_to_None (model_fields.test_imagefield.ImageFieldDimensionsFirstTests.test_assignment_to_None)
+Assigning ImageField to None clears dimensions. ... ok
+test_constructor (model_fields.test_imagefield.ImageFieldDimensionsFirstTests.test_constructor)
+Tests assigning an image field through the model's constructor. ... ok
+test_create (model_fields.test_imagefield.ImageFieldDimensionsFirstTests.test_create)
+Tests assigning an image in Manager.create(). ... ok
+test_default_value (model_fields.test_imagefield.ImageFieldDimensionsFirstTests.test_default_value)
+The default value for an ImageField is an instance of ... ok
+test_dimensions (model_fields.test_imagefield.ImageFieldDimensionsFirstTests.test_dimensions)
+Dimensions are updated correctly in various situations. ... ok
+test_field_save_and_delete_methods (model_fields.test_imagefield.ImageFieldDimensionsFirstTests.test_field_save_and_delete_methods)
+Tests assignment using the field's save method and deletion using ... ok
+test_image_after_constructor (model_fields.test_imagefield.ImageFieldDimensionsFirstTests.test_image_after_constructor)
+Tests behavior when image is not passed in constructor. ... ok
+test_assignment_to_None (model_fields.test_imagefield.ImageFieldNoDimensionsTests.test_assignment_to_None)
+Assigning ImageField to None clears dimensions. ... ok
+test_constructor (model_fields.test_imagefield.ImageFieldNoDimensionsTests.test_constructor)
+Tests assigning an image field through the model's constructor. ... ok
+test_create (model_fields.test_imagefield.ImageFieldNoDimensionsTests.test_create)
+Tests assigning an image in Manager.create(). ... ok
+test_default_value (model_fields.test_imagefield.ImageFieldNoDimensionsTests.test_default_value)
+The default value for an ImageField is an instance of ... ok
+test_dimensions (model_fields.test_imagefield.ImageFieldNoDimensionsTests.test_dimensions)
+Dimensions are updated correctly in various situations. ... ok
+test_field_save_and_delete_methods (model_fields.test_imagefield.ImageFieldNoDimensionsTests.test_field_save_and_delete_methods)
+Tests assignment using the field's save method and deletion using ... ok
+test_image_after_constructor (model_fields.test_imagefield.ImageFieldNoDimensionsTests.test_image_after_constructor)
+Tests behavior when image is not passed in constructor. ... ok
+test_post_init_not_connected (model_fields.test_imagefield.ImageFieldNoDimensionsTests.test_post_init_not_connected) ... ok
+test_assignment_to_None (model_fields.test_imagefield.ImageFieldOneDimensionTests.test_assignment_to_None)
+Assigning ImageField to None clears dimensions. ... ok
+test_constructor (model_fields.test_imagefield.ImageFieldOneDimensionTests.test_constructor)
+Tests assigning an image field through the model's constructor. ... ok
+test_create (model_fields.test_imagefield.ImageFieldOneDimensionTests.test_create)
+Tests assigning an image in Manager.create(). ... ok
+test_default_value (model_fields.test_imagefield.ImageFieldOneDimensionTests.test_default_value)
+The default value for an ImageField is an instance of ... ok
+test_dimensions (model_fields.test_imagefield.ImageFieldOneDimensionTests.test_dimensions)
+Dimensions are updated correctly in various situations. ... ok
+test_field_save_and_delete_methods (model_fields.test_imagefield.ImageFieldOneDimensionTests.test_field_save_and_delete_methods)
+Tests assignment using the field's save method and deletion using ... ok
+test_image_after_constructor (model_fields.test_imagefield.ImageFieldOneDimensionTests.test_image_after_constructor)
+Tests behavior when image is not passed in constructor. ... ok
+test_defer (model_fields.test_imagefield.ImageFieldTests.test_defer) ... ok
+test_delete_when_missing (model_fields.test_imagefield.ImageFieldTests.test_delete_when_missing)
+Bug #8175: correctly delete an object where the file no longer ... ok
+test_equal_notequal_hash (model_fields.test_imagefield.ImageFieldTests.test_equal_notequal_hash)
+Bug #9786: Ensure '==' and '!=' work correctly. ... ok
+test_instantiate_missing (model_fields.test_imagefield.ImageFieldTests.test_instantiate_missing)
+If the underlying file is unavailable, still create instantiate the ... ok
+test_pickle (model_fields.test_imagefield.ImageFieldTests.test_pickle)
+ImageField can be pickled, unpickled, and that the image of ... ok
+test_size_method (model_fields.test_imagefield.ImageFieldTests.test_size_method)
+Bug #8534: FileField.size should not leave the file open. ... ok
+test_assignment_to_None (model_fields.test_imagefield.ImageFieldTwoDimensionsTests.test_assignment_to_None)
+Assigning ImageField to None clears dimensions. ... ok
+test_constructor (model_fields.test_imagefield.ImageFieldTwoDimensionsTests.test_constructor)
+Tests assigning an image field through the model's constructor. ... ok
+test_create (model_fields.test_imagefield.ImageFieldTwoDimensionsTests.test_create)
+Tests assigning an image in Manager.create(). ... ok
+test_default_value (model_fields.test_imagefield.ImageFieldTwoDimensionsTests.test_default_value)
+The default value for an ImageField is an instance of ... ok
+test_dimensions (model_fields.test_imagefield.ImageFieldTwoDimensionsTests.test_dimensions)
+Dimensions are updated correctly in various situations. ... ok
+test_field_save_and_delete_methods (model_fields.test_imagefield.ImageFieldTwoDimensionsTests.test_field_save_and_delete_methods)
+Tests assignment using the field's save method and deletion using ... ok
+test_image_after_constructor (model_fields.test_imagefield.ImageFieldTwoDimensionsTests.test_image_after_constructor)
+Tests behavior when image is not passed in constructor. ... ok
+test_assignment_to_None (model_fields.test_imagefield.ImageFieldUsingFileTests.test_assignment_to_None)
+Assigning ImageField to None clears dimensions. ... ok
+test_constructor (model_fields.test_imagefield.ImageFieldUsingFileTests.test_constructor)
+Tests assigning an image field through the model's constructor. ... ok
+test_create (model_fields.test_imagefield.ImageFieldUsingFileTests.test_create)
+Tests assigning an image in Manager.create(). ... ok
+test_default_value (model_fields.test_imagefield.ImageFieldUsingFileTests.test_default_value)
+The default value for an ImageField is an instance of ... ok
+test_dimensions (model_fields.test_imagefield.ImageFieldUsingFileTests.test_dimensions)
+Dimensions are updated correctly in various situations. ... ok
+test_field_save_and_delete_methods (model_fields.test_imagefield.ImageFieldUsingFileTests.test_field_save_and_delete_methods)
+Tests assignment using the field's save method and deletion using ... ok
+test_image_after_constructor (model_fields.test_imagefield.ImageFieldUsingFileTests.test_image_after_constructor)
+Tests behavior when image is not passed in constructor. ... ok
+test_assignment (model_fields.test_imagefield.TwoImageFieldTests.test_assignment) ... ok
+test_constructor (model_fields.test_imagefield.TwoImageFieldTests.test_constructor) ... ok
+test_create (model_fields.test_imagefield.TwoImageFieldTests.test_create) ... ok
+test_dimensions (model_fields.test_imagefield.TwoImageFieldTests.test_dimensions)
+Dimensions are updated correctly in various situations. ... ok
+test_field_save_and_delete_methods (model_fields.test_imagefield.TwoImageFieldTests.test_field_save_and_delete_methods) ... ok
+
+----------------------------------------------------------------------
+Ran 47 tests in 0.033s
+
+OK
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout 3b62d8c83e3e48d2ed61cfa32a61c56d9e030293 tests/model_fields/test_imagefield.py
+Updated 1 path from 0c85149497

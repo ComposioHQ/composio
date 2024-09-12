@@ -1,0 +1,41 @@
+diff --git a/django/contrib/auth/forms.py b/django/contrib/auth/forms.py
+index b9eb3332..24ce7da2 100644
+--- a/django/contrib/auth/forms.py
++++ b/django/contrib/auth/forms.py
+@@ -52,10 +52,15 @@ class ReadOnlyPasswordHashWidget(forms.Widget):
+ 
+ 
+ class ReadOnlyPasswordHashField(forms.Field):
++    """
++    A form field that displays a hashed password and is disabled by default.
++    It does not allow direct editing of the password.
++    """
+     widget = ReadOnlyPasswordHashWidget
+ 
+     def __init__(self, *args, **kwargs):
+         kwargs.setdefault("required", False)
++        kwargs.setdefault("disabled", True)
+         super().__init__(*args, **kwargs)
+ 
+     def bound_data(self, data, initial):
+@@ -140,12 +145,17 @@ class UserCreationForm(forms.ModelForm):
+ 
+ 
+ class UserChangeForm(forms.ModelForm):
++    """
++    A form used in the admin interface to change a user's information
++    and permissions. The password field is now automatically disabled
++    due to the ReadOnlyPasswordHashField's default behavior.
++    """
+     password = ReadOnlyPasswordHashField(
+         label=_("Password"),
+         help_text=_(
+-            'Raw passwords are not stored, so there is no way to see this '
+-            'user’s password, but you can change the password using '
+-            '<a href="{}">this form</a>.'
++            "Raw passwords are not stored, so there is no way to see this "
++            "user's password, but you can change the password using "
++            "<a href=\"{}\">this form</a>."
+         ),
+     )
+ 

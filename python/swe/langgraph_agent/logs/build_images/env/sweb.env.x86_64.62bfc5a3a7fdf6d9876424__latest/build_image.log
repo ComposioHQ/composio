@@ -1,0 +1,555 @@
+2024-09-12 08:50:47,272 - INFO - Building image sweb.env.x86_64.62bfc5a3a7fdf6d9876424:latest
+Using dockerfile:
+FROM --platform=linux/x86_64 sweb.base.x86_64:latest
+
+COPY ./setup_env.sh /root/
+RUN chmod +x /root/setup_env.sh
+RUN /bin/bash -c "source ~/.bashrc && /root/setup_env.sh"
+
+WORKDIR /testbed/
+
+# Automatically activate the testbed environment
+RUN echo "source /opt/miniconda3/etc/profile.d/conda.sh && conda activate testbed" > /root/.bashrc
+
+Adding (1) setup scripts to image build repo
+2024-09-12 08:50:47,272 - INFO - [SETUP SCRIPT] setup_env.sh:
+#!/bin/bash
+set -euxo pipefail
+source /opt/miniconda3/bin/activate
+cat <<'EOF_59812759871' > environment.yml
+name: testbed
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - aiobotocore
+  - boto3
+  - bottleneck
+  - cartopy
+  - cdms2
+  - cfgrib
+  - cftime
+  - dask-core
+  - distributed
+  - flox
+  - fsspec!=2021.7.0
+  - h5netcdf
+  - h5py
+  - hdf5
+  - hypothesis
+  - iris
+  - lxml # Optional dep of pydap
+  - matplotlib-base
+  - nc-time-axis
+  - netcdf4
+  - numba
+  - numexpr
+  - numpy
+  - packaging
+  - pandas
+  - pint
+  - pip
+  - pooch
+  - pre-commit
+  - pseudonetcdf
+  - pydap
+  # - pynio: not compatible with netCDF4>1.5.3; only tested in py37-bare-minimum
+  - pytest
+  - pytest-cov
+  - pytest-env
+  - pytest-xdist
+  - rasterio
+  - scipy
+  - seaborn
+  - sparse
+  - toolz
+  - typing_extensions
+  - zarr
+  - pip:
+      - numbagg
+
+EOF_59812759871
+conda create -c conda-forge -n testbed python=3.10 -y
+conda env update -f environment.yml
+rm environment.yml
+conda activate testbed
+python -m pip install numpy==1.23.0 packaging==23.1 pandas==1.5.3 pytest==7.4.0 python-dateutil==2.8.2 pytz==2023.3 six==1.16.0 scipy==1.11.1 setuptools==68.0.0 dask==2022.8.1
+
+2024-09-12 08:50:47,273 - INFO - Building docker image sweb.env.x86_64.62bfc5a3a7fdf6d9876424:latest in logs/build_images/env/sweb.env.x86_64.62bfc5a3a7fdf6d9876424__latest with platform linux/x86_64
+2024-09-12 08:50:47,453 - INFO - Step 1/6 : FROM --platform=linux/x86_64 sweb.base.x86_64:latest
+2024-09-12 08:50:47,453 - INFO - 
+2024-09-12 08:50:47,453 - INFO - ---> f26f8e4f9bff
+2024-09-12 08:50:47,453 - INFO - Step 2/6 : COPY ./setup_env.sh /root/
+2024-09-12 08:50:47,453 - INFO - 
+2024-09-12 08:50:47,485 - INFO - ---> 8aabb390d915
+2024-09-12 08:50:47,485 - INFO - Step 3/6 : RUN chmod +x /root/setup_env.sh
+2024-09-12 08:50:47,485 - INFO - 
+2024-09-12 08:50:47,501 - INFO - ---> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+2024-09-12 08:50:47,501 - INFO - ---> Running in 4c3569639dbb
+2024-09-12 08:50:47,754 - INFO - ---> Removed intermediate container 4c3569639dbb
+2024-09-12 08:50:47,754 - INFO - ---> 5c7ef3525e55
+2024-09-12 08:50:47,755 - INFO - Step 4/6 : RUN /bin/bash -c "source ~/.bashrc && /root/setup_env.sh"
+2024-09-12 08:50:47,755 - INFO - 
+2024-09-12 08:50:47,795 - INFO - ---> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+2024-09-12 08:50:47,795 - INFO - ---> Running in 3ddd5193c265
+2024-09-12 08:50:47,978 - INFO - + source /opt/miniconda3/bin/activate
+2024-09-12 08:50:47,980 - INFO - ++ _CONDA_ROOT=/opt/miniconda3
+2024-09-12 08:50:47,981 - INFO - ++ . /opt/miniconda3/etc/profile.d/conda.sh
+2024-09-12 08:50:47,981 - INFO - +++ export CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-12 08:50:47,981 - INFO - +++ CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-12 08:50:47,981 - INFO - +++ export _CE_M=
+2024-09-12 08:50:47,981 - INFO - +++ _CE_M=
+2024-09-12 08:50:47,981 - INFO - +++ export _CE_CONDA=
++++ _CE_CONDA=
+2024-09-12 08:50:47,982 - INFO - +++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+2024-09-12 08:50:47,984 - INFO - +++ '[' -z '' ']'
+2024-09-12 08:50:47,985 - INFO - +++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
+2024-09-12 08:50:47,985 - INFO - +++ '[' -n '' ']'
+2024-09-12 08:50:47,988 - INFO - +++++ dirname /opt/miniconda3/bin/conda
+2024-09-12 08:50:48,000 - INFO - ++++ dirname /opt/miniconda3/bin
+2024-09-12 08:50:48,011 - INFO - +++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-12 08:50:48,012 - INFO - +++ export PATH
+2024-09-12 08:50:48,012 - INFO - +++ '[' -z '' ']'
+2024-09-12 08:50:48,012 - INFO - +++ PS1=
+2024-09-12 08:50:48,012 - INFO - ++ conda activate
+2024-09-12 08:50:48,013 - INFO - ++ local cmd=activate
+2024-09-12 08:50:48,013 - INFO - ++ case "$cmd" in
+2024-09-12 08:50:48,014 - INFO - ++ __conda_activate activate
+2024-09-12 08:50:48,014 - INFO - ++ '[' -n '' ']'
+2024-09-12 08:50:48,014 - INFO - ++ local ask_conda
+2024-09-12 08:50:48,015 - INFO - +++ PS1=
+2024-09-12 08:50:48,015 - INFO - +++ __conda_exe shell.posix activate
+2024-09-12 08:50:48,016 - INFO - +++ /opt/miniconda3/bin/conda shell.posix activate
+2024-09-12 08:50:48,547 - INFO - ++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+2024-09-12 08:50:48,547 - INFO - ++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+2024-09-12 08:50:48,547 - INFO - +++ PS1='(base) '
+2024-09-12 08:50:48,547 - INFO - +++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-12 08:50:48,547 - INFO - +++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
+2024-09-12 08:50:48,547 - INFO - +++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
+2024-09-12 08:50:48,547 - INFO - +++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
+2024-09-12 08:50:48,547 - INFO - +++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
+2024-09-12 08:50:48,548 - INFO - +++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-12 08:50:48,548 - INFO - +++ export _CE_M=
++++ _CE_M=
+2024-09-12 08:50:48,548 - INFO - +++ export _CE_CONDA=
+2024-09-12 08:50:48,548 - INFO - +++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+2024-09-12 08:50:48,548 - INFO - ++ __conda_hashr
+2024-09-12 08:50:48,548 - INFO - ++ '[' -n '' ']'
+2024-09-12 08:50:48,548 - INFO - ++ '[' -n '' ']'
+2024-09-12 08:50:48,548 - INFO - ++ hash -r
+2024-09-12 08:50:48,549 - INFO - + cat
+2024-09-12 08:50:48,563 - INFO - + conda create -c conda-forge -n testbed python=3.10 -y
+2024-09-12 08:50:48,563 - INFO - + local cmd=create
+2024-09-12 08:50:48,563 - INFO - + case "$cmd" in
+2024-09-12 08:50:48,563 - INFO - + __conda_exe create -c conda-forge -n testbed python=3.10 -y
+2024-09-12 08:50:48,564 - INFO - + /opt/miniconda3/bin/conda create -c conda-forge -n testbed python=3.10 -y
+2024-09-12 08:50:50,727 - INFO - Channels:
+ - conda-forge
+ - defaults
+Platform: linux-64
+Collecting package metadata (repodata.json): ...working...
+2024-09-12 08:53:06,304 - INFO - done
+2024-09-12 08:53:06,306 - INFO - Solving environment:
+2024-09-12 08:53:06,306 - INFO - ...working...
+2024-09-12 08:53:12,394 - INFO - done
+2024-09-12 08:53:23,964 - INFO - ## Package Plan ##
+
+  environment location: /opt/miniconda3/envs/testbed
+
+  added / updated specs:
+    - python=3.10
+
+
+The following packages will be downloaded:
+
+    package                    |            build
+    ---------------------------|-----------------
+    _libgcc_mutex-0.1          |      conda_forge           3 KB  conda-forge
+    _openmp_mutex-4.5          |            2_gnu          23 KB  conda-forge
+    bzip2-1.0.8                |       h4bc722e_7         247 KB  conda-forge
+    ca-certificates-2024.8.30  |       hbcca054_0         155 KB  conda-forge
+    ld_impl_linux-64-2.40      |       hf3520f5_7         691 KB  conda-forge
+    libffi-3.4.2               |       h7f98852_5          57 KB  conda-forge
+    libgcc-14.1.0              |       h77fa898_1         827 KB  conda-forge
+    libgcc-ng-14.1.0           |       h69a702a_1          51 KB  conda-forge
+    libgomp-14.1.0             |       h77fa898_1         449 KB  conda-forge
+    libnsl-2.0.1               |       hd590300_0          33 KB  conda-forge
+    libsqlite-3.46.1           |       hadc24fc_0         845 KB  conda-forge
+    libuuid-2.38.1             |       h0b41bf4_0          33 KB  conda-forge
+    libxcrypt-4.4.36           |       hd590300_1          98 KB  conda-forge
+    libzlib-1.3.1              |       h4ab18f5_1          60 KB  conda-forge
+    ncurses-6.5                |       he02047a_1         868 KB  conda-forge
+    openssl-3.3.2              |       hb9d3cd8_0         2.8 MB  conda-forge
+    pip-24.2                   |     pyh8b19718_1         1.2 MB  conda-forge
+    python-3.10.14             |hd12c33a_0_cpython        24.3 MB  conda-forge
+    readline-8.2               |       h8228510_1         275 KB  conda-forge
+    setuptools-73.0.1          |     pyhd8ed1ab_0         1.4 MB  conda-forge
+    tk-8.6.13                  |noxft_h4845f30_101         3.2 MB  conda-forge
+    tzdata-2024a               |       h8827d51_1         121 KB  conda-forge
+    wheel-0.44.0               |     pyhd8ed1ab_0          57 KB  conda-forge
+    xz-5.2.6                   |       h166bdaf_0         409 KB  conda-forge
+    ------------------------------------------------------------
+                                           Total:        38.0 MB
+
+The following NEW packages will be INSTALLED:
+
+  _libgcc_mutex      conda-forge/linux-64::_libgcc_mutex-0.1-conda_forge 
+  _openmp_mutex      conda-forge/linux-64::_openmp_mutex-4.5-2_gnu 
+  bzip2              conda-forge/linux-64::bzip2-1.0.8-h4bc722e_7 
+  ca-certificates    conda-forge/linux-64::ca-certificates-2024.8.30-hbcca054_0 
+  ld_impl_linux-64   conda-forge/linux-64::ld_impl_linux-64-2.40-hf3520f5_7 
+  libffi             conda-forge/linux-64::libffi-3.4.2-h7f98852_5 
+  libgcc             conda-forge/linux-64::libgcc-14.1.0-h77fa898_1 
+  libgcc-ng          conda-forge/linux-64::libgcc-ng-14.1.0-h69a702a_1 
+  libgomp            conda-forge/linux-64::libgomp-14.1.0-h77fa898_1 
+  libnsl             conda-forge/linux-64::libnsl-2.0.1-hd590300_0 
+  libsqlite          conda-forge/linux-64::libsqlite-3.46.1-hadc24fc_0 
+  libuuid            conda-forge/linux-64::libuuid-2.38.1-h0b41bf4_0 
+  libxcrypt          conda-forge/linux-64::libxcrypt-4.4.36-hd590300_1 
+  libzlib            conda-forge/linux-64::libzlib-1.3.1-h4ab18f5_1 
+  ncurses            conda-forge/linux-64::ncurses-6.5-he02047a_1 
+  openssl            conda-forge/linux-64::openssl-3.3.2-hb9d3cd8_0 
+  pip                conda-forge/noarch::pip-24.2-pyh8b19718_1 
+  python             conda-forge/linux-64::python-3.10.14-hd12c33a_0_cpython 
+  readline           conda-forge/linux-64::readline-8.2-h8228510_1 
+  setuptools         conda-forge/noarch::setuptools-73.0.1-pyhd8ed1ab_0 
+  tk                 conda-forge/linux-64::tk-8.6.13-noxft_h4845f30_101 
+  tzdata             conda-forge/noarch::tzdata-2024a-h8827d51_1 
+  wheel              conda-forge/noarch::wheel-0.44.0-pyhd8ed1ab_0 
+  xz                 conda-forge/linux-64::xz-5.2.6-h166bdaf_0 
+
+
+
+Downloading and Extracting Packages: ...working... done
+Preparing transaction: ...working...
+2024-09-12 08:53:24,934 - INFO - done
+2024-09-12 08:53:24,934 - INFO - Verifying transaction: ...working...
+2024-09-12 08:53:29,015 - INFO - done
+2024-09-12 08:53:29,018 - INFO - Executing transaction: ...working...
+2024-09-12 08:53:37,601 - INFO - done
+2024-09-12 08:53:37,620 - INFO - #
+# To activate this environment, use
+#
+#     $ conda activate testbed
+#
+# To deactivate an active environment, use
+#
+#     $ conda deactivate
+2024-09-12 08:53:37,791 - INFO - + conda env update -f environment.yml
+2024-09-12 08:53:37,792 - INFO - + local cmd=env
+2024-09-12 08:53:37,792 - INFO - + case "$cmd" in
+2024-09-12 08:53:37,792 - INFO - + __conda_exe env update -f environment.yml
+2024-09-12 08:53:37,793 - INFO - + /opt/miniconda3/bin/conda env update -f environment.yml
+2024-09-12 08:53:41,543 - INFO - Channels:
+ - conda-forge
+Platform: linux-64
+Collecting package metadata (repodata.json): ...working...
+2024-09-12 08:54:19,279 - INFO - done
+2024-09-12 08:54:19,279 - INFO - Solving environment: ...working...
+2024-09-12 08:56:32,186 - INFO - done
+2024-09-12 08:58:19,227 - INFO - Downloading and Extracting Packages: ...working... done
+Preparing transaction: ...working...
+2024-09-12 08:58:27,346 - INFO - done
+2024-09-12 08:58:27,347 - INFO - Verifying transaction: ...working...
+2024-09-12 08:58:52,475 - INFO - done
+2024-09-12 08:58:52,511 - INFO - Executing transaction: ...working...
+2024-09-12 08:59:38,092 - INFO - done
+2024-09-12 08:59:38,192 - INFO - Installing pip dependencies: ...working...
+2024-09-12 08:59:43,903 - INFO - Ran pip subprocess with arguments:
+['/opt/miniconda3/envs/testbed/bin/python', '-m', 'pip', 'install', '-U', '-r', '/condaenv.hgsq22df.requirements.txt', '--exists-action=b']
+Pip subprocess output:
+Collecting numbagg (from -r /condaenv.hgsq22df.requirements.txt (line 1))
+  Downloading numbagg-0.8.1-py3-none-any.whl.metadata (47 kB)
+Requirement already satisfied: numpy in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from numbagg->-r /condaenv.hgsq22df.requirements.txt (line 1)) (1.26.4)
+Requirement already satisfied: numba in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from numbagg->-r /condaenv.hgsq22df.requirements.txt (line 1)) (0.60.0)
+Requirement already satisfied: llvmlite<0.44,>=0.43.0dev0 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from numba->numbagg->-r /condaenv.hgsq22df.requirements.txt (line 1)) (0.43.0)
+Downloading numbagg-0.8.1-py3-none-any.whl (48 kB)
+Installing collected packages: numbagg
+Successfully installed numbagg-0.8.1
+
+done
+2024-09-12 08:59:43,904 - INFO - #
+# To activate this environment, use
+#
+#     $ conda activate testbed
+#
+# To deactivate an active environment, use
+#
+#     $ conda deactivate
+2024-09-12 08:59:44,238 - INFO - + rm environment.yml
+2024-09-12 08:59:44,257 - INFO - + conda activate testbed
+2024-09-12 08:59:44,257 - INFO - + local cmd=activate
+2024-09-12 08:59:44,257 - INFO - + case "$cmd" in
++ __conda_activate activate testbed
+2024-09-12 08:59:44,258 - INFO - + '[' -n '' ']'
++ local ask_conda
+2024-09-12 08:59:44,262 - INFO - ++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+2024-09-12 08:59:44,264 - INFO - ++ /opt/miniconda3/bin/conda shell.posix activate testbed
+2024-09-12 08:59:44,719 - INFO - + ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh"'
+2024-09-12 08:59:44,720 - INFO - + eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\''
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh"
+. "/opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh"'
+2024-09-12 08:59:44,720 - INFO - ++ PS1='(testbed) '
+2024-09-12 08:59:44,721 - INFO - ++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-12 08:59:44,721 - INFO - ++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-12 08:59:44,721 - INFO - ++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+2024-09-12 08:59:44,721 - INFO - ++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+2024-09-12 08:59:44,721 - INFO - ++ export CONDA_DEFAULT_ENV=testbed
+2024-09-12 08:59:44,721 - INFO - ++ CONDA_DEFAULT_ENV=testbed
+2024-09-12 08:59:44,721 - INFO - ++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+2024-09-12 08:59:44,721 - INFO - ++ CONDA_PROMPT_MODIFIER='(testbed) '
+2024-09-12 08:59:44,722 - INFO - ++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+2024-09-12 08:59:44,722 - INFO - ++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-12 08:59:44,722 - INFO - ++ export _CE_M=
+++ _CE_M=
+2024-09-12 08:59:44,722 - INFO - ++ export _CE_CONDA=
+++ _CE_CONDA=
+2024-09-12 08:59:44,722 - INFO - ++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+2024-09-12 08:59:44,722 - INFO - ++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/esmf-activate.sh
+2024-09-12 08:59:44,722 - INFO - +++ '[' -n '' ']'
+2024-09-12 08:59:44,722 - INFO - +++ '[' -f /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
+2024-09-12 08:59:44,722 - INFO - +++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+2024-09-12 08:59:44,723 - INFO - ++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/esmpy-activate.sh
+2024-09-12 08:59:44,723 - INFO - +++ '[' -n /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
+2024-09-12 08:59:44,723 - INFO - +++ export _CONDA_SET_ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ _CONDA_SET_ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+2024-09-12 08:59:44,723 - INFO - +++ '[' -f /opt/miniconda3/envs/testbed/lib/esmf.mk ']'
+2024-09-12 08:59:44,723 - INFO - +++ export ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
++++ ESMFMKFILE=/opt/miniconda3/envs/testbed/lib/esmf.mk
+2024-09-12 08:59:44,723 - INFO - ++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/gdal-activate.sh
+2024-09-12 08:59:44,723 - INFO - +++ '[' -n '' ']'
+2024-09-12 08:59:44,723 - INFO - +++ '[' -n '' ']'
+2024-09-12 08:59:44,724 - INFO - +++ '[' -d /opt/miniconda3/envs/testbed/share/gdal ']'
+2024-09-12 08:59:44,724 - INFO - +++ export GDAL_DATA=/opt/miniconda3/envs/testbed/share/gdal
+2024-09-12 08:59:44,724 - INFO - +++ GDAL_DATA=/opt/miniconda3/envs/testbed/share/gdal
+2024-09-12 08:59:44,724 - INFO - +++ export GDAL_DRIVER_PATH=/opt/miniconda3/envs/testbed/lib/gdalplugins
++++ GDAL_DRIVER_PATH=/opt/miniconda3/envs/testbed/lib/gdalplugins
+2024-09-12 08:59:44,724 - INFO - +++ '[' '!' -d /opt/miniconda3/envs/testbed/lib/gdalplugins ']'
+2024-09-12 08:59:44,725 - INFO - +++ export CPL_ZIP_ENCODING=UTF-8
++++ CPL_ZIP_ENCODING=UTF-8
+2024-09-12 08:59:44,725 - INFO - ++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/geotiff-activate.sh
+2024-09-12 08:59:44,725 - INFO - +++ '[' -n '' ']'
+2024-09-12 08:59:44,725 - INFO - +++ '[' -d /opt/miniconda3/envs/testbed/share/epsg_csv ']'
+2024-09-12 08:59:44,725 - INFO - +++ '[' -d /opt/miniconda3/envs/testbed/Library/share/epsg_csv ']'
+2024-09-12 08:59:44,725 - INFO - ++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libglib_activate.sh
+2024-09-12 08:59:44,726 - INFO - +++ export GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
++++ GSETTINGS_SCHEMA_DIR_CONDA_BACKUP=
+2024-09-12 08:59:44,726 - INFO - +++ export GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
++++ GSETTINGS_SCHEMA_DIR=/opt/miniconda3/envs/testbed/share/glib-2.0/schemas
+2024-09-12 08:59:44,726 - INFO - ++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/libxml2_activate.sh
+2024-09-12 08:59:44,726 - INFO - +++ test -n ''
+2024-09-12 08:59:44,726 - INFO - +++ xml_catalog_files_libxml2=
+2024-09-12 08:59:44,726 - INFO - +++ XML_CATALOG_FILES=
+2024-09-12 08:59:44,726 - INFO - +++ conda_catalog_files=
+2024-09-12 08:59:44,726 - INFO - +++ ifs_libxml2=' 	
+'
+2024-09-12 08:59:44,726 - INFO - +++ IFS=' '
+2024-09-12 08:59:44,727 - INFO - +++ rem=/opt/miniconda3/envs/testbed
+2024-09-12 08:59:44,727 - INFO - +++ for pre in ${rem}
+2024-09-12 08:59:44,727 - INFO - +++ test '' = /opt/miniconda3/envs/testbed
+2024-09-12 08:59:44,727 - INFO - +++ conda_catalog_files=/opt/miniconda3/envs/testbed
+2024-09-12 08:59:44,727 - INFO - +++ rem=
+2024-09-12 08:59:44,727 - INFO - +++ IFS=' 	
+'
+2024-09-12 08:59:44,727 - INFO - +++ conda_catalog_files='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
+2024-09-12 08:59:44,727 - INFO - +++ export 'XML_CATALOG_FILES=file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
++++ XML_CATALOG_FILES='file:///opt/miniconda3/envs/testbed/etc/xml/catalog file:///etc/xml/catalog'
+2024-09-12 08:59:44,727 - INFO - +++ unset conda_catalog_files ifs_libxml2 rem
+2024-09-12 08:59:44,727 - INFO - ++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/proj4-activate.sh
+2024-09-12 08:59:44,728 - INFO - +++ '[' -n '' ']'
+2024-09-12 08:59:44,728 - INFO - +++ '[' -d /opt/miniconda3/envs/testbed/share/proj ']'
+2024-09-12 08:59:44,728 - INFO - +++ export PROJ_DATA=/opt/miniconda3/envs/testbed/share/proj
+2024-09-12 08:59:44,728 - INFO - +++ PROJ_DATA=/opt/miniconda3/envs/testbed/share/proj
+2024-09-12 08:59:44,728 - INFO - +++ '[' -f /opt/miniconda3/envs/testbed/share/proj/copyright_and_licenses.csv ']'
+2024-09-12 08:59:44,728 - INFO - +++ export PROJ_NETWORK=ON
++++ PROJ_NETWORK=ON
+2024-09-12 08:59:44,728 - INFO - ++ . /opt/miniconda3/envs/testbed/etc/conda/activate.d/udunits2-activate.sh
+2024-09-12 08:59:44,728 - INFO - +++ '[' -n '' ']'
+2024-09-12 08:59:44,728 - INFO - +++ '[' -d /opt/miniconda3/envs/testbed/share/udunits ']'
+2024-09-12 08:59:44,728 - INFO - +++ export UDUNITS2_XML_PATH=/opt/miniconda3/envs/testbed/share/udunits/udunits2.xml
++++ UDUNITS2_XML_PATH=/opt/miniconda3/envs/testbed/share/udunits/udunits2.xml
+2024-09-12 08:59:44,728 - INFO - + __conda_hashr
+2024-09-12 08:59:44,729 - INFO - + '[' -n '' ']'
+2024-09-12 08:59:44,729 - INFO - + '[' -n '' ']'
+2024-09-12 08:59:44,729 - INFO - + hash -r
+2024-09-12 08:59:44,729 - INFO - + python -m pip install numpy==1.23.0 packaging==23.1 pandas==1.5.3 pytest==7.4.0 python-dateutil==2.8.2 pytz==2023.3 six==1.16.0 scipy==1.11.1 setuptools==68.0.0 dask==2022.8.1
+2024-09-12 08:59:47,170 - INFO - Collecting numpy==1.23.0
+2024-09-12 08:59:47,353 - INFO - Downloading numpy-1.23.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (2.2 kB)
+2024-09-12 08:59:47,481 - INFO - Collecting packaging==23.1
+2024-09-12 08:59:47,527 - INFO - Downloading packaging-23.1-py3-none-any.whl.metadata (3.1 kB)
+2024-09-12 08:59:48,152 - INFO - Collecting pandas==1.5.3
+2024-09-12 08:59:48,220 - INFO - Downloading pandas-1.5.3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (11 kB)
+2024-09-12 08:59:48,577 - INFO - Collecting pytest==7.4.0
+2024-09-12 08:59:48,625 - INFO - Downloading pytest-7.4.0-py3-none-any.whl.metadata (8.0 kB)
+2024-09-12 08:59:48,721 - INFO - Collecting python-dateutil==2.8.2
+2024-09-12 08:59:48,767 - INFO - Downloading python_dateutil-2.8.2-py2.py3-none-any.whl.metadata (8.2 kB)
+2024-09-12 08:59:49,001 - INFO - Collecting pytz==2023.3
+2024-09-12 08:59:49,055 - INFO - Downloading pytz-2023.3-py2.py3-none-any.whl.metadata (22 kB)
+2024-09-12 08:59:49,076 - INFO - Requirement already satisfied: six==1.16.0 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (1.16.0)
+2024-09-12 08:59:49,642 - INFO - Collecting scipy==1.11.1
+2024-09-12 08:59:49,696 - INFO - Downloading scipy-1.11.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (59 kB)
+2024-09-12 08:59:50,949 - INFO - Collecting setuptools==68.0.0
+2024-09-12 08:59:50,997 - INFO - Downloading setuptools-68.0.0-py3-none-any.whl.metadata (6.4 kB)
+2024-09-12 08:59:51,377 - INFO - Collecting dask==2022.8.1
+2024-09-12 08:59:51,429 - INFO - Downloading dask-2022.8.1-py3-none-any.whl.metadata (3.5 kB)
+2024-09-12 08:59:51,559 - INFO - Requirement already satisfied: iniconfig in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from pytest==7.4.0) (2.0.0)
+2024-09-12 08:59:51,563 - INFO - Requirement already satisfied: pluggy<2.0,>=0.12 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from pytest==7.4.0) (1.5.0)
+2024-09-12 08:59:51,565 - INFO - Requirement already satisfied: exceptiongroup>=1.0.0rc8 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from pytest==7.4.0) (1.2.2)
+2024-09-12 08:59:51,567 - INFO - Requirement already satisfied: tomli>=1.0.0 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from pytest==7.4.0) (2.0.1)
+2024-09-12 08:59:51,620 - INFO - Requirement already satisfied: cloudpickle>=1.1.1 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from dask==2022.8.1) (3.0.0)
+2024-09-12 08:59:51,622 - INFO - Requirement already satisfied: fsspec>=0.6.0 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from dask==2022.8.1) (2024.9.0)
+2024-09-12 08:59:51,642 - INFO - Requirement already satisfied: partd>=0.3.10 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from dask==2022.8.1) (1.4.2)
+2024-09-12 08:59:51,643 - INFO - Requirement already satisfied: pyyaml>=5.3.1 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from dask==2022.8.1) (6.0.2)
+2024-09-12 08:59:51,645 - INFO - Requirement already satisfied: toolz>=0.8.2 in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from dask==2022.8.1) (0.12.1)
+2024-09-12 08:59:51,848 - INFO - Requirement already satisfied: locket in /opt/miniconda3/envs/testbed/lib/python3.10/site-packages (from partd>=0.3.10->dask==2022.8.1) (1.0.0)
+2024-09-12 08:59:51,916 - INFO - Downloading numpy-1.23.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (17.0 MB)
+2024-09-12 08:59:56,093 - INFO - ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 17.0/17.0 MB 4.1 MB/s eta 0:00:00
+2024-09-12 08:59:56,098 - INFO - 
+2024-09-12 08:59:56,145 - INFO - Downloading packaging-23.1-py3-none-any.whl (48 kB)
+2024-09-12 08:59:56,200 - INFO - Downloading pandas-1.5.3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (12.1 MB)
+2024-09-12 08:59:59,239 - INFO - ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 12.1/12.1 MB 3.9 MB/s eta 0:00:00
+2024-09-12 08:59:59,240 - INFO - 
+2024-09-12 08:59:59,292 - INFO - Downloading pytest-7.4.0-py3-none-any.whl (323 kB)
+2024-09-12 08:59:59,425 - INFO - Downloading python_dateutil-2.8.2-py2.py3-none-any.whl (247 kB)
+2024-09-12 08:59:59,540 - INFO - Downloading pytz-2023.3-py2.py3-none-any.whl (502 kB)
+2024-09-12 08:59:59,706 - INFO - Downloading scipy-1.11.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (36.3 MB)
+2024-09-12 09:00:08,988 - INFO - ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 36.3/36.3 MB 3.9 MB/s eta 0:00:00
+2024-09-12 09:00:08,992 - INFO - 
+2024-09-12 09:00:09,035 - INFO - Downloading setuptools-68.0.0-py3-none-any.whl (804 kB)
+2024-09-12 09:00:09,184 - INFO - ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 804.0/804.0 kB 5.3 MB/s eta 0:00:00
+2024-09-12 09:00:09,184 - INFO - 
+2024-09-12 09:00:09,233 - INFO - Downloading dask-2022.8.1-py3-none-any.whl (1.1 MB)
+2024-09-12 09:00:09,465 - INFO - ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.1/1.1 MB 5.1 MB/s eta 0:00:00
+2024-09-12 09:00:09,466 - INFO - 
+2024-09-12 09:00:11,519 - INFO - Installing collected packages: pytz, setuptools, python-dateutil, packaging, numpy, scipy, pytest, pandas, dask
+2024-09-12 09:00:11,520 - INFO - Attempting uninstall: pytz
+2024-09-12 09:00:11,526 - INFO - Found existing installation: pytz 2024.2
+2024-09-12 09:00:11,592 - INFO - Uninstalling pytz-2024.2:
+2024-09-12 09:00:11,605 - INFO - Successfully uninstalled pytz-2024.2
+2024-09-12 09:00:12,005 - INFO - Attempting uninstall: setuptools
+2024-09-12 09:00:12,010 - INFO - Found existing installation: setuptools 73.0.1
+2024-09-12 09:00:12,018 - INFO - Uninstalling setuptools-73.0.1:
+2024-09-12 09:00:12,516 - INFO - Successfully uninstalled setuptools-73.0.1
+2024-09-12 09:00:14,048 - INFO - Attempting uninstall: python-dateutil
+2024-09-12 09:00:14,053 - INFO - Found existing installation: python-dateutil 2.9.0
+2024-09-12 09:00:14,066 - INFO - Uninstalling python-dateutil-2.9.0:
+2024-09-12 09:00:14,069 - INFO - Successfully uninstalled python-dateutil-2.9.0
+2024-09-12 09:00:14,236 - INFO - Attempting uninstall: packaging
+2024-09-12 09:00:14,250 - INFO - Found existing installation: packaging 24.1
+2024-09-12 09:00:14,267 - INFO - Uninstalling packaging-24.1:
+2024-09-12 09:00:14,270 - INFO - Successfully uninstalled packaging-24.1
+2024-09-12 09:00:14,364 - INFO - Attempting uninstall: numpy
+2024-09-12 09:00:14,368 - INFO - Found existing installation: numpy 1.26.4
+2024-09-12 09:00:14,598 - INFO - Uninstalling numpy-1.26.4:
+2024-09-12 09:00:14,645 - INFO - Successfully uninstalled numpy-1.26.4
+2024-09-12 09:00:20,926 - INFO - Attempting uninstall: scipy
+2024-09-12 09:00:20,931 - INFO - Found existing installation: scipy 1.14.1
+2024-09-12 09:00:21,143 - INFO - Uninstalling scipy-1.14.1:
+2024-09-12 09:00:21,209 - INFO - Successfully uninstalled scipy-1.14.1
+2024-09-12 09:00:31,425 - INFO - Attempting uninstall: pytest
+2024-09-12 09:00:31,429 - INFO - Found existing installation: pytest 8.3.3
+2024-09-12 09:00:31,461 - INFO - Uninstalling pytest-8.3.3:
+2024-09-12 09:00:31,940 - INFO - Successfully uninstalled pytest-8.3.3
+2024-09-12 09:00:32,635 - INFO - Attempting uninstall: pandas
+2024-09-12 09:00:32,641 - INFO - Found existing installation: pandas 2.2.2
+2024-09-12 09:00:33,165 - INFO - Uninstalling pandas-2.2.2:
+2024-09-12 09:00:33,229 - INFO - Successfully uninstalled pandas-2.2.2
+2024-09-12 09:00:46,727 - INFO - Attempting uninstall: dask
+2024-09-12 09:00:46,731 - INFO - Found existing installation: dask 2024.8.2
+2024-09-12 09:00:46,823 - INFO - Uninstalling dask-2024.8.2:
+2024-09-12 09:00:46,850 - INFO - Successfully uninstalled dask-2024.8.2
+2024-09-12 09:00:50,339 - INFO - ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
+distributed 2024.8.2 requires dask==2024.8.2, but you have dask 2022.8.1 which is incompatible.
+pytest-env 1.1.4 requires pytest>=8.3.2, but you have pytest 7.4.0 which is incompatible.
+scitools-iris 3.10.0 requires dask[array]>=2022.9.0, but you have dask 2022.8.1 which is incompatible.
+scitools-iris 3.10.0 requires numpy!=1.24.3,<2,>=1.24, but you have numpy 1.23.0 which is incompatible.
+xarray 2024.7.0 requires pandas>=2.0, but you have pandas 1.5.3 which is incompatible.
+zarr 2.18.3 requires numpy>=1.24, but you have numpy 1.23.0 which is incompatible.
+2024-09-12 09:00:50,340 - INFO - Successfully installed dask-2022.8.1 numpy-1.23.0 packaging-23.1 pandas-1.5.3 pytest-7.4.0 python-dateutil-2.8.2 pytz-2023.3 scipy-1.11.1 setuptools-68.0.0
+2024-09-12 09:00:50,341 - INFO - WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+2024-09-12 09:01:36,037 - INFO - ---> Removed intermediate container 3ddd5193c265
+2024-09-12 09:01:36,039 - INFO - ---> 586c688d4a7e
+2024-09-12 09:01:36,039 - INFO - Step 5/6 : WORKDIR /testbed/
+2024-09-12 09:01:36,039 - INFO - 
+2024-09-12 09:01:36,260 - INFO - ---> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+2024-09-12 09:01:36,261 - INFO - ---> Running in 35daf7671ccf
+2024-09-12 09:01:36,414 - INFO - ---> Removed intermediate container 35daf7671ccf
+2024-09-12 09:01:36,415 - INFO - ---> 763651fdac7a
+2024-09-12 09:01:36,415 - INFO - Step 6/6 : RUN echo "source /opt/miniconda3/etc/profile.d/conda.sh && conda activate testbed" > /root/.bashrc
+2024-09-12 09:01:36,415 - INFO - 
+2024-09-12 09:01:36,827 - INFO - ---> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+2024-09-12 09:01:36,827 - INFO - ---> Running in ac28673db575
+2024-09-12 09:01:37,782 - INFO - ---> Removed intermediate container ac28673db575
+2024-09-12 09:01:37,788 - INFO - ---> 9cbbe159f056
+2024-09-12 09:01:37,789 - INFO - Successfully built 9cbbe159f056
+2024-09-12 09:01:37,790 - INFO - Successfully tagged sweb.env.x86_64.62bfc5a3a7fdf6d9876424:latest
+2024-09-12 09:01:37,824 - INFO - Image built successfully!

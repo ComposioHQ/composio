@@ -1,0 +1,26 @@
+diff --git a/django/db/migrations/operations/models.py b/django/db/migrations/operations/models.py
+index 982816be..2ab26923 100644
+--- a/django/db/migrations/operations/models.py
++++ b/django/db/migrations/operations/models.py
+@@ -317,9 +317,20 @@ class RenameModel(ModelOperation):
+         state.rename_model(app_label, self.old_name, self.new_name)
+ 
+     def database_forwards(self, app_label, schema_editor, from_state, to_state):
++        """
++        Perform the rename operation in the database.
++        If the db_table is explicitly set and hasn't changed, this operation becomes a no-op.
++        """
+         new_model = to_state.apps.get_model(app_label, self.new_name)
++        old_model = from_state.apps.get_model(app_label, self.old_name)
++        
++        # Check if db_table is explicitly set and hasn't changed
++        if (old_model._meta.db_table == new_model._meta.db_table and
++            not old_model._meta.db_table == old_model._meta.model_name.lower()):
++            # db_table is explicitly set and unchanged, so this should be a no-op
++            return
++
+         if self.allow_migrate_model(schema_editor.connection.alias, new_model):
+-            old_model = from_state.apps.get_model(app_label, self.old_name)
+             # Move the main table
+             schema_editor.alter_db_table(
+                 new_model,

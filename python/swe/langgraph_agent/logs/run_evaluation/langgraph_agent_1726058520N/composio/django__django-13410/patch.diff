@@ -1,0 +1,24 @@
+diff --git a/django/core/files/locks.py b/django/core/files/locks.py
+index c46b00b9..4938347e 100644
+--- a/django/core/files/locks.py
++++ b/django/core/files/locks.py
+@@ -107,9 +107,15 @@ else:
+             return True
+     else:
+         def lock(f, flags):
+-            ret = fcntl.flock(_fd(f), flags)
+-            return ret == 0
++            try:
++                fcntl.flock(_fd(f), flags)
++                return True
++            except OSError:
++                return False
+ 
+         def unlock(f):
+-            ret = fcntl.flock(_fd(f), fcntl.LOCK_UN)
+-            return ret == 0
++            try:
++                fcntl.flock(_fd(f), fcntl.LOCK_UN)
++                return True
++            except OSError:
++                return False

@@ -1,0 +1,63 @@
+{
+    "django__django-13406": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "test_annotation_values (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_annotation_values_list (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_annotation_with_callable_default (queryset_pickle.tests.PickleabilityTestCase)"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "test_in_lookup_query_evaluation (queryset_pickle.tests.InLookupTests)",
+                    "test_in_lookup_queryset_evaluation (queryset_pickle.tests.InLookupTests)",
+                    "test_datetime_callable_default_all (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_datetime_callable_default_filter (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_doesnotexist_class (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_doesnotexist_exception (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_filter_deferred (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_filter_reverse_fk (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_forward_relatedobjectdoesnotexist_class (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_manager_pickle (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_missing_django_version_unpickling (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_model_pickle (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_model_pickle_dynamic (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_model_pickle_m2m (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_multipleobjectsreturned_class (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_order_by_model_with_abstract_inheritance_and_meta_ordering (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_pickle_exists_kwargs_queryset_not_evaluated (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_pickle_exists_queryset_not_evaluated (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_pickle_exists_queryset_still_usable (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_pickle_prefetch_queryset_not_evaluated (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_pickle_prefetch_queryset_still_usable (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_pickle_prefetch_queryset_usable_outside_of_prefetch (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_pickle_prefetch_related_idempotence (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_pickle_prefetch_related_with_m2m_and_objects_deletion (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_pickle_subquery_queryset_not_evaluated (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_related_field (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_reverse_one_to_one_relatedobjectdoesnotexist_class (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_specialized_queryset (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_standalone_method_as_default (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_staticmethod_as_default (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_string_as_default (queryset_pickle.tests.PickleabilityTestCase)",
+                    "test_unsupported_unpickle (queryset_pickle.tests.PickleabilityTestCase)"
+                ]
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

@@ -1,0 +1,168 @@
+diff --git a/django/db/models/aggregates.py b/django/db/models/aggregates.py
+index a778cd4..efceeac 100644
+--- a/django/db/models/aggregates.py
++++ b/django/db/models/aggregates.py
+@@ -25,8 +25,9 @@ __all__ = [
+ class Aggregate(Func):
+     template = "%(function)s(%(distinct)s%(expressions)s)"
+     contains_aggregate = True
++    contains_window_function = False
+     name = None
+-    filter_template = "%s FILTER (WHERE %%(filter)s)"
++    filter_template = "%s FILTER (WHERE %(filter)s)"
+     window_compatible = True
+     allow_distinct = False
+     empty_result_set_value = None
+diff --git a/django/db/models/functions/window.py b/django/db/models/functions/window.py
+index 671017a..798c775 100644
+--- a/django/db/models/functions/window.py
++++ b/django/db/models/functions/window.py
+@@ -16,27 +16,23 @@ __all__ = [
+ ]
+ 
+ 
+-class CumeDist(Func):
+-    function = "CUME_DIST"
+-    output_field = FloatField()
++class WindowFunction(Func):
+     window_compatible = True
++    contains_window_function = True
+ 
++class CumeDist(WindowFunction):
++    function = "CUME_DIST"
++    output_field = FloatField()
+ 
+-class DenseRank(Func):
++class DenseRank(WindowFunction):
+     function = "DENSE_RANK"
+     output_field = IntegerField()
+-    window_compatible = True
+-
+ 
+-class FirstValue(Func):
++class FirstValue(WindowFunction):
+     arity = 1
+     function = "FIRST_VALUE"
+-    window_compatible = True
+-
+-
+-class LagLeadFunction(Func):
+-    window_compatible = True
+ 
++class LagLeadFunction(WindowFunction):
+     def __init__(self, expression, offset=1, default=None, **extra):
+         if expression is None:
+             raise ValueError(
+@@ -56,24 +52,18 @@ class LagLeadFunction(Func):
+         sources = self.get_source_expressions()
+         return sources[0].output_field
+ 
+-
+ class Lag(LagLeadFunction):
+     function = "LAG"
+ 
+-
+-class LastValue(Func):
++class LastValue(WindowFunction):
+     arity = 1
+     function = "LAST_VALUE"
+-    window_compatible = True
+-
+ 
+ class Lead(LagLeadFunction):
+     function = "LEAD"
+ 
+-
+-class NthValue(Func):
++class NthValue(WindowFunction):
+     function = "NTH_VALUE"
+-    window_compatible = True
+ 
+     def __init__(self, expression, nth=1, **extra):
+         if expression is None:
+@@ -90,31 +80,23 @@ class NthValue(Func):
+         sources = self.get_source_expressions()
+         return sources[0].output_field
+ 
+-
+-class Ntile(Func):
++class Ntile(WindowFunction):
+     function = "NTILE"
+     output_field = IntegerField()
+-    window_compatible = True
+ 
+     def __init__(self, num_buckets=1, **extra):
+         if num_buckets <= 0:
+-            raise ValueError("num_buckets must be greater than 0.")
++            raise ValueError("num_buckets must be greater than 0")
+         super().__init__(num_buckets, **extra)
+ 
+-
+-class PercentRank(Func):
++class PercentRank(WindowFunction):
+     function = "PERCENT_RANK"
+     output_field = FloatField()
+-    window_compatible = True
+-
+ 
+-class Rank(Func):
++class Rank(WindowFunction):
+     function = "RANK"
+     output_field = IntegerField()
+-    window_compatible = True
+-
+ 
+-class RowNumber(Func):
++class RowNumber(WindowFunction):
+     function = "ROW_NUMBER"
+     output_field = IntegerField()
+-    window_compatible = True
+diff --git a/django/db/models/query.py b/django/db/models/query.py
+index 395ba6e..ff071e9 100644
+--- a/django/db/models/query.py
++++ b/django/db/models/query.py
+@@ -571,10 +571,19 @@ class QuerySet(AltersData):
+         self._validate_values_are_expressions(
+             (*args, *kwargs.values()), method_name="aggregate"
+         )
++        
++        # Check if any of the aggregates contain window functions
++        contains_window_function = any(
++            getattr(arg, 'contains_window_function', False)
++            for arg in chain(args, kwargs.values())
++        )
++        
++        if contains_window_function:
++            # If window functions are present, use the new method
++            return self._aggregate_with_window_functions(*args, **kwargs)
++        
++        # Original logic for non-window function aggregates
+         for arg in args:
+-            # The default_alias property raises TypeError if default_alias
+-            # can't be set automatically or AttributeError if it isn't an
+-            # attribute.
+             try:
+                 arg.default_alias
+             except (AttributeError, TypeError):
+@@ -583,6 +592,21 @@ class QuerySet(AltersData):
+ 
+         return self.query.chain().get_aggregation(self.db, kwargs)
+ 
++    def _aggregate_with_window_functions(self, *args, **kwargs):
++        """
++        Handle aggregations that include window functions.
++        """
++        # First, apply window functions
++        queryset = self.annotate(**{
++            k: v for k, v in kwargs.items() if getattr(v, 'contains_window_function', False)
++        })
++        
++        # Then, perform aggregation on the result
++        remaining_kwargs = {
++            k: v for k, v in kwargs.items() if not getattr(v, 'contains_window_function', False)
++        }
++        return queryset.aggregate(*args, **remaining_kwargs)
++
+     async def aaggregate(self, *args, **kwargs):
+         return await sync_to_async(self.aggregate)(*args, **kwargs)
+ 

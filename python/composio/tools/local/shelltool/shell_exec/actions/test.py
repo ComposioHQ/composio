@@ -27,17 +27,9 @@ class TestExecRequest(ShellRequest):
 class TestExecResponse(BaseModel):
     """Shell execution response."""
 
-    stdout: str = Field(
+    test_response: str = Field(
         ...,
-        description="Output captured from the execution of the command",
-    )
-    stderr: str = Field(
-        ...,
-        description="Errors captured during execution of the command",
-    )
-    exit_code: int = Field(
-        ...,
-        description="Exit code of the command",
+        description="Response from the test command",
     )
     current_shell_pwd: str = Field(
         default="",
@@ -63,8 +55,6 @@ class TestCommand(LocalAction[TestExecRequest, TestExecResponse]):
         output = shell.exec(cmd=f"{command}")
         self.logger.debug(output)
         return TestExecResponse(
-            stdout=output[STDOUT],
-            stderr=output[STDERR],
-            exit_code=int(output[EXIT_CODE]),
+            test_response=output[STDERR],
             current_shell_pwd=f"Currently in {shell.exec(cmd='pwd')[STDOUT].strip()}",
         )

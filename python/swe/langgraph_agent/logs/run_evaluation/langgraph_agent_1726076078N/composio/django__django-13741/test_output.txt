@@ -1,0 +1,539 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen
++ locale-gen
+Generating locales (this might take a while)...
+  en_US.UTF-8... done
+Generation complete.
++ export LANG=en_US.UTF-8
++ LANG=en_US.UTF-8
++ export LANGUAGE=en_US:en
++ LANGUAGE=en_US:en
++ export LC_ALL=en_US.UTF-8
++ LC_ALL=en_US.UTF-8
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/contrib/auth/forms.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit d746f28949c009251a8741ba03d156964050717f
+Author: Mariusz Felisiak <felisiak.mariusz@gmail.com>
+Date:   Thu Dec 3 09:30:33 2020 +0100
+
+    Refs #27095 -- Fixed test_contained_by_including_F_object when run in reverse.
+    
+    Tests should not rely on auto PKs.
+    
+    Test regression in 33403bf80f635577a18426bc99c8a65e31fd8dfa.
+
+diff --git a/tests/postgres_tests/migrations/0002_create_test_models.py b/tests/postgres_tests/migrations/0002_create_test_models.py
+index cd8b20ae01..c3ab5efed7 100644
+--- a/tests/postgres_tests/migrations/0002_create_test_models.py
++++ b/tests/postgres_tests/migrations/0002_create_test_models.py
+@@ -99,6 +99,7 @@ class Migration(migrations.Migration):
+                     'field_nested',
+                     ArrayField(ArrayField(models.IntegerField(), size=None, null=True), size=None, null=True),
+                 ),
++                ('order', models.IntegerField(null=True)),
+             ],
+             options={
+                 'required_db_vendor': 'postgresql',
+diff --git a/tests/postgres_tests/models.py b/tests/postgres_tests/models.py
+index 56c81064f3..c7f55a2661 100644
+--- a/tests/postgres_tests/models.py
++++ b/tests/postgres_tests/models.py
+@@ -46,6 +46,7 @@ class IntegerArrayModel(PostgreSQLModel):
+ class NullableIntegerArrayModel(PostgreSQLModel):
+     field = ArrayField(models.IntegerField(), blank=True, null=True)
+     field_nested = ArrayField(ArrayField(models.IntegerField(null=True)), null=True)
++    order = models.IntegerField(null=True)
+ 
+ 
+ class CharArrayModel(PostgreSQLModel):
+diff --git a/tests/postgres_tests/test_array.py b/tests/postgres_tests/test_array.py
+index 3c7584e84c..6fb34b3d92 100644
+--- a/tests/postgres_tests/test_array.py
++++ b/tests/postgres_tests/test_array.py
+@@ -205,11 +205,11 @@ class TestQuerying(PostgreSQLTestCase):
+     @classmethod
+     def setUpTestData(cls):
+         cls.objs = NullableIntegerArrayModel.objects.bulk_create([
+-            NullableIntegerArrayModel(field=[1]),
+-            NullableIntegerArrayModel(field=[2]),
+-            NullableIntegerArrayModel(field=[2, 3]),
+-            NullableIntegerArrayModel(field=[20, 30, 40]),
+-            NullableIntegerArrayModel(field=None),
++            NullableIntegerArrayModel(order=1, field=[1]),
++            NullableIntegerArrayModel(order=2, field=[2]),
++            NullableIntegerArrayModel(order=3, field=[2, 3]),
++            NullableIntegerArrayModel(order=4, field=[20, 30, 40]),
++            NullableIntegerArrayModel(order=5, field=None),
+         ])
+ 
+     def test_empty_list(self):
+@@ -304,7 +304,7 @@ class TestQuerying(PostgreSQLTestCase):
+ 
+     def test_contained_by_including_F_object(self):
+         self.assertSequenceEqual(
+-            NullableIntegerArrayModel.objects.filter(field__contained_by=[models.F('id'), 2]),
++            NullableIntegerArrayModel.objects.filter(field__contained_by=[models.F('order'), 2]),
+             self.objs[:3],
+         )
+ 
++ git diff d746f28949c009251a8741ba03d156964050717f
+diff --git a/django/contrib/auth/forms.py b/django/contrib/auth/forms.py
+index b9eb33329f..24ce7da2e7 100644
+--- a/django/contrib/auth/forms.py
++++ b/django/contrib/auth/forms.py
+@@ -52,10 +52,15 @@ class ReadOnlyPasswordHashWidget(forms.Widget):
+ 
+ 
+ class ReadOnlyPasswordHashField(forms.Field):
++    """
++    A form field that displays a hashed password and is disabled by default.
++    It does not allow direct editing of the password.
++    """
+     widget = ReadOnlyPasswordHashWidget
+ 
+     def __init__(self, *args, **kwargs):
+         kwargs.setdefault("required", False)
++        kwargs.setdefault("disabled", True)
+         super().__init__(*args, **kwargs)
+ 
+     def bound_data(self, data, initial):
+@@ -140,12 +145,17 @@ class UserCreationForm(forms.ModelForm):
+ 
+ 
+ class UserChangeForm(forms.ModelForm):
++    """
++    A form used in the admin interface to change a user's information
++    and permissions. The password field is now automatically disabled
++    due to the ReadOnlyPasswordHashField's default behavior.
++    """
+     password = ReadOnlyPasswordHashField(
+         label=_("Password"),
+         help_text=_(
+-            'Raw passwords are not stored, so there is no way to see this '
+-            'user’s password, but you can change the password using '
+-            '<a href="{}">this form</a>.'
++            "Raw passwords are not stored, so there is no way to see this "
++            "user's password, but you can change the password using "
++            "<a href=\"{}\">this form</a>."
+         ),
+     )
+ 
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: asgiref>=3.2.10 in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.2) (3.4.1)
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.2) (2024.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.2) (0.4.4)
+Requirement already satisfied: typing-extensions in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from asgiref>=3.2.10->Django==3.2) (4.1.1)
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 3.2
+    Uninstalling Django-3.2:
+      Successfully uninstalled Django-3.2
+  Running setup.py develop for Django
+Successfully installed Django-3.2
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
++ git checkout d746f28949c009251a8741ba03d156964050717f tests/auth_tests/test_forms.py
+Updated 0 paths from d2341d5ea5
++ git apply -v -
+Checking patch tests/auth_tests/test_forms.py...
+Applied patch tests/auth_tests/test_forms.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 auth_tests.test_forms
+Testing against Django installed in '/testbed/django'
+Importing application auth_tests
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: auth, auth_tests, contenttypes, messages, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table auth_tests_customuser
+    Creating table auth_tests_customuserwithoutisactivefield
+    Creating table auth_tests_extensionuser
+    Creating table auth_tests_custompermissionsuser
+    Creating table auth_tests_customusernonuniqueusername
+    Creating table auth_tests_isactivetestuser1
+    Creating table auth_tests_minimaluser
+    Creating table auth_tests_nopassworduser
+    Creating table auth_tests_concrete
+    Creating table auth_tests_uuiduser
+    Creating table auth_tests_customemailfield
+    Creating table auth_tests_email
+    Creating table auth_tests_customuserwithfk
+    Creating table auth_tests_integerusernameuser
+    Creating table auth_tests_userwithdisabledlastloginfield
+    Creating table auth_tests_organization
+    Creating table auth_tests_customuserwithm2m
+    Creating table auth_tests_customuserwithm2mthrough
+    Creating table auth_tests_membership
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+System check identified no issues (0 silenced).
+test_html_autocomplete_attributes (auth_tests.test_forms.AdminPasswordChangeFormTest) ... ok
+test_missing_passwords (auth_tests.test_forms.AdminPasswordChangeFormTest) ... ok
+test_non_matching_passwords (auth_tests.test_forms.AdminPasswordChangeFormTest) ... ok
+test_one_password (auth_tests.test_forms.AdminPasswordChangeFormTest) ... ok
+test_password_whitespace_not_stripped (auth_tests.test_forms.AdminPasswordChangeFormTest) ... ok
+test_success (auth_tests.test_forms.AdminPasswordChangeFormTest) ... ok
+test_custom_login_allowed_policy (auth_tests.test_forms.AuthenticationFormTest) ... ok
+test_get_invalid_login_error (auth_tests.test_forms.AuthenticationFormTest) ... ok
+test_html_autocomplete_attributes (auth_tests.test_forms.AuthenticationFormTest) ... ok
+test_inactive_user (auth_tests.test_forms.AuthenticationFormTest) ... ok
+test_inactive_user_i18n (auth_tests.test_forms.AuthenticationFormTest) ... ok
+test_inactive_user_incorrect_password (auth_tests.test_forms.AuthenticationFormTest)
+An invalid login doesn't leak the inactive status of a user. ... ok
+test_integer_username (auth_tests.test_forms.AuthenticationFormTest) ... ok
+test_invalid_username (auth_tests.test_forms.AuthenticationFormTest) ... ok
+test_login_failed (auth_tests.test_forms.AuthenticationFormTest) ... ok
+test_password_whitespace_not_stripped (auth_tests.test_forms.AuthenticationFormTest) ... ok
+test_success (auth_tests.test_forms.AuthenticationFormTest) ... ok
+test_unicode_username (auth_tests.test_forms.AuthenticationFormTest) ... ok
+test_username_field_autocapitalize_none (auth_tests.test_forms.AuthenticationFormTest) ... ok
+test_username_field_label (auth_tests.test_forms.AuthenticationFormTest) ... ok
+test_username_field_label_empty_string (auth_tests.test_forms.AuthenticationFormTest) ... ok
+test_username_field_label_not_set (auth_tests.test_forms.AuthenticationFormTest) ... ok
+test_username_field_max_length_defaults_to_254 (auth_tests.test_forms.AuthenticationFormTest) ... ok
+test_username_field_max_length_matches_user_model (auth_tests.test_forms.AuthenticationFormTest) ... ok
+test_field_order (auth_tests.test_forms.PasswordChangeFormTest) ... ok
+test_html_autocomplete_attributes (auth_tests.test_forms.PasswordChangeFormTest) ... ok
+test_incorrect_password (auth_tests.test_forms.PasswordChangeFormTest) ... ok
+test_password_verification (auth_tests.test_forms.PasswordChangeFormTest) ... ok
+test_password_whitespace_not_stripped (auth_tests.test_forms.PasswordChangeFormTest) ... ok
+test_success (auth_tests.test_forms.PasswordChangeFormTest) ... ok
+test_cleaned_data (auth_tests.test_forms.PasswordResetFormTest) ... ok
+test_custom_email_constructor (auth_tests.test_forms.PasswordResetFormTest) ... ok
+test_custom_email_field (auth_tests.test_forms.PasswordResetFormTest) ... ok
+test_custom_email_subject (auth_tests.test_forms.PasswordResetFormTest) ... ok
+test_html_autocomplete_attributes (auth_tests.test_forms.PasswordResetFormTest) ... ok
+test_inactive_user (auth_tests.test_forms.PasswordResetFormTest) ... ok
+test_invalid_email (auth_tests.test_forms.PasswordResetFormTest) ... ok
+test_nonexistent_email (auth_tests.test_forms.PasswordResetFormTest) ... ok
+test_preserve_username_case (auth_tests.test_forms.PasswordResetFormTest) ... ok
+test_save_html_email_template_name (auth_tests.test_forms.PasswordResetFormTest) ... ok
+test_save_plaintext_email (auth_tests.test_forms.PasswordResetFormTest) ... ok
+test_unusable_password (auth_tests.test_forms.PasswordResetFormTest) ... ok
+test_user_email_domain_unicode_collision (auth_tests.test_forms.PasswordResetFormTest) ... ok
+test_user_email_domain_unicode_collision_nonexistent (auth_tests.test_forms.PasswordResetFormTest) ... ok
+test_user_email_unicode_collision (auth_tests.test_forms.PasswordResetFormTest) ... ok
+test_user_email_unicode_collision_nonexistent (auth_tests.test_forms.PasswordResetFormTest) ... ok
+test_help_text_translation (auth_tests.test_forms.SetPasswordFormTest) ... ok
+test_html_autocomplete_attributes (auth_tests.test_forms.SetPasswordFormTest) ... ok
+test_password_verification (auth_tests.test_forms.SetPasswordFormTest) ... ok
+test_password_whitespace_not_stripped (auth_tests.test_forms.SetPasswordFormTest) ... ok
+test_success (auth_tests.test_forms.SetPasswordFormTest) ... ok
+test_validates_password (auth_tests.test_forms.SetPasswordFormTest) ... ok
+test_bug_14242 (auth_tests.test_forms.UserChangeFormTest) ... ok
+test_bug_17944_empty_password (auth_tests.test_forms.UserChangeFormTest) ... ok
+test_bug_17944_unknown_password_algorithm (auth_tests.test_forms.UserChangeFormTest) ... ok
+test_bug_17944_unmanageable_password (auth_tests.test_forms.UserChangeFormTest) ... ok
+test_bug_19133 (auth_tests.test_forms.UserChangeFormTest)
+The change form does not return the password value ... ok
+test_bug_19349_bound_password_field (auth_tests.test_forms.UserChangeFormTest) ... ok
+test_custom_form (auth_tests.test_forms.UserChangeFormTest) ... ok
+test_password_excluded (auth_tests.test_forms.UserChangeFormTest) ... ok
+test_unusable_password (auth_tests.test_forms.UserChangeFormTest) ... ok
+test_username_field_autocapitalize_none (auth_tests.test_forms.UserChangeFormTest) ... ok
+test_username_validity (auth_tests.test_forms.UserChangeFormTest) ... ok
+test_both_passwords (auth_tests.test_forms.UserCreationFormTest) ... ok
+test_custom_form (auth_tests.test_forms.UserCreationFormTest) ... ok
+test_custom_form_hidden_username_field (auth_tests.test_forms.UserCreationFormTest) ... ok
+test_custom_form_with_different_username_field (auth_tests.test_forms.UserCreationFormTest) ... ok
+test_duplicate_normalized_unicode (auth_tests.test_forms.UserCreationFormTest) ... ok
+test_html_autocomplete_attributes (auth_tests.test_forms.UserCreationFormTest) ... ok
+test_invalid_data (auth_tests.test_forms.UserCreationFormTest) ... ok
+test_normalize_username (auth_tests.test_forms.UserCreationFormTest) ... ok
+test_password_help_text (auth_tests.test_forms.UserCreationFormTest) ... ok
+test_password_verification (auth_tests.test_forms.UserCreationFormTest) ... ok
+test_password_whitespace_not_stripped (auth_tests.test_forms.UserCreationFormTest) ... ok
+test_success (auth_tests.test_forms.UserCreationFormTest) ... ok
+test_unicode_username (auth_tests.test_forms.UserCreationFormTest) ... ok
+test_user_already_exists (auth_tests.test_forms.UserCreationFormTest) ... ok
+test_user_create_form_validates_password_with_all_data (auth_tests.test_forms.UserCreationFormTest)
+UserCreationForm password validation uses all of the form's data. ... ok
+test_username_field_autocapitalize_none (auth_tests.test_forms.UserCreationFormTest) ... ok
+test_validates_password (auth_tests.test_forms.UserCreationFormTest) ... ok
+test_bug_19349_render_with_none_value (auth_tests.test_forms.ReadOnlyPasswordHashTest) ... ok
+test_readonly_field_has_changed (auth_tests.test_forms.ReadOnlyPasswordHashTest) ... ok
+test_render (auth_tests.test_forms.ReadOnlyPasswordHashTest) ... ok
+
+----------------------------------------------------------------------
+Ran 83 tests in 0.109s
+
+OK
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout d746f28949c009251a8741ba03d156964050717f tests/auth_tests/test_forms.py
+Updated 1 path from d2341d5ea5

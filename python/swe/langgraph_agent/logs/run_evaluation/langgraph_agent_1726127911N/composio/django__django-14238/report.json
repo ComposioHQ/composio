@@ -1,0 +1,69 @@
+{
+    "django__django-14238": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "test_issubclass_of_autofield (model_fields.test_autofield.AutoFieldInheritanceTests)",
+                    "test_default_auto_field_setting_bigautofield_subclass (model_options.test_default_pk.TestDefaultPK)"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "test_isinstance_of_autofield (model_fields.test_autofield.AutoFieldInheritanceTests)",
+                    "Backend specific ranges can be saved without corruption.",
+                    "Backend specific ranges are enforced at the model validation level",
+                    "test_coercing (model_fields.test_autofield.AutoFieldTests)",
+                    "Values within the documented safe range pass validation, and can be",
+                    "test_invalid_value (model_fields.test_autofield.AutoFieldTests)",
+                    "If there are stricter validators than the ones from the database",
+                    "test_rel_db_type (model_fields.test_autofield.AutoFieldTests)",
+                    "test_types (model_fields.test_autofield.AutoFieldTests)",
+                    "test_app_default_auto_field (model_options.test_default_pk.TestDefaultPK)",
+                    "test_app_default_auto_field_non_auto (model_options.test_default_pk.TestDefaultPK)",
+                    "test_app_default_auto_field_none (model_options.test_default_pk.TestDefaultPK)",
+                    "test_app_default_auto_field_nonexistent (model_options.test_default_pk.TestDefaultPK)",
+                    "test_default_auto_field_setting (model_options.test_default_pk.TestDefaultPK)",
+                    "test_default_auto_field_setting_non_auto (model_options.test_default_pk.TestDefaultPK)",
+                    "test_default_auto_field_setting_none (model_options.test_default_pk.TestDefaultPK)",
+                    "test_default_auto_field_setting_nonexistent (model_options.test_default_pk.TestDefaultPK)",
+                    "test_m2m_app_default_auto_field (model_options.test_default_pk.TestDefaultPK)",
+                    "test_m2m_default_auto_field_setting (model_options.test_default_pk.TestDefaultPK)",
+                    "test_coercing (model_fields.test_integerfield.SmallIntegerFieldTests)",
+                    "test_invalid_value (model_fields.test_integerfield.SmallIntegerFieldTests)",
+                    "test_rel_db_type (model_fields.test_integerfield.SmallIntegerFieldTests)",
+                    "test_types (model_fields.test_integerfield.SmallIntegerFieldTests)",
+                    "test_coercing (model_fields.test_integerfield.IntegerFieldTests)",
+                    "test_invalid_value (model_fields.test_integerfield.IntegerFieldTests)",
+                    "test_rel_db_type (model_fields.test_integerfield.IntegerFieldTests)",
+                    "test_types (model_fields.test_integerfield.IntegerFieldTests)",
+                    "test_coercing (model_fields.test_integerfield.BigIntegerFieldTests)",
+                    "test_invalid_value (model_fields.test_integerfield.BigIntegerFieldTests)",
+                    "test_rel_db_type (model_fields.test_integerfield.BigIntegerFieldTests)",
+                    "test_types (model_fields.test_integerfield.BigIntegerFieldTests)",
+                    "test_coercing (model_fields.test_autofield.SmallAutoFieldTests)",
+                    "test_invalid_value (model_fields.test_autofield.SmallAutoFieldTests)",
+                    "test_rel_db_type (model_fields.test_autofield.SmallAutoFieldTests)",
+                    "test_types (model_fields.test_autofield.SmallAutoFieldTests)",
+                    "test_coercing (model_fields.test_autofield.BigAutoFieldTests)",
+                    "test_invalid_value (model_fields.test_autofield.BigAutoFieldTests)",
+                    "test_rel_db_type (model_fields.test_autofield.BigAutoFieldTests)",
+                    "test_types (model_fields.test_autofield.BigAutoFieldTests)"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

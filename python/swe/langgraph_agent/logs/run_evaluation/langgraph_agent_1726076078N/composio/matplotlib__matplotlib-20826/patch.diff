@@ -1,0 +1,44 @@
+diff --git a/lib/matplotlib/axes/_base.py b/lib/matplotlib/axes/_base.py
+index 802fd3c..8a8e615 100644
+--- a/lib/matplotlib/axes/_base.py
++++ b/lib/matplotlib/axes/_base.py
+@@ -1192,6 +1192,12 @@ class _AxesBase(martist.Artist):
+         xaxis_visible = self.xaxis.get_visible()
+         yaxis_visible = self.yaxis.get_visible()
+ 
++        # Store the tick and label visibility states
++        xtick_visible = self.xaxis.get_major_ticks()[0].get_visible() if self.xaxis.get_major_ticks() else True
++        ytick_visible = self.yaxis.get_major_ticks()[0].get_visible() if self.yaxis.get_major_ticks() else True
++        xlabel_visible = self.xaxis.get_label().get_visible()
++        ylabel_visible = self.yaxis.get_label().get_visible()
++
+         self.xaxis.clear()
+         self.yaxis.clear()
+ 
+@@ -1278,8 +1284,6 @@ class _AxesBase(martist.Artist):
+             horizontalalignment='right',
+             )
+         title_offset_points = mpl.rcParams['axes.titlepad']
+-        # refactor this out so it can be called in ax.set_title if
+-        # pad argument used...
+         self._set_title_offset_trans(title_offset_points)
+ 
+         for _title in (self.title, self._left_title, self._right_title):
+@@ -1305,9 +1309,17 @@ class _AxesBase(martist.Artist):
+         if self._sharex is not None:
+             self.xaxis.set_visible(xaxis_visible)
+             self.patch.set_visible(patch_visible)
++            # Restore tick and label visibility for shared x-axis
++            for tick in self.xaxis.get_major_ticks():
++                tick.set_visible(xtick_visible)
++            self.xaxis.get_label().set_visible(xlabel_visible)
+         if self._sharey is not None:
+             self.yaxis.set_visible(yaxis_visible)
+             self.patch.set_visible(patch_visible)
++            # Restore tick and label visibility for shared y-axis
++            for tick in self.yaxis.get_major_ticks():
++                tick.set_visible(ytick_visible)
++            self.yaxis.get_label().set_visible(ylabel_visible)
+ 
+         self.stale = True
+ 

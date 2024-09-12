@@ -1,0 +1,64 @@
+{
+    "django__django-15252": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "test_migrate_test_setting_false_ensure_schema (backends.base.test_creation.TestDbCreationTests)",
+                    "The django_migrations table is not created if there are no migrations"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "test_mark_expected_failures_and_skips (backends.base.test_creation.TestMarkTests)",
+                    "test_custom_test_name (backends.base.test_creation.TestDbSignatureTests)",
+                    "test_custom_test_name_with_test_prefix (backends.base.test_creation.TestDbSignatureTests)",
+                    "test_default_name (backends.base.test_creation.TestDbSignatureTests)",
+                    "If the current state satisfies the given target, do nothing.",
+                    "Minimize unnecessary rollbacks in connected apps.",
+                    "Minimize rollbacks when target has multiple in-app children.",
+                    "mark_expected_failures_and_skips() isn't called unless",
+                    "test_migrate_test_setting_false (backends.base.test_creation.TestDbCreationTests)",
+                    "test_migrate_test_setting_true (backends.base.test_creation.TestDbCreationTests)",
+                    "test_circular_reference (backends.base.test_creation.TestDeserializeDbFromString)",
+                    "test_circular_reference_with_natural_key (backends.base.test_creation.TestDeserializeDbFromString)",
+                    "test_self_reference (backends.base.test_creation.TestDeserializeDbFromString)",
+                    "test_serialize_db_to_string_base_manager (backends.base.test_creation.TestDeserializeDbFromString)",
+                    "test_alter_id_type_with_fk (migrations.test_executor.ExecutorTests)",
+                    "Applying all replaced migrations marks replacement as applied (#24628).",
+                    "An atomic operation is properly rolled back inside a non-atomic",
+                    "Regression test for #22325 - references to a custom user model defined in the",
+                    "executor.detect_soft_applied() detects ManyToManyField tables from an",
+                    "Re-planning a full migration of a fully-migrated set doesn't",
+                    "test_migrate_backward_to_squashed_migration (migrations.test_executor.ExecutorTests)",
+                    "A new squash migration will be marked as applied even if all its",
+                    "test_migrate_marks_replacement_unapplied (migrations.test_executor.ExecutorTests)",
+                    "Migrations are applied and recorded atomically.",
+                    "Migrations are not recorded if deferred SQL application fails.",
+                    "Although the MigrationExecutor interfaces allows for mixed migration",
+                    "Applying a non-atomic migration works as expected.",
+                    "#24129 - Tests callback process",
+                    "Tests running a simple set of migrations.",
+                    "Tests running a squashed migration from zero (should ignore what it replaces)",
+                    "Tests detection of initial migrations already having been applied.",
+                    "#26647 - Unrelated applied migrations should be part of the final",
+                    "#24123 - All models of apps being unapplied which are",
+                    "#24123 - All models of apps already applied which are"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

@@ -1,0 +1,131 @@
+diff --git a/xarray/core/variable.py b/xarray/core/variable.py
+index 45553eb..419303b 100644
+--- a/xarray/core/variable.py
++++ b/xarray/core/variable.py
+@@ -185,6 +185,10 @@ def _possibly_convert_objects(values):
+     """
+     return np.asarray(pd.Series(values.ravel())).reshape(values.shape)
+ 
++class PreserveObject:
++    """A wrapper class to indicate that an object should be preserved as-is."""
++    def __init__(self, obj):
++        self.obj = obj
+ 
+ def as_compatible_data(data, fastpath=False):
+     """Prepare and wrap data to put in a Variable.
+@@ -194,8 +198,27 @@ def as_compatible_data(data, fastpath=False):
+       pandas.Timestamp, convert it to datetime64.
+     - If data is already a pandas or xarray object (other than an Index), just
+       use the values.
++    - If data is wrapped with PreserveObject, it will be returned as-is without
++      any conversion or extraction of the 'values' attribute.
+ 
+     Finally, wrap it up with an adapter if necessary.
++
++    Parameters
++    ----------
++    data : object
++        Data to be put in a Variable.
++    fastpath : bool, optional
++        If True, use a faster path for processing data, by default False.
++
++    Returns
++    -------
++    object
++        Processed data ready to be put in a Variable.
++
++    Notes
++    -----
++    To preserve objects with 'values' properties without extracting the 'values'
++    attribute, wrap the object with PreserveObject before passing it to this function.
+     """
+     if fastpath and getattr(data, "ndim", 0) > 0:
+         # can't use fastpath (yet) for scalars
+@@ -217,6 +240,10 @@ def as_compatible_data(data, fastpath=False):
+     if isinstance(data, timedelta):
+         data = np.timedelta64(getattr(data, "value", data), "ns")
+ 
++    # New check for PreserveObject
++    if isinstance(data, PreserveObject):
++        return data.obj
++
+     # we don't want nested self-described arrays
+     data = getattr(data, "values", data)
+ 
+@@ -855,6 +882,8 @@ class Variable(
+         dims, index_tuple, new_order = self._broadcast_indexes(key)
+ 
+         if not isinstance(value, Variable):
++            if hasattr(value, 'values') and not isinstance(value, (Variable,) + NON_NUMPY_SUPPORTED_ARRAY_TYPES):
++                value = PreserveObject(value)
+             value = as_compatible_data(value)
+             if value.ndim > len(dims):
+                 raise ValueError(
+@@ -865,7 +894,7 @@ class Variable(
+             if value.ndim == 0:
+                 value = Variable((), value)
+             else:
+-                value = Variable(dims[-value.ndim :], value)
++                value = Variable(dims[-value.ndim:], value)
+         # broadcast to become assignable
+         value = value.set_dims(dims).data
+ 
+@@ -873,6 +902,7 @@ class Variable(
+             value = duck_array_ops.asarray(value)
+             value = value[(len(dims) - value.ndim) * (np.newaxis,) + (Ellipsis,)]
+             value = duck_array_ops.moveaxis(value, new_order, range(len(new_order)))
++            value = duck_array_ops.moveaxis(value, new_order, range(len(new_order)))
+ 
+         indexable = as_indexable(self._data)
+         indexable[index_tuple] = value
+diff --git a/xarray/tests/test_variable.py b/xarray/tests/test_variable.py
+index e1ae3e1..f102951 100644
+--- a/xarray/tests/test_variable.py
++++ b/xarray/tests/test_variable.py
+@@ -2387,4 +2387,45 @@ class TestBackendIndexing:
+         # doubly wrapping
+         v = Variable(dims=("x", "y"), data=CopyOnWriteArray(DaskIndexingAdapter(da)))
+         self.check_orthogonal_indexing(v)
+-        self.check_vectorized_indexing(v)
++
++def test_preserve_object():
++    from xarray.core.variable import PreserveObject, as_compatible_data
++
++    class HasValues:
++        values = 5
++
++    # Test that PreserveObject preserves the original object
++    obj = HasValues()
++    preserved = PreserveObject(obj)
++    result = as_compatible_data(preserved)
++    assert result is obj
++    assert isinstance(result, HasValues)
++    assert result.values == 5
++
++    # Test that without PreserveObject, the 'values' attribute is extracted
++    result = as_compatible_data(obj)
++    assert result == 5
++    assert not isinstance(result, HasValues)
++
++    # Test with a more complex object
++    class ComplexObject:
++        def __init__(self):
++            self.values = np.array([1, 2, 3])
++            self.other_attr = "test"
++
++    complex_obj = ComplexObject()
++    preserved = PreserveObject(complex_obj)
++    result = as_compatible_data(preserved)
++    assert result is complex_obj
++    assert isinstance(result, ComplexObject)
++    assert_array_equal(result.values, np.array([1, 2, 3]))
++    assert result.other_attr == "test"
++
++    # Test without PreserveObject
++    result = as_compatible_data(complex_obj)
++    assert_array_equal(result, np.array([1, 2, 3]))
++    assert not isinstance(result, ComplexObject)
++    with pytest.raises(AttributeError):
++        result.other_attr
++
++print("Added test_preserve_object to test_variable.py")

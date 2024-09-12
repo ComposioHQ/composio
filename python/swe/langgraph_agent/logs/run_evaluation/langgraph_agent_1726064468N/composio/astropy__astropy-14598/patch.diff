@@ -1,0 +1,21 @@
+diff --git a/astropy/io/fits/card.py b/astropy/io/fits/card.py
+index 1b3285d..d3914dd 100644
+--- a/astropy/io/fits/card.py
++++ b/astropy/io/fits/card.py
+@@ -1271,11 +1271,13 @@ def _format_value(value):
+     # a null string
+     if isinstance(value, str):
+         if value == "":
+-            return "''"
++            return "''".rjust(20)
+         else:
+             exp_val_str = value.replace("'", "''")
+-            val_str = f"'{exp_val_str:8}'"
+-            return f"{val_str:20}"
++            val_str = f"'{exp_val_str}'"
++            if len(val_str) > 20:
++                val_str = val_str[:19] + "'"  # Ensure closing quote is preserved
++            return val_str.rjust(20)
+ 
+     # must be before int checking since bool is also int
+     elif isinstance(value, (bool, np.bool_)):

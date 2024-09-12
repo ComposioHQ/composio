@@ -1,0 +1,31 @@
+diff --git a/django/contrib/admin/options.py b/django/contrib/admin/options.py
+index 880a2cc1..1f588247 100644
+--- a/django/contrib/admin/options.py
++++ b/django/contrib/admin/options.py
+@@ -2047,6 +2047,7 @@ class InlineModelAdmin(BaseModelAdmin):
+         base_model_form = defaults['form']
+         can_change = self.has_change_permission(request, obj) if request else True
+         can_add = self.has_add_permission(request, obj) if request else True
++        can_view_only = self.has_view_permission(request, obj) and not can_change
+ 
+         class DeleteProtectedModelForm(base_model_form):
+ 
+@@ -2089,6 +2090,8 @@ class InlineModelAdmin(BaseModelAdmin):
+ 
+             def has_changed(self):
+                 # Protect against unauthorized edits.
++                if can_view_only:
++                    return False
+                 if not can_change and not self.instance._state.adding:
+                     return False
+                 if not can_add and self.instance._state.adding:
+@@ -2097,6 +2100,9 @@ class InlineModelAdmin(BaseModelAdmin):
+ 
+         defaults['form'] = DeleteProtectedModelForm
+ 
++        defaults['can_delete'] = can_delete and not can_view_only
++        defaults['can_order'] = not can_view_only
++
+         if defaults['fields'] is None and not modelform_defines_fields(defaults['form']):
+             defaults['fields'] = forms.ALL_FIELDS
+ 

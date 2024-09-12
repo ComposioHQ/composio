@@ -1,0 +1,456 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/forms/fields.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit db1fc5cd3c5d36cdb5d0fe4404efd6623dd3e8fb
+Author: Jacob Rief <jacob.rief@uibk.ac.at>
+Date:   Wed Aug 4 15:17:44 2021 +0200
+
+    Fixed #32855 -- Corrected BoundWidget.id_for_label() with custom auto_id.
+
+diff --git a/django/forms/boundfield.py b/django/forms/boundfield.py
+index 2ff8b0ee26..a061f15f87 100644
+--- a/django/forms/boundfield.py
++++ b/django/forms/boundfield.py
+@@ -277,7 +277,7 @@ class BoundWidget:
+ 
+     @property
+     def id_for_label(self):
+-        return 'id_%s_%s' % (self.data['name'], self.data['index'])
++        return self.data['attrs'].get('id')
+ 
+     @property
+     def choice_label(self):
+diff --git a/tests/forms_tests/tests/test_forms.py b/tests/forms_tests/tests/test_forms.py
+index f3ee64ceda..0fe0749294 100644
+--- a/tests/forms_tests/tests/test_forms.py
++++ b/tests/forms_tests/tests/test_forms.py
+@@ -720,7 +720,7 @@ Java</label></li>
+         fields = list(BeatleForm(auto_id=False)['name'])
+         self.assertEqual(len(fields), 4)
+ 
+-        self.assertEqual(fields[0].id_for_label, 'id_name_0')
++        self.assertEqual(fields[0].id_for_label, None)
+         self.assertEqual(fields[0].choice_label, 'John')
+         self.assertHTMLEqual(fields[0].tag(), '<option value="john">John</option>')
+         self.assertHTMLEqual(str(fields[0]), '<option value="john">John</option>')
+@@ -3202,6 +3202,22 @@ Good luck picking a username that doesn&#x27;t already exist.</p>
+         self.assertEqual(form['field'].id_for_label, 'myCustomID')
+         self.assertEqual(form['field_none'].id_for_label, 'id_field_none')
+ 
++    def test_boundfield_subwidget_id_for_label(self):
++        """
++        If auto_id is provided when initializing the form, the generated ID in
++        subwidgets must reflect that prefix.
++        """
++        class SomeForm(Form):
++            field = MultipleChoiceField(
++                choices=[('a', 'A'), ('b', 'B')],
++                widget=CheckboxSelectMultiple,
++            )
++
++        form = SomeForm(auto_id='prefix_%s')
++        subwidgets = form['field'].subwidgets
++        self.assertEqual(subwidgets[0].id_for_label, 'prefix_field_0')
++        self.assertEqual(subwidgets[1].id_for_label, 'prefix_field_1')
++
+     def test_boundfield_widget_type(self):
+         class SomeForm(Form):
+             first_name = CharField()
++ git diff db1fc5cd3c5d36cdb5d0fe4404efd6623dd3e8fb
+diff --git a/django/forms/fields.py b/django/forms/fields.py
+index 65d6a9ec82..0b71c66739 100644
+--- a/django/forms/fields.py
++++ b/django/forms/fields.py
+@@ -965,7 +965,7 @@ class ComboField(Field):
+ 
+ class MultiValueField(Field):
+     """
+-    Aggregate the logic of multiple Fields.
++    Aggregate the logic of multiple fields.
+ 
+     Its clean() method takes a "decompressed" list of values, which are then
+     cleaned into a single value according to self.fields. Each value in
+@@ -979,12 +979,17 @@ class MultiValueField(Field):
+     "compressed" version of those values -- a single value.
+ 
+     You'll probably want to use this with MultiWidget.
++
++    When require_all_fields is set to False, individual field validation is
++    respected even if not all fields are filled. This means that if a field
++    is marked as required, it will raise a ValidationError if it's empty,
++    regardless of the value of require_all_fields.
+     """
++
+     default_error_messages = {
+         'invalid': _('Enter a list of values.'),
+         'incomplete': _('Enter a complete value.'),
+     }
+-
+     def __init__(self, fields, *, require_all_fields=True, **kwargs):
+         self.require_all_fields = require_all_fields
+         super().__init__(**kwargs)
+@@ -1036,24 +1041,16 @@ class MultiValueField(Field):
+                 field_value = None
+             if field_value in self.empty_values:
+                 if self.require_all_fields:
+-                    # Raise a 'required' error if the MultiValueField is
+-                    # required and any field is empty.
+                     if self.required:
+                         raise ValidationError(self.error_messages['required'], code='required')
+                 elif field.required:
+-                    # Otherwise, add an 'incomplete' error to the list of
+-                    # collected errors and skip field cleaning, if a required
+-                    # field is empty.
+-                    if field.error_messages['incomplete'] not in errors:
+-                        errors.append(field.error_messages['incomplete'])
+-                    continue
+-            try:
+-                clean_data.append(field.clean(field_value))
+-            except ValidationError as e:
+-                # Collect all validation errors in a single list, which we'll
+-                # raise at the end of clean(), rather than raising a single
+-                # exception for the first error we encounter. Skip duplicates.
+-                errors.extend(m for m in e.error_list if m not in errors)
++                    # Raise a 'required' error if the field is required
++                    raise ValidationError(field.error_messages['required'], code='required')
++            if field_value not in self.empty_values or field.required:
++                try:
++                    clean_data.append(field.clean(field_value))
++                except ValidationError as e:
++                    errors.extend(m for m in e.error_list if m not in errors)
+         if errors:
+             raise ValidationError(errors)
+ 
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.3.2 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210804131800) (3.8.1)
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210804131800) (2024.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210804131800) (0.5.1)
+Requirement already satisfied: typing-extensions>=4 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from asgiref>=3.3.2->Django==4.0.dev20210804131800) (4.12.2)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-4.0.dev20210804131800-0.editable-py3-none-any.whl size=26581 sha256=08271528c7bbb3f364f8a3a58558c32d226afdb1bab94f29b19f15213db93dac
+  Stored in directory: /tmp/pip-ephem-wheel-cache-5wk5q3dp/wheels/b2/50/f1/218f2e9962a80d01a4b1297698978f9fb3b60056aa24343f24
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 4.0.dev20210804131800
+    Uninstalling Django-4.0.dev20210804131800:
+      Successfully uninstalled Django-4.0.dev20210804131800
+Successfully installed Django-4.0.dev20210804131800
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout db1fc5cd3c5d36cdb5d0fe4404efd6623dd3e8fb tests/forms_tests/field_tests/test_multivaluefield.py
+Updated 0 paths from b735936f17
++ git apply -v -
+Checking patch tests/forms_tests/field_tests/test_multivaluefield.py...
+Applied patch tests/forms_tests/field_tests/test_multivaluefield.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 forms_tests.field_tests.test_multivaluefield
+test_bad_choice (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest) ... ok
+test_clean (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest) ... ok
+test_clean_disabled_multivalue (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest) ... ok
+test_disabled_has_changed (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest) ... ok
+test_form_as_table (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest) ... ok
+test_form_as_table_data (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest) ... ok
+test_form_cleaned_data (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest) ... ok
+test_has_changed_first_widget (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest)
+Test when the first widget's data has changed. ... ok
+test_has_changed_last_widget (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest)
+Test when the last widget's data has changed. This ensures that it is ... ok
+test_has_changed_no_initial (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest) ... ok
+test_has_changed_same (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest) ... ok
+test_no_value (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest)
+If insufficient data is provided, None is substituted. ... ok
+test_render_required_attributes (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest) ... FAIL
+
+======================================================================
+FAIL: test_render_required_attributes (forms_tests.field_tests.test_multivaluefield.MultiValueFieldTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/tests/forms_tests/field_tests/test_multivaluefield.py", line 194, in test_render_required_attributes
+    self.assertInHTML('<input type="text" name="f_1" id="id_f_1">', form.as_p())
+  File "/testbed/django/test/testcases.py", line 834, in assertInHTML
+    self.assertTrue(real_count != 0, msg_prefix + "Couldn't find '%s' in response" % needle)
+AssertionError: False is not true : Couldn't find '<input id="id_f_1" name="f_1" type="text">' in response
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.008s
+
+FAILED (failures=1)
+Testing against Django installed in '/testbed/django'
+Importing application forms_tests
+Found 13 test(s).
+Skipping setup of unused database(s): default, other.
+System check identified no issues (0 silenced).
++ git checkout db1fc5cd3c5d36cdb5d0fe4404efd6623dd3e8fb tests/forms_tests/field_tests/test_multivaluefield.py
+Updated 1 path from b735936f17

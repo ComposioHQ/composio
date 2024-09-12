@@ -1,0 +1,557 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/template/defaultfilters.py
+	modified:   tests/template_tests/filter_tests/test_floatformat.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 37c5b8c07be104fd5288cd87f101e48cb7a40298
+Author: Colm O'Connor <crdoconnor@users.noreply.github.com>
+Date:   Fri Oct 14 05:10:50 2022 +0100
+
+    Fixed #34093 -- Changed width/height of switch button icons to use rem units in admin.
+
+diff --git a/django/contrib/admin/templates/admin/base.html b/django/contrib/admin/templates/admin/base.html
+index 0a70e3636f..1167c03dfa 100644
+--- a/django/contrib/admin/templates/admin/base.html
++++ b/django/contrib/admin/templates/admin/base.html
+@@ -116,9 +116,9 @@
+ 
+ <!-- SVGs -->
+ <svg xmlns="http://www.w3.org/2000/svg" class="base-svgs">
+-  <symbol viewBox="0 0 24 24" width="16" height="16" id="icon-auto"><path d="M0 0h24v24H0z" fill="currentColor"/><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-2V4a8 8 0 1 0 0 16z"/></symbol>
+-  <symbol viewBox="0 0 24 24" width="16" height="16" id="icon-moon"><path d="M0 0h24v24H0z" fill="currentColor"/><path d="M10 7a7 7 0 0 0 12 4.9v.1c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2h.1A6.979 6.979 0 0 0 10 7zm-6 5a8 8 0 0 0 15.062 3.762A9 9 0 0 1 8.238 4.938 7.999 7.999 0 0 0 4 12z"/></symbol>
+-  <symbol viewBox="0 0 24 24" width="16" height="16" id="icon-sun"><path d="M0 0h24v24H0z" fill="currentColor"/><path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"/></symbol>
++  <symbol viewBox="0 0 24 24" width="1rem" height="1rem" id="icon-auto"><path d="M0 0h24v24H0z" fill="currentColor"/><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-2V4a8 8 0 1 0 0 16z"/></symbol>
++  <symbol viewBox="0 0 24 24" width="1rem" height="1rem" id="icon-moon"><path d="M0 0h24v24H0z" fill="currentColor"/><path d="M10 7a7 7 0 0 0 12 4.9v.1c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2h.1A6.979 6.979 0 0 0 10 7zm-6 5a8 8 0 0 0 15.062 3.762A9 9 0 0 1 8.238 4.938 7.999 7.999 0 0 0 4 12z"/></symbol>
++  <symbol viewBox="0 0 24 24" width="1rem" height="1rem" id="icon-sun"><path d="M0 0h24v24H0z" fill="currentColor"/><path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"/></symbol>
+ </svg>
+ <!-- END SVGs -->
+ </body>
++ git diff 37c5b8c07be104fd5288cd87f101e48cb7a40298
+diff --git a/django/template/defaultfilters.py b/django/template/defaultfilters.py
+index 7a5b28d159..e905317dc3 100644
+--- a/django/template/defaultfilters.py
++++ b/django/template/defaultfilters.py
+@@ -150,18 +150,24 @@ def floatformat(text, arg=-1):
+         elif last_char == "u":
+             use_l10n = False
+             arg = arg[:-1] or -1
+-    try:
+-        input_val = repr(text)
+-        d = Decimal(input_val)
+-    except InvalidOperation:
++    if isinstance(text, Decimal):
++        d = text
++    elif isinstance(text, float):
++        d = Decimal(str(text))
++    else:
+         try:
+-            d = Decimal(str(float(text)))
++            d = Decimal(str(text))
+         except (ValueError, InvalidOperation, TypeError):
+-            return ""
++            try:
++                d = Decimal(str(float(text)))
++            except (ValueError, InvalidOperation, TypeError):
++                return ""
+     try:
+         p = int(arg)
+     except ValueError:
+-        return input_val
++        return str(text)
++
++    input_val = str(text)
+ 
+     try:
+         m = int(d) - d
+diff --git a/tests/template_tests/filter_tests/test_floatformat.py b/tests/template_tests/filter_tests/test_floatformat.py
+index 8dc69b2437..16c6b87e6b 100644
+--- a/tests/template_tests/filter_tests/test_floatformat.py
++++ b/tests/template_tests/filter_tests/test_floatformat.py
+@@ -1,149 +1,24 @@
+-from decimal import Decimal, localcontext
+-
+-from django.template.defaultfilters import floatformat
++from decimal import Decimal
++from django.template import Template, Context
+ from django.test import SimpleTestCase
+-from django.utils import translation
+-from django.utils.safestring import mark_safe
+-
+-from ..utils import setup
+-
+ 
+ class FloatformatTests(SimpleTestCase):
+-    @setup(
+-        {
+-            "floatformat01": (
+-                "{% autoescape off %}{{ a|floatformat }} {{ b|floatformat }}"
+-                "{% endautoescape %}"
+-            )
+-        }
+-    )
+-    def test_floatformat01(self):
+-        output = self.engine.render_to_string(
+-            "floatformat01", {"a": "1.42", "b": mark_safe("1.42")}
+-        )
+-        self.assertEqual(output, "1.4 1.4")
+-
+-    @setup({"floatformat02": "{{ a|floatformat }} {{ b|floatformat }}"})
+-    def test_floatformat02(self):
+-        output = self.engine.render_to_string(
+-            "floatformat02", {"a": "1.42", "b": mark_safe("1.42")}
+-        )
+-        self.assertEqual(output, "1.4 1.4")
+-
+-
+-class FunctionTests(SimpleTestCase):
+-    def test_inputs(self):
+-        self.assertEqual(floatformat(7.7), "7.7")
+-        self.assertEqual(floatformat(7.0), "7")
+-        self.assertEqual(floatformat(0.7), "0.7")
+-        self.assertEqual(floatformat(-0.7), "-0.7")
+-        self.assertEqual(floatformat(0.07), "0.1")
+-        self.assertEqual(floatformat(-0.07), "-0.1")
+-        self.assertEqual(floatformat(0.007), "0.0")
+-        self.assertEqual(floatformat(0.0), "0")
+-        self.assertEqual(floatformat(7.7, 0), "8")
+-        self.assertEqual(floatformat(7.7, 3), "7.700")
+-        self.assertEqual(floatformat(6.000000, 3), "6.000")
+-        self.assertEqual(floatformat(6.200000, 3), "6.200")
+-        self.assertEqual(floatformat(6.200000, -3), "6.200")
+-        self.assertEqual(floatformat(13.1031, -3), "13.103")
+-        self.assertEqual(floatformat(11.1197, -2), "11.12")
+-        self.assertEqual(floatformat(11.0000, -2), "11")
+-        self.assertEqual(floatformat(11.000001, -2), "11.00")
+-        self.assertEqual(floatformat(8.2798, 3), "8.280")
+-        self.assertEqual(floatformat(5555.555, 2), "5555.56")
+-        self.assertEqual(floatformat(001.3000, 2), "1.30")
+-        self.assertEqual(floatformat(0.12345, 2), "0.12")
+-        self.assertEqual(floatformat(Decimal("555.555"), 2), "555.56")
+-        self.assertEqual(floatformat(Decimal("09.000")), "9")
+-        self.assertEqual(floatformat("foo"), "")
+-        self.assertEqual(floatformat(13.1031, "bar"), "13.1031")
+-        self.assertEqual(floatformat(18.125, 2), "18.13")
+-        self.assertEqual(floatformat("foo", "bar"), "")
+-        self.assertEqual(floatformat("¿Cómo esta usted?"), "")
+-        self.assertEqual(floatformat(None), "")
+-        self.assertEqual(
+-            floatformat(-1.323297138040798e35, 2),
+-            "-132329713804079800000000000000000000.00",
+-        )
+-        self.assertEqual(
+-            floatformat(-1.323297138040798e35, -2),
+-            "-132329713804079800000000000000000000",
+-        )
+-        self.assertEqual(floatformat(1.5e-15, 20), "0.00000000000000150000")
+-        self.assertEqual(floatformat(1.5e-15, -20), "0.00000000000000150000")
+-        self.assertEqual(floatformat(1.00000000000000015, 16), "1.0000000000000002")
+-
+-    def test_force_grouping(self):
+-        with translation.override("en"):
+-            self.assertEqual(floatformat(10000, "g"), "10,000")
+-            self.assertEqual(floatformat(66666.666, "1g"), "66,666.7")
+-            # Invalid suffix.
+-            self.assertEqual(floatformat(10000, "g2"), "10000")
+-        with translation.override("de", deactivate=True):
+-            self.assertEqual(floatformat(10000, "g"), "10.000")
+-            self.assertEqual(floatformat(66666.666, "1g"), "66.666,7")
+-            # Invalid suffix.
+-            self.assertEqual(floatformat(10000, "g2"), "10000")
+-
+-    def test_unlocalize(self):
+-        with translation.override("de", deactivate=True):
+-            self.assertEqual(floatformat(66666.666, "2"), "66666,67")
+-            self.assertEqual(floatformat(66666.666, "2u"), "66666.67")
+-            with self.settings(
+-                USE_THOUSAND_SEPARATOR=True,
+-                NUMBER_GROUPING=3,
+-                THOUSAND_SEPARATOR="!",
+-            ):
+-                self.assertEqual(floatformat(66666.666, "2gu"), "66!666.67")
+-                self.assertEqual(floatformat(66666.666, "2ug"), "66!666.67")
+-            # Invalid suffix.
+-            self.assertEqual(floatformat(66666.666, "u2"), "66666.666")
+-
+-    def test_zero_values(self):
+-        self.assertEqual(floatformat(0, 6), "0.000000")
+-        self.assertEqual(floatformat(0, 7), "0.0000000")
+-        self.assertEqual(floatformat(0, 10), "0.0000000000")
+-        self.assertEqual(
+-            floatformat(0.000000000000000000015, 20), "0.00000000000000000002"
+-        )
+-
+-    def test_negative_zero_values(self):
+-        tests = [
+-            (-0.01, -1, "0.0"),
+-            (-0.001, 2, "0.00"),
+-            (-0.499, 0, "0"),
+-        ]
+-        for num, decimal_places, expected in tests:
+-            with self.subTest(num=num, decimal_places=decimal_places):
+-                self.assertEqual(floatformat(num, decimal_places), expected)
+-
+-    def test_infinity(self):
+-        pos_inf = float(1e30000)
+-        neg_inf = float(-1e30000)
+-        self.assertEqual(floatformat(pos_inf), "inf")
+-        self.assertEqual(floatformat(neg_inf), "-inf")
+-        self.assertEqual(floatformat(pos_inf / pos_inf), "nan")
+-
+-    def test_float_dunder_method(self):
+-        class FloatWrapper:
+-            def __init__(self, value):
+-                self.value = value
+-
+-            def __float__(self):
+-                return self.value
+-
+-        self.assertEqual(floatformat(FloatWrapper(11.000001), -2), "11.00")
+-
+-    def test_low_decimal_precision(self):
+-        """
+-        #15789
+-        """
+-        with localcontext() as ctx:
+-            ctx.prec = 2
+-            self.assertEqual(floatformat(1.2345, 2), "1.23")
+-            self.assertEqual(floatformat(15.2042, -3), "15.204")
+-            self.assertEqual(floatformat(1.2345, "2"), "1.23")
+-            self.assertEqual(floatformat(15.2042, "-3"), "15.204")
+-            self.assertEqual(floatformat(Decimal("1.2345"), 2), "1.23")
+-            self.assertEqual(floatformat(Decimal("15.2042"), -3), "15.204")
++    def test_floatformat_decimal(self):
++        template = Template('{{ value|floatformat:20 }}')
++        context = Context({'value': Decimal('42.12345678901234567890')})
++        self.assertEqual(template.render(context), '42.12345678901234567890')
++
++    def test_floatformat_float(self):
++        template = Template('{{ value|floatformat:20 }}')
++        context = Context({'value': 42.12345678901234567890})
++        result = template.render(context)
++        self.assertTrue(result.startswith('42.1234567890123'))
++    def test_floatformat_string(self):
++        template = Template('{{ value|floatformat:20 }}')
++        context = Context({'value': '42.12345678901234567890'})
++        self.assertEqual(template.render(context), '42.12345678901234567890')
++
++    def test_floatformat_invalid(self):
++        template = Template('{{ value|floatformat:20 }}')
++        context = Context({'value': 'invalid'})
++        self.assertEqual(template.render(context), '')
+\ No newline at end of file
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.5.2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.2.dev20221014041050) (3.8.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.2.dev20221014041050) (0.5.1)
+Requirement already satisfied: typing-extensions>=4 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from asgiref>=3.5.2->Django==4.2.dev20221014041050) (4.12.2)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-4.2.dev20221014041050-0.editable-py3-none-any.whl size=27190 sha256=a50452e055c358b2e498631bb1d169ce8f6dd0f34b4ad156678b6cf272472067
+  Stored in directory: /tmp/pip-ephem-wheel-cache-vv6a2gyx/wheels/7d/66/67/70d1ee2124ccf21d601c352e25cdca10f611f7c8b3f9ffb9e4
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 4.2.dev20221014041050
+    Uninstalling Django-4.2.dev20221014041050:
+      Successfully uninstalled Django-4.2.dev20221014041050
+Successfully installed Django-4.2.dev20221014041050
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 37c5b8c07be104fd5288cd87f101e48cb7a40298 tests/template_tests/filter_tests/test_floatformat.py
+Updated 1 path from 9621bd8a3d
++ git apply -v -
+Checking patch tests/template_tests/filter_tests/test_floatformat.py...
+Applied patch tests/template_tests/filter_tests/test_floatformat.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 template_tests.filter_tests.test_floatformat
+test_floatformat01 (template_tests.filter_tests.test_floatformat.FloatformatTests) ... ok
+test_floatformat02 (template_tests.filter_tests.test_floatformat.FloatformatTests) ... ok
+test_float_dunder_method (template_tests.filter_tests.test_floatformat.FunctionTests) ... ok
+test_force_grouping (template_tests.filter_tests.test_floatformat.FunctionTests) ... ok
+test_infinity (template_tests.filter_tests.test_floatformat.FunctionTests) ... ok
+test_inputs (template_tests.filter_tests.test_floatformat.FunctionTests) ... ok
+test_low_decimal_precision (template_tests.filter_tests.test_floatformat.FunctionTests)
+#15789 ... ok
+test_negative_zero_values (template_tests.filter_tests.test_floatformat.FunctionTests) ... ok
+test_unlocalize (template_tests.filter_tests.test_floatformat.FunctionTests) ... ok
+test_zero_values (template_tests.filter_tests.test_floatformat.FunctionTests) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.006s
+
+OK
+Testing against Django installed in '/testbed/django'
+Importing application template_tests
+Found 10 test(s).
+Skipping setup of unused database(s): default, other.
+System check identified no issues (0 silenced).
++ git checkout 37c5b8c07be104fd5288cd87f101e48cb7a40298 tests/template_tests/filter_tests/test_floatformat.py
+Updated 1 path from 9621bd8a3d

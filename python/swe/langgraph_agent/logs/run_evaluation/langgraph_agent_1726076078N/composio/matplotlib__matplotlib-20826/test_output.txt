@@ -1,0 +1,1397 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   lib/matplotlib/axes/_base.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit a0d2e399729d36499a1924e5ca5bc067c8396810
+Merge: 7d0a166245 eacda997a8
+Author: Elliott Sales de Andrade <quantum.analyst@gmail.com>
+Date:   Tue Aug 10 22:10:00 2021 -0400
+
+    Merge pull request #20229 from jklymak/enh-cl-drawtime
+    
+    ENH: Only do constrained layout at draw...
+
++ git diff a0d2e399729d36499a1924e5ca5bc067c8396810
+diff --git a/lib/matplotlib/axes/_base.py b/lib/matplotlib/axes/_base.py
+index 802fd3c997..8a8e61538a 100644
+--- a/lib/matplotlib/axes/_base.py
++++ b/lib/matplotlib/axes/_base.py
+@@ -1192,6 +1192,12 @@ class _AxesBase(martist.Artist):
+         xaxis_visible = self.xaxis.get_visible()
+         yaxis_visible = self.yaxis.get_visible()
+ 
++        # Store the tick and label visibility states
++        xtick_visible = self.xaxis.get_major_ticks()[0].get_visible() if self.xaxis.get_major_ticks() else True
++        ytick_visible = self.yaxis.get_major_ticks()[0].get_visible() if self.yaxis.get_major_ticks() else True
++        xlabel_visible = self.xaxis.get_label().get_visible()
++        ylabel_visible = self.yaxis.get_label().get_visible()
++
+         self.xaxis.clear()
+         self.yaxis.clear()
+ 
+@@ -1278,8 +1284,6 @@ class _AxesBase(martist.Artist):
+             horizontalalignment='right',
+             )
+         title_offset_points = mpl.rcParams['axes.titlepad']
+-        # refactor this out so it can be called in ax.set_title if
+-        # pad argument used...
+         self._set_title_offset_trans(title_offset_points)
+ 
+         for _title in (self.title, self._left_title, self._right_title):
+@@ -1305,9 +1309,17 @@ class _AxesBase(martist.Artist):
+         if self._sharex is not None:
+             self.xaxis.set_visible(xaxis_visible)
+             self.patch.set_visible(patch_visible)
++            # Restore tick and label visibility for shared x-axis
++            for tick in self.xaxis.get_major_ticks():
++                tick.set_visible(xtick_visible)
++            self.xaxis.get_label().set_visible(xlabel_visible)
+         if self._sharey is not None:
+             self.yaxis.set_visible(yaxis_visible)
+             self.patch.set_visible(patch_visible)
++            # Restore tick and label visibility for shared y-axis
++            for tick in self.yaxis.get_major_ticks():
++                tick.set_visible(ytick_visible)
++            self.yaxis.get_label().set_visible(ylabel_visible)
+ 
+         self.stale = True
+ 
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: cycler>=0.10 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from matplotlib==3.5.0.dev1652+ga0d2e39972.d20240912) (0.12.1)
+Requirement already satisfied: fonttools>=4.22.0 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from matplotlib==3.5.0.dev1652+ga0d2e39972.d20240912) (4.53.1)
+Requirement already satisfied: kiwisolver>=1.0.1 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from matplotlib==3.5.0.dev1652+ga0d2e39972.d20240912) (1.4.7)
+Requirement already satisfied: numpy>=1.17 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from matplotlib==3.5.0.dev1652+ga0d2e39972.d20240912) (1.24.4)
+Requirement already satisfied: packaging>=20.0 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from matplotlib==3.5.0.dev1652+ga0d2e39972.d20240912) (24.1)
+Requirement already satisfied: pillow>=6.2.0 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from matplotlib==3.5.0.dev1652+ga0d2e39972.d20240912) (10.4.0)
+Requirement already satisfied: pyparsing>=2.2.1 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from matplotlib==3.5.0.dev1652+ga0d2e39972.d20240912) (2.4.7)
+Requirement already satisfied: python-dateutil>=2.7 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from matplotlib==3.5.0.dev1652+ga0d2e39972.d20240912) (2.9.0.post0)
+Requirement already satisfied: setuptools_scm>=4 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from matplotlib==3.5.0.dev1652+ga0d2e39972.d20240912) (8.1.0)
+Requirement already satisfied: six>=1.5 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from python-dateutil>=2.7->matplotlib==3.5.0.dev1652+ga0d2e39972.d20240912) (1.16.0)
+Requirement already satisfied: setuptools in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from setuptools_scm>=4->matplotlib==3.5.0.dev1652+ga0d2e39972.d20240912) (72.1.0)
+Requirement already satisfied: typing-extensions in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from setuptools_scm>=4->matplotlib==3.5.0.dev1652+ga0d2e39972.d20240912) (4.12.2)
+Requirement already satisfied: tomli>=1 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from setuptools_scm>=4->matplotlib==3.5.0.dev1652+ga0d2e39972.d20240912) (2.0.1)
+Installing collected packages: matplotlib
+  Attempting uninstall: matplotlib
+    Found existing installation: matplotlib 3.5.0.dev1652+ga0d2e39972
+    Uninstalling matplotlib-3.5.0.dev1652+ga0d2e39972:
+      Successfully uninstalled matplotlib-3.5.0.dev1652+ga0d2e39972
+  DEPRECATION: Legacy editable install of matplotlib==3.5.0.dev1652+ga0d2e39972.d20240912 from file:///testbed (setup.py develop) is deprecated. pip 25.0 will enforce this behaviour change. A possible replacement is to add a pyproject.toml or enable --use-pep517, and use setuptools >= 64. If the resulting installation is not behaving as expected, try using --config-settings editable_mode=compat. Please consult the setuptools documentation for more information. Discussion can be found at https://github.com/pypa/pip/issues/11457
+  Running setup.py develop for matplotlib
+Successfully installed matplotlib
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout a0d2e399729d36499a1924e5ca5bc067c8396810 lib/matplotlib/tests/test_axes.py
+Updated 0 paths from 9884729686
++ git apply -v -
+Checking patch lib/matplotlib/tests/test_axes.py...
+Applied patch lib/matplotlib/tests/test_axes.py cleanly.
++ pytest -rA lib/matplotlib/tests/test_axes.py
+============================= test session starts ==============================
+platform linux -- Python 3.8.19, pytest-8.3.2, pluggy-1.5.0
+rootdir: /testbed
+configfile: pytest.ini
+plugins: cov-5.0.0, xdist-3.6.1, timeout-2.3.1, rerunfailures-14.0
+collected 745 items
+
+lib/matplotlib/tests/test_axes.py ...s..s..s......s....s.........s...... [  5%]
+s........s......s..s........s.....sFFs...s........s..s..s.....s......... [ 14%]
+..s...s...s..s..s..s..s..s..s...............F...sF..s................... [ 24%]
+...........sF.s.Fs.Fs...s............................................... [ 34%]
+...................s....s..s...........................s.....s.......... [ 43%]
+......................s...s...s......s.....s..s....s........s..s..s..... [ 53%]
+......s.....s..s..s....s..s....................s..s..s..s..s.........s.. [ 63%]
+s....................................................................... [ 72%]
+.........................................................s.............. [ 82%]
+.......F.F.............................................................. [ 92%]
+...........................................F...............              [100%]
+
+=================================== FAILURES ===================================
+____________________________ test_imshow_clip[png] _____________________________
+
+args = ()
+kwds = {'extension': 'png', 'request': <FixtureRequest for <Function test_imshow_clip[png]>>}
+
+    @wraps(func)
+    def inner(*args, **kwds):
+        with self._recreate_cm():
+>           return func(*args, **kwds)
+E           matplotlib.testing.exceptions.ImageComparisonFailure: images not close (RMS 0.009):
+E           	result_images/test_axes/imshow_clip.png
+E           	result_images/test_axes/imshow_clip-expected.png
+E           	result_images/test_axes/imshow_clip-failed-diff.png
+
+/opt/miniconda3/envs/testbed/lib/python3.8/contextlib.py:75: ImageComparisonFailure
+____________________________ test_imshow_clip[pdf] _____________________________
+
+args = ()
+kwds = {'extension': 'pdf', 'request': <FixtureRequest for <Function test_imshow_clip[pdf]>>}
+
+    @wraps(func)
+    def inner(*args, **kwds):
+        with self._recreate_cm():
+>           return func(*args, **kwds)
+E           matplotlib.testing.exceptions.ImageComparisonFailure: images not close (RMS 1.238):
+E           	result_images/test_axes/imshow_clip_pdf.png
+E           	result_images/test_axes/imshow_clip-expected_pdf.png
+E           	result_images/test_axes/imshow_clip_pdf-failed-diff.png
+
+/opt/miniconda3/envs/testbed/lib/python3.8/contextlib.py:75: ImageComparisonFailure
+_______________________________ test_bar_pandas ________________________________
+
+pd = <module 'pandas' from '/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/pandas/__init__.py'>
+
+    def test_bar_pandas(pd):
+        # Smoke test for pandas
+        df = pd.DataFrame(
+            {'year': [2018, 2018, 2018],
+             'month': [1, 1, 1],
+             'day': [1, 2, 3],
+             'value': [1, 2, 3]})
+        df['date'] = pd.to_datetime(df[['year', 'month', 'day']])
+    
+        monthly = df[['date', 'value']].groupby(['date']).sum()
+        dates = monthly.index
+        forecast = monthly['value']
+        baseline = monthly['value']
+    
+        fig, ax = plt.subplots()
+        ax.bar(dates, forecast, width=10, align='center')
+>       ax.plot(dates, baseline, color='orange', lw=4)
+
+lib/matplotlib/tests/test_axes.py:1695: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+lib/matplotlib/axes/_axes.py:1626: in plot
+    lines = [*self._get_lines(*args, data=data, **kwargs)]
+lib/matplotlib/axes/_base.py:312: in __call__
+    yield from self._plot_args(this, kwargs)
+lib/matplotlib/axes/_base.py:487: in _plot_args
+    x = _check_1d(xy[0])
+lib/matplotlib/cbook/__init__.py:1289: in _check_1d
+    ndim = x[:, None].ndim
+/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/pandas/core/indexes/base.py:5199: in __getitem__
+    disallow_ndim_indexing(result)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+result = <DatetimeArray>
+[
+['2018-01-01 00:00:00'],
+['2018-01-02 00:00:00'],
+['2018-01-03 00:00:00']
+]
+Shape: (3, 1), dtype: datetime64[ns]
+
+    def disallow_ndim_indexing(result) -> None:
+        """
+        Helper function to disallow multi-dimensional indexing on 1D Series/Index.
+    
+        GH#27125 indexer like idx[:, None] expands dim, but we cannot do that
+        and keep an index, so we used to return ndarray, which was deprecated
+        in GH#30588.
+        """
+        if np.ndim(result) > 1:
+>           raise ValueError(
+                "Multi-dimensional indexing (e.g. `obj[:, None]`) is no longer "
+                "supported. Convert to a numpy array before indexing instead."
+            )
+E           ValueError: Multi-dimensional indexing (e.g. `obj[:, None]`) is no longer supported. Convert to a numpy array before indexing instead.
+
+/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/pandas/core/indexers/utils.py:343: ValueError
+___________________________ test_pandas_minimal_plot ___________________________
+
+pd = <module 'pandas' from '/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/pandas/__init__.py'>
+
+    def test_pandas_minimal_plot(pd):
+        # smoke test that series and index objcets do not warn
+        x = pd.Series([1, 2], dtype="float64")
+>       plt.plot(x, x)
+
+lib/matplotlib/tests/test_axes.py:1724: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+lib/matplotlib/pyplot.py:2985: in plot
+    return gca().plot(
+lib/matplotlib/axes/_axes.py:1626: in plot
+    lines = [*self._get_lines(*args, data=data, **kwargs)]
+lib/matplotlib/axes/_base.py:312: in __call__
+    yield from self._plot_args(this, kwargs)
+lib/matplotlib/axes/_base.py:487: in _plot_args
+    x = _check_1d(xy[0])
+lib/matplotlib/cbook/__init__.py:1289: in _check_1d
+    ndim = x[:, None].ndim
+/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/pandas/core/series.py:1033: in __getitem__
+    return self._get_with(key)
+/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/pandas/core/series.py:1048: in _get_with
+    return self._get_values_tuple(key)
+/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/pandas/core/series.py:1082: in _get_values_tuple
+    disallow_ndim_indexing(result)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+result = array([[1.],
+       [2.]])
+
+    def disallow_ndim_indexing(result) -> None:
+        """
+        Helper function to disallow multi-dimensional indexing on 1D Series/Index.
+    
+        GH#27125 indexer like idx[:, None] expands dim, but we cannot do that
+        and keep an index, so we used to return ndarray, which was deprecated
+        in GH#30588.
+        """
+        if np.ndim(result) > 1:
+>           raise ValueError(
+                "Multi-dimensional indexing (e.g. `obj[:, None]`) is no longer "
+                "supported. Convert to a numpy array before indexing instead."
+            )
+E           ValueError: Multi-dimensional indexing (e.g. `obj[:, None]`) is no longer supported. Convert to a numpy array before indexing instead.
+
+/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/pandas/core/indexers/utils.py:343: ValueError
+__________________________ test_contour_colorbar[png] __________________________
+
+args = ()
+kwds = {'extension': 'png', 'request': <FixtureRequest for <Function test_contour_colorbar[png]>>}
+
+    @wraps(func)
+    def inner(*args, **kwds):
+        with self._recreate_cm():
+>           return func(*args, **kwds)
+E           matplotlib.testing.exceptions.ImageComparisonFailure: images not close (RMS 0.012):
+E           	result_images/test_axes/contour_colorbar.png
+E           	result_images/test_axes/contour_colorbar-expected.png
+E           	result_images/test_axes/contour_colorbar-failed-diff.png
+
+/opt/miniconda3/envs/testbed/lib/python3.8/contextlib.py:75: ImageComparisonFailure
+_______________________________ test_hist2d[pdf] _______________________________
+
+args = ()
+kwds = {'extension': 'pdf', 'request': <FixtureRequest for <Function test_hist2d[pdf]>>}
+
+    @wraps(func)
+    def inner(*args, **kwds):
+        with self._recreate_cm():
+>           return func(*args, **kwds)
+E           matplotlib.testing.exceptions.ImageComparisonFailure: images not close (RMS 142.950):
+E           	result_images/test_axes/hist2d_pdf.png
+E           	result_images/test_axes/hist2d-expected_pdf.png
+E           	result_images/test_axes/hist2d_pdf-failed-diff.png
+
+/opt/miniconda3/envs/testbed/lib/python3.8/contextlib.py:75: ImageComparisonFailure
+__________________________ test_hist2d_transpose[pdf] __________________________
+
+args = ()
+kwds = {'extension': 'pdf', 'request': <FixtureRequest for <Function test_hist2d_transpose[pdf]>>}
+
+    @wraps(func)
+    def inner(*args, **kwds):
+        with self._recreate_cm():
+>           return func(*args, **kwds)
+E           matplotlib.testing.exceptions.ImageComparisonFailure: images not close (RMS 155.125):
+E           	result_images/test_axes/hist2d_transpose_pdf.png
+E           	result_images/test_axes/hist2d_transpose-expected_pdf.png
+E           	result_images/test_axes/hist2d_transpose_pdf-failed-diff.png
+
+/opt/miniconda3/envs/testbed/lib/python3.8/contextlib.py:75: ImageComparisonFailure
+__________________________ test_pandas_indexing_dates __________________________
+
+pd = <module 'pandas' from '/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/pandas/__init__.py'>
+
+    def test_pandas_indexing_dates(pd):
+        dates = np.arange('2005-02', '2005-03', dtype='datetime64[D]')
+        values = np.sin(np.array(range(len(dates))))
+        df = pd.DataFrame({'dates': dates, 'values': values})
+    
+        ax = plt.gca()
+    
+        without_zero_index = df[np.array(df.index) % 2 == 1].copy()
+>       ax.plot('dates', 'values', data=without_zero_index)
+
+lib/matplotlib/tests/test_axes.py:5741: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+lib/matplotlib/axes/_axes.py:1626: in plot
+    lines = [*self._get_lines(*args, data=data, **kwargs)]
+lib/matplotlib/axes/_base.py:312: in __call__
+    yield from self._plot_args(this, kwargs)
+lib/matplotlib/axes/_base.py:487: in _plot_args
+    x = _check_1d(xy[0])
+lib/matplotlib/cbook/__init__.py:1289: in _check_1d
+    ndim = x[:, None].ndim
+/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/pandas/core/series.py:1033: in __getitem__
+    return self._get_with(key)
+/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/pandas/core/series.py:1048: in _get_with
+    return self._get_values_tuple(key)
+/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/pandas/core/series.py:1082: in _get_values_tuple
+    disallow_ndim_indexing(result)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+result = array([['2005-02-02T00:00:00'],
+       ['2005-02-04T00:00:00'],
+       ['2005-02-06T00:00:00'],
+       ['2005-02-08T00...       ['2005-02-24T00:00:00'],
+       ['2005-02-26T00:00:00'],
+       ['2005-02-28T00:00:00']], dtype='datetime64[s]')
+
+    def disallow_ndim_indexing(result) -> None:
+        """
+        Helper function to disallow multi-dimensional indexing on 1D Series/Index.
+    
+        GH#27125 indexer like idx[:, None] expands dim, but we cannot do that
+        and keep an index, so we used to return ndarray, which was deprecated
+        in GH#30588.
+        """
+        if np.ndim(result) > 1:
+>           raise ValueError(
+                "Multi-dimensional indexing (e.g. `obj[:, None]`) is no longer "
+                "supported. Convert to a numpy array before indexing instead."
+            )
+E           ValueError: Multi-dimensional indexing (e.g. `obj[:, None]`) is no longer supported. Convert to a numpy array before indexing instead.
+
+/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/pandas/core/indexers/utils.py:343: ValueError
+___________________________ test_pandas_index_shape ____________________________
+
+pd = <module 'pandas' from '/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/pandas/__init__.py'>
+
+    def test_pandas_index_shape(pd):
+        df = pd.DataFrame({"XX": [4, 5, 6], "YY": [7, 1, 2]})
+        fig, ax = plt.subplots()
+>       ax.plot(df.index, df['YY'])
+
+lib/matplotlib/tests/test_axes.py:5755: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+lib/matplotlib/axes/_axes.py:1626: in plot
+    lines = [*self._get_lines(*args, data=data, **kwargs)]
+lib/matplotlib/axes/_base.py:312: in __call__
+    yield from self._plot_args(this, kwargs)
+lib/matplotlib/axes/_base.py:487: in _plot_args
+    x = _check_1d(xy[0])
+lib/matplotlib/cbook/__init__.py:1289: in _check_1d
+    ndim = x[:, None].ndim
+/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/pandas/core/indexes/range.py:924: in __getitem__
+    return super().__getitem__(key)
+/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/pandas/core/indexes/base.py:5199: in __getitem__
+    disallow_ndim_indexing(result)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+result = array([[0],
+       [1],
+       [2]])
+
+    def disallow_ndim_indexing(result) -> None:
+        """
+        Helper function to disallow multi-dimensional indexing on 1D Series/Index.
+    
+        GH#27125 indexer like idx[:, None] expands dim, but we cannot do that
+        and keep an index, so we used to return ndarray, which was deprecated
+        in GH#30588.
+        """
+        if np.ndim(result) > 1:
+>           raise ValueError(
+                "Multi-dimensional indexing (e.g. `obj[:, None]`) is no longer "
+                "supported. Convert to a numpy array before indexing instead."
+            )
+E           ValueError: Multi-dimensional indexing (e.g. `obj[:, None]`) is no longer supported. Convert to a numpy array before indexing instead.
+
+/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/pandas/core/indexers/utils.py:343: ValueError
+_________________________ test_shared_axes_clear[png] __________________________
+
+ext = 'png'
+request = <FixtureRequest for <Function test_shared_axes_clear[png]>>, args = ()
+kwargs = {}, file_name = 'test_shared_axes_clear[png]'
+fig_test = <Figure size 640x480 with 4 Axes>
+fig_ref = <Figure size 640x480 with 4 Axes>, n_figs = 2
+test_image_path = PosixPath('/testbed/result_images/test_axes/test_shared_axes_clear[png].png')
+ref_image_path = PosixPath('/testbed/result_images/test_axes/test_shared_axes_clear[png]-expected.png')
+
+    @pytest.mark.parametrize("ext", extensions)
+    def wrapper(*args, ext, request, **kwargs):
+        if 'ext' in old_sig.parameters:
+            kwargs['ext'] = ext
+        if 'request' in old_sig.parameters:
+            kwargs['request'] = request
+    
+        file_name = "".join(c for c in request.node.name
+                            if c in ALLOWED_CHARS)
+        try:
+            fig_test = plt.figure("test")
+            fig_ref = plt.figure("reference")
+            # Keep track of number of open figures, to make sure test
+            # doesn't create any new ones
+            n_figs = len(plt.get_fignums())
+            func(*args, fig_test=fig_test, fig_ref=fig_ref, **kwargs)
+            if len(plt.get_fignums()) > n_figs:
+                raise RuntimeError('Number of open figures changed during '
+                                   'test. Make sure you are plotting to '
+                                   'fig_test or fig_ref, or if this is '
+                                   'deliberate explicitly close the '
+                                   'new figure(s) inside the test.')
+            test_image_path = result_dir / (file_name + "." + ext)
+            ref_image_path = result_dir / (file_name + "-expected." + ext)
+            fig_test.savefig(test_image_path)
+            fig_ref.savefig(ref_image_path)
+>           _raise_on_image_difference(
+                ref_image_path, test_image_path, tol=tol
+            )
+E           matplotlib.testing.exceptions.ImageComparisonFailure: images not close (RMS 12.919):
+E           	result_images/test_axes/test_shared_axes_clear[png].png
+E           	result_images/test_axes/test_shared_axes_clear[png]-expected.png
+E           	result_images/test_axes/test_shared_axes_clear[png]-failed-diff.png
+
+lib/matplotlib/testing/decorators.py:444: ImageComparisonFailure
+==================================== PASSES ====================================
+___________________ TestScatter.test_scatter_c[c_case9-None] ___________________
+------------------------------ Captured log call -------------------------------
+WARNING  matplotlib.axes._axes:_axes.py:4209 *c* argument looks like a single numeric RGB or RGBA sequence, which should be avoided as value-mapping will have precedence in case its length matches with *x* & *y*.  Please use the *color* keyword-argument or provide a 2D array with a single row if you intend to specify the same RGB or RGBA value for all points.
+__________________________ test_color_length_mismatch __________________________
+------------------------------ Captured log call -------------------------------
+WARNING  matplotlib.axes._axes:_axes.py:4209 *c* argument looks like a single numeric RGB or RGBA sequence, which should be avoided as value-mapping will have precedence in case its length matches with *x* & *y*.  Please use the *color* keyword-argument or provide a 2D array with a single row if you intend to specify the same RGB or RGBA value for all points.
+____________________________ test_2dcolor_plot[pdf] ____________________________
+------------------------------ Captured log call -------------------------------
+WARNING  matplotlib.axes._axes:_axes.py:4209 *c* argument looks like a single numeric RGB or RGBA sequence, which should be avoided as value-mapping will have precedence in case its length matches with *x* & *y*.  Please use the *color* keyword-argument or provide a 2D array with a single row if you intend to specify the same RGB or RGBA value for all points.
+=========================== short test summary info ============================
+PASSED lib/matplotlib/tests/test_axes.py::test_get_labels
+PASSED lib/matplotlib/tests/test_axes.py::test_label_loc_vertical[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_label_loc_vertical[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_label_loc_horizontal[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_label_loc_horizontal[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_label_loc_rc[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_label_loc_rc[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_acorr[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_spy[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_spy_invalid_kwargs
+PASSED lib/matplotlib/tests/test_axes.py::test_matshow[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_formatter_ticker[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_formatter_ticker[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_funcformatter_auto_formatter
+PASSED lib/matplotlib/tests/test_axes.py::test_strmethodformatter_auto_formatter
+PASSED lib/matplotlib/tests/test_axes.py::test_twin_axis_locators_formatters[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_twin_axis_locators_formatters[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_twinx_cla
+PASSED lib/matplotlib/tests/test_axes.py::test_twin_logscale[png-x]
+PASSED lib/matplotlib/tests/test_axes.py::test_twin_logscale[png-y]
+PASSED lib/matplotlib/tests/test_axes.py::test_twinx_axis_scales[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_twin_inherit_autoscale_setting
+PASSED lib/matplotlib/tests/test_axes.py::test_inverted_cla
+PASSED lib/matplotlib/tests/test_axes.py::test_minorticks_on_rcParams_both[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_autoscale_tiny_range[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_autoscale_tiny_range[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_autoscale_tight
+PASSED lib/matplotlib/tests/test_axes.py::test_autoscale_log_shared
+PASSED lib/matplotlib/tests/test_axes.py::test_use_sticky_edges
+PASSED lib/matplotlib/tests/test_axes.py::test_sticky_shared_axes[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_basic_annotate[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_basic_annotate[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_arrow_simple[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_arrow_empty
+PASSED lib/matplotlib/tests/test_axes.py::test_arrow_in_view
+PASSED lib/matplotlib/tests/test_axes.py::test_annotate_default_arrow
+PASSED lib/matplotlib/tests/test_axes.py::test_fill_units[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_plot_format_kwarg_redundant
+PASSED lib/matplotlib/tests/test_axes.py::test_single_point[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_single_point[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_single_date[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_shaped_data[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_structured_data
+PASSED lib/matplotlib/tests/test_axes.py::test_aitoff_proj[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_axvspan_epoch[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_axvspan_epoch[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_axhspan_epoch[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_axhspan_epoch[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_hexbin_extent[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hexbin_empty[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hexbin_pickable
+PASSED lib/matplotlib/tests/test_axes.py::test_hexbin_log[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hexbin_log_clim
+PASSED lib/matplotlib/tests/test_axes.py::test_inverted_limits
+PASSED lib/matplotlib/tests/test_axes.py::test_nonfinite_limits[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_nonfinite_limits[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_limits_empty_data[png-scatter]
+PASSED lib/matplotlib/tests/test_axes.py::test_limits_empty_data[png-plot]
+PASSED lib/matplotlib/tests/test_axes.py::test_limits_empty_data[png-fill_between]
+PASSED lib/matplotlib/tests/test_axes.py::test_imshow[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_imshow[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_imshow_norm_vminvmax
+PASSED lib/matplotlib/tests/test_axes.py::test_polycollection_joinstyle[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_polycollection_joinstyle[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_fill_between_input[2d_x_input]
+PASSED lib/matplotlib/tests/test_axes.py::test_fill_between_input[2d_y1_input]
+PASSED lib/matplotlib/tests/test_axes.py::test_fill_between_input[2d_y2_input]
+PASSED lib/matplotlib/tests/test_axes.py::test_fill_betweenx_input[2d_y_input]
+PASSED lib/matplotlib/tests/test_axes.py::test_fill_betweenx_input[2d_x1_input]
+PASSED lib/matplotlib/tests/test_axes.py::test_fill_betweenx_input[2d_x2_input]
+PASSED lib/matplotlib/tests/test_axes.py::test_fill_between_interpolate[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_fill_between_interpolate[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_fill_between_interpolate_decreasing[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_fill_between_interpolate_decreasing[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_fill_between_interpolate_nan[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_fill_between_interpolate_nan[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_symlog[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_symlog2[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolorargs_5205
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolormesh[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolormesh[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolormesh_alpha[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolormesh_alpha[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolormesh_datetime_axis[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolor_datetime_axis[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolorargs
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolornearest[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolornearestunits[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolorflaterror
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolorauto[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_canonical[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_canonical[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_arc_angles[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_arc_ellipse[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_arc_ellipse[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_marker_as_markerstyle
+PASSED lib/matplotlib/tests/test_axes.py::test_markevery[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_markevery[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_markevery_line[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_markevery_line[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_markevery_linear_scales[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_markevery_linear_scales[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_markevery_linear_scales_zoomed[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_markevery_linear_scales_zoomed[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_markevery_log_scales[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_markevery_log_scales[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_markevery_polar[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_markevery_polar[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_marker_edges[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_marker_edges[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_tick_label_single[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_nan_bar_values
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_ticklabel_fail
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_tick_label_multiple[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_tick_label_multiple_old_alignment[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_decimal_center[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_barh_decimal_center[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_decimal_width[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_barh_decimal_height[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_color_none_alpha
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_edgecolor_none_alpha
+PASSED lib/matplotlib/tests/test_axes.py::test_barh_tick_label[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_timedelta
+PASSED lib/matplotlib/tests/test_axes.py::test_boxplot_dates_pandas
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolor_regression
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_pandas_indexed
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_hatches[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_hatches[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_log[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_log[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_log_2[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_log_barstacked
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_bar_empty[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_step_empty[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_step_filled[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_density[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_unequal_bins_density
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_datetime_datasets
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_datetime_datasets_bins[date2num]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_datetime_datasets_bins[datetime.datetime]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_datetime_datasets_bins[np.datetime64]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_with_empty_input[data0-1]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_with_empty_input[data1-1]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_with_empty_input[data2-2]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_zorder[bar-1]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_zorder[step-2]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_zorder[stepfilled-1]
+PASSED lib/matplotlib/tests/test_axes.py::test_stairs[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_stairs_fill[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_stairs_update[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_stairs_baseline_0[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_stairs_empty
+PASSED lib/matplotlib/tests/test_axes.py::test_stairs_invalid_nan
+PASSED lib/matplotlib/tests/test_axes.py::test_stairs_invalid_mismatch
+PASSED lib/matplotlib/tests/test_axes.py::test_stairs_invalid_update
+PASSED lib/matplotlib/tests/test_axes.py::test_stairs_invalid_update2
+PASSED lib/matplotlib/tests/test_axes.py::test_stairs_options[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_stairs_datetime[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_contour_hatching[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_contour_hatching[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_contour_colorbar[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist2d[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist2d_transpose[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist2d_density
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_plot[png]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_plot[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_marker[png]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_2D[png]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_decimal[png]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_color
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_unfilled
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_unfillable
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_size_arg_size
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_edgecolor_RGB
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_invalid_color[png]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_no_invalid_color[png]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_norm_vminvmax
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_single_point[png]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_different_shapes[png]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[0.5-None]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case1-conversion]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[red-None]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[none-None]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[None-None]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case5-None]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[jaune-conversion]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case7-conversion]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case8-conversion]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case9-None]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case10-None]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case11-shape]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case12-None]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case13-None]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case14-conversion]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case15-None]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case16-shape]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case17-None]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case18-shape]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case19-None]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case20-shape]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case21-None]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case22-shape]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case23-None]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case24-shape]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case25-None]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case26-shape]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case27-conversion]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case28-conversion]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_c[c_case29-conversion]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_single_color_c[png]
+PASSED lib/matplotlib/tests/test_axes.py::TestScatter::test_scatter_linewidths
+PASSED lib/matplotlib/tests/test_axes.py::test_parse_scatter_color_args[params0-expected_result0]
+PASSED lib/matplotlib/tests/test_axes.py::test_parse_scatter_color_args[params1-expected_result1]
+PASSED lib/matplotlib/tests/test_axes.py::test_parse_scatter_color_args[params2-expected_result2]
+PASSED lib/matplotlib/tests/test_axes.py::test_parse_scatter_color_args[params3-expected_result3]
+PASSED lib/matplotlib/tests/test_axes.py::test_parse_scatter_color_args[params4-expected_result4]
+PASSED lib/matplotlib/tests/test_axes.py::test_parse_scatter_color_args_edgecolors[kwargs0-None]
+PASSED lib/matplotlib/tests/test_axes.py::test_parse_scatter_color_args_edgecolors[kwargs1-None]
+PASSED lib/matplotlib/tests/test_axes.py::test_parse_scatter_color_args_edgecolors[kwargs2-r]
+PASSED lib/matplotlib/tests/test_axes.py::test_parse_scatter_color_args_edgecolors[kwargs3-expected_edgecolors3]
+PASSED lib/matplotlib/tests/test_axes.py::test_parse_scatter_color_args_edgecolors[kwargs4-r]
+PASSED lib/matplotlib/tests/test_axes.py::test_parse_scatter_color_args_edgecolors[kwargs5-face]
+PASSED lib/matplotlib/tests/test_axes.py::test_parse_scatter_color_args_edgecolors[kwargs6-none]
+PASSED lib/matplotlib/tests/test_axes.py::test_parse_scatter_color_args_edgecolors[kwargs7-r]
+PASSED lib/matplotlib/tests/test_axes.py::test_parse_scatter_color_args_edgecolors[kwargs8-r]
+PASSED lib/matplotlib/tests/test_axes.py::test_parse_scatter_color_args_edgecolors[kwargs9-r]
+PASSED lib/matplotlib/tests/test_axes.py::test_parse_scatter_color_args_edgecolors[kwargs10-g]
+PASSED lib/matplotlib/tests/test_axes.py::test_parse_scatter_color_args_error
+PASSED lib/matplotlib/tests/test_axes.py::test_as_mpl_axes_api
+PASSED lib/matplotlib/tests/test_axes.py::test_pyplot_axes
+PASSED lib/matplotlib/tests/test_axes.py::test_log_scales[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_log_scales[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_log_scales_no_data
+PASSED lib/matplotlib/tests/test_axes.py::test_log_scales_invalid
+PASSED lib/matplotlib/tests/test_axes.py::test_stackplot[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_stackplot[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_stackplot_baseline[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_stackplot_baseline[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_baseline[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_rangewhis[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_percentilewhis[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_with_xlabels[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_horizontal[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_with_ylabels[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_patchartist[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_custompatchartist[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_customoutlier[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_showcustommean[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_custombox[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_custommedian[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_customcap[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_customwhisker[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_shownotches[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_nocaps[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_nobox[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_no_flier_stats[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_showmean[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_showmeanasline[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_scalarwidth[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_customwidths[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_custompositions[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_bad_widths
+PASSED lib/matplotlib/tests/test_axes.py::test_bxp_bad_positions
+PASSED lib/matplotlib/tests/test_axes.py::test_boxplot[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_boxplot[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_boxplot_sym2[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_boxplot_sym[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_boxplot_autorange_whiskers[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_boxplot_rc_parameters[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_boxplot_rc_parameters[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_boxplot_with_CIarray[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_boxplot_no_weird_whisker[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_boxplot_bad_medians
+PASSED lib/matplotlib/tests/test_axes.py::test_boxplot_bad_ci
+PASSED lib/matplotlib/tests/test_axes.py::test_boxplot_zorder
+PASSED lib/matplotlib/tests/test_axes.py::test_boxplot_marker_behavior
+PASSED lib/matplotlib/tests/test_axes.py::test_boxplot_mod_artist_after_plotting[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_vert_violinplot_baseline[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_vert_violinplot_showmeans[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_vert_violinplot_showextrema[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_vert_violinplot_showmedians[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_vert_violinplot_showall[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_vert_violinplot_custompoints_10[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_vert_violinplot_custompoints_200[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_horiz_violinplot_baseline[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_horiz_violinplot_showmedians[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_horiz_violinplot_showmeans[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_horiz_violinplot_showextrema[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_horiz_violinplot_showall[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_horiz_violinplot_custompoints_10[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_horiz_violinplot_custompoints_200[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_violinplot_bad_positions
+PASSED lib/matplotlib/tests/test_axes.py::test_violinplot_bad_widths
+PASSED lib/matplotlib/tests/test_axes.py::test_violinplot_bad_quantiles
+PASSED lib/matplotlib/tests/test_axes.py::test_violinplot_outofrange_quantiles
+PASSED lib/matplotlib/tests/test_axes.py::test_violinplot_single_list_quantiles[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_violinplot_pandas_series[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_manage_xticks
+PASSED lib/matplotlib/tests/test_axes.py::test_boxplot_not_single
+PASSED lib/matplotlib/tests/test_axes.py::test_tick_space_size_0
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_colorcycle
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_cycle_ecolor[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_cycle_ecolor[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_shape
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_limits[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_limits[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_errobar_nonefmt
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_line_specific_kwargs
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_with_prop_cycle[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_every_invalid
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_every[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_every[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_linewidth_type[elinewidth0]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_linewidth_type[elinewidth1]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_linewidth_type[1]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stacked_stepfilled[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stacked_stepfilled[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_offset[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_offset[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_step[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_step_horiz[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stacked_weighted[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stacked_weighted[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_stem[png-w/ line collection]
+PASSED lib/matplotlib/tests/test_axes.py::test_stem[png-w/o line collection]
+PASSED lib/matplotlib/tests/test_axes.py::test_stem_args
+PASSED lib/matplotlib/tests/test_axes.py::test_stem_dates
+PASSED lib/matplotlib/tests/test_axes.py::test_stem_orientation[png-w/ line collection]
+PASSED lib/matplotlib/tests/test_axes.py::test_stem_orientation[png-w/o line collection]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stacked_stepfilled_alpha[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stacked_stepfilled_alpha[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stacked_step[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stacked_step[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stacked_density[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stacked_density[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_step_bottom[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stepfilled_geometry
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_step_geometry
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stepfilled_bottom_geometry
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_step_bottom_geometry
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stacked_stepfilled_geometry
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stacked_step_geometry
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stacked_stepfilled_bottom_geometry
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stacked_step_bottom_geometry
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stacked_bar[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_stacked_bar[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_barstacked_bottom_unchanged
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_emptydata
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_labels
+PASSED lib/matplotlib/tests/test_axes.py::test_transparent_markers[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_transparent_markers[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_rgba_markers[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_rgba_markers[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_mollweide_grid[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_mollweide_grid[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_mollweide_forward_inverse_closure
+PASSED lib/matplotlib/tests/test_axes.py::test_mollweide_inverse_forward_closure
+PASSED lib/matplotlib/tests/test_axes.py::test_alpha[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_alpha[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_eventplot[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_eventplot[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_eventplot_defaults[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_eventplot_colors[colors0]
+PASSED lib/matplotlib/tests/test_axes.py::test_eventplot_colors[colors1]
+PASSED lib/matplotlib/tests/test_axes.py::test_eventplot_colors[colors2]
+PASSED lib/matplotlib/tests/test_axes.py::test_eventplot_problem_kwargs[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_empty_eventplot
+PASSED lib/matplotlib/tests/test_axes.py::test_eventplot_orientation[None-data0]
+PASSED lib/matplotlib/tests/test_axes.py::test_eventplot_orientation[None-data1]
+PASSED lib/matplotlib/tests/test_axes.py::test_eventplot_orientation[None-data2]
+PASSED lib/matplotlib/tests/test_axes.py::test_eventplot_orientation[vertical-data0]
+PASSED lib/matplotlib/tests/test_axes.py::test_eventplot_orientation[vertical-data1]
+PASSED lib/matplotlib/tests/test_axes.py::test_eventplot_orientation[vertical-data2]
+PASSED lib/matplotlib/tests/test_axes.py::test_eventplot_orientation[horizontal-data0]
+PASSED lib/matplotlib/tests/test_axes.py::test_eventplot_orientation[horizontal-data1]
+PASSED lib/matplotlib/tests/test_axes.py::test_eventplot_orientation[horizontal-data2]
+PASSED lib/matplotlib/tests/test_axes.py::test_marker_styles[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_markers_fillstyle_rcparams[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_vertex_markers[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_eb_line_zorder[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_eb_line_zorder[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_axline_loglog[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_axline_loglog[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_axline[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_axline[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_axline_transaxes[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_axline_transaxes[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_axline_transaxes_panzoom[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_axline_transaxes_panzoom[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_axline_args
+PASSED lib/matplotlib/tests/test_axes.py::test_vlines[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_vlines_default
+PASSED lib/matplotlib/tests/test_axes.py::test_hlines[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_hlines_default
+PASSED lib/matplotlib/tests/test_axes.py::test_lines_with_colors[png-data0]
+PASSED lib/matplotlib/tests/test_axes.py::test_lines_with_colors[png-data1]
+PASSED lib/matplotlib/tests/test_axes.py::test_step_linestyle[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_step_linestyle[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_mixed_collection[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_mixed_collection[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_subplot_key_hash
+PASSED lib/matplotlib/tests/test_axes.py::test_specgram[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_specgram_magnitude[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_specgram_angle[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_specgram_fs_none
+PASSED lib/matplotlib/tests/test_axes.py::test_specgram_origin_rcparam[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_specgram_origin_kwarg
+PASSED lib/matplotlib/tests/test_axes.py::test_psd_csd[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_spectrum[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_twin_spines[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_twin_spines_on_top[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_rcparam_grid_minor[both-True-True]
+PASSED lib/matplotlib/tests/test_axes.py::test_rcparam_grid_minor[major-True-False]
+PASSED lib/matplotlib/tests/test_axes.py::test_rcparam_grid_minor[minor-False-True]
+PASSED lib/matplotlib/tests/test_axes.py::test_grid
+PASSED lib/matplotlib/tests/test_axes.py::test_reset_grid
+PASSED lib/matplotlib/tests/test_axes.py::test_vline_limit
+PASSED lib/matplotlib/tests/test_axes.py::test_axline_minmax[axvline-axhline-args0]
+PASSED lib/matplotlib/tests/test_axes.py::test_axline_minmax[axvspan-axhspan-args1]
+PASSED lib/matplotlib/tests/test_axes.py::test_empty_shared_subplots
+PASSED lib/matplotlib/tests/test_axes.py::test_shared_with_aspect_1
+PASSED lib/matplotlib/tests/test_axes.py::test_shared_with_aspect_2
+PASSED lib/matplotlib/tests/test_axes.py::test_shared_with_aspect_3
+PASSED lib/matplotlib/tests/test_axes.py::test_twin_with_aspect[x]
+PASSED lib/matplotlib/tests/test_axes.py::test_twin_with_aspect[y]
+PASSED lib/matplotlib/tests/test_axes.py::test_relim_visible_only
+PASSED lib/matplotlib/tests/test_axes.py::test_text_labelsize
+PASSED lib/matplotlib/tests/test_axes.py::test_pie_default[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_pie_linewidth_0[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_pie_center_radius[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_pie_linewidth_2[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_pie_ccw_true[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_pie_frame_grid[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_pie_rotatelabels_true[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_pie_nolabel_but_legend[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_pie_textprops
+PASSED lib/matplotlib/tests/test_axes.py::test_pie_get_negative_values
+PASSED lib/matplotlib/tests/test_axes.py::test_normalize_kwarg_pie
+PASSED lib/matplotlib/tests/test_axes.py::test_set_get_ticklabels[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_set_ticks_with_labels[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_subsampled_ticklabels
+PASSED lib/matplotlib/tests/test_axes.py::test_mismatched_ticklabels
+PASSED lib/matplotlib/tests/test_axes.py::test_empty_ticks_fixed_loc
+PASSED lib/matplotlib/tests/test_axes.py::test_retain_tick_visibility[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_tick_label_update
+PASSED lib/matplotlib/tests/test_axes.py::test_o_marker_path_snap[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_margins
+PASSED lib/matplotlib/tests/test_axes.py::test_set_margin_updates_limits
+PASSED lib/matplotlib/tests/test_axes.py::test_length_one_hist
+PASSED lib/matplotlib/tests/test_axes.py::test_pathological_hexbin
+PASSED lib/matplotlib/tests/test_axes.py::test_color_None
+PASSED lib/matplotlib/tests/test_axes.py::test_color_alias
+PASSED lib/matplotlib/tests/test_axes.py::test_numerical_hist_label
+PASSED lib/matplotlib/tests/test_axes.py::test_unicode_hist_label
+PASSED lib/matplotlib/tests/test_axes.py::test_move_offsetlabel
+PASSED lib/matplotlib/tests/test_axes.py::test_rc_spines[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_rc_grid[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_rc_tick
+PASSED lib/matplotlib/tests/test_axes.py::test_rc_major_minor_tick
+PASSED lib/matplotlib/tests/test_axes.py::test_square_plot
+PASSED lib/matplotlib/tests/test_axes.py::test_bad_plot_args
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolorfast[data0-xy0-AxesImage]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolorfast[data0-xy1-AxesImage]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolorfast[data0-xy2-AxesImage]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolorfast[data0-xy3-PcolorImage]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolorfast[data0-xy4-QuadMesh]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolorfast[data1-xy0-AxesImage]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolorfast[data1-xy1-AxesImage]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolorfast[data1-xy2-AxesImage]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolorfast[data1-xy3-PcolorImage]
+PASSED lib/matplotlib/tests/test_axes.py::test_pcolorfast[data1-xy4-QuadMesh]
+PASSED lib/matplotlib/tests/test_axes.py::test_shared_scale
+PASSED lib/matplotlib/tests/test_axes.py::test_shared_bool
+PASSED lib/matplotlib/tests/test_axes.py::test_violin_point_mass
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs0]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs1]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs2]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs3]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs4]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs5]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs6]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs7]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs8]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs9]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs10]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs11]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs12]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs13]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs14]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs15]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs16]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs17]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs18]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs19]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs20]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs21]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs22]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs23]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs24]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs25]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs26]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs27]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs28]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs29]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs30]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs31]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs32]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs33]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs34]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs35]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs36]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs37]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs38]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs39]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs40]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs41]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs42]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs43]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs44]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs45]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs46]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs47]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs48]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs49]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs50]
+PASSED lib/matplotlib/tests/test_axes.py::test_errorbar_inputs_shotgun[kwargs51]
+PASSED lib/matplotlib/tests/test_axes.py::test_dash_offset[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_dash_offset[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_title_pad
+PASSED lib/matplotlib/tests/test_axes.py::test_title_location_roundtrip
+PASSED lib/matplotlib/tests/test_axes.py::test_loglog[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_loglog_nonpos[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_axes_margins
+PASSED lib/matplotlib/tests/test_axes.py::test_remove_shared_axes[gca-x]
+PASSED lib/matplotlib/tests/test_axes.py::test_remove_shared_axes[gca-y]
+PASSED lib/matplotlib/tests/test_axes.py::test_remove_shared_axes[subplots-x]
+PASSED lib/matplotlib/tests/test_axes.py::test_remove_shared_axes[subplots-y]
+PASSED lib/matplotlib/tests/test_axes.py::test_remove_shared_axes[subplots_shared-x]
+PASSED lib/matplotlib/tests/test_axes.py::test_remove_shared_axes[subplots_shared-y]
+PASSED lib/matplotlib/tests/test_axes.py::test_remove_shared_axes[add_axes-x]
+PASSED lib/matplotlib/tests/test_axes.py::test_remove_shared_axes[add_axes-y]
+PASSED lib/matplotlib/tests/test_axes.py::test_remove_shared_axes_relim
+PASSED lib/matplotlib/tests/test_axes.py::test_shared_axes_autoscale
+PASSED lib/matplotlib/tests/test_axes.py::test_adjust_numtick_aspect
+PASSED lib/matplotlib/tests/test_axes.py::test_auto_numticks[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_auto_numticks_log[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_broken_barh_empty
+PASSED lib/matplotlib/tests/test_axes.py::test_broken_barh_timedelta
+PASSED lib/matplotlib/tests/test_axes.py::test_pandas_pcolormesh
+PASSED lib/matplotlib/tests/test_axes.py::test_pandas_errorbar_indexing
+PASSED lib/matplotlib/tests/test_axes.py::test_pandas_indexing_hist
+PASSED lib/matplotlib/tests/test_axes.py::test_pandas_bar_align_center
+PASSED lib/matplotlib/tests/test_axes.py::test_tick_apply_tickdir_deprecation
+PASSED lib/matplotlib/tests/test_axes.py::test_axis_set_tick_params_labelsize_labelcolor
+PASSED lib/matplotlib/tests/test_axes.py::test_axes_tick_params_gridlines
+PASSED lib/matplotlib/tests/test_axes.py::test_axes_tick_params_ylabelside
+PASSED lib/matplotlib/tests/test_axes.py::test_axes_tick_params_xlabelside
+PASSED lib/matplotlib/tests/test_axes.py::test_none_kwargs
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_uint8
+PASSED lib/matplotlib/tests/test_axes.py::test_date_timezone_x[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_date_timezone_y[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_date_timezone_x_and_y[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_axisbelow[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_titletwiny
+PASSED lib/matplotlib/tests/test_axes.py::test_titlesetpos
+PASSED lib/matplotlib/tests/test_axes.py::test_title_xticks_top
+PASSED lib/matplotlib/tests/test_axes.py::test_title_xticks_top_both
+PASSED lib/matplotlib/tests/test_axes.py::test_title_no_move_off_page
+PASSED lib/matplotlib/tests/test_axes.py::test_offset_label_color
+PASSED lib/matplotlib/tests/test_axes.py::test_offset_text_visible
+PASSED lib/matplotlib/tests/test_axes.py::test_large_offset
+PASSED lib/matplotlib/tests/test_axes.py::test_barb_units
+PASSED lib/matplotlib/tests/test_axes.py::test_quiver_units
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_color_cycle
+PASSED lib/matplotlib/tests/test_axes.py::test_tick_param_label_rotation
+PASSED lib/matplotlib/tests/test_axes.py::test_fillbetween_cycle
+PASSED lib/matplotlib/tests/test_axes.py::test_log_margins
+PASSED lib/matplotlib/tests/test_axes.py::test_color_length_mismatch
+PASSED lib/matplotlib/tests/test_axes.py::test_eventplot_legend
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_broadcast_args
+PASSED lib/matplotlib/tests/test_axes.py::test_invalid_axis_limits
+PASSED lib/matplotlib/tests/test_axes.py::test_minorticks_on[symlog-symlog]
+PASSED lib/matplotlib/tests/test_axes.py::test_minorticks_on[symlog-log]
+PASSED lib/matplotlib/tests/test_axes.py::test_minorticks_on[log-symlog]
+PASSED lib/matplotlib/tests/test_axes.py::test_minorticks_on[log-log]
+PASSED lib/matplotlib/tests/test_axes.py::test_twinx_knows_limits
+PASSED lib/matplotlib/tests/test_axes.py::test_zero_linewidth
+PASSED lib/matplotlib/tests/test_axes.py::test_empty_errorbar_legend
+PASSED lib/matplotlib/tests/test_axes.py::test_plot_decimal[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_markerfacecolor_none_alpha[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_tick_padding_tightbbox
+PASSED lib/matplotlib/tests/test_axes.py::test_inset
+PASSED lib/matplotlib/tests/test_axes.py::test_zoom_inset
+PASSED lib/matplotlib/tests/test_axes.py::test_indicate_inset_inverted[False-False]
+PASSED lib/matplotlib/tests/test_axes.py::test_indicate_inset_inverted[False-True]
+PASSED lib/matplotlib/tests/test_axes.py::test_indicate_inset_inverted[True-False]
+PASSED lib/matplotlib/tests/test_axes.py::test_indicate_inset_inverted[True-True]
+PASSED lib/matplotlib/tests/test_axes.py::test_set_position
+PASSED lib/matplotlib/tests/test_axes.py::test_spines_properbbox_after_zoom
+PASSED lib/matplotlib/tests/test_axes.py::test_gettightbbox_ignore_nan
+PASSED lib/matplotlib/tests/test_axes.py::test_scatter_series_non_zero_index
+PASSED lib/matplotlib/tests/test_axes.py::test_scatter_empty_data
+PASSED lib/matplotlib/tests/test_axes.py::test_annotate_across_transforms[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_secondary_xy[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_secondary_fail
+PASSED lib/matplotlib/tests/test_axes.py::test_secondary_resize
+PASSED lib/matplotlib/tests/test_axes.py::test_secondary_minorloc
+PASSED lib/matplotlib/tests/test_axes.py::test_secondary_formatter
+PASSED lib/matplotlib/tests/test_axes.py::test_normal_axes
+PASSED lib/matplotlib/tests/test_axes.py::test_nodecorator
+PASSED lib/matplotlib/tests/test_axes.py::test_displaced_spine
+PASSED lib/matplotlib/tests/test_axes.py::test_tickdirs
+PASSED lib/matplotlib/tests/test_axes.py::test_minor_accountedfor
+PASSED lib/matplotlib/tests/test_axes.py::test_axis_bool_arguments[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_axis_extent_arg
+PASSED lib/matplotlib/tests/test_axes.py::test_datetime_masked
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_auto_bins
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_nan_data
+PASSED lib/matplotlib/tests/test_axes.py::test_hist_range_and_density
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_errbar_zorder
+PASSED lib/matplotlib/tests/test_axes.py::test_set_ticks_inverted
+PASSED lib/matplotlib/tests/test_axes.py::test_aspect_nonlinear_adjustable_box
+PASSED lib/matplotlib/tests/test_axes.py::test_aspect_nonlinear_adjustable_datalim
+PASSED lib/matplotlib/tests/test_axes.py::test_box_aspect
+PASSED lib/matplotlib/tests/test_axes.py::test_box_aspect_custom_position
+PASSED lib/matplotlib/tests/test_axes.py::test_bbox_aspect_axes_init
+PASSED lib/matplotlib/tests/test_axes.py::test_redraw_in_frame
+PASSED lib/matplotlib/tests/test_axes.py::test_invisible_axes
+PASSED lib/matplotlib/tests/test_axes.py::test_xtickcolor_is_not_markercolor
+PASSED lib/matplotlib/tests/test_axes.py::test_ytickcolor_is_not_markercolor
+PASSED lib/matplotlib/tests/test_axes.py::test_unautoscale[True-x]
+PASSED lib/matplotlib/tests/test_axes.py::test_unautoscale[True-y]
+PASSED lib/matplotlib/tests/test_axes.py::test_unautoscale[False-x]
+PASSED lib/matplotlib/tests/test_axes.py::test_unautoscale[False-y]
+PASSED lib/matplotlib/tests/test_axes.py::test_unautoscale[None-x]
+PASSED lib/matplotlib/tests/test_axes.py::test_unautoscale[None-y]
+PASSED lib/matplotlib/tests/test_axes.py::test_polar_interpolation_steps_variable_r[png]
+PASSED lib/matplotlib/tests/test_axes.py::test_autoscale_tiny_sticky
+PASSED lib/matplotlib/tests/test_axes.py::test_xtickcolor_is_not_xticklabelcolor
+PASSED lib/matplotlib/tests/test_axes.py::test_ytickcolor_is_not_yticklabelcolor
+PASSED lib/matplotlib/tests/test_axes.py::test_relative_ticklabel_sizes[xx-small]
+PASSED lib/matplotlib/tests/test_axes.py::test_relative_ticklabel_sizes[x-small]
+PASSED lib/matplotlib/tests/test_axes.py::test_relative_ticklabel_sizes[small]
+PASSED lib/matplotlib/tests/test_axes.py::test_relative_ticklabel_sizes[medium]
+PASSED lib/matplotlib/tests/test_axes.py::test_relative_ticklabel_sizes[large]
+PASSED lib/matplotlib/tests/test_axes.py::test_relative_ticklabel_sizes[x-large]
+PASSED lib/matplotlib/tests/test_axes.py::test_relative_ticklabel_sizes[xx-large]
+PASSED lib/matplotlib/tests/test_axes.py::test_relative_ticklabel_sizes[larger]
+PASSED lib/matplotlib/tests/test_axes.py::test_relative_ticklabel_sizes[smaller]
+PASSED lib/matplotlib/tests/test_axes.py::test_relative_ticklabel_sizes[8]
+PASSED lib/matplotlib/tests/test_axes.py::test_relative_ticklabel_sizes[10]
+PASSED lib/matplotlib/tests/test_axes.py::test_relative_ticklabel_sizes[12]
+PASSED lib/matplotlib/tests/test_axes.py::test_multiplot_autoscale
+PASSED lib/matplotlib/tests/test_axes.py::test_sharing_does_not_link_positions
+PASSED lib/matplotlib/tests/test_axes.py::test_2dcolor_plot[pdf]
+PASSED lib/matplotlib/tests/test_axes.py::test_shared_axes_retick
+PASSED lib/matplotlib/tests/test_axes.py::test_ylabel_ha_with_position[left]
+PASSED lib/matplotlib/tests/test_axes.py::test_ylabel_ha_with_position[center]
+PASSED lib/matplotlib/tests/test_axes.py::test_ylabel_ha_with_position[right]
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_label_location_vertical
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_label_location_horizontal
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_label_location_center
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_label_location_errorbars
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_label_fmt
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_label_labels
+PASSED lib/matplotlib/tests/test_axes.py::test_bar_label_nan_ydata
+PASSED lib/matplotlib/tests/test_axes.py::test_patch_bounds
+PASSED lib/matplotlib/tests/test_axes.py::test_warn_ignored_scatter_kwargs
+PASSED lib/matplotlib/tests/test_axes.py::test_artist_sublists
+PASSED lib/matplotlib/tests/test_axes.py::test_empty_line_plots
+SKIPPED [10] lib/matplotlib/testing/compare.py:274: Don't know how to convert .svg files to png
+SKIPPED [53] ../opt/miniconda3/envs/testbed/lib/python3.8/contextlib.py:75: Cannot compare svg files on this system
+FAILED lib/matplotlib/tests/test_axes.py::test_imshow_clip[png] - matplotlib....
+FAILED lib/matplotlib/tests/test_axes.py::test_imshow_clip[pdf] - matplotlib....
+FAILED lib/matplotlib/tests/test_axes.py::test_bar_pandas - ValueError: Multi...
+FAILED lib/matplotlib/tests/test_axes.py::test_pandas_minimal_plot - ValueErr...
+FAILED lib/matplotlib/tests/test_axes.py::test_contour_colorbar[png] - matplo...
+FAILED lib/matplotlib/tests/test_axes.py::test_hist2d[pdf] - matplotlib.testi...
+FAILED lib/matplotlib/tests/test_axes.py::test_hist2d_transpose[pdf] - matplo...
+FAILED lib/matplotlib/tests/test_axes.py::test_pandas_indexing_dates - ValueE...
+FAILED lib/matplotlib/tests/test_axes.py::test_pandas_index_shape - ValueErro...
+FAILED lib/matplotlib/tests/test_axes.py::test_shared_axes_clear[png] - matpl...
+================= 10 failed, 672 passed, 63 skipped in 37.48s ==================
++ git checkout a0d2e399729d36499a1924e5ca5bc067c8396810 lib/matplotlib/tests/test_axes.py
+Updated 1 path from 9884729686

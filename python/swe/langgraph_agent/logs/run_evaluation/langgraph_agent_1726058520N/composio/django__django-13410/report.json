@@ -1,0 +1,70 @@
+{
+    "django__django-13410": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": true,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "test_exclusive_lock (files.tests.FileTests)",
+                    "test_shared_lock (files.tests.FileTests)"
+                ],
+                "failure": []
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "test_open_resets_file_to_start_and_returns_context_manager (files.tests.InMemoryUploadedFileTests)",
+                    "test_content_file_custom_name (files.tests.ContentFileTestCase)",
+                    "test_content_file_default_name (files.tests.ContentFileTestCase)",
+                    "test_content_file_input_type (files.tests.ContentFileTestCase)",
+                    "test_open_resets_file_to_start_and_returns_context_manager (files.tests.ContentFileTestCase)",
+                    "ContentFile.size changes after a write().",
+                    "test_noname_file_default_name (files.tests.NoNameFileTestCase)",
+                    "test_noname_file_get_size (files.tests.NoNameFileTestCase)",
+                    "test_in_memory_spooled_temp (files.tests.SpooledTempTests)",
+                    "test_written_spooled_temp (files.tests.SpooledTempTests)",
+                    "The temporary file name has the same suffix as the original file.",
+                    "test_file_upload_temp_dir_pathlib (files.tests.TemporaryUploadedFileTests)",
+                    "test_file_move_copystat_cifs (files.tests.FileMoveSafeTests)",
+                    "test_file_move_overwrite (files.tests.FileMoveSafeTests)",
+                    "test_context_manager (files.tests.FileTests)",
+                    "test_file_iteration (files.tests.FileTests)",
+                    "test_file_iteration_mac_newlines (files.tests.FileTests)",
+                    "test_file_iteration_mixed_newlines (files.tests.FileTests)",
+                    "test_file_iteration_windows_newlines (files.tests.FileTests)",
+                    "test_file_iteration_with_mac_newline_at_chunk_boundary (files.tests.FileTests)",
+                    "test_file_iteration_with_text (files.tests.FileTests)",
+                    "test_file_iteration_with_unix_newline_at_chunk_boundary (files.tests.FileTests)",
+                    "test_file_iteration_with_windows_newline_at_chunk_boundary (files.tests.FileTests)",
+                    "test_file_mode (files.tests.FileTests)",
+                    "test_io_wrapper (files.tests.FileTests)",
+                    "test_namedtemporaryfile_closes (files.tests.FileTests)",
+                    "test_open_reopens_closed_file_and_returns_context_manager (files.tests.FileTests)",
+                    "test_open_resets_opened_file_to_start_and_returns_context_manager (files.tests.FileTests)",
+                    "test_readable (files.tests.FileTests)",
+                    "test_seekable (files.tests.FileTests)",
+                    "test_unicode_file_name (files.tests.FileTests)",
+                    "test_unicode_uploadedfile_name (files.tests.FileTests)",
+                    "test_writable (files.tests.FileTests)",
+                    "test_closing_of_filenames (files.tests.DimensionClosingBug)",
+                    "test_not_closing_of_files (files.tests.DimensionClosingBug)",
+                    "test_bug_19457 (files.tests.InconsistentGetImageDimensionsBug)",
+                    "test_multiple_calls (files.tests.InconsistentGetImageDimensionsBug)",
+                    "test_invalid_image (files.tests.GetImageDimensionsTests)",
+                    "test_valid_image (files.tests.GetImageDimensionsTests)",
+                    "test_webp (files.tests.GetImageDimensionsTests)"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

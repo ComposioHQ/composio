@@ -1,0 +1,38 @@
+{
+    "django__django-16136": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [
+                    "test_mixed_views_raise_error (async.tests.ViewTests)"
+                ],
+                "failure": [
+                    "test_http_method_not_allowed_responds_correctly (async.tests.ViewTests)"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "View and by extension any subclasses that don't define handlers are",
+                    "test_options_handler_responds_correctly (async.tests.ViewTests)",
+                    "test_views_are_correctly_marked (async.tests.ViewTests)",
+                    "test_caches_local (async.tests.CacheTest)",
+                    "test_async_unsafe (async.tests.AsyncUnsafeTest)",
+                    "Utility class which turns an awaitable that only works on the thread with",
+                    "test_get_async_connection (async.tests.DatabaseConnectionTest)"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

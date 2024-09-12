@@ -1,0 +1,83 @@
+2024-09-12 00:14:20,440 - INFO - Environment image sweb.env.arm64.2baaea72acc974f6c02079:latest found for django__django-11149
+Building instance image sweb.eval.arm64.django__django-11149:latest for django__django-11149
+2024-09-12 00:16:26,661 - INFO - Creating container for django__django-11149...
+2024-09-12 00:16:26,693 - INFO - Container for django__django-11149 created: 1698a64bdd8e84366779f420ffe3f96dc3a064b09d0ca795313bebf469e274ea
+2024-09-12 00:16:26,798 - INFO - Container for django__django-11149 started: 1698a64bdd8e84366779f420ffe3f96dc3a064b09d0ca795313bebf469e274ea
+2024-09-12 00:16:26,799 - INFO - Intermediate patch for django__django-11149 written to logs/run_evaluation/langgraph_agent_1726076078N/composio/django__django-11149/patch.diff, now applying to container...
+2024-09-12 00:16:26,956 - INFO - Failed to apply patch to container, trying again...
+2024-09-12 00:16:26,980 - INFO - >>>>> Applied Patch:
+patching file django/contrib/admin/options.py
+
+2024-09-12 00:16:27,294 - INFO - Git diff before:
+diff --git a/django/contrib/admin/options.py b/django/contrib/admin/options.py
+index 880a2cc17b..1f58824753 100644
+--- a/django/contrib/admin/options.py
++++ b/django/contrib/admin/options.py
+@@ -2047,6 +2047,7 @@ class InlineModelAdmin(BaseModelAdmin):
+         base_model_form = defaults['form']
+         can_change = self.has_change_permission(request, obj) if request else True
+         can_add = self.has_add_permission(request, obj) if request else True
++        can_view_only = self.has_view_permission(request, obj) and not can_change
+ 
+         class DeleteProtectedModelForm(base_model_form):
+ 
+@@ -2089,6 +2090,8 @@ class InlineModelAdmin(BaseModelAdmin):
+ 
+             def has_changed(self):
+                 # Protect against unauthorized edits.
++                if can_view_only:
++                    return False
+                 if not can_change and not self.instance._state.adding:
+                     return False
+                 if not can_add and self.instance._state.adding:
+@@ -2097,6 +2100,9 @@ class InlineModelAdmin(BaseModelAdmin):
+ 
+         defaults['form'] = DeleteProtectedModelForm
+ 
++        defaults['can_delete'] = can_delete and not can_view_only
++        defaults['can_order'] = not can_view_only
++
+         if defaults['fields'] is None and not modelform_defines_fields(defaults['form']):
+             defaults['fields'] = forms.ALL_FIELDS
+2024-09-12 00:16:27,294 - INFO - Eval script for django__django-11149 written to logs/run_evaluation/langgraph_agent_1726076078N/composio/django__django-11149/eval.sh; copying to container...
+2024-09-12 00:16:30,521 - INFO - Test runtime: 3.12 seconds
+2024-09-12 00:16:30,521 - INFO - Test output for django__django-11149 written to logs/run_evaluation/langgraph_agent_1726076078N/composio/django__django-11149/test_output.txt
+2024-09-12 00:16:30,566 - INFO - Git diff after:
+diff --git a/django/contrib/admin/options.py b/django/contrib/admin/options.py
+index 880a2cc17b..1f58824753 100644
+--- a/django/contrib/admin/options.py
++++ b/django/contrib/admin/options.py
+@@ -2047,6 +2047,7 @@ class InlineModelAdmin(BaseModelAdmin):
+         base_model_form = defaults['form']
+         can_change = self.has_change_permission(request, obj) if request else True
+         can_add = self.has_add_permission(request, obj) if request else True
++        can_view_only = self.has_view_permission(request, obj) and not can_change
+ 
+         class DeleteProtectedModelForm(base_model_form):
+ 
+@@ -2089,6 +2090,8 @@ class InlineModelAdmin(BaseModelAdmin):
+ 
+             def has_changed(self):
+                 # Protect against unauthorized edits.
++                if can_view_only:
++                    return False
+                 if not can_change and not self.instance._state.adding:
+                     return False
+                 if not can_add and self.instance._state.adding:
+@@ -2097,6 +2100,9 @@ class InlineModelAdmin(BaseModelAdmin):
+ 
+         defaults['form'] = DeleteProtectedModelForm
+ 
++        defaults['can_delete'] = can_delete and not can_view_only
++        defaults['can_order'] = not can_view_only
++
+         if defaults['fields'] is None and not modelform_defines_fields(defaults['form']):
+             defaults['fields'] = forms.ALL_FIELDS
+2024-09-12 00:16:30,566 - INFO - Grading answer for django__django-11149...
+2024-09-12 00:16:30,573 - INFO - report: {'django__django-11149': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': False, 'tests_status': {'FAIL_TO_PASS': {'success': [], 'failure': ['test_inline_add_m2m_view_only_perm (admin_inlines.tests.TestInlinePermissions)', 'test_inline_change_m2m_view_only_perm (admin_inlines.tests.TestInlinePermissions)']}, 'PASS_TO_PASS': {'success': ['Regression for #9362', 'test_deleting_inline_with_protected_delete_does_not_validate (admin_inlines.tests.TestInlineProtectedOnDelete)', 'test_all_inline_media (admin_inlines.tests.TestInlineMedia)', 'test_inline_media_only_base (admin_inlines.tests.TestInlineMedia)', 'test_inline_media_only_inline (admin_inlines.tests.TestInlineMedia)', 'test_inline_add_fk_add_perm (admin_inlines.tests.TestInlinePermissions)', 'test_inline_add_fk_noperm (admin_inlines.tests.TestInlinePermissions)', 'test_inline_add_m2m_add_perm (admin_inlines.tests.TestInlinePermissions)', 'test_inline_add_m2m_noperm (admin_inlines.tests.TestInlinePermissions)', 'test_inline_change_fk_add_change_perm (admin_inlines.tests.TestInlinePermissions)', 'test_inline_change_fk_add_perm (admin_inlines.tests.TestInlinePermissions)', 'test_inline_change_fk_all_perms (admin_inlines.tests.TestInlinePermissions)', 'test_inline_change_fk_change_del_perm (admin_inlines.tests.TestInlinePermissions)', 'test_inline_change_fk_change_perm (admin_inlines.tests.TestInlinePermissions)', 'test_inline_change_fk_noperm (admin_inlines.tests.TestInlinePermissions)', 'test_inline_change_m2m_add_perm (admin_inlines.tests.TestInlinePermissions)', 'test_inline_change_m2m_change_perm (admin_inlines.tests.TestInlinePermissions)', 'test_inline_change_m2m_noperm (admin_inlines.tests.TestInlinePermissions)', 'Admin inline should invoke local callable when its name is listed in readonly_fields', 'test_can_delete (admin_inlines.tests.TestInline)', 'test_create_inlines_on_inherited_model (admin_inlines.tests.TestInline)', 'test_custom_form_tabular_inline_label (admin_inlines.tests.TestInline)', 'test_custom_form_tabular_inline_overridden_label (admin_inlines.tests.TestInline)', 'test_custom_get_extra_form (admin_inlines.tests.TestInline)', 'test_custom_min_num (admin_inlines.tests.TestInline)', 'test_custom_pk_shortcut (admin_inlines.tests.TestInline)', 'test_help_text (admin_inlines.tests.TestInline)', 'test_inline_editable_pk (admin_inlines.tests.TestInline)', "#18263 -- Make sure hidden fields don't get a column in tabular inlines", 'test_inline_nonauto_noneditable_inherited_pk (admin_inlines.tests.TestInline)', 'test_inline_nonauto_noneditable_pk (admin_inlines.tests.TestInline)', 'test_inline_primary (admin_inlines.tests.TestInline)', 'Inlines `show_change_link` for registered models when enabled.', 'Inlines `show_change_link` disabled for unregistered models.', 'test_localize_pk_shortcut (admin_inlines.tests.TestInline)', 'Autogenerated many-to-many inlines are displayed correctly (#13407)', 'test_min_num (admin_inlines.tests.TestInline)', "Admin inline `readonly_field` shouldn't invoke parent ModelAdmin callable", 'test_non_related_name_inline (admin_inlines.tests.TestInline)', 'Inlines without change permission shows field inputs on add form.', 'Bug #13174.', 'test_stacked_inline_edit_form_contains_has_original_class (admin_inlines.tests.TestInline)', 'test_tabular_inline_column_css_class (admin_inlines.tests.TestInline)', 'Inlines `show_change_link` disabled by default.', 'test_tabular_model_form_meta_readonly_field (admin_inlines.tests.TestInline)', 'test_tabular_non_field_errors (admin_inlines.tests.TestInline)'], 'failure': []}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for django__django-11149: resolved: False
+2024-09-12 00:16:30,573 - INFO - Attempting to stop container sweb.eval.django__django-11149.langgraph_agent_1726076078N...
+2024-09-12 00:16:45,718 - INFO - Attempting to remove container sweb.eval.django__django-11149.langgraph_agent_1726076078N...
+2024-09-12 00:16:45,729 - INFO - Container sweb.eval.django__django-11149.langgraph_agent_1726076078N removed.
+2024-09-12 00:16:45,729 - INFO - Attempting to remove image sweb.eval.arm64.django__django-11149:latest...
+2024-09-12 00:16:45,821 - INFO - Image sweb.eval.arm64.django__django-11149:latest removed.

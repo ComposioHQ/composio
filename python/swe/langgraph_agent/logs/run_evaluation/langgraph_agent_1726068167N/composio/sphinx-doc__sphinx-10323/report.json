@@ -1,0 +1,70 @@
+{
+    "sphinx-doc__sphinx-10323": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_dedent_and_append_and_prepend"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_missing_start_and_end",
+                    "tests/test_directive_code.py::test_code_block",
+                    "tests/test_directive_code.py::test_force_option",
+                    "tests/test_directive_code.py::test_code_block_caption_html",
+                    "tests/test_directive_code.py::test_code_block_caption_latex",
+                    "tests/test_directive_code.py::test_code_block_namedlink_latex",
+                    "tests/test_directive_code.py::test_code_block_highlighted",
+                    "tests/test_directive_code.py::test_code_block_dedent"
+                ],
+                "failure": [
+                    "tests/test_directive_code.py::test_LiteralIncludeReader",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_lineno_start",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_pyobject1",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_pyobject2",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_pyobject3",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_pyobject_and_lines",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_lines1",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_lines2",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_lines_and_lineno_match1",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_lines_and_lineno_match2",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_lines_and_lineno_match3",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_start_at",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_start_after",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_start_after_and_lines",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_start_at_and_lines",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_end_before",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_prepend",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_dedent",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_tabwidth",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_tabwidth_dedent",
+                    "tests/test_directive_code.py::test_LiteralIncludeReader_diff",
+                    "tests/test_directive_code.py::test_code_block_emphasize_latex",
+                    "tests/test_directive_code.py::test_literal_include",
+                    "tests/test_directive_code.py::test_literal_include_block_start_with_comment_or_brank",
+                    "tests/test_directive_code.py::test_literal_include_linenos",
+                    "tests/test_directive_code.py::test_literalinclude_file_whole_of_emptyline",
+                    "tests/test_directive_code.py::test_literalinclude_caption_html",
+                    "tests/test_directive_code.py::test_literalinclude_caption_latex",
+                    "tests/test_directive_code.py::test_literalinclude_namedlink_latex",
+                    "tests/test_directive_code.py::test_literalinclude_classes",
+                    "tests/test_directive_code.py::test_literalinclude_pydecorators",
+                    "tests/test_directive_code.py::test_linenothreshold"
+                ]
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

@@ -1,0 +1,148 @@
+2024-09-11 23:54:49,452 - INFO - Environment image sweb.env.arm64.428468730904ff6b4232aa:latest found for astropy__astropy-8707
+Building instance image sweb.eval.arm64.astropy__astropy-8707:latest for astropy__astropy-8707
+2024-09-11 23:57:43,905 - INFO - Creating container for astropy__astropy-8707...
+2024-09-11 23:57:43,949 - INFO - Container for astropy__astropy-8707 created: 8bd0d9c69aadecfb35c4708f8876090331b065c6117c6d7f80bbf23b74fb7754
+2024-09-11 23:57:44,049 - INFO - Container for astropy__astropy-8707 started: 8bd0d9c69aadecfb35c4708f8876090331b065c6117c6d7f80bbf23b74fb7754
+2024-09-11 23:57:44,050 - INFO - Intermediate patch for astropy__astropy-8707 written to logs/run_evaluation/langgraph_agent_1726076078N/composio/astropy__astropy-8707/patch.diff, now applying to container...
+2024-09-11 23:57:44,211 - INFO - Failed to apply patch to container, trying again...
+2024-09-11 23:57:44,244 - INFO - >>>>> Applied Patch:
+patching file astropy/io/fits/card.py
+patching file astropy/io/fits/header.py
+
+2024-09-11 23:57:44,420 - INFO - Git diff before:
+diff --git a/astropy/io/fits/card.py b/astropy/io/fits/card.py
+index 8c1ac5d738..3c7ca7ed4a 100644
+--- a/astropy/io/fits/card.py
++++ b/astropy/io/fits/card.py
+@@ -544,14 +544,19 @@ class Card(_Verify):
+                 (isinstance(self.value, str) and not self.value) and
+                 not self.comment)
+ 
++    @classmethod
+     @classmethod
+     def fromstring(cls, image):
+         """
+-        Construct a `Card` object from a (raw) string. It will pad the string
++        Construct a `Card` object from a (raw) string or bytes. It will pad the string
+         if it is not the length of a card image (80 columns).  If the card
+         image is longer than 80 columns, assume it contains ``CONTINUE``
+         card(s).
+         """
++        if isinstance(image, bytes):
++            image = image.decode('utf-8')
++        elif not isinstance(image, str):
++            raise TypeError("image must be of type str or bytes")
+ 
+         card = cls()
+         card._image = _pad(image)
+diff --git a/astropy/io/fits/header.py b/astropy/io/fits/header.py
+index ad07e6d52d..84ae0472eb 100644
+--- a/astropy/io/fits/header.py
++++ b/astropy/io/fits/header.py
+@@ -326,16 +326,17 @@ class Header:
+     def _modified(self, val):
+         self.__dict__['_modified'] = val
+ 
++    @classmethod
+     @classmethod
+     def fromstring(cls, data, sep=''):
+         """
+-        Creates an HDU header from a byte string containing the entire header
++        Creates an HDU header from a byte string or unicode string containing the entire header
+         data.
+ 
+         Parameters
+         ----------
+-        data : str
+-           String containing the entire header.
++        data : str or bytes
++           String or bytes containing the entire header.
+ 
+         sep : str, optional
+             The string separating cards from each other, such as a newline.  By
+@@ -348,6 +349,11 @@ class Header:
+             A new `Header` instance.
+         """
+ 
++        if isinstance(data, bytes):
++            data = data.decode('utf-8')
++        elif not isinstance(data, str):
++            raise TypeError("data must be of type str or bytes")
++
+         cards = []
+ 
+         # If the card separator contains characters that may validly appear in
+2024-09-11 23:57:44,420 - INFO - Eval script for astropy__astropy-8707 written to logs/run_evaluation/langgraph_agent_1726076078N/composio/astropy__astropy-8707/eval.sh; copying to container...
+2024-09-11 23:57:57,708 - INFO - Test runtime: 13.17 seconds
+2024-09-11 23:57:57,709 - INFO - Test output for astropy__astropy-8707 written to logs/run_evaluation/langgraph_agent_1726076078N/composio/astropy__astropy-8707/test_output.txt
+2024-09-11 23:57:57,762 - INFO - Git diff after:
+diff --git a/astropy/io/fits/card.py b/astropy/io/fits/card.py
+index 8c1ac5d738..3c7ca7ed4a 100644
+--- a/astropy/io/fits/card.py
++++ b/astropy/io/fits/card.py
+@@ -544,14 +544,19 @@ class Card(_Verify):
+                 (isinstance(self.value, str) and not self.value) and
+                 not self.comment)
+ 
++    @classmethod
+     @classmethod
+     def fromstring(cls, image):
+         """
+-        Construct a `Card` object from a (raw) string. It will pad the string
++        Construct a `Card` object from a (raw) string or bytes. It will pad the string
+         if it is not the length of a card image (80 columns).  If the card
+         image is longer than 80 columns, assume it contains ``CONTINUE``
+         card(s).
+         """
++        if isinstance(image, bytes):
++            image = image.decode('utf-8')
++        elif not isinstance(image, str):
++            raise TypeError("image must be of type str or bytes")
+ 
+         card = cls()
+         card._image = _pad(image)
+diff --git a/astropy/io/fits/header.py b/astropy/io/fits/header.py
+index ad07e6d52d..84ae0472eb 100644
+--- a/astropy/io/fits/header.py
++++ b/astropy/io/fits/header.py
+@@ -326,16 +326,17 @@ class Header:
+     def _modified(self, val):
+         self.__dict__['_modified'] = val
+ 
++    @classmethod
+     @classmethod
+     def fromstring(cls, data, sep=''):
+         """
+-        Creates an HDU header from a byte string containing the entire header
++        Creates an HDU header from a byte string or unicode string containing the entire header
+         data.
+ 
+         Parameters
+         ----------
+-        data : str
+-           String containing the entire header.
++        data : str or bytes
++           String or bytes containing the entire header.
+ 
+         sep : str, optional
+             The string separating cards from each other, such as a newline.  By
+@@ -348,6 +349,11 @@ class Header:
+             A new `Header` instance.
+         """
+ 
++        if isinstance(data, bytes):
++            data = data.decode('utf-8')
++        elif not isinstance(data, str):
++            raise TypeError("data must be of type str or bytes")
++
+         cards = []
+ 
+         # If the card separator contains characters that may validly appear in
+2024-09-11 23:57:57,762 - INFO - Grading answer for astropy__astropy-8707...
+2024-09-11 23:57:57,849 - INFO - report: {'astropy__astropy-8707': {'patch_is_None': False, 'patch_exists': True, 'patch_successfully_applied': True, 'resolved': False, 'tests_status': {'FAIL_TO_PASS': {'success': [], 'failure': ['astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_card_from_bytes']}, 'PASS_TO_PASS': {'success': ['astropy/io/fits/tests/test_header.py::test_shallow_copy', 'astropy/io/fits/tests/test_header.py::test_init_with_header', 'astropy/io/fits/tests/test_header.py::test_init_with_dict', 'astropy/io/fits/tests/test_header.py::test_init_with_ordereddict'], 'failure': ['astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_rename_keyword', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_card_constructor_default_args', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_string_value_card', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_boolean_value_card', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_long_integer_value_card', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_floating_point_value_card', 'astropy/io/fits/tests/test_header.py::TestHeaderFunctions::test_complex_value_card']}, 'FAIL_TO_FAIL': {'success': [], 'failure': []}, 'PASS_TO_FAIL': {'success': [], 'failure': []}}}}
+Result for astropy__astropy-8707: resolved: False
+2024-09-11 23:57:57,849 - INFO - Attempting to stop container sweb.eval.astropy__astropy-8707.langgraph_agent_1726076078N...
+2024-09-11 23:58:12,981 - INFO - Attempting to remove container sweb.eval.astropy__astropy-8707.langgraph_agent_1726076078N...
+2024-09-11 23:58:12,991 - INFO - Container sweb.eval.astropy__astropy-8707.langgraph_agent_1726076078N removed.
+2024-09-11 23:58:12,991 - INFO - Attempting to remove image sweb.eval.arm64.astropy__astropy-8707:latest...
+2024-09-11 23:58:13,091 - INFO - Image sweb.eval.arm64.astropy__astropy-8707:latest removed.

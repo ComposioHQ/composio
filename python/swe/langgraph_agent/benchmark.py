@@ -10,7 +10,9 @@ from swekit.benchmark.run_evaluation import evaluate
 from swekit.config.store import IssueConfig
 from langchain_aws import BedrockChat
 import ast
-from agent import get_agent_graph
+from langgraph.errors import GraphRecursionError
+
+from agent_copy import get_agent_graph
 import re
 import random
 
@@ -21,8 +23,8 @@ bedrock_client = BedrockChat(
                 model_kwargs={"temperature": 0}
             )
 
-def build_comparison_prompt(repo_name: str, issue_desc: str, patches: List[str]) -> str:
-    patch_str = "\n".join(["="*50 + f"\nPatch {i+1}:\n{patch}" for i, patch in enumerate(patches)]+["="*50])    
+def build_comparison_prompt(repo_name: str, issue_desc: str, patches: List[str], tests_passed: List[bool]) -> str:
+    patch_str = "\n".join(["="*50 + f"\nPatch {i+1}:\nTESTS PASSED: {str(tests_passed[i])}\n{patch}" for i, patch in enumerate(patches)]+["="*50])    
     return """
 I facing the following issue in the repo {repo_name}. You have an older version of the codebase, so you your belief about the 
 codebase might be outdated.
@@ -39,22 +41,27 @@ First analyse all the patches thoroughly and then choose the best patch that fix
 consider all the edge cases very carefully. The chosen patch might be more verbose, but it should pass all the 
 possible test cases regarding the issue.
 
+NOTE: ONLY JUDGE THE PATCHES BASED ON THE CHANGES IN THE SOURCE CODE.
+IGNORE THE CHANGES IN THE TESTS, DOCS OR OTHER FILES.
+GIVE PREFERENCE TO THE PATCHES THAT PASS THE TESTS.
+
 Provide your response in the following format:
 {{
-    "patch": "The number of the patch that best fixes the issue (1 or 2)",
+    "patch": "The number of the patch that best fixes the issue (1, 2, 3, ...)",
     "reasoning": "Your explanation for why the chosen patch fixes the issue",
 }}
 """.format(repo_name=repo_name, issue_desc=issue_desc, patch_str=patch_str)
 
 def bench(workspace_ids: str, issue_config: IssueConfig) -> str:
-    with ThreadPoolExecutor(max_workers=2) as executor:
+    with ThreadPoolExecutor(max_workers=4) as executor:
         futures = [executor.submit(run_agent_function, workspace_id, issue_config) for workspace_id in workspace_ids]
-        patches = [future.result() for future in as_completed(futures)]
+        results = [future.result() for future in as_completed(futures)]
     
+    patches, tests_passed = zip(*results)
     response = bedrock_client.invoke(
         [
             ("system", "You are a software engineer expert at solving bugs."),
-            ("human", build_comparison_prompt(repo_name=issue_config.repo_name.split("/")[-1], issue_desc=issue_config.issue_desc, patches=patches))
+            ("human", build_comparison_prompt(repo_name=issue_config.repo_name.split("/")[-1], issue_desc=issue_config.issue_desc, patches=patches, tests_passed=tests_passed))
         ]
     )
     print("Response", response)
@@ -82,7 +89,8 @@ def run_agent_function(workspace_id: str, issue_config: IssueConfig) -> str:
 
     # Set the workspace for the tools to run.
     # import pdb; pdb.set_trace()
-    graph, composio_toolset = get_agent_graph(repo_name=issue_config.repo_name.split("/")[-1] , workspace_id=workspace_id)
+    
+    graph, composio_toolset = get_agent_graph(repo_name=issue_config.repo_name.split("/")[-1] , workspace_id=workspace_id, test_command=issue_config.test_command)
     
     # get the git tree
     git_tree_response = composio_toolset.execute_action(
@@ -100,7 +108,7 @@ def run_agent_function(workspace_id: str, issue_config: IssueConfig) -> str:
     # kick off the crew on the issue.
 
     try:
-        graph.invoke(
+        run_result = graph.invoke(
             {
                 "messages": [
                     HumanMessage(
@@ -108,45 +116,52 @@ def run_agent_function(workspace_id: str, issue_config: IssueConfig) -> str:
                     )
                 ]
             },
-            {"recursion_limit": 60},
+            {"recursion_limit": 70},
         )
-        cwd_response = composio_toolset.execute_action(
-            action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
-            params={"path": f"/home/user/{issue_config.repo_name.split('/')[-1]}"},
-        )
-        print("Result of pwd", cwd_response)
-        get_patch_resp = composio_toolset.execute_action(
-            action=Action.FILETOOL_GIT_PATCH,
-            params={},
-        )
-
-        print(f"Get patch response: {get_patch_resp}")
-        if not get_patch_resp.get("successfull", False):
-            error_message = get_patch_resp.get("error")
-            if error_message:
-                raise Exception(f"Error in get_patch: {error_message}")
-            else:
-                raise Exception("Unknown error occurred in get_patch")
-
-        patch_data = get_patch_resp.get("data", {})
-        if not patch_data:
-            raise Exception("No data found in the patch response")
-
-        patch = patch_data.get("patch")
-        if not patch:
-            error = patch_data.get("error")
-            if error:
-                print(f"Error in patch data: {error}")
-                return None
-            else:
-                print("No patch found in the response data")
-                return None
-
-        print(f"Final Patch: {patch}")
-        return patch
+        tests_passed = True
+    except GraphRecursionError as e:
+        print(f"GraphRecursionError: {e}")
+        tests_passed = False
     except Exception as e:
         print(f"Error in graph.invoke: {e}")
+        tests_passed = False
+
+    cwd_response = composio_toolset.execute_action(
+        action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
+        params={"path": f"/home/user/{issue_config.repo_name.split('/')[-1]}"},
+    )
+    print("Result of pwd", cwd_response)
+    get_patch_resp = composio_toolset.execute_action(
+        action=Action.FILETOOL_GIT_PATCH,
+        params={},
+    )
+
+    print(f"Get patch response: {get_patch_resp}")
+    if not get_patch_resp.get("successful", False):
+        error_message = get_patch_resp.get("error")
+        if error_message:
+            print(f"Error in get_patch: {error_message}")
+            return ""
+        else:
+            print("Unknown error occurred in get_patch")
+            return ""
+
+    patch_data = get_patch_resp.get("data", {})
+    if not patch_data:
+        print("No data found in the patch response")
         return ""
+    patch = patch_data.get("patch")
+    if not patch:
+        error = patch_data.get("error")
+        if error:
+            print(f"Error in patch data: {error}")
+            return ""
+        else:
+            print("No patch found in the response data")
+            return ""
+
+    print(f"Final Patch: {patch}")
+    return patch, tests_passed
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -189,5 +204,6 @@ if __name__ == "__main__":
         include_hints=False,
         test_instance_ids=test_instance_ids_list,
         run_id=args.run_id,
+        num_instances=3,
         #image_name="composio/composio:dev", # if you are doing local dev
     )

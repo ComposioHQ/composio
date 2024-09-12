@@ -1,0 +1,539 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen
++ locale-gen
+Generating locales (this might take a while)...
+  en_US.UTF-8... done
+Generation complete.
++ export LANG=en_US.UTF-8
++ LANG=en_US.UTF-8
++ export LANGUAGE=en_US:en
++ LANGUAGE=en_US:en
++ export LC_ALL=en_US.UTF-8
++ LC_ALL=en_US.UTF-8
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+nothing to commit, working tree clean
++ git show
+commit 8954f255bbf5f4ee997fd6de62cb50fc9b5dd697
+Author: Pat Garcia <commonzenmedia@gmail.com>
+Date:   Tue Aug 11 21:05:03 2020 -0400
+
+    Fixed #31382 -- Made Model.save(update_fields=...) raise ValueError on non-concrete fields.
+
+diff --git a/django/db/models/base.py b/django/db/models/base.py
+index 7c7bd2d7ee..97d1eecbc8 100644
+--- a/django/db/models/base.py
++++ b/django/db/models/base.py
+@@ -727,7 +727,7 @@ class Model(metaclass=ModelBase):
+             update_fields = frozenset(update_fields)
+             field_names = set()
+ 
+-            for field in self._meta.fields:
++            for field in self._meta.concrete_fields:
+                 if not field.primary_key:
+                     field_names.add(field.name)
+ 
+@@ -737,9 +737,11 @@ class Model(metaclass=ModelBase):
+             non_model_fields = update_fields.difference(field_names)
+ 
+             if non_model_fields:
+-                raise ValueError("The following fields do not exist in this "
+-                                 "model or are m2m fields: %s"
+-                                 % ', '.join(non_model_fields))
++                raise ValueError(
++                    'The following fields do not exist in this model, are m2m '
++                    'fields, or are non-concrete fields: %s'
++                    % ', '.join(non_model_fields)
++                )
+ 
+         # If saving to the same database, and this model is deferred, then
+         # automatically do an "update_fields" save on the loaded fields.
+diff --git a/tests/update_only_fields/models.py b/tests/update_only_fields/models.py
+index b7100398cd..3bba684d21 100644
+--- a/tests/update_only_fields/models.py
++++ b/tests/update_only_fields/models.py
+@@ -22,9 +22,19 @@ class Employee(Person):
+     accounts = models.ManyToManyField('Account', related_name='employees', blank=True)
+ 
+ 
++class NonConcreteField(models.IntegerField):
++    def db_type(self, connection):
++        return None
++
++    def get_attname_column(self):
++        attname, _ = super().get_attname_column()
++        return attname, None
++
++
+ class Profile(models.Model):
+     name = models.CharField(max_length=200)
+     salary = models.FloatField(default=1000.0)
++    non_concrete = NonConcreteField()
+ 
+ 
+ class ProxyEmployee(Employee):
+diff --git a/tests/update_only_fields/tests.py b/tests/update_only_fields/tests.py
+index 58ae94b7cc..65a260338c 100644
+--- a/tests/update_only_fields/tests.py
++++ b/tests/update_only_fields/tests.py
+@@ -5,7 +5,10 @@ from .models import Account, Employee, Person, Profile, ProxyEmployee
+ 
+ 
+ class UpdateOnlyFieldsTests(TestCase):
+-    msg = 'The following fields do not exist in this model or are m2m fields: %s'
++    msg = (
++        'The following fields do not exist in this model, are m2m fields, or '
++        'are non-concrete fields: %s'
++    )
+ 
+     def test_update_fields_basic(self):
+         s = Person.objects.create(name='Sara', gender='F')
+@@ -254,3 +257,8 @@ class UpdateOnlyFieldsTests(TestCase):
+         self.assertEqual(Person.objects.count(), 1)
+         with self.assertNumQueries(2):
+             s.save(update_fields=['name', 'employee_num'])
++
++    def test_update_non_concrete_field(self):
++        profile_boss = Profile.objects.create(name='Boss', salary=3000)
++        with self.assertRaisesMessage(ValueError, self.msg % 'non_concrete'):
++            profile_boss.save(update_fields=['non_concrete'])
++ git diff 8954f255bbf5f4ee997fd6de62cb50fc9b5dd697
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Requirement already satisfied: asgiref>=3.2.10 in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.2) (3.4.1)
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.2) (2024.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from Django==3.2) (0.4.4)
+Requirement already satisfied: typing-extensions in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from asgiref>=3.2.10->Django==3.2) (4.1.1)
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 3.2
+    Uninstalling Django-3.2:
+      Successfully uninstalled Django-3.2
+  Running setup.py develop for Django
+Successfully installed Django-3.2
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
++ git checkout 8954f255bbf5f4ee997fd6de62cb50fc9b5dd697 tests/generic_views/test_base.py
+Updated 0 paths from 289deb388c
++ git apply -v -
+Checking patch tests/generic_views/test_base.py...
+Applied patch tests/generic_views/test_base.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 generic_views.test_base
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+test_extra_template_params (generic_views.test_base.DeprecationTests)
+A template view can be customized to return extra context. ... ok
+test_template_params (generic_views.test_base.DeprecationTests)
+A generic template view passes kwargs as context. ... ok
+test_template_params_filtering (generic_views.test_base.DeprecationTests) ... ERROR
+test_template_params_warning (generic_views.test_base.DeprecationTests) ... ok
+test_get_context_data_super (generic_views.test_base.GetContextDataTest) ... ok
+test_object_at_custom_name_in_context_data (generic_views.test_base.GetContextDataTest) ... ok
+test_object_in_get_context_data (generic_views.test_base.GetContextDataTest) ... ok
+test_default_redirect (generic_views.test_base.RedirectViewTest)
+Default is a temporary redirect ... ok
+test_direct_instantiation (generic_views.test_base.RedirectViewTest) ... ok
+test_include_args (generic_views.test_base.RedirectViewTest)
+GET arguments can be included in the redirected URL ... ok
+test_include_urlencoded_args (generic_views.test_base.RedirectViewTest)
+GET arguments can be URL-encoded when included in the redirected URL ... ok
+test_named_url_pattern (generic_views.test_base.RedirectViewTest)
+Named pattern parameter should reverse to the matching pattern ... ok
+test_named_url_pattern_using_args (generic_views.test_base.RedirectViewTest) ... ok
+test_no_url (generic_views.test_base.RedirectViewTest)
+Without any configuration, returns HTTP 410 GONE ... ok
+test_parameter_substitution (generic_views.test_base.RedirectViewTest)
+Redirection URLs can be parameterized ... ok
+test_permanent_redirect (generic_views.test_base.RedirectViewTest)
+Permanent redirects are an option ... ok
+test_redirect_DELETE (generic_views.test_base.RedirectViewTest)
+Default is a temporary redirect ... ok
+test_redirect_HEAD (generic_views.test_base.RedirectViewTest)
+Default is a temporary redirect ... ok
+test_redirect_OPTIONS (generic_views.test_base.RedirectViewTest)
+Default is a temporary redirect ... ok
+test_redirect_PATCH (generic_views.test_base.RedirectViewTest)
+Default is a temporary redirect ... ok
+test_redirect_POST (generic_views.test_base.RedirectViewTest)
+Default is a temporary redirect ... ok
+test_redirect_PUT (generic_views.test_base.RedirectViewTest)
+Default is a temporary redirect ... ok
+test_redirect_when_meta_contains_no_query_string (generic_views.test_base.RedirectViewTest)
+regression for #16705 ... ok
+test_temporary_redirect (generic_views.test_base.RedirectViewTest)
+Temporary redirects are an option ... ok
+test_template_mixin_without_template (generic_views.test_base.SingleObjectTemplateResponseMixinTest) ... ok
+test_cached_views (generic_views.test_base.TemplateViewTest) ... ok
+test_content_type (generic_views.test_base.TemplateViewTest) ... ok
+test_extra_context (generic_views.test_base.TemplateViewTest) ... ok
+test_get (generic_views.test_base.TemplateViewTest) ... ok
+test_get_generic_template (generic_views.test_base.TemplateViewTest) ... ok
+test_get_template_attribute (generic_views.test_base.TemplateViewTest) ... ok
+test_head (generic_views.test_base.TemplateViewTest) ... ok
+test_resolve_login_required_view (generic_views.test_base.TemplateViewTest) ... ok
+test_resolve_view (generic_views.test_base.TemplateViewTest) ... ok
+test_template_engine (generic_views.test_base.TemplateViewTest) ... ok
+test_template_name_required (generic_views.test_base.TemplateViewTest) ... ok
+test_overwrite_queryset (generic_views.test_base.UseMultipleObjectMixinTest) ... ok
+test_use_queryset_from_view (generic_views.test_base.UseMultipleObjectMixinTest) ... ok
+test_args_kwargs_request_on_self (generic_views.test_base.ViewTest) ... ok
+test_calling_more_than_once (generic_views.test_base.ViewTest) ... ok
+test_class_attributes (generic_views.test_base.ViewTest) ... ok
+test_direct_instantiation (generic_views.test_base.ViewTest) ... ok
+test_dispatch_decoration (generic_views.test_base.ViewTest) ... ok
+test_get_and_head (generic_views.test_base.ViewTest) ... ok
+test_get_and_post (generic_views.test_base.ViewTest) ... ok
+test_get_only (generic_views.test_base.ViewTest) ... ok
+test_head_no_get (generic_views.test_base.ViewTest) ... ok
+test_invalid_keyword_argument (generic_views.test_base.ViewTest) ... ok
+test_no_init_args (generic_views.test_base.ViewTest) ... ok
+test_no_init_kwargs (generic_views.test_base.ViewTest) ... ok
+test_not_calling_parent_setup_error (generic_views.test_base.ViewTest) ... ok
+test_options (generic_views.test_base.ViewTest) ... ok
+test_options_for_get_and_post_view (generic_views.test_base.ViewTest) ... ok
+test_options_for_get_view (generic_views.test_base.ViewTest) ... ok
+test_options_for_post_view (generic_views.test_base.ViewTest) ... ok
+test_overridden_setup (generic_views.test_base.ViewTest) ... ok
+test_pathological_http_method (generic_views.test_base.ViewTest) ... ok
+test_setup_adds_args_kwargs_request (generic_views.test_base.ViewTest) ... ok
+test_setup_get_and_head (generic_views.test_base.ViewTest) ... Testing against Django installed in '/testbed/django'
+Importing application generic_views
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, generic_views, messages, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table generic_views_artist
+    Creating table generic_views_author
+    Creating table generic_views_book
+    Creating table generic_views_page
+    Creating table generic_views_booksigning
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (0 silenced).
+ok
+
+======================================================================
+ERROR: test_template_params_filtering (generic_views.test_base.DeprecationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/db/backends/utils.py", line 84, in _execute
+    return self.cursor.execute(sql, params)
+  File "/testbed/django/db/backends/sqlite3/base.py", line 412, in execute
+    return Database.Cursor.execute(self, query, params)
+sqlite3.InterfaceError: Error binding parameter 0 - probably unsupported type.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/testbed/django/test/utils.py", line 381, in inner
+    return func(*args, **kwargs)
+  File "/testbed/tests/generic_views/test_base.py", line 622, in test_template_params_filtering
+    response = ArtistView.as_view()(self.rf.get('/'), artist_name=artist.name)
+  File "/testbed/django/views/generic/base.py", line 73, in view
+    return self.dispatch(request, *args, **kwargs)
+  File "/testbed/django/views/generic/base.py", line 101, in dispatch
+    return handler(request, *args, **kwargs)
+  File "/testbed/django/views/generic/base.py", line 163, in get
+    context = self.get_context_data(**context_kwargs)
+  File "/testbed/tests/generic_views/test_base.py", line 618, in get_context_data
+    artist = Artist.objects.get(name=artist_name)
+  File "/testbed/django/db/models/manager.py", line 85, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+  File "/testbed/django/db/models/query.py", line 425, in get
+    num = len(clone)
+  File "/testbed/django/db/models/query.py", line 269, in __len__
+    self._fetch_all()
+  File "/testbed/django/db/models/query.py", line 1316, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+  File "/testbed/django/db/models/query.py", line 53, in __iter__
+    results = compiler.execute_sql(chunked_fetch=self.chunked_fetch, chunk_size=self.chunk_size)
+  File "/testbed/django/db/models/sql/compiler.py", line 1163, in execute_sql
+    cursor.execute(sql, params)
+  File "/testbed/django/db/backends/utils.py", line 66, in execute
+    return self._execute_with_wrappers(sql, params, many=False, executor=self._execute)
+  File "/testbed/django/db/backends/utils.py", line 75, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "/testbed/django/db/backends/utils.py", line 84, in _execute
+    return self.cursor.execute(sql, params)
+  File "/testbed/django/db/utils.py", line 90, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/testbed/django/db/backends/utils.py", line 84, in _execute
+    return self.cursor.execute(sql, params)
+  File "/testbed/django/db/backends/sqlite3/base.py", line 412, in execute
+    return Database.Cursor.execute(self, query, params)
+django.db.utils.InterfaceError: Error binding parameter 0 - probably unsupported type.
+
+----------------------------------------------------------------------
+Ran 59 tests in 3.107s
+
+FAILED (errors=1)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout 8954f255bbf5f4ee997fd6de62cb50fc9b5dd697 tests/generic_views/test_base.py
+Updated 1 path from 289deb388c

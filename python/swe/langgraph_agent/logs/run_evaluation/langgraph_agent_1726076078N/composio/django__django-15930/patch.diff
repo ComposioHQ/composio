@@ -1,0 +1,17 @@
+diff --git a/django/db/models/query_utils.py b/django/db/models/query_utils.py
+index d566cc18..ad98fdb4 100644
+--- a/django/db/models/query_utils.py
++++ b/django/db/models/query_utils.py
+@@ -73,8 +73,12 @@ class Q(tree.Node):
+ 
+     def __xor__(self, other):
+         return self._combine(other, self.XOR)
++    def is_empty_set(self):
++        return len(self.children) == 1 and isinstance(self.children[0], tuple) and not self.children[0][1]
+ 
+     def __invert__(self):
++        if self.is_empty_set():
++            return Q()  # Return an empty Q object, which will match all rows
+         obj = self.copy()
+         obj.negate()
+         return obj

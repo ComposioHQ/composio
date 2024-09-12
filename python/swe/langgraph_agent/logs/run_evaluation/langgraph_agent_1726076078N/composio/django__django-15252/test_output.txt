@@ -1,0 +1,583 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/db/migrations/recorder.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 361bb8f786f112ee275be136795c0b1ecefff928
+Author: Mariusz Felisiak <felisiak.mariusz@gmail.com>
+Date:   Wed Dec 29 10:57:23 2021 +0100
+
+    Refs #26872 -- Fixed wrapping of long choices in ModelAdmin.list_filter.
+    
+    Regression in 269a76714616fd7ad166a14113f3354bab8d9b65.
+
+diff --git a/django/contrib/admin/static/admin/css/changelists.css b/django/contrib/admin/static/admin/css/changelists.css
+index 5586465d1c..83e2434e3e 100644
+--- a/django/contrib/admin/static/admin/css/changelists.css
++++ b/django/contrib/admin/static/admin/css/changelists.css
+@@ -173,8 +173,7 @@
+ #changelist-filter a {
+     display: block;
+     color: var(--body-quiet-color);
+-    text-overflow: ellipsis;
+-    overflow-x: hidden;
++    word-break: break-word;
+ }
+ 
+ #changelist-filter li.selected {
++ git diff 361bb8f786f112ee275be136795c0b1ecefff928
+diff --git a/django/db/migrations/recorder.py b/django/db/migrations/recorder.py
+index 1a37c6b7d0..de7f29dda0 100644
+--- a/django/db/migrations/recorder.py
++++ b/django/db/migrations/recorder.py
+@@ -1,5 +1,5 @@
+ from django.apps.registry import Apps
+-from django.db import DatabaseError, models
++from django.db import DatabaseError, models, router
+ from django.utils.functional import classproperty
+ from django.utils.timezone import now
+ 
+@@ -62,6 +62,9 @@ class MigrationRecorder:
+         # in the codebase.
+         if self.has_table():
+             return
++        # Check if migration is allowed for this connection
++        if not router.allow_migrate(self.connection.alias, self.Migration):
++            return
+         # Make the table
+         try:
+             with self.connection.schema_editor() as editor:
+@@ -74,6 +77,8 @@ class MigrationRecorder:
+         Return a dict mapping (app_name, migration_name) to Migration instances
+         for all applied migrations.
+         """
++        if not router.allow_migrate(self.connection.alias, self.Migration):
++            return {}
+         if self.has_table():
+             return {(migration.app, migration.name): migration for migration in self.migration_qs}
+         else:
+@@ -83,14 +88,19 @@ class MigrationRecorder:
+ 
+     def record_applied(self, app, name):
+         """Record that a migration was applied."""
++        if not router.allow_migrate(self.connection.alias, self.Migration):
++            return
+         self.ensure_schema()
+         self.migration_qs.create(app=app, name=name)
+ 
+     def record_unapplied(self, app, name):
+         """Record that a migration was unapplied."""
++        if not router.allow_migrate(self.connection.alias, self.Migration):
++            return
+         self.ensure_schema()
+         self.migration_qs.filter(app=app, name=name).delete()
+-
+     def flush(self):
+         """Delete all migration records. Useful for testing migrations."""
++        if not router.allow_migrate(self.connection.alias, self.Migration):
++            return
+         self.migration_qs.all().delete()
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.4.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.1.dev20211229095723) (3.8.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Django==4.1.dev20211229095723) (0.5.1)
+Requirement already satisfied: typing-extensions>=4 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from asgiref>=3.4.1->Django==4.1.dev20211229095723) (4.12.2)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-4.1.dev20211229095723-0.editable-py3-none-any.whl size=26874 sha256=cd69c94d34de13fa3b459ef8343468a70d8131dc0fe62c66d1fe4caae3ad88df
+  Stored in directory: /tmp/pip-ephem-wheel-cache-x11b4upg/wheels/7d/66/67/70d1ee2124ccf21d601c352e25cdca10f611f7c8b3f9ffb9e4
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 4.1.dev20211229095723
+    Uninstalling Django-4.1.dev20211229095723:
+      Successfully uninstalled Django-4.1.dev20211229095723
+Successfully installed Django-4.1.dev20211229095723
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 361bb8f786f112ee275be136795c0b1ecefff928 tests/backends/base/test_creation.py tests/migrations/test_executor.py
+Updated 0 paths from 8cc6d6c6d8
++ git apply -v -
+Checking patch tests/backends/base/test_creation.py...
+Checking patch tests/migrations/test_executor.py...
+Applied patch tests/backends/base/test_creation.py cleanly.
+Applied patch tests/migrations/test_executor.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 backends.base.test_creation migrations.test_executor
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Testing against Django installed in '/testbed/django'
+Importing application migrations
+Importing application backends
+Found 36 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: auth, backends, contenttypes, messages, migrations, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table migrations_modelwithcustombase
+    Creating table migrations_unmigratedmodel
+    Creating table backends_square
+    Creating table backends_person
+    Creating table backends_schoolclass
+    Creating table backends_verylongmodelnamezzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+    Creating table backends_tag
+    Creating table CaseSensitive_Post
+    Creating table backends_reporter
+    Creating table backends_article
+    Creating table backends_item
+    Creating table backends_object
+    Creating table backends_objectreference
+    Creating table backends_objectselfreference
+    Creating table backends_circulara
+    Creating table backends_circularb
+    Creating table backends_rawdata
+    Creating table backends_author
+    Creating table backends_book
+    Creating table order
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+Creating test database for alias 'other' ('file:memorydb_other?mode=memory&cache=shared')...
+Operations to perform:
+  Synchronize unmigrated apps: auth, backends, contenttypes, messages, migrations, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table migrations_modelwithcustombase
+    Creating table migrations_unmigratedmodel
+    Creating table backends_square
+    Creating table backends_person
+    Creating table backends_schoolclass
+    Creating table backends_verylongmodelnamezzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+    Creating table backends_tag
+    Creating table CaseSensitive_Post
+    Creating table backends_reporter
+    Creating table backends_article
+    Creating table backends_item
+    Creating table backends_object
+    Creating table backends_objectreference
+    Creating table backends_objectselfreference
+    Creating table backends_circulara
+    Creating table backends_circularb
+    Creating table backends_rawdata
+    Creating table backends_author
+    Creating table backends_book
+    Creating table order
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+System check identified no issues (0 silenced).
+test_mark_expected_failures_and_skips_call (backends.base.test_creation.TestDbCreationTests)
+mark_expected_failures_and_skips() isn't called unless ... ok
+test_migrate_test_setting_false (backends.base.test_creation.TestDbCreationTests) ... ok
+test_migrate_test_setting_false_ensure_schema (backends.base.test_creation.TestDbCreationTests) ... FAIL
+test_migrate_test_setting_true (backends.base.test_creation.TestDbCreationTests) ... ok
+test_custom_test_name (backends.base.test_creation.TestDbSignatureTests) ... ok
+test_custom_test_name_with_test_prefix (backends.base.test_creation.TestDbSignatureTests) ... ok
+test_default_name (backends.base.test_creation.TestDbSignatureTests) ... ok
+test_circular_reference (backends.base.test_creation.TestDeserializeDbFromString) ... ok
+test_circular_reference_with_natural_key (backends.base.test_creation.TestDeserializeDbFromString) ... ok
+test_self_reference (backends.base.test_creation.TestDeserializeDbFromString) ... ok
+test_serialize_db_to_string_base_manager (backends.base.test_creation.TestDeserializeDbFromString) ... ok
+test_mark_expected_failures_and_skips (backends.base.test_creation.TestMarkTests) ... ok
+test_alter_id_type_with_fk (migrations.test_executor.ExecutorTests) ... ok
+test_apply_all_replaced_marks_replacement_as_applied (migrations.test_executor.ExecutorTests)
+Applying all replaced migrations marks replacement as applied (#24628). ... ok
+test_atomic_operation_in_non_atomic_migration (migrations.test_executor.ExecutorTests)
+An atomic operation is properly rolled back inside a non-atomic ... ok
+test_custom_user (migrations.test_executor.ExecutorTests)
+Regression test for #22325 - references to a custom user model defined in the ... ok
+test_detect_soft_applied_add_field_manytomanyfield (migrations.test_executor.ExecutorTests)
+executor.detect_soft_applied() detects ManyToManyField tables from an ... ok
+test_empty_plan (migrations.test_executor.ExecutorTests)
+Re-planning a full migration of a fully-migrated set doesn't ... ok
+test_migrate_backward_to_squashed_migration (migrations.test_executor.ExecutorTests) ... ok
+test_migrate_marks_replacement_applied_even_if_it_did_nothing (migrations.test_executor.ExecutorTests)
+A new squash migration will be marked as applied even if all its ... ok
+test_migrate_marks_replacement_unapplied (migrations.test_executor.ExecutorTests) ... ok
+test_migrate_skips_schema_creation (migrations.test_executor.ExecutorTests)
+The django_migrations table is not created if there are no migrations ... ERROR
+test_migrations_applied_and_recorded_atomically (migrations.test_executor.ExecutorTests)
+Migrations are applied and recorded atomically. ... ok
+test_migrations_not_applied_on_deferred_sql_failure (migrations.test_executor.ExecutorTests)
+Migrations are not recorded if deferred SQL application fails. ... ok
+test_mixed_plan_not_supported (migrations.test_executor.ExecutorTests)
+Although the MigrationExecutor interfaces allows for mixed migration ... ok
+test_non_atomic_migration (migrations.test_executor.ExecutorTests)
+Applying a non-atomic migration works as expected. ... ok
+test_process_callback (migrations.test_executor.ExecutorTests)
+#24129 - Tests callback process ... ok
+test_run (migrations.test_executor.ExecutorTests)
+Tests running a simple set of migrations. ... ok
+test_run_with_squashed (migrations.test_executor.ExecutorTests)
+Tests running a squashed migration from zero (should ignore what it replaces) ... ok
+test_soft_apply (migrations.test_executor.ExecutorTests)
+Tests detection of initial migrations already having been applied. ... ok
+test_unrelated_applied_migrations_mutate_state (migrations.test_executor.ExecutorTests)
+#26647 - Unrelated applied migrations should be part of the final ... ok
+test_unrelated_model_lookups_backwards (migrations.test_executor.ExecutorTests)
+#24123 - All models of apps being unapplied which are ... ok
+test_unrelated_model_lookups_forwards (migrations.test_executor.ExecutorTests)
+#24123 - All models of apps already applied which are ... ok
+test_backwards_nothing_to_do (migrations.test_executor.ExecutorUnitTests)
+If the current state satisfies the given target, do nothing. ... ok
+test_minimize_rollbacks (migrations.test_executor.ExecutorUnitTests)
+Minimize unnecessary rollbacks in connected apps. ... ok
+test_minimize_rollbacks_branchy (migrations.test_executor.ExecutorUnitTests)
+Minimize rollbacks when target has multiple in-app children. ... ok
+
+======================================================================
+ERROR: test_migrate_skips_schema_creation (migrations.test_executor.ExecutorTests)
+The django_migrations table is not created if there are no migrations
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/testbed/django/db/backends/utils.py", line 83, in _execute
+    return self.cursor.execute(sql)
+  File "/testbed/django/db/backends/sqlite3/base.py", line 332, in execute
+    return Database.Cursor.execute(self, query)
+sqlite3.OperationalError: table "django_migrations" already exists
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/testbed/django/db/migrations/recorder.py", line 71, in ensure_schema
+    editor.create_model(self.Migration)
+  File "/testbed/django/db/backends/base/schema.py", line 355, in create_model
+    self.execute(sql, params or None)
+  File "/testbed/django/db/backends/base/schema.py", line 151, in execute
+    cursor.execute(sql, params)
+  File "/testbed/django/db/backends/utils.py", line 99, in execute
+    return super().execute(sql, params)
+  File "/testbed/django/db/backends/utils.py", line 67, in execute
+    return self._execute_with_wrappers(sql, params, many=False, executor=self._execute)
+  File "/testbed/django/db/backends/utils.py", line 76, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "/testbed/django/db/backends/utils.py", line 85, in _execute
+    return self.cursor.execute(sql, params)
+  File "/testbed/django/db/utils.py", line 90, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/testbed/django/db/backends/utils.py", line 83, in _execute
+    return self.cursor.execute(sql)
+  File "/testbed/django/db/backends/sqlite3/base.py", line 332, in execute
+    return Database.Cursor.execute(self, query)
+django.db.utils.OperationalError: table "django_migrations" already exists
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/unittest/mock.py", line 1336, in patched
+    return func(*newargs, **newkeywargs)
+  File "/testbed/tests/migrations/test_executor.py", line 771, in test_migrate_skips_schema_creation
+    executor.migrate([], plan=[])
+  File "/testbed/django/db/migrations/executor.py", line 100, in migrate
+    self.recorder.ensure_schema()
+  File "/testbed/django/db/migrations/recorder.py", line 73, in ensure_schema
+    raise MigrationSchemaMissing("Unable to create the django_migrations table (%s)" % exc)
+django.db.migrations.exceptions.MigrationSchemaMissing: Unable to create the django_migrations table (table "django_migrations" already exists)
+
+======================================================================
+FAIL: test_migrate_test_setting_false_ensure_schema (backends.base.test_creation.TestDbCreationTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/unittest/mock.py", line 1336, in patched
+    return func(*newargs, **newkeywargs)
+  File "/testbed/tests/backends/base/test_creation.py", line 104, in test_migrate_test_setting_false_ensure_schema
+    mocked_ensure_schema.assert_not_called()
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/unittest/mock.py", line 868, in assert_not_called
+    raise AssertionError(msg)
+AssertionError: Expected 'ensure_schema' to not have been called. Called 1 times.
+Calls: [call()].
+
+----------------------------------------------------------------------
+Ran 36 tests in 0.380s
+
+FAILED (failures=1, errors=1)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Destroying test database for alias 'other' ('file:memorydb_other?mode=memory&cache=shared')...
++ git checkout 361bb8f786f112ee275be136795c0b1ecefff928 tests/backends/base/test_creation.py tests/migrations/test_executor.py
+Updated 2 paths from 8cc6d6c6d8

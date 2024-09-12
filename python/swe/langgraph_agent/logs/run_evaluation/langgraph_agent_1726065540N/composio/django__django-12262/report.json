@@ -1,0 +1,50 @@
+{
+    "django__django-12262": {
+        "patch_is_None": false,
+        "patch_exists": true,
+        "patch_successfully_applied": true,
+        "resolved": false,
+        "tests_status": {
+            "FAIL_TO_PASS": {
+                "success": [],
+                "failure": [
+                    "test_inclusion_tag_errors (template_tests.test_custom.InclusionTagTests)",
+                    "test_inclusion_tags (template_tests.test_custom.InclusionTagTests)",
+                    "test_simple_tag_errors (template_tests.test_custom.SimpleTagTests)",
+                    "test_simple_tags (template_tests.test_custom.SimpleTagTests)"
+                ]
+            },
+            "PASS_TO_PASS": {
+                "success": [
+                    "test_decorated_filter (template_tests.test_custom.CustomFilterTests)",
+                    "test_filter (template_tests.test_custom.CustomFilterTests)",
+                    "test_15070_use_l10n (template_tests.test_custom.InclusionTagTests)",
+                    "test_include_tag_missing_context (template_tests.test_custom.InclusionTagTests)",
+                    "test_inclusion_tag_registration (template_tests.test_custom.InclusionTagTests)",
+                    "test_inclusion_tags_from_template (template_tests.test_custom.InclusionTagTests)",
+                    "test_no_render_side_effect (template_tests.test_custom.InclusionTagTests)",
+                    "test_render_context_is_cleared (template_tests.test_custom.InclusionTagTests)",
+                    "test_simple_tag_escaping_autoescape_off (template_tests.test_custom.SimpleTagTests)",
+                    "test_simple_tag_explicit_escaping (template_tests.test_custom.SimpleTagTests)",
+                    "test_simple_tag_format_html_escaping (template_tests.test_custom.SimpleTagTests)",
+                    "test_simple_tag_missing_context (template_tests.test_custom.SimpleTagTests)",
+                    "test_simple_tag_naive_escaping (template_tests.test_custom.SimpleTagTests)",
+                    "test_simple_tag_registration (template_tests.test_custom.SimpleTagTests)",
+                    "test_load_annotated_function (template_tests.test_custom.TemplateTagLoadingTests)",
+                    "test_load_error (template_tests.test_custom.TemplateTagLoadingTests)",
+                    "test_load_error_egg (template_tests.test_custom.TemplateTagLoadingTests)",
+                    "test_load_working_egg (template_tests.test_custom.TemplateTagLoadingTests)"
+                ],
+                "failure": []
+            },
+            "FAIL_TO_FAIL": {
+                "success": [],
+                "failure": []
+            },
+            "PASS_TO_FAIL": {
+                "success": [],
+                "failure": []
+            }
+        }
+    }
+}

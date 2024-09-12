@@ -1,0 +1,577 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   django/db/models/query.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit d79be3ed39b76d3e34431873eec16f6dd354ab17
+Author: Daniele Procida <daniele@vurt.org>
+Date:   Sun Jun 27 10:55:06 2021 +0200
+
+    Refs #32880 -- Rearranged logging security notes.
+    
+    Expanded security notes and moved them under a new explanation heading
+    of their own for future reference and expansion.
+    
+    Removed specific reference to Sentry since there are multiple
+    third-party services that fulfill that role.
+
+diff --git a/docs/topics/logging.txt b/docs/topics/logging.txt
+index 5c0be8950b..b458d0c982 100644
+--- a/docs/topics/logging.txt
++++ b/docs/topics/logging.txt
+@@ -702,15 +702,8 @@ Python logging module.
+             }
+         },
+ 
+-    Note that this HTML version of the email contains a full traceback,
+-    with names and values of local variables at each level of the stack, plus
+-    the values of your Django settings. This information is potentially very
+-    sensitive, and you may not want to send it over email. Consider using
+-    something such as `Sentry`_ to get the best of both worlds -- the
+-    rich information of full tracebacks plus the security of *not* sending the
+-    information over email. You may also explicitly designate certain
+-    sensitive information to be filtered out of error reports -- learn more on
+-    :ref:`Filtering error reports<filtering-error-reports>`.
++    Be aware of the :ref:`security implications of logging
++    <logging-security-implications>` when using the ``AdminEmailHandler``.
+ 
+     By setting the ``email_backend`` argument of ``AdminEmailHandler``, the
+     :ref:`email backend <topic-email-backends>` that is being used by the
+@@ -747,8 +740,6 @@ Python logging module.
+         subclass the :class:`~django.utils.log.AdminEmailHandler` class and
+         override this method.
+ 
+-.. _Sentry: https://pypi.org/project/sentry/
+-
+ Filters
+ -------
+ 
+@@ -848,3 +839,38 @@ above.
+ See also :ref:`Configuring logging <configuring-logging>` to learn how you can
+ complement or replace this default logging configuration defined in
+ :source:`django/utils/log.py`.
++
++.. _logging-security-implications:
++
++Security implications
++=====================
++
++The logging system handles potentially sensitive information. For example, the
++log record may contain information about a web request or a stack trace, while
++some of the data you collect in your own loggers may also have security
++implications. You need to be sure you know:
++
++* what information is collected
++* where it will subsequently be stored
++* how it will be transferred
++* who might have access to it.
++
++To help control the collection of sensitive information, you can explicitly
++designate certain sensitive information to be filtered out of error reports --
++read more about how to :ref:`filter error reports <filtering-error-reports>`.
++
++``AdminEmailHandler``
++---------------------
++
++The built-in :class:`AdminEmailHandler` deserves a mention in the context of
++security. If its ``include_html`` option is enabled, the email message it sends
++will contain a full traceback, with names and values of local variables at each
++level of the stack, plus the values of your Django settings (in other words,
++the same level of detail that is exposed in a web page when :setting:`DEBUG` is
++``True``).
++
++It's generally not considered a good idea to send such potentially sensitive
++information over email. Consider instead using one of the many third-party
++services to which detailed logs can be sent to get the best of multiple worlds
++-- the rich information of full tracebacks, clear management of who is notified
++and has access to the information, and so on.
++ git diff d79be3ed39b76d3e34431873eec16f6dd354ab17
+diff --git a/django/db/models/query.py b/django/db/models/query.py
+index 387deca527..8dd11fa7b3 100644
+--- a/django/db/models/query.py
++++ b/django/db/models/query.py
+@@ -527,6 +527,8 @@ class QuerySet:
+     def bulk_update(self, objs, fields, batch_size=None):
+         """
+         Update the given fields in each of the given objects in the database.
++        
++        Returns the number of rows matched and updated.
+         """
+         if batch_size is not None and batch_size < 0:
+             raise ValueError('Batch size must be a positive integer.')
+@@ -541,7 +543,7 @@ class QuerySet:
+         if any(f.primary_key for f in fields):
+             raise ValueError('bulk_update() cannot be used with primary key fields.')
+         if not objs:
+-            return
++            return 0  # Return 0 if there are no objects to update
+         # PK is used twice in the resulting update query, once in the filter
+         # and once in the WHEN. Each field will also have one CAST.
+         max_batch_size = connections[self.db].ops.bulk_batch_size(['pk', 'pk'] + fields, objs)
+@@ -563,9 +565,14 @@ class QuerySet:
+                     case_statement = Cast(case_statement, output_field=field)
+                 update_kwargs[field.attname] = case_statement
+             updates.append(([obj.pk for obj in batch_objs], update_kwargs))
++        
++        total_rows_updated = 0  # Initialize the counter for total rows updated
+         with transaction.atomic(using=self.db, savepoint=False):
+             for pks, update_kwargs in updates:
+-                self.filter(pk__in=pks).update(**update_kwargs)
++                rows_updated = self.filter(pk__in=pks).update(**update_kwargs)
++                total_rows_updated += rows_updated  # Accumulate the number of rows updated
++        
++        return total_rows_updated  # Return the total number of rows updated
+     bulk_update.alters_data = True
+ 
+     def get_or_create(self, defaults=None, **kwargs):
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install -e .
+Obtaining file:///testbed
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: asgiref>=3.3.2 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210628094637) (3.8.1)
+Requirement already satisfied: pytz in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210628094637) (2024.1)
+Requirement already satisfied: sqlparse>=0.2.2 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from Django==4.0.dev20210628094637) (0.5.1)
+Requirement already satisfied: typing-extensions>=4 in /opt/miniconda3/envs/testbed/lib/python3.8/site-packages (from asgiref>=3.3.2->Django==4.0.dev20210628094637) (4.12.2)
+Building wheels for collected packages: Django
+  Building editable for Django (pyproject.toml): started
+  Building editable for Django (pyproject.toml): finished with status 'done'
+  Created wheel for Django: filename=Django-4.0.dev20210628094637-0.editable-py3-none-any.whl size=26194 sha256=dcfc00095bd942b8d1260e5084419531fad56389c5415b0ac7c76e0204d9e065
+  Stored in directory: /tmp/pip-ephem-wheel-cache-huwj3mox/wheels/b2/50/f1/218f2e9962a80d01a4b1297698978f9fb3b60056aa24343f24
+Successfully built Django
+Installing collected packages: Django
+  Attempting uninstall: Django
+    Found existing installation: Django 4.0.dev20210628094637
+    Uninstalling Django-4.0.dev20210628094637:
+      Successfully uninstalled Django-4.0.dev20210628094637
+Successfully installed Django-4.0.dev20210628094637
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout d79be3ed39b76d3e34431873eec16f6dd354ab17 tests/queries/test_bulk_update.py
+Updated 0 paths from 819a76c2c3
++ git apply -v -
+Checking patch tests/queries/test_bulk_update.py...
+Applied patch tests/queries/test_bulk_update.py cleanly.
++ ./tests/runtests.py --verbosity 2 --settings=test_sqlite --parallel 1 queries.test_bulk_update
+Testing against Django installed in '/testbed/django'
+Importing application queries
+Found 26 test(s).
+Skipping setup of unused database(s): other.
+Operations to perform:
+  Synchronize unmigrated apps: auth, contenttypes, messages, queries, sessions, staticfiles
+  Apply all migrations: admin, sites
+Synchronizing apps without migrations:
+  Creating tables...
+    Creating table django_content_type
+    Creating table auth_permission
+    Creating table auth_group
+    Creating table auth_user
+    Creating table django_session
+    Creating table queries_dumbcategory
+    Creating table queries_namedcategory
+    Creating table queries_tag
+    Creating table queries_note
+    Creating table queries_annotation
+    Creating table queries_datetimepk
+    Creating table queries_extrainfo
+    Creating table queries_author
+    Creating table queries_item
+    Creating table queries_report
+    Creating table queries_reportcomment
+    Creating table queries_ranking
+    Creating table queries_cover
+    Creating table queries_number
+    Creating table queries_valid
+    Creating table queries_x
+    Creating table queries_y
+    Creating table queries_loopx
+    Creating table queries_loopy
+    Creating table queries_loopz
+    Creating table queries_managedmodel
+    Creating table queries_detail
+    Creating table queries_member
+    Creating table queries_child
+    Creating table queries_custompk
+    Creating table queries_related
+    Creating table queries_custompktag
+    Creating table queries_celebrity
+    Creating table queries_tvchef
+    Creating table queries_fan
+    Creating table queries_leafa
+    Creating table queries_leafb
+    Creating table queries_join
+    Creating table queries_reservedname
+    Creating table queries_sharedconnection
+    Creating table queries_pointera
+    Creating table queries_pointerb
+    Creating table queries_singleobject
+    Creating table queries_relatedobject
+    Creating table queries_plaything
+    Creating table queries_article
+    Creating table queries_food
+    Creating table queries_eaten
+    Creating table queries_node
+    Creating table queries_objecta
+    Creating table queries_childobjecta
+    Creating table queries_objectb
+    Creating table queries_objectc
+    Creating table queries_simplecategory
+    Creating table queries_specialcategory
+    Creating table queries_categoryitem
+    Creating table queries_mixedcasefieldcategoryitem
+    Creating table queries_mixedcasedbcolumncategoryitem
+    Creating table queries_onetoonecategory
+    Creating table queries_categoryrelationship
+    Creating table queries_commonmixedcaseforeignkeys
+    Creating table queries_nullablename
+    Creating table queries_modeld
+    Creating table queries_modelc
+    Creating table queries_modelb
+    Creating table queries_modela
+    Creating table queries_job
+    Creating table queries_jobresponsibilities
+    Creating table queries_responsibility
+    Creating table queries_fk1
+    Creating table queries_fk2
+    Creating table queries_fk3
+    Creating table queries_basea
+    Creating table queries_identifier
+    Creating table queries_program
+    Creating table queries_channel
+    Creating table queries_book
+    Creating table queries_chapter
+    Creating table queries_paragraph
+    Creating table queries_page
+    Creating table queries_myobject
+    Creating table queries_order
+    Creating table queries_orderitem
+    Creating table queries_baseuser
+    Creating table queries_task
+    Creating table queries_staff
+    Creating table queries_staffuser
+    Creating table queries_ticket21203parent
+    Creating table queries_ticket21203child
+    Creating table queries_person
+    Creating table queries_company
+    Creating table queries_employment
+    Creating table queries_school
+    Creating table queries_student
+    Creating table queries_classroom
+    Creating table queries_teacher
+    Creating table queries_ticket23605aparent
+    Creating table queries_ticket23605a
+    Creating table queries_ticket23605b
+    Creating table queries_ticket23605c
+    Creating table Individual
+    Creating table RelatedIndividual
+    Creating table queries_customdbcolumn
+    Creating table queries_returningmodel
+    Creating table queries_nonintegerpkreturningmodel
+    Creating table queries_jsonfieldnullable
+    Running deferred SQL...
+Running migrations:
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying sites.0001_initial... OK
+  Applying sites.0002_alter_domain_unique... OK
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+System check identified no issues (1 silenced).
+test_batch_size (queries.test_bulk_update.BulkUpdateNoteTests) ... ok
+test_foreign_keys_do_not_lookup (queries.test_bulk_update.BulkUpdateNoteTests) ... ok
+test_functions (queries.test_bulk_update.BulkUpdateNoteTests) ... ok
+test_multiple_fields (queries.test_bulk_update.BulkUpdateNoteTests) ... ok
+test_set_field_to_null (queries.test_bulk_update.BulkUpdateNoteTests) ... ok
+test_set_mixed_fields_to_null (queries.test_bulk_update.BulkUpdateNoteTests) ... ok
+test_simple (queries.test_bulk_update.BulkUpdateNoteTests) ... ok
+test_unsaved_models (queries.test_bulk_update.BulkUpdateNoteTests) ... ok
+test_booleanfield (queries.test_bulk_update.BulkUpdateTests) ... ok
+test_custom_db_columns (queries.test_bulk_update.BulkUpdateTests) ... ok
+test_custom_pk (queries.test_bulk_update.BulkUpdateTests) ... ok
+test_datetime_field (queries.test_bulk_update.BulkUpdateTests) ... ok
+test_empty_objects (queries.test_bulk_update.BulkUpdateTests) ... ok
+test_falsey_pk_value (queries.test_bulk_update.BulkUpdateTests) ... ok
+test_field_references (queries.test_bulk_update.BulkUpdateTests) ... ok
+test_inherited_fields (queries.test_bulk_update.BulkUpdateTests) ... ok
+test_invalid_batch_size (queries.test_bulk_update.BulkUpdateTests) ... ok
+test_ipaddressfield (queries.test_bulk_update.BulkUpdateTests) ... ok
+test_json_field (queries.test_bulk_update.BulkUpdateTests) ... ok
+test_large_batch (queries.test_bulk_update.BulkUpdateTests) ... ok
+test_no_fields (queries.test_bulk_update.BulkUpdateTests) ... ok
+test_nonexistent_field (queries.test_bulk_update.BulkUpdateTests) ... ok
+test_only_concrete_fields_allowed (queries.test_bulk_update.BulkUpdateTests) ... ok
+test_update_custom_primary_key (queries.test_bulk_update.BulkUpdateTests) ... ok
+test_update_primary_key (queries.test_bulk_update.BulkUpdateTests) ... ok
+test_updated_rows_when_passing_duplicates (queries.test_bulk_update.BulkUpdateTests) ... ok
+
+----------------------------------------------------------------------
+Ran 26 tests in 0.176s
+
+OK
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
++ git checkout d79be3ed39b76d3e34431873eec16f6dd354ab17 tests/queries/test_bulk_update.py
+Updated 1 path from 819a76c2c3

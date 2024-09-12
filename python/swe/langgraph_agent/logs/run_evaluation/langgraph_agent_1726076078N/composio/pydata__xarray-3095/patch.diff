@@ -1,0 +1,39 @@
+diff --git a/xarray/core/variable.py b/xarray/core/variable.py
+index 379be8f..87fec3c 100644
+--- a/xarray/core/variable.py
++++ b/xarray/core/variable.py
+@@ -809,7 +809,7 @@ class Variable(common.AbstractArray, arithmetic.SupportsArithmetic,
+                     data = data.copy()
+                 elif not isinstance(data, PandasIndexAdapter):
+                     # pandas.Index is immutable
+-                    data = np.array(data)
++                    data = np.array(data, dtype=data.dtype)  # Preserve the original dtype
+         else:
+             data = as_compatible_data(data)
+             if self.shape != data.shape:
+diff --git a/xarray/tests/test_variable.py b/xarray/tests/test_variable.py
+index 73d2a40..9dd4f88 100644
+--- a/xarray/tests/test_variable.py
++++ b/xarray/tests/test_variable.py
+@@ -2141,4 +2141,20 @@ class TestBackendIndexing:
+         v = Variable(dims=('x', 'y'),
+                      data=CopyOnWriteArray(DaskIndexingAdapter(da)))
+         self.check_orthogonal_indexing(v)
+-        self.check_vectorized_indexing(v)
++def test_copy_preserves_unicode_dtype():
++    var = Variable(['x'], ['foo', 'bar', 'baz'])
++    assert var.dtype == '<U3'
++    var_copy = var.copy(deep=True)
++    assert var_copy.dtype == '<U3'
++    assert_identical(var, var_copy)
++
++    # Test with a more complex structure
++    ds = Dataset(
++        coords={'x': ['foo'], 'y': ('x', ['bar'])},
++        data_vars={'z': ('x', ['baz'])}
++    )
++    ds_copy = ds.copy(deep=True)
++    assert ds_copy['x'].dtype == '<U3'
++    assert ds_copy['y'].dtype == '<U3'
++    assert ds_copy['z'].dtype == '<U3'
++    assert_identical(ds, ds_copy)

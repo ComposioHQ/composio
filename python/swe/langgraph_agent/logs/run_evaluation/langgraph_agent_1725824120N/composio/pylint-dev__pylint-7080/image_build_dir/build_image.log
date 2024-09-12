@@ -1,4 +1,4 @@
-2024-09-09 07:14:22,449 - INFO - Building image sweb.eval.arm64.pylint-dev__pylint-7080:latest
+2024-09-12 09:23:21,919 - INFO - Building image sweb.eval.arm64.pylint-dev__pylint-7080:latest
 Using dockerfile:
 FROM --platform=linux/arm64/v8 sweb.env.arm64.b649f0ff62fad147f7f073:latest
 
@@ -8,7 +8,7 @@ RUN /bin/bash /root/setup_repo.sh
 WORKDIR /testbed/
 
 Adding (1) setup scripts to image build repo
-2024-09-09 07:14:22,449 - INFO - [SETUP SCRIPT] setup_repo.sh:
+2024-09-12 09:23:21,919 - INFO - [SETUP SCRIPT] setup_repo.sh:
 #!/bin/bash
 set -euxo pipefail
 git clone -o origin https://github.com/pylint-dev/pylint /testbed
@@ -21,54 +21,54 @@ conda activate testbed
 echo "Current environment: $CONDA_DEFAULT_ENV"
 python -m pip install -e .
 
-2024-09-09 07:14:22,449 - INFO - Building docker image sweb.eval.arm64.pylint-dev__pylint-7080:latest in logs/build_images/instances/sweb.eval.arm64.pylint-dev__pylint-7080__latest with platform linux/arm64/v8
-2024-09-09 07:14:22,543 - INFO - Step 1/4 : FROM --platform=linux/arm64/v8 sweb.env.arm64.b649f0ff62fad147f7f073:latest
-2024-09-09 07:14:22,543 - INFO - 
-2024-09-09 07:14:22,543 - INFO - ---> e6333bdfca97
-2024-09-09 07:14:22,543 - INFO - Step 2/4 : COPY ./setup_repo.sh /root/
-2024-09-09 07:14:22,543 - INFO - 
-2024-09-09 07:14:22,561 - INFO - ---> 645b1eb4a817
-2024-09-09 07:14:22,561 - INFO - Step 3/4 : RUN /bin/bash /root/setup_repo.sh
-2024-09-09 07:14:22,561 - INFO - 
-2024-09-09 07:14:22,575 - INFO - ---> Running in f966a05b251c
-2024-09-09 07:14:22,737 - INFO - + git clone -o origin https://github.com/pylint-dev/pylint /testbed
-2024-09-09 07:14:22,739 - INFO - Cloning into '/testbed'...
-2024-09-09 07:14:30,668 - INFO - + chmod -R 777 /testbed
-2024-09-09 07:14:30,677 - INFO - + cd /testbed
-+ git reset --hard 3c5eca2ded3dd2b59ebaf23eb289453b5d2930f0
-2024-09-09 07:14:30,794 - INFO - HEAD is now at 3c5eca2de Add documentation examples for `too-many-ancestors` (#7067)
-2024-09-09 07:14:30,794 - INFO - + git remote remove origin
-2024-09-09 07:14:30,797 - INFO - + source /opt/miniconda3/bin/activate
-2024-09-09 07:14:30,797 - INFO - ++ _CONDA_ROOT=/opt/miniconda3
-2024-09-09 07:14:30,797 - INFO - ++ . /opt/miniconda3/etc/profile.d/conda.sh
-2024-09-09 07:14:30,798 - INFO - +++ export CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-12 09:23:21,920 - INFO - Building docker image sweb.eval.arm64.pylint-dev__pylint-7080:latest in logs/build_images/instances/sweb.eval.arm64.pylint-dev__pylint-7080__latest with platform linux/arm64/v8
+2024-09-12 09:23:22,126 - INFO - Step 1/4 : FROM --platform=linux/arm64/v8 sweb.env.arm64.b649f0ff62fad147f7f073:latest
+2024-09-12 09:23:22,126 - INFO - 
+2024-09-12 09:23:22,126 - INFO - ---> e6333bdfca97
+2024-09-12 09:23:22,126 - INFO - Step 2/4 : COPY ./setup_repo.sh /root/
+2024-09-12 09:23:22,126 - INFO - 
+2024-09-12 09:23:22,157 - INFO - ---> a08ade63c8ce
+2024-09-12 09:23:22,157 - INFO - Step 3/4 : RUN /bin/bash /root/setup_repo.sh
+2024-09-12 09:23:22,157 - INFO - 
+2024-09-12 09:23:22,169 - INFO - ---> Running in 451d829e4251
+2024-09-12 09:23:22,311 - INFO - + git clone -o origin https://github.com/pylint-dev/pylint /testbed
+2024-09-12 09:23:22,317 - INFO - Cloning into '/testbed'...
+2024-09-12 09:23:30,145 - INFO - + chmod -R 777 /testbed
+2024-09-12 09:23:30,154 - INFO - + cd /testbed
+2024-09-12 09:23:30,154 - INFO - + git reset --hard 3c5eca2ded3dd2b59ebaf23eb289453b5d2930f0
+2024-09-12 09:23:30,262 - INFO - HEAD is now at 3c5eca2de Add documentation examples for `too-many-ancestors` (#7067)
+2024-09-12 09:23:30,262 - INFO - + git remote remove origin
+2024-09-12 09:23:30,264 - INFO - + source /opt/miniconda3/bin/activate
+2024-09-12 09:23:30,265 - INFO - ++ _CONDA_ROOT=/opt/miniconda3
+2024-09-12 09:23:30,265 - INFO - ++ . /opt/miniconda3/etc/profile.d/conda.sh
+2024-09-12 09:23:30,265 - INFO - +++ export CONDA_EXE=/opt/miniconda3/bin/conda
 +++ CONDA_EXE=/opt/miniconda3/bin/conda
 +++ export _CE_M=
 +++ _CE_M=
 +++ export _CE_CONDA=
 +++ _CE_CONDA=
-+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+2024-09-12 09:23:30,265 - INFO - +++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
 +++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
-2024-09-09 07:14:30,798 - INFO - +++ '[' -z '' ']'
-2024-09-09 07:14:30,798 - INFO - +++ export CONDA_SHLVL=0
+2024-09-12 09:23:30,266 - INFO - +++ '[' -z '' ']'
+2024-09-12 09:23:30,266 - INFO - +++ export CONDA_SHLVL=0
 +++ CONDA_SHLVL=0
 +++ '[' -n '' ']'
-2024-09-09 07:14:30,798 - INFO - +++++ dirname /opt/miniconda3/bin/conda
-2024-09-09 07:14:30,798 - INFO - ++++ dirname /opt/miniconda3/bin
-2024-09-09 07:14:30,799 - INFO - +++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-12 09:23:30,267 - INFO - +++++ dirname /opt/miniconda3/bin/conda
+2024-09-12 09:23:30,267 - INFO - ++++ dirname /opt/miniconda3/bin
+2024-09-12 09:23:30,268 - INFO - +++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 +++ export PATH
 +++ '[' -z '' ']'
 +++ PS1=
-2024-09-09 07:14:30,799 - INFO - ++ conda activate
+2024-09-12 09:23:30,268 - INFO - ++ conda activate
 ++ local cmd=activate
-2024-09-09 07:14:30,799 - INFO - ++ case "$cmd" in
-++ __conda_activate activate
+2024-09-12 09:23:30,268 - INFO - ++ case "$cmd" in
+2024-09-12 09:23:30,268 - INFO - ++ __conda_activate activate
 ++ '[' -n '' ']'
 ++ local ask_conda
-2024-09-09 07:14:30,799 - INFO - +++ PS1=
+2024-09-12 09:23:30,268 - INFO - +++ PS1=
 +++ __conda_exe shell.posix activate
-2024-09-09 07:14:30,799 - INFO - +++ /opt/miniconda3/bin/conda shell.posix activate
-2024-09-09 07:14:30,883 - INFO - ++ ask_conda='PS1='\''(base) '\''
+2024-09-12 09:23:30,268 - INFO - +++ /opt/miniconda3/bin/conda shell.posix activate
+2024-09-12 09:23:30,393 - INFO - ++ ask_conda='PS1='\''(base) '\''
 export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
 export CONDA_PREFIX='\''/opt/miniconda3'\''
 export CONDA_SHLVL='\''1'\''
@@ -95,7 +95,7 @@ export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
 +++ CONDA_PREFIX=/opt/miniconda3
 +++ export CONDA_SHLVL=1
 +++ CONDA_SHLVL=1
-2024-09-09 07:14:30,883 - INFO - +++ export CONDA_DEFAULT_ENV=base
++++ export CONDA_DEFAULT_ENV=base
 +++ CONDA_DEFAULT_ENV=base
 +++ export 'CONDA_PROMPT_MODIFIER=(base) '
 +++ CONDA_PROMPT_MODIFIER='(base) '
@@ -105,22 +105,22 @@ export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
 +++ _CE_M=
 +++ export _CE_CONDA=
 +++ _CE_CONDA=
-2024-09-09 07:14:30,883 - INFO - +++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
 +++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
 ++ __conda_hashr
-2024-09-09 07:14:30,883 - INFO - ++ '[' -n '' ']'
+++ '[' -n '' ']'
 ++ '[' -n '' ']'
 ++ hash -r
-+ conda activate testbed
+2024-09-12 09:23:30,393 - INFO - + conda activate testbed
 + local cmd=activate
 + case "$cmd" in
-2024-09-09 07:14:30,883 - INFO - + __conda_activate activate testbed
++ __conda_activate activate testbed
 + '[' -n '' ']'
-2024-09-09 07:14:30,883 - INFO - + local ask_conda
-2024-09-09 07:14:30,883 - INFO - ++ PS1='(base) '
++ local ask_conda
+2024-09-12 09:23:30,393 - INFO - ++ PS1='(base) '
 ++ __conda_exe shell.posix activate testbed
-2024-09-09 07:14:30,883 - INFO - ++ /opt/miniconda3/bin/conda shell.posix activate testbed
-2024-09-09 07:14:30,944 - INFO - + ask_conda='PS1='\''(testbed) '\''
+2024-09-12 09:23:30,393 - INFO - ++ /opt/miniconda3/bin/conda shell.posix activate testbed
+2024-09-12 09:23:30,450 - INFO - + ask_conda='PS1='\''(testbed) '\''
 export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
 export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
 export CONDA_SHLVL='\''2'\''
@@ -164,46 +164,46 @@ export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
 ++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
 ++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
 + __conda_hashr
-2024-09-09 07:14:30,944 - INFO - + '[' -n '' ']'
++ '[' -n '' ']'
 + '[' -n '' ']'
 + hash -r
-2024-09-09 07:14:30,944 - INFO - + echo 'Current environment: testbed'
+2024-09-12 09:23:30,451 - INFO - Current environment: testbed
+2024-09-12 09:23:30,451 - INFO - + echo 'Current environment: testbed'
 + python -m pip install -e .
-2024-09-09 07:14:30,944 - INFO - Current environment: testbed
-2024-09-09 07:14:31,132 - INFO - Obtaining file:///testbed
-2024-09-09 07:14:31,132 - INFO - Preparing metadata (setup.py): started
-2024-09-09 07:14:31,226 - INFO - Preparing metadata (setup.py): finished with status 'done'
-2024-09-09 07:14:31,310 - INFO - Collecting dill>=0.2 (from pylint==2.15.0.dev0)
-2024-09-09 07:14:31,366 - INFO - Downloading dill-0.3.8-py3-none-any.whl.metadata (10 kB)
-2024-09-09 07:14:31,377 - INFO - Requirement already satisfied: platformdirs>=2.2.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pylint==2.15.0.dev0) (4.3.2)
-2024-09-09 07:14:31,430 - INFO - Collecting astroid<=2.12.0-dev0,>=2.11.6 (from pylint==2.15.0.dev0)
-2024-09-09 07:14:31,448 - INFO - Downloading astroid-2.11.7-py3-none-any.whl.metadata (4.7 kB)
-2024-09-09 07:14:31,461 - INFO - Requirement already satisfied: isort<6,>=4.2.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pylint==2.15.0.dev0) (5.10.1)
-2024-09-09 07:14:31,461 - INFO - Requirement already satisfied: mccabe<0.8,>=0.6 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pylint==2.15.0.dev0) (0.7.0)
-2024-09-09 07:14:31,462 - INFO - Requirement already satisfied: tomlkit>=0.10.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pylint==2.15.0.dev0) (0.13.2)
-2024-09-09 07:14:31,462 - INFO - Requirement already satisfied: typing-extensions>=3.10.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pylint==2.15.0.dev0) (4.12.2)
-2024-09-09 07:14:31,462 - INFO - Requirement already satisfied: tomli>=1.1.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pylint==2.15.0.dev0) (2.0.1)
-2024-09-09 07:14:31,462 - INFO - Requirement already satisfied: lazy-object-proxy>=1.4.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from astroid<=2.12.0-dev0,>=2.11.6->pylint==2.15.0.dev0) (1.10.0)
-2024-09-09 07:14:31,463 - INFO - Requirement already satisfied: wrapt<2,>=1.11 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from astroid<=2.12.0-dev0,>=2.11.6->pylint==2.15.0.dev0) (1.16.0)
-2024-09-09 07:14:31,463 - INFO - Requirement already satisfied: setuptools>=20.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from astroid<=2.12.0-dev0,>=2.11.6->pylint==2.15.0.dev0) (72.1.0)
-2024-09-09 07:14:31,488 - INFO - Downloading astroid-2.11.7-py3-none-any.whl (251 kB)
-2024-09-09 07:14:31,604 - INFO - Downloading dill-0.3.8-py3-none-any.whl (116 kB)
-2024-09-09 07:14:31,671 - INFO - Installing collected packages: dill, astroid, pylint
-2024-09-09 07:14:31,711 - INFO - Attempting uninstall: astroid
-2024-09-09 07:14:31,711 - INFO - Found existing installation: astroid 2.12.13
-2024-09-09 07:14:31,718 - INFO - Uninstalling astroid-2.12.13:
-2024-09-09 07:14:31,735 - INFO - Successfully uninstalled astroid-2.12.13
-2024-09-09 07:14:31,803 - INFO - DEPRECATION: Legacy editable install of pylint==2.15.0.dev0 from file:///testbed (setup.py develop) is deprecated. pip 25.0 will enforce this behaviour change. A possible replacement is to add a pyproject.toml or enable --use-pep517, and use setuptools >= 64. If the resulting installation is not behaving as expected, try using --config-settings editable_mode=compat. Please consult the setuptools documentation for more information. Discussion can be found at https://github.com/pypa/pip/issues/11457
-2024-09-09 07:14:31,803 - INFO - Running setup.py develop for pylint
-2024-09-09 07:14:31,931 - INFO - Successfully installed astroid-2.11.7 dill-0.3.8 pylint
-2024-09-09 07:14:31,931 - INFO - WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
-2024-09-09 07:14:33,006 - INFO - ---> Removed intermediate container f966a05b251c
-2024-09-09 07:14:33,006 - INFO - ---> a9d062b36285
-2024-09-09 07:14:33,006 - INFO - Step 4/4 : WORKDIR /testbed/
-2024-09-09 07:14:33,006 - INFO - 
-2024-09-09 07:14:33,031 - INFO - ---> Running in ff1ba262e1bc
-2024-09-09 07:14:33,045 - INFO - ---> Removed intermediate container ff1ba262e1bc
-2024-09-09 07:14:33,045 - INFO - ---> bcefcb42c4a8
-2024-09-09 07:14:33,045 - INFO - Successfully built bcefcb42c4a8
-2024-09-09 07:14:33,047 - INFO - Successfully tagged sweb.eval.arm64.pylint-dev__pylint-7080:latest
-2024-09-09 07:14:33,047 - INFO - Image built successfully!
+2024-09-12 09:23:30,760 - INFO - Obtaining file:///testbed
+2024-09-12 09:23:30,761 - INFO - Preparing metadata (setup.py): started
+2024-09-12 09:23:30,890 - INFO - Preparing metadata (setup.py): finished with status 'done'
+2024-09-12 09:23:30,998 - INFO - Collecting dill>=0.2 (from pylint==2.15.0.dev0)
+2024-09-12 09:23:31,120 - INFO - Downloading dill-0.3.8-py3-none-any.whl.metadata (10 kB)
+2024-09-12 09:23:31,134 - INFO - Requirement already satisfied: platformdirs>=2.2.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pylint==2.15.0.dev0) (4.3.2)
+2024-09-12 09:23:31,206 - INFO - Collecting astroid<=2.12.0-dev0,>=2.11.6 (from pylint==2.15.0.dev0)
+2024-09-12 09:23:31,264 - INFO - Downloading astroid-2.11.7-py3-none-any.whl.metadata (4.7 kB)
+2024-09-12 09:23:31,279 - INFO - Requirement already satisfied: isort<6,>=4.2.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pylint==2.15.0.dev0) (5.10.1)
+2024-09-12 09:23:31,280 - INFO - Requirement already satisfied: mccabe<0.8,>=0.6 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pylint==2.15.0.dev0) (0.7.0)
+2024-09-12 09:23:31,280 - INFO - Requirement already satisfied: tomlkit>=0.10.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pylint==2.15.0.dev0) (0.13.2)
+2024-09-12 09:23:31,280 - INFO - Requirement already satisfied: typing-extensions>=3.10.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pylint==2.15.0.dev0) (4.12.2)
+2024-09-12 09:23:31,281 - INFO - Requirement already satisfied: tomli>=1.1.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pylint==2.15.0.dev0) (2.0.1)
+2024-09-12 09:23:31,281 - INFO - Requirement already satisfied: lazy-object-proxy>=1.4.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from astroid<=2.12.0-dev0,>=2.11.6->pylint==2.15.0.dev0) (1.10.0)
+2024-09-12 09:23:31,282 - INFO - Requirement already satisfied: wrapt<2,>=1.11 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from astroid<=2.12.0-dev0,>=2.11.6->pylint==2.15.0.dev0) (1.16.0)
+2024-09-12 09:23:31,282 - INFO - Requirement already satisfied: setuptools>=20.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from astroid<=2.12.0-dev0,>=2.11.6->pylint==2.15.0.dev0) (72.1.0)
+2024-09-12 09:23:31,331 - INFO - Downloading astroid-2.11.7-py3-none-any.whl (251 kB)
+2024-09-12 09:23:31,505 - INFO - Downloading dill-0.3.8-py3-none-any.whl (116 kB)
+2024-09-12 09:23:31,592 - INFO - Installing collected packages: dill, astroid, pylint
+2024-09-12 09:23:31,645 - INFO - Attempting uninstall: astroid
+2024-09-12 09:23:31,645 - INFO - Found existing installation: astroid 2.12.13
+2024-09-12 09:23:31,655 - INFO - Uninstalling astroid-2.12.13:
+2024-09-12 09:23:31,683 - INFO - Successfully uninstalled astroid-2.12.13
+2024-09-12 09:23:31,746 - INFO - DEPRECATION: Legacy editable install of pylint==2.15.0.dev0 from file:///testbed (setup.py develop) is deprecated. pip 25.0 will enforce this behaviour change. A possible replacement is to add a pyproject.toml or enable --use-pep517, and use setuptools >= 64. If the resulting installation is not behaving as expected, try using --config-settings editable_mode=compat. Please consult the setuptools documentation for more information. Discussion can be found at https://github.com/pypa/pip/issues/11457
+2024-09-12 09:23:31,747 - INFO - Running setup.py develop for pylint
+2024-09-12 09:23:31,883 - INFO - Successfully installed astroid-2.11.7 dill-0.3.8 pylint
+2024-09-12 09:23:31,884 - INFO - WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+2024-09-12 09:23:32,993 - INFO - ---> Removed intermediate container 451d829e4251
+2024-09-12 09:23:32,993 - INFO - ---> 58a8a87e851e
+2024-09-12 09:23:32,993 - INFO - Step 4/4 : WORKDIR /testbed/
+2024-09-12 09:23:32,993 - INFO - 
+2024-09-12 09:23:33,008 - INFO - ---> Running in da99666d5aab
+2024-09-12 09:23:33,039 - INFO - ---> Removed intermediate container da99666d5aab
+2024-09-12 09:23:33,040 - INFO - ---> a025c98f6c09
+2024-09-12 09:23:33,040 - INFO - Successfully built a025c98f6c09
+2024-09-12 09:23:33,042 - INFO - Successfully tagged sweb.eval.arm64.pylint-dev__pylint-7080:latest
+2024-09-12 09:23:33,042 - INFO - Image built successfully!

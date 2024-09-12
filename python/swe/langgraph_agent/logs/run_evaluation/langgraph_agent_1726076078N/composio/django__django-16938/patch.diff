@@ -1,0 +1,47 @@
+diff --git a/django/core/serializers/base.py b/django/core/serializers/base.py
+index 20dffac0..8e12ede2 100644
+--- a/django/core/serializers/base.py
++++ b/django/core/serializers/base.py
+@@ -83,6 +83,8 @@ class Serializer:
+     def serialize(
+         self,
+         queryset,
++        # The following changes address the issue with serialization of m2m relations
++        # when using custom managers with select_related (see #33937)
+         *,
+         stream=None,
+         fields=None,
+@@ -98,6 +100,11 @@ class Serializer:
+         self.options = options
+ 
+         self.stream = stream if stream is not None else self.stream_class()
++        
++        # Temporarily disable select_related for custom managers
++        original_queryset = queryset
++        if hasattr(queryset.model, '_default_manager'):
++            queryset = queryset.model._default_manager.filter(pk__in=queryset)
+         self.selected_fields = fields
+         self.use_natural_foreign_keys = use_natural_foreign_keys
+         self.use_natural_primary_keys = use_natural_primary_keys
+@@ -195,9 +202,18 @@ class Serializer:
+         """
+         Called to handle a ManyToManyField.
+         """
+-        raise NotImplementedError(
+-            "subclasses of Serializer must provide a handle_m2m_field() method"
+-        )
++        if field.remote_field.through._meta.auto_created:
++            if self.use_natural_foreign_keys and hasattr(field.remote_field.model, "natural_key"):
++                m2m_value = lambda value: value.natural_key()
++            else:
++                m2m_value = lambda value: self._value_from_field(field.remote_field.model, value.pk)
++            m2m_iter = getattr(obj, field.name).iterator()
++            # Use the default manager to avoid select_related issues
++            if hasattr(field.remote_field.model, '_default_manager'):
++                m2m_iter = field.remote_field.model._default_manager.filter(pk__in=m2m_iter)
++            return [m2m_value(related) for related in m2m_iter]
++        else:
++            raise NotImplementedError("handle_m2m_field() is not implemented for non-auto created M2M fields.")
+ 
+     def getvalue(self):
+         """

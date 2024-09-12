@@ -1,0 +1,801 @@
+2024-09-12 10:31:56,913 - INFO - Building image sweb.eval.x86_64.scikit-learn__scikit-learn-13135:latest
+Using dockerfile:
+FROM --platform=linux/x86_64 sweb.env.x86_64.aa92880033da20ca313928:latest
+
+COPY ./setup_repo.sh /root/
+RUN /bin/bash /root/setup_repo.sh
+
+WORKDIR /testbed/
+
+Adding (1) setup scripts to image build repo
+2024-09-12 10:31:56,914 - INFO - [SETUP SCRIPT] setup_repo.sh:
+#!/bin/bash
+set -euxo pipefail
+git clone -o origin https://github.com/scikit-learn/scikit-learn /testbed
+chmod -R 777 /testbed
+cd /testbed
+git reset --hard a061ada48efccf0845acae17009553e01764452b
+git remote remove origin
+source /opt/miniconda3/bin/activate
+conda activate testbed
+echo "Current environment: $CONDA_DEFAULT_ENV"
+python -m pip install -v --no-use-pep517 --no-build-isolation -e .
+
+2024-09-12 10:31:56,914 - INFO - Building docker image sweb.eval.x86_64.scikit-learn__scikit-learn-13135:latest in logs/build_images/instances/sweb.eval.x86_64.scikit-learn__scikit-learn-13135__latest with platform linux/x86_64
+2024-09-12 10:31:57,133 - INFO - Step 1/4 : FROM --platform=linux/x86_64 sweb.env.x86_64.aa92880033da20ca313928:latest
+2024-09-12 10:31:57,133 - INFO - 
+2024-09-12 10:31:57,133 - INFO - ---> 35878756f200
+2024-09-12 10:31:57,133 - INFO - Step 2/4 : COPY ./setup_repo.sh /root/
+2024-09-12 10:31:57,133 - INFO - 
+2024-09-12 10:31:57,166 - INFO - ---> 504403bbd17d
+2024-09-12 10:31:57,166 - INFO - Step 3/4 : RUN /bin/bash /root/setup_repo.sh
+2024-09-12 10:31:57,166 - INFO - 
+2024-09-12 10:31:57,178 - INFO - ---> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+2024-09-12 10:31:57,178 - INFO - ---> Running in e03ed6571490
+2024-09-12 10:31:57,391 - INFO - + git clone -o origin https://github.com/scikit-learn/scikit-learn /testbed
+2024-09-12 10:31:57,410 - INFO - Cloning into '/testbed'...
+2024-09-12 10:33:11,203 - INFO - + chmod -R 777 /testbed
+2024-09-12 10:33:11,222 - INFO - + cd /testbed
+2024-09-12 10:33:11,222 - INFO - + git reset --hard a061ada48efccf0845acae17009553e01764452b
+2024-09-12 10:33:11,546 - INFO - HEAD is now at a061ada48 FEA Print Decision Trees in ASCII format (#9424)
+2024-09-12 10:33:11,548 - INFO - + git remote remove origin
+2024-09-12 10:33:11,576 - INFO - + source /opt/miniconda3/bin/activate
+2024-09-12 10:33:11,578 - INFO - ++ _CONDA_ROOT=/opt/miniconda3
+2024-09-12 10:33:11,579 - INFO - ++ . /opt/miniconda3/etc/profile.d/conda.sh
+2024-09-12 10:33:11,580 - INFO - +++ export CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-12 10:33:11,580 - INFO - +++ CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-12 10:33:11,580 - INFO - +++ export _CE_M=
+2024-09-12 10:33:11,580 - INFO - +++ _CE_M=
+2024-09-12 10:33:11,580 - INFO - +++ export _CE_CONDA=
++++ _CE_CONDA=
+2024-09-12 10:33:11,580 - INFO - +++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+2024-09-12 10:33:11,583 - INFO - +++ '[' -z '' ']'
+2024-09-12 10:33:11,583 - INFO - +++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
+2024-09-12 10:33:11,584 - INFO - +++ '[' -n '' ']'
+2024-09-12 10:33:11,586 - INFO - +++++ dirname /opt/miniconda3/bin/conda
+2024-09-12 10:33:11,596 - INFO - ++++ dirname /opt/miniconda3/bin
+2024-09-12 10:33:11,607 - INFO - +++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-12 10:33:11,607 - INFO - +++ export PATH
+2024-09-12 10:33:11,607 - INFO - +++ '[' -z '' ']'
++++ PS1=
+2024-09-12 10:33:11,607 - INFO - ++ conda activate
+2024-09-12 10:33:11,608 - INFO - ++ local cmd=activate
+2024-09-12 10:33:11,609 - INFO - ++ case "$cmd" in
+2024-09-12 10:33:11,609 - INFO - ++ __conda_activate activate
+2024-09-12 10:33:11,609 - INFO - ++ '[' -n '' ']'
+2024-09-12 10:33:11,609 - INFO - ++ local ask_conda
+2024-09-12 10:33:11,611 - INFO - +++ PS1=
+2024-09-12 10:33:11,611 - INFO - +++ __conda_exe shell.posix activate
+2024-09-12 10:33:11,612 - INFO - +++ /opt/miniconda3/bin/conda shell.posix activate
+2024-09-12 10:33:12,043 - INFO - ++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+2024-09-12 10:33:12,044 - INFO - ++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+2024-09-12 10:33:12,044 - INFO - +++ PS1='(base) '
+2024-09-12 10:33:12,044 - INFO - +++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-12 10:33:12,044 - INFO - +++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
+2024-09-12 10:33:12,044 - INFO - +++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
+2024-09-12 10:33:12,044 - INFO - +++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-12 10:33:12,044 - INFO - +++ CONDA_EXE=/opt/miniconda3/bin/conda
+2024-09-12 10:33:12,044 - INFO - +++ export _CE_M=
++++ _CE_M=
+2024-09-12 10:33:12,044 - INFO - +++ export _CE_CONDA=
++++ _CE_CONDA=
+2024-09-12 10:33:12,045 - INFO - +++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+2024-09-12 10:33:12,045 - INFO - ++ __conda_hashr
+2024-09-12 10:33:12,045 - INFO - ++ '[' -n '' ']'
+2024-09-12 10:33:12,045 - INFO - ++ '[' -n '' ']'
+++ hash -r
+2024-09-12 10:33:12,045 - INFO - + conda activate testbed
+2024-09-12 10:33:12,045 - INFO - + local cmd=activate
+2024-09-12 10:33:12,045 - INFO - + case "$cmd" in
+2024-09-12 10:33:12,045 - INFO - + __conda_activate activate testbed
+2024-09-12 10:33:12,045 - INFO - + '[' -n '' ']'
+2024-09-12 10:33:12,045 - INFO - + local ask_conda
+2024-09-12 10:33:12,046 - INFO - ++ PS1='(base) '
+2024-09-12 10:33:12,046 - INFO - ++ __conda_exe shell.posix activate testbed
+2024-09-12 10:33:12,047 - INFO - ++ /opt/miniconda3/bin/conda shell.posix activate testbed
+2024-09-12 10:33:12,464 - INFO - + ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+2024-09-12 10:33:12,464 - INFO - + eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+2024-09-12 10:33:12,464 - INFO - ++ PS1='(testbed) '
+2024-09-12 10:33:12,465 - INFO - ++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2024-09-12 10:33:12,465 - INFO - ++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+2024-09-12 10:33:12,465 - INFO - ++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+2024-09-12 10:33:12,465 - INFO - ++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+2024-09-12 10:33:12,465 - INFO - ++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+2024-09-12 10:33:12,465 - INFO - ++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+2024-09-12 10:33:12,465 - INFO - + __conda_hashr
+2024-09-12 10:33:12,465 - INFO - + '[' -n '' ']'
+2024-09-12 10:33:12,465 - INFO - + '[' -n '' ']'
+2024-09-12 10:33:12,466 - INFO - + hash -r
+2024-09-12 10:33:12,466 - INFO - + echo 'Current environment: testbed'
+2024-09-12 10:33:12,466 - INFO - Current environment: testbed
+2024-09-12 10:33:12,466 - INFO - + python -m pip install -v --no-use-pep517 --no-build-isolation -e .
+2024-09-12 10:33:13,579 - INFO - Using pip 21.2.2 from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/pip (python 3.6)
+2024-09-12 10:33:13,679 - INFO - Obtaining file:///testbed
+2024-09-12 10:33:13,681 - INFO - Running command python setup.py egg_info
+2024-09-12 10:33:14,936 - INFO - running egg_info
+2024-09-12 10:33:14,939 - INFO - creating /tmp/pip-pip-egg-info-tig_wsad/scikit_learn.egg-info
+2024-09-12 10:33:14,939 - INFO - writing /tmp/pip-pip-egg-info-tig_wsad/scikit_learn.egg-info/PKG-INFO
+2024-09-12 10:33:14,941 - INFO - writing dependency_links to /tmp/pip-pip-egg-info-tig_wsad/scikit_learn.egg-info/dependency_links.txt
+2024-09-12 10:33:14,942 - INFO - writing requirements to /tmp/pip-pip-egg-info-tig_wsad/scikit_learn.egg-info/requires.txt
+2024-09-12 10:33:14,942 - INFO - writing top-level names to /tmp/pip-pip-egg-info-tig_wsad/scikit_learn.egg-info/top_level.txt
+2024-09-12 10:33:14,942 - INFO - writing manifest file '/tmp/pip-pip-egg-info-tig_wsad/scikit_learn.egg-info/SOURCES.txt'
+2024-09-12 10:33:14,944 - INFO - reading manifest file '/tmp/pip-pip-egg-info-tig_wsad/scikit_learn.egg-info/SOURCES.txt'
+2024-09-12 10:33:14,944 - INFO - reading manifest template 'MANIFEST.in'
+2024-09-12 10:33:15,227 - INFO - adding license file 'COPYING'
+2024-09-12 10:33:15,255 - INFO - writing manifest file '/tmp/pip-pip-egg-info-tig_wsad/scikit_learn.egg-info/SOURCES.txt'
+2024-09-12 10:33:15,256 - INFO - Partial import of sklearn during the build process.
+2024-09-12 10:33:15,362 - INFO - Requirement already satisfied: numpy>=1.11.0 in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from scikit-learn==0.21.dev0) (1.19.2)
+2024-09-12 10:33:15,365 - INFO - Requirement already satisfied: scipy>=0.17.0 in /opt/miniconda3/envs/testbed/lib/python3.6/site-packages (from scikit-learn==0.21.dev0) (1.5.2)
+2024-09-12 10:33:15,687 - INFO - Installing collected packages: scikit-learn
+2024-09-12 10:33:15,691 - INFO - Running setup.py develop for scikit-learn
+2024-09-12 10:33:15,691 - INFO - Running command /opt/miniconda3/envs/testbed/bin/python -c 'import io, os, sys, setuptools, tokenize; sys.argv[0] = '"'"'/testbed/setup.py'"'"'; __file__='"'"'/testbed/setup.py'"'"';f = getattr(tokenize, '"'"'open'"'"', open)(__file__) if os.path.exists(__file__) else io.StringIO('"'"'from setuptools import setup; setup()'"'"');code = f.read().replace('"'"'\r\n'"'"', '"'"'\n'"'"');f.close();exec(compile(code, __file__, '"'"'exec'"'"'))' develop --no-deps
+2024-09-12 10:33:16,992 - INFO - blas_opt_info:
+2024-09-12 10:33:16,994 - INFO - blas_mkl_info:
+2024-09-12 10:33:16,995 - INFO - customize UnixCCompiler
+2024-09-12 10:33:16,998 - INFO - libraries mkl_rt not found in ['/opt/miniconda3/envs/testbed/lib', '/usr/local/lib', '/usr/lib64', '/usr/lib', '/usr/lib/x86_64-linux-gnu']
+2024-09-12 10:33:16,998 - INFO - NOT AVAILABLE
+2024-09-12 10:33:16,998 - INFO - 
+2024-09-12 10:33:16,999 - INFO - blis_info:
+2024-09-12 10:33:17,000 - INFO - libraries blis not found in ['/opt/miniconda3/envs/testbed/lib', '/usr/local/lib', '/usr/lib64', '/usr/lib', '/usr/lib/x86_64-linux-gnu']
+2024-09-12 10:33:17,000 - INFO - NOT AVAILABLE
+2024-09-12 10:33:17,000 - INFO - 
+2024-09-12 10:33:17,002 - INFO - openblas_info:
+2024-09-12 10:33:17,012 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 10:33:17,013 - INFO - 
+2024-09-12 10:33:17,013 - INFO - creating /tmp/tmpe9ioq4uo/tmp
+2024-09-12 10:33:17,013 - INFO - creating /tmp/tmpe9ioq4uo/tmp/tmpe9ioq4uo
+2024-09-12 10:33:17,013 - INFO - compile options: '-c'
+2024-09-12 10:33:17,013 - INFO - gcc: /tmp/tmpe9ioq4uo/source.c
+2024-09-12 10:33:17,272 - INFO - gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ /tmp/tmpe9ioq4uo/tmp/tmpe9ioq4uo/source.o -L/opt/miniconda3/envs/testbed/lib -lopenblas -o /tmp/tmpe9ioq4uo/a.out
+2024-09-12 10:33:17,399 - INFO - FOUND:
+2024-09-12 10:33:17,399 - INFO - libraries = ['openblas', 'openblas']
+2024-09-12 10:33:17,399 - INFO - library_dirs = ['/opt/miniconda3/envs/testbed/lib']
+2024-09-12 10:33:17,399 - INFO - language = c
+2024-09-12 10:33:17,399 - INFO - define_macros = [('HAVE_CBLAS', None)]
+2024-09-12 10:33:17,400 - INFO - 
+2024-09-12 10:33:17,400 - INFO - FOUND:
+2024-09-12 10:33:17,400 - INFO - libraries = ['openblas', 'openblas']
+2024-09-12 10:33:17,400 - INFO - library_dirs = ['/opt/miniconda3/envs/testbed/lib']
+2024-09-12 10:33:17,401 - INFO - language = c
+2024-09-12 10:33:17,401 - INFO - define_macros = [('HAVE_CBLAS', None)]
+2024-09-12 10:33:17,401 - INFO - 
+2024-09-12 10:34:27,604 - INFO - Partial import of sklearn during the build process.
+2024-09-12 10:34:27,605 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/__check_build/_check_build.pyx
+2024-09-12 10:34:27,606 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,606 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/_isotonic.pyx
+2024-09-12 10:34:27,606 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,606 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/cluster/_dbscan_inner.pyx
+2024-09-12 10:34:27,606 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,606 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/cluster/_hierarchical.pyx
+2024-09-12 10:34:27,606 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,606 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/cluster/_k_means.pyx
+2024-09-12 10:34:27,606 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,606 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/cluster/_k_means_elkan.pyx
+2024-09-12 10:34:27,607 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,607 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/datasets/_svmlight_format.pyx
+2024-09-12 10:34:27,607 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,607 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/decomposition/_online_lda.pyx
+2024-09-12 10:34:27,607 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,608 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/decomposition/cdnmf_fast.pyx
+2024-09-12 10:34:27,608 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,608 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/ensemble/_gradient_boosting.pyx
+2024-09-12 10:34:27,608 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,608 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/feature_extraction/_hashing.pyx
+2024-09-12 10:34:27,609 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,609 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/linear_model/cd_fast.pyx
+2024-09-12 10:34:27,609 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,609 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/linear_model/sag_fast.pyx
+2024-09-12 10:34:27,609 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,610 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/linear_model/sgd_fast.pxd
+2024-09-12 10:34:27,610 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,610 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/manifold/_barnes_hut_tsne.pyx
+2024-09-12 10:34:27,610 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,610 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/manifold/_utils.pyx
+2024-09-12 10:34:27,611 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,611 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/metrics/cluster/expected_mutual_info_fast.pyx
+2024-09-12 10:34:27,611 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,611 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/metrics/pairwise_fast.pyx
+2024-09-12 10:34:27,611 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,611 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/neighbors/ball_tree.pyx
+2024-09-12 10:34:27,612 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,612 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/neighbors/dist_metrics.pxd
+2024-09-12 10:34:27,612 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,612 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/neighbors/kd_tree.pyx
+2024-09-12 10:34:27,612 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,613 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/neighbors/quad_tree.pxd
+2024-09-12 10:34:27,613 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,613 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/neighbors/typedefs.pxd
+2024-09-12 10:34:27,613 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,613 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/preprocessing/_csr_polynomial_expansion.pyx
+2024-09-12 10:34:27,614 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,614 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/svm/liblinear.pxd
+2024-09-12 10:34:27,614 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,614 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/svm/libsvm.pxd
+2024-09-12 10:34:27,614 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:27,615 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/Cython/Compiler/Main.py:369: FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). This will change in a later release! File: /testbed/sklearn/svm/libsvm_sparse.pyx
+2024-09-12 10:34:27,615 - INFO - tree = Parsing.p_module(s, pxd, full_module_name)
+2024-09-12 10:34:56,304 - INFO - Compiling sklearn/__check_build/_check_build.pyx because it changed.
+2024-09-12 10:34:56,305 - INFO - Compiling sklearn/preprocessing/_csr_polynomial_expansion.pyx because it changed.
+2024-09-12 10:34:56,306 - INFO - Compiling sklearn/cluster/_dbscan_inner.pyx because it changed.
+2024-09-12 10:34:56,306 - INFO - Compiling sklearn/cluster/_hierarchical.pyx because it changed.
+2024-09-12 10:34:56,306 - INFO - Compiling sklearn/cluster/_k_means_elkan.pyx because it changed.
+2024-09-12 10:34:56,306 - INFO - Compiling sklearn/cluster/_k_means.pyx because it changed.
+2024-09-12 10:34:56,306 - INFO - Compiling sklearn/datasets/_svmlight_format.pyx because it changed.
+2024-09-12 10:34:56,306 - INFO - Compiling sklearn/decomposition/_online_lda.pyx because it changed.
+2024-09-12 10:34:56,306 - INFO - Compiling sklearn/decomposition/cdnmf_fast.pyx because it changed.
+2024-09-12 10:34:56,306 - INFO - Compiling sklearn/ensemble/_gradient_boosting.pyx because it changed.
+2024-09-12 10:34:56,307 - INFO - Compiling sklearn/feature_extraction/_hashing.pyx because it changed.
+2024-09-12 10:34:56,307 - INFO - Compiling sklearn/manifold/_utils.pyx because it changed.
+2024-09-12 10:34:56,307 - INFO - Compiling sklearn/manifold/_barnes_hut_tsne.pyx because it changed.
+2024-09-12 10:34:56,307 - INFO - Compiling sklearn/metrics/cluster/expected_mutual_info_fast.pyx because it changed.
+2024-09-12 10:34:56,307 - INFO - Compiling sklearn/metrics/pairwise_fast.pyx because it changed.
+2024-09-12 10:34:56,308 - INFO - Compiling sklearn/neighbors/ball_tree.pyx because it changed.
+2024-09-12 10:34:56,308 - INFO - Compiling sklearn/neighbors/kd_tree.pyx because it changed.
+2024-09-12 10:34:56,308 - INFO - Compiling sklearn/neighbors/dist_metrics.pyx because it changed.
+2024-09-12 10:34:56,308 - INFO - Compiling sklearn/neighbors/typedefs.pyx because it changed.
+2024-09-12 10:34:56,308 - INFO - Compiling sklearn/neighbors/quad_tree.pyx because it changed.
+2024-09-12 10:34:56,308 - INFO - Compiling sklearn/tree/_tree.pyx because it changed.
+2024-09-12 10:34:56,308 - INFO - Compiling sklearn/tree/_splitter.pyx because it changed.
+2024-09-12 10:34:56,308 - INFO - Compiling sklearn/tree/_criterion.pyx because it changed.
+2024-09-12 10:34:56,308 - INFO - Compiling sklearn/tree/_utils.pyx because it changed.
+2024-09-12 10:34:56,309 - INFO - Compiling sklearn/svm/libsvm.pyx because it changed.
+2024-09-12 10:34:56,309 - INFO - Compiling sklearn/svm/liblinear.pyx because it changed.
+2024-09-12 10:34:56,309 - INFO - Compiling sklearn/svm/libsvm_sparse.pyx because it changed.
+2024-09-12 10:34:56,309 - INFO - Compiling sklearn/_isotonic.pyx because it changed.
+2024-09-12 10:34:56,309 - INFO - Compiling sklearn/linear_model/cd_fast.pyx because it changed.
+2024-09-12 10:34:56,310 - INFO - Compiling sklearn/linear_model/sgd_fast.pyx because it changed.
+2024-09-12 10:34:56,310 - INFO - Compiling sklearn/linear_model/sag_fast.pyx because it changed.
+2024-09-12 10:34:56,310 - INFO - Compiling sklearn/utils/sparsefuncs_fast.pyx because it changed.
+2024-09-12 10:34:56,310 - INFO - Compiling sklearn/utils/_cython_blas.pyx because it changed.
+2024-09-12 10:34:56,310 - INFO - Compiling sklearn/utils/arrayfuncs.pyx because it changed.
+2024-09-12 10:34:56,310 - INFO - Compiling sklearn/utils/murmurhash.pyx because it changed.
+2024-09-12 10:34:56,311 - INFO - Compiling sklearn/utils/lgamma.pyx because it changed.
+2024-09-12 10:34:56,311 - INFO - Compiling sklearn/utils/graph_shortest_path.pyx because it changed.
+2024-09-12 10:34:56,311 - INFO - Compiling sklearn/utils/fast_dict.pyx because it changed.
+2024-09-12 10:34:56,311 - INFO - Compiling sklearn/utils/seq_dataset.pyx because it changed.
+2024-09-12 10:34:56,311 - INFO - Compiling sklearn/utils/weight_vector.pyx because it changed.
+2024-09-12 10:34:56,311 - INFO - Compiling sklearn/utils/_random.pyx because it changed.
+2024-09-12 10:34:56,312 - INFO - Compiling sklearn/utils/_logistic_sigmoid.pyx because it changed.
+2024-09-12 10:34:56,312 - INFO - [ 1/42] Cythonizing sklearn/__check_build/_check_build.pyx
+2024-09-12 10:34:56,312 - INFO - [ 2/42] Cythonizing sklearn/_isotonic.pyx
+2024-09-12 10:34:56,312 - INFO - [ 3/42] Cythonizing sklearn/cluster/_dbscan_inner.pyx
+2024-09-12 10:34:56,312 - INFO - [ 4/42] Cythonizing sklearn/cluster/_hierarchical.pyx
+2024-09-12 10:34:56,313 - INFO - [ 5/42] Cythonizing sklearn/cluster/_k_means.pyx
+2024-09-12 10:34:56,313 - INFO - [ 6/42] Cythonizing sklearn/cluster/_k_means_elkan.pyx
+2024-09-12 10:34:56,313 - INFO - [ 7/42] Cythonizing sklearn/datasets/_svmlight_format.pyx
+2024-09-12 10:34:56,313 - INFO - [ 8/42] Cythonizing sklearn/decomposition/_online_lda.pyx
+2024-09-12 10:34:56,313 - INFO - [ 9/42] Cythonizing sklearn/decomposition/cdnmf_fast.pyx
+2024-09-12 10:34:56,314 - INFO - [10/42] Cythonizing sklearn/ensemble/_gradient_boosting.pyx
+2024-09-12 10:34:56,314 - INFO - [11/42] Cythonizing sklearn/feature_extraction/_hashing.pyx
+2024-09-12 10:34:56,314 - INFO - [12/42] Cythonizing sklearn/linear_model/cd_fast.pyx
+2024-09-12 10:34:56,314 - INFO - [13/42] Cythonizing sklearn/linear_model/sag_fast.pyx
+2024-09-12 10:34:56,314 - INFO - [14/42] Cythonizing sklearn/linear_model/sgd_fast.pyx
+2024-09-12 10:34:56,314 - INFO - [15/42] Cythonizing sklearn/manifold/_barnes_hut_tsne.pyx
+2024-09-12 10:34:56,315 - INFO - [16/42] Cythonizing sklearn/manifold/_utils.pyx
+2024-09-12 10:34:56,315 - INFO - [17/42] Cythonizing sklearn/metrics/cluster/expected_mutual_info_fast.pyx
+2024-09-12 10:34:56,315 - INFO - [18/42] Cythonizing sklearn/metrics/pairwise_fast.pyx
+2024-09-12 10:34:56,315 - INFO - [19/42] Cythonizing sklearn/neighbors/ball_tree.pyx
+2024-09-12 10:34:56,315 - INFO - [20/42] Cythonizing sklearn/neighbors/dist_metrics.pyx
+2024-09-12 10:34:56,316 - INFO - [21/42] Cythonizing sklearn/neighbors/kd_tree.pyx
+2024-09-12 10:34:56,316 - INFO - [22/42] Cythonizing sklearn/neighbors/quad_tree.pyx
+2024-09-12 10:34:56,316 - INFO - [23/42] Cythonizing sklearn/neighbors/typedefs.pyx
+2024-09-12 10:34:56,316 - INFO - [24/42] Cythonizing sklearn/preprocessing/_csr_polynomial_expansion.pyx
+2024-09-12 10:34:56,316 - INFO - [25/42] Cythonizing sklearn/svm/liblinear.pyx
+2024-09-12 10:34:56,317 - INFO - [26/42] Cythonizing sklearn/svm/libsvm.pyx
+2024-09-12 10:34:56,317 - INFO - [27/42] Cythonizing sklearn/svm/libsvm_sparse.pyx
+2024-09-12 10:34:56,317 - INFO - [28/42] Cythonizing sklearn/tree/_criterion.pyx
+2024-09-12 10:34:56,317 - INFO - [29/42] Cythonizing sklearn/tree/_splitter.pyx
+2024-09-12 10:34:56,317 - INFO - [30/42] Cythonizing sklearn/tree/_tree.pyx
+2024-09-12 10:34:56,317 - INFO - [31/42] Cythonizing sklearn/tree/_utils.pyx
+2024-09-12 10:34:56,318 - INFO - [32/42] Cythonizing sklearn/utils/_cython_blas.pyx
+2024-09-12 10:34:56,318 - INFO - [33/42] Cythonizing sklearn/utils/_logistic_sigmoid.pyx
+2024-09-12 10:34:56,318 - INFO - [34/42] Cythonizing sklearn/utils/_random.pyx
+2024-09-12 10:34:56,318 - INFO - [35/42] Cythonizing sklearn/utils/arrayfuncs.pyx
+2024-09-12 10:34:56,318 - INFO - [36/42] Cythonizing sklearn/utils/fast_dict.pyx
+2024-09-12 10:34:56,319 - INFO - [37/42] Cythonizing sklearn/utils/graph_shortest_path.pyx
+2024-09-12 10:34:56,319 - INFO - [38/42] Cythonizing sklearn/utils/lgamma.pyx
+2024-09-12 10:34:56,319 - INFO - [39/42] Cythonizing sklearn/utils/murmurhash.pyx
+2024-09-12 10:34:56,319 - INFO - [40/42] Cythonizing sklearn/utils/seq_dataset.pyx
+2024-09-12 10:34:56,319 - INFO - [41/42] Cythonizing sklearn/utils/sparsefuncs_fast.pyx
+2024-09-12 10:34:56,319 - INFO - [42/42] Cythonizing sklearn/utils/weight_vector.pyx
+2024-09-12 10:34:56,346 - INFO - running develop
+2024-09-12 10:34:56,472 - INFO - running build_scripts
+2024-09-12 10:34:56,473 - INFO - running egg_info
+2024-09-12 10:34:56,473 - INFO - running build_src
+2024-09-12 10:34:56,473 - INFO - build_src
+2024-09-12 10:34:56,475 - INFO - building library "libsvm-skl" sources
+2024-09-12 10:34:56,475 - INFO - building extension "sklearn.__check_build._check_build" sources
+2024-09-12 10:34:56,475 - INFO - building extension "sklearn.preprocessing._csr_polynomial_expansion" sources
+2024-09-12 10:34:56,475 - INFO - building extension "sklearn.cluster._dbscan_inner" sources
+2024-09-12 10:34:56,475 - INFO - building extension "sklearn.cluster._hierarchical" sources
+2024-09-12 10:34:56,476 - INFO - building extension "sklearn.cluster._k_means_elkan" sources
+2024-09-12 10:34:56,476 - INFO - building extension "sklearn.cluster._k_means" sources
+2024-09-12 10:34:56,476 - INFO - building extension "sklearn.datasets._svmlight_format" sources
+2024-09-12 10:34:56,476 - INFO - building extension "sklearn.decomposition._online_lda" sources
+2024-09-12 10:34:56,477 - INFO - building extension "sklearn.decomposition.cdnmf_fast" sources
+2024-09-12 10:34:56,477 - INFO - building extension "sklearn.ensemble._gradient_boosting" sources
+2024-09-12 10:34:56,477 - INFO - building extension "sklearn.feature_extraction._hashing" sources
+2024-09-12 10:34:56,477 - INFO - building extension "sklearn.manifold._utils" sources
+2024-09-12 10:34:56,477 - INFO - building extension "sklearn.manifold._barnes_hut_tsne" sources
+2024-09-12 10:34:56,478 - INFO - building extension "sklearn.metrics.cluster.expected_mutual_info_fast" sources
+2024-09-12 10:34:56,478 - INFO - building extension "sklearn.metrics.pairwise_fast" sources
+2024-09-12 10:34:56,478 - INFO - building extension "sklearn.neighbors.ball_tree" sources
+2024-09-12 10:34:56,479 - INFO - building extension "sklearn.neighbors.kd_tree" sources
+2024-09-12 10:34:56,479 - INFO - building extension "sklearn.neighbors.dist_metrics" sources
+2024-09-12 10:34:56,479 - INFO - building extension "sklearn.neighbors.typedefs" sources
+2024-09-12 10:34:56,479 - INFO - building extension "sklearn.neighbors.quad_tree" sources
+2024-09-12 10:34:56,479 - INFO - building extension "sklearn.tree._tree" sources
+2024-09-12 10:34:56,479 - INFO - building extension "sklearn.tree._splitter" sources
+2024-09-12 10:34:56,479 - INFO - building extension "sklearn.tree._criterion" sources
+2024-09-12 10:34:56,480 - INFO - building extension "sklearn.tree._utils" sources
+2024-09-12 10:34:56,480 - INFO - building extension "sklearn.svm.libsvm" sources
+2024-09-12 10:34:56,480 - INFO - building extension "sklearn.svm.liblinear" sources
+2024-09-12 10:34:56,480 - INFO - building extension "sklearn.svm.libsvm_sparse" sources
+2024-09-12 10:34:56,480 - INFO - building extension "sklearn._isotonic" sources
+2024-09-12 10:34:56,481 - INFO - building extension "sklearn.linear_model.cd_fast" sources
+2024-09-12 10:34:56,481 - INFO - building extension "sklearn.linear_model.sgd_fast" sources
+2024-09-12 10:34:56,481 - INFO - building extension "sklearn.linear_model.sag_fast" sources
+2024-09-12 10:34:56,481 - INFO - building extension "sklearn.utils.sparsefuncs_fast" sources
+2024-09-12 10:34:56,481 - INFO - building extension "sklearn.utils._cython_blas" sources
+2024-09-12 10:34:56,481 - INFO - building extension "sklearn.utils.arrayfuncs" sources
+2024-09-12 10:34:56,482 - INFO - building extension "sklearn.utils.murmurhash" sources
+2024-09-12 10:34:56,482 - INFO - building extension "sklearn.utils.lgamma" sources
+2024-09-12 10:34:56,482 - INFO - building extension "sklearn.utils.graph_shortest_path" sources
+2024-09-12 10:34:56,482 - INFO - building extension "sklearn.utils.fast_dict" sources
+2024-09-12 10:34:56,482 - INFO - building extension "sklearn.utils.seq_dataset" sources
+2024-09-12 10:34:56,483 - INFO - building extension "sklearn.utils.weight_vector" sources
+2024-09-12 10:34:56,483 - INFO - building extension "sklearn.utils._random" sources
+2024-09-12 10:34:56,483 - INFO - building extension "sklearn.utils._logistic_sigmoid" sources
+2024-09-12 10:34:56,483 - INFO - building data_files sources
+2024-09-12 10:34:56,490 - INFO - build_src: building npy-pkg config files
+2024-09-12 10:34:56,491 - INFO - creating scikit_learn.egg-info
+2024-09-12 10:34:56,491 - INFO - writing scikit_learn.egg-info/PKG-INFO
+2024-09-12 10:34:56,492 - INFO - writing dependency_links to scikit_learn.egg-info/dependency_links.txt
+2024-09-12 10:34:56,493 - INFO - writing requirements to scikit_learn.egg-info/requires.txt
+2024-09-12 10:34:56,494 - INFO - writing top-level names to scikit_learn.egg-info/top_level.txt
+2024-09-12 10:34:56,494 - INFO - writing manifest file 'scikit_learn.egg-info/SOURCES.txt'
+2024-09-12 10:34:56,555 - INFO - reading manifest file 'scikit_learn.egg-info/SOURCES.txt'
+2024-09-12 10:34:56,556 - INFO - reading manifest template 'MANIFEST.in'
+2024-09-12 10:34:56,871 - INFO - adding license file 'COPYING'
+2024-09-12 10:34:56,924 - INFO - writing manifest file 'scikit_learn.egg-info/SOURCES.txt'
+2024-09-12 10:34:56,925 - INFO - running build_ext
+2024-09-12 10:34:56,925 - INFO - customize UnixCCompiler
+2024-09-12 10:34:56,925 - INFO - customize UnixCCompiler using build_clib
+2024-09-12 10:34:56,926 - INFO - building 'libsvm-skl' library
+2024-09-12 10:34:56,926 - INFO - compiling C++ sources
+2024-09-12 10:34:56,926 - INFO - C compiler: g++ -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -fPIC
+2024-09-12 10:34:56,927 - INFO - 
+2024-09-12 10:34:56,927 - INFO - creating build
+2024-09-12 10:34:56,927 - INFO - creating build/temp.linux-x86_64-3.6
+2024-09-12 10:34:56,927 - INFO - creating build/temp.linux-x86_64-3.6/sklearn
+2024-09-12 10:34:56,927 - INFO - creating build/temp.linux-x86_64-3.6/sklearn/svm
+2024-09-12 10:34:56,928 - INFO - creating build/temp.linux-x86_64-3.6/sklearn/svm/src
+2024-09-12 10:34:56,928 - INFO - creating build/temp.linux-x86_64-3.6/sklearn/svm/src/libsvm
+2024-09-12 10:34:56,928 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 10:34:56,929 - INFO - g++: sklearn/svm/src/libsvm/libsvm_template.cpp
+2024-09-12 10:35:08,269 - INFO - ar: adding 1 object files to build/temp.linux-x86_64-3.6/liblibsvm-skl.a
+2024-09-12 10:35:08,295 - INFO - customize UnixCCompiler
+2024-09-12 10:35:08,296 - INFO - customize UnixCCompiler using build_ext_subclass
+2024-09-12 10:35:08,297 - INFO - resetting extension 'sklearn.svm.liblinear' language from 'c' to 'c++'.
+2024-09-12 10:35:08,298 - INFO - customize UnixCCompiler
+2024-09-12 10:35:08,298 - INFO - customize UnixCCompiler using build_ext_subclass
+2024-09-12 10:35:08,299 - INFO - building 'sklearn.__check_build._check_build' extension
+2024-09-12 10:35:08,299 - INFO - compiling C sources
+2024-09-12 10:35:08,300 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 10:35:08,300 - INFO - 
+2024-09-12 10:35:08,300 - INFO - creating build/temp.linux-x86_64-3.6/sklearn/__check_build
+2024-09-12 10:35:08,300 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 10:35:08,300 - INFO - gcc: sklearn/__check_build/_check_build.c
+2024-09-12 10:35:09,543 - INFO - gcc -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/__check_build/_check_build.o -Lbuild/temp.linux-x86_64-3.6 -o sklearn/__check_build/_check_build.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 10:35:09,657 - INFO - building 'sklearn.preprocessing._csr_polynomial_expansion' extension
+2024-09-12 10:35:09,657 - INFO - compiling C sources
+2024-09-12 10:35:09,657 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 10:35:09,657 - INFO - 
+2024-09-12 10:35:09,657 - INFO - creating build/temp.linux-x86_64-3.6/sklearn/preprocessing
+2024-09-12 10:35:09,657 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 10:35:09,658 - INFO - gcc: sklearn/preprocessing/_csr_polynomial_expansion.c
+2024-09-12 10:35:10,008 - INFO - In file included from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarraytypes.h:1822,
+2024-09-12 10:35:10,009 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarrayobject.h:12,
+2024-09-12 10:35:10,009 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/arrayobject.h:4,
+2024-09-12 10:35:10,009 - INFO - from sklearn/preprocessing/_csr_polynomial_expansion.c:642:
+2024-09-12 10:35:10,009 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h:17:2: warning: #warning "Using deprecated NumPy API, disable it with " "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+2024-09-12 10:35:10,009 - INFO - 17 | #warning "Using deprecated NumPy API, disable it with " \
+2024-09-12 10:35:10,009 - INFO - |  ^~~~~~~
+2024-09-12 10:35:30,273 - INFO - gcc -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/preprocessing/_csr_polynomial_expansion.o -Lbuild/temp.linux-x86_64-3.6 -lm -o sklearn/preprocessing/_csr_polynomial_expansion.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 10:35:30,421 - INFO - building 'sklearn.cluster._dbscan_inner' extension
+2024-09-12 10:35:30,421 - INFO - compiling C++ sources
+2024-09-12 10:35:30,422 - INFO - C compiler: g++ -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -fPIC
+2024-09-12 10:35:30,422 - INFO - 
+2024-09-12 10:35:30,422 - INFO - creating build/temp.linux-x86_64-3.6/sklearn/cluster
+2024-09-12 10:35:30,422 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 10:35:30,422 - INFO - g++: sklearn/cluster/_dbscan_inner.cpp
+2024-09-12 10:35:30,748 - INFO - In file included from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarraytypes.h:1822,
+2024-09-12 10:35:30,748 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarrayobject.h:12,
+2024-09-12 10:35:30,749 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/arrayobject.h:4,
+2024-09-12 10:35:30,749 - INFO - from sklearn/cluster/_dbscan_inner.cpp:659:
+2024-09-12 10:35:30,749 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h:17:2: warning: #warning "Using deprecated NumPy API, disable it with " "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+2024-09-12 10:35:30,749 - INFO - 17 | #warning "Using deprecated NumPy API, disable it with " \
+2024-09-12 10:35:30,749 - INFO - |  ^~~~~~~
+2024-09-12 10:35:34,566 - INFO - g++ -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/cluster/_dbscan_inner.o -Lbuild/temp.linux-x86_64-3.6 -o sklearn/cluster/_dbscan_inner.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 10:35:34,740 - INFO - building 'sklearn.cluster._hierarchical' extension
+2024-09-12 10:35:34,740 - INFO - compiling C++ sources
+2024-09-12 10:35:34,740 - INFO - C compiler: g++ -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -fPIC
+2024-09-12 10:35:34,740 - INFO - 
+2024-09-12 10:35:34,740 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 10:35:34,740 - INFO - g++: sklearn/cluster/_hierarchical.cpp
+2024-09-12 10:35:35,013 - INFO - In file included from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarraytypes.h:1822,
+2024-09-12 10:35:35,013 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarrayobject.h:12,
+2024-09-12 10:35:35,013 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/arrayobject.h:4,
+2024-09-12 10:35:35,013 - INFO - from sklearn/cluster/_hierarchical.cpp:657:
+2024-09-12 10:35:35,013 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h:17:2: warning: #warning "Using deprecated NumPy API, disable it with " "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+2024-09-12 10:35:35,014 - INFO - 17 | #warning "Using deprecated NumPy API, disable it with " \
+2024-09-12 10:35:35,014 - INFO - |  ^~~~~~~
+2024-09-12 10:35:57,669 - INFO - g++ -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/cluster/_hierarchical.o -Lbuild/temp.linux-x86_64-3.6 -lm -o sklearn/cluster/_hierarchical.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 10:35:57,874 - INFO - building 'sklearn.cluster._k_means_elkan' extension
+2024-09-12 10:35:57,875 - INFO - compiling C sources
+2024-09-12 10:35:57,875 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 10:35:57,875 - INFO - 
+2024-09-12 10:35:57,875 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 10:35:57,875 - INFO - gcc: sklearn/cluster/_k_means_elkan.c
+2024-09-12 10:35:58,231 - INFO - In file included from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarraytypes.h:1822,
+2024-09-12 10:35:58,232 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarrayobject.h:12,
+2024-09-12 10:35:58,232 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/arrayobject.h:4,
+2024-09-12 10:35:58,232 - INFO - from sklearn/cluster/_k_means_elkan.c:642:
+2024-09-12 10:35:58,232 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h:17:2: warning: #warning "Using deprecated NumPy API, disable it with " "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+2024-09-12 10:35:58,232 - INFO - 17 | #warning "Using deprecated NumPy API, disable it with " \
+2024-09-12 10:35:58,232 - INFO - |  ^~~~~~~
+2024-09-12 10:36:26,366 - INFO - gcc -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/cluster/_k_means_elkan.o -Lbuild/temp.linux-x86_64-3.6 -lm -o sklearn/cluster/_k_means_elkan.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 10:36:26,535 - INFO - building 'sklearn.cluster._k_means' extension
+2024-09-12 10:36:26,535 - INFO - compiling C sources
+2024-09-12 10:36:26,536 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 10:36:26,536 - INFO - 
+2024-09-12 10:36:26,536 - INFO - compile options: '-DHAVE_CBLAS -Isklearn/src/cblas -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 10:36:26,536 - INFO - gcc: sklearn/cluster/_k_means.c
+2024-09-12 10:36:26,901 - INFO - In file included from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarraytypes.h:1822,
+2024-09-12 10:36:26,902 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarrayobject.h:12,
+2024-09-12 10:36:26,902 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/arrayobject.h:4,
+2024-09-12 10:36:26,902 - INFO - from sklearn/cluster/_k_means.c:657:
+2024-09-12 10:36:26,902 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h:17:2: warning: #warning "Using deprecated NumPy API, disable it with " "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+2024-09-12 10:36:26,902 - INFO - 17 | #warning "Using deprecated NumPy API, disable it with " \
+2024-09-12 10:36:26,902 - INFO - |  ^~~~~~~
+2024-09-12 10:36:26,988 - INFO - sklearn/cluster/_k_means.c: In function '__pyx_fuse_0__pyx_f_7sklearn_7cluster_8_k_means__assign_labels_array':
+2024-09-12 10:36:26,990 - INFO - sklearn/cluster/_k_means.c:3893:15: warning: assignment to 'float (*)(int,  float *, int,  float *, int)' from incompatible pointer type 'float (*)(const int,  const float *, const int,  const float *, const int)' [-Wincompatible-pointer-types]
+2024-09-12 10:36:26,990 - INFO - 3893 |   __pyx_v_dot = cblas_sdot;
+2024-09-12 10:36:26,990 - INFO - |               ^
+2024-09-12 10:36:27,013 - INFO - sklearn/cluster/_k_means.c: In function '__pyx_fuse_1__pyx_f_7sklearn_7cluster_8_k_means__assign_labels_array':
+2024-09-12 10:36:27,015 - INFO - sklearn/cluster/_k_means.c:4696:15: warning: assignment to 'double (*)(int,  double *, int,  double *, int)' from incompatible pointer type 'double (*)(const int,  const double *, const int,  const double *, const int)' [-Wincompatible-pointer-types]
+2024-09-12 10:36:27,015 - INFO - 4696 |   __pyx_v_dot = cblas_ddot;
+2024-09-12 10:36:27,016 - INFO - |               ^
+2024-09-12 10:36:27,061 - INFO - sklearn/cluster/_k_means.c: In function '__pyx_fuse_0__pyx_f_7sklearn_7cluster_8_k_means__assign_labels_csr':
+2024-09-12 10:36:27,064 - INFO - sklearn/cluster/_k_means.c:6115:15: warning: assignment to 'float (*)(int,  float *, int,  float *, int)' from incompatible pointer type 'float (*)(const int,  const float *, const int,  const float *, const int)' [-Wincompatible-pointer-types]
+2024-09-12 10:36:27,064 - INFO - 6115 |   __pyx_v_dot = cblas_sdot;
+2024-09-12 10:36:27,064 - INFO - |               ^
+2024-09-12 10:36:27,068 - INFO - sklearn/cluster/_k_means.c:6241:213: warning: comparison of integer expressions of different signedness: 'unsigned int' and '__pyx_t_7sklearn_7cluster_8_k_means_INT' {aka 'int'} [-Wsign-compare]
+2024-09-12 10:36:27,068 - INFO - 6241 |       for (__pyx_t_28 = (*__Pyx_BufPtrStrided1d(__pyx_t_7sklearn_7cluster_8_k_means_INT *, __pyx_pybuffernd_X_indptr.rcbuffer->pybuffer.buf, __pyx_t_20, __pyx_pybuffernd_X_indptr.diminfo[0].strides)); __pyx_t_28 < __pyx_t_27; __pyx_t_28+=1) {
+2024-09-12 10:36:27,068 - INFO - |                                                                                                                                                                                                                     ^
+2024-09-12 10:36:27,092 - INFO - sklearn/cluster/_k_means.c: In function '__pyx_fuse_1__pyx_f_7sklearn_7cluster_8_k_means__assign_labels_csr':
+2024-09-12 10:36:27,095 - INFO - sklearn/cluster/_k_means.c:6984:15: warning: assignment to 'double (*)(int,  double *, int,  double *, int)' from incompatible pointer type 'double (*)(const int,  const double *, const int,  const double *, const int)' [-Wincompatible-pointer-types]
+2024-09-12 10:36:27,096 - INFO - 6984 |   __pyx_v_dot = cblas_ddot;
+2024-09-12 10:36:27,096 - INFO - |               ^
+2024-09-12 10:36:27,100 - INFO - sklearn/cluster/_k_means.c:7110:213: warning: comparison of integer expressions of different signedness: 'unsigned int' and '__pyx_t_7sklearn_7cluster_8_k_means_INT' {aka 'int'} [-Wsign-compare]
+2024-09-12 10:36:27,100 - INFO - 7110 |       for (__pyx_t_28 = (*__Pyx_BufPtrStrided1d(__pyx_t_7sklearn_7cluster_8_k_means_INT *, __pyx_pybuffernd_X_indptr.rcbuffer->pybuffer.buf, __pyx_t_20, __pyx_pybuffernd_X_indptr.diminfo[0].strides)); __pyx_t_28 < __pyx_t_27; __pyx_t_28+=1) {
+2024-09-12 10:36:27,100 - INFO - |                                                                                                                                                                                                                     ^
+2024-09-12 10:36:27,152 - INFO - sklearn/cluster/_k_means.c: In function '__pyx_pf_7sklearn_7cluster_8_k_means_22_mini_batch_update_csr':
+2024-09-12 10:36:27,156 - INFO - sklearn/cluster/_k_means.c:8507:209: warning: comparison of integer expressions of different signedness: '__pyx_t_7sklearn_7cluster_8_k_means_INT' {aka 'int'} and 'unsigned int' [-Wsign-compare]
+2024-09-12 10:36:27,156 - INFO - 8507 |       __pyx_t_13 = (((*__Pyx_BufPtrStrided1d(__pyx_t_7sklearn_7cluster_8_k_means_INT *, __pyx_pybuffernd_nearest_center.rcbuffer->pybuffer.buf, __pyx_t_9, __pyx_pybuffernd_nearest_center.diminfo[0].strides)) == __pyx_v_center_idx) != 0);
+2024-09-12 10:36:27,156 - INFO - |                                                                                                                                                                                                                 ^~
+2024-09-12 10:36:27,163 - INFO - sklearn/cluster/_k_means.c:8628:209: warning: comparison of integer expressions of different signedness: '__pyx_t_7sklearn_7cluster_8_k_means_INT' {aka 'int'} and 'unsigned int' [-Wsign-compare]
+2024-09-12 10:36:27,163 - INFO - 8628 |       __pyx_t_13 = (((*__Pyx_BufPtrStrided1d(__pyx_t_7sklearn_7cluster_8_k_means_INT *, __pyx_pybuffernd_nearest_center.rcbuffer->pybuffer.buf, __pyx_t_9, __pyx_pybuffernd_nearest_center.diminfo[0].strides)) != __pyx_v_center_idx) != 0);
+2024-09-12 10:36:27,163 - INFO - |                                                                                                                                                                                                                 ^~
+2024-09-12 10:36:27,167 - INFO - sklearn/cluster/_k_means.c:8660:176: warning: comparison of integer expressions of different signedness: 'unsigned int' and 'int' [-Wsign-compare]
+2024-09-12 10:36:27,167 - INFO - 8660 |       for (__pyx_t_18 = (*__Pyx_BufPtrStrided1d(int *, __pyx_pybuffernd_X_indptr.rcbuffer->pybuffer.buf, __pyx_t_9, __pyx_pybuffernd_X_indptr.diminfo[0].strides)); __pyx_t_18 < __pyx_t_17; __pyx_t_18+=1) {
+2024-09-12 10:36:27,168 - INFO - |                                                                                                                                                                                ^
+2024-09-12 10:36:27,188 - INFO - sklearn/cluster/_k_means.c: In function '__pyx_pf_7sklearn_7cluster_8_k_means_24_mini_batch_update_csr':
+2024-09-12 10:36:27,192 - INFO - sklearn/cluster/_k_means.c:9285:209: warning: comparison of integer expressions of different signedness: '__pyx_t_7sklearn_7cluster_8_k_means_INT' {aka 'int'} and 'unsigned int' [-Wsign-compare]
+2024-09-12 10:36:27,192 - INFO - 9285 |       __pyx_t_13 = (((*__Pyx_BufPtrStrided1d(__pyx_t_7sklearn_7cluster_8_k_means_INT *, __pyx_pybuffernd_nearest_center.rcbuffer->pybuffer.buf, __pyx_t_9, __pyx_pybuffernd_nearest_center.diminfo[0].strides)) == __pyx_v_center_idx) != 0);
+2024-09-12 10:36:27,193 - INFO - |                                                                                                                                                                                                                 ^~
+2024-09-12 10:36:27,199 - INFO - sklearn/cluster/_k_means.c:9406:209: warning: comparison of integer expressions of different signedness: '__pyx_t_7sklearn_7cluster_8_k_means_INT' {aka 'int'} and 'unsigned int' [-Wsign-compare]
+2024-09-12 10:36:27,200 - INFO - 9406 |       __pyx_t_13 = (((*__Pyx_BufPtrStrided1d(__pyx_t_7sklearn_7cluster_8_k_means_INT *, __pyx_pybuffernd_nearest_center.rcbuffer->pybuffer.buf, __pyx_t_9, __pyx_pybuffernd_nearest_center.diminfo[0].strides)) != __pyx_v_center_idx) != 0);
+2024-09-12 10:36:27,200 - INFO - |                                                                                                                                                                                                                 ^~
+2024-09-12 10:36:27,205 - INFO - sklearn/cluster/_k_means.c:9438:176: warning: comparison of integer expressions of different signedness: 'unsigned int' and 'int' [-Wsign-compare]
+     9438 |       for (__pyx_t_18 = (*__Pyx_BufPtrStrided1d(int *, __pyx_pybuffernd_X_indptr.rcbuffer->pybuffer.buf, __pyx_t_9, __pyx_pybuffernd_X_indptr.diminfo[0].strides)); __pyx_t_18 < __pyx_t_17; __pyx_t_18+=1) {
+          |                                                                                                                                                                                ^
+2024-09-12 10:37:02,526 - INFO - gcc -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/cluster/_k_means.o -L/opt/miniconda3/envs/testbed/lib -Lbuild/temp.linux-x86_64-3.6 -lopenblas -lopenblas -lm -o sklearn/cluster/_k_means.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 10:37:02,734 - INFO - building 'sklearn.datasets._svmlight_format' extension
+2024-09-12 10:37:02,734 - INFO - compiling C sources
+2024-09-12 10:37:02,734 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 10:37:02,734 - INFO - 
+2024-09-12 10:37:02,735 - INFO - creating build/temp.linux-x86_64-3.6/sklearn/datasets
+2024-09-12 10:37:02,735 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 10:37:02,735 - INFO - gcc: sklearn/datasets/_svmlight_format.c
+2024-09-12 10:37:03,093 - INFO - In file included from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarraytypes.h:1822,
+2024-09-12 10:37:03,093 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarrayobject.h:12,
+2024-09-12 10:37:03,093 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/arrayobject.h:4,
+2024-09-12 10:37:03,094 - INFO - from sklearn/datasets/_svmlight_format.c:640:
+2024-09-12 10:37:03,094 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h:17:2: warning: #warning "Using deprecated NumPy API, disable it with " "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+2024-09-12 10:37:03,094 - INFO - 17 | #warning "Using deprecated NumPy API, disable it with " \
+2024-09-12 10:37:03,094 - INFO - |  ^~~~~~~
+2024-09-12 10:37:09,278 - INFO - gcc -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/datasets/_svmlight_format.o -Lbuild/temp.linux-x86_64-3.6 -o sklearn/datasets/_svmlight_format.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 10:37:09,399 - INFO - building 'sklearn.decomposition._online_lda' extension
+2024-09-12 10:37:09,400 - INFO - compiling C sources
+2024-09-12 10:37:09,400 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 10:37:09,400 - INFO - 
+2024-09-12 10:37:09,400 - INFO - creating build/temp.linux-x86_64-3.6/sklearn/decomposition
+2024-09-12 10:37:09,400 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 10:37:09,400 - INFO - gcc: sklearn/decomposition/_online_lda.c
+2024-09-12 10:37:09,762 - INFO - In file included from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarraytypes.h:1822,
+2024-09-12 10:37:09,762 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarrayobject.h:12,
+2024-09-12 10:37:09,763 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/arrayobject.h:4,
+2024-09-12 10:37:09,763 - INFO - from sklearn/decomposition/_online_lda.c:643:
+2024-09-12 10:37:09,763 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h:17:2: warning: #warning "Using deprecated NumPy API, disable it with " "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+2024-09-12 10:37:09,763 - INFO - 17 | #warning "Using deprecated NumPy API, disable it with " \
+2024-09-12 10:37:09,763 - INFO - |  ^~~~~~~
+2024-09-12 10:37:12,815 - INFO - gcc -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/decomposition/_online_lda.o -Lbuild/temp.linux-x86_64-3.6 -lm -o sklearn/decomposition/_online_lda.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 10:37:12,947 - INFO - building 'sklearn.decomposition.cdnmf_fast' extension
+2024-09-12 10:37:12,947 - INFO - compiling C sources
+2024-09-12 10:37:12,948 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 10:37:12,948 - INFO - 
+2024-09-12 10:37:12,948 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 10:37:12,948 - INFO - gcc: sklearn/decomposition/cdnmf_fast.c
+2024-09-12 10:37:26,731 - INFO - gcc -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/decomposition/cdnmf_fast.o -Lbuild/temp.linux-x86_64-3.6 -lm -o sklearn/decomposition/cdnmf_fast.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 10:37:26,882 - INFO - building 'sklearn.ensemble._gradient_boosting' extension
+2024-09-12 10:37:26,882 - INFO - compiling C sources
+2024-09-12 10:37:26,882 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 10:37:26,882 - INFO - 
+2024-09-12 10:37:26,883 - INFO - creating build/temp.linux-x86_64-3.6/sklearn/ensemble
+2024-09-12 10:37:26,883 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 10:37:26,883 - INFO - gcc: sklearn/ensemble/_gradient_boosting.c
+2024-09-12 10:37:27,239 - INFO - In file included from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarraytypes.h:1822,
+2024-09-12 10:37:27,239 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarrayobject.h:12,
+2024-09-12 10:37:27,239 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/arrayobject.h:4,
+2024-09-12 10:37:27,239 - INFO - from sklearn/ensemble/_gradient_boosting.c:640:
+2024-09-12 10:37:27,239 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h:17:2: warning: #warning "Using deprecated NumPy API, disable it with " "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+2024-09-12 10:37:27,240 - INFO - 17 | #warning "Using deprecated NumPy API, disable it with " \
+2024-09-12 10:37:27,240 - INFO - |  ^~~~~~~
+2024-09-12 10:37:44,882 - INFO - gcc -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/ensemble/_gradient_boosting.o -Lbuild/temp.linux-x86_64-3.6 -o sklearn/ensemble/_gradient_boosting.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 10:37:45,030 - INFO - building 'sklearn.feature_extraction._hashing' extension
+2024-09-12 10:37:45,031 - INFO - compiling C sources
+2024-09-12 10:37:45,031 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 10:37:45,031 - INFO - 
+2024-09-12 10:37:45,031 - INFO - creating build/temp.linux-x86_64-3.6/sklearn/feature_extraction
+2024-09-12 10:37:45,031 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 10:37:45,032 - INFO - gcc: sklearn/feature_extraction/_hashing.c
+2024-09-12 10:37:45,410 - INFO - In file included from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarraytypes.h:1822,
+2024-09-12 10:37:45,411 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarrayobject.h:12,
+2024-09-12 10:37:45,411 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/arrayobject.h:4,
+2024-09-12 10:37:45,411 - INFO - from sklearn/feature_extraction/_hashing.c:644:
+2024-09-12 10:37:45,411 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h:17:2: warning: #warning "Using deprecated NumPy API, disable it with " "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+2024-09-12 10:37:45,411 - INFO - 17 | #warning "Using deprecated NumPy API, disable it with " \
+2024-09-12 10:37:45,411 - INFO - |  ^~~~~~~
+2024-09-12 10:37:50,284 - INFO - gcc -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/feature_extraction/_hashing.o -Lbuild/temp.linux-x86_64-3.6 -lm -o sklearn/feature_extraction/_hashing.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 10:37:50,442 - INFO - building 'sklearn.manifold._utils' extension
+2024-09-12 10:37:50,442 - INFO - compiling C sources
+2024-09-12 10:37:50,443 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 10:37:50,443 - INFO - 
+2024-09-12 10:37:50,444 - INFO - creating build/temp.linux-x86_64-3.6/sklearn/manifold
+2024-09-12 10:37:50,444 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 10:37:50,444 - INFO - extra options: '-O3'
+2024-09-12 10:37:50,445 - INFO - gcc: sklearn/manifold/_utils.c
+2024-09-12 10:37:50,813 - INFO - In file included from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarraytypes.h:1822,
+2024-09-12 10:37:50,813 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarrayobject.h:12,
+2024-09-12 10:37:50,813 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/arrayobject.h:4,
+2024-09-12 10:37:50,814 - INFO - from sklearn/manifold/_utils.c:647:
+2024-09-12 10:37:50,814 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h:17:2: warning: #warning "Using deprecated NumPy API, disable it with " "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+2024-09-12 10:37:50,814 - INFO - 17 | #warning "Using deprecated NumPy API, disable it with " \
+2024-09-12 10:37:50,814 - INFO - |  ^~~~~~~
+2024-09-12 10:37:53,897 - INFO - gcc -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/manifold/_utils.o -Lbuild/temp.linux-x86_64-3.6 -lm -o sklearn/manifold/_utils.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 10:37:54,029 - INFO - building 'sklearn.manifold._barnes_hut_tsne' extension
+2024-09-12 10:37:54,030 - INFO - compiling C sources
+2024-09-12 10:37:54,030 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 10:37:54,030 - INFO - 
+2024-09-12 10:37:54,030 - INFO - compile options: '-DHAVE_CBLAS -Isklearn/src/cblas -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 10:37:54,030 - INFO - extra options: '-O4'
+2024-09-12 10:37:54,030 - INFO - gcc: sklearn/manifold/_barnes_hut_tsne.c
+2024-09-12 10:37:54,405 - INFO - In file included from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarraytypes.h:1822,
+2024-09-12 10:37:54,406 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarrayobject.h:12,
+2024-09-12 10:37:54,406 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/arrayobject.h:4,
+2024-09-12 10:37:54,406 - INFO - from sklearn/manifold/_barnes_hut_tsne.c:659:
+2024-09-12 10:37:54,407 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h:17:2: warning: #warning "Using deprecated NumPy API, disable it with " "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+2024-09-12 10:37:54,407 - INFO - 17 | #warning "Using deprecated NumPy API, disable it with " \
+2024-09-12 10:37:54,407 - INFO - |  ^~~~~~~
+2024-09-12 10:37:54,459 - INFO - sklearn/manifold/_barnes_hut_tsne.c: In function '__pyx_f_7sklearn_8manifold_16_barnes_hut_tsne_compute_gradient_negative':
+2024-09-12 10:37:54,460 - INFO - sklearn/manifold/_barnes_hut_tsne.c:3588:9: warning: variable '__pyx_v_force' set but not used [-Wunused-but-set-variable]
+2024-09-12 10:37:54,460 - INFO - 3588 |   float __pyx_v_force[3];
+2024-09-12 10:37:54,460 - INFO - |         ^~~~~~~~~~~~~
+2024-09-12 10:37:54,462 - INFO - sklearn/manifold/_barnes_hut_tsne.c:3587:9: warning: variable '__pyx_v_iQ' set but not used [-Wunused-but-set-variable]
+2024-09-12 10:37:54,462 - INFO - 3587 |   float __pyx_v_iQ[1];
+2024-09-12 10:37:54,462 - INFO - |         ^~~~~~~~~~
+2024-09-12 10:38:09,907 - INFO - gcc -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/manifold/_barnes_hut_tsne.o -L/opt/miniconda3/envs/testbed/lib -Lbuild/temp.linux-x86_64-3.6 -lopenblas -lopenblas -o sklearn/manifold/_barnes_hut_tsne.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 10:38:10,066 - INFO - building 'sklearn.metrics.cluster.expected_mutual_info_fast' extension
+2024-09-12 10:38:10,066 - INFO - compiling C sources
+2024-09-12 10:38:10,066 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 10:38:10,067 - INFO - 
+2024-09-12 10:38:10,067 - INFO - creating build/temp.linux-x86_64-3.6/sklearn/metrics
+2024-09-12 10:38:10,067 - INFO - creating build/temp.linux-x86_64-3.6/sklearn/metrics/cluster
+2024-09-12 10:38:10,067 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 10:38:10,067 - INFO - gcc: sklearn/metrics/cluster/expected_mutual_info_fast.c
+2024-09-12 10:38:10,428 - INFO - In file included from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarraytypes.h:1822,
+2024-09-12 10:38:10,428 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarrayobject.h:12,
+2024-09-12 10:38:10,428 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/arrayobject.h:4,
+2024-09-12 10:38:10,428 - INFO - from sklearn/metrics/cluster/expected_mutual_info_fast.c:643:
+2024-09-12 10:38:10,428 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h:17:2: warning: #warning "Using deprecated NumPy API, disable it with " "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+2024-09-12 10:38:10,428 - INFO - 17 | #warning "Using deprecated NumPy API, disable it with " \
+2024-09-12 10:38:10,428 - INFO - |  ^~~~~~~
+2024-09-12 10:38:18,738 - INFO - gcc -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/metrics/cluster/expected_mutual_info_fast.o -Lbuild/temp.linux-x86_64-3.6 -lm -o sklearn/metrics/cluster/expected_mutual_info_fast.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 10:38:18,874 - INFO - building 'sklearn.metrics.pairwise_fast' extension
+2024-09-12 10:38:18,874 - INFO - compiling C sources
+2024-09-12 10:38:18,874 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 10:38:18,874 - INFO - 
+2024-09-12 10:38:18,874 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 10:38:18,875 - INFO - gcc: sklearn/metrics/pairwise_fast.c
+2024-09-12 10:38:19,244 - INFO - In file included from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarraytypes.h:1822,
+2024-09-12 10:38:19,245 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarrayobject.h:12,
+2024-09-12 10:38:19,245 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/arrayobject.h:4,
+2024-09-12 10:38:19,245 - INFO - from sklearn/metrics/pairwise_fast.c:636:
+2024-09-12 10:38:19,245 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h:17:2: warning: #warning "Using deprecated NumPy API, disable it with " "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+2024-09-12 10:38:19,245 - INFO - 17 | #warning "Using deprecated NumPy API, disable it with " \
+2024-09-12 10:38:19,245 - INFO - |  ^~~~~~~
+2024-09-12 10:38:57,190 - INFO - gcc -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/metrics/pairwise_fast.o -Lbuild/temp.linux-x86_64-3.6 -lm -o sklearn/metrics/pairwise_fast.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 10:38:57,344 - INFO - building 'sklearn.neighbors.ball_tree' extension
+2024-09-12 10:38:57,344 - INFO - compiling C sources
+2024-09-12 10:38:57,344 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 10:38:57,344 - INFO - 
+2024-09-12 10:38:57,344 - INFO - creating build/temp.linux-x86_64-3.6/sklearn/neighbors
+2024-09-12 10:38:57,345 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 10:38:57,345 - INFO - gcc: sklearn/neighbors/ball_tree.c
+2024-09-12 10:38:57,698 - INFO - In file included from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarraytypes.h:1822,
+2024-09-12 10:38:57,699 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarrayobject.h:12,
+2024-09-12 10:38:57,699 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/arrayobject.h:4,
+2024-09-12 10:38:57,699 - INFO - from sklearn/neighbors/ball_tree.c:642:
+2024-09-12 10:38:57,699 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h:17:2: warning: #warning "Using deprecated NumPy API, disable it with " "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+2024-09-12 10:38:57,699 - INFO - 17 | #warning "Using deprecated NumPy API, disable it with " \
+2024-09-12 10:38:57,699 - INFO - |  ^~~~~~~
+2024-09-12 11:02:15,884 - INFO - sklearn/neighbors/ball_tree.c: In function '__pyx_f_7sklearn_9neighbors_9ball_tree_10BinaryTree__kde_single_breadthfirst':
+2024-09-12 11:02:15,893 - INFO - sklearn/neighbors/ball_tree.c:19880:65: warning: '__pyx_v_sample_weight' may be used uninitialized in this function [-Wmaybe-uninitialized]
+2024-09-12 11:02:15,894 - INFO - 19880 |           __pyx_t_10 = PyFloat_FromDouble((__pyx_v_sample_weight[(__pyx_v_idx_array[__pyx_v_i])])); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 2228, __pyx_L1_error)
+2024-09-12 11:02:15,894 - INFO - |                                                                 ^
+2024-09-12 11:03:57,496 - INFO - sklearn/neighbors/ball_tree.c: In function '__pyx_f_7sklearn_9neighbors_9ball_tree_10BinaryTree__kde_single_depthfirst':
+2024-09-12 11:03:57,505 - INFO - sklearn/neighbors/ball_tree.c:20564:62: warning: '__pyx_v_sample_weight' may be used uninitialized in this function [-Wmaybe-uninitialized]
+2024-09-12 11:03:57,506 - INFO - 20564 |         __pyx_t_9 = PyFloat_FromDouble((__pyx_v_sample_weight[(__pyx_v_idx_array[__pyx_v_i])])); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 2363, __pyx_L1_error)
+2024-09-12 11:03:57,506 - INFO - |                                                              ^
+2024-09-12 11:04:54,818 - INFO - gcc -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/neighbors/ball_tree.o -Lbuild/temp.linux-x86_64-3.6 -lm -o sklearn/neighbors/ball_tree.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 11:04:54,975 - INFO - building 'sklearn.neighbors.kd_tree' extension
+2024-09-12 11:04:54,976 - INFO - compiling C sources
+2024-09-12 11:04:54,976 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 11:04:54,976 - INFO - 
+2024-09-12 11:04:54,976 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 11:04:54,976 - INFO - gcc: sklearn/neighbors/kd_tree.c
+2024-09-12 11:04:55,314 - INFO - In file included from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarraytypes.h:1822,
+2024-09-12 11:04:55,314 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarrayobject.h:12,
+2024-09-12 11:04:55,314 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/arrayobject.h:4,
+2024-09-12 11:04:55,314 - INFO - from sklearn/neighbors/kd_tree.c:642:
+2024-09-12 11:04:55,314 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h:17:2: warning: #warning "Using deprecated NumPy API, disable it with " "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+2024-09-12 11:04:55,314 - INFO - 17 | #warning "Using deprecated NumPy API, disable it with " \
+2024-09-12 11:04:55,314 - INFO - |  ^~~~~~~
+2024-09-12 11:07:38,068 - INFO - sklearn/neighbors/kd_tree.c: In function '__pyx_f_7sklearn_9neighbors_7kd_tree_10BinaryTree__kde_single_breadthfirst':
+2024-09-12 11:07:38,072 - INFO - sklearn/neighbors/kd_tree.c:19851:65: warning: '__pyx_v_sample_weight' may be used uninitialized in this function [-Wmaybe-uninitialized]
+2024-09-12 11:07:38,072 - INFO - 19851 |           __pyx_t_10 = PyFloat_FromDouble((__pyx_v_sample_weight[(__pyx_v_idx_array[__pyx_v_i])])); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 2228, __pyx_L1_error)
+2024-09-12 11:07:38,073 - INFO - |                                                                 ^
+2024-09-12 11:07:45,442 - INFO - sklearn/neighbors/kd_tree.c: In function '__pyx_f_7sklearn_9neighbors_7kd_tree_10BinaryTree__kde_single_depthfirst':
+2024-09-12 11:07:45,452 - INFO - sklearn/neighbors/kd_tree.c:20535:62: warning: '__pyx_v_sample_weight' may be used uninitialized in this function [-Wmaybe-uninitialized]
+2024-09-12 11:07:45,452 - INFO - 20535 |         __pyx_t_9 = PyFloat_FromDouble((__pyx_v_sample_weight[(__pyx_v_idx_array[__pyx_v_i])])); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 2363, __pyx_L1_error)
+2024-09-12 11:07:45,452 - INFO - |                                                              ^
+2024-09-12 11:07:49,667 - INFO - gcc -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/neighbors/kd_tree.o -Lbuild/temp.linux-x86_64-3.6 -lm -o sklearn/neighbors/kd_tree.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 11:07:49,840 - INFO - building 'sklearn.neighbors.dist_metrics' extension
+2024-09-12 11:07:49,840 - INFO - compiling C sources
+2024-09-12 11:07:49,840 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 11:07:49,840 - INFO - 
+2024-09-12 11:07:49,840 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 11:07:49,840 - INFO - gcc: sklearn/neighbors/dist_metrics.c
+2024-09-12 11:07:50,222 - INFO - In file included from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarraytypes.h:1822,
+2024-09-12 11:07:50,222 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/ndarrayobject.h:12,
+2024-09-12 11:07:50,222 - INFO - from /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/arrayobject.h:4,
+2024-09-12 11:07:50,222 - INFO - from sklearn/neighbors/dist_metrics.c:643:
+2024-09-12 11:07:50,223 - INFO - /opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include/numpy/npy_1_7_deprecated_api.h:17:2: warning: #warning "Using deprecated NumPy API, disable it with " "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+2024-09-12 11:07:50,223 - INFO - 17 | #warning "Using deprecated NumPy API, disable it with " \
+2024-09-12 11:07:50,223 - INFO - |  ^~~~~~~
+2024-09-12 11:07:50,359 - INFO - sklearn/neighbors/dist_metrics.c: In function '__pyx_f_7sklearn_9neighbors_12dist_metrics_18SEuclideanDistance_dist':
+2024-09-12 11:07:50,362 - INFO - sklearn/neighbors/dist_metrics.c:7158:86: warning: passing argument 1 of '__pyx_f_7sklearn_9neighbors_12dist_metrics_18SEuclideanDistance_rdist' from incompatible pointer type [-Wincompatible-pointer-types]
+2024-09-12 11:07:50,363 - INFO - 7158 |   __pyx_t_1 = __pyx_f_7sklearn_9neighbors_12dist_metrics_18SEuclideanDistance_rdist(((struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_DistanceMetric *)__pyx_v_self), __pyx_v_x1, __pyx_v_x2, __pyx_v_size); if (unlikely(__pyx_t_1 == ((__pyx_t_7sklearn_9neighbors_8typedefs_DTYPE_t)-1.0))) __PYX_ERR(1, 463, __pyx_L1_error)
+2024-09-12 11:07:50,363 - INFO - |                                                                                     ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2024-09-12 11:07:50,363 - INFO - |                                                                                      |
+2024-09-12 11:07:50,363 - INFO - |                                                                                      struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_DistanceMetric *
+2024-09-12 11:07:50,366 - INFO - sklearn/neighbors/dist_metrics.c:6955:196: note: expected 'struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_SEuclideanDistance *' but argument is of type 'struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_DistanceMetric *'
+2024-09-12 11:07:50,366 - INFO - 6955 | static __pyx_t_7sklearn_9neighbors_8typedefs_DTYPE_t __pyx_f_7sklearn_9neighbors_12dist_metrics_18SEuclideanDistance_rdist(struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_SEuclideanDistance *__pyx_v_self, __pyx_t_7sklearn_9neighbors_8typedefs_DTYPE_t *__pyx_v_x1, __pyx_t_7sklearn_9neighbors_8typedefs_DTYPE_t *__pyx_v_x2, __pyx_t_7sklearn_9neighbors_8typedefs_ITYPE_t __pyx_v_size) {
+2024-09-12 11:07:50,366 - INFO - |                                                                                                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~
+2024-09-12 11:07:50,382 - INFO - sklearn/neighbors/dist_metrics.c: In function '__pyx_f_7sklearn_9neighbors_12dist_metrics_17MinkowskiDistance_dist':
+2024-09-12 11:07:50,386 - INFO - sklearn/neighbors/dist_metrics.c:7931:85: warning: passing argument 1 of '__pyx_f_7sklearn_9neighbors_12dist_metrics_17MinkowskiDistance_rdist' from incompatible pointer type [-Wincompatible-pointer-types]
+2024-09-12 11:07:50,386 - INFO - 7931 |   __pyx_t_1 = __pyx_f_7sklearn_9neighbors_12dist_metrics_17MinkowskiDistance_rdist(((struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_DistanceMetric *)__pyx_v_self), __pyx_v_x1, __pyx_v_x2, __pyx_v_size); if (unlikely(__pyx_t_1 == ((__pyx_t_7sklearn_9neighbors_8typedefs_DTYPE_t)-1.0))) __PYX_ERR(1, 552, __pyx_L1_error)
+2024-09-12 11:07:50,386 - INFO - |                                                                                    ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2024-09-12 11:07:50,387 - INFO - |                                                                                     |
+2024-09-12 11:07:50,387 - INFO - |                                                                                     struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_DistanceMetric *
+2024-09-12 11:07:50,391 - INFO - sklearn/neighbors/dist_metrics.c:7847:194: note: expected 'struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_MinkowskiDistance *' but argument is of type 'struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_DistanceMetric *'
+2024-09-12 11:07:50,391 - INFO - 7847 | static __pyx_t_7sklearn_9neighbors_8typedefs_DTYPE_t __pyx_f_7sklearn_9neighbors_12dist_metrics_17MinkowskiDistance_rdist(struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_MinkowskiDistance *__pyx_v_self, __pyx_t_7sklearn_9neighbors_8typedefs_DTYPE_t *__pyx_v_x1, __pyx_t_7sklearn_9neighbors_8typedefs_DTYPE_t *__pyx_v_x2, __pyx_t_7sklearn_9neighbors_8typedefs_ITYPE_t __pyx_v_size) {
+2024-09-12 11:07:50,391 - INFO - |                                                                                                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~
+2024-09-12 11:07:50,408 - INFO - sklearn/neighbors/dist_metrics.c: In function '__pyx_f_7sklearn_9neighbors_12dist_metrics_18WMinkowskiDistance_dist':
+2024-09-12 11:07:50,411 - INFO - sklearn/neighbors/dist_metrics.c:8626:86: warning: passing argument 1 of '__pyx_f_7sklearn_9neighbors_12dist_metrics_18WMinkowskiDistance_rdist' from incompatible pointer type [-Wincompatible-pointer-types]
+2024-09-12 11:07:50,411 - INFO - 8626 |   __pyx_t_1 = __pyx_f_7sklearn_9neighbors_12dist_metrics_18WMinkowskiDistance_rdist(((struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_DistanceMetric *)__pyx_v_self), __pyx_v_x1, __pyx_v_x2, __pyx_v_size); if (unlikely(__pyx_t_1 == ((__pyx_t_7sklearn_9neighbors_8typedefs_DTYPE_t)-1.0))) __PYX_ERR(1, 611, __pyx_L1_error)
+2024-09-12 11:07:50,412 - INFO - |                                                                                     ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2024-09-12 11:07:50,412 - INFO - |                                                                                      |
+2024-09-12 11:07:50,412 - INFO - |                                                                                      struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_DistanceMetric *
+2024-09-12 11:07:50,416 - INFO - sklearn/neighbors/dist_metrics.c:8433:196: note: expected 'struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_WMinkowskiDistance *' but argument is of type 'struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_DistanceMetric *'
+2024-09-12 11:07:50,416 - INFO - 8433 | static __pyx_t_7sklearn_9neighbors_8typedefs_DTYPE_t __pyx_f_7sklearn_9neighbors_12dist_metrics_18WMinkowskiDistance_rdist(struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_WMinkowskiDistance *__pyx_v_self, __pyx_t_7sklearn_9neighbors_8typedefs_DTYPE_t *__pyx_v_x1, __pyx_t_7sklearn_9neighbors_8typedefs_DTYPE_t *__pyx_v_x2, __pyx_t_7sklearn_9neighbors_8typedefs_ITYPE_t __pyx_v_size) {
+2024-09-12 11:07:50,417 - INFO - |                                                                                                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~
+2024-09-12 11:07:50,435 - INFO - sklearn/neighbors/dist_metrics.c: In function '__pyx_f_7sklearn_9neighbors_12dist_metrics_19MahalanobisDistance_dist':
+2024-09-12 11:07:50,440 - INFO - sklearn/neighbors/dist_metrics.c:9485:87: warning: passing argument 1 of '__pyx_f_7sklearn_9neighbors_12dist_metrics_19MahalanobisDistance_rdist' from incompatible pointer type [-Wincompatible-pointer-types]
+2024-09-12 11:07:50,440 - INFO - 9485 |   __pyx_t_1 = __pyx_f_7sklearn_9neighbors_12dist_metrics_19MahalanobisDistance_rdist(((struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_DistanceMetric *)__pyx_v_self), __pyx_v_x1, __pyx_v_x2, __pyx_v_size); if (unlikely(__pyx_t_1 == ((__pyx_t_7sklearn_9neighbors_8typedefs_DTYPE_t)-1.0))) __PYX_ERR(1, 684, __pyx_L1_error)
+2024-09-12 11:07:50,440 - INFO - |                                                                                      ~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2024-09-12 11:07:50,440 - INFO - |                                                                                       |
+2024-09-12 11:07:50,440 - INFO - |                                                                                       struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_DistanceMetric *
+2024-09-12 11:07:50,445 - INFO - sklearn/neighbors/dist_metrics.c:9234:198: note: expected 'struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_MahalanobisDistance *' but argument is of type 'struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_DistanceMetric *'
+2024-09-12 11:07:50,445 - INFO - 9234 | static __pyx_t_7sklearn_9neighbors_8typedefs_DTYPE_t __pyx_f_7sklearn_9neighbors_12dist_metrics_19MahalanobisDistance_rdist(struct __pyx_obj_7sklearn_9neighbors_12dist_metrics_MahalanobisDistance *__pyx_v_self, __pyx_t_7sklearn_9neighbors_8typedefs_DTYPE_t *__pyx_v_x1, __pyx_t_7sklearn_9neighbors_8typedefs_DTYPE_t *__pyx_v_x2, __pyx_t_7sklearn_9neighbors_8typedefs_ITYPE_t __pyx_v_size) {
+2024-09-12 11:07:50,445 - INFO - |                                                                                                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~
+2024-09-12 11:08:16,263 - INFO - gcc -pthread -shared -B /opt/miniconda3/envs/testbed/compiler_compat -L/opt/miniconda3/envs/testbed/lib -Wl,-rpath=/opt/miniconda3/envs/testbed/lib -Wl,--no-as-needed -Wl,--sysroot=/ build/temp.linux-x86_64-3.6/sklearn/neighbors/dist_metrics.o -Lbuild/temp.linux-x86_64-3.6 -lm -o sklearn/neighbors/dist_metrics.cpython-36m-x86_64-linux-gnu.so
+2024-09-12 11:08:16,435 - INFO - building 'sklearn.neighbors.typedefs' extension
+2024-09-12 11:08:16,436 - INFO - compiling C sources
+2024-09-12 11:08:16,437 - INFO - C compiler: gcc -pthread -B /opt/miniconda3/envs/testbed/compiler_compat -Wl,--sysroot=/ -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -Wstrict-prototypes -fPIC
+2024-09-12 11:08:16,438 - INFO - 
+2024-09-12 11:08:16,438 - INFO - compile options: '-I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/lib/python3.6/site-packages/numpy/core/include -I/opt/miniconda3/envs/testbed/include/python3.6m -I/opt/miniconda3/envs/testbed/include/python3.6m -c'
+2024-09-12 11:08:16,439 - INFO - gcc: sklearn/neighbors/typedefs.c

@@ -45,7 +45,7 @@ def get_agent_graph(repo_name: str, workspace_id: str):
                 credentials_profile_name="default",
                 model_id="anthropic.claude-3-5-sonnet-20240620-v1:0",
                 region_name="us-east-1",
-                model_kwargs={"temperature": 0}
+                model_kwargs={"temperature": 0, "max_tokens": 8192}
             )
     
     composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Docker(),
@@ -73,7 +73,6 @@ def get_agent_graph(repo_name: str, workspace_id: str):
         *composio_toolset.get_actions(
             actions=[
                 Action.FILETOOL_OPEN_FILE,
-                Action.FILETOOL_SCROLL,
                 Action.FILETOOL_GIT_REPO_TREE,
                 Action.FILETOOL_GIT_PATCH
             ]
@@ -103,7 +102,6 @@ def get_agent_graph(repo_name: str, workspace_id: str):
                 Action.FILETOOL_FIND_FILE,
                 Action.FILETOOL_SEARCH_WORD,
                 Action.FILETOOL_WRITE,
-                Action.SHELLTOOL_EXEC_COMMAND
             ]
         ),
     ]

@@ -1,0 +1,37 @@
+diff --git a/django/template/library.py b/django/template/library.py
+index 20bc86da..9c41b0f7 100644
+--- a/django/template/library.py
++++ b/django/template/library.py
+@@ -253,7 +253,7 @@ def parse_bits(parser, bits, params, varargs, varkw, defaults,
+     unhandled_params = list(params)
+     unhandled_kwargs = [
+         kwarg for kwarg in kwonly
+-        if not kwonly_defaults or kwarg not in kwonly_defaults
++        if kwarg not in kwonly_defaults
+     ]
+     for bit in bits:
+         # First we try to extract a potential kwarg from the bit
+@@ -261,7 +261,8 @@ def parse_bits(parser, bits, params, varargs, varkw, defaults,
+         if kwarg:
+             # The kwarg was successfully extracted
+             param, value = kwarg.popitem()
+-            if param not in params and param not in unhandled_kwargs and varkw is None:
++            if (param not in params and param not in unhandled_kwargs and
++                param not in kwonly_defaults and varkw is None):
+                 # An unexpected keyword argument was supplied
+                 raise TemplateSyntaxError(
+                     "'%s' received unexpected keyword argument '%s'" %
+@@ -301,11 +302,11 @@ def parse_bits(parser, bits, params, varargs, varkw, defaults,
+         # Consider the last n params handled, where n is the
+         # number of defaults.
+         unhandled_params = unhandled_params[:-len(defaults)]
+-    if unhandled_params or unhandled_kwargs:
++    if unhandled_params or [k for k in unhandled_kwargs if k not in kwonly_defaults]:
+         # Some positional arguments were not supplied
+         raise TemplateSyntaxError(
+             "'%s' did not receive value(s) for the argument(s): %s" %
+-            (name, ", ".join("'%s'" % p for p in unhandled_params + unhandled_kwargs)))
++            (name, ", ".join("'%s'" % p for p in unhandled_params + [k for k in unhandled_kwargs if k not in kwonly_defaults])))
+     return args, kwargs
+ 
+ 
