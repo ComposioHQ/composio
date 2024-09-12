@@ -7,7 +7,7 @@
     "test": "jest --testMatch=\"**/*.spec.ts\"",
     "test:watch": "jest --testMatch=\"**/*.spec.ts\" --watch",
     "test:coverage": "jest --coverage --testMatch=\"**/*.spec.ts\"",
-    "build": "tsc  --project . --outDir lib",
+    "build": "tsc  --project . --outDir lib && cp src/constants.js lib/src/constants.js",
     "build:watch": "tsc --watch --project . --outDir lib --watch",
     "type-docs": "typedoc",
     "openapispec:generate": "npx @hey-api/openapi-ts"
