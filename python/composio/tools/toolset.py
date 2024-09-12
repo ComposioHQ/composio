@@ -239,7 +239,9 @@ class ComposioToolSet(WithLogger):
             self.logger.debug("`api_key` is not set when initializing toolset.")
 
         self._processors = (
-            processors if processors is not None else {"post": {}, "pre": {}, "schema": {}}
+            processors
+            if processors is not None
+            else {"post": {}, "pre": {}, "schema": {}}
         )
         self._metadata = metadata or {}
         self._workspace_id = workspace_id
@@ -546,7 +548,7 @@ class ComposioToolSet(WithLogger):
             ),
             type_="post",
         )
-    
+
     def _process_schema_properties(self, action: Action, properties: t.Dict) -> t.Dict:
         return self._process(
             key=App(action.app),
@@ -738,7 +740,7 @@ class ComposioToolSet(WithLogger):
             ]
         action_item.parameters.properties = self._process_schema_properties(
             action=Action(action_item.name.upper()),
-            properties=action_item.parameters.properties
+            properties=action_item.parameters.properties,
         )
         return action_item
 

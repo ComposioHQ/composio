@@ -299,10 +299,8 @@ class RemoteWorkspace(Workspace):
             timeout=600,
         )
         if request.status_code != 200:
-            raise ComposioSDKError(
-                f"Error installing dependencies: {request.text}"
-            )
-        
+            raise ComposioSDKError(f"Error installing dependencies: {request.text}")
+
         response = request.json()
         if response["error"] is not None:
             raise ComposioSDKError(

@@ -314,7 +314,7 @@ class TestFiletool:
             },
         )
         assert "New content line" in edit_response["data"]["updated_text"]
-        
+
         # Edit file
         edit_response = toolset.execute_action(
             Action.FILETOOL_EDIT_FILE,

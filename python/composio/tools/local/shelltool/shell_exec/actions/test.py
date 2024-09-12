@@ -5,7 +5,7 @@ import typing as t
 from pydantic import BaseModel, Field
 
 from composio.tools.base.local import LocalAction
-from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
+from composio.tools.env.constants import STDERR, STDOUT
 
 
 class ShellRequest(BaseModel):
@@ -50,8 +50,8 @@ class TestCommand(LocalAction[TestExecRequest, TestExecResponse]):
         project_path = metadata.get("project_path")
         command = metadata.get("test_command")
         self.logger.debug(f"Executing {command} @ {shell}")
-        cwd = shell.exec(cmd=f'cd {project_path}')
-        install = shell.exec(cmd=f'python -m pip install -e .')
+        shell.exec(cmd=f"cd {project_path}")
+        shell.exec(cmd="python -m pip install -e .")
         output = shell.exec(cmd=f"{command}")
         self.logger.debug(output)
         return TestExecResponse(

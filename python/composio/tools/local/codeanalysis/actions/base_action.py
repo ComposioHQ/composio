@@ -33,7 +33,10 @@ class BaseCodeAnalysisAction:
         }
 
     def get_matching_items(
-        self, query_name: Optional[str], item_type: str, parent_fqdns: Optional[List[str]] = None
+        self,
+        query_name: Optional[str],
+        item_type: str,
+        parent_fqdns: Optional[List[str]] = None,
     ) -> List[str]:
         if not self.fqdn_index:
             raise ValueError("FQDN index not loaded")
@@ -96,7 +99,9 @@ class MethodAnalysisAction(BaseCodeAnalysisAction):
     ) -> Dict:
         matching_fqdns_class = self.get_matching_items(query_class_name, "class")
         if query_class_name is not None:
-            matching_fqdns_func = self.get_matching_items(query_method_name, "function", matching_fqdns_class)
+            matching_fqdns_func = self.get_matching_items(
+                query_method_name, "function", matching_fqdns_class
+            )
         else:
             matching_fqdns_func = self.get_matching_items(query_method_name, "function")
         func_results = self.get_item_results(matching_fqdns_func, repo_path)

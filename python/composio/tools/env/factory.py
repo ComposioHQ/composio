@@ -100,7 +100,7 @@ class WorkspaceFactory:
         workspace = cls._workspaces[id]
         if workspace.persistent:
             return
-        
+
         workspace.teardown()
 
     @classmethod
