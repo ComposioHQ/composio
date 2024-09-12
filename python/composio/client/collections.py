@@ -954,7 +954,7 @@ class Actions(Collection[ActionModel]):
         response_json = response.json()
         items = [self.model(**action) for action in response_json.get("items")]
         if len(actions) > 0:
-            required = [t.cast(Action, action).name for action in actions]
+            required = [t.cast(Action, action).slug for action in actions]
             items = [item for item in items if item.name in required]
 
         if len(tags) > 0:
@@ -1054,7 +1054,7 @@ class Actions(Collection[ActionModel]):
 
         return self._raise_if_required(
             self.client.http.post(
-                url=str(self.endpoint / action.name / "execute"),
+                url=str(self.endpoint / action.slug / "execute"),
                 json={
                     "connectedAccountId": connected_account,
                     "input": modified_params,

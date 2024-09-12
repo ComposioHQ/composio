@@ -147,8 +147,11 @@ class Composio(BaseClient):
             },
             timeout=60,
         )
-        if response.status_code != 200:
+        if response.status_code in (401, 403):
             raise ComposioClientError("API Key is not valid!")
+
+        if response.status_code != 200:
+            raise ComposioClientError(f"Unexpected error: HTTP {response.status_code}")
 
         _valid_keys.add(key)
         return key
@@ -367,6 +370,7 @@ class Entity:
         app = self.client.apps.get(name=app_name)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         if integration is None and auth_mode is not None:
+            use_composio_auth = use_composio_auth if app.testConnectors and len(app.testConnectors) > 0 else False
             integration = self.client.integrations.create(
                 app_id=app.appId,
                 name=f"{app_name}_{timestamp}",

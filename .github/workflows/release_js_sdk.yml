@@ -1,0 +1,43 @@
+name: Release JS SDK
+
+on:
+  push:
+    # Pattern matched against refs/tags
+    # This workflow will run when a tag starting with 'js-' is pushed
+    # For example, 'js-v1.0.0' or 'js-release-2.3.1'
+    tags:        
+      - 'js-*'  
+    
+
+jobs:
+  run-js-tests:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: js
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        registry-url: 'https://registry.npmjs.org'
+    - name: Install dependencies
+      run: npm install -g pnpm@8.15.7
+    - name: Install packages in js folder
+      run: pnpm install
+
+    - name: Set publishing config
+      run: pnpm config set '//registry.npmjs.org/:_authToken' "${NODE_AUTH_TOKEN}"
+      env:
+        NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+
+    - name: pnpm build
+      run: pnpm build
+      
+    - name: pnpm publish
+      run: pnpm publish --no-git-checks
+

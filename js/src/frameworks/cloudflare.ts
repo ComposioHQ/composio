@@ -36,6 +36,9 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     );
   }
 
+  /**
+   * @deprecated Use getTools instead.
+   */
   async getActions(filters: {
     actions: Sequence<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
@@ -74,7 +77,8 @@ export class CloudflareToolSet extends BaseComposioToolSet {
   }
 
   async getTools(filters: {
-    apps: Sequence<string>;
+    actions?: Optional<Sequence<string>>;
+    apps?: Sequence<string>;
     tags?: Optional<Array<string>>;
     useCase?: Optional<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
@@ -122,7 +126,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     entityId: Optional<string> = null
   ): Promise<string> {
     return JSON.stringify(
-      await this.executeAction(
+      await this.execute_action(
         tool.name,
         typeof tool.arguments === "string" ? JSON.parse(tool.arguments) : tool.arguments,
         entityId || this.entityId

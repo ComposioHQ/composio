@@ -1,8 +1,8 @@
 {
   "name": "composio-core",
-  "version": "0.1.12",
+  "version": "0.1.17-3",
   "description": "",
-  "main": "lib/index.js",
+  "main": "lib/src/index.js",
   "scripts": {
     "test": "jest --testMatch=\"**/*.spec.ts\"",
     "test:watch": "jest --testMatch=\"**/*.spec.ts\" --watch",

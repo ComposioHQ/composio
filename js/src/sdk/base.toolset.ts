@@ -111,7 +111,8 @@ export class ComposioToolSet {
 
     async getToolsSchema(
         filters: {
-            apps: Sequence<string>;
+            actions?: Optional<Array<string>>;
+            apps?: Array<string>;
             tags?: Optional<Array<string>>;
             useCase?: Optional<string>;
         },
@@ -120,18 +121,19 @@ export class ComposioToolSet {
         await this.setup();
 
         const apps =  await this.client.actions.list({
-            apps: filters.apps.join(","),
-            tags: filters.tags?.join(","),
-            showAll: true,
-            filterImportantActions: !filters.tags && !filters.useCase,
-            useCase: filters.useCase || undefined
+            ...(filters?.apps && { apps: filters?.apps?.join(",") }),
+            ...(filters?.tags && { tags: filters?.tags?.join(",") }),
+            ...(filters?.useCase && { useCase: filters?.useCase }),
+            ...(filters?.actions && { actions: filters?.actions?.join(",") }),
          });
         const localActions = new Map<string, NonNullable<GetListActionsResponse["items"]>[0]>();
-        for (const appName of filters.apps!) {
-            const actionData = this.localActions?.filter((a: any) => a.appName === appName);
-            if(actionData) {
-                for (const action of actionData) {
-                    localActions.set(action.name, action);
+        if(filters.apps && Array.isArray(filters.apps)) {
+            for (const appName of filters.apps!) {
+                const actionData = this.localActions?.filter((a: any) => a.appName === appName);
+                if(actionData) {
+                    for (const action of actionData) {
+                        localActions.set(action.name, action);
+                    }
                 }
             }
         }
