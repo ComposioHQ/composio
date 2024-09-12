@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeAll } from "@jest/globals";
-import { CloudflareToolSet } from "./cloudflare";
-import { get } from "http";
 import { getTestConfig } from "../../config/getTestConfig";
-import { LangchainToolSet } from "./langchain";
-import { OpenAIToolSet } from "./openai";
 import { VercelAIToolSet } from "./vercel";
 
 
@@ -27,10 +23,9 @@ describe("Apps class tests", () => {
     });
 
     it("check if actions are coming", async () => {
-        const tools = await vercelAIToolSet.get_actions({
+        const tools = await vercelAIToolSet.getTools({
             actions: ['GITHUB_GITHUB_API_ROOT']
         });
-
         expect(Object.keys(tools).length).toBe(1);
     });
 
