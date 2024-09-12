@@ -7,6 +7,7 @@ import typing as t
 from abc import abstractmethod
 from pathlib import Path
 
+from composio.utils.pydantic import parse_pydantic_error
 import inflection
 import jsonref
 import pydantic

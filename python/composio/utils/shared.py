@@ -119,7 +119,7 @@ def json_schema_to_pydantic_field(
         Field(
             description=description,
             examples=examples,
-            default=... if name in required else default,
+            default=... if (name in required or json_schema.get("required", False)) else default,
         ),
     )
 
@@ -205,7 +205,7 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
         else:
             signature_prop_type = pydantic_model_from_param_schema(prop_info)
 
-        if prop_name in required_props:
+        if prop_name in required_props or prop_info.get("required", False):
             required_fields[prop_name] = (
                 signature_prop_type,
                 Field(
@@ -289,13 +289,13 @@ def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Par
             param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
 
         param_annotation = signature_param_type
+        is_required = param_name in required_params or param_schema.get("required", False)
         param = Parameter(
             name=param_name,
             kind=Parameter.POSITIONAL_OR_KEYWORD,
             annotation=param_annotation,
-            default=Parameter.empty if param_name in required_params else param_default,
+            default=Parameter.empty if is_required else param_default,
         )
-        is_required = param_name in required_params
         if is_required:
             required_parameters.append(param)
         else:

@@ -98,6 +98,8 @@ class TestValidateTools:
             match=f"Error installing {self.package}",
         ):
             self.toolset.validate_tools(apps=[App.BROWSER_TOOL])
+<<<<<<< HEAD
+=======
 
 
 def test_api_key_missing() -> None:
@@ -111,3 +113,4 @@ def test_api_key_missing() -> None:
         ),
     ):
         _ = toolset.workspace
+>>>>>>> master
