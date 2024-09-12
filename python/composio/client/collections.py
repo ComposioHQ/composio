@@ -1054,7 +1054,7 @@ class Actions(Collection[ActionModel]):
 
         return self._raise_if_required(
             self.client.http.post(
-                url=str(self.endpoint / action.name / "execute"),
+                url=str(self.endpoint / action.slug / "execute"),
                 json={
                     "connectedAccountId": connected_account,
                     "input": modified_params,
