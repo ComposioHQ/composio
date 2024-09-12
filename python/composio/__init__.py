@@ -1,21 +1,9 @@
 # pylint: disable=wrong-import-position
 
+from composio.utils import sentry
 
-try:
-    import sentry_sdk
 
-    sentry_sdk.init(
-        dsn=(
-            "https://071d95df77abfdaaa87cd9441f42e12f@o4507825828462592.ingest.de."
-            "sentry.io/4507833628557392"
-        ),
-        traces_sample_rate=1.0,
-        profiles_sample_rate=1.0,
-        debug=False,
-    )
-except Exception:
-    pass
-
+sentry.init()
 
 import atexit  # noqa: E402
 
