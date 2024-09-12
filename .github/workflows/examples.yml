@@ -12,6 +12,12 @@ on:
       base_url:
         required: false
         type: string
+      author:
+        required: false
+        type: string
+      commit_message:
+        required: false
+        type: string
   workflow_dispatch:
     inputs:
       working-directory:
@@ -23,7 +29,12 @@ on:
       base_url:
         required: false
         type: string
-
+      author:
+        required: false
+        type: string
+      commit_message:
+        required: false
+        type: string
 
 jobs:
   run-tests:
@@ -84,3 +95,5 @@ jobs:
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_TECH_WEBHOOK }}
           SLACK_TITLE: "Example Tests Failed"
+          SLACK_MSG_AUTHOR: ${{ inputs.author || github.actor }}
+          SLACK_MESSAGE: ${{ inputs.commit_message || github.event.head_commit.message }}
