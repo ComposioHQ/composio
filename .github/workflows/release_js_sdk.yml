@@ -1,8 +1,12 @@
 name: Release JS SDK
 
 on:
-  workflow_dispatch:
   push:
+    # Pattern matched against refs/tags
+    # This workflow will run when a tag starting with 'js-' is pushed
+    # For example, 'js-v1.0.0' or 'js-release-2.3.1'
+    tags:        
+      - 'js-*'  
     
 
 jobs:
