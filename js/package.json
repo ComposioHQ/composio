@@ -7,13 +7,15 @@
     "test": "jest --testMatch=\"**/*.spec.ts\"",
     "test:watch": "jest --testMatch=\"**/*.spec.ts\" --watch",
     "test:coverage": "jest --coverage --testMatch=\"**/*.spec.ts\"",
-    "build": "tsc  --project . --outDir lib && cp src/constants.js lib/src/constants.js",
+    "build": "tsc  --project . --outDir lib && ./setup_cli.sh",
     "build:watch": "tsc --watch --project . --outDir lib --watch",
     "type-docs": "typedoc",
-    "openapispec:generate": "npx @hey-api/openapi-ts"
+    "openapispec:generate": "npx @hey-api/openapi-ts",
+    "run:cli": "ts-node src/cli/index.ts"
   },
   "bin": {
-    "composio": "./lib/src/cli/index.js"
+    "composio-js": "./lib/src/cli/index.",
+    "composio": "./lib/src/cli/index"
   },
   "keywords": [],
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",

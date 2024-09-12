@@ -24,7 +24,7 @@ describe("Apps class tests", () => {
 
     it("check if apps are coming", async () => {
         const tools = await cloudflareToolSet.getTools({
-            actions: ['GITHUB_GITHUB_API_ROOT']
+            actions: ['CODEINTERPRETER_GET_FILE_CMD']
         });
 
         expect(tools.length).toBe(1);
