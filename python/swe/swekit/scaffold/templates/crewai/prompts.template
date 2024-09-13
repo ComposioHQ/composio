@@ -47,6 +47,7 @@ following tips.
     If it didn't, issue another command to fix it.
   11. When you finish working on the issue, use the get patch action with the
     new files created to create the final patch to be submitted to fix the issue.
+NOTE: Give owner/repo_name while cloning the repo, not the full URL.
 """
 
 DESCRIPTION = """We're currently solving the following issue within our repository. 
