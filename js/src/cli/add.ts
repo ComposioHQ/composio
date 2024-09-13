@@ -31,7 +31,8 @@ export default class AddCommand {
         appName: appName.toLowerCase(),
       });
 
-    if (!integration) {
+
+    if (integration?.items.length === 0) {
       integration = (await this.createIntegration(
         appName,
       )) as GetConnectorListResDTO;
@@ -89,6 +90,8 @@ export default class AddCommand {
     const data = await this.composioClient.integrations.get({ integrationId });
     const { expectedInputFields } = data;
 
+
+
     const config = await this.collectInputFields(expectedInputFields, true);
 
     const connectionData = await this.composioClient.connectedAccounts.create({
@@ -118,6 +121,12 @@ export default class AddCommand {
     const app = await this.composioClient.apps.get({
       appKey: appName.toLowerCase(),
     });
+
+
+    if (app.no_auth) {
+        console.log(chalk.green(`The app '${appName}' does not require authentication. You can connect it directly.\n`));
+        process.exit(0);
+    }
 
     const config: Record<string, any> = {};
 
@@ -189,7 +198,6 @@ export default class AddCommand {
       }
     }
 
-    console.log(config);
     return config;
   }
 
