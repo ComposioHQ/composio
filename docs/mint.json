@@ -183,26 +183,9 @@
         "examples/combined/calendar-agent",
         "examples/combined/code-execution-agent",
         "examples/combined/rag-agent",
-    {
-          "group": "Detailed Python Guides", 
-          "pages":[
-            "examples/python/research-assistant",
-            "examples/python/sql-agent",
-            "examples/python/competitor-researcher",
-            "examples/python/rag_agent",
-            "examples/python/interpreter_agent",
-            "examples/python/news-summary",
-            "examples/python/calendar-agent"
-        ]
-      },
-      {
-        "group":"Javascript Guides",
-        "pages":[
-          "examples/javascript/calendar-agent",
-          "examples/javascript/code-execution-agent",
-          "examples/javascript/rag_agent"
-        ]
-      }
+        "examples/combined/newsletter_summarizer",
+        "examples/combined/research_agent",
+        "examples/combined/sql-agent"
         ]
     },
     {
