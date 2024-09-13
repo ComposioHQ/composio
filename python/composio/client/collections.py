@@ -637,7 +637,10 @@ class _PusherClient(logging.WithLogger):
 
         try:
             response = requests.post(
-                f"{self.base_url}/v1/triggers/pusher", headers=headers, json=data
+                f"{self.base_url}/v1/triggers/pusher",
+                headers=headers,
+                json=data,
+                timeout=timeout,
             )
             response.raise_for_status()
         except requests.RequestException as e:
