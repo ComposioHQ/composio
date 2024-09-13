@@ -111,6 +111,7 @@
         "framework/langchain",
         "framework/llamaindex",
         "framework/crewai",
+        "framework/groq",
         "framework/openai",
         "framework/autogen",
         {
@@ -183,9 +184,9 @@
         "examples/combined/calendar-agent",
         "examples/combined/code-execution-agent",
         "examples/combined/rag-agent",
-        "examples/combined/newsletter_summarizer",
         "examples/combined/research_agent",
-        "examples/combined/sql-agent"
+        "examples/combined/sql-agent",
+        "examples/combined/newsletter_summarizer"
         ]
     },
     {

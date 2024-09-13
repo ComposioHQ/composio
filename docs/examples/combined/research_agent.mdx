@@ -6,52 +6,22 @@ description: "This guide provides detailed steps to create a Demo Assistant usin
 ---
 This project is an example that uses Composio to seamlessly interact with GitHub through an AI assistant. It automatically creates issues and retrieves user information based on user input.
 
-<Card color="#7bee0c" title="Demo Assistant GitHub Repository" icon="github" href="https://www.github.com/ComposioHQ/composio/blob/master/js/examples/openai/demo_assistant.mjs">
+
+
+
+<Tabs>
+<Tab title="Python">
+<Card color="#7bee0c" title="Research Agent GitHub Repository" icon="github" href="https://github.com/ComposioHQ/composio/tree/master/python/examples/arxiv-research-reporter">
   Explore the complete source code for the Demo Assistant project. This repository contains all the necessary files and scripts to set up and run the Demo Assistant using Composio and OpenAI.
   <CardBody>
-    - Clone the repository to get started
-    - Follow the setup instructions in the README
-    - Experiment with and customize the Demo Assistant
   </CardBody>
 </Card>
-
 <Steps>
-    <Step title="Run the `setup.sh` file">
-    > Fork and Clone this [repository](https://github.com/composiohq/composio), Navigate to the Project Directory 
-
-    <CodeGroup>
-        ```bash Python
-        cd python/examples/quickstarters/arxiv-research-reporter
-        ```
-        ```bash JS
-        cd js/examples/openai
-        ```
-
-    </CodeGroup>
-
-    Make the setup.sh Script Executable (if necessary): On Linux or macOS, you might need to make the setup.sh script executable:
-    <CodeGroup>
-        ```bash Python - Run Command
-       chmod +x setup.sh
-
-       # run the setup.sh file
-       ./setup.sh
-        ```
-        Fill in the .env file after running the script.
-
-        ```bash JS - Install Dependencies
-        ## Any of the following commands will install the required dependencies
-        npm install
-        yarn install 
-        pnpm install
-        ```
-    </CodeGroup>
-    </Step>
 
     <Step title="Import base packages">
     Next, we'll import the essential libraries for our project.
     <CodeGroup>
-        ```python Python - Import statements
+        ```python Import statements
         import os
         import dotenv
         from composio_llamaindex import Action, ComposioToolSet  # pylint: disable=import-error
@@ -60,16 +30,11 @@ This project is an example that uses Composio to seamlessly interact with GitHub
         from llama_index.agent.openai import OpenAIAgent
         from llama_index.tools.arxiv.base import ArxivToolSpec
         ```
-        ```javascript JS - Import statements
-        import express from 'express';
-        import { OpenAI } from "openai";
-        import { OpenAIToolSet, Action } from "composio-core";
-        ```
     </CodeGroup>
     </Step>
 
-    <Step title="Initialize Express App">
-    We'll initialize our Express application and set up the necessary configurations.
+    <Step title="Initialize LLM">
+    We'll initialize our LLM and set up the necessary configurations.
     <CodeGroup>
         ```python Python - Initialize LLM
         dotenv.load_dotenv()
@@ -81,18 +46,11 @@ This project is an example that uses Composio to seamlessly interact with GitHub
         n_issues = 3
         
         ```
-        ```javascript Initialize Express App
-        const app = express();
-        const PORT = process.env.PORT || 2001;
-        const research_topic = "LLM agents function calling"
-        const target_repo = "composiohq/composio"
-        app.use(express.json());
-        ```
     </CodeGroup>
     </Step>
 
-    <Step title="Define Webhook Endpoint">
-    Define the webhook endpoint for JS and the main function for Python that will handle incoming requests and interact with the OpenAI API.
+    <Step title="Define Main Function">
+    Define the main function for Python that will handle incoming requests and interact with the OpenAI API.
     <CodeGroup>
         ```python Define Main
         def main():
@@ -132,6 +90,59 @@ This project is an example that uses Composio to seamlessly interact with GitHub
             print("Response:", response)
         
         ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Start the Server">
+    Finally, we'll Run the main on Python to execute the Agent
+    <CodeGroup>
+        ```python Main function 
+        if __name__ == "__main__":
+            main()
+
+        ```
+    </CodeGroup>
+    </Step>
+
+</Steps>
+</Tab>
+
+<Tab title = "Javascript">
+<Card color="#7bee0c" title="Research Agent GitHub Repository" icon="github" href="https://www.github.com/ComposioHQ/composio/blob/master/js/examples/openai/demo_assistant.mjs">
+  Explore the complete source code for the Demo Assistant project. This repository contains all the necessary files and scripts to set up and run the Demo Assistant using Composio and OpenAI.
+  <CardBody>
+  </CardBody>
+</Card>
+
+<Steps>
+
+    <Step title="Import base packages">
+    Next, we'll import the essential libraries for our project.
+    <CodeGroup>
+        ```javascript JS - Import statements
+        import express from 'express';
+        import { OpenAI } from "openai";
+        import { OpenAIToolSet, Action } from "composio-core";
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Initialize Express App">
+    We'll initialize our Express application and set up the necessary configurations.
+    <CodeGroup>
+        ```javascript Initialize Express App
+        const app = express();
+        const PORT = process.env.PORT || 2001;
+        const research_topic = "LLM agents function calling"
+        const target_repo = "composiohq/composio"
+        app.use(express.json());
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define Webhook Endpoint">
+    Define the webhook endpoint for JS that will handle incoming requests and interact with the OpenAI API.
+    <CodeGroup>
         ```javascript Define Webhook
         app.get('/webhook', async (req, res) => {
             try {
@@ -193,13 +204,8 @@ This project is an example that uses Composio to seamlessly interact with GitHub
     </Step>
 
     <Step title="Start the Server">
-    Finally, we'll start the Express server for JS and Run the main on Python to listen for incoming requests.
+    Finally, we'll start the Express server for JS to listen for incoming requests.
     <CodeGroup>
-        ```python Python 
-        if __name__ == "__main__":
-            main()
-
-        ```
         ```javascript Start Server
         app.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
@@ -209,6 +215,23 @@ This project is an example that uses Composio to seamlessly interact with GitHub
     </Step>
 
 </Steps>
+</Tab>
+
+</Tabs>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Putting it All Together
 
