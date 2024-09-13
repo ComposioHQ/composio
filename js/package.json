@@ -1,16 +1,21 @@
 {
   "name": "composio-core",
-  "version": "0.1.17-3",
+  "version": "0.1.17-4",
   "description": "",
   "main": "lib/src/index.js",
   "scripts": {
     "test": "jest --testMatch=\"**/*.spec.ts\"",
     "test:watch": "jest --testMatch=\"**/*.spec.ts\" --watch",
     "test:coverage": "jest --coverage --testMatch=\"**/*.spec.ts\"",
-    "build": "tsc  --project . --outDir lib",
+    "build": "tsc  --project . --outDir lib && ./setup_cli.sh",
     "build:watch": "tsc --watch --project . --outDir lib --watch",
     "type-docs": "typedoc",
-    "openapispec:generate": "npx @hey-api/openapi-ts"
+    "openapispec:generate": "npx @hey-api/openapi-ts",
+    "run:cli": "ts-node src/cli/index.ts"
+  },
+  "bin": {
+    "composio-js": "./lib/src/cli/index",
+    "composio": "./lib/src/cli/index"
   },
   "keywords": [],
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",
@@ -53,13 +58,17 @@
     "@langchain/openai": "^0.2.5",
     "ai": "^3.2.22",
     "axios": "^1.7.2",
+    "chalk": "^4",
     "cli-progress": "^3.12.0",
     "colors": "^1.4.0",
+    "commander": "^12.1.0",
     "dockerode": "^4.0.2",
     "e2b": "^0.16.1",
     "enumify": "^2.0.0",
     "hono": "^4.4.11",
+    "inquirer": "^10.2.2",
     "langchain": "^0.2.11",
+    "open": "^8.4.0",
     "openai": "^4.50.0",
     "pusher-js": "8.4.0-rc2",
     "ts-node": "^10.9.2",
