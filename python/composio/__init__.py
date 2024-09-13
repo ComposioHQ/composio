@@ -49,6 +49,6 @@ __all__ = (
     "LogLevel",
 )
 
-__version__ = "0.5.19"
+__version__ = "0.5.20"
 
 atexit.register(create_latest_version_warning_hook(version=__version__))
