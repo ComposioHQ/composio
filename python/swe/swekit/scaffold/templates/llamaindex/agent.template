@@ -42,7 +42,7 @@ class FunctionCallingAgent(Workflow):
         super().__init__(*args, **kwargs)
         self.tools = tools or []
 
-        self.llm = llm or OpenAI(model="gpt-4-turbo")
+        self.llm = llm or OpenAI(model="gpt-4-1106-preview")
         assert self.llm.metadata.is_function_calling_model
 
         self.memory = ChatMemoryBuffer.from_defaults(llm=llm)

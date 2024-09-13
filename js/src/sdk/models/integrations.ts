@@ -108,7 +108,9 @@ export class Integrations {
     get(data: GetIntegrationData): any {
         return apiClient.appConnector.getConnectorInfo({
             path: data
-        }).then(res => res.data)
+        }).then(res => {
+            return res.data
+        })
     }
 
     /**
