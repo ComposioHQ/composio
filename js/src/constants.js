@@ -1,11 +1,16 @@
-export const APPS = {
+const APPS = {
     // apps list start here
 
     // apps list end here
 }
 
-export const ACTIONS = {
+const ACTIONS = {
     // actions list start here
 
     // actions list end here
+}
+
+module.exports = {
+    APPS,
+    ACTIONS
 }
