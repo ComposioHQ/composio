@@ -1,8 +1,7 @@
 import chalk from "chalk";
 import { Command } from "commander";
 
-import client from "../sdk/client/client";
-import { setAxiosForBEAPICall } from "../sdk/utils/config";
+import { getAPISDK } from "../sdk/utils/config";
 import { Composio } from "../sdk";
 import inquirer from "inquirer";
 
@@ -32,7 +31,7 @@ export default class ConnectionsCommand {
     app: string;
   }): Promise<void> {
     const { active, id, app } = options;
-    setAxiosForBEAPICall();
+    const client = getAPISDK();
     const { data, error } = await client.triggers.listTriggers({
       query: {
         ...(!!active && { showEnabledOnly: true }),
@@ -81,12 +80,10 @@ export class TriggerAdd {
   }
 
   async handleAction(triggerName: string): Promise<void> {
-    setAxiosForBEAPICall();
-
     const composioClient = new Composio();
 
-    // @ts-ignore
     const data = (await composioClient.triggers.list()).find(
+      // @ts-ignore
       (trigger) => trigger.enum.toLowerCase() === triggerName.toLowerCase(),
     );
 
@@ -150,11 +147,9 @@ export class TriggerDisable {
   }
 
   async handleAction(triggerId: string): Promise<void> {
-    setAxiosForBEAPICall();
-
     const composioClient = new Composio();
     try {
-      const trigger = await composioClient.triggers.disable({ triggerId });
+      await composioClient.triggers.disable({ triggerId });
       console.log(chalk.green(`Trigger ${triggerId} disabled`));
     } catch (error) {
       console.log(chalk.red(`Error disabling trigger ${triggerId}: ${error}`));
@@ -174,8 +169,6 @@ export class ActiveTriggers {
   }
 
   async handleAction(): Promise<void> {
-    setAxiosForBEAPICall();
-
     const composioClient = new Composio();
     const triggers = await composioClient.activeTriggers.list();
     for (const trigger of triggers) {

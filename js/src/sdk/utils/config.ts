@@ -4,6 +4,9 @@ import * as os from 'os';
 import { getEnvVariable } from "../../utils/shared";
 
 import { client as axiosClient } from "../client/services.gen"
+import apiClient from "../client/client"
+
+
 // Constants
 const LOCAL_CACHE_DIRECTORY_NAME = '.composio';
 const USER_DATA_FILE_NAME = 'user_data.json';
@@ -31,7 +34,7 @@ export function getClientBaseConfig(baseUrl?: string, apiKey?: string) {
     return { baseURL: baseURLParsed, apiKey: apiKeyParsed };
 }
 
-export function setAxiosForBEAPICall(baseUrl?: string, apiKey?: string) {
+export function getAPISDK(baseUrl?: string, apiKey?: string) {
     const { baseURL, apiKey:apiKeyParsed } = getClientBaseConfig(baseUrl, apiKey);
     axiosClient.setConfig({
         baseURL: baseURL,
@@ -43,7 +46,7 @@ export function setAxiosForBEAPICall(baseUrl?: string, apiKey?: string) {
         throwOnError: true
     });
 
-    return axiosClient;
+    return apiClient;
 }
 
 export function setCliConfig(apiKey:string,baseUrl:string){

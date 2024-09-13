@@ -2,7 +2,7 @@ import chalk from "chalk";
 import { Command } from "commander";
 
 import client from "../sdk/client/client";
-import { setAxiosForBEAPICall } from "../sdk/utils/config";
+import { getAPISDK } from "../sdk/utils/config";
 
 export default class ConnectionsCommand {
   private program: Command;
@@ -21,7 +21,7 @@ export default class ConnectionsCommand {
   }
 
   private async handleAction(options: { active: boolean }): Promise<void> {
-    setAxiosForBEAPICall();
+    getAPISDK();
     const { data, error } = await client.connections.getConnections({
       query: options.active ? { status: "ACTIVE" } : {},
       throwOnError: false,
@@ -58,7 +58,7 @@ export class ConnectionsGetCommand {
   }
 
   private async handleAction(id: string): Promise<void> {
-    setAxiosForBEAPICall();
+    getAPISDK();
     const { data, error } = await client.connections.getConnection({
       path: { connectedAccountId: id },
       throwOnError: false,

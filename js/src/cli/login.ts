@@ -5,7 +5,7 @@ import open from "open";
 
 import {
   getClientBaseConfig,
-  setAxiosForBEAPICall,
+  getAPISDK,
   setCliConfig,
 } from "../sdk/utils/config";
 import client from "../sdk/client/client";
@@ -27,7 +27,7 @@ export default class LoginCommand {
   }
 
   private async handleAction(options: { browser: boolean }): Promise<void> {
-    setAxiosForBEAPICall();
+    getAPISDK();
     const { apiKey, baseURL } = getClientBaseConfig();
 
     if (apiKey) {

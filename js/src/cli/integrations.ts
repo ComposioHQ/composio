@@ -2,7 +2,7 @@ import chalk from "chalk";
 import { Command } from "commander";
 
 import client from "../sdk/client/client";
-import { setAxiosForBEAPICall } from "../sdk/utils/config";
+import { getAPISDK } from "../sdk/utils/config";
 import { parseDate } from "./src/util";
 
 export default class ConnectionsCommand {
@@ -20,7 +20,7 @@ export default class ConnectionsCommand {
   }
 
   private async handleAction(options: { active: boolean }): Promise<void> {
-    setAxiosForBEAPICall();
+    getAPISDK();
     const { data, error } = await client.appConnector.listGlobalConnectors({
       query: options.active ? { status: "ACTIVE" } : {},
       throwOnError: false,

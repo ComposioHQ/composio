@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import { Command } from "commander";
 
-import { setAxiosForBEAPICall } from "../sdk/utils/config";
+import { getAPISDK } from "../sdk/utils/config";
 import client from "../sdk/client/client";
 
 // @ts-ignore
@@ -24,7 +24,7 @@ export default class AppsCommand {
   }
 
   private async handleAction(options: { browser: boolean }): Promise<void> {
-    setAxiosForBEAPICall();
+    getAPISDK();
     const { data, error } = await client.apps.getApps({});
 
     if (!!error) {
@@ -105,7 +105,7 @@ class AppUpdateCommand {
   }
 
   async handleAction(): Promise<void> {
-    setAxiosForBEAPICall();
+    getAPISDK();
 
     const appList = await client.apps
       .getApps({})
