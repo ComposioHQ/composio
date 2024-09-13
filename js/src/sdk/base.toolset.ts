@@ -10,6 +10,7 @@ import logger from "../utils/logger";
 import axios from "axios";
 import { ExecuteActionResDTO } from "./client/types.gen";
 import {  saveFile } from "./utils/fileUtils";
+import { convertReqParams, converReqParamForActionExecution } from "./utils";
 
 type GetListActionsResponse = any;
 class UserData {
@@ -40,6 +41,7 @@ const getUserPath = () => {
     }
     
 }
+
 export class ComposioToolSet {
     client: Composio;
     apiKey: string;
@@ -108,7 +110,12 @@ export class ComposioToolSet {
             }
         });
         const uniqueLocalActions = Array.from(localActionsMap.values());
-        return [...actions!, ...uniqueLocalActions];
+
+        const toolsActions = [...actions!, ...uniqueLocalActions];
+
+        return toolsActions.map((action: any) => {
+            return this.modifyActionForLocalExecution(action);
+        });
     }
 
     async getToolsSchema(
@@ -149,25 +156,8 @@ export class ComposioToolSet {
     }
 
     modifyActionForLocalExecution(toolSchema: any) {
-        const properties = toolSchema.parameters.properties;
-
-        for (const propertKey of Object.keys(properties)) {
-            const object = properties[propertKey];
-            const isObject = typeof object === "object";
-            const isFile = isObject && (object?.required?.includes("name") && object?.required?.includes("content"));
-
-            if(isFile) {
-                object.properties = {
-                    file_uri_path: {
-                        type: "string",
-                        title: "Name",
-                        description: "Local absolute path to the file or http url to the file"
-                    }
-                }
-                object.required = ["file_uri_path"]
-            }
-        }
-
+        const properties = convertReqParams(toolSchema.parameters.properties);
+        toolSchema.parameters.properties = properties;
         const response = toolSchema.response.properties;
 
         for (const responseKey of Object.keys(response)) {
@@ -217,27 +207,7 @@ export class ComposioToolSet {
                 entityId: this.entityId
             });
         }
-
-        if(params.file_uri_path) {
-            const file = await fetch(params.file_uri_path);
-            params.file_uri_path = await file.text();
-
-            // if not http url
-            if(params.file_uri_path.startsWith("http")) {
-                params.name = params.file_uri_path.split("/").pop();
-                params.content = await file.text();
-            }
-
-            if(params.file_uri_path.startsWith("http")) {
-                const {data} = await axios.get(params.file_uri_path, {
-                    responseType: "stream"
-                });
-
-                params.content = data;
-                params.name = params.file_uri_path.split("/").pop();
-            }
-        }
-
+        params = await converReqParamForActionExecution(params);
         const data =  await this.client.getEntity(entityId).execute(action, params);
 
         return this.processResponse(data,{
@@ -269,13 +239,8 @@ export class ComposioToolSet {
                     ...data.response_data,
                     file_uri_path: filePath
                 }
-            }
-
-            
+            }    
         }
-
-
-
 
         return data;
     }

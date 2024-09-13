@@ -14,7 +14,7 @@
     "run:cli": "ts-node src/cli/index.ts"
   },
   "bin": {
-    "composio-js": "./lib/src/cli/index.",
+    "composio-js": "./lib/src/cli/index",
     "composio": "./lib/src/cli/index"
   },
   "keywords": [],
