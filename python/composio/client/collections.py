@@ -11,6 +11,7 @@ import typing as t
 import warnings
 from concurrent.futures import Future, ThreadPoolExecutor
 from unittest import mock
+import requests
 
 import pysher
 import typing_extensions as te
@@ -620,6 +621,24 @@ class _PusherClient(logging.WithLogger):
 
     def connect(self, timeout: float = 15.0) -> TriggerSubscription:
         """Connect to Pusher channel for given client ID."""
+        # Make a request to the Pusher webhook endpoint
+        headers = {
+            "Content-Type": "application/json",
+        }
+        data = {
+            "time": int(time.time() * 1000),  # Current time in milliseconds
+            "events": [{
+                "name": "channel_occupied",
+                "channel": f"private-{self.client_id}_triggers"
+            }]
+        }
+        
+        try:
+            response = requests.post(f"{self.base_url}/v1/triggers/pusher", headers=headers, json=data)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            self.logger.error(f"Failed to send Pusher webhook: {e}")
+
         pusher = pysher.Pusher(
             key=PUSHER_KEY,
             cluster=PUSHER_CLUSTER,
