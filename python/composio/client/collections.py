@@ -11,9 +11,9 @@ import typing as t
 import warnings
 from concurrent.futures import Future, ThreadPoolExecutor
 from unittest import mock
-import requests
 
 import pysher
+import requests
 import typing_extensions as te
 from pydantic import BaseModel, ConfigDict, Field
 from pysher.channel import Channel
@@ -627,14 +627,18 @@ class _PusherClient(logging.WithLogger):
         }
         data = {
             "time": int(time.time() * 1000),  # Current time in milliseconds
-            "events": [{
-                "name": "channel_occupied",
-                "channel": f"private-{self.client_id}_triggers"
-            }]
+            "events": [
+                {
+                    "name": "channel_occupied",
+                    "channel": f"private-{self.client_id}_triggers",
+                }
+            ],
         }
-        
+
         try:
-            response = requests.post(f"{self.base_url}/v1/triggers/pusher", headers=headers, json=data)
+            response = requests.post(
+                f"{self.base_url}/v1/triggers/pusher", headers=headers, json=data
+            )
             response.raise_for_status()
         except requests.RequestException as e:
             self.logger.error(f"Failed to send Pusher webhook: {e}")
