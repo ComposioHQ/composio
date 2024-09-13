@@ -121,6 +121,7 @@ class AppUpdateCommand {
       .then(
         (res) =>
           res.data?.items
+            // @ts-ignore
             .map((action) => `'${action.enum}': '${action.enum}'`)
             .join(",\n") || [],
       );

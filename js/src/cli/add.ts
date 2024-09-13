@@ -152,8 +152,9 @@ export default class AddCommand {
       return this.setupIntegration(app, authSchema, useComposioAuth, config);
     }
 
-    // @ts-ignore
+
     const authConfig = await this.collectInputFields(
+      // @ts-ignore
       app.auth_schemes[0].fields,
     );
     return this.setupIntegration(app, authSchema, false, authConfig);
