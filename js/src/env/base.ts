@@ -127,7 +127,7 @@ export class Workspace {
         this.id = uuidv4();
         this.accessToken = uuidv4().replace(/-/g, "");
         this.composioAPIKey = _readEnvVar(ENV_COMPOSIO_API_KEY, configRepo.config.composioAPIKey!);
-        this.composioBaseURL = _readEnvVar(ENV_COMPOSIO_BASE_URL, configRepo.config.composioBaseURL!);
+        this.composioBaseURL = _readEnvVar(ENV_COMPOSIO_BASE_URL, configRepo.config.composioBaseURL!) + (configRepo.config.composioBaseURL!.endsWith('/api') ? '' : '/api');
         this.githubAccessToken = configRepo.config.githubAccessToken || getEnvVariable(ENV_GITHUB_ACCESS_TOKEN, "NO_VALUE")!;
         this.environment = {
             ...(configRepo.config.environment || {}),
@@ -172,7 +172,7 @@ export class RemoteWorkspace extends Workspace {
 
     constructor(configRepo: WorkspaceConfig) {
         super(configRepo);
-        this.url = configRepo.config.composioBaseURL!;
+        this.url = configRepo.config.composioBaseURL! + (configRepo.config.composioBaseURL!.endsWith('/api') ? '' : '/api');
     }
 
     async _request(endpoint: string, method: string, json: any = null, timeout: number = 60000.0): Promise<AxiosResponse> {
