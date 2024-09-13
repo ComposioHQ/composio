@@ -7,7 +7,6 @@ import typing as t
 from composio.tools.base.local import LocalAction, LocalTool
 
 from .actions import (
-    ApplyPatch,
     ChangeWorkingDirectory,
     CreateFile,
     EditFile,
@@ -46,5 +45,4 @@ class Filetool(LocalTool, autoload=True):
             GitClone,
             GitRepoTree,
             GitPatch,
-            ApplyPatch,
         ]
