@@ -116,7 +116,9 @@ class EvaluationManager(WithLogger):
             if error_message:
                 raise Exception(f"Error in get_patch: {error_message}")
             else:
-                raise Exception(f"Unknown error occurred in get_patch: {get_patch_resp}")
+                raise Exception(
+                    f"Unknown error occurred in get_patch: {get_patch_resp}"
+                )
 
         patch_data = get_patch_resp.get("data", {})
         if not patch_data:
