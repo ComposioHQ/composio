@@ -113,3 +113,27 @@ def test_trigger_subscription(capsys, caplog) -> None:
         in caplog.text
     )
     assert "Trigger 2 called from callback 3\n" in capsys.readouterr().out
+
+
+def test_trigger_filters(capsys, caplog) -> None:
+    """Test trigger callback filters."""
+    logging.setup(logging.LogLevel.DEBUG)
+    subscription = TriggerSubscription()
+    subscription.set_alive()
+
+    @subscription.callback(filters={"trigger_id": "trigger_1"})
+    def _callback_1(event: TriggerEventData) -> None:  # pylint: disable=unused-argument
+        print("Trigger 1 called from callback 1")
+
+    with mock.patch.object(
+        subscription,
+        "_parse_payload",
+        return_value=mock.Mock(
+            metadata=mock.Mock(
+                id="TRIGGER_1",
+            )
+        ),
+    ), caplog.at_level(DEBUG):
+        subscription.handle_event(event="")
+
+    assert "Trigger 1 called from callback 1" in capsys.readouterr().out
