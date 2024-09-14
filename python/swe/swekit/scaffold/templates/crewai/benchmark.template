@@ -30,7 +30,7 @@ if __name__ == "__main__":
         "--test-split",
         type=str,
         default="1:2",
-        help="Test split ratio (e.g. 1:2, 1:300) Maximum 300 tests per project.",
+        help="Test split ratio (e.g. 1:2, 1:500) Maximum 500 tests per project.",
     )
     group.add_argument(
         "--test-instance-ids",
@@ -44,7 +44,7 @@ if __name__ == "__main__":
         test_instance_ids_list = [
             id.strip() for id in args.test_instance_ids.split(",")
         ]
-        test_range = "1:300"
+        test_range = "1:500"
     else:
         test_instance_ids_list = []
         test_range = args.test_split
