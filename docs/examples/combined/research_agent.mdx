@@ -1,0 +1,363 @@
+---
+title: "Research Agent"
+sidebarTitle: "Research Agent"
+icon: "book"
+description: "This guide provides detailed steps to create a Demo Assistant using Composio and OpenAI. You will build a system capable of interacting with GitHub to create issues and fetch user information."
+---
+This project is an example that uses Composio to seamlessly interact with GitHub through an AI assistant. It automatically creates issues and retrieves user information based on user input.
+
+
+
+
+<Tabs>
+<Tab title="Python">
+<Card color="#7bee0c" title="Research Agent GitHub Repository" icon="github" href="https://github.com/ComposioHQ/composio/tree/master/python/examples/arxiv-research-reporter">
+  Explore the complete source code for the Demo Assistant project. This repository contains all the necessary files and scripts to set up and run the Demo Assistant using Composio and OpenAI.
+  <CardBody>
+  </CardBody>
+</Card>
+<Steps>
+
+    <Step title="Import base packages">
+    Next, we'll import the essential libraries for our project.
+    <CodeGroup>
+        ```python Import statements
+        import os
+        import dotenv
+        from composio_llamaindex import Action, ComposioToolSet  # pylint: disable=import-error
+        from llama_index.core.llms import ChatMessage  # pylint: disable=import-error
+        from llama_index.llms.openai import OpenAI  # pylint: disable=import-error
+        from llama_index.agent.openai import OpenAIAgent
+        from llama_index.tools.arxiv.base import ArxivToolSpec
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Initialize LLM">
+    We'll initialize our LLM and set up the necessary configurations.
+    <CodeGroup>
+        ```python Python - Initialize LLM
+        dotenv.load_dotenv()
+
+        llm = OpenAI(model="gpt-4o")
+
+        research_topic = "LLM agents function calling"
+        target_repo = "composiohq/composio"
+        n_issues = 3
+        
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define Main Function">
+    Define the main function for Python that will handle incoming requests and interact with the OpenAI API.
+    <CodeGroup>
+        ```python Define Main
+        def main():
+            # Get All the tools
+            composio_toolset = ComposioToolSet()
+            tools = composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_AN_ISSUE])
+            arxiv_tool = ArxivToolSpec()
+
+            prefix_messages = [
+                ChatMessage(
+                    role="system",
+                    content=(
+                        "You are now a integration agent, and what  ever you are "
+                        "requested, you will try to execute utilizing your tools."
+                    ),
+                )
+            ]
+
+            agent = OpenAIAgent.from_tools(
+                tools=tools + arxiv_tool.to_tool_list(),
+                llm=llm,
+                prefix_messages=prefix_messages,
+                max_function_calls=10,
+                allow_parallel_tool_calls=False,
+                verbose=True,
+            )
+
+            response = agent.chat(
+                f"Please research on Arxiv about `{research_topic}`, Organize "
+                f"the top {n_issues} results as {n_issues} issues for "
+                f"a github repository, finally raise those issues with proper, "
+                f"title, body, implementation guidance and reference in "
+                f"{target_repo} repo,  as well as relevant tags and assignee as "
+                "the repo owner."
+            )
+
+            print("Response:", response)
+        
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Start the Server">
+    Finally, we'll Run the main on Python to execute the Agent
+    <CodeGroup>
+        ```python Main function 
+        if __name__ == "__main__":
+            main()
+
+        ```
+    </CodeGroup>
+    </Step>
+
+</Steps>
+</Tab>
+
+<Tab title = "Javascript">
+<Card color="#7bee0c" title="Research Agent GitHub Repository" icon="github" href="https://www.github.com/ComposioHQ/composio/blob/master/js/examples/openai/demo_assistant.mjs">
+  Explore the complete source code for the Demo Assistant project. This repository contains all the necessary files and scripts to set up and run the Demo Assistant using Composio and OpenAI.
+  <CardBody>
+  </CardBody>
+</Card>
+
+<Steps>
+
+    <Step title="Import base packages">
+    Next, we'll import the essential libraries for our project.
+    <CodeGroup>
+        ```javascript JS - Import statements
+        import express from 'express';
+        import { OpenAI } from "openai";
+        import { OpenAIToolSet, Action } from "composio-core";
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Initialize Express App">
+    We'll initialize our Express application and set up the necessary configurations.
+    <CodeGroup>
+        ```javascript Initialize Express App
+        const app = express();
+        const PORT = process.env.PORT || 2001;
+        const research_topic = "LLM agents function calling"
+        const target_repo = "composiohq/composio"
+        app.use(express.json());
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define Webhook Endpoint">
+    Define the webhook endpoint for JS that will handle incoming requests and interact with the OpenAI API.
+    <CodeGroup>
+        ```javascript Define Webhook
+        app.get('/webhook', async (req, res) => {
+            try {
+                const body = `Please research on Arxiv about \`${researchTopic}\`, organize 
+                the top ${nIssues} results as ${nIssues} issues for 
+                a GitHub repository, and finally raise those issues with proper 
+                title, body, implementation guidance, and references in 
+                the ${targetRepo} repo, as well as relevant tags and assignees as 
+                the repo owner.`;
+                
+                const toolset = new OpenAIToolSet({
+                    apiKey: process.env.COMPOSIO_API_KEY,
+                });
+                const tools = await toolset.get_actions([
+                    Action.SERPAPI_SEARCH,
+                    Action.GITHUB_USERS_GET_AUTHENTICATED,
+                    Action.GITHUB_ISSUES_CREATE
+                ]);
+
+                const client = new OpenAI({});
+                const assistant = await client.beta.assistants.create({
+                    model: "gpt-4-turbo",
+                    description: "This is a test assistant",
+                    instructions: "You are a helpful assistant that takes actions on user's GitHub",
+                    tools: tools,
+                });
+
+                const thread = await client.beta.threads.create({
+                    messages: [{
+                        role: "user",
+                        content: body
+                    }]
+                });
+
+                let run = await client.beta.threads.runs.create(thread.id, {
+                    assistant_id: assistant.id,
+                });
+
+                run = await toolset.wait_and_handle_assistant_tool_calls(client, run, thread);
+                
+                // Check if the run is completed
+                if (run.status === "completed") {
+                    let messages = await client.beta.threads.messages.list(thread.id);
+                    console.log(messages.data);
+                    return messages.data;
+                } else if (run.status === "requires_action") {
+                    console.log(run.status);
+                    return await toolset.handle_assistant_message(run);
+                } else {
+                    console.error("Run did not complete:", run);
+                }
+            } catch (error) {
+                console.error(error);
+                res.status(500).send('Internal Server Error');
+            }
+        });
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Start the Server">
+    Finally, we'll start the Express server for JS to listen for incoming requests.
+    <CodeGroup>
+        ```javascript Start Server
+        app.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
+        });
+        ```
+    </CodeGroup>
+    </Step>
+
+</Steps>
+</Tab>
+
+</Tabs>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Putting it All Together
+
+<CodeGroup>
+```python Python Final code
+import os
+import dotenv
+from composio_llamaindex import Action, ComposioToolSet  # pylint: disable=import-error
+from llama_index.core.llms import ChatMessage  # pylint: disable=import-error
+from llama_index.llms.openai import OpenAI  # pylint: disable=import-error
+from llama_index.agent.openai import OpenAIAgent
+from llama_index.tools.arxiv.base import ArxivToolSpec
+
+# Load environment variables from .env
+dotenv.load_dotenv()
+
+llm = OpenAI(model="gpt-4o")
+
+research_topic = "LLM agents function calling"
+target_repo = "composiohq/composio"
+n_issues = 3
+
+
+def main():
+    # Get All the tools
+    composio_toolset = ComposioToolSet()
+    tools = composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_AN_ISSUE])
+    arxiv_tool = ArxivToolSpec()
+
+    prefix_messages = [
+        ChatMessage(
+            role="system",
+            content=(
+                "You are now a integration agent, and what  ever you are "
+                "requested, you will try to execute utilizing your tools."
+            ),
+        )
+    ]
+
+    agent = OpenAIAgent.from_tools(
+        tools=tools + arxiv_tool.to_tool_list(),
+        llm=llm,
+        prefix_messages=prefix_messages,
+        max_function_calls=10,
+        allow_parallel_tool_calls=False,
+        verbose=True,
+    )
+
+    response = agent.chat(
+        f"Please research on Arxiv about `{research_topic}`, Organize "
+        f"the top {n_issues} results as {n_issues} issues for "
+        f"a github repository, finally raise those issues with proper, "
+        f"title, body, implementation guidance and reference in "
+        f"{target_repo} repo,  as well as relevant tags and assignee as "
+        "the repo owner."
+    )
+
+    print("Response:", response)
+
+
+if __name__ == "__main__":
+    main()
+
+```
+    ```javascript Javascript Final Code
+import express from 'express';
+import { OpenAI } from "openai";
+import { OpenAIToolSet, Action } from "composio-core";
+
+const app = express();
+const PORT = process.env.PORT || 2001;
+
+app.use(express.json());
+
+app.get('/webhook', async (req, res) => {
+    try {
+        const body = "TITLE: HELLO WORLD, DESCRIPTION: HELLO WORLD for the repo - utkarsh-dixit/speedy";
+        
+        const toolset = new OpenAIToolSet({
+            apiKey: process.env.COMPOSIO_API_KEY,
+        });
+        const tools = await toolset.get_actions([
+            Action.GITHUB_USERS_GET_AUTHENTICATED,
+            Action.GITHUB_ISSUES_CREATE
+        ]);
+
+        const client = new OpenAI({});
+        const assistant = await client.beta.assistants.create({
+            model: "gpt-4-turbo",
+            description: "This is a test assistant",
+            instructions: "You are a helpful assistant that takes actions on user's GitHub",
+            tools: tools,
+        });
+
+        const thread = await client.beta.threads.create({
+            messages: [{
+                role: "user",
+                content: body
+            }]
+        });
+
+        let run = await client.beta.threads.runs.create(thread.id, {
+            assistant_id: assistant.id,
+        });
+
+        run = await toolset.wait_and_handle_assistant_tool_calls(client, run, thread);
+        
+        // Check if the run is completed
+        if (run.status === "completed") {
+            let messages = await client.beta.threads.messages.list(thread.id);
+            console.log(messages.data);
+            return messages.data;
+        } else if (run.status === "requires_action") {
+            console.log(run.status);
+            return await toolset.handle_assistant_message(run);
+        } else {
+            console.error("Run did not complete:", run);
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+    ```
+</CodeGroup>
