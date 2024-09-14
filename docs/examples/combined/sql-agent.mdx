@@ -9,34 +9,14 @@ File operations and plot insightful graphs on the data in the db"
 
 This project involves setting up and running a system of agents to conduct SQL queries, write the output to a file, and plot graphs based on the data. We use Composio to set up the tools and OpenAI GPT-4o to power the agents. Follow this guide to set up and run the project.
 
-
+Note: This is a Python only example. JS version coming soon!
 <Card color="#7bee0c" title="SQL Agent GitHub Repository" icon="github" href="https://git.new/SQLAgent">
   Explore the complete source code for the SQL Agent project. This repository contains all the necessary files and scripts to set up and run the SQL Agent system using Langchain and Composio.
   <CardBody>
-    - Clone the repository to get started
-    - Follow the setup instructions in the README
-    - Experiment with and customize the SQL Agent
   </CardBody>
 </Card>
 
 <Steps>
-    <Step title="Run the `setup.sh` file">
-    > Fork and Clone this [repository](https://git.new/composio), Navigate to the Project Directory 
-
-    `cd python/examples/sql_agent`
-
-    Make the setup.sh Script Executable (if necessary): On Linux or macOS, you might need to make the setup.sh script executable:
-    <CodeGroup>
-        ```bash Run Command
-       chmod +x setup.sh
-
-       # run the setup.sh file
-       ./setup.sh
-        ```
-        Fill in the .env file after running the script.
-    </CodeGroup>
-    </Step>
-
 
     <Step title="Imports and Environment Setup">
     In your Python script, import the necessary libraries and set up your environment variables.
@@ -119,7 +99,7 @@ This project involves setting up and running a system of agents to conduct SQL q
 
 ## Putting it All Together
 <CodeGroup>
-    ```python
+    ```python Final Code
     import os
     import dotenv
     from composio_langchain import App, ComposioToolSet
