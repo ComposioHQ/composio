@@ -1,3 +1,0 @@
-camel-ai
-composio-camel
-python-dotenv

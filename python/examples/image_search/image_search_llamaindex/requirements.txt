@@ -1,5 +1,0 @@
-chromadb
-sentence-transformers
-open-clip-torch
-composio-llamaindex
-llama-index-llm-openai
