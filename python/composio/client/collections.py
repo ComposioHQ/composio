@@ -505,7 +505,7 @@ class TriggerSubscription(logging.WithLogger):
             ("integration_id", data.metadata.connection.integrationId),
         ):
             value = filters.get(name)
-            if value is None or value == check:
+            if value is None or str(value).lower() == check.lower():
                 continue
 
             self.logger.debug(
