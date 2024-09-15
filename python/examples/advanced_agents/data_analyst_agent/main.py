@@ -5,14 +5,6 @@ from googleapiclient.discovery import build
 from openai import OpenAI
 from composio_openai import ComposioToolSet, App, Action
 
-# [Previous functions remain unchanged]
-import time
-import logging
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from openai import OpenAI
-from composio_openai import ComposioToolSet, App, Action
-
 # Set up logging configuration
 logging.basicConfig(filename='sheet_monitor.log', level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
 
