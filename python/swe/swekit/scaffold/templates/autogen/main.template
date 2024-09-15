@@ -1,0 +1,29 @@
+from inputs import from_github
+from composio import Action
+from agent import composio_toolset, assistant, user_proxy
+
+def main() -> None:
+    """Run the agent."""
+    repo, issue = from_github()
+    
+    # Initiate the chat
+    user_proxy.initiate_chat(
+        assistant,
+        message=f"Solve the following issue in the repository {repo}: {issue}"
+    )
+
+    # Get the patch after the chat is complete
+    response = composio_toolset.execute_action(
+        action=Action.FILETOOL_GIT_PATCH,
+        params={},
+    )
+    data = response.get("data")
+    if data.get("error") and len(data["error"]) > 0:
+        print("Error:", response["error"])
+    elif data.get("patch"):
+        print("=== Generated Patch ===\n" + data["patch"])
+    else:
+        print("No output available")
+
+if __name__ == "__main__":
+    main()

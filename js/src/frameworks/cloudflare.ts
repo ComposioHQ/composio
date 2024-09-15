@@ -26,7 +26,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     baseUrl?: Optional<string>;
     entityId?: string;
     workspaceConfig?: WorkspaceConfig
-  }) {
+  }={}) {
     super(
       config.apiKey || null,
       config.baseUrl || COMPOSIO_BASE_URL,

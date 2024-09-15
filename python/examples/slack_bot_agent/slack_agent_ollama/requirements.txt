@@ -1,4 +1,0 @@
-langchain
-langchain-openai
-composio-langchain
-python-dotenv

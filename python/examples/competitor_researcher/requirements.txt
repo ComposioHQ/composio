@@ -1,6 +1,0 @@
-python-dotenv
-requests
-beautifulsoup4
-composio-crewai
-crewai
-langchain-openai

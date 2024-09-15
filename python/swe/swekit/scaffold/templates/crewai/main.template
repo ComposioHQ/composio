@@ -17,10 +17,11 @@ def main() -> None:
         action=Action.FILETOOL_GIT_PATCH,
         params={},
     )
-    if response.get("error") and len(response["error"]) > 0:
-        print("Error:", response["error"])
-    elif response.get("patch"):
-        print("=== Generated Patch ===\n" + response["patch"])
+    data = response.get("data", {})
+    if data.get("error") and len(data["error"]) > 0:
+        print("Error:", data["error"])
+    elif data.get("patch"):
+        print("=== Generated Patch ===\n" + data["patch"])
     else:
         print("No output available")
 

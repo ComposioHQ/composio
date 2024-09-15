@@ -46,13 +46,27 @@ describe("ComposioToolSet class tests", () => {
 
     });
 
-    // it("should have a valid API key", () => {
-    //     expect(toolset.apiKey).toBe(testConfig.COMPOSIO_API_KEY);
-    // });
 
-    // it("should have a valid backend URL", () => {
-    //     expect(toolset.client.baseUrl).toBe(testConfig.BACKEND_HERMES_URL);
-    // });
+    it("should execute an file upload", async () => {
+        const ACTION_NAME = "GMAIL_SEND_EMAIL";
+        const actions = await toolset.getToolsSchema({ actions: [ACTION_NAME] });
 
-    // Additional tests for ComposioToolSet methods can be added here
+        // Check if exist
+        expect(actions[0].parameters.properties["attachment_file_uri_path"]).toBeDefined();
+
+        const requestBody = {
+            recipient_email: "himanshu@composio.dev",
+            subject: "Test email from himanshu",
+            body: "This is a test email",
+            attachment_file_uri_path: "https://composio.dev/wp-content/uploads/2024/07/Composio-Logo.webp"
+        };
+
+        const executionResult = await toolset.executeAction(ACTION_NAME, requestBody, "default");
+        expect(executionResult).toBeDefined();
+        // @ts-ignore
+        expect(executionResult).toHaveProperty('successfull', true);
+        expect(executionResult.data).toBeDefined();
+
+    });
+
 });

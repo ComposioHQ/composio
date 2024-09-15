@@ -56,7 +56,8 @@ class GitCloneRequest(BaseFileRequest):
 
     repo_name: str = Field(
         ...,
-        description="The Git repository to clone. ex composiohq/composio or django/django",
+        description="""The Git repository to clone. For example: composiohq/composio or django/django.
+        Please provide the owner/repo_name, not the full URL.""",
     )
     destination: t.Optional[str] = Field(
         None,

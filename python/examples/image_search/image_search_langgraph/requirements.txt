@@ -1,6 +1,0 @@
-chromadb
-sentence-transformers
-open-clip-torch
-composio-langgraph
-langgraph
-langchain-openai
