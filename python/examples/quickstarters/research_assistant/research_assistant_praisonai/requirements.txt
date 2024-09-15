@@ -1,0 +1,4 @@
+python-dotenv
+composio_praisonai
+langchain_openai
+praisonai 

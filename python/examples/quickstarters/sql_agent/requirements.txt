@@ -1,0 +1,5 @@
+composio-core
+composio-langchain
+composio-llamaindex
+python-dotenv
+langchain-openai

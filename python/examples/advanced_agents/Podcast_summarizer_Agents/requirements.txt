@@ -1,0 +1,7 @@
+crewai
+composio-crewai
+langchain-openai
+python-dotenv
+crewai-tools
+streamlit
+openai-whisper
