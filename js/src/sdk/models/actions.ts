@@ -147,7 +147,6 @@ export class Actions {
 
             }
         }).then(res => {
-            const resp = res;
             return res.data!
         })
     }

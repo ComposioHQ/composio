@@ -50,7 +50,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
             baseUrl?: Optional<string>,
             entityId?: string,
             workspaceConfig?: WorkspaceConfig
-        }
+        }={}
     ) {
         super(
             config.apiKey || null,
@@ -89,6 +89,9 @@ export class LangchainToolSet extends BaseComposioToolSet {
         });
     }
 
+    /**
+        * @deprecated Use getTools instead.
+    */
     async getActions(
         filters: {
             actions?: Optional<Sequence<string>>
@@ -105,7 +108,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
     }
 
     /**
-     * @deprecated Use getActions instead.
+     * @deprecated Use getTools instead.
      */
     async get_actions(filters: {
         actions?: Optional<Sequence<string>>
@@ -116,7 +119,8 @@ export class LangchainToolSet extends BaseComposioToolSet {
 
     async getTools(
         filters: {
-            apps: Sequence<string>;
+            actions?: Optional<Array<string>>;
+            apps?: Sequence<string>;
             tags?: Optional<Array<string>>;
             useCase?: Optional<string>;
         },

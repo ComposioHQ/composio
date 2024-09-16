@@ -19,6 +19,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 COMPOSIO_API_KEY = os.environ.get("COMPOSIO_API_KEY")
 JULEP_API_KEY = os.environ.get("JULEP_API_KEY")
 JULEP_API_URL = os.environ.get("JULEP_API_URL")
+LISTENNOTES_API_KEY = os.environ.get("LISTENNOTES_API_KEY")
 
 # Plugin test definitions
 EXAMPLES = {
@@ -64,8 +65,8 @@ EXAMPLES = {
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY},
     },
-    "crewai": {
-        "plugin": "crewai",
+    "crew_ai": {
+        "plugin": "crew_ai",
         "file": PLUGINS / "crew_ai" / "crewai_demo.py",
         "match": {
             "type": "stdout",
@@ -127,6 +128,43 @@ EXAMPLES = {
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
+    "upload_file": {
+        "plugin": "crew_ai",
+        "file": EXAMPLES_PATH / "attachment" / "send_attachment.py",
+        "match": {
+            "type": "stdout",
+            "values": ["'labelIds': ['SENT']"],
+        },
+        "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
+    },
+    "download_file": {
+        "plugin": "crew_ai",
+        "file": "run_issue.py",
+        "match": {
+            "type": "stdout",
+            "values": ["composio_output/CODEINTERPRETER_GET_FILE_CMD_default_", ""],
+        },
+        "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
+        "cwd": EXAMPLES_PATH / "sql_agent" / "sql_agent_plotter_crewai",
+    },
+    "multi_entity_api_key": {
+        "plugin": "langchain",
+        "file": EXAMPLES_PATH / "miscellaneous" / "multi_entity.py",
+        "match": {
+            "type": "stdout",
+            "values": [
+                "Invoking: `LISTENNOTES_FETCH_A_LIST_OF_SUPPORTED_LANGUAGES_FOR_PODCASTS`",
+                "Any language",
+                "Abkhazian",
+                "Arabic",
+            ],
+        },
+        "env": {
+            "OPENAI_API_KEY": OPENAI_API_KEY,
+            "COMPOSIO_API_KEY": COMPOSIO_API_KEY,
+            "LISTENNOTES_API_KEY": LISTENNOTES_API_KEY,
+        },
+    },
     # "praisonai": {
     #     "plugin": "praisonai",
     #     "file": PLUGINS / "praisonai" / "praisonai_demo.py",
@@ -160,16 +198,18 @@ def test_example(
             val is not None
         ), f"Please provide value for `{key}` for testing `{example['file']}`"
 
+    cwd = example.get("cwd", None)
     proc = subprocess.Popen(  # pylint: disable=consider-using-with
         args=[sys.executable, example["file"]],
         # TODO(@angryblade): Sanitize the env before running the process.
         env={**os.environ, **example["env"]},
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        cwd=cwd,
     )
 
     # Wait for 2 minutes for example to run
-    proc.wait(timeout=120)
+    proc.wait(timeout=180)
 
     # Check if process exited with success
     assert proc.returncode == 0, (

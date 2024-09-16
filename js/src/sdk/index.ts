@@ -8,6 +8,10 @@ import { getEnvVariable } from '../utils/shared';
 import { COMPOSIO_BASE_URL } from './client/core/OpenAPI';
 import { BackendClient } from './models/backendClient';
 import { Entity } from './models/Entity';
+import axios from 'axios';
+import { getPackageJsonDir } from './utils/projectUtils';
+import { isNewerVersion } from './utils/other';
+import { getClientBaseConfig } from './utils/config';
 
 export class Composio {
     /**
@@ -31,9 +35,8 @@ export class Composio {
      * @param {string} [runtime] - The runtime environment for the SDK.
      */
     constructor(apiKey?: string, baseUrl?: string, runtime?: string) {
-        // Parse the base URL and API key, falling back to environment variables or defaults if not provided.
-        const baseURLParsed = baseUrl || getEnvVariable("COMPOSIO_BASE_URL", COMPOSIO_BASE_URL) || "https://backend.composio.dev";
-        const apiKeyParsed = apiKey || getEnvVariable("COMPOSIO_API_KEY") || '';
+        // // Parse the base URL and API key, falling back to environment variables or defaults if not provided.
+        const { baseURL: baseURLParsed, apiKey: apiKeyParsed } =  getClientBaseConfig(baseUrl, apiKey);
 
         // Initialize the BackendClient with the parsed API key and base URL.
         this.backendClient = new BackendClient(apiKeyParsed, baseURLParsed, runtime);
@@ -45,6 +48,30 @@ export class Composio {
         this.actions = new Actions(this.backendClient);
         this.integrations = new Integrations(this.backendClient);
         this.activeTriggers = new ActiveTriggers(this.backendClient);
+
+        this.checkForLatestVersionFromNPM();
+    }
+
+    /**
+     * Checks for the latest version of the Composio SDK from NPM.
+     * If a newer version is available, it logs a warning to the console.
+     */
+    async checkForLatestVersionFromNPM() {
+        try {
+            const packageName = "composio-core";
+            const packageJsonDir = getPackageJsonDir();
+            const currentVersionFromPackageJson = require(packageJsonDir + '/package.json').version;
+        
+            const response = await axios.get(`https://registry.npmjs.org/${packageName}/latest`);
+            const latestVersion = response.data.version;
+
+            
+            if (isNewerVersion(latestVersion, currentVersionFromPackageJson)) {
+                console.warn(`🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`);
+            }
+        } catch (error) {
+            // Ignore and do nothing
+        }
     }
     
 

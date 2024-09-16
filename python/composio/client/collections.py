@@ -13,6 +13,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from unittest import mock
 
 import pysher
+import requests
 import typing_extensions as te
 from pydantic import BaseModel, ConfigDict, Field
 from pysher.channel import Channel
@@ -401,7 +402,7 @@ class TriggerModel(BaseModel):
 class SuccessExecuteActionResponseModel(BaseModel):
     """Success execute action response data model."""
 
-    successful: bool
+    successfull: bool
     data: t.Dict
     error: t.Optional[str] = None
 
@@ -504,7 +505,7 @@ class TriggerSubscription(logging.WithLogger):
             ("integration_id", data.metadata.connection.integrationId),
         ):
             value = filters.get(name)
-            if value is None or value == check:
+            if value is None or str(value).lower() == check.lower():
                 continue
 
             self.logger.debug(
@@ -620,6 +621,31 @@ class _PusherClient(logging.WithLogger):
 
     def connect(self, timeout: float = 15.0) -> TriggerSubscription:
         """Connect to Pusher channel for given client ID."""
+        # Make a request to the Pusher webhook endpoint
+        headers = {
+            "Content-Type": "application/json",
+        }
+        data = {
+            "time": int(time.time() * 1000),  # Current time in milliseconds
+            "events": [
+                {
+                    "name": "channel_occupied",
+                    "channel": f"private-{self.client_id}_triggers",
+                }
+            ],
+        }
+
+        try:
+            response = requests.post(
+                f"{self.base_url}/v1/triggers/pusher",
+                headers=headers,
+                json=data,
+                timeout=timeout,
+            )
+            response.raise_for_status()
+        except requests.RequestException as e:
+            self.logger.error(f"Failed to send Pusher webhook: {e}")
+
         pusher = pysher.Pusher(
             key=PUSHER_KEY,
             cluster=PUSHER_CLUSTER,
@@ -954,7 +980,7 @@ class Actions(Collection[ActionModel]):
         response_json = response.json()
         items = [self.model(**action) for action in response_json.get("items")]
         if len(actions) > 0:
-            required = [t.cast(Action, action).name for action in actions]
+            required = [t.cast(Action, action).slug for action in actions]
             items = [item for item in items if item.name in required]
 
         if len(tags) > 0:
@@ -1054,7 +1080,7 @@ class Actions(Collection[ActionModel]):
 
         return self._raise_if_required(
             self.client.http.post(
-                url=str(self.endpoint / action.name / "execute"),
+                url=str(self.endpoint / action.slug / "execute"),
                 json={
                     "connectedAccountId": connected_account,
                     "input": modified_params,

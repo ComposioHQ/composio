@@ -1,6 +1,6 @@
 import logger from "../../utils/logger";
 
-const PUSHER_KEY = "ff9f18c208855d77a152"
+const PUSHER_KEY = process.env.CLIENT_PUSHER_KEY || "ff9f18c208855d77a152"
 const PUSHER_CLUSTER = "mt1"
 
 type PusherClient = any;
@@ -37,7 +37,7 @@ export class PusherUtils {
             PusherUtils.pusherClient = new PusherClient(PUSHER_KEY, {
                 cluster: PUSHER_CLUSTER,
                 channelAuthorization: {
-                    endpoint: `${baseURL}/v1/client/auth/pusher_auth`,
+                    endpoint: `${baseURL}/api/v1/client/auth/pusher_auth`,
                     headers: {
                         "x-api-key": apiKey
                     },
