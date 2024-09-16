@@ -13,12 +13,12 @@ from pathlib import Path
 import click
 
 from composio.cli.context import Context, get_context, pass_context
+from composio.cli.utils.decorators import handle_exceptions
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import enums
 from composio.client.collections import ActionModel, AppModel, TriggerModel
 from composio.core.cls.did_you_mean import DYMGroup
-from composio.exceptions import ComposioSDKError
-from composio.tools.local.handler import LocalClient
+from composio.tools.local import load_local_tools
 from composio.utils import get_enum_key
 
 
@@ -41,23 +41,22 @@ class AppsExamples(HelpfulCmdBase, DYMGroup):
     default=False,
     help="Only show apps which are enabled",
 )
+@handle_exceptions()
 @pass_context
 def _apps(context: Context, enabled: bool = False) -> None:
     """List composio tools/apps which you have access to"""
     if context.click_ctx.invoked_subcommand:
         return
 
-    try:
-        apps = context.client.apps.get()
-        if enabled:
-            apps = [app for app in apps if app.enabled]
-            context.console.print("[green]Showing apps which are enabled[/green]")
-        else:
-            context.console.print("[green]Showing all apps[/green]")
-        for app in apps:
-            context.console.print(f"• {app.key}")
-    except ComposioSDKError as e:
-        raise click.ClickException(message=e.message) from e
+    apps = context.client.apps.get()
+    if enabled:
+        apps = [app for app in apps if app.enabled]
+        context.console.print("[green]Showing apps which are enabled[/green]")
+    else:
+        context.console.print("[green]Showing all apps[/green]")
+
+    for app in apps:
+        context.console.print(f"• {app.key}")
 
 
 class UpdateExamples(HelpfulCmdBase, click.Command):
@@ -74,13 +73,11 @@ class UpdateExamples(HelpfulCmdBase, click.Command):
     help="Include beta apps.",
 )
 @click.help_option("--help", "-h", "-help")
+@handle_exceptions()
 @pass_context
 def _update(context: Context, beta: bool = False) -> None:
     """Updates local Apps database."""
-    try:
-        update(context=context, beta=beta)
-    except ComposioSDKError as e:
-        raise click.ClickException(message=e.message) from e
+    update(context=context, beta=beta)
 
 
 def update(context: Context, beta: bool = False) -> None:
@@ -91,7 +88,7 @@ def update(context: Context, beta: bool = False) -> None:
     )
     actions = sorted(
         context.client.actions.get(allow_all=True),
-        key=lambda x: f"{x.appKey}_{x.name}",
+        key=lambda x: f"{x.appName}_{x.name}",
     )
     triggers = sorted(
         context.client.triggers.get(),
@@ -141,12 +138,11 @@ def _update_apps(apps: t.List[AppModel]) -> None:
             is_local=False,
         ).store()
 
-    for tool in LocalClient().tools.values():
-        app_names.append(
-            get_enum_key(
-                name=tool.name.lower().replace(" ", "_").replace("-", "_"),
-            )
-        )
+    for tool in load_local_tools()["local"].values():
+        if tool.enum in app_names:
+            continue
+
+        app_names.append(tool.enum)
         enums.base.AppData(
             name=tool.name,
             path=enums.base.APPS_CACHE / app_names[-1],
@@ -166,7 +162,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
     action_names = []
     for app in sorted(apps, key=lambda x: x.key):
         for action in actions:
-            if action.appKey != app.key:
+            if action.appName != app.key:
                 continue
 
             if (
@@ -175,7 +171,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
             ):
                 _, newact = action.description.split("<<DEPRECATED use ", maxsplit=1)
                 deprecated[get_enum_key(name=action.name)] = (
-                    action.appKey.lower() + "_" + newact.replace(">>", "")
+                    action.appName.lower() + "_" + newact.replace(">>", "")
                 ).upper()
             else:
                 action_names.append(get_enum_key(name=action.name))
@@ -186,26 +182,25 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
                 tags=action.tags,
                 no_auth=app.no_auth,
                 is_local=False,
-                path=enums.base.ACTIONS_CACHE / action_names[-1],
+                path=enums.base.ACTIONS_CACHE / get_enum_key(name=action.name),
             ).store()
 
-    local_tool_handler = LocalClient()
-    for tool in local_tool_handler.tools.values():
-        for tool_action in tool.actions():
-            name = tool_action().get_tool_merged_action_name()
-            action_names.append(
-                get_enum_key(
-                    name=name,
-                )
-            )
+    processed = []
+    for tool in load_local_tools()["local"].values():
+        if tool.name in processed:
+            continue
+
+        processed.append(tool.name)
+        for actcls in tool.actions():
+            action_names.append(actcls.enum)
             enums.base.ActionData(
-                name=name,
+                name=actcls.enum,
                 app=tool.name,
-                tags=["local"],  # TOFIX (kavee): Add `tags` attribute on local tools
+                tags=actcls.tags(),
                 no_auth=True,
                 is_local=True,
                 path=enums.base.ACTIONS_CACHE / action_names[-1],
-                shell=tool_action.run_on_shell,
+                shell=False,
             ).store()
 
     _update_annotations(
@@ -221,7 +216,7 @@ def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
     tag_map: t.Dict[str, t.Set[str]] = {}
     for app in apps:
         app_name = app.key
-        for action in [action for action in actions if action.appKey == app_name]:
+        for action in [action for action in actions if action.appName == app_name]:
             if app_name not in tag_map:
                 tag_map[app_name] = set()
             tag_map[app_name].update(action.tags or [])
@@ -254,11 +249,12 @@ def _update_triggers(
 ) -> None:
     """Get Trigger enum."""
     trigger_names = []
-    enums.base.TRIGGERS_CACHE.mkdir(
-        exist_ok=True,
-    )
+    enums.base.TRIGGERS_CACHE.mkdir(exist_ok=True)
     for app in apps:
-        for trigger in [trigger for trigger in triggers if trigger.appKey == app.key]:
+        for trigger in triggers:
+            if trigger.appKey != app.key:
+                continue
+
             trigger_names.append(get_enum_key(name=trigger.name).upper())
             enums.base.TriggerData(
                 name=trigger.name,

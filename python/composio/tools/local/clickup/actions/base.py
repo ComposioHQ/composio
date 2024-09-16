@@ -105,17 +105,13 @@ class OpenAPIAction(Action):
             else self.url + self.path
         )
 
-    def execute(
-        self,
-        request_data: BaseModel,
-        authorisation_data: dict,
-    ) -> t.Dict:
+    def execute(self, request: BaseModel, authorisation_data: dict) -> t.Dict:
         """Execute API request using the defined schema params."""
         token = authorisation_data.get("token")
         if token is None:
             raise RuntimeError("`token` is required for running clickup actions")
 
-        request = request_data.model_dump(
+        _request = request.model_dump(
             exclude_none=True,
             by_alias=True,
         )
@@ -123,23 +119,23 @@ class OpenAPIAction(Action):
             method=self.method,
             url=self._get_url().format(
                 **self._get_path_params(
-                    request=request,
+                    request=_request,
                 )
             ),
             params=self._get_query_params(
-                request=request,
+                request=_request,
                 auth=authorisation_data,
             ),
             headers={
                 "Authorization": f"Bearer {token}",
                 **self._get_header_params(
-                    request=request,
+                    request=_request,
                     auth=authorisation_data,
                 ),
             },
             json=(
                 self._get_request_params(
-                    request=request,
+                    request=_request,
                 )
                 if self.method != "get"
                 else None

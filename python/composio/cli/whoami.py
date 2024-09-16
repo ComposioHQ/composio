@@ -8,8 +8,8 @@ Usage:
 import click
 
 from composio.cli.context import Context, pass_context
+from composio.cli.utils.decorators import handle_exceptions
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
-from composio.exceptions import ComposioSDKError
 
 
 class WhoamiExamples(HelpfulCmdBase, click.Command):
@@ -21,10 +21,8 @@ class WhoamiExamples(HelpfulCmdBase, click.Command):
 
 @click.command(name="whoami", cls=WhoamiExamples)
 @click.help_option("--help", "-h", "-help")
+@handle_exceptions()
 @pass_context
 def _whoami(context: Context) -> None:
     """List your account information"""
-    try:
-        context.console.print(f"API Key: [green]{context.user_data.api_key}[/green]")
-    except ComposioSDKError as e:
-        raise click.ClickException(message=e.message) from e
+    context.console.print(f"API Key: [green]{context.user_data.api_key}[/green]")

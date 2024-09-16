@@ -1,15 +1,15 @@
 import typing as t
 
-from composio.tools.local.base import Action, Tool
+from composio.tools.base.local import LocalAction, LocalTool
 
 from .actions import AddContentToRagTool, RagToolQuery
 
 
-class RagTool(Tool):
+class Ragtool(LocalTool, autoload=True):
     """Rag Tool"""
 
-    def actions(self) -> list[t.Type[Action]]:
-        return [RagToolQuery, AddContentToRagTool]
+    logo = "https://raw.githubusercontent.com/ComposioHQ/composio/master/python/docs/imgs/logos/Ragtool.png"
 
-    def triggers(self) -> list:
-        return []
+    @classmethod
+    def actions(cls) -> list[t.Type[LocalAction]]:
+        return [RagToolQuery, AddContentToRagTool]

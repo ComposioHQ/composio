@@ -200,13 +200,12 @@ class FlyIO(WithLogger):
 
     def _wait_for_machine(self) -> None:
         """Wait for machine to get started."""
-        while True:
+        deadline = time.time() + float(os.environ.get("WORKSPACE_WAIT_TIMEOUT", 60.0))
+        while time.time() < deadline:
             try:
                 requests.get(
                     self.url,
-                    headers={
-                        "x-api-key": self.access_token,
-                    },
+                    headers={"x-api-key": self.access_token},
                     timeout=30.0,
                 ).content.decode()
                 return

@@ -1,10 +1,12 @@
+from typing import Dict, Optional
+
 from pydantic import Field
 
-from composio.tools.env.filemanager.manager import FileManager
+from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
-    BaseFileAction,
     BaseFileRequest,
     BaseFileResponse,
+    include_cwd,
 )
 
 
@@ -26,11 +28,21 @@ class EditFileRequest(BaseFileRequest):
     )
     start_line: int = Field(
         ...,
-        description="The line number at which the file edit will start (REQUIRED). Inclusive - the start line will be included in the edit.",
+        description=(
+            "The line number at which the file edit will start (REQUIRED). "
+            "Inclusive - the start line will be included in the edit. "
+            "If you just want to add code and not replace any line, "
+            "don't provide end_line field."
+        ),
     )
-    end_line: int = Field(
-        ...,
-        description="The line number at which the file edit will end (REQUIRED). Exclusive - the end line will NOT be included in the edit.",
+    end_line: Optional[int] = Field(
+        default=None,
+        description=(
+            "The line number at which the file edit will end (REQUIRED). "
+            "Inclusive - the end line will be included in the edit. "
+            "If you just want to add code and not replace any line, "
+            "don't provide this field."
+        ),
     )
 
 
@@ -54,62 +66,59 @@ class EditFileResponse(BaseFileResponse):
     )
 
 
-class EditFile(BaseFileAction):
+class EditFile(LocalAction[EditFileRequest, EditFileResponse]):
     """
-    Use this tools to edit a file.
-    THE EDIT COMMAND REQUIRES INDENTATION.
+    Use this tools to edit a file on specific line numbers.
 
+    Please note that THE EDIT COMMAND REQUIRES PROPER INDENTATION.
+
+    Python files will be checked for syntax errors after the edit.
     If you'd like to add the line '        print(x)' you must fully write
     that out, with all those spaces before the code!
 
-    If a lint error occurs, the edit will not be applied.
-    Review the error message, adjust your edit accordingly.
+    If a syntax error is detected, the edit won't be executed. Review the error
+    message and modify your edit command accordingly.
 
-    Examples A -
-    Start line: 1
-    End line: 1
-    Text: "print(x)"
-    Result: As Start line == End line, print(x) will be added as first line in the file. Rest of the file will be unchanged.
+    When start and end lines are the same, the new text is inserted at that line,
+    preserving the original line's content.
 
-    Examples B -
-    Start line: 1
-    End line: 3
-    Text: "print(x)"
-    Result: print(x) will be replaced in the file as first line.
-    First and Second line will be removed as end line = 3
-    Rest of the file will be unchanged.
+    Ex A: Start=End=1, Text: "print(x)"
+    Result: Adds "print(x)" as first line, rest unchanged.
+
+    Ex B: Start=1, End=3, Text: "print(x)"
+    Result: Replaces lines 1,2 and 3 with "print(x)", rest unchanged.
 
     This action edits a specific part of the file, if you want to rewrite the
     complete file, use `write` tool instead."""
 
-    _display_name = "Edit a file"
-    _request_schema = EditFileRequest
-    _response_schema = EditFileResponse
+    display_name = "Edit a file"
 
-    def execute_on_file_manager(
-        self,
-        file_manager: FileManager,
-        request_data: EditFileRequest,  # type: ignore
-    ) -> EditFileResponse:
+    @include_cwd  # type: ignore
+    def execute(self, request: EditFileRequest, metadata: Dict) -> EditFileResponse:
+        file_manager = self.filemanagers.get(request.file_manager_id)
         try:
             file = (
                 file_manager.recent
-                if request_data.file_path is None
-                else file_manager.open(
-                    path=request_data.file_path,
-                )
+                if request.file_path is None
+                else file_manager.open(path=request.file_path)
             )
+
             if file is None:
-                raise FileNotFoundError(f"File not found: {request_data.file_path}")
+                raise FileNotFoundError(f"File not found: {request.file_path}")
+
+            if request.end_line is None:
+                request.end_line = -1
 
             response = file.write_and_run_lint(
-                text=request_data.text,
-                start=request_data.start_line,
-                end=request_data.end_line,
+                text=request.text,
+                start=request.start_line,
+                end=request.end_line,
             )
-            if response.get("error") and len(response["error"]) > 0:
+            if response.get("error") and len(response["error"]) > 0:  # type: ignore
                 return EditFileResponse(
-                    error="No Update, found error: " + response["error"]
+                    old_text=response["replaced_text"],
+                    updated_text=response["replaced_with"],
+                    error="No Update, found error: " + response["error"],  # type: ignore
                 )
             return EditFileResponse(
                 old_text=response["replaced_text"],

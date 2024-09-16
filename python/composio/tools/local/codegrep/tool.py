@@ -4,18 +4,17 @@ Code grep tool for Composio.
 
 import typing as t
 
-from composio.tools.local.base import Action, Tool
+from composio.tools.base.local import LocalAction, LocalTool
 
 from .actions import SearchCodebase
 
 
-class CodeGrepTool(Tool):
+class CodeGrepTool(LocalTool, autoload=True):
     """Code Grep tool."""
 
-    def actions(self) -> t.List[t.Type[Action]]:
+    logo = "https://raw.githubusercontent.com/ComposioHQ/composio/master/python/docs/imgs/logos/codegrep.png"
+
+    @classmethod
+    def actions(cls) -> t.List[t.Type[LocalAction]]:
         """Return the list of actions."""
         return [SearchCodebase]
-
-    def triggers(self) -> t.List:
-        """Return the list of triggers."""
-        return []

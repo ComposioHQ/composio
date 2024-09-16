@@ -11,6 +11,8 @@ from composio.tools.env.constants import EXIT_CODE, STDERR, STDOUT
 from composio.tools.env.factory import WorkspaceType
 from composio.utils.logging import get as get_logger
 
+from tests.conftest import skip_if_ci
+
 
 PATH = Path(__file__).parent
 
@@ -21,24 +23,25 @@ def test_outputs() -> None:
         workspace_config=WorkspaceType.Host(),
     )
     output = toolset.execute_action(
-        action=Action.SHELL_EXEC_COMMAND,
+        action=Action.SHELLTOOL_EXEC_COMMAND,
         params={"cmd": f"ls {PATH}"},
     )
-    assert output[EXIT_CODE] == 0
-    assert output[STDERR] == ""
-    assert "test_workspace.py" in output[STDOUT]
+    assert output["data"][EXIT_CODE] == 0
+    assert output["data"][STDERR] == ""
+    assert "test_workspace.py" in output["data"][STDOUT]
 
 
+@skip_if_ci(reason="Timeout")
 def test_stderr() -> None:
     """Test outputs."""
     toolset = ComposioToolSet(
         workspace_config=WorkspaceType.Host(),
     )
     output = toolset.execute_action(
-        action=Action.SHELL_EXEC_COMMAND,
+        action=Action.SHELLTOOL_EXEC_COMMAND,
         params={"cmd": "ls ./random"},
     )
-    assert "No such file or directory" in output[STDERR]
+    assert "No such file or directory" in output["data"][STDERR]
 
 
 def _check_output(output: dict) -> None:

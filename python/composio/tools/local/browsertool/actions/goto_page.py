@@ -34,7 +34,7 @@ class GotoPageResponse(BaseBrowserResponse):
     )
 
 
-class GotoPage(BaseBrowserAction):
+class GotoPage(BaseBrowserAction[GotoPageRequest, GotoPageResponse]):
     """
     Navigate to a specified webpage.
 
@@ -43,13 +43,13 @@ class GotoPage(BaseBrowserAction):
     The action takes a URL and an optional timeout as input parameters.
     """
 
-    _display_name = "GotoPage"
+    display_name = "GotoPage"
     _request_schema = GotoPageRequest
     _response_schema = GotoPageResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: GotoPageRequest  # type: ignore
+        self, browser_manager: BrowserManager, request: GotoPageRequest  # type: ignore
     ) -> GotoPageResponse:
         """Execute the navigation action."""
-        browser_manager.goto(request_data.url, request_data.timeout)
+        browser_manager.goto(request.url, request.timeout)
         return GotoPageResponse(message="Navigated to the specified webpage.")

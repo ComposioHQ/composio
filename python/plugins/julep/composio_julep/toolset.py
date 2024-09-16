@@ -1,46 +1,22 @@
 import json
-import typing as t
 
 from julep import Client
 from julep.api.types import ChatResponse
 
-from composio import Action, WorkspaceConfigType
+from composio import Action
 from composio.constants import DEFAULT_ENTITY_ID
 
 from composio_openai import ComposioToolSet as BaseComposioToolSet
 
 
-class ComposioToolSet(BaseComposioToolSet):
+class ComposioToolSet(
+    BaseComposioToolSet,
+    runtime="julep",
+    description_char_limit=1024,
+):
     """
     Composio toolset wrapper for Julep framework.
     """
-
-    def __init__(
-        self,
-        api_key: t.Optional[str] = None,
-        base_url: t.Optional[str] = None,
-        entity_id: str = DEFAULT_ENTITY_ID,
-        output_in_file: bool = False,
-        workspace_config: t.Optional[WorkspaceConfigType] = None,
-        workspace_id: t.Optional[str] = None,
-    ) -> None:
-        """
-        Initialize composio toolset.
-
-        :param api_key: Composio API key
-        :param base_url: Base URL for the Composio API server
-        :param entity_id: Entity ID for making function calls
-        :param output_in_file: Whether to write output to a file
-        """
-        super().__init__(
-            api_key,
-            base_url,
-            entity_id=entity_id,
-            output_in_file=output_in_file,
-            workspace_config=workspace_config,
-            workspace_id=workspace_id,
-        )
-        self._runtime = "julep"
 
     def handle_tool_calls(  # type: ignore[override]
         self,
@@ -57,13 +33,13 @@ class ComposioToolSet(BaseComposioToolSet):
         :param entity_id: Entity ID to use for executing function calls.
         :return: A list of output objects from the function calls.
         """
-        entity_id = self.validate_entity_id(entity_id or self.entity_id)
         outputs = []
+        entity_id = self.validate_entity_id(entity_id or self.entity_id)
         while response.finish_reason == "tool_calls":
             for _responses in response.response:
                 for _response in _responses:
                     try:
-                        tool_function = json.loads(_response.content)
+                        tool_function = json.loads(_response.content)  # type: ignore
                         outputs.append(
                             self.execute_action(
                                 action=Action(value=tool_function["name"]),
@@ -76,12 +52,7 @@ class ComposioToolSet(BaseComposioToolSet):
 
             response = julep_client.sessions.chat(  # submit the tool call
                 session_id=session_id,
-                messages=[
-                    {
-                        "role": "assistant",
-                        "content": json.dumps(outputs),
-                    }
-                ],
+                messages=[{"role": "assistant", "content": json.dumps(outputs)}],  # type: ignore
                 recall=True,
                 remember=True,
             )

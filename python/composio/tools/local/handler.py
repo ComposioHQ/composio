@@ -1,8 +1,9 @@
 import typing as t
 
 from composio.client.enums import Action, ActionType, App, AppType, Tag, TagType
-from composio.tools.local.base import Action as LocalActionType
-from composio.tools.local.base import Tool as LocalToolType
+from composio.tools.base.abs import Action as LocalActionType
+from composio.tools.base.abs import Tool as LocalToolType
+from composio.tools.base.abs import action_registry
 from composio.utils.logging import WithLogger
 
 
@@ -15,40 +16,34 @@ class LocalClient(WithLogger):
     _tools: t.Dict[str, LocalToolType] = {}
     """Local tools registry."""
 
-    @property
-    def tools(self) -> t.Dict[str, LocalToolType]:
+    @classmethod
+    def tools(cls) -> t.Dict[str, LocalToolType]:
         """Local tools."""
         from composio.tools.local import (  # pylint: disable=import-outside-toplevel
-            TOOLS,
+            load_local_tools,
         )
 
-        for tool in t.cast(t.List[t.Type[LocalToolType]], TOOLS):
-            _tool = tool()
-            self._tools[_tool.name] = _tool
+        cls._tools = load_local_tools().get("local", {})
+        return cls._tools
 
-        return self._tools
-
+    @classmethod
     def get_action_schemas(
-        self,
+        cls,
         apps: t.Optional[t.Sequence[AppType]] = None,
         actions: t.Optional[t.Sequence[ActionType]] = None,
         tags: t.Optional[t.Sequence[TagType]] = None,
     ) -> t.List[t.Dict]:
         """Get action schemas for given parameters."""
+        tools = cls.tools()
         apps = t.cast(t.List[App], [App(app) for app in apps or []])
         actions = t.cast(t.List[Action], [Action(action) for action in actions or []])
         action_schemas: t.List[t.Dict] = []
 
         for app in apps:
-            action_schemas += [
-                action().get_action_schema()
-                for action in self.tools[app.name].actions()
-            ]
+            action_schemas += [action.schema() for action in tools[app.slug].actions()]
 
         for action in actions:
-            action_schemas.append(
-                self.tools[action.app].get_action(name=action.name).get_action_schema()
-            )
+            action_schemas.append(action_registry["local"][action.slug].schema())
 
         if tags:
             tags = t.cast(t.List[str], [Tag(tag).value for tag in tags or []])
@@ -57,32 +52,11 @@ class LocalClient(WithLogger):
                 for action_schema in action_schemas
                 if bool(set(tags) & set(action_schema["tags"]))
             ]
+
+        for schema in action_schemas:
+            schema["name"] = schema["enum"]
+
         return action_schemas
-
-    def get_action(self, action: Action) -> LocalActionType:
-        """Get a local action class."""
-        return self.tools[action.app].get_action(name=action.name)
-
-    def execute_action(
-        self,
-        action: Action,
-        request_data: dict,
-        metadata: t.Optional[t.Dict] = None,
-    ):
-        """Execute a local action."""
-        if action.is_runtime:
-            return _runtime_actions[action.name].execute_action(
-                request_data=request_data,
-                metadata=metadata or {},
-            )
-        return (
-            self.tools[action.app]
-            .get_action(name=action.name)
-            .execute_action(
-                request_data=request_data,
-                metadata=metadata or {},
-            )
-        )
 
 
 def add_runtime_action(name: str, cls: t.Type[LocalActionType]) -> None:

@@ -67,7 +67,7 @@ def from_github() -> t.Tuple[str, str]:
     return (
         f"{owner}/{name}",
         read_user_input(
-            prompt="Enter github issue ID or descrption or path to the file containing description",
+            prompt="Enter github issue ID or description or path to the file containing description",
             metavar="github issue",
             validator=_create_github_issue_validator(
                 owner=owner,

@@ -1,15 +1,15 @@
 import typing as t
 
-from composio.tools.local.base import Action, Tool
+from composio.tools.base.local import LocalAction, LocalTool
 
 from .actions import ScrapeWebsiteContent, ScrapeWebsiteElement
 
 
-class WebTool(Tool):
+class Webtool(LocalTool, autoload=True):
     """Web Tools"""
 
-    def actions(self) -> list[t.Type[Action]]:
-        return [ScrapeWebsiteContent, ScrapeWebsiteElement]
+    logo = "https://raw.githubusercontent.com/ComposioHQ/composio/master/python/docs/imgs/logos/webtool.png"
 
-    def triggers(self) -> list:
-        return []
+    @classmethod
+    def actions(cls) -> list[t.Type[LocalAction]]:
+        return [ScrapeWebsiteContent, ScrapeWebsiteElement]

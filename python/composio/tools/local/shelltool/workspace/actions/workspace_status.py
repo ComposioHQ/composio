@@ -1,10 +1,8 @@
 from pydantic import Field
 
-from .base_workspace_action import (
-    BaseWorkspaceAction,
-    BaseWorkspaceRequest,
-    BaseWorkspaceResponse,
-)
+from composio.tools.base.local import LocalAction
+
+from .base_workspace_action import BaseWorkspaceRequest, BaseWorkspaceResponse
 
 
 class WorkspaceStatusRequest(BaseWorkspaceRequest):
@@ -20,20 +18,18 @@ class WorkspaceStatusResponse(BaseWorkspaceResponse):
     )
 
 
-class WorkspaceStatusAction(BaseWorkspaceAction):
+class WorkspaceStatusAction(
+    LocalAction[
+        WorkspaceStatusRequest,
+        WorkspaceStatusResponse,
+    ]
+):
     """
     Returns the status of workspace given in the request
     """
 
-    _display_name = "Get workspace status"
-    _tool_name = "workspacetool"
-    _request_schema = WorkspaceStatusRequest
-    _response_schema = WorkspaceStatusResponse
-
     def execute(
-        self,
-        request_data: WorkspaceStatusRequest,
-        authorisation_data: dict,
-    ) -> dict:
+        self, request: WorkspaceStatusRequest, metadata: dict
+    ) -> WorkspaceStatusResponse:
         # TODO: Implement shell status
-        return {"output": "running"}
+        return WorkspaceStatusResponse(workspace_status="runinng")

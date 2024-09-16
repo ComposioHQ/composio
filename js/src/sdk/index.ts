@@ -1,295 +1,88 @@
-import axios, { AxiosInstance } from 'axios';
-import { ConnectedAccounts, ConnectionRequest } from './models/connectedAccounts';
+import { ConnectedAccounts } from './models/connectedAccounts';
 import { Apps } from './models/apps';
 import { Actions } from './models/actions';
 import { Triggers } from './models/triggers';
 import { Integrations } from './models/integrations';
 import { ActiveTriggers } from './models/activeTriggers';
-import { AuthScheme, GetConnectedAccountResponse, ListActiveTriggersResponse, ListAllConnectionsResponse, OpenAPI, PatchUpdateActiveTriggerStatusResponse, SetupTriggerResponse } from './client';
 import { getEnvVariable } from '../utils/shared';
 import { COMPOSIO_BASE_URL } from './client/core/OpenAPI';
+import { BackendClient } from './models/backendClient';
+import { Entity } from './models/Entity';
+import axios from 'axios';
+import { getPackageJsonDir } from './utils/projectUtils';
+import { isNewerVersion } from './utils/other';
+import { getClientBaseConfig } from './utils/config';
 
 export class Composio {
-    public apiKey: string;
-    public baseUrl: string;
-    private http: AxiosInstance;
-
-
+    /**
+     * The Composio class serves as the main entry point for interacting with the Composio SDK.
+     * It provides access to various models that allow for operations on connected accounts, apps,
+     * actions, triggers, integrations, and active triggers.
+     */
+    backendClient: BackendClient;
     connectedAccounts: ConnectedAccounts;
     apps: Apps;
     actions: Actions;
     triggers: Triggers;
     integrations: Integrations;
     activeTriggers: ActiveTriggers;
-    config: typeof OpenAPI;
 
+    /**
+     * Initializes a new instance of the Composio class.
+     * 
+     * @param {string} [apiKey] - The API key for authenticating with the Composio backend. Can also be set locally in an environment variable.
+     * @param {string} [baseUrl] - The base URL for the Composio backend. By default, it is set to the production URL.
+     * @param {string} [runtime] - The runtime environment for the SDK.
+     */
     constructor(apiKey?: string, baseUrl?: string, runtime?: string) {
-        this.apiKey = apiKey || getEnvVariable("COMPOSIO_API_KEY") || '';
-        if (!this.apiKey) {
-            throw new Error('API key is missing');
-        }
+        // // Parse the base URL and API key, falling back to environment variables or defaults if not provided.
+        const { baseURL: baseURLParsed, apiKey: apiKeyParsed } =  getClientBaseConfig(baseUrl, apiKey);
 
-        this.baseUrl = baseUrl || Composio.getApiUrlBase();
-        this.http = axios.create({
-            baseURL: this.baseUrl,
-            headers: {
-                'X-API-KEY': `${this.apiKey}`,
-                'X-SOURCE': 'js_sdk',
-                'X-RUNTIME': runtime
-            }
-        });
+        // Initialize the BackendClient with the parsed API key and base URL.
+        this.backendClient = new BackendClient(apiKeyParsed, baseURLParsed, runtime);
 
-        this.config = {
-            ...OpenAPI,
-            BASE: this.baseUrl,
-            HEADERS: {
-                'X-API-Key': `${this.apiKey}`,
-                'X-SOURCE': 'js_sdk',
-                // @ts-ignore
-                'X-RUNTIME': runtime
-            }
-        }
+        // Instantiate models with dependencies as needed.
+        this.connectedAccounts = new ConnectedAccounts(this.backendClient);
+        this.triggers = new Triggers(this.backendClient);
+        this.apps = new Apps(this.backendClient);
+        this.actions = new Actions(this.backendClient);
+        this.integrations = new Integrations(this.backendClient);
+        this.activeTriggers = new ActiveTriggers(this.backendClient);
 
-        this.connectedAccounts = new ConnectedAccounts(this);
-        this.apps = new Apps(this);
-        this.actions = new Actions(this);
-        this.triggers = new Triggers(this);
-        this.integrations = new Integrations(this);
-        this.activeTriggers = new ActiveTriggers(this);
-
+        this.checkForLatestVersionFromNPM();
     }
 
-    public async getClientId(): Promise<string> {
-        const response = await this.http.get('/v1/client/auth/client_info',{
-            headers: {
-                'X-API-KEY': `${this.apiKey}`
+    /**
+     * Checks for the latest version of the Composio SDK from NPM.
+     * If a newer version is available, it logs a warning to the console.
+     */
+    async checkForLatestVersionFromNPM() {
+        try {
+            const packageName = "composio-core";
+            const packageJsonDir = getPackageJsonDir();
+            const currentVersionFromPackageJson = require(packageJsonDir + '/package.json').version;
+        
+            const response = await axios.get(`https://registry.npmjs.org/${packageName}/latest`);
+            const latestVersion = response.data.version;
+
+            
+            if (isNewerVersion(latestVersion, currentVersionFromPackageJson)) {
+                console.warn(`🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`);
             }
-        });
-        if (response.status !== 200) {
-            throw new Error(`HTTP Error: ${response.status}`);
+        } catch (error) {
+            // Ignore and do nothing
         }
-        return response.data.client.id;
     }
+    
 
-    static getApiUrlBase(): string {
-        return getEnvVariable("COMPOSIO_BASE_URL", COMPOSIO_BASE_URL) as string;
-    }
-
-    static async generateAuthKey(baseUrl?: string): Promise<string> {
-        const http = axios.create({
-            baseURL: baseUrl || this.getApiUrlBase(),
-            headers: {
-                'Authorization': ''
-            }
-        });
-        const response = await http.get('/v1/cli/generate_cli_session');
-        if (response.status !== 200) {
-            throw new Error(`HTTP Error: ${response.status}`);
-        }
-        return response.data.key;
-    }
-
-    static async validateAuthSession(key: string, code: string, baseUrl?: string): Promise<string> {
-        const http = axios.create({
-            baseURL: baseUrl || this.getApiUrlBase(),
-            headers: {
-                'Authorization': ''
-            }
-        });
-        const response = await http.get(`/v1/cli/verify_cli_code`, {
-            params: { key, code }
-        });
-        if (response.status !== 200) {
-            throw new Error(`HTTP Error: ${response.status}`);
-        }
-        return response.data.apiKey;
-    }
-
+    /**
+     * Retrieves an Entity instance associated with a given ID.
+     * 
+     * @param {string} [id='default'] - The ID of the entity to retrieve.
+     * @returns {Entity} An instance of the Entity class.
+     */
     getEntity(id: string = 'default'): Entity {
-        return new Entity(this, id);
+        return new Entity(this.backendClient, id);
     }
 }
 
-export class Entity {
-    private client: Composio;
-    id: string;
-
-    constructor(client: Composio, id: string = 'DEFAULT_ENTITY_ID') {
-        this.client = client;
-        this.id = id;
-    }
-
-    async execute(actionName: string, params?: Record<string, any> | undefined, text?: string | undefined, connectedAccountId?: string): Promise<Record<string, any>> {
-        const action = await this.client.actions.get({
-            actionName: actionName
-        });
-        if (!action) {
-            throw new Error("Could not find action: " + actionName);
-        }
-        const app = await this.client.apps.get({
-            appKey: action.appKey!
-        });
-        if ((app.yaml as any).no_auth) {
-            return this.client.actions.execute({
-                actionName: actionName,
-                requestBody: {
-                    input: params,
-                    appName: action.appKey
-                }
-            });
-        }
-        let connectedAccount = null;
-        if(connectedAccountId) {
-            connectedAccount = await this.client.connectedAccounts.get({
-                connectedAccountId: connectedAccountId
-            });
-        } else {
-            const connectedAccounts = await this.client.connectedAccounts.list({
-                user_uuid: this.id,
-                appNames: [action.appKey!],
-                status: 'ACTIVE'
-            });
-            if (connectedAccounts.items!.length === 0) {
-                throw new Error('No connected account found');
-            }
-
-            connectedAccount = connectedAccounts.items![0];
-        }
-        return this.client.actions.execute({
-            actionName: actionName,
-            requestBody: {
-                connectedAccountId: connectedAccount.id,
-                input: params,
-                appName: action.appKey,
-                text: text
-            }
-        });
-    }
-
-    async getConnection(app?: string, connectedAccountId?: string): Promise<GetConnectedAccountResponse | null> {
-        if (connectedAccountId) {
-            return await this.client.connectedAccounts.get({
-                connectedAccountId
-            });
-        }
-
-        let latestAccount = null;
-        let latestCreationDate: Date | null = null;
-        const connectedAccounts = await this.client.connectedAccounts.list({
-            user_uuid: this.id,
-        });
-
-        if(!connectedAccounts.items || connectedAccounts.items.length === 0) {
-            return null;
-        }
-
-        for (const connectedAccount of connectedAccounts.items!) {
-            if (app === connectedAccount.appName) {
-                const creationDate = new Date(connectedAccount.createdAt!);
-                if ((!latestAccount || (latestCreationDate && creationDate > latestCreationDate)) && connectedAccount.status === "ACTIVE") {
-                    latestCreationDate = creationDate;
-                    latestAccount = connectedAccount;
-                }
-            }
-        }
-
-        if (!latestAccount) {
-            return null;
-        }
-
-        return this.client.connectedAccounts.get({
-            connectedAccountId: latestAccount.id!
-        });
-    }
-
-    async setupTrigger(app: string, triggerName: string, config: { [key: string]: any }): Promise<SetupTriggerResponse> {
-        /**
-         * Enable a trigger for an entity.
-         *
-         * @param app App name
-         * @param triggerName Trigger name
-         * @param config Trigger config
-         */
-        const connectedAccount = await this.getConnection(app);
-        if (!connectedAccount) {
-            throw new Error(`Could not find a connection with app='${app}' and entity='${this.id}'`);
-        }
-        return this.client.triggers.setup({
-            triggerName: triggerName,
-            connectedAccountId: connectedAccount.id!,
-            requestBody: {
-                triggerConfig: config,
-            }
-        });
-    }
-
-    async disableTrigger(triggerId: string): Promise<PatchUpdateActiveTriggerStatusResponse> {
-        /**
-         * Disable a trigger for an entity.
-         *
-         * @param triggerId Trigger ID
-         */
-        return this.client.activeTriggers.disable({ triggerId: triggerId });
-    }
-
-    async getConnections(): Promise<ListAllConnectionsResponse["items"]> {
-        /**
-         * Get all connections for an entity.
-         */
-        const connectedAccounts = await this.client.connectedAccounts.list({
-            user_uuid: this.id
-        });
-        return connectedAccounts.items!;
-    }
-
-    async getActiveTriggers(): Promise<ListActiveTriggersResponse["triggers"]> {
-        /**
-         * Get all active triggers for an entity.
-         */
-        const connectedAccounts = await this.getConnections();
-        const activeTriggers = await this.client.activeTriggers.list({
-            connectedAccountIds: connectedAccounts!.map(account => account.id!).join(",")
-        });
-        return activeTriggers.triggers!;
-    }
-
-    async initiateConnection(
-        appName: string,
-        authMode?: AuthScheme,
-        authConfig?: { [key: string]: any },
-        redirectUrl?: string,
-        integrationId?: string
-    ): Promise<ConnectionRequest> {
-
-        // Get the app details from the client
-        const app = await this.client.apps.get({ appKey: appName });
-        const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
-
-        let integration = integrationId ? await this.client.integrations.get({ integrationId: integrationId }) : null;
-        // Create a new integration if not provided
-        if (!integration && authMode) {
-            integration = await this.client.integrations.create({
-                appId: app.appId!,
-                name: `integration_${timestamp}`,
-                authScheme: authMode,
-                authConfig: authConfig,
-                useComposioAuth: false,
-            });
-        }
-
-        if (!integration && !authMode) {
-            integration = await this.client.integrations.create({
-                appId: app.appId!,
-                name: `integration_${timestamp}`,
-                useComposioAuth: true,
-            });
-        }
-
-        // Initiate the connection process
-        return this.client.connectedAccounts.initiate({
-            integrationId: integration!.id!,
-            userUuid: this.id,
-            redirectUri: redirectUrl,
-        });
-    }
-}

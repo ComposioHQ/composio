@@ -1,10 +1,11 @@
 import json
 import os
+from typing import Dict
 
 import requests
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 
 
 class message(BaseModel):
@@ -37,13 +38,23 @@ class CodeQueryRequest(BaseModel):
         description="The repository to ask the question about. This should be a github repository. Example openai/docs, composiohq/composio",
         examples=["openai/docs", "composiohq/composio"],
     )
+    timeout: int = Field(
+        default=60,
+        description="The timeout for the Greptile API request. Default is 20 seconds",
+        examples=[60, 120, 180],
+    )
+    branch: str = Field(
+        default=None,
+        description="The branch to ask the question about. Default is master, if not specified. Example: main, master",
+        examples=["master", "main"],
+    )
 
 
 class CodeQueryResponse(BaseModel):
-    response: str = Field(..., description="The response to the question")
+    response: dict = Field(..., description="The response to the question")
 
 
-class CodeQuery(Action[CodeQueryRequest, CodeQueryResponse]):
+class CodeQuery(LocalAction[CodeQueryRequest, CodeQueryResponse]):
     """
     Ask the mentor, any questions on the code and get the answer from the mentor.
     with a list of relevant code references (filepaths, line numbers, etc)
@@ -54,21 +65,15 @@ class CodeQuery(Action[CodeQueryRequest, CodeQueryResponse]):
     “Rewrite this code snippet using relevant abstractions already in the repo”
     """
 
-    _display_name = "Code query"
-    _request_schema = CodeQueryRequest
-    _response_schema = CodeQueryResponse
     _tags = ["code_query"]
-    _tool_name = "greptile"
 
-    def execute(
-        self, request_data: CodeQueryRequest, authorisation_data: dict = {}  # type: ignore[override]
-    ) -> dict:
-        token = os.getenv("GREPTILE_TOKEN")
+    def execute(self, request: CodeQueryRequest, metadata: Dict) -> CodeQueryResponse:
+        token = metadata.get("greptile_token", os.getenv("GREPTILE_TOKEN"))
         if token is None:
             self.logger.error("GREPTILE_TOKEN is not set")
             raise ValueError("GREPTILE_TOKEN is not set")
 
-        github_token = os.getenv("GITHUB_TOKEN")
+        github_token = metadata.get("github_token", os.getenv("GITHUB_TOKEN"))
         if github_token is None:
             self.logger.error("GITHUB_TOKEN is not set")
             raise ValueError("GITHUB_TOKEN is not set")
@@ -83,42 +88,39 @@ class CodeQuery(Action[CodeQueryRequest, CodeQueryResponse]):
         # Construct the data payload for the API request
         data = {
             "messages": [
-                {
-                    "content": "You are a helpful assistant",
-                    "role": "assistant",
-                },
-                {
-                    "content": request_data.question,
-                    "role": "user",
-                },
+                {"content": request.question, "role": "user"},
             ],
             "repositories": [
                 {
                     "remote": "github",
-                    "branch": "master",
-                    "repository": request_data.repository,
+                    "branch": request.branch,
+                    "repository": request.repository,
                 }
             ],
-            "genius": request_data.genius,
+            "genius": request.genius,
         }
 
-        if request_data.sessionId and request_data.sessionId != "":
-            data["sessionId"] = request_data.sessionId
+        if request.sessionId and request.sessionId != "":
+            data["sessionId"] = request.sessionId
+
         # Send the POST request to the Greptile API
         response = requests.post(
             "https://api.greptile.com/v2/query",
             headers=headers,
             data=json.dumps(data),
-            timeout=20,
+            timeout=request.timeout,
         )
+
         # Check if the request was successful
         if response.status_code == 200:
-            return response.json()
+            return CodeQueryResponse(response=response.json())
+
         self.logger.error(
             "Failed to fetch data from Greptile API, status code: %s",
             response.status_code,
         )
-        return {
-            "error": "Failed to fetch data from Greptile API",
-            "status_code": response.status_code,
-        }
+
+        raise ValueError(
+            f"Failed to fetch data from Greptile API with status code "
+            f"{response.status_code} and error {response.content.decode()}"
+        )

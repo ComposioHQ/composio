@@ -10,9 +10,9 @@ from pathlib import Path
 
 import typing_extensions as te
 
+from composio.tools.env.base import Sessionable
 from composio.tools.env.filemanager.file import File
 from composio.tools.env.id import generate_id
-from composio.utils.logging import WithLogger
 
 
 _active_manager: t.Optional["FileManager"] = None
@@ -39,7 +39,7 @@ class FindResult(te.TypedDict):
     file: str
 
 
-class FileManager(WithLogger):
+class FileManager(Sessionable):
     """File manager implementation for agent workspaces."""
 
     _files: t.Dict[Path, File]
@@ -50,10 +50,15 @@ class FileManager(WithLogger):
     def __init__(self, working_dir: t.Optional[str] = None) -> None:
         """Initialize file manager."""
         super().__init__()
-        self.id = generate_id()
+        self._id = generate_id()
+        self._files = {}
         self.working_dir = Path(working_dir or "./").resolve()
 
-        self._files = {}
+    def setup(self) -> None:
+        """Setup browser manager."""
+
+    def teardown(self) -> None:
+        """Teardown a browser manager."""
 
     @property
     def recent(self) -> t.Optional[File]:
@@ -140,6 +145,25 @@ class FileManager(WithLogger):
         self._recent = self._files[path]
         return self._recent
 
+    def rename(self, old_file_path: str, new_file_path: str) -> bool:
+        """
+        Renames a file or directory.
+        :param old_file_path: Path of the file, make sure the path is relative to
+            the working directory.
+        :param new_file_path: Path of the file, make sure the path is relative to
+            the working directory.
+        :return:
+        """
+
+        old_path = self.working_dir / old_file_path
+        new_path = self.working_dir / new_file_path
+        if not old_path.exists():
+            raise FileNotFoundError(f"File / Directory {old_path} does not exist!")
+        if new_path.exists():
+            raise FileExistsError(f"File / Directory {new_path} already exists!")
+        old_path.rename(new_path)
+        return True
+
     def create(self, path: t.Union[str, Path]) -> File:
         """
         Create a new file
@@ -154,6 +178,12 @@ class FileManager(WithLogger):
         self._files[path] = file
         self._recent = self._files[path]
         return self._recent
+
+    def create_directory(self, path: t.Union[str, Path]) -> Path:
+        """Create a new directory."""
+        path = self.working_dir / path
+        path.mkdir(parents=True, exist_ok=False)
+        return path
 
     def grep(
         self,
@@ -304,7 +334,7 @@ class FileManager(WithLogger):
         depth: int,
         exclude: t.List[Path],
     ) -> str:
-        """Auxialiary method for creating working directory tree recursively."""
+        """Auxiliary method for creating working directory tree recursively."""
         if (depth != -1 and level > depth) or directory in exclude:
             return ""
 

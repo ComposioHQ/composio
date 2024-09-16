@@ -13,6 +13,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from unittest import mock
 
 import pysher
+import requests
 import typing_extensions as te
 from pydantic import BaseModel, ConfigDict, Field
 from pysher.channel import Channel
@@ -188,16 +189,16 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
             )
             return self.model(**response.json())
 
-        quries = {}
+        queries = {}
         if len(entity_ids) > 0:
-            quries["user_uuid"] = ",".join(entity_ids)
+            queries["user_uuid"] = ",".join(entity_ids)
 
         if active:
-            quries["showActiveOnly"] = "true"
+            queries["showActiveOnly"] = "true"
 
         response = self._raise_if_required(
             self.client.http.get(
-                url=str(self.endpoint(queries=quries)),
+                url=str(self.endpoint(queries=queries)),
             )
         )
         return [self.model(**account) for account in response.json().get("items", [])]
@@ -209,7 +210,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
         params: t.Optional[t.Dict] = None,
         redirect_url: t.Optional[str] = None,
     ) -> ConnectionRequestModel:
-        """Initiate a new connected accont."""
+        """Initiate a new connected account."""
         response = self._raise_if_required(
             response=self.client.http.post(
                 url=str(self.endpoint),
@@ -231,7 +232,7 @@ class AuthSchemeField(BaseModel):
     description: str
     type: str
 
-    displayName: t.Optional[str] = None
+    display_name: t.Optional[str] = None
 
     required: bool = False
     expected_from_customer: bool = True
@@ -398,24 +399,19 @@ class TriggerModel(BaseModel):
     logo: t.Optional[str] = None
 
 
-class ExecutionDetailsModel(BaseModel):
-    """Execution details data model."""
-
-    executed: bool
-
-
 class SuccessExecuteActionResponseModel(BaseModel):
     """Success execute action response data model."""
 
-    execution_details: ExecutionDetailsModel
-    response_data: str
+    successfull: bool
+    data: t.Dict
+    error: t.Optional[str] = None
 
 
-class FileModel(BaseModel):
+class FileType(BaseModel):
     name: str = Field(
         ..., description="File name, contains extension to indetify the file type"
     )
-    content: bytes = Field(..., description="File content in base64")
+    content: str = Field(..., description="File content in base64")
 
 
 class Connection(BaseModel):
@@ -509,7 +505,7 @@ class TriggerSubscription(logging.WithLogger):
             ("integration_id", data.metadata.connection.integrationId),
         ):
             value = filters.get(name)
-            if value is None or value == check:
+            if value is None or str(value).lower() == check.lower():
                 continue
 
             self.logger.debug(
@@ -522,7 +518,7 @@ class TriggerSubscription(logging.WithLogger):
             return callback(data)
         except BaseException:
             self.logger.info(
-                f"Erorr executing `{callback.__name__}` for "
+                f"Error executing `{callback.__name__}` for "
                 f"event `{data.metadata.triggerName}` "
                 f"with error:\n {traceback.format_exc()}"
             )
@@ -540,8 +536,13 @@ class TriggerSubscription(logging.WithLogger):
         """Filter events and call the callback function."""
         data = self._parse_payload(event=event)
         if data is None:
+            self.logger.error(f"Error parsing trigger payload: {event}")
             return
 
+        self.logger.info(
+            f"Received trigger event with trigger ID: {data.metadata.id} "
+            f"and trigger name: {data.metadata.triggerName}"
+        )
         awaitables: t.List[Future] = []
         with ThreadPoolExecutor() as executor:
             for callback, filters in self._callbacks:
@@ -582,11 +583,12 @@ class TriggerSubscription(logging.WithLogger):
             time.sleep(1)
 
 
-class _PusherClient:
+class _PusherClient(logging.WithLogger):
     """Pusher client for Composio SDK."""
 
     def __init__(self, client_id: str, base_url: str, api_key: str) -> None:
         """Initialize pusher client."""
+        super().__init__()
         self.client_id = client_id
         self.base_url = base_url
         self.api_key = api_key
@@ -619,6 +621,31 @@ class _PusherClient:
 
     def connect(self, timeout: float = 15.0) -> TriggerSubscription:
         """Connect to Pusher channel for given client ID."""
+        # Make a request to the Pusher webhook endpoint
+        headers = {
+            "Content-Type": "application/json",
+        }
+        data = {
+            "time": int(time.time() * 1000),  # Current time in milliseconds
+            "events": [
+                {
+                    "name": "channel_occupied",
+                    "channel": f"private-{self.client_id}_triggers",
+                }
+            ],
+        }
+
+        try:
+            response = requests.post(
+                f"{self.base_url}/v1/triggers/pusher",
+                headers=headers,
+                json=data,
+                timeout=timeout,
+            )
+            response.raise_for_status()
+        except requests.RequestException as e:
+            self.logger.error(f"Failed to send Pusher webhook: {e}")
+
         pusher = pysher.Pusher(
             key=PUSHER_KEY,
             cluster=PUSHER_CLUSTER,
@@ -719,6 +746,7 @@ class Triggers(Collection[TriggerModel]):
 
     def subscribe(self, timeout: float = 15.0) -> TriggerSubscription:
         """Subscribe to a trigger and receive trigger events."""
+        self.logger.info("Creating trigger subscription")
         response = self._raise_if_required(
             response=self.client.http.get(
                 url="/v1/client/auth/client_info",
@@ -779,6 +807,21 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
         return self._raise_if_empty(super().get(queries=queries))
 
 
+def _check_file_uploadable(param_field: dict) -> bool:
+    return (
+        isinstance(param_field, dict)
+        and (param_field.get("title") in ["File", "FileType"])
+        and all(
+            field_name in param_field.get("properties", {})
+            for field_name in ["name", "content"]
+        )
+    )
+
+
+def _check_file_downloadable(param_field: dict) -> bool:
+    return set(param_field.keys()) == {"name", "content"}
+
+
 class ActionParametersModel(BaseModel):
     """Action parameter data models."""
 
@@ -803,14 +846,13 @@ class ActionModel(BaseModel):
     """Action data model."""
 
     name: str
-    display_name: str
+    display_name: t.Optional[str] = None
     parameters: ActionParametersModel
     response: ActionResponseModel
-    appKey: str
+    appName: str
     appId: str
     tags: t.List[str]
-    appName: str
-    enabled: bool
+    enabled: bool = False
 
     logo: t.Optional[str] = None
     description: t.Optional[str] = None
@@ -838,7 +880,7 @@ class Actions(Collection[ActionModel]):
         :param actions: Filter by the list of Actions.
         :param apps: Filter by the list of Apps.
         :param tags: Filter by the list of given Tags.
-        :param limit: Limit the numnber of actions to a specific number.
+        :param limit: Limit the number of actions to a specific number.
         :param use_case: Filter by use case.
         :param allow_all: Allow querying all of the actions for a specific
                         app
@@ -859,12 +901,10 @@ class Actions(Collection[ActionModel]):
             and (len(local_apps) > 0 or len(local_actions) > 0)
         )
         if only_local_apps:
-            from composio.tools.local.handler import (  # pylint: disable=import-outside-toplevel
-                LocalClient,
-            )
-
-            local_items = LocalClient().get_action_schemas(
-                apps=local_apps, actions=local_actions, tags=tags
+            local_items = self.client.local.get_action_schemas(
+                apps=local_apps,
+                actions=local_actions,
+                tags=tags,
             )
             return [self.model(**item) for item in local_items]
 
@@ -940,7 +980,7 @@ class Actions(Collection[ActionModel]):
         response_json = response.json()
         items = [self.model(**action) for action in response_json.get("items")]
         if len(actions) > 0:
-            required = [t.cast(Action, action).name for action in actions]
+            required = [t.cast(Action, action).slug for action in actions]
             items = [item for item in items if item.name in required]
 
         if len(tags) > 0:
@@ -991,14 +1031,9 @@ class Actions(Collection[ActionModel]):
         action_req_schema = action_model.parameters.properties
         modified_params: t.Dict[str, t.Union[str, t.Dict[str, str]]] = {}
         for param, value in params.items():
-            file_readable = False
-            if isinstance(action_req_schema[param], dict):
-                file_readable = action_req_schema[param].get("file_readable", False)
-                file_uploadable = (
-                    action_req_schema[param].get("allOf", [{}])[0].get("properties")
-                    or action_req_schema[param].get("properties")
-                    or {}
-                ) == FileModel.schema().get("properties")
+            request_param_schema = action_req_schema[param]
+            file_readable = request_param_schema.get("file_readable", False)
+            file_uploadable = _check_file_uploadable(request_param_schema)
 
             if file_readable and isinstance(value, str) and os.path.isfile(value):
                 with open(value, "rb") as file:
@@ -1011,19 +1046,16 @@ class Actions(Collection[ActionModel]):
                             "utf-8"
                         )
             elif file_uploadable and isinstance(value, str):
-                if os.path.isfile(value):
-                    with open(value, "rb") as file:
-                        file_content = file.read()
-                    encoded_data = base64.b64encode(file_content).decode("utf-8")
-                    encoded_data_with_filename = {
-                        "name": os.path.basename(value),
-                        "content": encoded_data,
-                    }
-                    modified_params[param] = encoded_data_with_filename
-                elif value == "":
-                    pass
-                else:
-                    return {"error": f"File with path {value} not found"}
+                if not os.path.isfile(value):
+                    raise ValueError(f"Attachment File with path `{value}` not found.")
+
+                with open(value, "rb") as file:
+                    file_content = file.read()
+
+                modified_params[param] = {
+                    "name": os.path.basename(value),
+                    "content": base64.b64encode(file_content).decode("utf-8"),
+                }
             else:
                 modified_params[param] = value
 
@@ -1048,7 +1080,7 @@ class Actions(Collection[ActionModel]):
 
         return self._raise_if_required(
             self.client.http.post(
-                url=str(self.endpoint / action.name / "execute"),
+                url=str(self.endpoint / action.slug / "execute"),
                 json={
                     "connectedAccountId": connected_account,
                     "input": modified_params,

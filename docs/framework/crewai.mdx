@@ -1,6 +1,6 @@
 ---
-title: "Using Composio With crewAI"
-sidebarTitle: "crewAI SDK"
+title: "Using Composio With CrewAI"
+sidebarTitle: "CrewAI"
 icon: "people-group"
 description: "Integrate Composio with Crewai agents to let them seamlessly interact with external apps"
 ---
@@ -18,34 +18,56 @@ description: "Integrate Composio with Crewai agents to let them seamlessly inter
 These commands prepare your environment for seamless interaction between CrewAI and Github.
 
 <CodeGroup>
-    ```bash Run Command
-    pip install composio_crewai
-
-    #Connect your Github so agents can use it.
-    composio add github #Also try - composio add notion
-
-    #Check all different apps which you can connect with
-    composio apps
-
-    ```
-
+```bash Run Command
+pip install composio_crewai
+```
 </CodeGroup>
+
 
 ### Goal: Use Crew Agent to Interact with Github using Composio
 
 <Steps>
+<Step title="Connect Github account">
+- Connect a user Jessica's Github account to allow our agents to utilize GitHub functionalities.
+<Tabs>
+<Tab title="CLI">
+<CodeGroup>
+```bash Authenticate GitHub Account 
+composio add github -e "Jessica"
+```
+</CodeGroup>
+</Tab>
+<Tab title="Python">
+<CodeGroup>
+```python Authenticate Jessica's GitHub Account 
+from composio_crewai import ComposioToolSet, App
+
+toolset = ComposioToolSet(entity_id="Jessica")
+
+entity = toolset.get_entity()
+
+request = entity.initiate_connection(App.GITHUB)
+
+print(
+    f"Open this URL in your browser: {request.redirectUrl}"
+)
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+</Step>
+
+
 <Step title="Import Base Packages">
 
 <CodeGroup>
-    ```python Default Imports
+```python Default Imports
+from crewai import Agent, Task, Crew
+from langchain_openai import ChatOpenAI
 
-    from crewai import Agent, Task
-    from langchain_openai import ChatOpenAI
-
-    # add OPENAI_API_KEY to env variables.
-    llm = ChatOpenAI()
-    ```
-
+# add OPENAI_API_KEY to env variables.
+llm = ChatOpenAI()
+```
 </CodeGroup>
 
 </Step>
@@ -53,16 +75,15 @@ These commands prepare your environment for seamless interaction between CrewAI 
 <Step title="Fetch all Tools via Composio">
 
 <CodeGroup>
-    ```python Tools For Github
+```python Tools For Github
 
-    from composio_crewai import ComposioToolSet, Action, App
+from composio_crewai import ComposioToolSet, Action, App
 
-    # Get All the tools
+# Get All the tools
 
-    composio_toolset = ComposioToolSet()
-    tools = composio_toolset.get_tools(apps=[App.GITHUB])
-    ```
-
+composio_toolset = ComposioToolSet(entity_id="Jessica")
+tools = composio_toolset.get_tools(apps=[App.GITHUB])
+```
 </CodeGroup>
 
 </Step>
@@ -70,27 +91,29 @@ These commands prepare your environment for seamless interaction between CrewAI 
 <Step title="Execute the Agent">
 
 <CodeGroup>
-    ```python CrewAI Agent Executes Task
-    # Define agent
-    crewai_agent = Agent(
-        role="Github Agent",
-        goal="""You take action on Github using Github APIs""",
-        backstory=(
-            "You are AI agent that is responsible for taking actions on Github "
-            "on users behalf. You need to take action on Github using Github APIs"
-        ),
-        verbose=True,
-        tools=tools,
-        llm=llm,
-    )
-    task = Task(
-        description="Star a repo composiohq/composio on GitHub",
-        agent=crewai_agent,
-        expected_output="if the star happened"
-    )
-    task.execute()
-    ```
+```python CrewAI Agent Executes Task
+# Define agent
+crewai_agent = Agent(
+    role="Github Agent",
+    goal="""You take action on Github using Github APIs""",
+    backstory=(
+        "You are AI agent that is responsible for taking actions on Github "
+        "on users behalf. You need to take action on Github using Github APIs"
+    ),
+    verbose=True,
+    tools=tools,
+    llm=llm,
+)
+task = Task(
+    description="Star a repo composiohq/composio on GitHub",
+    agent=crewai_agent,
+    expected_output="if the star happened"
+)
+my_crew = Crew(agents=[crewai_agent], tasks=[task])
 
+result = my_crew.kickoff()
+print(result)
+```
 </CodeGroup>
 
 </Step>
@@ -98,26 +121,25 @@ These commands prepare your environment for seamless interaction between CrewAI 
 <Step title="Check Response">
 
 <CodeGroup>
-    ```bash Executing Agents
-    > Entering new CrewAgentExecutor chain...[0m
-    I need to star a repository on GitHub, specifically the repo "composiohq/composio".
+```bash Executing Agents
+> Entering new CrewAgentExecutor chain...[0m
+I need to star a repository on GitHub, specifically the repo "composiohq/composio".
 
-    Action:
-    github_star_repo
+Action:
+github_star_repo
 
-    Action Input:
-    {
-    "owner": "composiohq",
-    "repo": "composio"
-    }
+Action Input:
+{
+"owner": "composiohq",
+"repo": "composio"
+}
 
-    {'execution_details': {'executed': True}, 'response_data': ''}
-    Final Answer: {'execution_details': {'executed': True}, 'response_data': ''}[0m
+{'execution_details': {'executed': True}, 'response_data': ''}
+Final Answer: {'execution_details': {'executed': True}, 'response_data': ''}[0m
 
-    > Finished chain.[0m
-    > {'execution_details': {'executed': True}, 'response_data': ''}
-    ```
-
+> Finished chain.[0m
+> {'execution_details': {'executed': True}, 'response_data': ''}
+```
 </CodeGroup>
 
 </Step>
@@ -127,7 +149,7 @@ These commands prepare your environment for seamless interaction between CrewAI 
     ```bash Filter Specific Action
     # To restrict agents from using all the actions, filter specific actions
     composio_toolset = ComposioToolSet()
-    tools = composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_ISSUE])
+    tools = composio_toolset.get_tools(actions=[Action.GITHUB_CREATE_ISSUE])
     ```
 </CodeGroup>
 

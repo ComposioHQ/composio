@@ -77,6 +77,10 @@ format-code:
 	tox -e isort
 	tox -e black
 
+.PHONY: fmt
+fmt: format-code
+	@echo
+
 .PHONY: check-code
 check-code:
 	tox -e isort-check
@@ -85,6 +89,10 @@ check-code:
 	tox -e mypy
 	tox -e pylint
 
+.PHONY: chk
+chk: check-code
+	@echo
+
 .PHONY: format-and-check
 format-and-check:
 	make format-code
@@ -92,7 +100,7 @@ format-and-check:
 
 .PHONY: env
 env: clean
-	if [[ "$$VIRTUAL_ENV" == "" ]];\
+	if [ -z "$$VIRTUAL_ENV"];\
 	then\
 		pipenv --rm;\
 		pipenv --clear;\

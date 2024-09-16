@@ -4,7 +4,7 @@ File I/O tool for Composio.
 
 import typing as t
 
-from composio.tools.local.base import Action, Tool
+from composio.tools.base.local import LocalAction, LocalTool
 
 from .actions import (
     ChangeWorkingDirectory,
@@ -16,19 +16,24 @@ from .actions import (
     GitRepoTree,
     ListFiles,
     OpenFile,
+    RenameFile,
     Scroll,
     SearchWord,
     Write,
 )
 
 
-class FileTool(Tool):
+class Filetool(LocalTool, autoload=True):
     """File I/O tool."""
 
-    def actions(self) -> t.List[t.Type[Action]]:
+    logo = "https://raw.githubusercontent.com/ComposioHQ/composio/master/python/docs/imgs/logos/filetool.png"
+
+    @classmethod
+    def actions(cls) -> t.List[t.Type[LocalAction]]:
         """Return the list of actions."""
         return [
             OpenFile,
+            RenameFile,
             EditFile,
             CreateFile,
             Scroll,
@@ -41,7 +46,3 @@ class FileTool(Tool):
             GitRepoTree,
             GitPatch,
         ]
-
-    def triggers(self) -> t.List:
-        """Return the list of triggers."""
-        return []

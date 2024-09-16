@@ -1,15 +1,15 @@
 import typing as t
 
-from composio.tools.local.base import Action, Tool
+from composio.tools.base.local import LocalAction, LocalTool
 
 from .actions import Crawl, Scrape
 
 
-class SpiderTool(Tool):
+class Spidertool(LocalTool, autoload=True):
     """Spider Tools"""
 
-    def actions(self) -> list[t.Type[Action]]:
-        return [Scrape, Crawl]
+    logo = "https://raw.githubusercontent.com/ComposioHQ/composio/master/python/docs/imgs/logos/spidertool.png"
 
-    def triggers(self) -> list:
-        return []
+    @classmethod
+    def actions(cls) -> list[t.Type[LocalAction]]:
+        return [Scrape, Crawl]

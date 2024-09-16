@@ -34,7 +34,7 @@ class ExecuteScriptResponse(BaseBrowserResponse):
     )
 
 
-class ExecuteScript(BaseBrowserAction):
+class ExecuteScript(BaseBrowserAction[ExecuteScriptRequest, ExecuteScriptResponse]):
     """
     Execute a custom JavaScript script on the current webpage.
 
@@ -50,19 +50,19 @@ class ExecuteScript(BaseBrowserAction):
     }
     """
 
-    _display_name = "ExecuteScript"
+    display_name = "ExecuteScript"
     _request_schema = ExecuteScriptRequest
     _response_schema = ExecuteScriptResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: ExecuteScriptRequest  # type: ignore
+        self, browser_manager: BrowserManager, request: ExecuteScriptRequest  # type: ignore
     ) -> ExecuteScriptResponse:
         """Execute the custom JavaScript script."""
 
         try:
             # Execute the script
             result = browser_manager.execute_script(
-                request_data.script, *(request_data.args or [])
+                request.script, *(request.args or [])
             )
 
             return ExecuteScriptResponse(success=True, result=result)

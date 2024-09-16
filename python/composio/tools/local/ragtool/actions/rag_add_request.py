@@ -1,8 +1,11 @@
+from typing import Dict
+
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 
 
+# pylint: disable=import-outside-toplevel
 class RagToolAddRequest(BaseModel):
     content: str = Field(
         ...,
@@ -15,34 +18,17 @@ class RagToolAddResponse(BaseModel):
     status: str = Field(..., description="Status of the addition to the knowledge base")
 
 
-class AddContentToRagTool(Action[RagToolAddRequest, RagToolAddResponse]):
-    """
-    Tool for adding content to the knowledge base
-    """
+class AddContentToRagTool(LocalAction[RagToolAddRequest, RagToolAddResponse]):
+    """Tool for adding content to the knowledge base"""
 
-    _display_name = "Add Content to Rag Tool"
-    _request_schema: type[RagToolAddRequest] = RagToolAddRequest
-    _response_schema: type[RagToolAddResponse] = RagToolAddResponse
     _tags = ["Knowledge Base"]
-    _tool_name = "ragtool"
 
-    def execute(
-        self, request_data: RagToolAddRequest, authorisation_data: dict
-    ) -> dict:
+    def execute(self, request: RagToolAddRequest, metadata: Dict) -> RagToolAddResponse:
         """Add content to the knowledge base"""
-        if authorisation_data is None:
-            authorisation_data = {}
         try:
-            # pylint: disable=import-outside-toplevel
             from embedchain import App
-
-            # pylint: enable=import-outside-toplevel
         except ImportError as e:
-            return {"error": f"Failed to import App from embedchain: {e}"}
-        try:
-            embedchain_app = App()
-            content = request_data.content
-            embedchain_app.add(content)
-            return {"status": "Content added successfully"}
-        except Exception as e:
-            return {"error": f"Error adding content: {e}"}
+            raise ImportError(f"Failed to import App from embedchain: {e}") from e
+
+        App().add(request.content)
+        return RagToolAddResponse(status="Content added successfully")

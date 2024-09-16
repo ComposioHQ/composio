@@ -38,7 +38,7 @@ class RefreshPageResponse(BaseBrowserResponse):
     )
 
 
-class RefreshPage(BaseBrowserAction):
+class RefreshPage(BaseBrowserAction[RefreshPageRequest, RefreshPageResponse]):
     """
     Refresh the current page in the browser.
 
@@ -47,16 +47,16 @@ class RefreshPage(BaseBrowserAction):
     refreshing a web page.
     """
 
-    _display_name = "RefreshPage"
+    display_name = "RefreshPage"
     _request_schema = RefreshPageRequest
     _response_schema = RefreshPageResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: RefreshPageRequest  # type: ignore
+        self, browser_manager: BrowserManager, request: RefreshPageRequest  # type: ignore
     ) -> RefreshPageResponse:
         """Execute the refresh page action."""
         previous_url = browser_manager.get_current_url()
-        browser_manager.refresh(ignore_cache=request_data.ignore_cache)
+        browser_manager.refresh(ignore_cache=request.ignore_cache)
         new_url = browser_manager.get_current_url()
         return RefreshPageResponse(
             success=True,

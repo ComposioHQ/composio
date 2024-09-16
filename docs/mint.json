@@ -80,76 +80,66 @@
       "pages": [
         "introduction/intro/overview",
         "introduction/intro/quickstart",
+        "introduction/intro/quickstart_2",
+        "introduction/intro/quickstart_3"
+      ]
+    },
+    {
+      "group": "Basics",
+      "pages": [
+        "introduction/foundations/basic",
+        "introduction/foundations/components/entity/entity-guide",
+        "introduction/foundations/components/actions/action-guide",
+        "introduction/foundations/components/triggers/trigger-guide",
+        "introduction/foundations/components/local_tools",
+        "introduction/foundations/components/integrations/custom-integration",
         {
-          "group": "Core Concepts",
+          "group": "Advanced",
           "pages": [
-            "introduction/foundations/basic",
-            "introduction/foundations/components/entity/entity-guide",
             "introduction/foundations/components/integrations/integration-guide",
-            "introduction/foundations/components/actions/action-guide",
-            "introduction/foundations/components/triggers/trigger-guide",
-            "introduction/foundations/components/local_tools",
-            "introduction/foundations/components/integrations/custom-integration",
-            "introduction/foundations/components/actions/local-code"
+            "introduction/foundations/components/actions/processing",
+            "introduction/foundations/components/workspace",
+            "introduction/foundations/components/list_local_tools"
           ]
         }
       ]
     },
     {
-      "group": "Python",
-      "pages": [
-        "python/introduction",
-        {
-          "group": "With Frameworks",
-          "icon": "code",
-          "iconType": "solid",
-          "pages": [
-      "framework/langchain",
-        "framework/autogen",
-        "framework/crewai",
-        "framework/lyzr",
-        "framework/openai",
-        "framework/julep",
-        "framework/griptape",
+      "group":"Supported Frameworks",
+
+      "pages":[
+        "framework/langchain",
         "framework/llamaindex",
-        "framework/camelai",
-        "framework/praisonai",
-        "framework/langgraph",
-        "framework/phidata"
-          ]
-        }
-      ]
-    },
-            {
-      "group": "Javascript",
-      "pages": [
-       "javascript/openai",
+        "framework/crewai",
+        "framework/groq",
+        "framework/openai",
+        "framework/autogen",
         {
-          "group": "With frameworks",
-          "icon": "code",
-          "iconType": "solid",
+          "group": "Other Frameworks",
           "pages": [
-            "javascript/langchain",
+            "framework/langgraph",
+            "framework/phidata",
+            "framework/camelai",
             "javascript/cloudflare",
+            "javascript/vercel",
             "javascript/openai",
-            "javascript/vercel"
+            "javascript/langchain",
+            "framework/lyzr",
+            "framework/praisonai",
+            "framework/julep",
+            "framework/griptape"
           ]
         }
       ]
+      
+
     },
+    
     {
-      "group": "SweKit (JS)",
+      "group": "SweKit",
       "pages": [
         "swekit-js/introduction",
-        "swekit-js/workspace-env"
-      ]
-    },
-    {
-      "group": "SweKit (Python)",
-      "pages": [
         "swekit/introduction",
-        "swekit/workspace-env",
-        "swekit/custom-tools",
         "swekit/benchmarks"
       ]
     },
@@ -191,71 +181,83 @@
     {
       "group": "Examples",
       "pages": [
-        "examples/examples/Example",
-    {
-          "group": "Python Guides", 
-          "pages":[
-            "examples/python/investment-analyst",
-            "examples/python/research-assistant",
-            "examples/python/sql-agent",
-            "examples/python/competitor-researcher",
-            "examples/python/rag_agent",
-            "examples/python/interpreter_agent",
-            "examples/python/news-summary",
-            "examples/python/calendar-agent"
-        ]
-      },
-      {
-        "group":"Javascript Guides",
-        "pages":[
-          "examples/javascript/calendar-agent",
-          "examples/javascript/code-execution-agent",
-          "examples/javascript/rag_agent",
-          "examples/javascript/investment-analyst"
-        ]
-      }
+        "examples/combined/calendar-agent",
+        "examples/combined/code-execution-agent",
+        "examples/combined/rag-agent",
+        "examples/combined/research_agent",
+        "examples/combined/sql-agent",
+        "examples/combined/newsletter_summarizer"
         ]
     },
     {
       "group": "Endpoints",
       "icon": "robot",
       "pages": [
-        {
-          "icon": "code",
-          "group": "apps",
-          "pages": [
-            "api-reference/apps/list-all-apps"
-          ]
-        },
-        {
-          "icon": "rectangles-mixed",
-          "group": "connections",
-          "pages": [
-            "api-reference/connectedaccounts/list-all-connected-accounts",
-            "api-reference/connectedaccounts/connect-an-account",
-            "api-reference/connectedaccounts/get-a-connected-account",
-            "api-reference/connectedaccounts/delete-a-connected-account"
-          ]
-        },
-        {
-          "icon": "database",
-          "group": "integrations",
-          "pages": [
-            "api-reference/integrations/get-an-integration",
-            "api-reference/integrations/update-an-integration",
-            "api-reference/integrations/list-all-integrations",
-            "api-reference/integrations/create-a-new-integration"
-          ]
-        },
-        {
-          "group": "actions",
-          "pages": [
-            "api-reference/actions/get-a-specific-action",
-            "api-reference/actions/get-list-of-actions",
-            "api-reference/actions/execute-action"
-          ]
-        }
-      ]
+  {
+    "group": "Client Auth",
+    "pages": [
+      "api-reference/client-auth/get-user-info"
+    ]
+  },
+  {
+    "group": "App",
+    "pages": [
+      "api-reference/app/get-apps"
+    ]
+  },
+  {
+    "group": "App Connector",
+    "pages": [
+      "api-reference/app-connector/list-global-connectors",
+      "api-reference/app-connector/create-connector",
+      "api-reference/app-connector/get-connector-info",
+      "api-reference/app-connector/delete-connector",
+      "api-reference/app-connector/patch-connector"
+    ]
+  },
+  {
+    "group": "Actions Controller",
+    "pages": [
+      "api-reference/actions-controller-v-2/list-actions",
+      "api-reference/actions-controller-v-2/execute-action",
+      "api-reference/actions-controller-v-2/execute-action-proxy",
+       "api-reference/actions-controller-v-1/get-action"
+    ]
+  },
+  {
+    "group": "Connections",
+    "pages": [
+      "api-reference/connections/get-connections",
+      "api-reference/connections/initiate-connection",
+      "api-reference/connections/get-connection",
+      "api-reference/connections/delete-connection",
+      "api-reference/connections/disable-connection",
+      "api-reference/connections/enable-connection"
+    ]
+  },
+  {
+    "group": "Triggers",
+    "pages": [
+      "api-reference/triggers/list-triggers",
+      "api-reference/triggers/handle-trigger",
+      "api-reference/triggers/enable-trigger",
+      "api-reference/triggers/get-trigger",
+      "api-reference/triggers/get-active-triggers",
+      "api-reference/triggers/disable-trigger",
+      "api-reference/triggers/delete-trigger",
+      "api-reference/triggers/set-callback-url",
+      "api-reference/triggers/set-callback-url-1",
+      "api-reference/triggers/get-webhook-url",
+      "api-reference/triggers/get-logs"
+    ]
+  },
+  {
+    "group": "Logs",
+    "pages": [
+      "api-reference/logs/get-logs"
+    ]
+  }
+]
     }
   ],
   "integrations": {

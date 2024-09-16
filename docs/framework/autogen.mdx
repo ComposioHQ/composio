@@ -1,6 +1,6 @@
 ---
 title: "Using Composio With Autogen"
-sidebarTitle: "Autogen SDK"
+sidebarTitle: "Autogen"
 icon: "robot"
 description: "Integrate Composio with Autogen agents to let them seamlessly interact with external apps"
 ---
@@ -18,17 +18,41 @@ These commands prepare your environment for seamless interaction between Autogen
 <CodeGroup>
   ```bash Run Command 
   pip install composio-autogen
-
-  #Connect your Github so agents can use it
-  composio add github
-
-  #Check all supported apps
-  composio apps
-
   ```
 </CodeGroup>
 
 <Steps>
+
+<Step title="Connect GitHub account">
+
+- Connect a user Jessica's Github account to allow your agents to utilize GitHub functionalities.
+<Tabs>
+<Tab title="CLI">
+<CodeGroup>
+```bash Authenticate GitHub Account 
+composio add github -e "Jessica"
+```
+</CodeGroup>
+</Tab>
+<Tab title="Python">
+<CodeGroup>
+```python Authenticate Jessica's GitHub Account 
+from composio_autogen import ComposioToolSet, App
+
+toolset = ComposioToolSet(entity_id="Jessica")
+
+entity = toolset.get_entity()
+
+request = entity.initiate_connection(App.GITHUB)
+
+print(
+    f"Open this URL in your browser: {request.redirectUrl}"
+)
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+</Step>
 
 <Step title="Import Base Packages & Create default Autogen Agent">
 <CodeGroup>
@@ -63,7 +87,7 @@ These commands prepare your environment for seamless interaction between Autogen
 
   # Initialise the Composio Tool Set
 
-  composio_toolset = ComposioToolSet()
+  composio_toolset = ComposioToolSet(entity_id="Jessica")
 
   # Register the preferred Applications, with right executor.
 

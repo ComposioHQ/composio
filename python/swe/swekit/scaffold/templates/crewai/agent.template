@@ -17,7 +17,7 @@ dotenv.load_dotenv()
 # Initialize tool.
 openai_client = ChatOpenAI(
     api_key=os.environ["OPENAI_API_KEY"],  # type: ignore
-    model="gpt-4-turbo",
+    model="gpt-4-1106-preview",
 )
 composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Docker())
 
@@ -32,7 +32,7 @@ tools = [
     *composio_toolset.get_actions(
         actions=[
             say,  # This is just here as an example of a custom tool, you can remove it
-            Action.GITHUB_CREATE_A_PULL_REQUEST
+            # Action.GITHUB_CREATE_A_PULL_REQUEST
         ]
     ),
 ]

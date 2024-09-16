@@ -7,7 +7,7 @@ USER user
 WORKDIR /home/user
 
 # Clone github repository
-RUN git config --global http.postBuffer 157286400 && git clone --depth 1 https://github.com/{{ repository }}
+RUN git config --global http.postBuffer 157286400 && git config --global --add safe.directory /home/user/{{ reponame }} && git clone --depth 1 https://github.com/{{ repository }}
 
 # Set repository as workdir
 WORKDIR /home/user/{{ reponame }}
@@ -18,15 +18,21 @@ RUN git fetch --depth 1 origin {{ basecommit}}
 # Checkout to base commit
 RUN git checkout {{ basecommit}}
 
+WORKDIR /home/user
+
+RUN mkdir -p /home/user/.composio/tmp
+COPY deeplake /home/user/.composio/tmp/{{ reponame }}
+COPY fqdn_cache.json /home/user/.composio/tmp/{{ reponame }}
+
 {% if dependencies -%}
-# Install dependecies
+# Install dependencies
 RUN /home/user/.dev/bin/python -m pip install {{ dependencies }} || echo "$?"
 
 {% endif -%}
 
 
 {% if requirements -%}
-# Install dependecies
+# Install dependencies
 COPY requirements.txt _requirements.txt
 
 # Install from requirements.txt
@@ -44,6 +50,10 @@ RUN {{ cmd }}
 
 # Install package
 RUN /home/user/.dev/bin/python -m {{ install }} || echo "$?"
+
+ENV HOME=/home/user/
+
+WORKDIR /home/user/{{ reponame }}
 
 # Switch to root
 USER root

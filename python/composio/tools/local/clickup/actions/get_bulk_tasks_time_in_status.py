@@ -12,7 +12,7 @@ class GetBulkTasksTimeInStatusRequest(BaseModel):
         ...,
         alias="task_ids",
         description=(
-            "Include this paramater once per `task_id`. You can include up to 100 task "
+            "Include this parameter once per `task_id`. You can include up to 100 task "
             "ids per request. For example: `task_ids=3cuh&task_ids=g4fs` "
         ),
     )

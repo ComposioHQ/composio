@@ -1,4 +1,6 @@
-from composio.tools.local.base import Tool
+import typing as t
+
+from composio.tools.base.local import LocalAction, LocalTool
 from composio.tools.local.shelltool.git_cmds.actions import (
     GetPatchCmd,
     GitRepoTree,
@@ -6,13 +8,15 @@ from composio.tools.local.shelltool.git_cmds.actions import (
 )
 
 
-class GitCmdTool(Tool):
-    """
-    command manager tool for workspace
-    """
+class Git(LocalTool, autoload=True):
+    """Command manager tool for workspace"""
 
-    def actions(self) -> list:
-        return [GitRepoTree, GithubCloneCmd, GetPatchCmd]
+    logo = "https://raw.githubusercontent.com/ComposioHQ/composio/master/python/docs/imgs/logos/shelltool.png"
 
-    def triggers(self) -> list:
-        return []
+    @classmethod
+    def actions(cls) -> t.List[t.Type[LocalAction]]:
+        return [
+            GitRepoTree,
+            GithubCloneCmd,
+            GetPatchCmd,
+        ]

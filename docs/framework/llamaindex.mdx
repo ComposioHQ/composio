@@ -1,6 +1,6 @@
 ---
 title: "🦙 Using Composio With LlamaIndex"
-sidebarTitle: "LlamaIndex SDK"
+sidebarTitle: "LlamaIndex"
 icon: "dove"
 description: "Integrate Composio with LlamaIndex application to let them seamlessly interact with external apps"
 ---
@@ -18,17 +18,41 @@ These commands prepare your environment for seamless interaction between LlamaIn
 <CodeGroup> 
   ```bash Run Command
   pip install composio-llamaindex
-
-  #Connect your Github so agents can use it
-  composio add github
-
-  #Check all different apps which you can connect with
-  composio apps
-
   ```
 </CodeGroup>
 
 <Steps>
+<Step title="Connect GitHub account">
+
+- Connect a user Jessica's Github account to allow your agents to utilize GitHub functionalities.
+<Tabs>
+<Tab title="CLI">
+<CodeGroup>
+```bash Authenticate GitHub Account 
+composio add github -e "Jessica"
+```
+</CodeGroup>
+</Tab>
+<Tab title="Python">
+<CodeGroup>
+```python Authenticate Jessica's GitHub Account 
+from composio_llamaindex import ComposioToolSet, App
+
+toolset = ComposioToolSet(entity_id="Jessica")
+
+entity = toolset.get_entity()
+
+request = entity.initiate_connection(App.GITHUB)
+
+print(
+    f"Open this URL in your browser: {request.redirectUrl}"
+)
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+</Step>
+
 <Step title="Import Base Packages">
 <CodeGroup>
   ```python Default Imports
@@ -54,7 +78,7 @@ These commands prepare your environment for seamless interaction between LlamaIn
 
   # Get All the tools
 
-  composio_toolset = ComposioToolSet()
+  composio_toolset = ComposioToolSet(entity_id="Jessica")
   tools = composio_toolset.get_tools(apps=[App.GITHUB])
   ```
 </CodeGroup>
@@ -108,7 +132,7 @@ Converse with your LlamaIndex agent, and it will use the provoded tool(s) as nec
 <CodeGroup>
   ```bash Filter Specific Action
   # To restrict agents from using all the actions, filter specific actions
-  tools = composio_toolset.get_actions(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]) 
+  tools = composio_toolset.get_tools(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]) 
   ```
 </CodeGroup>
 

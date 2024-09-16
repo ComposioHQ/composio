@@ -6,10 +6,10 @@ import types
 import typing as t
 from inspect import Signature
 
+import typing_extensions as te
 from lyzr_automata import Tool
 
-from composio import Action, ActionType, AppType, TagType, WorkspaceConfigType
-from composio.constants import DEFAULT_ENTITY_ID
+from composio import Action, ActionType, AppType, TagType
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.utils.shared import (
     get_signature_format_from_schema_params,
@@ -17,37 +17,14 @@ from composio.utils.shared import (
 )
 
 
-class ComposioToolSet(BaseComposioToolSet):
+class ComposioToolSet(
+    BaseComposioToolSet,
+    runtime="lyzr",
+    description_char_limit=1024,
+):
     """
     Composio toolset for Lyzr framework.
     """
-
-    def __init__(
-        self,
-        api_key: t.Optional[str] = None,
-        base_url: t.Optional[str] = None,
-        entity_id: str = DEFAULT_ENTITY_ID,
-        output_in_file: bool = False,
-        workspace_config: t.Optional[WorkspaceConfigType] = None,
-        workspace_id: t.Optional[str] = None,
-    ) -> None:
-        """
-        Initialize composio toolset.
-
-        :param api_key: Composio API key
-        :param base_url: Base URL for the Composio API server
-        :param entity_id: Entity ID for making function calls
-        :param output_in_file: Whether to write output to a file
-        """
-        super().__init__(
-            api_key=api_key,
-            base_url=base_url,
-            runtime="lyzr",
-            entity_id=entity_id,
-            output_in_file=output_in_file,
-            workspace_config=workspace_config,
-            workspace_id=workspace_id,
-        )
 
     def _wrap_tool(
         self,
@@ -93,6 +70,7 @@ class ComposioToolSet(BaseComposioToolSet):
             default_params={},
         )
 
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
     def get_actions(
         self,
         actions: t.Sequence[ActionType],
@@ -102,35 +80,34 @@ class ComposioToolSet(BaseComposioToolSet):
         Get composio tools wrapped as Lyzr `Tool` objects.
 
         :param actions: List of actions to wrap
-        :param entity_id: Entity ID to use for executing function calls.
+        :param entity_id: Entity ID for the function wrapper
+
         :return: Composio tools wrapped as `Tool` objects
         """
-        return [
-            self._wrap_tool(
-                schema=schema.model_dump(exclude_none=True),
-                entity_id=entity_id or self.entity_id,
-            )
-            for schema in self.get_action_schemas(actions=actions)
-        ]
+        return self.get_tools(actions=actions, entity_id=entity_id)
 
     def get_tools(
         self,
-        apps: t.Sequence[AppType],
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
-    ) -> t.Sequence[Tool]:
+    ) -> t.List[Tool]:
         """
         Get composio tools wrapped as Lyzr `Tool` objects.
 
+        :param actions: List of actions to wrap
         :param apps: List of apps to wrap
         :param tags: Filter the apps by given tags
-        :param entity_id: Entity ID to use for executing function calls.
+        :param entity_id: Entity ID for the function wrapper
+
         :return: Composio tools wrapped as `Tool` objects
         """
+        self.validate_tools(apps=apps, actions=actions, tags=tags)
         return [
             self._wrap_tool(
                 schema=schema.model_dump(exclude_none=True),
                 entity_id=entity_id or self.entity_id,
             )
-            for schema in self.get_action_schemas(apps=apps, tags=tags)
+            for schema in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
         ]

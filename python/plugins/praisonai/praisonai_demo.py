@@ -18,7 +18,7 @@ print(tool_section_str)
 agent_yaml = (
     """
 framework: "crewai"
-topic: "Github Mangement"
+topic: "Github Management"
 
 roles:
   developer:

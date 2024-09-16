@@ -1,5 +1,6 @@
 """Local tools."""
 
+import importlib
 from pathlib import Path
 
 from composio.tools.local.browsertool import BrowserTool
@@ -25,6 +26,7 @@ from composio.tools.local.sqltool import SqlTool
 from composio.tools.local.system import SystemTools
 from composio.tools.local.webtool import WebTool
 from composio.tools.local.zep import ZepTool
+from composio.tools.base.abs import ToolRegistry, tool_registry
 
 
 TOOLS_PATH = Path(__file__).parent
@@ -54,3 +56,13 @@ TOOLS = [
     ZepTool,
     ImageAnalyserTool,
 ]
+
+def load_local_tools() -> ToolRegistry:
+    for tooldef in TOOLS_PATH.glob("**/tool.py"):
+        importlib.import_module(
+            "composio.tools.local."
+            + ".".join(tooldef.relative_to(TOOLS_PATH).parent.parts)
+            + ".tool"
+        )
+
+    return tool_registry

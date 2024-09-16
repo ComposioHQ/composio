@@ -51,15 +51,13 @@ class DYMMixin:
 
 class DYMGroup(DYMMixin, click.Group):
     """
-    click Group to provide git-like
-    *did-you-mean* functionality when a certain
+    click Group to provide git-like *did-you-mean* functionality when a certain
     command is not found in the group.
     """
 
 
 class DYMCommandCollection(DYMMixin, click.CommandCollection):
     """
-    click CommandCollection to provide git-like
-    *did-you-mean* functionality when a certain
+    click CommandCollection to provide git-like *did-you-mean* functionality when a certain
     command is not found in the group.
     """

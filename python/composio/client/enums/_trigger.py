@@ -1,7 +1,6 @@
 """
 Trigger enums.
 """
-
 from composio.client.enums.base import TRIGGERS_CACHE, TriggerData, _AnnotatedEnum, enum
 
 
@@ -28,9 +27,6 @@ class Trigger(_AnnotatedEnum[TriggerData], path=TRIGGERS_CACHE):
     SLACK_REACTION_REMOVED: "Trigger"
     SLACK_RECEIVE_MESSAGE: "Trigger"
     SLACK_RECEIVE_THREAD_REPLY: "Trigger"
-    SPOTIFY_NEW_DEVICE_TRIGGER: "Trigger"
-    SPOTIFY_PLAYLIST_ITEM_TRIGGER: "Trigger"
-    SPOTIFY_PLAYLIST_TRIGGER: "Trigger"
     YOUTUBE_NEW_ACTIVITY_TRIGGER: "Trigger"
     YOUTUBE_NEW_ITEM_IN_PLAYLIST_TRIGGER: "Trigger"
     YOUTUBE_NEW_PLAYLIST_TRIGGER: "Trigger"

@@ -9,10 +9,22 @@ from typing import Generic, List, Optional, Type, TypeVar, Union
 
 import inflection
 import jsonref
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
+# from composio.client.collections import _check_file_uploadable
 from composio.client.enums.base import SentinalObject
 from composio.utils.logging import WithLogger
+
+
+def _check_file_uploadable(param_field: dict) -> bool:
+    return (
+        isinstance(param_field, dict)
+        and (param_field.get("title") in ["File", "FileType"])
+        and all(
+            field_name in param_field.get("properties", {})
+            for field_name in ["name", "content"]
+        )
+    )
 
 
 def generate_hashed_appId(input_string):
@@ -27,13 +39,6 @@ def generate_hashed_appId(input_string):
 
 RequestType = TypeVar("RequestType", bound=BaseModel)
 ResponseType = TypeVar("ResponseType", bound=BaseModel)
-
-
-class FileModel(BaseModel):
-    name: str = Field(
-        ..., description="File name, contains extension to indetify the file type"
-    )
-    content: bytes = Field(..., description="File content in base64")
 
 
 class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]):
@@ -97,7 +102,7 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
 
     @abstractmethod
     def execute(
-        self, request_data: RequestType, authorisation_data: dict
+        self, request_data: RequestType, metadata: dict
     ) -> Union[dict, ResponseType]:
         pass
 
@@ -157,19 +162,6 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
         }
         return action_schema
 
-    def _check_file_uploadable(self, param: str) -> bool:
-        return (
-            self.request_schema.model_json_schema()
-            .get("properties", {})
-            .get(param, {})
-            .get("allOf", [{}])[0]
-            .get("properties", {})
-            or self.request_schema.model_json_schema()
-            .get("properties", {})
-            .get(param, {})
-            .get("properties", {})
-        ) == FileModel.model_json_schema().get("properties")
-
     def execute_action(
         self,
         request_data: RequestType,
@@ -186,7 +178,7 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
                 file_readable = annotations is not None and annotations.get(  # type: ignore
                     "file_readable", False
                 )
-
+                file_uploadable = _check_file_uploadable(param)
                 if file_readable and isinstance(value, str) and os.path.isfile(value):
                     with open(value, "rb") as file:
                         file_content = file.read()
@@ -200,12 +192,13 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
                             modified_request_data[param] = base64.b64encode(
                                 file_content
                             ).decode("utf-8")
-                elif (
-                    self._check_file_uploadable(param=param)
-                    and isinstance(value, str)
-                    and os.path.isfile(value)
-                ):
-                    # For uploadable files, we also need to send the  filename
+
+                elif file_uploadable and isinstance(value, str):
+                    if not os.path.isfile(value):
+                        raise ValueError(
+                            f"Attachment File with path `{value}` not found."
+                        )
+
                     with open(value, "rb") as file:
                         file_content = file.read()
 
@@ -222,7 +215,7 @@ class Action(ABC, SentinalObject, WithLogger, Generic[RequestType, ResponseType]
                         modified_request_data,
                     )
                 ),
-                authorisation_data=metadata,
+                metadata=metadata,
             )
         except json.JSONDecodeError as e:
             return {

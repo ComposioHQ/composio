@@ -1,5 +1,6 @@
 import base64
 import os
+import typing as t
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
@@ -8,7 +9,7 @@ from typing import Any, Dict, List, Optional, Union
 import requests
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base.action import Action
+from composio.tools.base.local import LocalAction
 
 
 system_prompt = "You are an expert assistant that analyzes images and provides detailed descriptions to answer questions about them."
@@ -119,7 +120,7 @@ class ClaudeAnalyzer(MediaAnalyzer):
                 system=system_prompt,
                 messages=[{"role": "user", "content": content}],
             )
-            return message.content[0].text
+            return message.content[0].text  # type: ignore
         except Exception as e:
             return f"Error during Claude analysis: {str(e)}"
 
@@ -154,35 +155,30 @@ class ClaudeAnalyzer(MediaAnalyzer):
         return f"Unsupported image format: {file_extension}"
 
 
-class ImageAnalyser(Action):
+class Analyse(LocalAction[ImageAnalyserRequest, ImageAnalyserResponse]):
     """Analyze local images using multimodal LLMs."""
 
-    _display_name = "Image Analyser"
-    _request_schema = ImageAnalyserRequest
-    _response_schema = ImageAnalyserResponse
     _tags = ["image"]
-    _tool_name = "imageanalyser"
 
-    def __init__(self):
-        self.analyzers = {
+    @property
+    def analyzers(self) -> t.Dict[ModelChoice, MediaAnalyzer]:
+        return {
             ModelChoice.GPT4_VISION: OpenAIAnalyzer(),
             ModelChoice.GPT4_VISION_MINI: OpenAIAnalyzer(),
             ModelChoice.CLAUDE_3_SONNET: ClaudeAnalyzer(),
         }
 
     def execute(
-        self,
-        request_data: ImageAnalyserRequest,
-        authorisation_data: dict,
+        self, request: ImageAnalyserRequest, metadata: Dict
     ) -> ImageAnalyserResponse:
         """Execute image analysis."""
-        validation_result = self._validate_request(request_data)
+        validation_result = self._validate_request(request)
         if validation_result:
             return ImageAnalyserResponse(error_message=validation_result, analysis=None)
 
         media_model_choice = os.environ.get("MEDIA_MODEL_CHOICE", "gpt-4o")
         media_model_choice = ModelChoice(media_model_choice)
-        api_key_result = self._get_api_key(media_model_choice, authorisation_data)
+        api_key_result = self._get_api_key(media_model_choice, metadata)
         if not isinstance(api_key_result, str):
             return ImageAnalyserResponse(
                 error_message="No API key found", analysis=None
@@ -191,21 +187,22 @@ class ImageAnalyser(Action):
         analyzer = self.analyzers.get(media_model_choice)
         if not analyzer:
             return ImageAnalyserResponse(
-                error_message=f"Unsupported model: {media_model_choice}", analysis=None
+                error_message=f"Unsupported model: {media_model_choice}",
+                analysis=None,
             )
 
         analysis = analyzer.analyze(
             media_model_choice,
-            request_data.media_paths,
-            request_data.prompt,
+            request.media_paths,
+            request.prompt,
             api_key_result,
         )
         return ImageAnalyserResponse(analysis=analysis, error_message=None)
 
-    def _validate_request(self, request_data: ImageAnalyserRequest) -> Optional[str]:
-        if not request_data.media_paths:
+    def _validate_request(self, request: ImageAnalyserRequest) -> Optional[str]:
+        if not request.media_paths:
             return "Media paths cannot be None or empty"
-        for media_path in request_data.media_paths:
+        for media_path in request.media_paths:
             if not media_path.startswith(("http://", "https://")):
                 path = Path(media_path)
                 if not path.exists() or not path.is_file():
@@ -213,16 +210,14 @@ class ImageAnalyser(Action):
         return None
 
     def _get_api_key(
-        self, model: ModelChoice, authorisation_data: dict
+        self, model: ModelChoice, metadata: dict
     ) -> Union[str, Dict[str, str]]:
         if model in [ModelChoice.GPT4_VISION, ModelChoice.GPT4_VISION_MINI]:
-            key = os.environ.get("OPENAI_API_KEY") or authorisation_data.get(
-                "OPENAI_API_KEY"
-            )
+            key = os.environ.get("OPENAI_API_KEY") or metadata.get("OPENAI_API_KEY")
             key_name = "OPENAI_API_KEY"
 
         elif model == ModelChoice.CLAUDE_3_SONNET:
-            key = os.environ.get("ANTHROPIC_API_KEY") or authorisation_data.get(
+            key = os.environ.get("ANTHROPIC_API_KEY") or metadata.get(
                 "ANTHROPIC_API_KEY"
             )
             key_name = "ANTHROPIC_API_KEY"

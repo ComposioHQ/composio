@@ -4,20 +4,25 @@ Camel tool spec.
 
 import typing as t
 
+import typing_extensions as te
+
 # pylint: disable=E0611
 from camel.toolkits import OpenAIFunction
 
 from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
-from composio.tools.env.base import WorkspaceConfigType
 from composio.tools.schema import OpenAISchema, SchemaType
 
 
 # pylint: enable=E0611
 
 
-class ComposioToolSet(BaseComposioToolSet):
+class ComposioToolSet(
+    BaseComposioToolSet,
+    runtime="camel",
+    description_char_limit=1024,
+):
     """
     Composio toolset for OpenAI framework.
 
@@ -84,33 +89,7 @@ class ComposioToolSet(BaseComposioToolSet):
     ```
     """
 
-    def __init__(
-        self,
-        api_key: t.Optional[str] = None,
-        base_url: t.Optional[str] = None,
-        entity_id: str = DEFAULT_ENTITY_ID,
-        output_in_file: bool = False,
-        workspace_id: t.Optional[str] = None,
-        workspace_config: t.Optional[WorkspaceConfigType] = None,
-    ) -> None:
-        """
-        Initialize composio toolset.
-
-        :param api_key: Composio API key
-        :param base_url: Base URL for the Composio API server
-        :param entity_id: Entity ID for making function calls
-        :param output_in_file: Whether to write output to a file
-        """
-        super().__init__(
-            api_key,
-            base_url,
-            runtime="camel",
-            entity_id=entity_id,
-            output_in_file=output_in_file,
-            workspace_id=workspace_id,
-            workspace_config=workspace_config,
-        )
-        self.schema = SchemaType.OPENAI
+    schema = SchemaType.OPENAI
 
     def validate_entity_id(self, entity_id: str) -> str:
         """Validate entity ID."""
@@ -121,7 +100,7 @@ class ComposioToolSet(BaseComposioToolSet):
         ):
             raise ValueError(
                 "Separate `entity_id` can not be provided during "
-                "intialization and handling tool calls"
+                "initialization and handling tool calls"
             )
         if self.entity_id != DEFAULT_ENTITY_ID:
             entity_id = self.entity_id
@@ -150,6 +129,7 @@ class ComposioToolSet(BaseComposioToolSet):
             openai_tool_schema=schema,
         )
 
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
     def get_actions(
         self,
         actions: t.Sequence[ActionType],
@@ -159,36 +139,30 @@ class ComposioToolSet(BaseComposioToolSet):
         Get composio tools wrapped as Camel `OpenAIFunction` objects.
 
         :param actions: List of actions to wrap
+        :param entity_id: Entity ID for the function wrapper
+
         :return: Composio tools wrapped as `OpenAIFunction` objects
         """
-        return [
-            self._wrap_tool(
-                t.cast(
-                    OpenAISchema,
-                    self.schema.format(
-                        schema.model_dump(
-                            exclude_none=True,
-                        )
-                    ),
-                ).model_dump(),
-                entity_id=entity_id,
-            )
-            for schema in self.get_action_schemas(actions=actions)
-        ]
+        return self.get_tools(actions=actions, entity_id=entity_id)
 
     def get_tools(
         self,
-        apps: t.Sequence[AppType],
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
     ) -> t.List[OpenAIFunction]:
         """
         Get composio tools wrapped as Camel `OpenAIFunction` objects.
 
+        :param actions: List of actions to wrap
         :param apps: List of apps to wrap
         :param tags: Filter the apps by given tags
+        :param entity_id: Entity ID for the function wrapper
+
         :return: Composio tools wrapped as `OpenAIFunction` objects
         """
+        self.validate_tools(apps=apps, actions=actions, tags=tags)
         return [
             self._wrap_tool(  # type: ignore
                 t.cast(
@@ -196,10 +170,10 @@ class ComposioToolSet(BaseComposioToolSet):
                     self.schema.format(
                         schema.model_dump(
                             exclude_none=True,
-                        )
+                        ),
                     ),
                 ).model_dump(),
                 entity_id=entity_id,
             )
-            for schema in self.get_action_schemas(apps=apps, tags=tags)
+            for schema in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
         ]

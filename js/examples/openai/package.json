@@ -4,7 +4,8 @@
   "description": "",
   "main": "demo.mjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "debug": "COMPOSIO_API_KEY=cc0fu8lookgq1ov8z4xx9n node sample.mjs"
   },
   "keywords": [],
   "author": "",

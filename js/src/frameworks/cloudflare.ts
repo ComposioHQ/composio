@@ -2,14 +2,12 @@ import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import {
   AiTextGenerationOutput,
   AiTextGenerationToolInput,
-  // @ts-ignore
 } from "@cloudflare/workers-types";
-import { ExecEnv } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
-import { GetListActionsResponse } from "../sdk/client";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
+import {  ActionsControllerV1ListActionsResponse, ActionsListResponseDTO } from "../sdk/client";
 
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
@@ -28,7 +26,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     baseUrl?: Optional<string>;
     entityId?: string;
     workspaceConfig?: WorkspaceConfig
-  }) {
+  }={}) {
     super(
       config.apiKey || null,
       config.baseUrl || COMPOSIO_BASE_URL,
@@ -38,11 +36,14 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     );
   }
 
+  /**
+   * @deprecated Use getTools instead.
+   */
   async getActions(filters: {
     actions: Sequence<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
     const actions = await this.getActionsSchema(filters);
-    return actions.map((action: NonNullable<GetListActionsResponse["items"]>[0]) => {
+    return actions.map((action: NonNullable<ActionsListResponseDTO["items"]>[0]) => {
           const formattedSchema: AiTextGenerationToolInput["function"] = {
             name: action.name!,
             description: action.description!,
@@ -76,12 +77,13 @@ export class CloudflareToolSet extends BaseComposioToolSet {
   }
 
   async getTools(filters: {
-    apps: Sequence<string>;
+    actions?: Optional<Sequence<string>>;
+    apps?: Sequence<string>;
     tags?: Optional<Array<string>>;
     useCase?: Optional<string>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
     const actions = await this.getToolsSchema(filters);
-    return actions.map((action: NonNullable<GetListActionsResponse["items"]>[0]) => {
+    return actions.map((action: NonNullable<ActionsControllerV1ListActionsResponse["items"]>[0]) => {
         const formattedSchema: AiTextGenerationToolInput["function"] = {
           name: action.name!,
           description: action.description!,
@@ -124,7 +126,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     entityId: Optional<string> = null
   ): Promise<string> {
     return JSON.stringify(
-      await this.executeAction(
+      await this.execute_action(
         tool.name,
         typeof tool.arguments === "string" ? JSON.parse(tool.arguments) : tool.arguments,
         entityId || this.entityId

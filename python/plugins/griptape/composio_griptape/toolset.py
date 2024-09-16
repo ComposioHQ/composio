@@ -1,12 +1,12 @@
 import logging
 import typing as t
 
+import typing_extensions as te
 from griptape.tools import BaseTool
 from griptape.utils.decorators import activity
 from schema import Literal, Schema
 
-from composio import Action, ActionType, AppType, TagType, WorkspaceConfigType
-from composio.constants import DEFAULT_ENTITY_ID
+from composio import Action, ActionType, AppType, TagType
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.utils.shared import PYDANTIC_TYPE_TO_PYTHON_TYPE
 
@@ -14,7 +14,11 @@ from composio.utils.shared import PYDANTIC_TYPE_TO_PYTHON_TYPE
 logger = logging.getLogger(__name__)
 
 
-class ComposioToolSet(BaseComposioToolSet):
+class ComposioToolSet(
+    BaseComposioToolSet,
+    runtime="griptape",
+    description_char_limit=1024,
+):
     """
     Composio toolset wrapper for Griptape framework.
 
@@ -42,33 +46,6 @@ class ComposioToolSet(BaseComposioToolSet):
         Chat(agent).start()
     ```
     """
-
-    def __init__(
-        self,
-        api_key: t.Optional[str] = None,
-        base_url: t.Optional[str] = None,
-        entity_id: str = DEFAULT_ENTITY_ID,
-        output_in_file: bool = False,
-        workspace_config: t.Optional[WorkspaceConfigType] = None,
-        workspace_id: t.Optional[str] = None,
-    ) -> None:
-        """
-        Initialize composio toolset.
-
-        :param api_key: Composio API key
-        :param base_url: Base URL for the Composio API server
-        :param entity_id: Entity ID for making function calls
-        :param output_in_file: Whether to write output to a file
-        """
-        super().__init__(
-            api_key=api_key,
-            base_url=base_url,
-            runtime="griptape",
-            entity_id=entity_id,
-            output_in_file=output_in_file,
-            workspace_config=workspace_config,
-            workspace_id=workspace_id,
-        )
 
     def _wrap_tool(
         self,
@@ -137,6 +114,7 @@ class ComposioToolSet(BaseComposioToolSet):
         cls = type(name, (GripTapeTool,), {})
         return cls()
 
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
     def get_actions(
         self,
         actions: t.Sequence[ActionType],
@@ -149,34 +127,32 @@ class ComposioToolSet(BaseComposioToolSet):
         :param entity_id: Entity ID to use for executing function calls.
         :return: Composio tools wrapped as `BaseTool` objects
         """
-
-        return [
-            self._wrap_tool(
-                schema=tool.model_dump(exclude_none=True),
-                entity_id=entity_id,
-            )
-            for tool in self.get_action_schemas(actions=actions)
-        ]
+        return self.get_tools(actions=actions, entity_id=entity_id)
 
     def get_tools(
         self,
-        apps: t.Sequence[AppType],
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
     ) -> t.List[BaseTool]:
         """
         Get composio tools wrapped as GripTape `BaseTool` type objects.
 
+        :param actions: List of actions to wrap
         :param apps: List of apps to wrap
         :param tags: Filter the apps by given tags
-        :param entity_id: Entity ID to use for executing function calls.
+        :param entity_id: Entity ID for the function wrapper
+
         :return: Composio tools wrapped as `BaseTool` objects
         """
-
+        self.validate_tools(apps=apps, actions=actions, tags=tags)
         return [
             self._wrap_tool(
-                schema=tool.model_dump(exclude_none=True),
+                schema=tool.model_dump(
+                    exclude_none=True,
+                ),
                 entity_id=entity_id,
             )
-            for tool in self.get_action_schemas(apps=apps, tags=tags)
+            for tool in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
         ]

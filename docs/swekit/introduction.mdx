@@ -1,6 +1,6 @@
 ---
 title: "SWE Development Kit"
-sidebarTitle: "Introduction"
+sidebarTitle: "Introduction (Python)"
 icon: "code"
 description: "Build Software Engineering agents locally with frameworks and tools of your choice"
 ---
@@ -60,6 +60,17 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
   </CodeGroup>
   </Tab>
   </Tabs>
+
+  <Note>
+  There are two ways to provide the GitHub access token for git clone:
+
+  1. Set the environment variable `GITHUB_ACCESS_TOKEN='<git_access_token>'`.
+  2. Use the GitHub account connected to your toolset entity. However, this method has limitations:
+     - The agent won't be able to push or create PRs.
+     - You need to set `export ALLOW_CLONE_WITHOUT_REPO='true'`.
+
+  Option 1 is recommended for full functionality.
+  </Note>
 </Step>
 
 <Step title="Create a New Agent">
@@ -105,9 +116,3 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
   You will be prompted to specify the repository and issue for the agent to address.
 </Step>
 </Steps>
-
-## Next Steps
-
-- Familiarize yourself with the different [workspace environments](/swekit/workspace-env) and their use cases.
-- Discover how to [tailor your agent's functionality](/swekit/custom-tools) to suit specific tasks.
-- Understand how to [execute benchmarks](/swekit/benchmark) to evaluate your agent's performance.

@@ -3,12 +3,17 @@ Composio SDK tools.
 """
 
 import base64
+import binascii
 import hashlib
 import itertools
 import json
 import os
 import time
 import typing as t
+import warnings
+from functools import wraps
+from importlib.util import find_spec
+from pathlib import Path
 
 import typing_extensions as te
 from pydantic import BaseModel
@@ -20,10 +25,11 @@ from composio.client.collections import (
     ActionModel,
     AppAuthScheme,
     ConnectedAccountModel,
-    FileModel,
+    FileType,
     SuccessExecuteActionResponseModel,
     TriggerSubscription,
 )
+from composio.client.enums.base import EnumStringNotFound
 from composio.client.exceptions import ComposioClientError
 from composio.constants import (
     DEFAULT_ENTITY_ID,
@@ -34,28 +40,28 @@ from composio.constants import (
 )
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.storage.user import UserData
+from composio.tools.base.local import LocalAction
 from composio.tools.env.base import (
     ENV_GITHUB_ACCESS_TOKEN,
     Workspace,
     WorkspaceConfigType,
 )
 from composio.tools.env.factory import HostWorkspaceConfig, WorkspaceFactory
-from composio.tools.local.base import Action as LocalAction
+from composio.tools.local import load_local_tools
 from composio.tools.local.handler import LocalClient
 from composio.utils.enums import get_enum_key
-from composio.utils.logging import WithLogger
+from composio.utils.logging import LogLevel, WithLogger
 from composio.utils.url import get_api_url_base
 
 
-ParamType = t.TypeVar("ParamType")
+T = te.TypeVar("T")
+P = te.ParamSpec("P")
 
 _KeyType = t.Union[AppType, ActionType]
-MetadataType = t.Dict[_KeyType, t.Dict]
-
-output_dir = LOCAL_CACHE_DIRECTORY / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
-
-
 _ProcessorType = t.Callable[[t.Dict], t.Dict]
+
+MetadataType = t.Dict[_KeyType, t.Dict]
+ParamType = t.TypeVar("ParamType")
 
 
 class ProcessorsType(te.TypedDict):
@@ -68,24 +74,69 @@ class ProcessorsType(te.TypedDict):
     """Response processors."""
 
 
+def _check_agentops() -> bool:
+    """Check if AgentOps is installed and initialized."""
+    if find_spec("agentops") is None:
+        return False
+    import agentops  # pylint: disable=import-outside-toplevel # type: ignore
+
+    return agentops.get_api_key() is not None
+
+
+def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if _check_agentops():
+            import agentops  # pylint: disable=import-outside-toplevel # type: ignore
+
+            action_name = str(kwargs.get("action", "unknown_action"))
+            return agentops.record_action(action_name)(func)(self, *args, **kwargs)
+        return func(self, *args, **kwargs)  # type: ignore
+
+    return wrapper  # type: ignore
+
+
 class ComposioToolSet(WithLogger):
     """Composio toolset."""
 
-    _remote_client: t.Optional[Composio] = None
     _connected_accounts: t.Optional[t.List[ConnectedAccountModel]] = None
+    _remote_client: t.Optional[Composio] = None
     _workspace: t.Optional[Workspace] = None
+
+    _runtime: str = "composio"
+    _description_char_limit: int = 1024
+
+    def __init_subclass__(
+        cls,
+        runtime: t.Optional[str] = None,
+        description_char_limit: t.Optional[int] = None,
+    ) -> None:
+        if runtime is None:
+            warnings.warn(
+                f"runtime is not set on {cls.__name__}, using 'composio' as default"
+            )
+        cls._runtime = runtime or "composio"
+
+        if description_char_limit is None:
+            warnings.warn(
+                f"description_char_limit is not set on {cls.__name__}, using 1024 as default"
+            )
+        cls._description_char_limit = description_char_limit or 1024
 
     def __init__(
         self,
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
-        runtime: t.Optional[str] = None,
-        output_in_file: bool = False,
         entity_id: str = DEFAULT_ENTITY_ID,
         workspace_id: t.Optional[str] = None,
         workspace_config: t.Optional[WorkspaceConfigType] = None,
         metadata: t.Optional[MetadataType] = None,
         processors: t.Optional[ProcessorsType] = None,
+        output_in_file: bool = False,
+        logging_level: LogLevel = LogLevel.INFO,
+        output_dir: t.Optional[Path] = None,
+        verbosity_level: t.Optional[int] = None,
+        **kwargs: t.Any,
     ) -> None:
         """
         Initialize composio toolset
@@ -154,20 +205,35 @@ class ComposioToolSet(WithLogger):
                 }
             )
             ```
+        :param verbosity_level: This defines the size of the log object that will
+            be printed on the console.
 
         """
-        super().__init__()
+        super().__init__(
+            logging_level=logging_level,
+            verbosity_level=verbosity_level,
+        )
+        self.logger.info(
+            f"Logging is set to {self._logging_level}, "
+            "use `logging_level` argument or "
+            "`COMPOSIO_LOGGING_LEVEL` change this"
+        )
         self.entity_id = entity_id
         self.output_in_file = output_in_file
-        self.base_url = base_url or get_api_url_base()
+        self.output_dir = (
+            output_dir or LOCAL_CACHE_DIRECTORY / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
+        )
+        self._ensure_output_dir_exists()
 
+        self._base_url = base_url or get_api_url_base()
         try:
-            self.api_key = (
+            self._api_key = (
                 api_key
                 or os.environ.get(ENV_COMPOSIO_API_KEY)
                 or UserData.load(LOCAL_CACHE_DIRECTORY / USER_DATA_FILE_NAME).api_key
             )
         except FileNotFoundError:
+            self._api_key = None
             self.logger.debug("`api_key` is not set when initializing toolset.")
 
         self._processors = (
@@ -176,8 +242,13 @@ class ComposioToolSet(WithLogger):
         self._metadata = metadata or {}
         self._workspace_id = workspace_id
         self._workspace_config = workspace_config
-        self._runtime = runtime
         self._local_client = LocalClient()
+
+        if len(kwargs) > 0:
+            self.logger.info(f"Extra kwards while initializing toolset: {kwargs}")
+
+        self.logger.debug("Loading local tools")
+        load_local_tools()
 
     def _try_get_github_access_token_for_current_entity(self) -> t.Optional[str]:
         """Try and get github access token for current entiry."""
@@ -204,6 +275,23 @@ class ComposioToolSet(WithLogger):
             return None
 
     @property
+    def api_key(self) -> str:
+        if self._api_key is None:
+            raise ApiKeyNotProvidedError()
+        return self._api_key
+
+    @property
+    def client(self) -> Composio:
+        if self._remote_client is None:
+            self._remote_client = Composio(
+                api_key=self._api_key,
+                base_url=self._base_url,
+                runtime=self._runtime,
+            )
+        self._remote_client.local = self._local_client
+        return self._remote_client
+
+    @property
     def workspace(self) -> Workspace:
         """Workspace for this toolset instance."""
         if self._workspace is not None:
@@ -218,7 +306,7 @@ class ComposioToolSet(WithLogger):
             workspace_config.composio_api_key = self.api_key
 
         if workspace_config.composio_base_url is None:
-            workspace_config.composio_base_url = self.base_url
+            workspace_config.composio_base_url = self._base_url
 
         if workspace_config.github_access_token is None:
             workspace_config.github_access_token = (
@@ -232,25 +320,6 @@ class ComposioToolSet(WithLogger):
         self._workspace_id = workspace_id
         if self._workspace is not None:
             self._workspace = WorkspaceFactory.get(id=workspace_id)
-
-    @property
-    def client(self) -> Composio:
-        if self.api_key is None:
-            raise ApiKeyNotProvidedError()
-
-        if self._remote_client is None:
-            self._remote_client = Composio(
-                api_key=self.api_key,
-                base_url=self.base_url,
-                runtime=self.runtime,
-            )
-            self._remote_client.local = self._local_client
-
-        return self._remote_client
-
-    @property
-    def runtime(self) -> t.Optional[str]:
-        return self._runtime
 
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
@@ -269,7 +338,7 @@ class ComposioToolSet(WithLogger):
         ]:
             raise ComposioSDKError(
                 f"No connected account found for app `{action.app}`; "
-                f"Run `composio add {action.app}` to fix this"
+                f"Run `composio add {action.app.lower()}` to fix this"
             )
 
     def _execute_local(
@@ -310,34 +379,58 @@ class ComposioToolSet(WithLogger):
                 output=output,
                 entity_id=entity_id,
             )
-        try:
-            # Save the variables of type file to the composio/output directory.
-            output_modified = self._save_var_files(
-                f"{action.name}_{entity_id}_{time.time()}", output
-            )
-            return output_modified
-        except Exception:
-            pass
-        return output
 
-    def _save_var_files(self, file_name_prefix: str, output: dict) -> dict:
-        success_response_model = SuccessExecuteActionResponseModel.model_validate(
-            output
+        try:
+            self.logger.debug("Trying to validate success response model")
+            success_response_model = SuccessExecuteActionResponseModel.model_validate(
+                output
+            )
+        except Exception:
+            self.logger.debug("Failed to validate success response model")
+            return output
+
+        return self._save_var_files(
+            file_name_prefix=f"{action.name}_{entity_id}_{time.time()}",
+            success_response_model=success_response_model,
         )
-        resp_data = json.loads(success_response_model.response_data)
+
+    def _ensure_output_dir_exists(self):
+        """Ensure the output directory exists."""
+        if not self.output_dir.exists():
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+
+    def _save_var_files(
+        self,
+        file_name_prefix: str,
+        success_response_model: SuccessExecuteActionResponseModel,
+    ) -> dict:
+        error = success_response_model.error
+        resp_data = success_response_model.data
+        is_invalid_file = False
         for key, val in resp_data.items():
             try:
-                file_model = FileModel.model_validate(val)
-                _ensure_output_dir_exists()
-                output_file_path = (
-                    output_dir
+                file_model = FileType.model_validate(val)
+                self._ensure_output_dir_exists()
+
+                local_filepath = (
+                    self.output_dir
                     / f"{file_name_prefix}_{file_model.name.replace('/', '_')}"
                 )
-                _write_file(output_file_path, base64.b64decode(file_model.content))
-                resp_data[key] = str(output_file_path)
+
+                _write_file(
+                    local_filepath, base64.urlsafe_b64decode(file_model.content)
+                )
+
+                resp_data[key] = str(local_filepath)
+            except binascii.Error:
+                is_invalid_file = True
+                resp_data[key] = "Invalid File! Unable to decode."
             except Exception:
                 pass
-        success_response_model.response_data = resp_data
+
+        if is_invalid_file is True and error is None:
+            success_response_model.error = "Execution failed"
+        success_response_model.data = resp_data
         return success_response_model.model_dump()
 
     def _write_to_file(
@@ -350,8 +443,8 @@ class ComposioToolSet(WithLogger):
         filename = hashlib.sha256(
             f"{action.name}-{entity_id}-{time.time()}".encode()
         ).hexdigest()
-        _ensure_output_dir_exists()
-        outfile = output_dir / filename
+        self._ensure_output_dir_exists()
+        outfile = self.output_dir / filename
         self.logger.info(f"Writing output to: {outfile}")
         _write_file(outfile, json.dumps(output))
         return {
@@ -391,7 +484,7 @@ class ComposioToolSet(WithLogger):
 
         try:
             return self._metadata.get(Action(t.cast(ActionType, key)), {})  # type: ignore
-        except ValueError:
+        except EnumStringNotFound:
             return self._metadata.get(App(t.cast(AppType, key)), {})  # type: ignore
 
     def _add_metadata(self, action: Action, metadata: t.Optional[t.Dict]) -> t.Dict:
@@ -412,7 +505,7 @@ class ComposioToolSet(WithLogger):
 
         try:
             return self._processors.get(type_, {}).get(Action(t.cast(ActionType, key)))  # type: ignore
-        except ValueError:
+        except EnumStringNotFound:
             return self._processors.get(type_, {}).get(App(t.cast(AppType, key)))  # type: ignore
 
     def _process(
@@ -423,6 +516,10 @@ class ComposioToolSet(WithLogger):
     ) -> t.Dict:
         processor = self._get_processor(key=key, type_=type_)
         if processor is not None:
+            self.logger.info(
+                f"Running {'request' if type_ == 'pre' else 'response'}"
+                f" through: {processor.__name__}"
+            )
             data = processor(data)
         return data
 
@@ -448,6 +545,7 @@ class ComposioToolSet(WithLogger):
             type_="post",
         )
 
+    @_record_action_if_available
     def execute_action(
         self,
         action: ActionType,
@@ -468,15 +566,13 @@ class ComposioToolSet(WithLogger):
         :param connected_account_id: Connection ID for executing the remote action
         :return: Output object from the function call
         """
-        self.logger.info(f"Executing action: {action}")
         action = Action(action)
-        params = self._process_request(
-            action=action,
-            request=self._serialize_execute_params(
-                param=params,
-            ),
-        )
-        metadata = self._add_metadata(action=action, metadata=metadata)
+        params = self._serialize_execute_params(param=params)
+        if not action.is_runtime:
+            params = self._process_request(action=action, request=params)
+            metadata = self._add_metadata(action=action, metadata=metadata)
+
+        self.logger.info(f"Executing `{action.slug}` with {params=} and {metadata=}")
         response = (
             self._execute_local(
                 action=action,
@@ -492,7 +588,28 @@ class ComposioToolSet(WithLogger):
                 text=text,
             )
         )
-        return self._process_respone(action=action, response=response)
+        response = (
+            response
+            if action.is_runtime
+            else self._process_respone(action=action, response=response)
+        )
+        self.logger.info(f"Got {response=} from {action=} with {params=}")
+        return response
+
+    def validate_tools(
+        self,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        tags: t.Optional[t.Sequence[TagType]] = None,
+    ) -> None:
+        # NOTE: This an experimental, can convert to decorator for more convinience
+        if not apps and not actions and not tags:
+            return
+        self.workspace.check_for_missing_dependencies(
+            apps=apps,
+            actions=actions,
+            tags=tags,
+        )
 
     def get_action_schemas(
         self,
@@ -513,14 +630,10 @@ class ComposioToolSet(WithLogger):
             ],
         )
         apps = t.cast(t.List[App], [App(app) for app in apps or []])
+        items: t.List[ActionModel] = []
 
         local_actions = [action for action in actions if action.is_local]
         local_apps = [app for app in apps if app.is_local]
-
-        remote_actions = [action for action in actions if not action.is_local]
-        remote_apps = [app for app in apps if not app.is_local]
-
-        items: t.List[ActionModel] = []
         if len(local_actions) > 0 or len(local_apps) > 0:
             items += [
                 ActionModel(**item)
@@ -531,36 +644,50 @@ class ComposioToolSet(WithLogger):
                 )
             ]
 
+        remote_actions = [action for action in actions if not action.is_local]
+        remote_apps = [app for app in apps if not app.is_local]
         if len(remote_actions) > 0 or len(remote_apps) > 0:
             remote_items = self.client.actions.get(
                 apps=remote_apps,
                 actions=remote_actions,
                 tags=tags,
             )
+            for item in remote_items:
+                self.check_connected_account(action=item.name)
             items = items + remote_items
 
-        items += [ActionModel(**act().get_action_schema()) for act in runtime_actions]
+        for act in runtime_actions:
+            schema = act.schema()
+            schema["name"] = act.enum
+            items.append(ActionModel(**schema))
+
         for item in items:
-            self.check_connected_account(action=item.name)
-            item = self.action_preprocessing(item)
+            item = self._process_schema(item)
+
         return items
 
-    def action_preprocessing(self, action_item: ActionModel) -> ActionModel:
+    def _process_schema(self, action_item: ActionModel) -> ActionModel:
         required_params = action_item.parameters.required or []
         for param_name, param_details in action_item.parameters.properties.items():
-            if param_details.get("properties") == FileModel.schema().get("properties"):
+            if param_details.get("title") == "FileType" and all(
+                fprop in param_details.get("properties")
+                for fprop in ("name", "content")
+            ):
                 action_item.parameters.properties[param_name].pop("properties")
                 action_item.parameters.properties[param_name] = {
+                    "default": param_details.get("default"),
                     "type": "string",
                     "format": "file-path",
                     "description": f"File path to {param_details.get('description', '')}",
                 }
-            elif param_details.get("allOf", [{}])[0].get(
-                "properties"
-            ) == FileModel.schema().get("properties"):
+            elif param_details.get("allOf", [{}])[0].get("title") == "FileType" and all(
+                fprop in param_details.get("allOf", [{}])[0].get("properties", {})
+                for fprop in ("name", "content")
+            ):
                 action_item.parameters.properties[param_name].pop("allOf")
                 action_item.parameters.properties[param_name].update(
                     {
+                        "default": param_details.get("default"),
                         "type": "string",
                         "format": "file-path",
                         "description": f"File path to {param_details.get('description', '')}",
@@ -591,6 +718,11 @@ class ComposioToolSet(WithLogger):
                     ] = f"{description.rstrip('.')}. This parameter is required."
                 else:
                     param_details["description"] = "This parameter is required."
+
+        if action_item.description is not None:
+            action_item.description = action_item.description[
+                : self._description_char_limit
+            ]
 
         return action_item
 
@@ -713,12 +845,6 @@ class ComposioToolSet(WithLogger):
     def get_entity(self, id: t.Optional[str] = None) -> Entity:
         """Get entity object for given ID."""
         return self.client.get_entity(id=id or self.entity_id)
-
-
-def _ensure_output_dir_exists():
-    """Ensure the output directory exists."""
-    if not output_dir.exists():
-        output_dir.mkdir()
 
 
 def _write_file(file_path: t.Union[str, os.PathLike], content: t.Union[str, bytes]):

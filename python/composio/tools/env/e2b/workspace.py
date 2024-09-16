@@ -6,6 +6,7 @@ import typing as t
 from dataclasses import dataclass
 from uuid import uuid4
 
+import requests
 from e2b import Sandbox
 
 from composio.tools.env.base import RemoteWorkspace, WorkspaceConfigType
@@ -53,46 +54,59 @@ class E2BWorkspace(RemoteWorkspace):
         self.api_key = config.api_key
         self.port = config.port or TOOLSERVER_PORT
 
+    def _wait(self) -> None:
+        deadline = time.time() + float(os.environ.get("WORKSPACE_WAIT_TIMEOUT", 60.0))
+        while time.time() < deadline:
+            try:
+                if (
+                    self._request(endpoint="", method="get", log=False).status_code
+                    == 200
+                ):
+                    return
+            except requests.ConnectionError:
+                time.sleep(1)
+
     def setup(self) -> None:
         """Start toolserver."""
         # Start sandbox
-        self.sandbox = Sandbox(
-            template=self.template,
-            env_vars=self.environment,
-            api_key=self.api_key,
-        )
-        self.url = TOOLSERVER_URL.format(
-            host=self.sandbox.get_hostname(self.port),
-        )
+        self.sandbox = Sandbox(template=self.template, api_key=self.api_key)
+        self.url = TOOLSERVER_URL.format(host=self.sandbox.get_host(self.port))
+        self.logger.debug(f"{self}.url = {self.url}")
 
         # Start app update in background
-        process = self.sandbox.process.start(
+        self.sandbox.commands.run(
             cmd="composio apps update",
+            envs=self.environment,
+            background=False,
         )
 
         # Setup SSH server
         _ssh_password = uuid4().hex.replace("-", "")
-        self.sandbox.process.start(
+        self.sandbox.commands.run(
             cmd=f"echo user:{_ssh_password} | sudo chpasswd",
+            envs=self.environment,
+            background=False,
         )
-        self.sandbox.process.start(
+        self.sandbox.commands.run(
             cmd="sudo service ssh restart",
+            envs=self.environment,
+            background=False,
         )
-        self.sandbox.process.start(
+        self.sandbox.commands.run(
             cmd=(
                 f"COMPOSIO_LOGGING_LEVEL=debug "
                 f"_SSH_USERNAME=user _SSH_PASSWORD={_ssh_password} "
                 f"composio serve -h '0.0.0.0' -p {self.port}"
             ),
+            envs=self.environment,
+            background=True,
         )
-        while self._request(endpoint="", method="get").status_code != 200:
-            time.sleep(1)
-        process.wait()
-
-        self.host = self.sandbox.get_hostname()
+        self.host = self.sandbox.get_host(port=80)
         self.ports = []
+        self._wait()
 
     def teardown(self) -> None:
         """Teardown E2B workspace."""
         super().teardown()
-        self.sandbox.close()
+        if hasattr(self, "sandbox"):
+            self.sandbox.kill()

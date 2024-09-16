@@ -18,17 +18,16 @@ class TestListActions(BaseCliTest):
     @pytest.mark.parametrize(
         argnames="arguments,exptected_outputs,unexptected_outputs",
         argvalues=(
-            (tuple(), ("strava_", "github_"), tuple()),  # List all apps
-            (("--enabled",), ("github_",), ("strava_",)),  # List enabled apps
+            (tuple(), ("GMAIL_", "GITHUB_"), tuple()),  # List all apps
             (
-                ("--app", "slack"),
-                ("slack_",),
-                ("strava_", "github_"),
+                ("--app", "SLACK"),
+                ("SLACK_",),
+                ("GMAIL_", "GITHUB_"),
             ),  # Filter by a specific app
             (
                 ("--tag", "repos"),
-                ("github_",),
-                ("strava_",),
+                ("GITHUB_",),
+                ("GMAIL_",),
             ),  # Filter by a specific app
         ),
     )

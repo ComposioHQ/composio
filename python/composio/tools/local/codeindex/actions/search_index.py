@@ -1,9 +1,9 @@
 from pathlib import Path
-from typing import List, Optional, Type
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 from composio.tools.local.codeindex.actions.create_index import CreateIndex
 
 
@@ -58,7 +58,7 @@ class SearchCodebaseResponse(BaseModel):
     )
 
 
-class SearchCodebase(Action[SearchCodebaseRequest, SearchCodebaseResponse]):
+class SearchCodebase(LocalAction[SearchCodebaseRequest, SearchCodebaseResponse]):
     """
     Searches the indexed codebase for relevant code snippets based on a given query.
 
@@ -67,21 +67,18 @@ class SearchCodebase(Action[SearchCodebaseRequest, SearchCodebaseResponse]):
     by file type and provides detailed information about each matching snippet.
     """
 
-    _display_name = "Search Indexed Codebase"
-    _request_schema: Type[SearchCodebaseRequest] = SearchCodebaseRequest
-    _response_schema: Type[SearchCodebaseResponse] = SearchCodebaseResponse
+    display_name = "Search Indexed Codebase"
     _tags = ["codebase", "search", "index"]
-    _tool_name = "codeindex"
 
     def execute(
-        self, request_data: SearchCodebaseRequest, authorisation_data: dict = {}
+        self, request: SearchCodebaseRequest, metadata: dict
     ) -> SearchCodebaseResponse:
         import chromadb  # pylint: disable=C0415
         from chromadb.errors import ChromaError  # pylint: disable=C0415
 
         # Verify index existence
         index_creator = CreateIndex()
-        index_status = index_creator.check_status(request_data.codebase_directory)
+        index_status = index_creator.check_status(request.codebase_directory)
         if index_status["status"] != "completed":
             return SearchCodebaseResponse(
                 matched_snippets=[],
@@ -91,7 +88,7 @@ class SearchCodebase(Action[SearchCodebaseRequest, SearchCodebaseResponse]):
         # Configure Chroma client and collection
         index_storage_path = Path.home() / ".composio" / "index_storage"
         chroma_client = chromadb.PersistentClient(path=str(index_storage_path))
-        collection_name = Path(request_data.codebase_directory).name
+        collection_name = Path(request.codebase_directory).name
 
         embedding_type = index_status.get("embedding_type", "local")
         embedding_function = index_creator.create_embedding_function(embedding_type)
@@ -103,22 +100,22 @@ class SearchCodebase(Action[SearchCodebaseRequest, SearchCodebaseResponse]):
 
             # Set up file type filter if specified
             file_type_filter = None
-            if request_data.file_extension:
+            if request.file_extension:
                 file_type_filter = {
-                    "file_type": {"$eq": request_data.file_extension.upper()}
+                    "file_type": {"$eq": request.file_extension.upper()}
                 }
 
             # Execute the search query
             if file_type_filter:
                 search_results = chroma_collection.query(
-                    query_texts=[request_data.search_query],
-                    n_results=request_data.max_results,
+                    query_texts=[request.search_query],
+                    n_results=request.max_results,
                     where=file_type_filter,
                 )
             else:
                 search_results = chroma_collection.query(
-                    query_texts=[request_data.search_query],
-                    n_results=request_data.max_results,
+                    query_texts=[request.search_query],
+                    n_results=request.max_results,
                 )
 
             # Process and format the search results
@@ -132,19 +129,19 @@ class SearchCodebase(Action[SearchCodebaseRequest, SearchCodebaseResponse]):
                     and search_results["metadatas"]
                     and search_results["distances"]
                 ):
-                    for snippet, metadata, distance in zip(
+                    for snippet, mdata, distance in zip(
                         search_results["documents"][0],
                         search_results["metadatas"][0],
                         search_results["distances"][0],
                     ):
                         matched_snippets.append(
                             CodeSnippet(
-                                file_path=str(metadata["file_path"]),
-                                start_line=int(metadata["start_line"]),
-                                end_line=int(metadata["end_line"]),
+                                file_path=str(mdata["file_path"]),
+                                start_line=int(mdata["start_line"]),
+                                end_line=int(mdata["end_line"]),
+                                file_type=str(mdata["file_type"]),
                                 snippet_content=snippet,
                                 relevance_score=round(1 - distance, 4),
-                                file_type=str(metadata["file_type"]),
                             )
                         )
 

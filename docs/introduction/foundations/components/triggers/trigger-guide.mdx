@@ -1,8 +1,8 @@
 ---
-title: "🛠️ How to Use Triggers"
+title: "🛠️ Getting Started with Triggers"
 sidebarTitle: "Triggers"
 icon: "webhook"
-description: "Learn, how to use triggers in Connected Apps"
+description: "How to enable triggers & listen to them?"
 ---
 
 ## Using Triggers
@@ -10,65 +10,67 @@ description: "Learn, how to use triggers in Connected Apps"
 **Prerequisite**: Successfully **linking an account** & then having `connectedAccountId`.
 
 Triggers are predefined conditions that, when met, initiate webhooks to your agents. 
-These webhooks usually contain payload which cn be used to our advantage. Some of the examples:
-* Github Commit Event: Triggers a webhook whenever there is a new commit made to a particular repository.
-* Youtube New Item In Playlist: Triggers a webhook whenever a new video has been added to a youtube playlist.
+These webhooks usually contain payloads which can be used to our advantage.
 
+* **Github Commit Event**: Triggers a webhook whenever there is a new commit made to a particular repository.
+* **New email in inbox (Gmail)**: Triggers a webhook whenever a new email has been received.
 
-Check out the coding guides provided in the examples section to have a better understanding.
-
-## **Types of Triggers**
+## Enabling Triggers
 
 <Tabs>
-  <Tab title="Default Triggers (Preferred)">
-    Composio supports a variety of default triggers for each supported
-    application. Check them out by going to the app page.
-  </Tab>
-  <Tab title="Custom Triggers (Build your Own)">
-    Our platform offers an extensible interface for defining custom triggers for
-    both custom and default applications. [**Coming Soon**](#)
-  </Tab>
-</Tabs>
-
-## Getting Started with Triggers
-
+<Tab title="Using CLI">
 <CodeGroup>
-``` Bash Triggers Help
+```Bash Enable Trigger from CLI
 # In CLI
-composio triggers --help
+composio triggers enable <trigger_name> 
+# trigger_name is the name of the trigger - slackbot_receive_thread_reply
 
-🔗 Options 
-
---active    Only list the active triggers
---id TEXT   Filter by trigger id
---app TEXT  Filter by app name
-
-📙 Examples:
-
-composio triggers              # List all triggers available in Composio
-composio triggers --active     # List only active/enabled triggers 
-composio triggers --id 12345   # List a trigger with specific ID
-composio triggers --app MyApp  # List all triggers available for a specific app
+## To disable a trigger
+composio triggers disable <trigger_name>
 ```
 </CodeGroup>
-
-`composio triggers` will be a list of all triggers.
-
+</Tab>
+<Tab title="Using Python Code">
 <CodeGroup>
-```Bash List of all Triggers 
-• github_issue_added_event
-• slackbot_receive_message
-• slackbot_receive_thread_reply
-• slackbot_reaction_removed
-• slackbot_reaction_added
-....
+```python Enable Trigger using python code
+from composio import Composio, Action
+
+client = Composio() 
+entity = client.get_entity(id="Jessica")
+
+# config is optional, it can be used to pass additional parameters for the trigger
+entity.enable_trigger(app=App.GOOGLECALENDAR, trigger_name="<trigger_name>", config={}) # Enable trigger
+
+entity.disable_trigger("<tigger_id>") # Disable trigger via ID
 ```
 </CodeGroup>
+</Tab>
 
-## Setting Up Triggers
+<Tab title="Using Javascript Code">
+<CodeGroup>
+```javascript Enable Trigger using javascript code
+Coming soon!
+```
+</CodeGroup>
+</Tab>
+<Tab title="Using API">
+When you Initiate a Connection, you receive the connectionAccountID
+<CodeGroup>
+```API curl
+curl --request POST \
+  --url https://backend.composio.dev/api/v1/triggers/enable/{connectedAccountId}/GITHUB_PULL_REQUEST_EVENT \
+  --header 'Content-Type: application/json' \
+  --header 'X-API-Key: <x-api-key>' \
+  --data '{
+  "triggerConfig": {
+    "owner":"composiohq",
+    "repo":"composio"
+  }
+}'
 
-To Enable triggers, follow these steps:
-<Tabs>
+```
+</CodeGroup>
+</Tab>
 <Tab title="Using Dashboard">
 <div
   style={{
@@ -92,56 +94,6 @@ To Enable triggers, follow these steps:
     }}/>
 </div>
 </Tab>
-<Tab title="Using CLI">
-<CodeGroup>
-```Bash Enable Trigger from CLI
-# In CLI
-composio triggers enable <trigger_name> 
-# trigger_name is the name of the trigger - slackbot_receive_thread_reply
-
-## To disable a trigger
-composio triggers disable <trigger_name>
-```
-</CodeGroup>
-</Tab>
-<Tab title="Using Python Code">
-<CodeGroup>
-```python Enable Trigger using python code
-from composio import Composio, Action
-
-USER_ID = "Your User ID" 
-# It has to be same ID for which connected account is linked
-# In case, you are not sure use `default`
-
-# If you have CLI, passing `COMPOSIO_API_KEY` is not required
-COMPOSIO_API_KEY = "1231knakndasn"
-
-client = Composio(api_key=COMPOSIO_API_KEY) 
-entity = client.get_entity(id=USER_ID)
-
-entity.enable_trigger(app=App.GOOGLECALENDAR, trigger_name="<trigger_name>", config={}) # Enable trigger
-
-# config is optional, it can be used to pass additional parameters for the trigger
-
-entity.disable_trigger("<tigger_id>") # Disable trigger via ID
-```
-</CodeGroup>
-</Tab>
-
-<Tab title="Using Javascript Code">
-<CodeGroup>
-```javascript Enable Trigger using javascript code
-Coming soon!
-```
-</CodeGroup>
-</Tab>
-<Tab title="Using API">
-<CodeGroup>
-```API Enable Trigger using API
-Coming soon!
-```
-</CodeGroup>
-</Tab>
 </Tabs>
 
 
@@ -153,11 +105,9 @@ Coming soon!
 <Tab title="Using Python Code">
 <CodeGroup>
 ```python Create a trigger listener
-
 listener = composio_toolset.create_trigger_listener() 
 
 ## Triggers when a new event has taken place
-
 @listener.callback(filters={"trigger_name": "trigger_name"}) 
 def callback_function(event):
     ## Your Code Here ##
@@ -193,6 +143,32 @@ Coming soon!
 </Tab>
 </Tabs>
 
+## Obtaining config parameters
+
+You can find the list of triggers and the config parameters that need to be passed to each trigger to enable them with this APi call.
+<CodeGroup>
+```python Python
+import requests
+
+url = "https://backend.composio.dev/api/v1/triggers"
+
+headers = {"X-API-Key": "<x-api-key>"}
+
+response = requests.request("GET", url, headers=headers)
+
+print(response.text)
+```
+
+```javascript JS 
+const options = {method: 'GET', headers: {'X-API-Key': '<x-api-key>'}};
+
+fetch('https://backend.composio.dev/api/v1/triggers', options)
+  .then(response => response.json())
+  .then(response => console.log(response))
+  .catch(err => console.error(err));
+
+```
+</CodeGroup>
 
 
 ## Handling Triggers 
@@ -200,20 +176,3 @@ Coming soon!
 After completing the setup, the specified webhook URL will begin to receive data. 
 
 This data includes the `connected_account_id` for account identification, `trigger_id` for trigger identification, and the `payload`, which adheres to the trigger's specified payload schema.
-<CodeGroup>
-``` JSON Sample Trigger Webhook, Received on Callback URL
-{
-	"trigger_name":"github_commit_event",
-    "trigger_id":"12310-sadas-12ad-sa",
-	"connected_account_id":"64184e1a-76bf-404b-bf8e-e9ce04fd7c9c",
-	"payload":{
-		"id":"ae4926ca23488ef488e76c8b39e2ad3ae9e58786",
-		"message":"Update README.md",
-		"timestamp":"2024-03-26T19:36:58+05:30",
-		"author":"kaavee315",
-		"url":"https://github.com/kaavee315/ML_assignment/commit/ae4926ca23488ef488e76c8b39e2ad3ae9e58786"
-	}
-}
-
-```
-</CodeGroup>

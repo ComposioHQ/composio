@@ -2,16 +2,20 @@ import types
 import typing as t
 from inspect import Signature
 
+import typing_extensions as te
 from llama_index.core.tools import FunctionTool
 
-from composio import Action, ActionType, AppType, TagType, WorkspaceConfigType
-from composio.constants import DEFAULT_ENTITY_ID
+from composio import Action, ActionType, AppType
+from composio import ComposioToolSet as BaseComposioToolSet
+from composio import TagType
 from composio.utils.shared import get_pydantic_signature_format_from_schema_params
 
-from composio_langchain import ComposioToolSet as BaseComposioToolSet
 
-
-class ComposioToolSet(BaseComposioToolSet):
+class ComposioToolSet(
+    BaseComposioToolSet,
+    runtime="llamaindex",
+    description_char_limit=1024,
+):
     """
     Composio toolset for LlamaIndex framework.
 
@@ -52,30 +56,6 @@ class ComposioToolSet(BaseComposioToolSet):
         agent_executor.invoke({"input": task})
     ```
     """
-
-    def __init__(
-        self,
-        api_key: t.Optional[str] = None,
-        base_url: t.Optional[str] = None,
-        entity_id: str = DEFAULT_ENTITY_ID,
-        workspace_config: t.Optional[WorkspaceConfigType] = None,
-        workspace_id: t.Optional[str] = None,
-    ) -> None:
-        """
-        Initialize composio toolset.
-
-        :param api_key: Composio API key
-        :param base_url: Base URL for the Composio API server
-        :param entity_id: Entity ID for making function calls
-        """
-        super().__init__(
-            api_key=api_key,
-            base_url=base_url,
-            entity_id=entity_id,
-            workspace_config=workspace_config,
-            workspace_id=workspace_id,
-        )
-        self._runtime = "llamaindex"
 
     def _wrap_action(
         self,
@@ -129,6 +109,7 @@ class ComposioToolSet(BaseComposioToolSet):
             description=description,
         )
 
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
     def get_actions(
         self,
         actions: t.Sequence[ActionType],
@@ -138,23 +119,36 @@ class ComposioToolSet(BaseComposioToolSet):
         Get composio tools wrapped as LlamaIndex FunctionTool objects.
 
         :param actions: List of actions to wrap
-        :param entity_id: Entity ID to use for executing function calls.
+        :param entity_id: Entity ID for the function wrapper
+
         :return: Composio tools wrapped as `StructuredTool` objects
         """
-        return super().get_actions(actions, entity_id)
+        return self.get_tools(actions=actions, entity_id=entity_id)
 
     def get_tools(
         self,
-        apps: t.Sequence[AppType],
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
     ) -> t.Sequence[FunctionTool]:
         """
         Get composio tools wrapped as LlamaIndex FunctionTool objects.
 
+        :param actions: List of actions to wrap
         :param apps: List of apps to wrap
         :param tags: Filter the apps by given tags
-        :param entity_id: Entity ID to use for executing function calls.
+        :param entity_id: Entity ID for the function wrapper
+
         :return: Composio tools wrapped as `StructuredTool` objects
         """
-        return super().get_tools(apps, tags, entity_id)
+        self.validate_tools(apps=apps, actions=actions, tags=tags)
+        return [
+            self._wrap_tool(
+                schema=tool.model_dump(
+                    exclude_none=True,
+                ),
+                entity_id=entity_id or self.entity_id,
+            )
+            for tool in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
+        ]

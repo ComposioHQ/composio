@@ -7,7 +7,7 @@ import typing as t
 
 from pydantic import BaseModel
 
-from composio.tools.local.base.action import Action
+from composio.tools.base.local import LocalAction
 
 
 class SearchMemoryRequest(BaseModel):
@@ -36,35 +36,25 @@ class SearchMemoryResponse(BaseModel):
     results: t.List[SearchResult]
 
 
-class SearchMemory(Action):
+class SearchMemory(LocalAction[SearchMemoryRequest, SearchMemoryResponse]):
     """Search memory from zep session."""
 
-    _display_name = "Search Memory From Zep Session"
-    _request_schema = SearchMemoryRequest
-    _response_schema = SearchMemoryResponse
     _tags = ["memory", "history"]
-    _tool_name = "zeptool"
 
     def execute(
-        self,
-        request_data: SearchMemoryRequest,
-        authorisation_data: dict,
+        self, request: SearchMemoryRequest, metadata: t.Dict
     ) -> SearchMemoryResponse:
-        """Create session."""
+        """Search memory from a session."""
+
         from zep_cloud.client import Zep  # pylint: disable=import-outside-toplevel
 
-        client = Zep(
-            api_key=os.environ.get(
-                "ZEP_API_KEY",
-                authorisation_data.get("api_key"),
-            ),
-        )
+        client = Zep(api_key=os.environ.get("ZEP_API_KEY", metadata.get("api_key")))
         results = client.memory.search(
-            session_id=request_data.session_id,
-            text=request_data.query,
-            limit=request_data.limit,
-            search_type=request_data.search_type,
-            search_scope=request_data.search_scope,
+            session_id=request.session_id,
+            text=request.query,
+            limit=request.limit,
+            search_type=request.search_type,
+            search_scope=request.search_scope,
         )
         return SearchMemoryResponse(
             results=[

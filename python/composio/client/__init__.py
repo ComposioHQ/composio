@@ -48,6 +48,7 @@ from composio.utils.url import get_api_url_base
 
 
 _valid_keys: t.Set[str] = set()
+_clients: t.List["Composio"] = []
 
 
 class Composio(BaseClient):
@@ -79,6 +80,14 @@ class Composio(BaseClient):
         self.integrations = Integrations(client=self)
         self.active_triggers = ActiveTriggers(client=self)
         self.connected_accounts = ConnectedAccounts(client=self)
+        _clients.append(self)
+
+    @staticmethod
+    def get_latest() -> "Composio":
+        """Get latest composio client from the runtime stack."""
+        if len(_clients) == 0:
+            _ = Composio()
+        return _clients[-1]
 
     @property
     def api_key(self) -> str:
@@ -95,12 +104,15 @@ class Composio(BaseClient):
             )
             if env_api_key:
                 self._api_key = env_api_key
+
         if self._api_key is None:
             raise ApiKeyNotProvidedError()
+
         self._api_key = self.validate_api_key(
             key=t.cast(str, self._api_key),
             base_url=self.base_url,
         )
+
         return self._api_key
 
     @api_key.setter
@@ -135,8 +147,11 @@ class Composio(BaseClient):
             },
             timeout=60,
         )
-        if response.status_code != 200:
+        if response.status_code in (401, 403):
             raise ComposioClientError("API Key is not valid!")
+
+        if response.status_code != 200:
+            raise ComposioClientError(f"Unexpected error: HTTP {response.status_code}")
 
         _valid_keys.add(key)
         return key
@@ -336,7 +351,7 @@ class Entity:
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
         redirect_url: t.Optional[str] = None,
         integration: t.Optional[IntegrationModel] = None,
-        use_composio_auth: bool = False,
+        use_composio_auth: bool = True,
         force_new_integration: bool = False,
     ) -> ConnectionRequestModel:
         """
@@ -355,6 +370,7 @@ class Entity:
         app = self.client.apps.get(name=app_name)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         if integration is None and auth_mode is not None:
+            use_composio_auth = use_composio_auth if app.testConnectors and len(app.testConnectors) > 0 else False
             integration = self.client.integrations.create(
                 app_id=app.appId,
                 name=f"{app_name}_{timestamp}",

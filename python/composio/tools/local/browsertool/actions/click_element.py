@@ -31,7 +31,7 @@ class ClickElementResponse(BaseBrowserResponse):
     )
 
 
-class ClickElement(BaseBrowserAction):
+class ClickElement(BaseBrowserAction[ClickElementRequest, ClickElementResponse]):
     """
     Click an element on the current webpage.
 
@@ -46,25 +46,23 @@ class ClickElement(BaseBrowserAction):
     - Successful click
     """
 
-    _display_name = "ClickElement"
+    display_name = "ClickElement"
     _request_schema = ClickElementRequest
     _response_schema = ClickElementResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: ClickElementRequest  # type: ignore
+        self, browser_manager: BrowserManager, request: ClickElementRequest  # type: ignore
     ) -> ClickElementResponse:
         """Execute the click element action."""
 
         # First, check if the element exists
-        element = browser_manager.find_element(
-            request_data.selector, request_data.selector_type
-        )
+        element = browser_manager.find_element(request.selector, request.selector_type)
 
         if element is not None:
             # Scroll the element into view before clicking
             try:
                 browser_manager.scroll_to_element(
-                    request_data.selector, request_data.selector_type
+                    request.selector, request.selector_type
                 )
             except Exception as scroll_error:
                 return ClickElementResponse(
@@ -75,7 +73,7 @@ class ClickElement(BaseBrowserAction):
                 )
 
             # Now attempt to click the element
-            browser_manager.click(request_data.selector, request_data.selector_type)
+            browser_manager.click(request.selector, request.selector_type)
             return ClickElementResponse(
                 success=True, element_found=True, scrolled_into_view=True
             )

@@ -32,7 +32,9 @@ class GetElementDetailsResponse(BaseBrowserResponse):
     )
 
 
-class GetElementDetails(BaseBrowserAction):
+class GetElementDetails(
+    BaseBrowserAction[GetElementDetailsRequest, GetElementDetailsResponse]
+):
     """
     Get details of an element on the current webpage.
 
@@ -53,18 +55,16 @@ class GetElementDetails(BaseBrowserAction):
     - Verifying element properties and attributes
     """
 
-    _display_name = "GetElementDetails"
+    display_name = "GetElementDetails"
     _request_schema = GetElementDetailsRequest
     _response_schema = GetElementDetailsResponse
 
     def execute_on_browser_manager(
-        self, browser_manager: BrowserManager, request_data: GetElementDetailsRequest  # type: ignore
+        self, browser_manager: BrowserManager, request: GetElementDetailsRequest  # type: ignore
     ) -> GetElementDetailsResponse:
         """Execute the get element details action."""
         # Find the element
-        element = browser_manager.find_element(
-            request_data.selector, request_data.selector_type
-        )
+        element = browser_manager.find_element(request.selector, request.selector_type)
 
         if element is None:
             return GetElementDetailsResponse(success=False, element_found=False)

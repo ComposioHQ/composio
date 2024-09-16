@@ -38,7 +38,7 @@ class UpdateCommentResponse(BaseModel):
 
 class UpdateComment(OpenAPIAction):
     """
-    Replace the content of a task commment, assign a comment, and mark a comment
+    Replace the content of a task comment, assign a comment, and mark a comment
     as resolved.
     """
 

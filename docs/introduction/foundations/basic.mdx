@@ -1,44 +1,37 @@
 ---
-title: "Core Concepts"
-sidebarTitle: "Core Concepts"
+title: "Concepts at a Glance"
+sidebarTitle: "At a Glance"
 icon: "book"
-description: "Platform's core concepts and functionalities."
+description: "Core Platform Modules"
 ---
 
-Let's get you started building with Composio! This section will get you familiar with Composio’s core concepts.
-
-Goal of this section is to give you a brief walkthrough of each component and how they go together.
-
-<CardGroup cols={3}>
-<Card color="#7bee0c" title="Integrations" icon="plug" href="./components/integrations/integration-guide">
-</Card>
+<CardGroup cols={2}>
 
 <Card color="#7bee0c" title="Entity" icon="users" href="./components/entity/entity-guide">
+Entity is the user who is using your app Jessica or Melissa
 </Card>
 
+<Card color="#7bee0c" title="Accounts" icon="plug" href="./components/">
+GitHub Connection Authorised for Jessica's account
+</Card>
+
+
 <Card color="#7bee0c" title="Actions" icon="wand-magic-sparkles" href="./components/actions/action-guide">
+Send email via Gmail, Outlook, Sendgrid, etc
 </Card>
 
 <Card color="#7bee0c" title="Triggers" icon="webhook" href="./components/triggers/trigger-guide">
+Webhooks on New Github Issue, Pull Request
 </Card>
 
-<Card color="#7bee0c" title="Custom Actions" icon="code" href="./components/actions/local-code">
-</Card>
-
-<Card color="#7bee0c" title="Custom Tools" icon="puzzle-piece" href="./components/integrations/custom-integration">
-</Card>
 </CardGroup>
 
-| Component         | Description                                                                                                                                                                                                                                                                | Examples                                                                                                                                           |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Entity            | Entity represents the user and all accounts that belong to a specific user will have same entity id. &nbsp; [Learn More...](./components/entity/entity-guide) | Entity could be Melissa, Sam, ABC Corp, etc                                                                                                                        |
-| ConnectedAccounts | Connections represent **link between your app and third-party platforms accounts of your user**. &nbsp; [Learn More...](./components/entity/entity-guide)                                                                             | Melissa's Github account after completing auth with integration, Similarly Sam's Hubspot account.                                                  |
-| Integrations      | Integrations are customisable configurations (settings) that are used while creating a new connected account. &nbsp; [Learn More...](./components/integrations/integration-guide) | Github Integration that that will ask Melissa for private repo permission|
-| Tools             | Tools refer to the various applications or tools that can be integrated and used by your agents via Composio. &nbsp; [Learn More...](./components/tools/tool-guide)                                                                                                                                                              | Shell manager, Hubspot, Github, Slack & many others                                                                                                |
-| Actions           | Actions are tasks that can be performed by your agents. &nbsp; [Learn More...](./components/actions/action-guide)      | Send email via Gmail, Send email via Outlook, Send email via Sendgrid, etc                                                                   |
-| Triggers          | Triggers are predefined conditions that, when met, initiate webhooks to your agents. &nbsp; [Learn More...](./components/triggers/trigger-guide)                                                                                                                                                                                       | New Github Issue, New Github Pull Request, New Github Release, New Hubspot Ticket, New Hubspot Case, etc                                           |
 
-
-In next few pages, we can go through each component in detail. They will explain how to use each component in the code and what the expected flow should look like.
-
-If you prefer something quicker, checkout [Quickstart Guide](../intro/quickstart)
+| Component         | Description                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 
+| Entity            | Entity represents the user and all accounts that belong to a specific user will have same entity id. &nbsp; [Learn More...](./components/entity/entity-guide) 
+| Accounts | Connections represent **link between your app and third-party platforms accounts of your user**. &nbsp; [Learn More...](./components/entity/entity-guide)
+| Tools             | Tools refer to the various applications or tools that can be integrated and used by your agents via Composio. &nbsp; [Learn More...](./components/tools/tool-guide)
+| Actions           | Actions are tasks that can be performed by your agents. &nbsp; [Learn More...](./components/actions/action-guide)
+| Triggers          | Triggers are predefined conditions that, when met, initiate webhooks to your agents. &nbsp; [Learn More...](./components/triggers/trigger-guide)
+| Integrations      | Integrations are customisable configurations (settings) that are used while creating a new connected account. &nbsp; [Learn More...](./components/integrations/integration-guide) 

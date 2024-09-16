@@ -3,11 +3,11 @@ import multiprocessing
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import List, Optional, Tuple, Type
+from typing import List, Optional, Tuple
 
 from pydantic import BaseModel, Field
 
-from composio.tools.local.base import Action
+from composio.tools.base.local import LocalAction
 
 
 # Constants
@@ -48,42 +48,37 @@ class CreateCodeIndexOutput(BaseModel):
     result: str = Field(..., description="Result of the action")
 
 
-class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
+class CreateIndex(LocalAction[CreateCodeIndexInput, CreateCodeIndexOutput]):
     """
     Indexes a code base in a folder and stores the index in a vector store.
     """
 
-    _display_name = "Create index"
-    _request_schema: Type[CreateCodeIndexInput] = CreateCodeIndexInput
-    _response_schema: Type[CreateCodeIndexOutput] = CreateCodeIndexOutput
+    display_name = "Create index"
     _tags = ["index"]
-    _tool_name = "codeindex"
 
     def execute(
-        self, request_data: CreateCodeIndexInput, authorisation_data: dict = {}
+        self, request: CreateCodeIndexInput, metadata: dict
     ) -> CreateCodeIndexOutput:
         # Check if index already exists or is in progress
-        status = self.check_status(request_data.dir_to_index_path)
-        if status["status"] == "completed" and not request_data.force_index:
+        status = self.check_status(request.dir_to_index_path)
+        if status["status"] == "completed" and not request.force_index:
             return CreateCodeIndexOutput(
-                result=f"Index already exists for {request_data.dir_to_index_path}. Use force_index=True to recreate."
+                result=f"Index already exists for {request.dir_to_index_path}. Use force_index=True to recreate."
             )
-        if status["status"] == "in_progress" and not request_data.force_index:
+        if status["status"] == "in_progress" and not request.force_index:
             return CreateCodeIndexOutput(
-                result=f"Indexing is already in progress for {request_data.dir_to_index_path}. Use force_index=True to restart."
+                result=f"Indexing is already in progress for {request.dir_to_index_path}. Use force_index=True to restart."
             )
 
         # If force_index is True, delete existing index
-        if request_data.force_index:
-            self._delete_existing_index(request_data.dir_to_index_path)
+        if request.force_index:
+            self._delete_existing_index(request.dir_to_index_path)
 
         # Start the indexing process in a new process
-        process = multiprocessing.Process(
-            target=self._index_creation, args=(request_data,)
-        )
+        process = multiprocessing.Process(target=self._index_creation, args=(request,))
         process.start()
         return CreateCodeIndexOutput(
-            result=f"Indexing started for {request_data.dir_to_index_path}"
+            result=f"Indexing started for {request.dir_to_index_path}"
         )
 
     def _delete_existing_index(self, repo_path: str):
@@ -102,17 +97,17 @@ class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
         if status_file.exists():
             os.remove(status_file)
 
-    def _index_creation(self, request_data: CreateCodeIndexInput):
+    def _index_creation(self, request: CreateCodeIndexInput):
         import chromadb  # pylint: disable=C0415
 
-        collection_name = self._get_collection_name(request_data.dir_to_index_path)
+        collection_name = self._get_collection_name(request.dir_to_index_path)
         index_storage_path = Path.home() / ".composio" / "index_storage"
         self._create_index_storage_path(index_storage_path)
 
         chroma_client = chromadb.PersistentClient(path=str(index_storage_path))
 
         embedding_function = self.create_embedding_function(
-            request_data.embedding_type,
+            request.embedding_type,
         )
 
         chroma_collection = self._create_chroma_collection(
@@ -121,8 +116,8 @@ class CreateIndex(Action[CreateCodeIndexInput, CreateCodeIndexOutput]):
 
         self._process_and_add(
             chroma_collection,
-            request_data.dir_to_index_path,
-            request_data.embedding_type,
+            request.dir_to_index_path,
+            request.embedding_type,
         )
 
     def _get_openai_credentials(

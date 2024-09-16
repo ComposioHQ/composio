@@ -1,12 +1,11 @@
-import typing as t
-
-from composio import WorkspaceConfigType
-from composio.constants import DEFAULT_ENTITY_ID
-
 from composio_langchain import ComposioToolSet as BaseComposioToolSet
 
 
-class ComposioToolSet(BaseComposioToolSet):
+class ComposioToolSet(
+    BaseComposioToolSet,
+    runtime="langgraph",
+    description_char_limit=1024,
+):
     """
     Composio toolset for LangGraph framework.
 
@@ -94,31 +93,3 @@ class ComposioToolSet(BaseComposioToolSet):
     app = workflow.compile()
     ```
     """
-
-    def __init__(
-        self,
-        api_key: t.Optional[str] = None,
-        base_url: t.Optional[str] = None,
-        entity_id: str = DEFAULT_ENTITY_ID,
-        output_in_file: bool = False,
-        workspace_config: t.Optional[WorkspaceConfigType] = None,
-        workspace_id: t.Optional[str] = None,
-    ) -> None:
-        """
-        Initialize composio toolset.
-
-        :param api_key: Composio API key
-        :param base_url: Base URL for the Composio API server
-        :param entity_id: Entity ID for making function calls
-        :param output_in_file: Whether to write output to a file
-        """
-        super().__init__(
-            api_key=api_key,
-            base_url=base_url,
-            entity_id=entity_id,
-            output_in_file=output_in_file,
-            workspace_config=workspace_config,
-            workspace_id=workspace_id,
-        )
-
-        self._runtime = "langgraph"
