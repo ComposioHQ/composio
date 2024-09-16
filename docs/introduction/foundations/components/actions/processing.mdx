@@ -23,7 +23,7 @@ Here's how you can implement these processors:
 <Steps>
 <Step title="Define the Preprocessor or Postprocessor Functions">
 <CodeGroup>
-```python Define the Preprocessor or Postprocessor Functions
+```python
 def tool_preprocessor(input_data):
     # Modify input_data as needed
     return modified_input_data
@@ -44,7 +44,7 @@ def action_postprocessor(output_data):
 </Step>
 <Step title="Use them while creating the toolset">
 <CodeGroup>
-```python Set the pre and post processors while creating the toolset
+```python
 # while defining the toolset, you can define the pre and post processors
 composio_toolset = ComposioToolSet(
     processors={
@@ -64,7 +64,6 @@ tools = composio_toolset.get_tools(apps=[App.GITHUB])
 </CodeGroup>
 </Step>
 </Steps>
-
 
 <Warning>
   Ensure that your preprocessing and postprocessing functions are efficient and don't introduce significant latency.

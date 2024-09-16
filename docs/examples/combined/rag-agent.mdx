@@ -2,11 +2,8 @@
 title: "RAG Tool Agent"
 sidebarTitle: "RAG Tool Agent"
 icon: "database"
-description: "This project involves setting up and running a system of agents to add content to a RAG (Retrieval-Augmented Generation) tool, perform queries, and return relevant information. We use Composio to setup this Local Tool and OpenAI GPT-4o to power the agents. Follow this guide to set up and run the project."
+description: "This project involves setting up and running a system of agents to add content to a RAG (Retrieval-Augmented Generation) tool, perform queries, and return relevant information. We use Composio to set up this Local Tool and OpenAI GPT-4o to power the agents. Follow this guide to set up and run the project."
 ---
-
-
-
 
 <Tabs>
     <Tab title="Python">
@@ -20,7 +17,7 @@ description: "This project involves setting up and running a system of agents to
     <Step title="Imports and Environment Setup">
     In your Python script, import the necessary libraries and set up your environment variables.
     <CodeGroup>
-        ```python Import libraries
+        ```python
         import os
         import dotenv
         from textwrap import dedent
@@ -37,7 +34,7 @@ description: "This project involves setting up and running a system of agents to
     <Step title="Initialize Language Model and Define Tools">
     Initialize the language model with OpenAI API key and model name, and set up the necessary tools for the agents.
     <CodeGroup>
-        ```python LLM and Tools
+        ```python
         # Initialize the LLM with the OpenAI GPT-4o model and API key
         llm = ChatOpenAI(model="gpt-4o")
 
@@ -53,7 +50,7 @@ description: "This project involves setting up and running a system of agents to
     <Step title="Define the RAG Agent">
     Define the RAG agent with its role, goal, backstory, and tools.
     <CodeGroup>
-        ```python Set up Agents
+        ```python
         # Define the RAG Agent
         rag_agent = Agent(
             role="RAG Agent",
@@ -81,7 +78,7 @@ description: "This project involves setting up and running a system of agents to
     <Step title="Define Tasks for Adding Content">
     Create tasks to add content to the RAG tool for enriching its knowledge base.
     <CodeGroup>
-        ```python Creating Tasks
+        ```python
         from composio_langchain import Task  # Ensure Task is imported
 
         # User-provided description of the data to be added
@@ -114,7 +111,7 @@ description: "This project involves setting up and running a system of agents to
     <Step title="Define and Execute Query Task">
     Create and execute the task for querying the RAG tool based on user input.
     <CodeGroup>
-        ```python Python - Query task
+        ```python
         # User-provided query
         user_query = "What is the capital of France?"
 
@@ -131,18 +128,17 @@ description: "This project involves setting up and running a system of agents to
             allow_delegation=False,
         )
         ```
-
     </CodeGroup>
     </Step>
 
     <Step title="Create Crew and Execute Process">
     Define the crew with the agent and tasks, then execute the process.
     <CodeGroup>
-        ```python Final step
+        ```python
         # Define the crew with the agent and tasks
         crew = Crew(
             agents=[rag_agent],
-            tasks=[add_content_tasks ,query_task],
+            tasks=[add_content_tasks, query_task],
             process=Process.sequential,
         )
 
@@ -166,7 +162,7 @@ description: "This project involves setting up and running a system of agents to
     <Step title="Imports and Environment Setup">
     Import the necessary libraries and set up your environment variables.
     <CodeGroup>
-        ```javascript Import libraries
+        ```javascript
         import dotenv from 'dotenv';
         import { ExecEnv, LangchainToolSet } from 'composio-core';
         import { ChatOpenAI } from '@langchain/openai';
@@ -183,7 +179,7 @@ description: "This project involves setting up and running a system of agents to
     Initialize the language model with OpenAI API key and model name, and set up the necessary tools for the agents.
     <CodeGroup>
 
-        ```javascript LLM and Tools
+        ```javascript
         // Initialize the LLM with the OpenAI GPT-4-turbo model
         const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
 
@@ -206,7 +202,7 @@ description: "This project involves setting up and running a system of agents to
     <CodeGroup>
 
 
-        ```javascript Creating Agents
+        ```javascript
         const prompt = await pull("hwchase17/openai-functions-agent");
         
         const agent = await createOpenAIToolsAgent({
@@ -228,7 +224,7 @@ description: "This project involves setting up and running a system of agents to
     <Step title="Adding Content">
     Create tasks to add content to the RAG tool for enriching its knowledge base.
     <CodeGroup>
-        ```javascript Add Content
+        ```javascript
         async function addContentToRAG(content) {
             const result = await agentExecutor.invoke({
                 input: `Add the following content to the RAG tool to enrich its knowledge base: ${content}`
@@ -256,9 +252,7 @@ description: "This project involves setting up and running a system of agents to
     <Step title="Define and Execute Query Task">
     Create and execute the task for querying the RAG tool based on user input.
     <CodeGroup>
-
-                
-        ```javascript Query Function
+        ```javascript
         async function queryRAG(userQuery) {
             const result = await agentExecutor.invoke({
                 input: `Formulate a query based on this input: ${userQuery}. 
@@ -280,23 +274,9 @@ description: "This project involves setting up and running a system of agents to
     </Tab>
 </Tabs>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ## Putting it All Together
 <CodeGroup>
-    ```python Python Final Code
+    ```python
     import os
     import dotenv
     from textwrap import dedent
@@ -304,19 +284,19 @@ description: "This project involves setting up and running a system of agents to
     from crewai import Agent, Crew, Process, Task
     from langchain_openai import ChatOpenAI
     from composio.tools.local import ragtool
-    
+
     # Load environment variables from .env file
     dotenv.load_dotenv()
-    
+
     # Initialize the ComposioToolSet
     toolset = ComposioToolSet()
-    
+
     # Get the RAG tool from the Composio ToolSet
     tools = toolset.get_tools(apps=[App.RAGTOOL])
-    
+
     # Initialize the ChatOpenAI model with GPT-4 and API key from environment variables
     llm = ChatOpenAI(model="gpt-4o")
-    
+
     # User-provided description of the data to be added and the query
     additional_content_list = [
         "Paris is the capital of France. It is known for its art, fashion, and culture.",
@@ -325,9 +305,9 @@ description: "This project involves setting up and running a system of agents to
         "Canberra is the capital of Australia. It is known for its modern architecture and museums.",
         # Add more data as needed
     ]
-    
+
     user_query = "What is the capital of France?"  # Edit the query for the action you want it to perform
-    
+
     # Define the RAG Agent
     rag_agent = Agent(
         role="RAG Agent",
@@ -348,13 +328,10 @@ description: "This project involves setting up and running a system of agents to
         allow_delegation=False,
         tools=tools,
     )
-    
-    # Define the task for adding content to the RAG tool
-    
-    
+
     total_content = ""
     for content in additional_content_list:
-      total_content +=content
+      total_content += content
     
     add_content_tasks = Task(
             description=dedent(
@@ -378,21 +355,20 @@ description: "This project involves setting up and running a system of agents to
         agent=rag_agent,
         allow_delegation=False,
     )
-    
+
     # Define the crew with the agent and tasks
     crew = Crew(
         agents=[rag_agent],
-        tasks=[add_content_tasks,query_task],
+        tasks=[add_content_tasks, query_task],
         process=Process.sequential,
     )
-    
+
     # Kickoff the process and print the result
     result = crew.kickoff()
     print(result)
     ```
 
-    ```javascript Javascript Final Code
-
+    ```javascript
     import dotenv from 'dotenv';
     import { ExecEnv, LangchainToolSet } from 'composio-core';
     import { ChatOpenAI } from '@langchain/openai';
@@ -464,4 +440,3 @@ description: "This project involves setting up and running a system of agents to
     })();
     ```
 </CodeGroup>
-

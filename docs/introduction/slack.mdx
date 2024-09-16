@@ -16,7 +16,7 @@ Just use `TestIntegration.AppName` to use default integrations.
 </Step>
 <Step title="Authenticating Slack">
 <CodeGroup>
-```bash Install Composio SDK
+```bash 
 pip install composio-core
 ```
 </CodeGroup>
@@ -24,7 +24,7 @@ Use `Slack Integration` to Connect your `Slack Account`
 Modify _Composio_ `api-key` by [creating your own](https://app.composio.dev/settings).
 <Tip> TestIntegration.*App* uses Composio built-in Integrations </Tip>
 <CodeGroup>
-```python Auth via OAuth
+```python 
 from composio import Composio, TestIntegration
 client = Composio("api-key")
 #client.get_integration(**YourIntegrationID**)
@@ -38,7 +38,7 @@ print("Complete the auth flow, link: ", connected_account.redirectUrl)
 <Step title="Wait for Connected Account Status to be 'Active'">
   If you haven’t, please click on redirectUrl above and complete the flow.
   <CodeGroup>
-    ```python Connected Account Polling
+    ```python 
     #Keep Polling and wait until timeout
     connected_account = connected_account.wait_until_active(timeout=60)
     ```
@@ -46,7 +46,7 @@ print("Complete the auth flow, link: ", connected_account.redirectUrl)
 </Step>
 <Step title="Supported Actions">
   <CodeGroup>
-    ```python Fetch Actions
+    ```python 
     actions = connected_account.get_all_actions()
     ```
   </CodeGroup>
@@ -54,7 +54,7 @@ print("Complete the auth flow, link: ", connected_account.redirectUrl)
 <Step title="Using Function Call">
 Modify `OPENAIKEY` before executing it.
 <CodeGroup>
-```python Task to Action Selection
+```python 
 from openai import OpenAI
 my_task = "Set a reminder to buy groceries tomorrow at 5pm"
 # Initialize the OpenAI client with your API key
@@ -73,7 +73,7 @@ messages=[
 </Step>
 <Step title="Handle Tool Calls - Execute Actions">
 <CodeGroup>
-```python Executing Selected Actions!
+```python 
 # Execute Function calls
 execution_details = connected_account.handle_tools_calls(response)
 print(execution_details)
@@ -84,7 +84,7 @@ print("Completed Task")
 </Steps>
 ### Putting it all together
 <CodeGroup>
-```python Complete Code
+```python 
 ## Step 1
 #!pip install composio-core
 ## Step 2
@@ -94,7 +94,7 @@ from composio import Composio, TestIntegration
 openai_client = OpenAI(api_key="******OPENAIKEY******")
 client = Composio("api-key")
 #client.get_integration(**YourIntegrationID**)
-integration = client.get_integration(TestIntegration.SLACK
+integration = client.get_integration(TestIntegration.SLACK)
 #Trying to initiate a new connection
 connected_account = integration.initiate_connection(entity_id = None)
 print("Complete the auth flow, link: ", connected_account.redirectUrl)

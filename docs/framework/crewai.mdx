@@ -1,8 +1,10 @@
+Here is the corrected text:
+
 ---
 title: "Using Composio With CrewAI"
 sidebarTitle: "CrewAI"
 icon: "people-group"
-description: "Integrate Composio with Crewai agents to let them seamlessly interact with external apps"
+description: "Integrate Composio with CrewAI agents to let them seamlessly interact with external apps"
 ---
 
 <img src="https://i.imgur.com/jXeNUda.png" alt="CrewAI Logo" />
@@ -15,7 +17,7 @@ description: "Integrate Composio with Crewai agents to let them seamlessly inter
 
 ### Install Packages & Connect a Tool
 
-These commands prepare your environment for seamless interaction between CrewAI and Github.
+These commands prepare your environment for seamless interaction between CrewAI and GitHub.
 
 <CodeGroup>
 ```bash Run Command
@@ -24,11 +26,11 @@ pip install composio_crewai
 </CodeGroup>
 
 
-### Goal: Use Crew Agent to Interact with Github using Composio
+### Goal: Use Crew Agent to Interact with GitHub using Composio
 
 <Steps>
-<Step title="Connect Github account">
-- Connect a user Jessica's Github account to allow our agents to utilize GitHub functionalities.
+<Step title="Connect GitHub account">
+- Connect a user Jessica's GitHub account to allow our agents to utilize GitHub functionalities.
 <Tabs>
 <Tab title="CLI">
 <CodeGroup>
@@ -75,8 +77,7 @@ llm = ChatOpenAI()
 <Step title="Fetch all Tools via Composio">
 
 <CodeGroup>
-```python Tools For Github
-
+```python Tools For GitHub
 from composio_crewai import ComposioToolSet, Action, App
 
 # Get All the tools
@@ -94,21 +95,23 @@ tools = composio_toolset.get_tools(apps=[App.GITHUB])
 ```python CrewAI Agent Executes Task
 # Define agent
 crewai_agent = Agent(
-    role="Github Agent",
-    goal="""You take action on Github using Github APIs""",
+    role="GitHub Agent",
+    goal="""You take action on GitHub using GitHub APIs""",
     backstory=(
-        "You are AI agent that is responsible for taking actions on Github "
-        "on users behalf. You need to take action on Github using Github APIs"
+        "You are AI agent that is responsible for taking actions on GitHub "
+        "on users behalf. You need to take action on GitHub using GitHub APIs"
     ),
     verbose=True,
     tools=tools,
     llm=llm,
 )
+
 task = Task(
     description="Star a repo composiohq/composio on GitHub",
     agent=crewai_agent,
     expected_output="if the star happened"
 )
+
 my_crew = Crew(agents=[crewai_agent], tasks=[task])
 
 result = my_crew.kickoff()
@@ -145,6 +148,7 @@ Final Answer: {'execution_details': {'executed': True}, 'response_data': ''}[0m
 </Step>
 </Steps>
 ### Use Specific Actions
+
 <CodeGroup>
     ```bash Filter Specific Action
     # To restrict agents from using all the actions, filter specific actions

@@ -1,35 +1,37 @@
+Here is the corrected text with spelling mistakes fixed:
+
 ---
 title: "🦜🔗 Using Composio With LangChain"
 sidebarTitle: "LangChain"
 icon: "link"
-description: "Integrate Composio with Langchain agents to let them seamlessly interact with external apps"
+description: "Integrate Composio with LangChain agents to let them seamlessly interact with external apps"
 ---
 
-**Composio enables** your **Langchain agents** to **connect** with many **tools**!
+**Composio enables** your **LangChain agents** to **connect** with many **tools**!
 
 <Tip>
-  Goal: Star a repository on GitHub with natural language & Langchain Agent
+  Goal: Star a repository on GitHub with natural language & LangChain Agent
 </Tip>
 
 ### Install Packages & Connect a Tool
 
-These commands prepare your environment for seamless interaction between Langchain and Github.
+These commands prepare your environment for seamless interaction between LangChain and GitHub.
 
 <CodeGroup> 
   ```bash python 
   pip install composio-langchain
 
-  #Connect your Github so agents can use it
+  # Connect your GitHub so agents can use it
   composio add github
 
-  #Check all different apps which you can connect with
+  # Check all different apps which you can connect with
   composio apps
   ```
   ```javascript javascript
   npm install composio-core
   npm install langchain
 
-  // Connect your Github so agents can use it
+  // Connect your GitHub so agents can use it
   composio add github
 
   // Check all different apps which you can connect with
@@ -41,7 +43,7 @@ These commands prepare your environment for seamless interaction between Langcha
 <Step title="Import Base Packages">
 <CodeGroup>
   ```python python 
-  # Initialise imports
+  # Initialize imports
   from langchain.agents import create_openai_functions_agent, AgentExecutor
   from langchain import hub
   from langchain_openai import ChatOpenAI
@@ -52,13 +54,13 @@ These commands prepare your environment for seamless interaction between Langcha
   prompt = hub.pull("hwchase17/openai-functions-agent")
   ```
   ```javascript javascript
-  // Importing necessary modules from langchain and composio-core packages
+  // Importing necessary modules from LangChain and Composio-core packages
   import dotenv from 'dotenv';
   dotenv.config();
 
   import { ChatOpenAI } from "@langchain/openai";
   import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
-  import { LangchainToolSet } from "composio-core";
+  import { LangChainToolSet } from "composio-core";
   import { pull } from "langchain/hub";
   
   // Creating an instance of ChatOpenAI with specific model and temperature settings
@@ -74,7 +76,7 @@ These commands prepare your environment for seamless interaction between Langcha
   ```
 </CodeGroup>
 </Step>
-<Step title="Fetch all Github Langchain Tools via Composio">
+<Step title="Fetch all GitHub LangChain Tools via Composio">
 <CodeGroup>
   ```python python 
   # Import from composio_langchain
@@ -87,8 +89,8 @@ These commands prepare your environment for seamless interaction between Langcha
   ```
 
   ```javascript javascript
-  // Initialize the LangchainToolSet with the API key from environment variables
-  const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY});
+  // Initialize the LangChainToolSet with the API key from environment variables
+  const toolset = new LangChainToolSet({ apiKey: process.env.COMPOSIO_API_KEY});
   
   // Fetch tools configured for GitHub applications
   const tools = await toolset.getTools({ apps: ["github"] });

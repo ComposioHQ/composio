@@ -9,10 +9,9 @@ description: "How to enable triggers & listen to them?"
 
 **Prerequisite**: Successfully **linking an account** & then having `connectedAccountId`.
 
-Triggers are predefined conditions that, when met, initiate webhooks to your agents. 
-These webhooks usually contain payloads which can be used to our advantage.
+Triggers are predefined conditions that, when met, initiate webhooks to your agents. These webhooks usually contain payloads which can be used to our advantage.
 
-* **Github Commit Event**: Triggers a webhook whenever there is a new commit made to a particular repository.
+* **GitHub Commit Event**: Triggers a webhook whenever there is a new commit made to a particular repository.
 * **New email in inbox (Gmail)**: Triggers a webhook whenever a new email has been received.
 
 ## Enabling Triggers
@@ -20,7 +19,8 @@ These webhooks usually contain payloads which can be used to our advantage.
 <Tabs>
 <Tab title="Using CLI">
 <CodeGroup>
-```Bash Enable Trigger from CLI
+```Bash 
+# Enable Trigger from CLI
 # In CLI
 composio triggers enable <trigger_name> 
 # trigger_name is the name of the trigger - slackbot_receive_thread_reply
@@ -32,7 +32,8 @@ composio triggers disable <trigger_name>
 </Tab>
 <Tab title="Using Python Code">
 <CodeGroup>
-```python Enable Trigger using python code
+```python 
+# Enable Trigger using python code
 from composio import Composio, Action
 
 client = Composio() 
@@ -41,20 +42,21 @@ entity = client.get_entity(id="Jessica")
 # config is optional, it can be used to pass additional parameters for the trigger
 entity.enable_trigger(app=App.GOOGLECALENDAR, trigger_name="<trigger_name>", config={}) # Enable trigger
 
-entity.disable_trigger("<tigger_id>") # Disable trigger via ID
+entity.disable_trigger("<trigger_id>") # Disable trigger via ID
 ```
 </CodeGroup>
 </Tab>
 
-<Tab title="Using Javascript Code">
+<Tab title="Using JavaScript Code">
 <CodeGroup>
-```javascript Enable Trigger using javascript code
+```javascript 
+// Enable Trigger using JavaScript code
 Coming soon!
 ```
 </CodeGroup>
 </Tab>
 <Tab title="Using API">
-When you Initiate a Connection, you receive the connectionAccountID
+When you initiate a connection, you receive the connectionAccountID
 <CodeGroup>
 ```API curl
 curl --request POST \
@@ -67,7 +69,6 @@ curl --request POST \
     "repo":"composio"
   }
 }'
-
 ```
 </CodeGroup>
 </Tab>
@@ -96,15 +97,12 @@ curl --request POST \
 </Tab>
 </Tabs>
 
-
-
-
-
 ## Listening to Triggers
 <Tabs>
 <Tab title="Using Python Code">
 <CodeGroup>
-```python Create a trigger listener
+```python 
+# Create a trigger listener
 listener = composio_toolset.create_trigger_listener() 
 
 ## Triggers when a new event has taken place
@@ -118,12 +116,13 @@ listener.listen()
 </CodeGroup>
 
 </Tab>
-<Tab title="Using Javascript Code">
+<Tab title="Using JavaScript Code">
 <CodeGroup>
-```Javascript Create a trigger listener
+```javascript 
+// Create a trigger listener
 import { LangchainToolSet } from "composio-core"; // or any other toolset
 
-const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY }); /
+const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY }); 
 const composio_client = toolset.client
 
 // If not using LangchainToolSet
@@ -145,9 +144,9 @@ Coming soon!
 
 ## Obtaining config parameters
 
-You can find the list of triggers and the config parameters that need to be passed to each trigger to enable them with this APi call.
+You can find the list of triggers and the config parameters that need to be passed to each trigger to enable them with this API call.
 <CodeGroup>
-```python Python
+```python 
 import requests
 
 url = "https://backend.composio.dev/api/v1/triggers"
@@ -159,14 +158,13 @@ response = requests.request("GET", url, headers=headers)
 print(response.text)
 ```
 
-```javascript JS 
+```javascript 
 const options = {method: 'GET', headers: {'X-API-Key': '<x-api-key>'}};
 
 fetch('https://backend.composio.dev/api/v1/triggers', options)
   .then(response => response.json())
   .then(response => console.log(response))
   .catch(err => console.error(err));
-
 ```
 </CodeGroup>
 

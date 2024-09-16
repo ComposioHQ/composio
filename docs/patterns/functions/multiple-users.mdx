@@ -1,9 +1,7 @@
----
 title: "Managing Multiple Users and Their Authentication with Composio"
 sidebarTitle: "Managing Multiple Users"
 icon: "plug"
 description: "This section will walk you through the basics of managing multiple users and their authentication using Composio."
----
 
 ### Introduction to Entities
 
@@ -15,7 +13,7 @@ To create or retrieve an entity for a user, you can use their unique identifier.
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-```python Python Code Snippet to get an entity (user)
+```python
 from composio import Composio
 
 composio_client = Composio(api_key="COMPOSIO_API_KEY")
@@ -25,7 +23,7 @@ entity = composio_client.get_entity(id='user_email_id')
 </Tab>
 <Tab title="JS">
 <CodeGroup>
-```javascript JS Code Snippet to get an entity (user)
+```javascript
 import { OpenAIToolSet } from "composio-core";
 
 const openai_client = new OpenAI({
@@ -45,9 +43,9 @@ To get the connected accounts for an entity, you can use the following code:
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-```python Python Code Snippet to get a connected account
+```python
 try:
-    connected_account  = entity.get_connection(app="slack")
+    connected_account = entity.get_connection(app="slack")
 except Exception as e:
     print("No connected account found")
 ```
@@ -55,8 +53,8 @@ except Exception as e:
 </Tab>
 <Tab title="JS">
 <CodeGroup>
-```javascript JS Code Snippet to get a connected account
-const connected_account  = await entity.getConnection("slack");
+```javascript
+const connected_account = await entity.getConnection("slack");
 ```
 </CodeGroup>
 </Tab>
@@ -70,14 +68,14 @@ Composio allows you to perform actions on behalf of users. For example, you can 
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-```python python
+```python
 actions = entity.get_tools(app_name=App.GITHUB)
 ```
 </CodeGroup>
 </Tab>
 <Tab title="JS">
 <CodeGroup>
-```javascript javascript
+```javascript
 const actions = entity.getActions(app_name=App.GITHUB);
 ```
 </CodeGroup>
@@ -88,8 +86,7 @@ With the actions fetched, you can configure an agent to perform tasks on GitHub 
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-```python python
-
+```python
 from composio_openai import ComposioToolSet, App
 from openai import OpenAI
 
@@ -113,7 +110,7 @@ tool_set.handle_tool_calls(response=response, entity_id="melissa")
 </Tab>
 <Tab title="JS">
 <CodeGroup>
-```javascript javascript
+```javascript
 import { OpenAI } from "openai";
 import { OpenAIToolSet } from "composio-core";
 

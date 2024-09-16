@@ -13,13 +13,13 @@ description: "Integrate Composio with phidata agents to let them seamlessly inte
   Goal: Star a repository on GitHub with natural language & phidata Assistant
 </Tip>
 
-These commands prepare your environment for seamless interaction between PhiData and Github.
+These commands prepare your environment for seamless interaction between PhiData and GitHub.
 
 <CodeGroup>
   ```bash Run Command 
 pip install composio-phidata
 
-#Connect your Github so agents can use it
+#Connect your GitHub so agents can use it
 composio add github
 
 #Check all supported apps
@@ -36,9 +36,9 @@ from composio_phidata import Action, ComposioToolSet
   ```
 </CodeGroup>
 </Step>
-<Step title="Fetch all Github PhiData Tools via Composio">
+<Step title="Fetch all GitHub PhiData Tools via Composio">
 <CodeGroup>
-  ```python Tools For Github
+  ```python Tools For GitHub
 toolset = ComposioToolSet()
 composio_tools = toolset.get_tools(
     actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
@@ -63,9 +63,8 @@ assistant.print_response("Can you star composiohq/composio repo?")
   ```bash Executing Agents
 
 - Running: github_star_a_repository_for_the_authenticated_user(owner=composiohq, repo=composio)
-  I have successfully starred the repository `composiohq/composio` for you. 
+  I have successfully starred the repository `composiohq/composio` for you.
   ```
-
 </CodeGroup>
 
 </Step>

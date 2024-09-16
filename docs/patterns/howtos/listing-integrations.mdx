@@ -11,7 +11,7 @@ To retrieve a complete list of your integrations, you can use the following code
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-```python List all integrations via Python
+```python
 from composio import Composio
 
 composio_client = Composio()
@@ -22,16 +22,16 @@ print(composio_client.integrations.get())
 </Tab>
 <Tab title="CLI">
 <CodeGroup>
-```bash List all integrations via CLI
+```bash
 composio integrations
 ```
 </CodeGroup>
 </Tab>
 <Tab title="JS">
-Coming Soon! 
+Coming Soon!
 </Tab>
 <Tab title="API">
-Coming Soon! 
+Coming Soon!
 </Tab>
 </Tabs>
 
@@ -43,27 +43,26 @@ To get detailed information about a specific integration, use the get command fo
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-```python Get integration details via Python
+```python
 from composio import Composio
 
-client = Composio()
+composio_client = Composio()
 
 print(composio_client.integrations.get(id=123))
 ```
 </CodeGroup>
 </Tab>
 <Tab title="CLI">
-
 <CodeGroup>
-```bash bash
+```bash
 composio integrations get 123
 ```
 </CodeGroup>
 </Tab>
 <Tab title="JS">
-Coming Soon! 
+Coming Soon!
 </Tab>
 <Tab title="API">
-Coming Soon! 
+Coming Soon!
 </Tab>
 </Tabs>

@@ -13,9 +13,9 @@ description: "Integrate Composio with LlamaIndex application to let them seamles
 
 ### Install Packages & Connect a Tool
 
-These commands prepare your environment for seamless interaction between LlamaIndex and Github.
+These commands prepare your environment for seamless interaction between LlamaIndex and GitHub.
 
-<CodeGroup> 
+<CodeGroup>
   ```bash Run Command
   pip install composio-llamaindex
   ```
@@ -24,7 +24,7 @@ These commands prepare your environment for seamless interaction between LlamaIn
 <Steps>
 <Step title="Connect GitHub account">
 
-- Connect a user Jessica's Github account to allow your agents to utilize GitHub functionalities.
+- Connect a user Jessica's GitHub account to allow your agents to utilize GitHub functionalities.
 <Tabs>
 <Tab title="CLI">
 <CodeGroup>
@@ -91,7 +91,7 @@ Create a worker agent, setting it up with proper prefix messages and tools.
       ChatMessage(
           role="system",
           content=(
-              "You are now a integration agent, and what  ever you are requested, you will try to execute utilizing your toools."
+              "You are now an integration agent, and whatever you are requested, you will try to execute utilizing your tools."
           ),
       )
   ]
@@ -109,7 +109,7 @@ Create a worker agent, setting it up with proper prefix messages and tools.
 </CodeGroup>
 </Step>
 <Step title="Chat with the Agent">
-Converse with your LlamaIndex agent, and it will use the provoded tool(s) as necessary.
+Converse with your LlamaIndex agent, and it will use the provided tool(s) as necessary.
 <CodeGroup>
   ```python Executing Agent
   response = agent.chat("Hello! I would like to star a repo composiohq/composio on GitHub")
@@ -135,4 +135,3 @@ Converse with your LlamaIndex agent, and it will use the provoded tool(s) as nec
   tools = composio_toolset.get_tools(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]) 
   ```
 </CodeGroup>
-

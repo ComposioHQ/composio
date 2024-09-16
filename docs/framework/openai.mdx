@@ -46,7 +46,7 @@ composio add github
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-  ```python python
+  ```python
   from openai import OpenAI
   from composio_openai import ComposioToolSet, App
 
@@ -58,7 +58,7 @@ composio add github
 </Tab>
 <Tab title="JavaScript">
 <CodeGroup>
-  ```javascript javascript
+  ```javascript
   import dotenv from 'dotenv';
   dotenv.config();
 
@@ -83,7 +83,7 @@ composio add github
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-  ```python python
+  ```python
   # Get GitHub tools that are pre-configured
   # Retrieve actions
   actions = composio_toolset.get_tools(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
@@ -92,7 +92,7 @@ composio add github
 </Tab>
 <Tab title="JavaScript">
 <CodeGroup>
-  ```javascript javascript
+  ```javascript
   // Get GitHub tools that are pre-configured
   // Retrieve actions
   const tools = await composio_toolset.getActions({
@@ -136,7 +136,7 @@ run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=as
 </Tab>
 <Tab title="JavaScript">
 <CodeGroup>
-  ```javascript javascript
+  ```javascript
   const instruction = "Star a repo composiohq/composio on GitHub";
   
   // Creating a chat completion request to the OpenAI model
@@ -155,8 +155,7 @@ run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=as
 
 <Step title="Handle Tool Calls and Check Response">
 <CodeGroup>
-  ```python python
-
+  ```python
   # Execute function calls
   response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
       client=openai_client,
@@ -166,7 +165,7 @@ run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=as
 
   print(response_after_tool_calls)
   ```
-  ```javascript javascript
+  ```javascript
   // Extracting tool calls from the response and logging them
   var resp = response.choices[0].message.tool_calls 
   console.log(resp);

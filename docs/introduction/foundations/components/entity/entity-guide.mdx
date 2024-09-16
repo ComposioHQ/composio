@@ -19,7 +19,8 @@ description: "Manage all the connected accounts of your Users"
 <Tabs>
 <Tab title="Python OAuth2 Apps">
 <CodeGroup>
-```python get the entity and auth scheme for an app
+```python
+# Get the entity and auth scheme for an app
 from composio import ComposioToolSet, App
 
 user_id = "Jessica"  # this is the user id of the user you want to connect with
@@ -54,7 +55,8 @@ except NoItemsFound as e:
 </Tab>
 <Tab title="Python Non OAuth2 Apps">
 <CodeGroup>
-```python get the entity and auth scheme for an app
+```python
+# Get the entity and auth scheme for an app
 from composio import ComposioToolSet, App
 
 toolset = ComposioToolSet(entity_id="default")
@@ -80,7 +82,7 @@ except NoItemsFound as e:
     # Create a request to initiate connection
     connection_request = entity.initiate_connection(
         app_name=App.SERPAPI,
-        auth_mode=schemes[0].auth_mode, # this is fetched from the scheme dict ex. "api_key" or "basic_auth" or some other value
+        auth_mode=schemes[0].auth_mode,  # this is fetched from the scheme dict ex. "api_key" or "basic_auth" or some other value
         auth_config=auth_config,
     )
 
@@ -93,7 +95,8 @@ except NoItemsFound as e:
 </Tab>
 <Tab title="JS All apps">
 <CodeGroup>
-```javascript Get the entity and auth scheme for an app
+```javascript
+// Get the entity and auth scheme for an app
 import { Composio } from "composio-core";
 
 const client = new Composio(
@@ -117,7 +120,7 @@ console.log(
 Complete Authentication process by passing the auth config to the initiate connection method.
 
 <CodeGroup>
-```javascript javascript
+```javascript
 const entity = await client.getEntity("Jessica");
 
 const params = {
@@ -134,7 +137,8 @@ const connection = await entity.initiateConnection(
 </Tab>
 <Tab title="CLI">
 <CodeGroup>
-```bash Adding a connection for an entity
+```bash
+# Adding a connection for an entity
 composio add github -e default # replace `default` with the entity id
 
 # you can also use -s to specify scopes ex. -s "repo,user"
@@ -172,7 +176,7 @@ For deploying in a production environment, utilize the SDK or API methods.
 <Tab title="Via API">
 ## Initiate Connections API
 <CodeGroup>
-```curl cURL 
+```curl
 curl --request POST \
   --url https://backend.composio.dev/api/v1/connectedAccounts \
   --header 'Content-Type: application/json' \
@@ -191,7 +195,8 @@ curl --request POST \
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-```python Get All Connected Account
+```python
+# Get All Connected Account
 try:
     connected_accounts  = entity.get_connections()
 except NoItemsFound as e:
@@ -201,7 +206,8 @@ except NoItemsFound as e:
 </Tab>
 <Tab title="Javascript">
 <CodeGroup>
-```javascript Get All Connected Account
+```javascript
+// Get All Connected Account
 coming soon
 ```
 </CodeGroup>
@@ -211,7 +217,7 @@ coming soon
 <Tab title="API">
 Returns a list of Connections for an integration
 <CodeGroup>
-```curl cURL 
+```curl
 curl --request GET \
   --url https://backend.composio.dev/api/v1/connectedAccounts \
   --header 'X-API-Key: <x-api-key>'
@@ -219,7 +225,7 @@ curl --request GET \
 </CodeGroup>
 
 Returns Connections for a Connected Account ID
-```curl cURL 
+```curl
 curl --request GET \
   --url https://backend.composio.dev/api/v1/connectedAccounts/{connectedAccountId} \
   --header 'X-API-Key: <x-api-key>'
@@ -234,7 +240,8 @@ Now, let's get all the actions that can be performed on the entity on GitHub.
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-```python Fetch tools
+```python
+# Fetch tools
 from composio_openai import ComposioToolSet, Action, App
 from openai import OpenAI
 
@@ -249,7 +256,8 @@ actions = tool_set.get_tools(apps=[App.GITHUB])
 </Tab>
 <Tab title="Javascript">
 <CodeGroup>
-```javascript Fetch tools
+```javascript
+// Fetch tools
 import { OpenAIToolSet } from "composio-core";
 
 const toolset = new OpenAIToolSet({
@@ -266,7 +274,7 @@ const tools = await toolset.getTools({ apps: ["github"] }, entity.id);
 <Tab title="Via API">
 Retrieve a list of all Actions based on Query Parameters.
 <CodeGroup>
-```curl curl
+```curl
 curl --request GET \
   --url https://backend.composio.dev/api/v2/actions \
   --header 'X-API-Key: <x-api-key>'
@@ -275,7 +283,7 @@ curl --request GET \
 
 Get Action Details for a Specific Action
 <CodeGroup>
-```curl curl
+```curl
 curl --request GET \
   --url https://backend.composio.dev/api/v1/actions/GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER \
   --header 'X-API-Key: <x-api-key>'
@@ -288,7 +296,8 @@ Now, let's call our agent for this entity to perform the task on Github on behal
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-```python execute agent
+```python
+# Execute agent
 
 my_task = "Star a repo composiohq/composio on GitHub"
 
@@ -302,13 +311,12 @@ assistant = openai_client.beta.assistants.create(
     tools=actions,  # type: ignore
 )
 
-
 # create a thread
 thread = openai_client.beta.threads.create()
-message = openai_client.beta.threads.messages.create(thread_id=thread.id,role="user",content=my_task)
+message = openai_client.beta.threads.messages.create(thread_id=thread.id, role="user", content=my_task)
 
 # Execute Agent with integrations
-run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=assistant.id)
+run = openai_client.beta.threads.runs.create(thread_id=thread.id, assistant_id=assistant.id)
 response_after_tool_calls = tool_set.wait_and_handle_assistant_tool_calls(
     client=openai_client,
     run=run,
@@ -316,16 +324,14 @@ response_after_tool_calls = tool_set.wait_and_handle_assistant_tool_calls(
 )
 
 print(response_after_tool_calls)
-
-
-
 ```
 </CodeGroup>
 
 </Tab>
 <Tab title="Javascript">
 <CodeGroup>
-```javascript Execute Agent
+```javascript
+// Execute Agent
 import { OpenAIToolSet } from "composio-core";
 import { OpenAI } from "openai";
 import { config } from "process";
@@ -384,7 +390,7 @@ await composioToolset.waitAndHandleAssistantToolCalls(
 
 <Tab title="Via API">
 <CodeGroup>
-```curl curl
+```curl
 curl --request POST \
   --url https://backend.composio.dev/api/v2/actions/GITHUB_STAR_A_REPO/execute \
   --header 'Content-Type: application/json' \

@@ -1,15 +1,13 @@
----
 title: "Workspace Environments"
 sidebarTitle: "Workspace Environments"
 icon: "server"
 description: "Configure and utilize different workspace environments for running your SWE agents"
----
 
 ## Overview
 
 Workspace environments facilitate **isolated** and **secure** execution of tools with **customizable configurations**. The SWE Development Kit (swekit) provides a range of environments tailored to your agents' needs, encompassing **security**, **configuration**, **CPU allocation**, and **network port access** for public services.
 
-## Why Workspace Environments Matters?
+## Why Workspace Environments Matter?
 
 Workspace environments are essential for:
 - **Security**: Isolating execution to protect the host system and sensitive data.
@@ -102,17 +100,16 @@ toolset = new OpenAIToolset({
   To use E2B sandboxes, you need to set the `E2B_API_KEY` environment variable with your E2B API key.
 </Warning>
 
-## Customizing Workspace Environments Variables
+## Customizing Workspace Environment Variables
 
-You can customize the workspace environment by adding environment variables while creating workspace.
+You can customize the workspace environment by adding environment variables while creating workspace:
 <CodeGroup>
 ``` javascript Add environment variables to workspace
 composio_toolset = new OpenAIToolset({
-    workspaceConfig: WorkspaceType.Docker({
+    workspaceConfig: Workspace.Docker({
         environment: {
             "SOME_API_TOKEN": "<SOME_API_TOKEN>",
         }
     })
 })
 ```
-</CodeGroup>

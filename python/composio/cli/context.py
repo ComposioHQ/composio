@@ -30,7 +30,7 @@ _context: t.Optional["Context"] = None
 
 
 class Context(logging.WithLogger):
-    """Runtime Context for Compsio CLI tool."""
+    """Runtime Context for Composio CLI tool."""
 
     _client: t.Optional[Composio] = None
     _toolset: t.Optional[ComposioToolSet] = None

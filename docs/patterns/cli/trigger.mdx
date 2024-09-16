@@ -11,7 +11,7 @@ description: "Learn how to enable, disable, list, and manage triggers using the 
 <Step title="Set Global Trigger Callback URL">
 Set a global callback URL to which all triggers from Composio will be sent.
   <CodeGroup>
-  ```bash Set Global Callback
+  ```bash
   composio triggers callbacks set https://31-*****-163.ngrok.app
   ```
   </CodeGroup>
@@ -20,7 +20,7 @@ Set a global callback URL to which all triggers from Composio will be sent.
 <Step title="List All Triggers for Slack">
 Identify which triggers are available for `slack` and explore potential activations.
   <CodeGroup>
-  ```bash List Slack Triggers
+  ```bash
   composio triggers --app slack
   ```
   </CodeGroup>
@@ -28,7 +28,7 @@ Identify which triggers are available for `slack` and explore potential activati
 <Step title="Enable a Specific Trigger">
 **Activate** a Slack trigger to **obtain a unique `Trigger_ID`**.
   <CodeGroup>
-  ```bash Enable a Trigger
+  ```bash
   composio triggers enable slack_receive_message # Replace 'slack_receive_message' with your desired trigger name
   ```
   </CodeGroup>
@@ -38,7 +38,7 @@ Identify which triggers are available for `slack` and explore potential activati
 <Step title="Disable a Specific Trigger">
 Deactivate a trigger if it no longer meets your needs after testing.
   <CodeGroup>
-  ```bash Disable a Trigger
+  ```bash
   composio triggers disable <trigger_id>
   ```
   </CodeGroup>
@@ -46,7 +46,7 @@ Deactivate a trigger if it no longer meets your needs after testing.
 <Step title="List All Active Triggers">
 Review all triggers that are currently active within your account.
   <CodeGroup>
-  ```bash List all Active Triggers
+  ```bash
   composio triggers --active
   ```
   </CodeGroup>
