@@ -14,8 +14,7 @@ export default class ConnectionsCommand {
     const command = this.program.command("triggers");
 
     command
-      .description("List all triggers you have access to")
-      .option("--active", "Only list the active triggers")
+      .description("Manage and list triggers")
       .option("--id <text>", "Filter by trigger id")
       .option("--app <text>", "Filter by app name")
       .action(this.handleAction.bind(this));
@@ -74,7 +73,7 @@ export class TriggerAdd {
 
     this.program
       .command("add")
-      .description("Add a trigger")
+      .description("Add a new trigger")
       .argument("<trigger>", "The trigger name")
       .action(this.handleAction.bind(this));
   }
@@ -141,7 +140,7 @@ export class TriggerDisable {
 
     this.program
       .command("disable")
-      .description("Disable a trigger")
+      .description("Disable an existing trigger")
       .argument("<triggerid>", "The trigger id")
       .action(this.handleAction.bind(this));
   }
@@ -164,7 +163,7 @@ export class ActiveTriggers {
 
     this.program
       .command("active")
-      .description("Disable a trigger")
+      .description("Show list of currently active triggers")
       .action(this.handleAction.bind(this));
   }
 

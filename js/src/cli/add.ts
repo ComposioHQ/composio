@@ -91,7 +91,6 @@ export default class AddCommand {
     const { expectedInputFields } = data;
 
 
-
     const config = await this.collectInputFields(expectedInputFields, true);
 
     const connectionData = await composioClient.connectedAccounts.create({
