@@ -74,6 +74,7 @@ class ProcessorsType(te.TypedDict):
     """Response processors."""
 
     schema: te.NotRequired[t.Dict[_KeyType, _ProcessorType]]
+    """Schema processors"""
 
 
 def _check_agentops() -> bool:
