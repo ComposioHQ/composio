@@ -252,7 +252,7 @@ class ComposioToolSet(WithLogger):
 
     def _try_get_github_access_token_for_current_entity(self) -> t.Optional[str]:
         """Try and get github access token for current entiry."""
-        from_env = os.environ.get(f"_COMPOSIO_{ENV_GITHUB_ACCESS_TOKEN}")
+        from_env = os.environ.get(ENV_GITHUB_ACCESS_TOKEN)
         if from_env is not None:
             self.logger.debug("Using composio github access token")
             return from_env
@@ -272,6 +272,15 @@ class ComposioToolSet(WithLogger):
             )
             return token
         except ComposioClientError:
+            self.logger.error(
+                f"Could not retrieve github access token for {self.entity_id=}"
+            )
+            return None
+        except ApiKeyNotProvidedError:
+            self.logger.error(
+                f"Could not retrieve github access token for {self.entity_id=},"
+                "Neiter GITHUB_ACCESS_TOKEN env var nor a composio API key was provided."
+            )
             return None
 
     @property
@@ -303,7 +312,7 @@ class ComposioToolSet(WithLogger):
 
         workspace_config = self._workspace_config or HostWorkspaceConfig()
         if workspace_config.composio_api_key is None:
-            workspace_config.composio_api_key = self.api_key
+            workspace_config.composio_api_key = self._api_key
 
         if workspace_config.composio_base_url is None:
             workspace_config.composio_base_url = self._base_url
