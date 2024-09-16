@@ -63,6 +63,8 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     NASA: "App"
     NOTION: "App"
     PERPLEXITYAI: "App"
+    POSTGRESTOOL: "App"
+    POSTHOG: "App"
     PIPEDRIVE: "App"
     RAGTOOL: "App"
     SALESFORCE: "App"
