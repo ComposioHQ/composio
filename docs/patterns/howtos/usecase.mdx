@@ -16,11 +16,12 @@ This method ensures your AI agents have the most appropriate tools for each spec
 <Tabs>
   <Tab title="Python">
   <CodeGroup>
-  ```Python Fetching Actions using natural language use-case
+  ```Python
+  Fetching Actions using natural language use-case
 
-  use_case="Star a repo on github"
+  use_case="Star a repo on GitHub"
 
-  action_enums=toolset.find_actions_by_use_case(app=App.GITHUB, use_case=use_case)
+  action_enums = toolset.find_actions_by_use_case(app=App.GITHUB, use_case=use_case)
   tools = toolset.get_tools(actions=action_enums)
 
   # use tools as per your framework
@@ -30,7 +31,8 @@ This method ensures your AI agents have the most appropriate tools for each spec
 
   <Tab title="Javascript">
   <CodeGroup>
-  ```Javascript Fetching Actions using natural language use-case
+  ```Javascript
+  Fetching Actions using natural language use-case
   //coming soon
   ```
   </CodeGroup>
@@ -38,8 +40,9 @@ This method ensures your AI agents have the most appropriate tools for each spec
 
   <Tab title="CLI">
   <CodeGroup>
-  ```bash Fetching Actions using natural language use-case
-  composio actions --use-case 'get channel messages' --app 'slack'
+  ```bash
+  Fetching Actions using natural language use-case
+  composio actions --use-case 'get channel messages' --app 'Slack'
   ```
   </CodeGroup>
   </Tab>

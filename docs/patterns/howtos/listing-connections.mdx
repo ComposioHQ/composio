@@ -15,11 +15,9 @@ from composio import Composio
 
 client = Composio()
 
-entity = composio_client.get_entity(id=USER_ID)
+entity = client.get_entity(id=USER_ID)
 
-print(composio_client.)
-
-print(composio_client.connected_accounts.get())
+print(client.connected_accounts.get())
 ```
 </CodeGroup>
 </Tab>
@@ -50,12 +48,11 @@ from composio import Composio
 
 client = Composio()
 
-print(composio_client.connected_accounts.get(id=123))
+print(client.connected_accounts.get(id=123))
 ```
 </CodeGroup>
 </Tab>
 <Tab title="CLI">
-
 <CodeGroup>
 ```bash Get connection details via CLI
 composio connections get 123

@@ -5,8 +5,6 @@ icon: "calendar"
 description: "This project is an example which uses Composio to seamlessly convert your to-do lists into Google Calendar events. It automatically schedules tasks with specified labels and times, ensuring your calendar is always up-to-date and organized."
 ---
 
-
-
 <Tabs>
 <Tab title="Python">
 <Card color="#7bee0c" title="Calendar Agent GitHub Repository" icon="github" href="https://www.github.com/ComposioHQ/composio/blob/master/python/examples/quickstarters/calendar_agent/">
@@ -16,7 +14,7 @@ description: "This project is an example which uses Composio to seamlessly conve
 
     <Step title="Install the required packages">
     <CodeGroup>
-    ```python Install the required packages
+    ```python
     pip install composio-crewai langchain-openai
     ```
     </CodeGroup>
@@ -27,36 +25,36 @@ description: "This project is an example which uses Composio to seamlessly conve
     <Step title="Import base packages">
     Next, we'll import the essential libraries for our project.
     <CodeGroup>
-        ```python Python - Import statements
+        ```python
         import os
         from datetime import datetime
 
         from composio_crewai import App, ComposioToolSet
         from crewai import Agent, Task
         from dotenv import load_dotenv
-        from langchain_openai import ChatOpenAI        
+        from langchain_openai import ChatOpenAI
         ```
     </CodeGroup>
     </Step>
 
 
-    <Step title="Initialise Language Model and Define tools">
+    <Step title="Initialize Language Model and Define tools">
     We'll initialize our language model and set up the necessary tools for our agents.
     <CodeGroup>
-        ```python Models and Tools
+        ```python
         load_dotenv()
 
         # Initialize the language model
         llm = ChatOpenAI(model="gpt-4o")
 
         # Define tools for the agents
-        # We are using Google calendar tool from composio to connect to our calendar account.
+        # We are using Google calendar tool from Composio to connect to our calendar account.
         composio_toolset = ComposioToolSet()
         tools = composio_toolset.get_tools(apps=[App.GOOGLECALENDAR])
 
-        # Retreive the current date and time
+        # Retrieve the current date and time
         date = datetime.today().strftime("%Y-%m-%d")
-        timezone = datetime.now().astimezone().tzinfo        
+        timezone = datetime.now().astimezone().tzinfo
         ```
     </CodeGroup>
     </Step>
@@ -64,14 +62,14 @@ description: "This project is an example which uses Composio to seamlessly conve
     <Step title="Setup Todo">
     Define the todo list that we want to convert into calendar events.
     <CodeGroup>
-        ```python Python - Todo Setup
+        ```python
         # Setup Todo
         todo = """
             1PM - 3PM -> Code,
             5PM - 7PM -> Meeting,
             9AM - 12AM -> Learn something,
             8PM - 10PM -> Game
-        """        
+        """
         ```
     </CodeGroup>
     </Step>
@@ -79,33 +77,32 @@ description: "This project is an example which uses Composio to seamlessly conve
     <Step title="Create and Execute Agent">
     Finally, we'll define and execute the agent responsible for creating Google Calendar events based on the todo list.
     <CodeGroup>
-        ```python Run agent
+        ```python
         # Create and Execute Agent.
         def run_crew():
-        calendar_agent = Agent(
-            role="Google Calendar Agent",
-            goal="""You take action on Google Calendar using Google Calendar APIs""",
-            backstory="""You are an AI agent responsible for taking actions on Google Calendar on users' behalf. 
-            You need to take action on Calendar using Google Calendar APIs. Use correct tools to run APIs from the given tool-set.""",
-            verbose=True,
-            tools=tools,
-            llm=llm,
-        )
-        task = Task(
-            description=f"Book slots according to {todo}. Label them with the work provided to be done in that time period. Schedule it for today. Today's date is {date} (it's in YYYY-MM-DD format) and make the timezone be {timezone}.",
-            agent=calendar_agent,
-            expected_output="if free slot is found",
-        )
-        crew = Crew(agents=[calendar_agent], tasks=[task])
-        result = crew.kickoff()
-        print(result) 
+            calendar_agent = Agent(
+                role="Google Calendar Agent",
+                goal="""You take action on Google Calendar using Google Calendar APIs""",
+                backstory="""You are an AI agent responsible for taking actions on Google Calendar on users' behalf. 
+                You need to take action on Calendar using Google Calendar APIs. Use correct tools to run APIs from the given tool-set.""",
+                verbose=True,
+                tools=tools,
+                llm=llm,
+            )
+            task = Task(
+                description=f"Book slots according to {todo}. Label them with the work provided to be done in that time period. Schedule it for today. Today's date is {date} (it's in YYYY-MM-DD format) and make the timezone be {timezone}.",
+                agent=calendar_agent,
+                expected_output="if free slot is found",
+            )
+            crew = Crew(agents=[calendar_agent], tasks=[task])
+            result = crew.kickoff()
+            print(result) 
         ```
     </CodeGroup>
     </Step>
 
 </Steps>
 </Tab>
-
 
 <Tab title="Javascript">
 <Card color="#7bee0c" title="Calendar Agent GitHub Repository" icon="github" href="https://github.com/ComposioHQ/composio/tree/master/js/examples/docs-example/calendar_agent">
@@ -115,7 +112,7 @@ description: "This project is an example which uses Composio to seamlessly conve
 
     <Step title="Install the required packages">
     <CodeGroup>
-    ```javascript Install the required packages
+    ```javascript
     pnpm add composio-core dotenv langchain @langchain/openai
     ```
     </CodeGroup>
@@ -125,27 +122,27 @@ description: "This project is an example which uses Composio to seamlessly conve
     <Step title="Import base packages">
     Next, we'll import the essential libraries for our project.
     <CodeGroup>
-        ```javascript JS - Import statements
+        ```javascript
         import dotenv from 'dotenv';
         import { ChatOpenAI } from "@langchain/openai";
         import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
         import { pull } from "langchain/hub";
         import { LangchainToolSet } from "composio-core";
-        
+
         dotenv.config();
         ```
     </CodeGroup>
     </Step>
 
-    <Step title="Initialise Language Model and Define tools">
+    <Step title="Initialize Language Model and Define tools">
     We'll initialize our language model and set up the necessary tools for our agents.
     <CodeGroup>
-        ```javascript Models and Tools
+        ```javascript
         // Initialize the language model
         const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
 
         // Define tools for the agents
-        // We are using Google calendar tool from composio to connect to our calendar account.
+        // We are using Google calendar tool from Composio to connect to our calendar account.
         const composioToolset = new LangchainToolSet({
             apiKey: process.env.COMPOSIO_API_KEY
         });
@@ -163,10 +160,10 @@ description: "This project is an example which uses Composio to seamlessly conve
     </CodeGroup>
     </Step>
 
-            <Step title="Setup Todo">
+    <Step title="Setup Todo">
     Define the todo list that we want to convert into calendar events.
     <CodeGroup>
-        ```javascript JS - Todo Setup
+        ```javascript
         // Setup Todo
         const todo = `
             1PM - 3PM -> Code solo
@@ -182,7 +179,7 @@ description: "This project is an example which uses Composio to seamlessly conve
     Finally, we'll define and execute the agent responsible for creating Google Calendar events based on the todo list.
     <CodeGroup>
 
-        ```javascript Run agent
+        ```javascript
         // Create and Execute Agent.
         async function runAgent() {
             const prompt = await pull("hwchase17/openai-functions-agent");
@@ -219,7 +216,7 @@ description: "This project is an example which uses Composio to seamlessly conve
 
 ## Complete Code 
     <CodeGroup>
-    ```python Python Final Code
+    ```python
     # Import base packages
     import os
     from datetime import datetime
@@ -236,11 +233,11 @@ description: "This project is an example which uses Composio to seamlessly conve
     llm = ChatOpenAI(model="gpt-4o")
 
     # Define tools for the agents
-    # We are using Google calendar tool from composio to connect to our calendar account.
+    # We are using Google calendar tool from Composio to connect to our calendar account.
     composio_toolset = ComposioToolSet()
     tools = composio_toolset.get_tools(apps=[App.GOOGLECALENDAR])
 
-    # Retreive the current date and time
+    # Retrieve the current date and time
     date = datetime.today().strftime("%Y-%m-%d")
     timezone = datetime.now().astimezone().tzinfo
 
@@ -276,7 +273,7 @@ description: "This project is an example which uses Composio to seamlessly conve
     run_crew()    
     ```
 
-    ```javascript Javascript Final Code
+    ```javascript
     import dotenv from 'dotenv';
     import { ChatOpenAI } from "@langchain/openai";
     import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
@@ -307,8 +304,8 @@ description: "This project is an example which uses Composio to seamlessly conve
 
     async function runAgent() {
         const tools = await composioToolset.getActions({
-        actions: ["googlecalendar_create_event", "googlecalendar_list_events"]
-    });
+            actions: ["googlecalendar_create_event", "googlecalendar_list_events"]
+        });
         const prompt = await pull("hwchase17/openai-functions-agent");
         const agent = await createOpenAIFunctionsAgent({
             llm,
@@ -316,28 +313,24 @@ description: "This project is an example which uses Composio to seamlessly conve
             prompt
         });
 
-    const agentExecutor = new AgentExecutor({
-        agent,
-        tools,
-        verbose: true,
-    });
+        const agentExecutor = new AgentExecutor({
+            agent,
+            tools,
+            verbose: true,
+        });
 
-    const result = await agentExecutor.invoke({
-        input: `Book slots according to this todo list: ${todo}. 
-                Label them with the work provided to be done in that time period. 
-                Schedule it for today. Today's date is ${date} (it's in YYYY-MM-DD format) 
-                and make the timezone be ${timezone}.`
-    });
+        const result = await agentExecutor.invoke({
+            input: `Book slots according to this todo list: ${todo}. 
+                    Label them with the work provided to be done in that time period. 
+                    Schedule it for today. Today's date is ${date} (it's in YYYY-MM-DD format) 
+                    and make the timezone be ${timezone}.`
+        });
 
-    console.log(result.output);
-    return "Agent execution completed";
+        console.log(result.output);
+        return "Agent execution completed";
     }
 
     runAgent().then(console.log).catch(console.error);
     ```
 
     </CodeGroup>
-
-
-
-
