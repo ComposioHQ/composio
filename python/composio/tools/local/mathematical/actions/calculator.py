@@ -1,3 +1,4 @@
+import ast
 from typing import Dict
 
 from pydantic import BaseModel, Field
@@ -25,6 +26,4 @@ class Calculator(LocalAction[CalculatorRequest, CalculatorResponse]):
     _tags = ["calculator"]
 
     def execute(self, request: CalculatorRequest, metadata: Dict) -> CalculatorResponse:
-        return CalculatorResponse(
-            result=str(eval(request.operation))  # pylint: disable=eval-used
-        )
+        return CalculatorResponse(result=str(ast.literal_eval(request.operation)))

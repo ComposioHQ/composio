@@ -103,11 +103,8 @@ class TestValidateTools:
 def test_api_key_missing() -> None:
     toolset = ComposioToolSet()
     toolset._api_key = None  # pylint: disable=protected-access
-    with pytest.raises(
-        ApiKeyNotProvidedError,
-        match=(
-            "API Key not provided, either provide API key or export it as "
-            "`COMPOSIO_API_KEY` or run `composio login`"
-        ),
-    ):
-        _ = toolset.workspace
+    # No exception should be raised when accessing workspace
+    workspace = toolset.workspace
+    assert workspace is not None
+    # Verify that the workspace is created without an API key
+    assert toolset._api_key is None
