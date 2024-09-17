@@ -54,7 +54,7 @@ class Shell(Sessionable):
                     break
                 chunks.pop(0)
 
-            if chunks[0] not in _NOWAIT_CMDS:
+            if len(chunks) > 0 and chunks[0] not in _NOWAIT_CMDS:
                 cmds.append(shlex.join(chunks).rstrip().lstrip().lower())
         return cmds
 
