@@ -1,0 +1,13 @@
+diff --git a/requests/auth.py b/requests/auth.py
+index a3de123..58cc43e 100644
+--- a/requests/auth.py
++++ b/requests/auth.py
+@@ -144,7 +144,7 @@ class HTTPDigestAuth(AuthBase):
+         if entdig:
+             base += ', digest="%s"' % entdig
+         if qop:
+-            base += ', qop=auth, nc=%s, cnonce="%s"' % (ncvalue, cnonce)
++            base += ', qop="auth", nc=%s, cnonce=\"%s\"' % (ncvalue, cnonce)
+ 
+         return 'Digest %s' % (base)
+ 

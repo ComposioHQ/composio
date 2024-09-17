@@ -181,6 +181,7 @@ def build_image_and_container(
                 composio_api_key=composio_toolset.api_key,
                 composio_base_url=composio_toolset._base_url or get_api_url_base(),
                 github_access_token=composio_toolset._try_get_github_access_token_for_current_entity(),
+                persistent=True,
             ),
         )
     elif workspace_env == WorkspaceType.E2B:
@@ -312,4 +313,4 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-    get_score(logs_dir="/Users/shrey/.composio_coder/logs/17262871386532/", run_id="langgraph_agent_temp")
+    get_score(logs_dir="/Users/shrey/.composio_coder/logs/17265554758930/", run_id="langgraph_agent_temp")

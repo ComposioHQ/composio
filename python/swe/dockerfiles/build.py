@@ -80,6 +80,8 @@ def _swes(generated: Path, multi: bool = False) -> None:
             repo = child.name.replace("__", "-")
             for version in child.iterdir():
                 tag = f"{repo}-{version.name.replace('.', '-')}"
+                if "sympy" not in repo:
+                    continue
                 futures.append(
                     executor.submit(
                         _build,

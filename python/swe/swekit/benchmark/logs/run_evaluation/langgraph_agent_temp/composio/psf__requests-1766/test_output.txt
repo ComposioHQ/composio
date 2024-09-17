@@ -1,0 +1,441 @@
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z '' ']'
++++ export CONDA_SHLVL=0
++++ CONDA_SHLVL=0
++++ '[' -n '' ']'
++++++ dirname /opt/miniconda3/bin/conda
+++++ dirname /opt/miniconda3/bin
++++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export PATH
++++ '[' -z '' ']'
++++ PS1=
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1=
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''1'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=1
++++ CONDA_SHLVL=1
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''2'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_1='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=2
+++ CONDA_SHLVL=2
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_1=/opt/miniconda3
+++ CONDA_PREFIX_1=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ cd /testbed
++ git config --global --add safe.directory /testbed
++ cd /testbed
++ git status
+On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   requests/auth.py
+
+no changes added to commit (use "git add" and/or "git commit -a")
++ git show
+commit 847735553aeda6e6633f2b32e14ba14ba86887a4
+Merge: 340b2459 b825bbd4
+Author: Kenneth Reitz <me@kennethreitz.org>
+Date:   Wed Nov 27 09:23:40 2013 -0800
+
+    Merge pull request #1762 from dstufft/update-urllib3
+    
+    Update urllib3 to 929f1586
+
++ git diff 847735553aeda6e6633f2b32e14ba14ba86887a4
+diff --git a/requests/auth.py b/requests/auth.py
+index a3de123d..58cc43e7 100644
+--- a/requests/auth.py
++++ b/requests/auth.py
+@@ -144,7 +144,7 @@ class HTTPDigestAuth(AuthBase):
+         if entdig:
+             base += ', digest="%s"' % entdig
+         if qop:
+-            base += ', qop=auth, nc=%s, cnonce="%s"' % (ncvalue, cnonce)
++            base += ', qop="auth", nc=%s, cnonce=\"%s\"' % (ncvalue, cnonce)
+ 
+         return 'Digest %s' % (base)
+ 
++ source /opt/miniconda3/bin/activate
+++ _CONDA_ROOT=/opt/miniconda3
+++ . /opt/miniconda3/etc/profile.d/conda.sh
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ '[' -z x ']'
+++ conda activate
+++ local cmd=activate
+++ case "$cmd" in
+++ __conda_activate activate
+++ '[' -n '' ']'
+++ local ask_conda
++++ PS1='(testbed) '
++++ __conda_exe shell.posix activate
++++ /opt/miniconda3/bin/conda shell.posix activate
+++ ask_conda='PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ eval 'PS1='\''(base) '\''
+export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3'\''
+export CONDA_SHLVL='\''3'\''
+export CONDA_DEFAULT_ENV='\''base'\''
+export CONDA_PROMPT_MODIFIER='\''(base) '\''
+export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++++ PS1='(base) '
++++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
++++ export CONDA_PREFIX=/opt/miniconda3
++++ CONDA_PREFIX=/opt/miniconda3
++++ export CONDA_SHLVL=3
++++ CONDA_SHLVL=3
++++ export CONDA_DEFAULT_ENV=base
++++ CONDA_DEFAULT_ENV=base
++++ export 'CONDA_PROMPT_MODIFIER=(base) '
++++ CONDA_PROMPT_MODIFIER='(base) '
++++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
++++ export CONDA_EXE=/opt/miniconda3/bin/conda
++++ CONDA_EXE=/opt/miniconda3/bin/conda
++++ export _CE_M=
++++ _CE_M=
++++ export _CE_CONDA=
++++ _CE_CONDA=
++++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ __conda_hashr
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ hash -r
++ conda activate testbed
++ local cmd=activate
++ case "$cmd" in
++ __conda_activate activate testbed
++ '[' -n '' ']'
++ local ask_conda
+++ PS1='(base) '
+++ __conda_exe shell.posix activate testbed
+++ /opt/miniconda3/bin/conda shell.posix activate testbed
++ ask_conda='PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
++ eval 'PS1='\''(testbed) '\''
+export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
+export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
+export CONDA_SHLVL='\''4'\''
+export CONDA_DEFAULT_ENV='\''testbed'\''
+export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
+export CONDA_PREFIX_3='\''/opt/miniconda3'\''
+export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
+export _CE_M='\'''\''
+export _CE_CONDA='\'''\''
+export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
+++ PS1='(testbed) '
+++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
+++ export CONDA_SHLVL=4
+++ CONDA_SHLVL=4
+++ export CONDA_DEFAULT_ENV=testbed
+++ CONDA_DEFAULT_ENV=testbed
+++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
+++ CONDA_PROMPT_MODIFIER='(testbed) '
+++ export CONDA_PREFIX_3=/opt/miniconda3
+++ CONDA_PREFIX_3=/opt/miniconda3
+++ export CONDA_EXE=/opt/miniconda3/bin/conda
+++ CONDA_EXE=/opt/miniconda3/bin/conda
+++ export _CE_M=
+++ _CE_M=
+++ export _CE_CONDA=
+++ _CE_CONDA=
+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
++ __conda_hashr
++ '[' -n '' ']'
++ '[' -n '' ']'
++ hash -r
++ python -m pip install .
+Processing /testbed
+  Preparing metadata (setup.py): started
+  Preparing metadata (setup.py): finished with status 'done'
+Building wheels for collected packages: requests
+  Building wheel for requests (setup.py): started
+  Building wheel for requests (setup.py): finished with status 'done'
+  Created wheel for requests: filename=requests-2.0.1-py2.py3-none-any.whl size=435558 sha256=d0adb1ce8e01af05d499227e20f6ab57a269a2298f5748b578b1113d492094f9
+  Stored in directory: /tmp/pip-ephem-wheel-cache-vdqx8avw/wheels/7d/66/67/70d1ee2124ccf21d601c352e25cdca10f611f7c8b3f9ffb9e4
+Successfully built requests
+Installing collected packages: requests
+  Attempting uninstall: requests
+    Found existing installation: requests 2.0.1
+    Uninstalling requests-2.0.1:
+      Successfully uninstalled requests-2.0.1
+Successfully installed requests-2.0.1
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
++ git checkout 847735553aeda6e6633f2b32e14ba14ba86887a4 test_requests.py
+Updated 0 paths from 98a2015e
++ git apply -v -
+Checking patch test_requests.py...
+Applied patch test_requests.py cleanly.
++ pytest -rA test_requests.py
+============================= test session starts ==============================
+platform linux -- Python 3.9.19, pytest-7.4.4, pluggy-1.0.0
+rootdir: /testbed
+collected 91 items
+
+test_requests.py ....................F.................................. [ 60%]
+....................................                                     [100%]
+
+=================================== FAILURES ===================================
+________________ RequestsTestCase.test_conflicting_post_params _________________
+
+self = <test_requests.RequestsTestCase testMethod=test_conflicting_post_params>
+
+    def test_conflicting_post_params(self):
+        url = httpbin('post')
+        with open('requirements.txt') as f:
+>           pytest.raises(ValueError, "requests.post(url, data='[{\"some\": \"data\"}]', files={'some': f})")
+E           TypeError: 'requests.post(url, data=\'[{"some": "data"}]\', files={\'some\': f})' object (type: <class 'str'>) must be callable
+
+test_requests.py:370: TypeError
+=============================== warnings summary ===============================
+requests/packages/urllib3/_collections.py:7
+  /testbed/requests/packages/urllib3/_collections.py:7: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+    from collections import MutableMapping
+
+requests/sessions.py:12
+  /testbed/requests/sessions.py:12: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+    from collections import Mapping
+
+test_requests.py::RequestsTestCase::test_BASICAUTH_TUPLE_HTTP_200_OK_GET
+  /testbed/requests/models.py:156: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+    if isinstance(hook, collections.Callable):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED test_requests.py::RequestsTestCase::test_BASICAUTH_TUPLE_HTTP_200_OK_GET
+PASSED test_requests.py::RequestsTestCase::test_DIGESTAUTH_QUOTES_QOP_VALUE
+PASSED test_requests.py::RequestsTestCase::test_DIGESTAUTH_WRONG_HTTP_401_GET
+PASSED test_requests.py::RequestsTestCase::test_DIGEST_AUTH_RETURNS_COOKIE
+PASSED test_requests.py::RequestsTestCase::test_DIGEST_AUTH_SETS_SESSION_COOKIES
+PASSED test_requests.py::RequestsTestCase::test_DIGEST_HTTP_200_OK_GET
+PASSED test_requests.py::RequestsTestCase::test_DIGEST_STREAM
+PASSED test_requests.py::RequestsTestCase::test_HTTP_200_OK_GET_ALTERNATIVE
+PASSED test_requests.py::RequestsTestCase::test_HTTP_200_OK_GET_WITH_MIXED_PARAMS
+PASSED test_requests.py::RequestsTestCase::test_HTTP_200_OK_GET_WITH_PARAMS
+PASSED test_requests.py::RequestsTestCase::test_HTTP_200_OK_HEAD
+PASSED test_requests.py::RequestsTestCase::test_HTTP_200_OK_PUT
+PASSED test_requests.py::RequestsTestCase::test_HTTP_302_ALLOW_REDIRECT_GET
+PASSED test_requests.py::RequestsTestCase::test_POSTBIN_GET_POST_FILES
+PASSED test_requests.py::RequestsTestCase::test_POSTBIN_GET_POST_FILES_WITH_DATA
+PASSED test_requests.py::RequestsTestCase::test_autoset_header_values_are_native
+PASSED test_requests.py::RequestsTestCase::test_basic_building
+PASSED test_requests.py::RequestsTestCase::test_basicauth_with_netrc
+PASSED test_requests.py::RequestsTestCase::test_can_send_nonstring_objects_with_files
+PASSED test_requests.py::RequestsTestCase::test_cannot_send_unprepared_requests
+PASSED test_requests.py::RequestsTestCase::test_cookie_parameters
+PASSED test_requests.py::RequestsTestCase::test_cookie_persists_via_api
+PASSED test_requests.py::RequestsTestCase::test_cookie_quote_wrapped
+PASSED test_requests.py::RequestsTestCase::test_cookie_removed_on_expire
+PASSED test_requests.py::RequestsTestCase::test_cookie_sent_on_redirect
+PASSED test_requests.py::RequestsTestCase::test_custom_content_type
+PASSED test_requests.py::RequestsTestCase::test_decompress_gzip
+PASSED test_requests.py::RequestsTestCase::test_different_encodings_dont_break_post
+PASSED test_requests.py::RequestsTestCase::test_entry_points
+PASSED test_requests.py::RequestsTestCase::test_fixes_1329
+PASSED test_requests.py::RequestsTestCase::test_generic_cookiejar_works
+PASSED test_requests.py::RequestsTestCase::test_get_auth_from_url
+PASSED test_requests.py::RequestsTestCase::test_header_keys_are_native
+PASSED test_requests.py::RequestsTestCase::test_header_remove_is_case_insensitive
+PASSED test_requests.py::RequestsTestCase::test_hook_receives_request_arguments
+PASSED test_requests.py::RequestsTestCase::test_http_error
+PASSED test_requests.py::RequestsTestCase::test_invalid_url
+PASSED test_requests.py::RequestsTestCase::test_links
+PASSED test_requests.py::RequestsTestCase::test_long_authinfo_in_url
+PASSED test_requests.py::RequestsTestCase::test_mixed_case_scheme_acceptable
+PASSED test_requests.py::RequestsTestCase::test_no_content_length
+PASSED test_requests.py::RequestsTestCase::test_oddball_schemes_dont_check_URLs
+PASSED test_requests.py::RequestsTestCase::test_params_are_added_before_fragment
+PASSED test_requests.py::RequestsTestCase::test_params_are_merged_case_sensitive
+PASSED test_requests.py::RequestsTestCase::test_path_is_not_double_encoded
+PASSED test_requests.py::RequestsTestCase::test_prepared_from_session
+PASSED test_requests.py::RequestsTestCase::test_prepared_request_hook
+PASSED test_requests.py::RequestsTestCase::test_request_and_response_are_pickleable
+PASSED test_requests.py::RequestsTestCase::test_request_cookie_overrides_session_cookie
+PASSED test_requests.py::RequestsTestCase::test_request_ok_set
+PASSED test_requests.py::RequestsTestCase::test_requests_in_history_are_not_overridden
+PASSED test_requests.py::RequestsTestCase::test_response_is_iterable
+PASSED test_requests.py::RequestsTestCase::test_session_pickling
+PASSED test_requests.py::RequestsTestCase::test_set_cookie_on_301
+PASSED test_requests.py::RequestsTestCase::test_status_raising
+PASSED test_requests.py::RequestsTestCase::test_time_elapsed_blank
+PASSED test_requests.py::RequestsTestCase::test_transport_adapter_ordering
+PASSED test_requests.py::RequestsTestCase::test_unicode_get
+PASSED test_requests.py::RequestsTestCase::test_unicode_header_name
+PASSED test_requests.py::RequestsTestCase::test_unicode_method_name
+PASSED test_requests.py::RequestsTestCase::test_unicode_multipart_post
+PASSED test_requests.py::RequestsTestCase::test_unicode_multipart_post_fieldnames
+PASSED test_requests.py::RequestsTestCase::test_uppercase_scheme_redirect
+PASSED test_requests.py::RequestsTestCase::test_urlencoded_get_query_multivalued_param
+PASSED test_requests.py::RequestsTestCase::test_user_agent_transfers
+PASSED test_requests.py::TestContentEncodingDetection::test_html4_pragma
+PASSED test_requests.py::TestContentEncodingDetection::test_html_charset
+PASSED test_requests.py::TestContentEncodingDetection::test_none
+PASSED test_requests.py::TestContentEncodingDetection::test_precedence
+PASSED test_requests.py::TestContentEncodingDetection::test_xhtml_pragma
+PASSED test_requests.py::TestContentEncodingDetection::test_xml
+PASSED test_requests.py::TestCaseInsensitiveDict::test_contains
+PASSED test_requests.py::TestCaseInsensitiveDict::test_delitem
+PASSED test_requests.py::TestCaseInsensitiveDict::test_docstring_example
+PASSED test_requests.py::TestCaseInsensitiveDict::test_equality
+PASSED test_requests.py::TestCaseInsensitiveDict::test_fixes_649
+PASSED test_requests.py::TestCaseInsensitiveDict::test_get
+PASSED test_requests.py::TestCaseInsensitiveDict::test_getitem
+PASSED test_requests.py::TestCaseInsensitiveDict::test_iter
+PASSED test_requests.py::TestCaseInsensitiveDict::test_iterable_init
+PASSED test_requests.py::TestCaseInsensitiveDict::test_kwargs_init
+PASSED test_requests.py::TestCaseInsensitiveDict::test_len
+PASSED test_requests.py::TestCaseInsensitiveDict::test_lower_items
+PASSED test_requests.py::TestCaseInsensitiveDict::test_mapping_init
+PASSED test_requests.py::TestCaseInsensitiveDict::test_preserve_key_case
+PASSED test_requests.py::TestCaseInsensitiveDict::test_preserve_last_key_case
+PASSED test_requests.py::TestCaseInsensitiveDict::test_setdefault
+PASSED test_requests.py::TestCaseInsensitiveDict::test_update
+PASSED test_requests.py::TestCaseInsensitiveDict::test_update_retains_unchanged
+PASSED test_requests.py::UtilsTestCase::test_super_len_io_streams
+FAILED test_requests.py::RequestsTestCase::test_conflicting_post_params - Typ...
+============= 1 failed, 90 passed, 3 warnings in 95.85s (0:01:35) ==============
++ git checkout 847735553aeda6e6633f2b32e14ba14ba86887a4 test_requests.py
+Updated 1 path from 98a2015e
