@@ -32,6 +32,7 @@ class GetRelevantCode(LocalAction[GetRelevantCodeRequest, GetRelevantCodeRespons
     query: "database connection pooling"
 
     The relevance of retrieved code snippets depends on the quality and specificity of the provided query.
+    Don't use this action if you are not sure about the query. And the results returned are not very relevant.
     """
 
     display_name = "Get Relevant Code"
