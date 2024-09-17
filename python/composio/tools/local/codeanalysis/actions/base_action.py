@@ -33,21 +33,29 @@ class BaseCodeAnalysisAction:
         }
 
     def get_matching_items(
-        self, query_name: Optional[str], item_type: str
+        self,
+        query_name: Optional[str],
+        item_type: str,
+        parent_fqdns: Optional[List[str]] = None,
     ) -> List[str]:
         if not self.fqdn_index:
             raise ValueError("FQDN index not loaded")
+
+        def matches_query(curr_fqdn: str) -> bool:
+            return (
+                query_name is None
+                or query_name == curr_fqdn.split(".")[-1]
+                or query_name == curr_fqdn
+            )
 
         matching_fqdns = [
             curr_fqdn
             for curr_fqdn, curr_fqdn_elem in self.fqdn_index.items()
             if curr_fqdn_elem["global_type"] == item_type
-            and (
-                query_name is None
-                or query_name == curr_fqdn.split(".")[-1]
-                or query_name == curr_fqdn
-            )
+            and matches_query(curr_fqdn)
+            and (parent_fqdns is None or curr_fqdn_elem["parent_fqdn"] in parent_fqdns)
         ]
+
         return matching_fqdns
 
     def fetch_relevant_details(self, relevant_fqdn: str, repo_path: str) -> List[Dict]:
@@ -89,13 +97,20 @@ class MethodAnalysisAction(BaseCodeAnalysisAction):
     def get_method_artefacts(
         self, query_class_name: Optional[str], query_method_name: str, repo_path: str
     ) -> Dict:
-        matching_fqdns_func = self.get_matching_items(query_method_name, "function")
         matching_fqdns_class = self.get_matching_items(query_class_name, "class")
-
+        if query_class_name is not None:
+            matching_fqdns_func = self.get_matching_items(
+                query_method_name, "function", matching_fqdns_class
+            )
+        else:
+            matching_fqdns_func = self.get_matching_items(query_method_name, "function")
         func_results = self.get_item_results(matching_fqdns_func, repo_path)
-        filtered_func_results = self.filter_function_results(
-            func_results, query_class_name, matching_fqdns_class, repo_path
-        )
+        if query_class_name is not None:
+            filtered_func_results = self.filter_function_results(
+                func_results, query_class_name, matching_fqdns_class, repo_path
+            )
+        else:
+            filtered_func_results = func_results
 
         return self.format_method_results(filtered_func_results)
 

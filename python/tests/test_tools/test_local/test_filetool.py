@@ -326,6 +326,17 @@ class TestFiletool:
         )
         assert "Invalid request data provided" in edit_response["error"]
 
+        # Edit file
+        edit_response = toolset.execute_action(
+            Action.FILETOOL_EDIT_FILE,
+            {
+                "file_path": "file1.txt",
+                "start_line": 1,
+                "end_line": 1,
+            },
+        )
+        assert "Invalid request data provided" in edit_response["error"]
+
         # Verify changes
         open_response = toolset.execute_action(
             Action.FILETOOL_OPEN_FILE, {"file_path": "file1.txt"}
