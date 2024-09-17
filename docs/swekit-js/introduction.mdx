@@ -7,12 +7,12 @@ description: "Build and benchmark Software Engineering agents with Composio's to
 
 ## Overview
 
-SWE Development Kit (swekit) is a powerful framework for building Software Engineering agents using Composio's tooling ecosystem. 
-It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell Manager, and more.
+SWE Development Kit (swekit) is a powerful framework for building Software Engineering agents using Composio's tooling ecosystem.
+It provides tools like GitHub, Repo Indexing, Repo Search, File Manager, Shell Manager, and more.
 
 ## Key Features
 
-- **Agent Scaffolding**: Quickly create Devin like agents that work out-of-the-box with popular agentic frameworks like OpenAI, Langchain, and more.
+- **Agent Scaffolding**: Quickly create Devin-like agents that work out-of-the-box with popular agent frameworks like OpenAI, Langchain, and more.
 - **Flexible Workspace Environments**: Operate your agents within a variety of secure and isolated environments including Docker, E2B, and FlyIO for security and isolation.
 - **Customizable Tools**: Add or optimize your agent's abilities with a variety of tools.
 - **Benchmarking**: Evaluate your agents against the SWE-bench, a comprehensive benchmark for software engineering tasks.
@@ -21,8 +21,8 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
 
 <Steps>
 <Step title="Installation">
-  Begin by installing the core packages using your favourite package manager:
-  
+  Begin by installing the core packages using your favorite package manager:
+
   <Tabs>
     <Tab title="pnpm (recommended)">
         <CodeGroup>
@@ -41,17 +41,17 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
     <Tab title="yarn">
        <CodeGroup>
         ```bash Installing Composio Core Package
-        yarn install -g composio-core
+        yarn global add composio-core
         ```
         </CodeGroup>
     </Tab>
   </Tabs>
 </Step>
 
-<Step title="Connect your Github Account">
-  To utilize Github Issues as a task source, link your Github account as follows:
+<Step title="Connect your GitHub Account">
+  To utilize GitHub Issues as a task source, link your GitHub account as follows:
   <CodeGroup>
-  ```bash Use Github Auth Token
+  ```bash Use GitHub Auth Token
   export GITHUB_ACCESS_TOKEN=<your_token>
   ```
   </CodeGroup>
@@ -60,23 +60,23 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
 
 <Step title="Clone SWE Template for JS">
   <Warning>
-  To use Docker as the default workspace environment, ensure your Docker server is running
+  To use Docker as the default workspace environment, ensure your Docker server is running.
   </Warning>
-  To quickly get started, clone the template from github using below command
+  To quickly get started, clone the template from GitHub using the command below:
   <CodeGroup>
-  ```bash Clon and setup SWE Template
+  ```bash Clone and set up SWE Template
   git clone https://github.com/ComposioHQ/swe-js-template.git swe-js
   ```
   </CodeGroup>
     
-  This will a new agent in `swe-js` with key files:
+  This will create a new agent in `swe-js` with key files:
   - `src/app.ts`: Entry point to run the agent
   - `src/prompts.ts`: Agent prompts
-  - `src/agents/swe`: Agent definations
+  - `src/agents/swe`: Agent definitions
 </Step>
 
 <Step title="Install all the dependencies">
-  Install all the required dependencies for SWE agent
+  Install all the required dependencies for SWE agent.
     <Tabs>
     <Tab title="pnpm (recommended)">
         <CodeGroup>
@@ -88,7 +88,7 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
     <Tab title="npm">
        <CodeGroup>
         ```bash Install all the dependencies
-        cd swe-js && npm i
+        cd swe-js && npm install
         ```
         </CodeGroup>
     </Tab>
@@ -103,8 +103,8 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
 
 </Step>
 
-<Step title="Run your SWE agnet">
-  To start the agent, just run the following command
+<Step title="Run your SWE agent">
+  To start the agent, just run the following command:
   <CodeGroup>
   ```bash Run the agent
   pnpm start

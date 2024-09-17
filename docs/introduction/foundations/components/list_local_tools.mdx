@@ -1,9 +1,7 @@
----
 title: "Available Local Tools"
 description: List of Local Tools you can readily use for your Agents
 sidebarTitle: Available Local Tools
 icon: "gear"
----
 
 Composio provides you with hundreds of tools and thousands of prebuilt actions, which contains both:
 
@@ -15,9 +13,8 @@ You can check out the list of all [tools](https://app.composio.dev/apps?category
 
 The second kind is termed as Local Tools.
 
+Here's a list of local tools that Composio supports: ## Browser Tools
 
-Here's a list of local tools that Composio supports:
-## Browser Tools
 <AccordionGroup>
 
 <Accordion title="Web Scraper">
@@ -67,8 +64,7 @@ Here's a list of local tools that Composio supports:
             </Accordion>
         </Card>
     </CardGroup>
-     [Here's the Github Link to the tool](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/webtool)
-</Accordion>
+     [Here's the Github Link to the tool](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/webtool) </Accordion>
 
 <Accordion title="Spider Crawler">
     <CardGroup cols={1}>
@@ -115,8 +111,7 @@ Here's a list of local tools that Composio supports:
             </Accordion>
         </Card>
     </CardGroup>
-    [Here's the Github link to the Tool](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/spidertool)
-</Accordion>
+    [Here's the Github link to the Tool](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/spidertool) </Accordion>
 
 <Accordion title="Browser Search - In Beta">
     <CardGroup cols={1}>
@@ -268,7 +263,7 @@ Here's a list of local tools that Composio supports:
         </Card>
 
     </CardGroup>
-      [Here's the Github Link](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/browsertool)
+      [Here's the Github Link](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/browsertool) </Accordion>
 </Accordion>
 </AccordionGroup>
 
@@ -312,7 +307,7 @@ Here's a list of local tools that Composio supports:
               action=Action.FILETOOL_FIND_FILE,
               params={
                   "pattern":pattern,
-                  "case_sensitive":True
+                  "case_sensitive":True,
                   "include":["List of directories to search in"],
                   "exclude":["List of directories to exclude while searching"]
                   },
@@ -339,9 +334,9 @@ Here's a list of local tools that Composio supports:
               action=Action.FILETOOL_GIT_CLONE,
               params={
                   "repo_name":repo_name,
-                  "destination":destination
+                  "destination":destination,
                   "just_reset":True,
-                  "commit_id":"The commit id you want to set it to"
+                  "commit_id":"The commit id you want to set it to",
                   },
           )
           ```
@@ -386,29 +381,7 @@ Here's a list of local tools that Composio supports:
 </Accordion>
 </AccordionGroup>
 
-## Project Management
-<AccordionGroup>
-<Accordion title="ClickUp">
-  <CardGroup cols={1}>
-  <Card title="Create Tasks and Checklists" >
-
-      <Accordion title="Code Snippet">
-      <CodeGroup>
-          ```python Python
-          toolset = ComposioToolSet()
-          toolset.execute_action(
-              action=[Action.SHELLTOOL]
-              params={
-                  
-              }
-          )
-          ```
-          ```javascript JS
-        COMING SOON
-
-          ```
-      </CodeGroup>
-      
+## Project Management <AccordionGroup> <Accordion title="ClickUp"> <CardGroup cols={1}> <Card title="Create Tasks and Checklists" > <Accordion title="Code Snippet"> <CodeGroup> ```python Python toolset = ComposioToolSet() toolset.execute_action( action=[Action.SHELLTOOL] params={ } ) ``` ```javascript JS COMING SOON ``` </CodeGroup>
 
       </Accordion>
     </Card>
@@ -427,7 +400,6 @@ Here's a list of local tools that Composio supports:
           ```
           ```javascript JS
         COMING SOON
-
           ```
       </CodeGroup>
       
@@ -435,11 +407,8 @@ Here's a list of local tools that Composio supports:
       </Accordion>
     </Card>
   </CardGroup>
-    [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/clickup)
+    [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/clickup) </Accordion> </AccordionGroup> ## Code Assistance Tools
 
-</Accordion>
-</AccordionGroup>
-## Code Assistance Tools
 <Accordion title="Greptile">
 
   <CardGroup cols={1}>
@@ -470,9 +439,7 @@ Here's a list of local tools that Composio supports:
       </Accordion>
     </Card>
   </CardGroup>
-    [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/greptile)
-
-</Accordion>
+    [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/greptile) </Accordion>
 
 <Accordion title="SQL Tool">
 
@@ -503,12 +470,10 @@ Here's a list of local tools that Composio supports:
       </Accordion>
     </Card>      
   </CardGroup>
-    [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/sqltool)
-
-</Accordion>
-
+    [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/sqltool) </Accordion>
 
 ## On Demand RAG Tools
+
 <AccordionGroup>
 <Accordion title="Create a RAG">
   <CardGroup cols={1}>
@@ -562,9 +527,7 @@ Here's a list of local tools that Composio supports:
       </Accordion>
     </Card> 
   </CardGroup>
-    [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/ragtool)
-
-</Accordion>
+    [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/ragtool) </Accordion>
 
 <Accordion title="Image Search with RAG">
   <CardGroup cols={1}>
@@ -619,6 +582,4 @@ Here's a list of local tools that Composio supports:
     </Card> 
   </CardGroup>
 
-  [Github Link for the Tool](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/embedtool)
-</Accordion>
-</AccordionGroup>
+  [Github Link for the Tool](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/embedtool) </Accordion> </AccordionGroup>

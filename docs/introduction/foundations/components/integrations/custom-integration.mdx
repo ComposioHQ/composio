@@ -31,7 +31,7 @@ Also, feel free to go through the below step by step guide on how to create a cu
 </Step>
 
 <Step title="Create the integrations.yaml File">
-    Create an `integrations.yaml` file. Below is the base template for the Integrations.yaml file for any custom tool that you create. However, you will modify the auth schems as each tool supports differnt auth methods.
+    Create an `integrations.yaml` file. Below is the base template for the Integrations.yaml file for any custom tool that you create. However, you will modify the auth schemes as each tool supports different auth methods.
 
     <AccordionGroup title="integrations.yaml">
     <Accordion title="Base Template">
@@ -45,11 +45,11 @@ get_current_user_endpoint: ""
 
 auth_schemes:
 
-// OAuth1 
-	- scheme_name: 
-		auth_mode: OAuth1
-		request_url:
-		authorization_url: 
+// OAuth1
+  - scheme_name:
+    auth_mode: OAuth1
+    request_url:
+    authorization_url:
     token_url:
     signature_method:
     default_scopes: [""]
@@ -65,16 +65,16 @@ auth_schemes:
         displayName: Base URL
         description: "desc_here"
         type: string
-        default: {{add the api endpoint URL of the app}}
+        default: {{add the API endpoint URL of the app}}
 
-// OAuth2 
-	- scheme_name: 
-		auth_mode: OAUTH2
-		authorization_url: 
+// OAuth2
+  - scheme_name:
+    auth_mode: OAUTH2
+    authorization_url:
     token_url:
     default_scopes: [""]
     scope_separator: ','
-    token_access_request_method: 
+    token_access_request_method:
     authorization_params:
         response_type:
     token_params:
@@ -86,37 +86,37 @@ auth_schemes:
         displayName: Base URL
         description: "desc_here"
         type: string
-        default: {{api endpoint URL of the app}}
-        
-        
+        default: {{API endpoint URL of the app}}
+
+
 // API-KEY
   - scheme_name: app_name_api-key
-	  auth_mode: API_KEY
-	  proxy:
+    auth_mode: API_KEY
+    proxy:
       base_url: "{{base_url}}"
       headers:
         Authorization: "{{api_key}}"
     fields:
       - name: api_key
-        expected_from_customer: true 
+        expected_from_customer: true
         displayName: API Key
         description: "add_desc_here"
         type: string
         required: true
       - name: base_url
-        expected_from_customer: true 
+        expected_from_customer: true
         displayName: Base URL
         description: "add_desc_here"
         type: string
         required: false
-        default: {{add the api endpoint URL of the app}}
-   
-        
- // BASIC
+        default: {{add the API endpoint URL of the app}}
+
+
+// BASIC
    - scheme_name: app_name_basic
     auth_mode: BASIC
     proxy:
-      base_url: {{add the api_endpoint_url}}
+      base_url: {{add the API_endpoint_url}}
     fields:
       - name: api_key
         displayName: API Key
@@ -127,7 +127,7 @@ auth_schemes:
         displayName: Username
         description: "desc_here"
         type: string
-        expected_from_customer: 
+        expected_from_customer:
       - name: password
         displayName: Password
         description: "your password here."
@@ -159,9 +159,9 @@ You can refer to below snippets of the each auth method to see how these fields 
         - scheme_name: tool_name_oauth1
           auth_mode: OAUTH1
           request_url:
-          authorization_url: 
-          
+          authorization_url:
           token_url:
+
           signature_method:
           default_scopes: [""]
           scope_separator: ','
@@ -176,18 +176,18 @@ You can refer to below snippets of the each auth method to see how these fields 
               displayName: Base URL
               description: "desc_here"
               type: string
-              default: {{add the api endpoint URL of the app}}
+              default: {{add the API endpoint URL of the app}}
       ```
-        </ Accordion>
+        </Accordion>
       <Accordion title="OAuth2">
       ```yaml
         - scheme_name: tool_name_oauth2
           auth_mode: OAUTH2
-          authorization_url: 
+          authorization_url:
           token_url:
           default_scopes: [""]
           scope_separator: ','
-          token_access_request_method: 
+          token_access_request_method:
           authorization_params:
               response_type:
           token_params:
@@ -199,9 +199,9 @@ You can refer to below snippets of the each auth method to see how these fields 
               displayName: Base URL
               description: "desc_here"
               type: string
-              default: {{api endpoint URL of the app}}
+              default: {{API endpoint URL of the app}}
       ```
-        </ Accordion>
+        </Accordion>
       <Accordion title="API-KEY">
       ```yaml
         - scheme_name: app_name_api_key
@@ -212,26 +212,26 @@ You can refer to below snippets of the each auth method to see how these fields 
               Authorization: "{{api_key}}"
           fields:
             - name: api_key
-              expected_from_customer: true 
+              expected_from_customer: true
               displayName: API Key
               description: "add_desc_here"
               type: string
               required: true
             - name: base_url
-              expected_from_customer: true 
+              expected_from_customer: true
               displayName: Base URL
               description: "add_desc_here"
               type: string
               required: false
-              default: {{add the api endpoint URL of the app}}
+              default: {{add the API endpoint URL of the app}}
         ```
-        </ Accordion>
+        </Accordion>
       <Accordion title="BASIC">
       ```yaml
         - scheme_name: app_name_basic
           auth_mode: BASIC
           proxy:
-            base_url: {{add the api_endpoint_url}}
+            base_url: {{add the API_endpoint_url}}
           fields:
             - name: api_key
               displayName: API Key
@@ -242,22 +242,22 @@ You can refer to below snippets of the each auth method to see how these fields 
               displayName: Username
               description: "desc_here"
               type: string
-              expected_from_customer: 
+              expected_from_customer:
             - name: password
               displayName: Password
               description: "your password here."
               type: string
               expected_from_customer: true
         ```
-        </ Accordion>
-        
+        </Accordion>
+
     </AccordionGroup>
 
 <Tip>
 Most tools have their auth methods listed in their docs. You can usually find it by searching "custom_tool_name auth docs" on Google. The first result often has what you need.
 </Tip>
 
- In this case, GitHub uses OAuth2 for authentication.
+In this case, GitHub uses OAuth2 for authentication.
 
 ```yaml
 name: GitHub

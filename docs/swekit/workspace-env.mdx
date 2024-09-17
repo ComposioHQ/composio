@@ -1,17 +1,15 @@
----
-title: "Workspace Environments"
-sidebarTitle: "Workspace Environments"
-icon: "server"
-description: "Configure and utilize different workspace environments for running your SWE agents securely and with custom configurations."
----
+**title**: "Workspace Environments"  
+**sidebarTitle**: "Workspace Environments"  
+**icon**: "server"  
+**description**: "Configure and utilize different workspace environments for running your SWE agents securely and with custom configurations."
 
 ## Overview
 
 Workspace environments facilitate **isolated** and **secure** execution of tools with **customizable configurations**. The SWE Development Kit (swekit) provides a range of environments tailored to your agents' needs, encompassing **security**, **configuration**, **CPU allocation**, and **network port access** for public services.
 
-## Why Workspace Environments Matters?
+## Why Workspace Environments Matter?
 
-Workspace environments are essential for:
+Workspace environments are essential for: 
 - **Security**: Isolating execution to protect the host system and sensitive data.
 - **Specific Configuration Needs**: Tailoring the environment to the requirements of different agents.
 - **Resource Allocation**: Allocating specific CPU and memory resources to agents.
@@ -76,7 +74,6 @@ toolset = ComposioToolSet(
 ```
 </CodeGroup>
 
-
 ### Docker Environment
 
 For enhanced security and isolation, use Docker:
@@ -101,6 +98,7 @@ toolset = ComposioToolSet(
 )
 ```
 </CodeGroup>
+
 <Info>
   For more details on configuring Docker ports, refer to the [Docker Python SDK documentation](https://docker-py.readthedocs.io/en/stable/containers.html#docker.models.containers.ContainerCollection.run).
 </Info>
@@ -175,7 +173,6 @@ composio_toolset = ComposioToolSet(
 )
 ```
 </CodeGroup>
-
 
 ### Retrieve Workspace Network Details
 

@@ -32,16 +32,15 @@ Follow these 5 steps to connect your user to Google Calendar and create an event
     <Tabs>
         <Tab title="Python">
             <CodeGroup>
-                ```bash Install Composio
+                ```bash
                 pip install composio_core composio_openai
                 ```
             </CodeGroup>
         </Tab>
         <Tab title="JavaScript">
             <CodeGroup>
-                ```bash Install Composio
+                ```bash
                 npm install composio-core openai
-                pip install composio_core  # for CLI (optional)
                 ```
             </CodeGroup>
             <Note>
@@ -57,14 +56,14 @@ Follow these 5 steps to connect your user to Google Calendar and create an event
     <Tabs>
         <Tab title="CLI (Quickest)">
             <CodeGroup>
-                ```bash Authenticate Jessica's Google Calendar Account
+                ```bash
                 composio add googlecalendar -e "Jessica" # Launches Google Calendar login
                 ```
             </CodeGroup>
         </Tab>
         <Tab title="Python">
             <CodeGroup>
-                ```python Authenticate Jessica's Google Calendar Account
+                ```python
                 from composio import ComposioToolSet, App
 
                 toolset = ComposioToolSet(entity_id="Jessica")
@@ -77,7 +76,7 @@ Follow these 5 steps to connect your user to Google Calendar and create an event
         </Tab>
         <Tab title="JavaScript">
             <CodeGroup>
-                ```javascript Authenticate Jessica's Google Calendar Account
+                ```javascript
                 import { Composio } from "composio-core";
 
                 const client = new Composio(process.env.COMPOSIO_API_KEY);
@@ -103,7 +102,7 @@ Follow these 5 steps to connect your user to Google Calendar and create an event
     <Tabs>
         <Tab title="Python">
             <CodeGroup>
-                ```python Initialize Composio and OpenAI
+                ```python
                 from composio_openai import ComposioToolSet, Action
                 from openai import OpenAI
 
@@ -114,7 +113,7 @@ Follow these 5 steps to connect your user to Google Calendar and create an event
         </Tab>
         <Tab title="JavaScript">
             <CodeGroup>
-                ```javascript Initialize Composio and OpenAI
+                ```javascript
                 import { OpenAI } from "openai";
                 import { OpenAIToolSet } from "composio-core";
 
@@ -143,7 +142,7 @@ Follow these 5 steps to connect your user to Google Calendar and create an event
     <Tabs>
         <Tab title="Python">
             <CodeGroup>
-                ```python Fetch Google Calendar Actions & Interact with LLM
+                ```python
                 tools = composio_toolset.get_tools(actions=[Action.GOOGLECALENDAR_CREATE_EVENT])
 
                 task = "Create a 1 hour meeting event at 5:30PM tomorrow"
@@ -161,7 +160,7 @@ Follow these 5 steps to connect your user to Google Calendar and create an event
         </Tab>
         <Tab title="JavaScript">
             <CodeGroup>
-                ```javascript Fetch Google Calendar Actions & Interact with LLM
+                ```javascript
                 const tools = await composio_toolset.getActions({
                     actions: ["googlecalendar_create_event"]
                 });
@@ -180,7 +179,7 @@ Follow these 5 steps to connect your user to Google Calendar and create an event
         <Tab title="API">
             You can get a list of Actions for a particular App like this. In this case, we obtain all the Google Calendar Actions:
             <CodeGroup>
-                ```curl Fetch Google Calendar Actions & Interact with LLM
+                ```curl
                 curl --request GET \
                 --url 'https://backend.composio.dev/api/v2/actions?appNames=GOOGLECALENDAR' \
                 --header 'X-API-Key: ADD YOUR API KEY HERE'
@@ -196,7 +195,7 @@ Follow these 5 steps to connect your user to Google Calendar and create an event
     <Tabs>
         <Tab title="Python">
             <CodeGroup>
-                ```python Execute Tool Calls
+                ```python
                 result = composio_toolset.handle_tool_calls(response)
                 print(result)
                 ```
@@ -204,7 +203,7 @@ Follow these 5 steps to connect your user to Google Calendar and create an event
         </Tab>
         <Tab title="JavaScript">
             <CodeGroup>
-                ```javascript Execute Tool Calls
+                ```javascript
                 const result = await composio_toolset.handleToolCall(response);
                 console.log(result);
                 ```
@@ -212,7 +211,7 @@ Follow these 5 steps to connect your user to Google Calendar and create an event
         </Tab>
         <Tab title="API">
             <CodeGroup>
-                ```curl Execute Tool Calls
+                ```curl
                 curl --request POST \
                 --url https://backend.composio.dev/api/v2/actions/GOOGLECALENDAR_CREATE_EVENT/execute \
                 --header 'Content-Type: application/json' \

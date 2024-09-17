@@ -1,5 +1,5 @@
 ---
-title: "🐫 Using Composio With CAMEL-AI"
+title: "🐪 Using Composio With CAMEL-AI"
 sidebarTitle: "CAMEL"
 icon: "cow"
 description: "Integrate Composio with CAMEL agents to let them seamlessly interact with external apps"
@@ -13,12 +13,12 @@ description: "Integrate Composio with CAMEL agents to let them seamlessly intera
 
 Ensure you have the necessary packages installed and connect your GitHub account to allow your CAMEL-AI agents to utilize GitHub functionalities.
 <CodeGroup>
-    ``` bash Run command
+    ```bash Run command
     pip install camel-ai
     pip install composio-camel -U
-    #  Connect your Github so agents can use it. 
+    # Connect your GitHub so agents can use it.
     composio add github
-    #  Check all different apps which you can connect with
+    # Check all different apps which you can connect with
     composio apps
     ```
 </CodeGroup>
@@ -40,7 +40,6 @@ Prepare your environment by initializing necessary imports from Composio & CAMEL
     from camel.types import ModelPlatformType, ModelType
     from camel.utils import print_text_animated
     from composio_camel import ComposioToolSet, Action
-
     ```
 
 </CodeGroup>
@@ -79,13 +78,12 @@ This step involves configuring and executing the agent to carry out actions, suc
         model_config_dict=assistant_model_config.__dict__,
     )
 
-
     # set up agent
     assistant_sys_msg = BaseMessage.make_assistant_message(
         role_name="Developer",
         content=(
-            "You are a programmer as well an experienced github user. "
-            "When asked given a instruction, "
+            "You are a programmer as well an experienced GitHub user. "
+            "When asked given an instruction, "
             "you try to use available tools, and execute it"
         ),
     )
@@ -108,8 +106,8 @@ Execute the following code to execute the agent, ensuring that the intended task
 <CodeGroup>
     ```python CAMEL Agent Execution
     prompt = (
-        "I have created a new Github Repo,"
-        "Please star my github repository: camel-ai/camel"
+        "I have created a new GitHub Repo,"
+        "Please star my GitHub repository: camel-ai/camel"
     )
     user_msg = BaseMessage.make_user_message(role_name="User", content=prompt)
     print(Fore.YELLOW + f"User prompt:\n{prompt}\n")

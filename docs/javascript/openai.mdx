@@ -2,12 +2,12 @@
 title: "Using Composio JS SDK with OpenAI"
 sidebarTitle: "OpenAI (JS)"
 icon: "code"
-description: "Use Composio JS SDK with OpenAI to create a github issue creation agent"
+description: "Use Composio JS SDK with OpenAI to create a GitHub issue creation agent"
 ---
 
 ## Demo
 
- <iframe
+<iframe
     src="https://codesandbox.io/p/devbox/test-wnktj6?embed=1&file=%2Findex.mjs&showConsole=true"
     frameBorder="0"
     title="Direct Action Execution"
@@ -35,9 +35,9 @@ pnpm add composio-core openai
     </CodeGroup>
 </Step>
 
-<Step title="Define method to let user connect their GitHub account">
+<Step title="Define method to let the user connect their GitHub account">
 
- <CodeGroup>
+<CodeGroup>
       ```typescript index.mjs
 import { OpenAI } from "openai";
 import { OpenAIToolSet } from "composio-core";
@@ -46,7 +46,7 @@ const COMPOSIO_API_KEY = "<your-composio-api-key>"
 const OPEN_AI_API_KEY = "<your-openai-api-key>"
 const toolset = new OpenAIToolSet({apiKey: COMPOSIO_API_KEY,});
 
-const appName = 'github';
+const appName = 'GitHub';
 
 async function setupUserConnectionIfNotExists(entityId) {
         const entity = toolset.client.getEntity(entityId);
@@ -71,7 +71,7 @@ Learn more about entities [here](introduction/foundations/components/entity/enti
 
 <CodeGroup>
       ```typescript index.mjs
-async function executeAgent(repo,entityName="default") {
+async function executeAgent(repo, entityName = "default") {
         const entity = toolset.client.getEntity(entityName)
         await setupUserConnectionIfNotExists(entity.id);
 
@@ -101,7 +101,7 @@ async function executeAgent(repo,entityName="default") {
 <Step title="Invoke Your Agent">
 
 <CodeGroup>
-      ```typescript  index.mjs
+      ```typescript index.mjs
       executeAgent("himanshu-dixit/custom-repo-breaking")
       ```
     </CodeGroup>
@@ -113,5 +113,3 @@ Tada 🎉! It was this simple to create a powerful Agent with Composio and OpenA
 View the full snippet [here](https://github.com/composiohq/composio/tree/master/js/examples/openai/sample.mjs)
 </Step>
 </Steps>
-
-

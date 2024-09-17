@@ -1,3 +1,4 @@
+```html
 <p align="center">
   <picture width="200">
     <source media="(prefers-color-scheme: dark)" width="172" srcset="https://mintlify.s3-us-west-1.amazonaws.com/composio-27/logo/dark.svg">
@@ -7,11 +8,11 @@
   <hr/>
   <p align="center">
     <img alt="Tests" src="https://github.com/composiohq/composio/actions/workflows/common.yml/badge.svg">
-  <img alt="PyPI" src="https://img.shields.io/pypi/v/composio_core?label=Latest">
+    <img alt="PyPI" src="https://img.shields.io/pypi/v/composio_core?label=Latest">
     <img alt="Docs" src="https://img.shields.io/badge/Docs-Live-blue">
     <img alt="Twitter" src="https://img.shields.io/twitter/url?url=https%3A%2F%2Ftwitter.com%2Fcomposiohq&label=Follow us">
     <img alt="Discord" src="https://img.shields.io/discord/1170785031560646836?label=Discord">
-    </p>
+  </p>
 </p>
 
 <img alt="Illustration" src="./docs/imgs/banner.png" style="border-radius: 5px"/>
@@ -42,3 +43,4 @@ To get started, select a framework and install the corresponding plugin:
 - Docs: https://docs.composio.dev/
 - Discord: https://dub.composio.dev/discord
 - Twitter: https://twitter.com/composiohq
+```

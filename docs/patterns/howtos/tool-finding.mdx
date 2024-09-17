@@ -12,7 +12,7 @@ You can list all available applications in Composio along with their logos, desc
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-```python python
+```python
 from composio import Composio
 
 client = Composio()
@@ -23,7 +23,7 @@ print(client.apps.get())
 </Tab>
 <Tab title="CLI">
 <CodeGroup>
-```bash bash
+```bash
 composio apps
 ```
 </CodeGroup>
@@ -40,7 +40,7 @@ You can list all connected tools for a user, which includes information about th
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-```python Get all connections for a user
+```python 
 from composio import Composio
 
 composio_client = Composio()
@@ -69,12 +69,12 @@ Coming soon!
 
 ### Listing all Actions
 
-All actions supported by the Composio along with function signatures and parameter descriptions.
+All actions supported by Composio along with function signatures and parameter descriptions.
 
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-```python python
+```python
 from composio import Composio
 
 client = Composio()
@@ -85,7 +85,7 @@ print(client.actions.get(limit=10))
 </Tab>
 <Tab title="CLI">
 <CodeGroup>
-```bash bash
+```bash
 composio actions --limit 10
 ```
 </CodeGroup>
@@ -93,5 +93,4 @@ composio actions --limit 10
 <Tab title="JS">
 Coming soon!
 </Tab>
-
 </Tabs>

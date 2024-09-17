@@ -13,12 +13,12 @@ description: "Integrate Composio with Griptape agents to let them seamlessly int
 
 ### Install Packages & Connect a Tool
 
-These commands prepare your environment for seamless interaction between Griptape and Github.
+These commands prepare your environment for seamless interaction between Griptape and GitHub.
 
 <CodeGroup>
-  ``` bash Run command
+  ```bash Run command
   pip install composio_griptape
-  # Connect your Github so agents can use it. 
+  # Connect your GitHub so agents can use it. 
   composio add github
   # Check all different apps which you can connect with
   composio show-apps
@@ -43,15 +43,15 @@ These commands prepare your environment for seamless interaction between Griptap
 
 </Step>
 
-<Step title="Add Tools to agent">
+<Step title="Add Tools to Agent">
 
 <CodeGroup>
   ```python Prepare Griptape Agent
   composio_toolset = ComposioToolSet()
-  tools = composio_toolset.get_tools(apps = [App.GITHUB])
+  tools = composio_toolset.get_tools(apps=[App.GITHUB])
 
   agent = Agent(
-  tools=tools
+      tools=tools
   )
   ```
 </CodeGroup>
@@ -77,9 +77,9 @@ Star composiohq/composio repository
 ```
 </CodeGroup>
 </Tab>
-<Tab title="Get last Commit">
+<Tab title="Get Last Commit">
 <CodeGroup>
-```bash Get last commit
+```bash Get Last Commit
 Get last commit on composiohq/composio repository
 ```
 </CodeGroup>

@@ -1,14 +1,12 @@
----
 title: "Using Composio JS SDK with Vercel AI SDK"
 sidebarTitle: "Vercel AI SDK"
 icon: "code"
 description: "Use Composio JS SDK with Vercel AI SDK"
----
 
 <Steps>
 <Step title="Import Dependencies">
  <CodeGroup>
-      ```javascript Import Vercel AI and Vercel AIToolSet
+      ```javascript
 import { openai } from "@ai-sdk/openai";
 import { VercelAIToolSet } from "composio-core";
 import dotenv from "dotenv";
@@ -20,7 +18,7 @@ dotenv.config();
 <Step title="Define method to let user connect their Google account">
 
  <CodeGroup>
-      ```typescript Define method to let user connect their Google account
+      ```typescript
 dotenv.config();
 
 const toolset = new VercelAIToolSet({
@@ -51,7 +49,7 @@ Learn more about entities [here](introduction/foundations/components/entity/enti
 <Step title="Setup Agent with Vercel AI">
 
 <CodeGroup>
-      ```typescript Define your Agent
+      ```typescript
 async function executeAgent(entityName) {
         const entity = await toolset.client.getEntity(entityName);
         await setupUserConnectionIfNotExists(entity.id);
@@ -75,7 +73,7 @@ async function executeAgent(entityName) {
 <Step title="Invoke Your Agent">
 
 <CodeGroup>
-      ```typescript  Invoke the Agent
+      ```typescript
       executeAgent("default_user")
       ```
     </CodeGroup>
