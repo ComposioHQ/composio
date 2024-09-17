@@ -89,6 +89,7 @@ jobs:
           composio apps update
 
           CI=false COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} PLUGIN_TO_TEST=${{matrix.package}} COMPOSIO_LOGGING_LEVEL='debug' pytest -vv tests/test_example.py
+          CI=false COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} PLUGIN_TO_TEST=${{matrix.package}} COMPOSIO_LOGGING_LEVEL='debug' pytest -vv tests/test_load_tools.py
       - name: Slack Notification on Failure
         if: ${{ failure() && !contains(github.event.head_commit.message, 'release') && !contains(github.event.head_commit.message, 'Release') }}
         uses: rtCamp/action-slack-notify@v2

@@ -686,7 +686,7 @@ class ComposioToolSet(WithLogger):
         required_params = action_item.parameters.required or []
         for param_name, param_details in action_item.parameters.properties.items():
             if param_details.get("title") == "FileType" and all(
-                fprop in param_details.get("properties")
+                fprop in param_details.get("properties", {})
                 for fprop in ("name", "content")
             ):
                 action_item.parameters.properties[param_name].pop("properties")
