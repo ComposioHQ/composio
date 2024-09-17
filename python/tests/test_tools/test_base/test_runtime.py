@@ -1,6 +1,5 @@
 """Test runtime decorator."""
 
-
 import pytest
 import typing_extensions as te
 from pydantic import BaseModel, Field

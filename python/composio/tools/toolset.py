@@ -73,6 +73,9 @@ class ProcessorsType(te.TypedDict):
     post: te.NotRequired[t.Dict[_KeyType, _ProcessorType]]
     """Response processors."""
 
+    schema: te.NotRequired[t.Dict[_KeyType, _ProcessorType]]
+    """Schema processors"""
+
 
 def _check_agentops() -> bool:
     """Check if AgentOps is installed and initialized."""
@@ -237,7 +240,9 @@ class ComposioToolSet(WithLogger):
             self.logger.debug("`api_key` is not set when initializing toolset.")
 
         self._processors = (
-            processors if processors is not None else {"post": {}, "pre": {}}
+            processors
+            if processors is not None
+            else {"post": {}, "pre": {}, "schema": {}}
         )
         self._metadata = metadata or {}
         self._workspace_id = workspace_id
@@ -496,7 +501,7 @@ class ComposioToolSet(WithLogger):
     def _get_processor(
         self,
         key: _KeyType,
-        type_: te.Literal["post", "pre"],
+        type_: te.Literal["post", "pre", "schema"],
     ) -> t.Optional[_ProcessorType]:
         """Get processor for given app or action"""
         processor = self._processors.get(type_, {}).get(key)  # type: ignore
@@ -512,12 +517,12 @@ class ComposioToolSet(WithLogger):
         self,
         key: _KeyType,
         data: t.Dict,
-        type_: te.Literal["pre", "post"],
+        type_: te.Literal["pre", "post", "schema"],
     ) -> t.Dict:
         processor = self._get_processor(key=key, type_=type_)
         if processor is not None:
             self.logger.info(
-                f"Running {'request' if type_ == 'pre' else 'response'}"
+                f"Running {'request' if type_ == 'pre' else 'response' if type_ == 'post' else 'schema'}"
                 f" through: {processor.__name__}"
             )
             data = processor(data)
@@ -543,6 +548,17 @@ class ComposioToolSet(WithLogger):
                 type_="post",
             ),
             type_="post",
+        )
+
+    def _process_schema_properties(self, action: Action, properties: t.Dict) -> t.Dict:
+        return self._process(
+            key=App(action.app),
+            data=self._process(
+                key=action,
+                data=properties,
+                type_="schema",
+            ),
+            type_="schema",
         )
 
     @_record_action_if_available
@@ -723,7 +739,10 @@ class ComposioToolSet(WithLogger):
             action_item.description = action_item.description[
                 : self._description_char_limit
             ]
-
+        action_item.parameters.properties = self._process_schema_properties(
+            action=Action(action_item.name.upper()),
+            properties=action_item.parameters.properties,
+        )
         return action_item
 
     def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:
