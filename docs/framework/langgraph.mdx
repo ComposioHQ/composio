@@ -18,7 +18,7 @@ description: "Integrate Composio with LangGraph Agentic workflows & enable them 
 Ensure you have the necessary packages installed and connect your GitHub account to allow your agents to utilize GitHub functionalities.
 
 <CodeGroup>
-    ```bash Run command
+    ```bash Install and login
     pip install composio-langgraph
     # login to composio
     composio login
@@ -80,7 +80,7 @@ from langgraph.prebuilt import ToolNode
 - Access GitHub tools provided by Composio for LangGraph, initialize a `ToolNode` with necessary tools obtained from `ComposioToolSet`.
 
 <CodeGroup>
-```python Get tools
+```python Get tools for GitHub interactions
 from composio_langgraph import Action, ComposioToolSet
 
 # Initialize the toolset for GitHub
@@ -101,7 +101,7 @@ tool_node = ToolNode(tools)
 - Initialize the LLM class and bind obtained functions to the model.
 
 <CodeGroup>
-    ```python Define model
+    ```python Define model and bind tools
     model = ChatOpenAI(temperature=0, streaming=True)
     model_with_tools = model.bind_tools(functions)
     ```
@@ -114,7 +114,7 @@ tool_node = ToolNode(tools)
 - LangGraph expects you to define different nodes of the agentic workflow as separate functions.
 
 <CodeGroup>
-```python Define nodes
+```python Define nodes and handle model responses
 def call_model(state: MessagesState):
     messages = state["messages"]
     response = model_with_tools.invoke(messages)
@@ -131,7 +131,7 @@ def call_model(state: MessagesState):
 - These edges can be straightforward or conditional, depending on the workflow requirements.
 
 <CodeGroup>
-```python Define edges
+```python Define edges and compile the workflow
 def should_continue(state: MessagesState) -> Literal["tools", "__end__"]:
     messages = state["messages"]
     last_message = messages[-1]
@@ -161,7 +161,7 @@ app = workflow.compile()
 - After the compilation of the workflow, we invoke the LLM with a task, and stream the response.
 
 <CodeGroup>
-```python Execute workflow
+```python Execute workflow and stream the response
 for chunk in app.stream(
     {
         "messages": [
