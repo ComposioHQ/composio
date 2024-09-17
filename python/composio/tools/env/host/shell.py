@@ -3,6 +3,7 @@
 import os
 import re
 import select
+import shlex
 import subprocess
 import time
 import typing as t
@@ -33,7 +34,7 @@ _ANSI_ESCAPE = re.compile(
 
 
 _DEV_SOURCE = Path("/home/user/.dev/bin/activate")
-_NOWAIT_CMDS = ("cd", "ls", "pwd")
+_NOWAIT_CMDS = ("cd", "ls", "pwd", "export")
 
 
 class Shell(Sessionable):
@@ -42,6 +43,20 @@ class Shell(Sessionable):
     def sanitize_command(self, cmd: str) -> bytes:
         """Prepare command string."""
         return (cmd.rstrip() + "\n").encode()
+
+    @staticmethod
+    def _split_commands(cmd: str) -> t.List[str]:
+        cmds = []
+        for _cmd in cmd.split("&&"):
+            chunks = shlex.split(_cmd)
+            while True:
+                if "=" not in chunks[0]:
+                    break
+                chunks.pop(0)
+
+            if chunks[0] not in _NOWAIT_CMDS:
+                cmds.append(shlex.join(chunks).rstrip().lstrip().lower())
+        return cmds
 
     @abstractmethod
     def exec(self, cmd: str) -> t.Dict:
@@ -59,7 +74,6 @@ class HostShell(Shell):
         super().__init__()
         self._id = generate_id()
         self.environment = environment or {}
-        self.logger.debug(f"HostShell initialized with ID: {self._id}")
 
     def setup(self) -> None:
         """Setup host shell."""
@@ -72,69 +86,45 @@ class HostShell(Shell):
             text=True,
             bufsize=1,
         )
-        self.logger.debug(f"Subprocess created with PID: {self._process.pid}")
-        initial_data = self._read(wait=False)
         self.logger.debug(
-            f"Initial data from session: {self.id} - {initial_data}",
+            "Initial data from session: %s - %s",
+            self.id,
+            self._read(wait=False),
         )
 
         # Load development environment if available
         if _DEV_SOURCE.exists():
-            self.logger.debug(f"Loading development environment from {_DEV_SOURCE}")
+            self.logger.debug("Loading development environment")
             self.exec(f"source {_DEV_SOURCE}")
-        else:
-            self.logger.debug(f"Development environment source not found at {_DEV_SOURCE}")
 
         # Setup environment
-        self.logger.debug("Setting up environment variables")
         for key, value in self.environment.items():
-            self.logger.debug(f"Setting environment variable: {key}")
             self.exec(f"export {key}={value}")
             time.sleep(0.05)
-        self.logger.debug("Environment setup complete")
 
     def _has_command_exited(self, cmd: str) -> bool:
-        """Wait for command to exit."""
-        self.logger.debug(f"Checking if command has exited: {cmd}")
-        # Split the command and remove any environment variable assignments
-        cmd_parts = [part for part in cmd.split() if '=' not in part]
-        if not cmd_parts:
-            self.logger.debug("Only environment variables set, considering command exited")
-            return True  # If only env vars were set, consider it exited
-
-        _cmd = cmd_parts[0]
-        self.logger.debug(f"Checking _cmd: {_cmd}")
-        if _cmd in _NOWAIT_CMDS:
-            self.logger.debug(f"Command {_cmd} is in NOWAIT_CMDS, waiting 0.5 seconds")
-            time.sleep(0.5)
+        """Waif for command to exit."""
+        cmds = self._split_commands(cmd=cmd)
+        if len(cmds) == 0:
+            time.sleep(0.3)
             return True
 
-        self.logger.debug("Running 'ps -e' to check for running processes")
-        output = subprocess.run(  # pylint: disable=subprocess-run-check
-            ["ps", "-e"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        ).stdout.decode()
-        self.logger.debug(f"ps -e output (truncated): {output[:200]}...")
-        # Remove any environment variable assignments from cmd
-        cmd_parts = [part for part in cmd.split() if '=' not in part]
-        cmd_without_env_vars = " ".join(cmd_parts)
-        self.logger.debug(f"Command without env vars: {cmd_without_env_vars}")
-        return all(_cmd.strip() not in output for _cmd in cmd_without_env_vars.split("&&"))
-        # return False
+        output = (
+            subprocess.run(  # pylint: disable=subprocess-run-check
+                ["ps", "-e"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            .stdout.decode()
+            .lower()
+        )
+        return all(_cmd not in output for _cmd in cmds)
 
     def _get_exit_code(self) -> int:
         """Get exit code of the last process."""
-        self.logger.debug("Getting exit code")
         self._write(ECHO_EXIT_CODE)
-        read_result = self._read(wait=False)
-        self.logger.debug(f"Read result for exit code: {read_result}")
-        stdout = read_result.get(STDOUT, "").strip()
-        self.logger.debug(f"STDOUT for exit code: {stdout}")
-        *_, exit_code = stdout.split("\n")
-        self.logger.debug(f"Raw exit code: {exit_code}")
+        *_, exit_code = self._read(wait=False).get(STDOUT).strip().split("\n")  # type: ignore
         if len(exit_code) == 0:
-            self.logger.debug("Empty exit code, returning 0")
             return 0
         return int(exit_code)
 
@@ -142,10 +132,9 @@ class HostShell(Shell):
         self,
         cmd: t.Optional[str] = None,
         wait: bool = True,
-        timeout: float = 300.0,
+        timeout: float = 120.0,
     ) -> t.Dict:
         """Read data from a subprocess with a timeout."""
-        self.logger.debug(f"Reading data. Command: {cmd}, Wait: {wait}, Timeout: {timeout}")
         stderr = t.cast(t.IO[str], self._process.stderr).fileno()
         stdout = t.cast(t.IO[str], self._process.stdout).fileno()
         buffer = {stderr: b"", stdout: b""}
@@ -155,72 +144,54 @@ class HostShell(Shell):
         end_time = time.time() + timeout
         while time.time() < end_time:
             if wait and not self._has_command_exited(cmd=str(cmd)):
-                self.logger.debug("Command not exited, waiting 0.5 seconds")
                 time.sleep(0.5)
                 continue
 
-            self.logger.debug("Selecting readable file descriptors")
             readables, _, _ = select.select([stderr, stdout], [], [], 0.1)
             if not readables:
-                self.logger.debug("No readable file descriptors, breaking loop")
                 break
             for fd in readables:
                 data = os.read(fd, 4096)
                 if data:
                     buffer[fd] += data
-                    self.logger.debug(f"Read {len(data)} bytes from {'stderr' if fd == stderr else 'stdout'}")
             time.sleep(0.05)
 
         if self._process.poll() is not None:
-            self.logger.error(f"Subprocess exited unexpectedly. Exit code: {self._process.returncode}")
             raise RuntimeError(
                 f"Subprocess exited unexpectedly.\nCurrent buffer: {buffer}"
             )
 
         if time.time() >= end_time:
-            self.logger.error("Timeout reached while reading from subprocess")
             raise TimeoutError(
                 "Timeout reached while reading from subprocess.\nCurrent "
                 f"buffer: {buffer}"
             )
 
-        result = {
+        return {
             STDOUT: buffer[stdout].decode(),
             STDERR: buffer[stderr].decode(),
         }
-        self.logger.debug(f"Read result: {result}")
-        return result
 
     def _write(self, cmd: str) -> None:
         """Write command to shell."""
-        self.logger.debug(f"Writing command: {cmd}")
         try:
             stdin = t.cast(t.IO[str], self._process.stdin)
-            sanitized_cmd = self.sanitize_command(cmd=cmd)
-            self.logger.debug(f"Sanitized command: {sanitized_cmd}")
-            os.write(stdin.fileno(), sanitized_cmd)
+            os.write(stdin.fileno(), self.sanitize_command(cmd=cmd))
             stdin.flush()
-            self.logger.debug("Command written and flushed")
         except BrokenPipeError as e:
-            self.logger.error(f"BrokenPipeError occurred: {e}")
             raise RuntimeError(str(e)) from e
 
     def exec(self, cmd: str) -> t.Dict:
         """Execute command on container."""
-        self.logger.debug(f"Executing command: {cmd}")
         self._write(cmd=cmd)
-        result = {
+        return {
             **self._read(cmd=cmd, wait=True),
             EXIT_CODE: self._get_exit_code(),
         }
-        self.logger.debug(f"Execution result: {result}")
-        return result
 
     def teardown(self) -> None:
         """Stop and remove the running shell."""
-        self.logger.debug("Tearing down HostShell")
         self._process.kill()
-        self.logger.debug("Process killed")
 
 
 class SSHShell(Shell):
@@ -276,17 +247,15 @@ class SSHShell(Shell):
 
     def _wait(self, cmd: str) -> None:
         """Wait for the command to execute."""
-        _cmd, *_rest = cmd.split(" ")
-        if _cmd in _NOWAIT_CMDS or len(_rest) == 0:
+        cmds = self._split_commands(cmd=cmd)
+        if len(cmds) == 0:
             time.sleep(0.3)
             return
 
         while True:
             _, stdout, _ = self.client.exec_command(command="ps -eo command")
-            if all(
-                not line.lstrip().rstrip().endswith(cmd)
-                for line in stdout.read().decode().split("\n")
-            ):
+            output = stdout.read().decode().lstrip().rstrip().lower()
+            if all(_cmd not in output for _cmd in cmds):
                 return
             time.sleep(0.3)
 
