@@ -49,7 +49,7 @@ EXAMPLES = {
     },
     "local_tools": {
         "plugin": "autogen",
-        "file": EXAMPLES_PATH / "local_tools" / "autogen_math.py",
+        "file": EXAMPLES_PATH / "quickstarters" / "math_agent" / "autogen_math.py",
         "match": {
             "type": "stdout",
             "values": ["11962"],
