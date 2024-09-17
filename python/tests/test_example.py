@@ -145,7 +145,7 @@ EXAMPLES = {
             "values": ["composio_output/CODEINTERPRETER_GET_FILE_CMD_default_", ""],
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
-        "cwd": EXAMPLES_PATH / "sql_agent" / "sql_agent_plotter_crewai",
+        "cwd": EXAMPLES_PATH / "quickstarters" / "sql_agent" / "sql_agent_plotter_crewai",
     },
     "multi_entity_api_key": {
         "plugin": "langchain",
