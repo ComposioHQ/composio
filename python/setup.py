@@ -1,5 +1,5 @@
 """
-Setup configuration for compsio core.
+Setup configuration for composio core.
 """
 
 import typing as t
@@ -50,7 +50,6 @@ core_requires = [
     "fastapi",  # Tool API
     "uvicorn",  # Tool server
     "paramiko>=3.4.1",  # Host workspace
-    "docker>=7.1.0",  # Docker workspace
     "docker>=7.1.0",  # Docker workspace
     "e2b>=0.17.2a37",  # E2B Workspace
     "e2b-code-interpreter",  # E2B workspace
