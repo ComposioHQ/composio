@@ -58,7 +58,7 @@ EXAMPLES = {
     },
     "runtime_tools": {
         "plugin": "langchain",
-        "file": EXAMPLES_PATH / "runtime_tools" / "langchain_math.py",
+        "file": EXAMPLES_PATH / "miscellaneous" / "runtime_tools" / "langchain_math.py",
         "match": {
             "type": "stdout",
             "values": ["2645406630"],
