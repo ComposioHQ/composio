@@ -478,9 +478,12 @@ def fetch_relevant_elem(
         with open(file_path, "r", encoding="utf-8") as fp:
             original_contents[file_path] = fp.read()
 
-    entity_objs = [
-        entity_class_map[expected_type](name, file_name, repo_dir) for name in all_names
-    ]
+    entity_objs = []
+    for name in all_names:
+        try:
+            entity_objs.append(entity_class_map[expected_type](name, file_name, repo_dir))
+        except Exception as e:
+            print(f"Error creating entity object for {name}: {str(e)}")
 
     for file_path, original_content in original_contents.items():
         with open(file_path, "w", encoding="utf-8") as fd:

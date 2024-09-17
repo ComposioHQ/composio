@@ -92,10 +92,10 @@ def get_score(logs_dir, run_id):
     )
 
 
-def build_issue_description(hints, problem_statement, include_hints):
+def build_issue_description(repo, hints, problem_statement, include_hints):
     if not problem_statement or not problem_statement.strip():
         raise ValueError("problem statement is empty")
-    tmpl = f"""Here is the issue, that you have to solve all on your own:\n{problem_statement}"""
+    tmpl = f"""You have the repository {repo} cloned in the workspace. You are at the root of the repository. Here is the issue, that you have to solve all on your own:\n{problem_statement}. You can only make changes in the core repository {repo}.\n"""
     if include_hints and hints:
         tmpl += f"""\n\nHere are few hints to solve the issue described in problem_statement: \n{hints}"""
 
@@ -312,4 +312,4 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-    get_score(logs_dir="/Users/shrey/.composio_coder/logs/17260697863768/", run_id="langgraph_agent_temp")
+    get_score(logs_dir="/Users/shrey/.composio_coder/logs/17262871386532/", run_id="langgraph_agent_temp")

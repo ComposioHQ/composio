@@ -1,2 +1,0 @@
-2024-09-10 19:49:36,678 - INFO - Environment image sweb.env.arm64.e83e37f52c09532c62acfb:latest found for django__django-13590
-Building instance image sweb.eval.arm64.django__django-13590:latest for django__django-13590

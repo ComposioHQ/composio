@@ -12,9 +12,14 @@ from langchain_aws import BedrockChat
 import ast
 from langgraph.errors import GraphRecursionError
 
-from agent_copy import get_agent_graph
+from agent_testexp import get_agent_graph
 import re
 import random
+import time
+from botocore.exceptions import ClientError
+
+max_retries = 5
+base_delay = 1  # in seconds
 
 bedrock_client = BedrockChat(
                 credentials_profile_name="default",
@@ -23,8 +28,8 @@ bedrock_client = BedrockChat(
                 model_kwargs={"temperature": 0}
             )
 
-def build_comparison_prompt(repo_name: str, issue_desc: str, patches: List[str], tests_passed: List[bool]) -> str:
-    patch_str = "\n".join(["="*50 + f"\nPatch {i+1}:\nTESTS PASSED: {str(tests_passed[i])}\n{patch}" for i, patch in enumerate(patches)]+["="*50])    
+def build_comparison_prompt(repo_name: str, issue_desc: str, patches: List[str], tests_passed: List[str]) -> str:
+    patch_str = "\n".join(["="*50 + f"\nPatch {i+1}:\nTESTS STATUS: {str(tests_passed[i])}\n\n{patch}" for i, patch in enumerate(patches)]+["="*50])    
     return """
 I facing the following issue in the repo {repo_name}. You have an older version of the codebase, so you your belief about the 
 codebase might be outdated.
@@ -73,14 +78,8 @@ def bench(workspace_ids: str, issue_config: IssueConfig) -> str:
     if not valid_results:
         return ""
     
-    sorted_results = sorted(valid_results, key=lambda x: x[1])
+    sorted_results = sorted(valid_results, key=lambda x: "PASS" in x[1])
     patches, tests_passed = zip(*sorted_results)
-
-    import time
-    from botocore.exceptions import ClientError
-
-    max_retries = 5
-    base_delay = 1  # in seconds
 
     for attempt in range(max_retries):
         try:
@@ -121,8 +120,9 @@ def run_agent_function(workspace_id: str, issue_config: IssueConfig) -> str:
 
     # Set the workspace for the tools to run.
     # import pdb; pdb.set_trace()
+    print("Running agent function")
     
-    graph, composio_toolset = get_agent_graph(repo_name=issue_config.repo_name.split("/")[-1] , workspace_id=workspace_id, test_command=issue_config.test_command)
+    graph, composio_toolset, test_response_file = get_agent_graph(repo_name=issue_config.repo_name.split("/")[-1] , workspace_id=workspace_id, test_command=issue_config.test_command)
     
     # get the git tree
     git_tree_response = composio_toolset.execute_action(
@@ -150,13 +150,22 @@ def run_agent_function(workspace_id: str, issue_config: IssueConfig) -> str:
             },
             {"recursion_limit": 70},
         )
-        tests_passed = True
     except GraphRecursionError as e:
         print(f"GraphRecursionError: {e}")
-        tests_passed = False
     except Exception as e:
         print(f"Error in graph.invoke: {e}")
-        tests_passed = False
+    
+    if not os.path.exists(test_response_file):
+        print(f"Test response file {test_response_file} does not exist")
+        print(f"Final Patch: {patch}")
+        return patch, "NOT RUN"
+    
+    with open(test_response_file, "r") as f:
+        test_response = f.read()
+
+    
+    
+    os.remove(test_response_file)
 
     cwd_response = composio_toolset.execute_action(
         action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
@@ -173,27 +182,54 @@ def run_agent_function(workspace_id: str, issue_config: IssueConfig) -> str:
         error_message = get_patch_resp.get("error")
         if error_message:
             print(f"Error in get_patch: {error_message}")
-            return "", False
+            return "", "FAIL"
         else:
             print("Unknown error occurred in get_patch")
-            return "", False
+            return "", "FAIL"
 
     patch_data = get_patch_resp.get("data", {})
     if not patch_data:
         print("No data found in the patch response")
-        return "", False
+        return "", "FAIL"
     patch = patch_data.get("patch")
     if not patch:
         error = patch_data.get("error")
         if error:
             print(f"Error in patch data: {error}")
-            return "", False
+            return "", "FAIL"
         else:
             print("No patch found in the response data")
-            return "", False
+            return "", "FAIL"
+
+
+    response_prompt = f"""
+    You are given the following test response:
+    {test_response}
+
+    You need to check if the test response is successful.
+    If the test response is successful, respond with "PASS".
+    If the test response is not successful, respond with "FAIL".
+    """
+
+    for attempt in range(max_retries):
+        try:
+            response = bedrock_client.invoke(
+                [
+                    ("system", "You are expert at reading test responses."),
+                    ("human", response_prompt)
+                ]
+            )
+            break  # If successful, break out of the retry loop
+        except ClientError as e:
+            if attempt == max_retries - 1:  # If this was the last attempt
+                break  # Break out of the retry loop on the last attempt
+            delay = (2 ** attempt) * base_delay  # Exponential backoff
+            time.sleep(delay)
+    
+
 
     print(f"Final Patch: {patch}")
-    return patch, tests_passed
+    return patch, "PASS" if "PASS" in response.content else "FAIL"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

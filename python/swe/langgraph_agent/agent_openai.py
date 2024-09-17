@@ -38,15 +38,27 @@ def pop_thought_from_request(request: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     return request
 
 
+
 def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
     # Initialize tool
+    ## random 4 digit string
+    import random
+    import string
+    import os
 
-    bedrock_client = BedrockChat(
-                credentials_profile_name="default",
-                model_id="anthropic.claude-3-5-sonnet-20240620-v1:0",
-                region_name="us-east-1",
-                model_kwargs={"temperature": 0, "max_tokens": 8192}
-            )
+    random_string = ''.join(random.choices(string.digits, k=6))
+
+    def save_test_response(response: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
+        with open(f"test_response_{random_string}.txt", "w") as f:
+            f.write(response["data"]["stdout"] + "\n" + response["data"]["stderr"])
+        return response
+
+    openai_client = ChatOpenAI(
+        model="gpt-4o",
+        temperature=0,
+        max_tokens=4096,
+        api_key=os.environ["OPENAI_API_KEY"],
+    )
     
     composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Docker(),
                                             metadata={
@@ -68,6 +80,9 @@ def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
                                                     App.FILETOOL: add_thought_to_request,
                                                     App.CODE_ANALYSIS_TOOL: add_thought_to_request,
                                                     App.SHELLTOOL: add_thought_to_request,
+                                                },
+                                                "post": {
+                                                    Action.SHELLTOOL_TEST_COMMAND: save_test_response,
                                                 }
                                             }
                                        )
@@ -128,6 +143,7 @@ def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
     class AgentState(TypedDict):
         messages: Annotated[Sequence[BaseMessage], operator.add]
         sender: str
+        consecutive_visits: dict
 
     # Agent names
     software_engineer_name = "SoftwareEngineer"
@@ -172,7 +188,7 @@ def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
                 MessagesPlaceholder(variable_name="messages"),
             ]
         )
-        llm = bedrock_client
+        llm = openai_client
         if tools:
             # return prompt | llm.bind_tools(tools)
             return prompt | llm.bind_tools(tools)
@@ -339,5 +355,5 @@ def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
     # Save the image
     output_path = "workflow_graph.png"
     image.save(output_path)
-    return graph, composio_toolset
+    return graph, composio_toolset, f"test_response_{random_string}.txt"
 

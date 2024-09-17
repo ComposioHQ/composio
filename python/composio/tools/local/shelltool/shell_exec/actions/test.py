@@ -27,9 +27,13 @@ class TestExecRequest(ShellRequest):
 class TestExecResponse(BaseModel):
     """Shell execution response."""
 
-    test_response: str = Field(
+    stdout: str = Field(
         ...,
-        description="Response from the test command",
+        description="Output captured from the execution of the command",
+    )
+    stderr: str = Field(
+        ...,
+        description="Errors captured during execution of the command",
     )
     current_shell_pwd: str = Field(
         default="",
@@ -40,6 +44,8 @@ class TestExecResponse(BaseModel):
 class TestCommand(LocalAction[TestExecRequest, TestExecResponse]):
     """
     Run the command for testing the patch.
+    Note: THE COMMAND TO TEST THE PATCH IS ALREADY PROVIDED, 
+    YOU DON'T NEED TO PROVIDE THE COMMAND IN THE REQUEST.
     """
 
     _tags = ["workspace", "shell"]
@@ -55,6 +61,7 @@ class TestCommand(LocalAction[TestExecRequest, TestExecResponse]):
         output = shell.exec(cmd=f"{command}")
         self.logger.debug(output)
         return TestExecResponse(
-            test_response=output[STDERR],
+            stdout="\n".join(output[STDOUT].splitlines()[-100:]),
+            stderr="\n".join(output[STDERR].splitlines()[-100:]),
             current_shell_pwd=f"Currently in {shell.exec(cmd='pwd')[STDOUT].strip()}",
         )

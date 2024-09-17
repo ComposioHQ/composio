@@ -305,6 +305,7 @@ class RemoteWorkspace(Workspace):
         
         response = request.json()
         if response["error"] is not None:
+            self.logger.error(response['traceback'])
             raise ComposioSDKError(
                 f"Error installing dependencies: {response['error']}"
             )

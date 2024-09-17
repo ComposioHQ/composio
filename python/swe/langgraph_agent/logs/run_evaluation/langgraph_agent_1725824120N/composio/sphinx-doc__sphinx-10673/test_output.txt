@@ -1,941 +1,0 @@
-+ source /opt/miniconda3/bin/activate
-++ _CONDA_ROOT=/opt/miniconda3
-++ . /opt/miniconda3/etc/profile.d/conda.sh
-+++ export CONDA_EXE=/opt/miniconda3/bin/conda
-+++ CONDA_EXE=/opt/miniconda3/bin/conda
-+++ export _CE_M=
-+++ _CE_M=
-+++ export _CE_CONDA=
-+++ _CE_CONDA=
-+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
-+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
-+++ '[' -z '' ']'
-+++ export CONDA_SHLVL=0
-+++ CONDA_SHLVL=0
-+++ '[' -n '' ']'
-+++++ dirname /opt/miniconda3/bin/conda
-++++ dirname /opt/miniconda3/bin
-+++ PATH=/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-+++ export PATH
-+++ '[' -z '' ']'
-+++ PS1=
-++ conda activate
-++ local cmd=activate
-++ case "$cmd" in
-++ __conda_activate activate
-++ '[' -n '' ']'
-++ local ask_conda
-+++ PS1=
-+++ __conda_exe shell.posix activate
-+++ /opt/miniconda3/bin/conda shell.posix activate
-++ ask_conda='PS1='\''(base) '\''
-export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
-export CONDA_PREFIX='\''/opt/miniconda3'\''
-export CONDA_SHLVL='\''1'\''
-export CONDA_DEFAULT_ENV='\''base'\''
-export CONDA_PROMPT_MODIFIER='\''(base) '\''
-export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
-export _CE_M='\'''\''
-export _CE_CONDA='\'''\''
-export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
-++ eval 'PS1='\''(base) '\''
-export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
-export CONDA_PREFIX='\''/opt/miniconda3'\''
-export CONDA_SHLVL='\''1'\''
-export CONDA_DEFAULT_ENV='\''base'\''
-export CONDA_PROMPT_MODIFIER='\''(base) '\''
-export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
-export _CE_M='\'''\''
-export _CE_CONDA='\'''\''
-export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
-+++ PS1='(base) '
-+++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-+++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-+++ export CONDA_PREFIX=/opt/miniconda3
-+++ CONDA_PREFIX=/opt/miniconda3
-+++ export CONDA_SHLVL=1
-+++ CONDA_SHLVL=1
-+++ export CONDA_DEFAULT_ENV=base
-+++ CONDA_DEFAULT_ENV=base
-+++ export 'CONDA_PROMPT_MODIFIER=(base) '
-+++ CONDA_PROMPT_MODIFIER='(base) '
-+++ export CONDA_EXE=/opt/miniconda3/bin/conda
-+++ CONDA_EXE=/opt/miniconda3/bin/conda
-+++ export _CE_M=
-+++ _CE_M=
-+++ export _CE_CONDA=
-+++ _CE_CONDA=
-+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
-+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
-++ __conda_hashr
-++ '[' -n '' ']'
-++ '[' -n '' ']'
-++ hash -r
-+ conda activate testbed
-+ local cmd=activate
-+ case "$cmd" in
-+ __conda_activate activate testbed
-+ '[' -n '' ']'
-+ local ask_conda
-++ PS1='(base) '
-++ __conda_exe shell.posix activate testbed
-++ /opt/miniconda3/bin/conda shell.posix activate testbed
-+ ask_conda='PS1='\''(testbed) '\''
-export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
-export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
-export CONDA_SHLVL='\''2'\''
-export CONDA_DEFAULT_ENV='\''testbed'\''
-export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
-export CONDA_PREFIX_1='\''/opt/miniconda3'\''
-export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
-export _CE_M='\'''\''
-export _CE_CONDA='\'''\''
-export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
-+ eval 'PS1='\''(testbed) '\''
-export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
-export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
-export CONDA_SHLVL='\''2'\''
-export CONDA_DEFAULT_ENV='\''testbed'\''
-export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
-export CONDA_PREFIX_1='\''/opt/miniconda3'\''
-export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
-export _CE_M='\'''\''
-export _CE_CONDA='\'''\''
-export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
-++ PS1='(testbed) '
-++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
-++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
-++ export CONDA_SHLVL=2
-++ CONDA_SHLVL=2
-++ export CONDA_DEFAULT_ENV=testbed
-++ CONDA_DEFAULT_ENV=testbed
-++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
-++ CONDA_PROMPT_MODIFIER='(testbed) '
-++ export CONDA_PREFIX_1=/opt/miniconda3
-++ CONDA_PREFIX_1=/opt/miniconda3
-++ export CONDA_EXE=/opt/miniconda3/bin/conda
-++ CONDA_EXE=/opt/miniconda3/bin/conda
-++ export _CE_M=
-++ _CE_M=
-++ export _CE_CONDA=
-++ _CE_CONDA=
-++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
-++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
-+ __conda_hashr
-+ '[' -n '' ']'
-+ '[' -n '' ']'
-+ hash -r
-+ cd /testbed
-+ git config --global --add safe.directory /testbed
-+ cd /testbed
-+ git status
-On branch master
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git restore <file>..." to discard changes in working directory)
-	modified:   doc/index.rst
-	modified:   tox.ini
-
-no changes added to commit (use "git add" and/or "git commit -a")
-+ git show
-commit f35d2a6cc726f97d0e859ca7a0e1729f7da8a6c8
-Author: Adam Turner <9087854+AA-Turner@users.noreply.github.com>
-Date:   Fri Sep 9 05:08:48 2022 +0100
-
-    Remove Pygments compatability code (#10812)
-
-diff --git a/setup.py b/setup.py
-index 95f29c9c2..4c65723aa 100644
---- a/setup.py
-+++ b/setup.py
-@@ -87,7 +87,7 @@ setup(
-         'sphinxcontrib-serializinghtml>=1.1.5',
-         'sphinxcontrib-qthelp',
-         'Jinja2>=3.0',
--        'Pygments>=2.8',
-+        'Pygments>=2.12',
-         'docutils>=0.14,<0.20',
-         'snowballstemmer>=2.0',
-         'babel>=2.9',
-diff --git a/sphinx/highlighting.py b/sphinx/highlighting.py
-index bb020850f..4a737eb40 100644
---- a/sphinx/highlighting.py
-+++ b/sphinx/highlighting.py
-@@ -2,17 +2,15 @@
- 
- from functools import partial
- from importlib import import_module
--from typing import Any, Dict, Optional
-+from typing import Any, Dict, Optional, Type, Union
- 
--from packaging import version
--from pygments import __version__ as pygmentsversion
- from pygments import highlight
- from pygments.filters import ErrorToken
- from pygments.formatter import Formatter
- from pygments.formatters import HtmlFormatter, LatexFormatter
- from pygments.lexer import Lexer
--from pygments.lexers import (CLexer, Python3Lexer, PythonConsoleLexer, PythonLexer, RstLexer,
--                             TextLexer, get_lexer_by_name, guess_lexer)
-+from pygments.lexers import (CLexer, PythonConsoleLexer, PythonLexer, RstLexer, TextLexer,
-+                             get_lexer_by_name, guess_lexer)
- from pygments.style import Style
- from pygments.styles import get_style_by_name
- from pygments.util import ClassNotFound
-@@ -24,12 +22,10 @@ from sphinx.util import logging, texescape
- logger = logging.getLogger(__name__)
- 
- lexers: Dict[str, Lexer] = {}
--lexer_classes: Dict[str, Lexer] = {
-+lexer_classes: Dict[str, Union[Type[Lexer], 'partial[Lexer]']] = {
-     'none': partial(TextLexer, stripnl=False),
-     'python': partial(PythonLexer, stripnl=False),
--    'python3': partial(Python3Lexer, stripnl=False),
-     'pycon': partial(PythonConsoleLexer, stripnl=False),
--    'pycon3': partial(PythonConsoleLexer, python3=True, stripnl=False),
-     'rest': partial(RstLexer, stripnl=False),
-     'c': partial(CLexer, stripnl=False),
- }
-@@ -76,20 +72,6 @@ _LATEX_ADD_STYLES = r'''
- \protected\def\PYG#1#2{\PYG@reset\PYG@toks#1+\relax+{\PYG@do{#2}}}
- \makeatother
- '''
--# fix extra space between lines when Pygments highlighting uses \fcolorbox
--# add a {..} to limit \fboxsep scope, and force \fcolorbox use correct value
--# cf pygments #1708 which makes this unneeded for Pygments > 2.7.4
--_LATEX_ADD_STYLES_FIXPYG = r'''
--\makeatletter
--% fix for Pygments <= 2.7.4
--\let\spx@original@fcolorbox\fcolorbox
--\def\spx@fixpyg@fcolorbox{\fboxsep-\fboxrule\spx@original@fcolorbox}
--\protected\def\PYG#1#2{\PYG@reset\PYG@toks#1+\relax+%
--             {\let\fcolorbox\spx@fixpyg@fcolorbox\PYG@do{#2}}}
--\makeatother
--'''
--if version.parse(pygmentsversion).release <= (2, 7, 4):
--    _LATEX_ADD_STYLES += _LATEX_ADD_STYLES_FIXPYG
- 
- 
- class PygmentsBridge:
-@@ -132,17 +114,12 @@ class PygmentsBridge:
-             opts = {}
- 
-         # find out which lexer to use
--        if lang in ('py', 'python'):
-+        if lang in {'py', 'python', 'py3', 'python3', 'default'}:
-             if source.startswith('>>>'):
-                 # interactive session
-                 lang = 'pycon'
-             else:
-                 lang = 'python'
--        elif lang in ('py3', 'python3', 'default'):
--            if source.startswith('>>>'):
--                lang = 'pycon3'
--            else:
--                lang = 'python3'
- 
-         if lang in lexers:
-             # just return custom lexers here (without installing raiseonerror filter)
-diff --git a/sphinx/writers/latex.py b/sphinx/writers/latex.py
-index e0b4ec03b..43f3910dd 100644
---- a/sphinx/writers/latex.py
-+++ b/sphinx/writers/latex.py
-@@ -1708,15 +1708,10 @@ class LaTeXTranslator(SphinxTranslator):
- 
-         opts = self.config.highlight_options.get(lang, {})
-         hlcode = self.highlighter.highlight_block(
--            node.astext(), lang, opts=opts, location=node)
--        # TODO: Use nowrap option once LaTeX formatter supports it
--        # https://github.com/pygments/pygments/pull/1343
--        hlcode = hlcode.replace(r'\begin{Verbatim}[commandchars=\\\{\}]',
--                                r'\sphinxcode{\sphinxupquote{%')
--        # get consistent trailer
--        hlcode = hlcode.rstrip()[:-15]  # strip \n\end{Verbatim}
--        self.body.append(hlcode)
--        self.body.append('%' + CR + '}}')
-+            node.astext(), lang, opts=opts, location=node, nowrap=True)
-+        self.body.append(r'\sphinxcode{\sphinxupquote{%' + CR
-+                         + hlcode.rstrip() + '%' + CR  # NoQA: W503
-+                         + '}}')  # NoQA: W503
-         raise nodes.SkipNode
- 
-     def depart_literal(self, node: Element) -> None:
-diff --git a/tests/test_build_html.py b/tests/test_build_html.py
-index 2b74690a1..8fd83b438 100644
---- a/tests/test_build_html.py
-+++ b/tests/test_build_html.py
-@@ -6,10 +6,8 @@ from itertools import chain, cycle
- from unittest.mock import ANY, call, patch
- 
- import docutils
--import pygments
- import pytest
- from html5lib import HTMLParser
--from packaging import version
- 
- from sphinx.builders.html import validate_html_extra_path, validate_html_static_path
- from sphinx.errors import ConfigError
-@@ -23,9 +21,6 @@ else:
-     FIGURE_CAPTION = ".//figure/figcaption/p"
- 
- 
--PYGMENTS_VERSION = version.parse(pygments.__version__).release
--
--
- ENV_WARNINGS = """\
- %(root)s/autodoc_fodder.py:docstring of autodoc_fodder.MarkupError:\\d+: \
- WARNING: Explicit markup ends without a blank line; unexpected unindent.
-@@ -1631,13 +1626,10 @@ def test_html_codeblock_linenos_style_table(app):
-     app.build()
-     content = (app.outdir / 'index.html').read_text(encoding='utf8')
- 
--    if PYGMENTS_VERSION >= (2, 8):
--        assert ('<div class="linenodiv"><pre><span class="normal">1</span>\n'
--                '<span class="normal">2</span>\n'
--                '<span class="normal">3</span>\n'
--                '<span class="normal">4</span></pre></div>') in content
--    else:
--        assert '<div class="linenodiv"><pre>1\n2\n3\n4</pre></div>' in content
-+    assert ('<div class="linenodiv"><pre><span class="normal">1</span>\n'
-+            '<span class="normal">2</span>\n'
-+            '<span class="normal">3</span>\n'
-+            '<span class="normal">4</span></pre></div>') in content
- 
- 
- @pytest.mark.sphinx('html', testroot='reST-code-block',
-@@ -1646,10 +1638,7 @@ def test_html_codeblock_linenos_style_inline(app):
-     app.build()
-     content = (app.outdir / 'index.html').read_text(encoding='utf8')
- 
--    if PYGMENTS_VERSION > (2, 7):
--        assert '<span class="linenos">1</span>' in content
--    else:
--        assert '<span class="lineno">1 </span>' in content
-+    assert '<span class="linenos">1</span>' in content
- 
- 
- @pytest.mark.sphinx('html', testroot='highlight_options')
-diff --git a/tests/test_intl.py b/tests/test_intl.py
-index 1366b0a06..796d95bcc 100644
---- a/tests/test_intl.py
-+++ b/tests/test_intl.py
-@@ -7,7 +7,6 @@ import os
- import re
- 
- import docutils
--import pygments
- import pytest
- from babel.messages import mofile, pofile
- from babel.messages.catalog import Catalog
-@@ -25,8 +24,6 @@ sphinx_intl = pytest.mark.sphinx(
-     },
- )
- 
--pygments_version = tuple(int(v) for v in pygments.__version__.split('.'))
--
- 
- def read_po(pathname):
-     with pathname.open(encoding='utf-8') as f:
-@@ -1099,13 +1096,9 @@ def test_additional_targets_should_not_be_translated(app):
-     assert_count(expected_expr, result, 1)
- 
-     # C code block with lang should not be translated but be *C* highlighted
--    if pygments_version < (2, 10, 0):
--        expected_expr = ("""<span class="cp">#include</span> """
--                         """<span class="cpf">&lt;stdio.h&gt;</span>""")
--    else:
--        expected_expr = ("""<span class="cp">#include</span>"""
--                         """<span class="w"> </span>"""
--                         """<span class="cpf">&lt;stdio.h&gt;</span>""")
-+    expected_expr = ("""<span class="cp">#include</span>"""
-+                     """<span class="w"> </span>"""
-+                     """<span class="cpf">&lt;stdio.h&gt;</span>""")
-     assert_count(expected_expr, result, 1)
- 
-     # literal block in list item should not be translated
-@@ -1182,13 +1175,9 @@ def test_additional_targets_should_be_translated(app):
-     assert_count(expected_expr, result, 1)
- 
-     # C code block with lang should be translated and be *C* highlighted
--    if pygments_version < (2, 10, 0):
--        expected_expr = ("""<span class="cp">#include</span> """
--                         """<span class="cpf">&lt;STDIO.H&gt;</span>""")
--    else:
--        expected_expr = ("""<span class="cp">#include</span>"""
--                         """<span class="w"> </span>"""
--                         """<span class="cpf">&lt;STDIO.H&gt;</span>""")
-+    expected_expr = ("""<span class="cp">#include</span>"""
-+                     """<span class="w"> </span>"""
-+                     """<span class="cpf">&lt;STDIO.H&gt;</span>""")
-     assert_count(expected_expr, result, 1)
- 
-     # literal block in list item should be translated
-+ git diff f35d2a6cc726f97d0e859ca7a0e1729f7da8a6c8
-diff --git a/doc/index.rst b/doc/index.rst
-index e795bdb57..b9db7c2d8 100644
---- a/doc/index.rst
-+++ b/doc/index.rst
-@@ -111,4 +111,12 @@ usecase-driven documentation, see :ref:`get-started` or :ref:`user-guides`.
-    man/index
-    glossary
-    changes
-+
-+Indices and tables
-+==================
-+
-+* :ref:`genindex`
-+* :ref:`modindex`
-+* :ref:`search`
-+
-    examples
-diff --git a/tox.ini b/tox.ini
-index 7ca990b56..a0708b02c 100644
---- a/tox.ini
-+++ b/tox.ini
-@@ -30,7 +30,7 @@ setenv =
-     PYTHONWARNINGS = all
-     PYTEST_ADDOPTS = {env:PYTEST_ADDOPTS:} --color yes
- commands=
--    python -X dev -X warn_default_encoding -m pytest --durations 25 {posargs}
-+    python -X dev -X warn_default_encoding -m pytest -rA --durations 25 {posargs}
- 
- [testenv:du-latest]
- commands =
-+ source /opt/miniconda3/bin/activate
-++ _CONDA_ROOT=/opt/miniconda3
-++ . /opt/miniconda3/etc/profile.d/conda.sh
-+++ export CONDA_EXE=/opt/miniconda3/bin/conda
-+++ CONDA_EXE=/opt/miniconda3/bin/conda
-+++ export _CE_M=
-+++ _CE_M=
-+++ export _CE_CONDA=
-+++ _CE_CONDA=
-+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
-+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
-+++ '[' -z x ']'
-++ conda activate
-++ local cmd=activate
-++ case "$cmd" in
-++ __conda_activate activate
-++ '[' -n '' ']'
-++ local ask_conda
-+++ PS1='(testbed) '
-+++ __conda_exe shell.posix activate
-+++ /opt/miniconda3/bin/conda shell.posix activate
-++ ask_conda='PS1='\''(base) '\''
-export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
-export CONDA_PREFIX='\''/opt/miniconda3'\''
-export CONDA_SHLVL='\''3'\''
-export CONDA_DEFAULT_ENV='\''base'\''
-export CONDA_PROMPT_MODIFIER='\''(base) '\''
-export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
-export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
-export _CE_M='\'''\''
-export _CE_CONDA='\'''\''
-export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
-++ eval 'PS1='\''(base) '\''
-export PATH='\''/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
-export CONDA_PREFIX='\''/opt/miniconda3'\''
-export CONDA_SHLVL='\''3'\''
-export CONDA_DEFAULT_ENV='\''base'\''
-export CONDA_PROMPT_MODIFIER='\''(base) '\''
-export CONDA_PREFIX_2='\''/opt/miniconda3/envs/testbed'\''
-export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
-export _CE_M='\'''\''
-export _CE_CONDA='\'''\''
-export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
-+++ PS1='(base) '
-+++ export PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-+++ PATH=/opt/miniconda3/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-+++ export CONDA_PREFIX=/opt/miniconda3
-+++ CONDA_PREFIX=/opt/miniconda3
-+++ export CONDA_SHLVL=3
-+++ CONDA_SHLVL=3
-+++ export CONDA_DEFAULT_ENV=base
-+++ CONDA_DEFAULT_ENV=base
-+++ export 'CONDA_PROMPT_MODIFIER=(base) '
-+++ CONDA_PROMPT_MODIFIER='(base) '
-+++ export CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
-+++ CONDA_PREFIX_2=/opt/miniconda3/envs/testbed
-+++ export CONDA_EXE=/opt/miniconda3/bin/conda
-+++ CONDA_EXE=/opt/miniconda3/bin/conda
-+++ export _CE_M=
-+++ _CE_M=
-+++ export _CE_CONDA=
-+++ _CE_CONDA=
-+++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
-+++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
-++ __conda_hashr
-++ '[' -n '' ']'
-++ '[' -n '' ']'
-++ hash -r
-+ conda activate testbed
-+ local cmd=activate
-+ case "$cmd" in
-+ __conda_activate activate testbed
-+ '[' -n '' ']'
-+ local ask_conda
-++ PS1='(base) '
-++ __conda_exe shell.posix activate testbed
-++ /opt/miniconda3/bin/conda shell.posix activate testbed
-+ ask_conda='PS1='\''(testbed) '\''
-export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
-export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
-export CONDA_SHLVL='\''4'\''
-export CONDA_DEFAULT_ENV='\''testbed'\''
-export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
-export CONDA_PREFIX_3='\''/opt/miniconda3'\''
-export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
-export _CE_M='\'''\''
-export _CE_CONDA='\'''\''
-export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
-+ eval 'PS1='\''(testbed) '\''
-export PATH='\''/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'\''
-export CONDA_PREFIX='\''/opt/miniconda3/envs/testbed'\''
-export CONDA_SHLVL='\''4'\''
-export CONDA_DEFAULT_ENV='\''testbed'\''
-export CONDA_PROMPT_MODIFIER='\''(testbed) '\''
-export CONDA_PREFIX_3='\''/opt/miniconda3'\''
-export CONDA_EXE='\''/opt/miniconda3/bin/conda'\''
-export _CE_M='\'''\''
-export _CE_CONDA='\'''\''
-export CONDA_PYTHON_EXE='\''/opt/miniconda3/bin/python'\'''
-++ PS1='(testbed) '
-++ export PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-++ PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/condabin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-++ export CONDA_PREFIX=/opt/miniconda3/envs/testbed
-++ CONDA_PREFIX=/opt/miniconda3/envs/testbed
-++ export CONDA_SHLVL=4
-++ CONDA_SHLVL=4
-++ export CONDA_DEFAULT_ENV=testbed
-++ CONDA_DEFAULT_ENV=testbed
-++ export 'CONDA_PROMPT_MODIFIER=(testbed) '
-++ CONDA_PROMPT_MODIFIER='(testbed) '
-++ export CONDA_PREFIX_3=/opt/miniconda3
-++ CONDA_PREFIX_3=/opt/miniconda3
-++ export CONDA_EXE=/opt/miniconda3/bin/conda
-++ CONDA_EXE=/opt/miniconda3/bin/conda
-++ export _CE_M=
-++ _CE_M=
-++ export _CE_CONDA=
-++ _CE_CONDA=
-++ export CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
-++ CONDA_PYTHON_EXE=/opt/miniconda3/bin/python
-+ __conda_hashr
-+ '[' -n '' ']'
-+ '[' -n '' ']'
-+ hash -r
-+ python -m pip install -e '.[test]'
-Obtaining file:///testbed
-  Preparing metadata (setup.py): started
-  Preparing metadata (setup.py): finished with status 'done'
-Requirement already satisfied: sphinxcontrib-applehelp in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (2.0.0)
-Requirement already satisfied: sphinxcontrib-devhelp in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (2.0.0)
-Requirement already satisfied: sphinxcontrib-jsmath in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (1.0.1)
-Requirement already satisfied: sphinxcontrib-htmlhelp>=2.0.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (2.1.0)
-Requirement already satisfied: sphinxcontrib-serializinghtml>=1.1.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (2.0.0)
-Requirement already satisfied: sphinxcontrib-qthelp in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (2.0.0)
-Requirement already satisfied: Jinja2>=3.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (3.1.4)
-Requirement already satisfied: Pygments>=2.12 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (2.18.0)
-Requirement already satisfied: docutils<0.20,>=0.14 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (0.19)
-Requirement already satisfied: snowballstemmer>=2.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (2.2.0)
-Requirement already satisfied: babel>=2.9 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (2.16.0)
-Requirement already satisfied: alabaster<0.8,>=0.7 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (0.7.16)
-Requirement already satisfied: imagesize>=1.3 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (1.4.1)
-Requirement already satisfied: requests>=2.5.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (2.32.3)
-Requirement already satisfied: packaging>=21.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (24.1)
-Requirement already satisfied: importlib-metadata>=4.8 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (8.4.0)
-Requirement already satisfied: pytest>=4.6 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (8.3.2)
-Requirement already satisfied: html5lib in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (1.1)
-Requirement already satisfied: cython in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Sphinx==5.2.0.dev20240909) (3.0.11)
-Requirement already satisfied: zipp>=0.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from importlib-metadata>=4.8->Sphinx==5.2.0.dev20240909) (3.20.1)
-Requirement already satisfied: MarkupSafe>=2.0 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from Jinja2>=3.0->Sphinx==5.2.0.dev20240909) (2.1.5)
-Requirement already satisfied: iniconfig in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest>=4.6->Sphinx==5.2.0.dev20240909) (2.0.0)
-Requirement already satisfied: pluggy<2,>=1.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest>=4.6->Sphinx==5.2.0.dev20240909) (1.5.0)
-Requirement already satisfied: exceptiongroup>=1.0.0rc8 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest>=4.6->Sphinx==5.2.0.dev20240909) (1.2.2)
-Requirement already satisfied: tomli>=1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from pytest>=4.6->Sphinx==5.2.0.dev20240909) (2.0.1)
-Requirement already satisfied: charset-normalizer<4,>=2 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==5.2.0.dev20240909) (3.3.2)
-Requirement already satisfied: idna<4,>=2.5 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==5.2.0.dev20240909) (3.8)
-Requirement already satisfied: urllib3<3,>=1.21.1 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==5.2.0.dev20240909) (2.2.2)
-Requirement already satisfied: certifi>=2017.4.17 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from requests>=2.5.0->Sphinx==5.2.0.dev20240909) (2024.8.30)
-Requirement already satisfied: six>=1.9 in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from html5lib->Sphinx==5.2.0.dev20240909) (1.16.0)
-Requirement already satisfied: webencodings in /opt/miniconda3/envs/testbed/lib/python3.9/site-packages (from html5lib->Sphinx==5.2.0.dev20240909) (0.5.1)
-Installing collected packages: Sphinx
-  Attempting uninstall: Sphinx
-    Found existing installation: Sphinx 5.2.0.dev20240909
-    Uninstalling Sphinx-5.2.0.dev20240909:
-      Successfully uninstalled Sphinx-5.2.0.dev20240909
-  DEPRECATION: Legacy editable install of Sphinx[test]==5.2.0.dev20240909 from file:///testbed (setup.py develop) is deprecated. pip 25.0 will enforce this behaviour change. A possible replacement is to add a pyproject.toml or enable --use-pep517, and use setuptools >= 64. If the resulting installation is not behaving as expected, try using --config-settings editable_mode=compat. Please consult the setuptools documentation for more information. Discussion can be found at https://github.com/pypa/pip/issues/11457
-  Running setup.py develop for Sphinx
-Successfully installed Sphinx
-WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable.It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
-+ git checkout f35d2a6cc726f97d0e859ca7a0e1729f7da8a6c8 tests/test_environment_toctree.py
-Updated 0 paths from a38c6b4b1
-+ git apply -v -
-Checking patch tests/roots/test-toctree-index/conf.py...
-Checking patch tests/roots/test-toctree-index/foo.rst...
-Checking patch tests/roots/test-toctree-index/index.rst...
-<stdin>:35: new blank line at EOF.
-+
-Checking patch tests/test_environment_toctree.py...
-Applied patch tests/roots/test-toctree-index/conf.py cleanly.
-Applied patch tests/roots/test-toctree-index/foo.rst cleanly.
-Applied patch tests/roots/test-toctree-index/index.rst cleanly.
-Applied patch tests/test_environment_toctree.py cleanly.
-warning: 1 line adds whitespace errors.
-+ tox --current-env -epy39 -v -- tests/roots/test-toctree-index/conf.py tests/roots/test-toctree-index/foo.rst tests/roots/test-toctree-index/index.rst tests/test_environment_toctree.py
-py39: commands[0]> python -X dev -X warn_default_encoding -m pytest -rA --durations 25 tests/roots/test-toctree-index/conf.py tests/roots/test-toctree-index/foo.rst tests/roots/test-toctree-index/index.rst tests/test_environment_toctree.py
-[1m============================= test session starts ==============================[0m
-platform linux -- Python 3.9.19, pytest-8.3.2, pluggy-1.5.0
-cachedir: .tox/py39/.pytest_cache
-libraries: Sphinx-5.2.0+/f35d2a6cc, docutils-0.19
-base tempdir: /tmp/pytest-of-root/pytest-0
-rootdir: /testbed
-configfile: setup.cfg
-collected 10 items
-
-tests/test_environment_toctree.py [32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[32m.[0m[31mF[0m[31m                             [100%][0m
-
-=================================== FAILURES ===================================
-[31m[1m______________________________ test_toctree_index ______________________________[0m
-
-app = <SphinxTestApp buildername='xml'>
-
-    [0m[37m@pytest[39;49;00m.mark.sphinx([33m'[39;49;00m[33mxml[39;49;00m[33m'[39;49;00m, testroot=[33m'[39;49;00m[33mtoctree-index[39;49;00m[33m'[39;49;00m)[90m[39;49;00m
-    [94mdef[39;49;00m [92mtest_toctree_index[39;49;00m(app):[90m[39;49;00m
-        app.build()[90m[39;49;00m
-        toctree = app.env.tocs[[33m'[39;49;00m[33mindex[39;49;00m[33m'[39;49;00m][90m[39;49;00m
-        assert_node(toctree,[90m[39;49;00m
-                    [bullet_list, ([list_item, (compact_paragraph,  [90m# [0][0][39;49;00m[90m[39;49;00m
-                                                [bullet_list, (addnodes.toctree,  [90m# [0][1][0][39;49;00m[90m[39;49;00m
-                                                               addnodes.toctree)])])])  [90m# [0][1][1][39;49;00m[90m[39;49;00m
->       assert_node(toctree[[94m0[39;49;00m][[94m1[39;49;00m][[94m1[39;49;00m], addnodes.toctree,[90m[39;49;00m
-                    caption=[33m"[39;49;00m[33mIndices[39;49;00m[33m"[39;49;00m, glob=[94mFalse[39;49;00m, hidden=[94mFalse[39;49;00m,[90m[39;49;00m
-                    titlesonly=[94mFalse[39;49;00m, maxdepth=-[94m1[39;49;00m, numbered=[94m0[39;49;00m,[90m[39;49;00m
-                    entries=[([94mNone[39;49;00m, [33m'[39;49;00m[33mgenindex[39;49;00m[33m'[39;49;00m), ([94mNone[39;49;00m, [33m'[39;49;00m[33mmodindex[39;49;00m[33m'[39;49;00m), ([94mNone[39;49;00m, [33m'[39;49;00m[33msearch[39;49;00m[33m'[39;49;00m)])[90m[39;49;00m
-
-[1m[31mtests/test_environment_toctree.py[0m:359: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-
-node = <toctree: >, cls = <class 'sphinx.addnodes.toctree'>, xpath = ''
-kwargs = {'caption': 'Indices', 'entries': [(None, 'genindex'), (None, 'modindex'), (None, 'search')], 'glob': False, 'hidden': False, ...}
-key = 'entries'
-value = [(None, 'genindex'), (None, 'modindex'), (None, 'search')]
-
-    [0m[94mdef[39;49;00m [92massert_node[39;49;00m(node: Node, [96mcls[39;49;00m: Any = [94mNone[39;49;00m, xpath: [96mstr[39;49;00m = [33m"[39;49;00m[33m"[39;49;00m, **kwargs: Any) -> [94mNone[39;49;00m:[90m[39;49;00m
-        [94mif[39;49;00m [96mcls[39;49;00m:[90m[39;49;00m
-            [94mif[39;49;00m [96misinstance[39;49;00m([96mcls[39;49;00m, [96mlist[39;49;00m):[90m[39;49;00m
-                assert_node(node, [96mcls[39;49;00m[[94m0[39;49;00m], xpath=xpath, **kwargs)[90m[39;49;00m
-                [94mif[39;49;00m [96mcls[39;49;00m[[94m1[39;49;00m:]:[90m[39;49;00m
-                    [94mif[39;49;00m [96misinstance[39;49;00m([96mcls[39;49;00m[[94m1[39;49;00m], [96mtuple[39;49;00m):[90m[39;49;00m
-                        assert_node(node, [96mcls[39;49;00m[[94m1[39;49;00m], xpath=xpath, **kwargs)[90m[39;49;00m
-                    [94melse[39;49;00m:[90m[39;49;00m
-                        [94massert[39;49;00m [96misinstance[39;49;00m(node, nodes.Element), \
-                            [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m does not have any children[39;49;00m[33m'[39;49;00m % xpath[90m[39;49;00m
-                        [94massert[39;49;00m [96mlen[39;49;00m(node) == [94m1[39;49;00m, \
-                            [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m has [39;49;00m[33m%d[39;49;00m[33m child nodes, not one[39;49;00m[33m'[39;49;00m % (xpath, [96mlen[39;49;00m(node))[90m[39;49;00m
-                        assert_node(node[[94m0[39;49;00m], [96mcls[39;49;00m[[94m1[39;49;00m:], xpath=xpath + [33m"[39;49;00m[33m[0][39;49;00m[33m"[39;49;00m, **kwargs)[90m[39;49;00m
-            [94melif[39;49;00m [96misinstance[39;49;00m([96mcls[39;49;00m, [96mtuple[39;49;00m):[90m[39;49;00m
-                [94massert[39;49;00m [96misinstance[39;49;00m(node, ([96mlist[39;49;00m, nodes.Element)), \
-                    [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m does not have any items[39;49;00m[33m'[39;49;00m % xpath[90m[39;49;00m
-                [94massert[39;49;00m [96mlen[39;49;00m(node) == [96mlen[39;49;00m([96mcls[39;49;00m), \
-                    [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m has [39;49;00m[33m%d[39;49;00m[33m child nodes, not [39;49;00m[33m%r[39;49;00m[33m'[39;49;00m % (xpath, [96mlen[39;49;00m(node), [96mlen[39;49;00m([96mcls[39;49;00m))[90m[39;49;00m
-                [94mfor[39;49;00m i, nodecls [95min[39;49;00m [96menumerate[39;49;00m([96mcls[39;49;00m):[90m[39;49;00m
-                    path = xpath + [33m"[39;49;00m[33m[[39;49;00m[33m%d[39;49;00m[33m][39;49;00m[33m"[39;49;00m % i[90m[39;49;00m
-                    assert_node(node[i], nodecls, xpath=path, **kwargs)[90m[39;49;00m
-            [94melif[39;49;00m [96misinstance[39;49;00m([96mcls[39;49;00m, [96mstr[39;49;00m):[90m[39;49;00m
-                [94massert[39;49;00m node == [96mcls[39;49;00m, [33m'[39;49;00m[33mThe node [39;49;00m[33m%r[39;49;00m[33m is not [39;49;00m[33m%r[39;49;00m[33m: [39;49;00m[33m%r[39;49;00m[33m'[39;49;00m % (xpath, [96mcls[39;49;00m, node)[90m[39;49;00m
-            [94melse[39;49;00m:[90m[39;49;00m
-                [94massert[39;49;00m [96misinstance[39;49;00m(node, [96mcls[39;49;00m), \
-                    [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m is not subclass of [39;49;00m[33m%r[39;49;00m[33m: [39;49;00m[33m%r[39;49;00m[33m'[39;49;00m % (xpath, [96mcls[39;49;00m, node)[90m[39;49;00m
-    [90m[39;49;00m
-        [94mif[39;49;00m kwargs:[90m[39;49;00m
-            [94massert[39;49;00m [96misinstance[39;49;00m(node, nodes.Element), \
-                [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m does not have any attributes[39;49;00m[33m'[39;49;00m % xpath[90m[39;49;00m
-    [90m[39;49;00m
-            [94mfor[39;49;00m key, value [95min[39;49;00m kwargs.items():[90m[39;49;00m
-                [94massert[39;49;00m key [95min[39;49;00m node, \
-                    [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m does not have [39;49;00m[33m%r[39;49;00m[33m attribute: [39;49;00m[33m%r[39;49;00m[33m'[39;49;00m % (xpath, key, node)[90m[39;49;00m
->               [94massert[39;49;00m node[key] == value, \
-                    [33m'[39;49;00m[33mThe node[39;49;00m[33m%s[39;49;00m[33m[[39;49;00m[33m%s[39;49;00m[33m] is not [39;49;00m[33m%r[39;49;00m[33m: [39;49;00m[33m%r[39;49;00m[33m'[39;49;00m % (xpath, key, value, node[key])[90m[39;49;00m
-[1m[31mE               AssertionError: The node[entries] is not [(None, 'genindex'), (None, 'modindex'), (None, 'search')]: [][0m
-
-[1m[31msphinx/testing/util.py[0m:74: AssertionError
---------------------------- Captured stdout teardown ---------------------------
-# testroot: root
-# builder: xml
-# srcdir: /tmp/pytest-of-root/pytest-0/toctree-index
-# outdir: /tmp/pytest-of-root/pytest-0/toctree-index/_build/xml
-# status: 
-[01mRunning Sphinx v5.2.0+/f35d2a6cc[39;49;00m
-[01mbuilding [mo]: [39;49;00mtargets for 0 po files that are out of date
-[01mbuilding [xml]: [39;49;00mtargets for 2 source files that are out of date
-[01mupdating environment: [39;49;00m[new config] 2 added, 0 changed, 0 removed
-[01mreading sources... [39;49;00m[ 50%] [35mfoo[39;49;00m                                                  [01mreading sources... [39;49;00m[100%] [35mindex[39;49;00m                                                
-[01mlooking for now-outdated files... [39;49;00mnone found
-[01mpickling environment... [39;49;00mdone
-[01mchecking consistency... [39;49;00mdone
-[01mpreparing documents... [39;49;00mdone
-[01mwriting output... [39;49;00m[ 50%] [32mfoo[39;49;00m                                                   [01mwriting output... [39;49;00m[100%] [32mindex[39;49;00m                                                 
-[01mbuild succeeded, 3 warnings.[39;49;00m
-
-The XML files are in ../tmp/pytest-of-root/pytest-0/toctree-index/_build/xml.
-
-# warning: 
-[91m/tmp/pytest-of-root/pytest-0/toctree-index/index.rst:9: WARNING: toctree contains reference to nonexisting document 'genindex'[39;49;00m
-[91m/tmp/pytest-of-root/pytest-0/toctree-index/index.rst:9: WARNING: toctree contains reference to nonexisting document 'modindex'[39;49;00m
-[91m/tmp/pytest-of-root/pytest-0/toctree-index/index.rst:9: WARNING: toctree contains reference to nonexisting document 'search'[39;49;00m
-
-==================================== PASSES ====================================
---------------------------- Captured stdout teardown ---------------------------
-# testroot: root
-# builder: xml
-# srcdir: /tmp/pytest-of-root/pytest-0/test_environment_toctree_basic
-# outdir: /tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/_build/xml
-# status: 
-[01mRunning Sphinx v5.2.0+/f35d2a6cc[39;49;00m
-[01mbuilding [mo]: [39;49;00mtargets for 0 po files that are out of date
-[01mbuilding [xml]: [39;49;00mtargets for 7 source files that are out of date
-[01mupdating environment: [39;49;00m[new config] 7 added, 0 changed, 0 removed
-[01mreading sources... [39;49;00m[ 14%] [35mbar[39;49;00m                                                  [01mreading sources... [39;49;00m[ 28%] [35mbaz[39;49;00m                                                  [01mreading sources... [39;49;00m[ 42%] [35mfoo[39;49;00m                                                  [01mreading sources... [39;49;00m[ 57%] [35mindex[39;49;00m                                                [01mreading sources... [39;49;00m[ 71%] [35mquux[39;49;00m                                                 [01mreading sources... [39;49;00m[ 85%] [35mqux[39;49;00m                                                  [01mreading sources... [39;49;00m[100%] [35mtocdepth[39;49;00m                                             
-[01mlooking for now-outdated files... [39;49;00mnone found
-[01mpickling environment... [39;49;00mdone
-[01mchecking consistency... [39;49;00mdone
-[01mpreparing documents... [39;49;00mdone
-[01mwriting output... [39;49;00m[ 14%] [32mbar[39;49;00m                                                   [01mwriting output... [39;49;00m[ 28%] [32mbaz[39;49;00m                                                   [01mwriting output... [39;49;00m[ 42%] [32mfoo[39;49;00m                                                   [01mwriting output... [39;49;00m[ 57%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 71%] [32mquux[39;49;00m                                                  [01mwriting output... [39;49;00m[ 85%] [32mqux[39;49;00m                                                   [01mwriting output... [39;49;00m[100%] [32mtocdepth[39;49;00m                                              
-[01mbuild succeeded, 2 warnings.[39;49;00m
-
-The XML files are in ../tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/_build/xml.
-
-# warning: 
-[91m/tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/qux.rst: WARNING: document isn't included in any toctree[39;49;00m
-[91m/tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/tocdepth.rst: WARNING: document isn't included in any toctree[39;49;00m
-
---------------------------- Captured stdout teardown ---------------------------
-# testroot: root
-# builder: dummy
-# srcdir: /tmp/pytest-of-root/pytest-0/toctree-glob
-# outdir: /tmp/pytest-of-root/pytest-0/toctree-glob/_build/dummy
-# status: 
-[01mRunning Sphinx v5.2.0+/f35d2a6cc[39;49;00m
-[01mbuilding [mo]: [39;49;00mtargets for 0 po files that are out of date
-[01mbuilding [dummy]: [39;49;00mtargets for 12 source files that are out of date
-[01mupdating environment: [39;49;00m[new config] 12 added, 0 changed, 0 removed
-[01mreading sources... [39;49;00m[  8%] [35mbar/bar_1[39;49;00m                                            [01mreading sources... [39;49;00m[ 16%] [35mbar/bar_2[39;49;00m                                            [01mreading sources... [39;49;00m[ 25%] [35mbar/bar_3[39;49;00m                                            [01mreading sources... [39;49;00m[ 33%] [35mbar/bar_4/index[39;49;00m                                      [01mreading sources... [39;49;00m[ 41%] [35mbar/index[39;49;00m                                            [01mreading sources... [39;49;00m[ 50%] [35mbaz[39;49;00m                                                  [01mreading sources... [39;49;00m[ 58%] [35mfoo[39;49;00m                                                  [01mreading sources... [39;49;00m[ 66%] [35mindex[39;49;00m                                                [01mreading sources... [39;49;00m[ 75%] [35mquux[39;49;00m                                                 [01mreading sources... [39;49;00m[ 83%] [35mqux/index[39;49;00m                                            [01mreading sources... [39;49;00m[ 91%] [35mqux/qux_1[39;49;00m                                            [01mreading sources... [39;49;00m[100%] [35mqux/qux_2[39;49;00m                                            
-[01mlooking for now-outdated files... [39;49;00mnone found
-[01mpickling environment... [39;49;00mdone
-[01mchecking consistency... [39;49;00mdone
-[01mpreparing documents... [39;49;00mdone
-[01mwriting output... [39;49;00m[  8%] [32mbar/bar_1[39;49;00m                                             [01mwriting output... [39;49;00m[ 16%] [32mbar/bar_2[39;49;00m                                             [01mwriting output... [39;49;00m[ 25%] [32mbar/bar_3[39;49;00m                                             [01mwriting output... [39;49;00m[ 33%] [32mbar/bar_4/index[39;49;00m                                       [01mwriting output... [39;49;00m[ 41%] [32mbar/index[39;49;00m                                             [01mwriting output... [39;49;00m[ 50%] [32mbaz[39;49;00m                                                   [01mwriting output... [39;49;00m[ 58%] [32mfoo[39;49;00m                                                   [01mwriting output... [39;49;00m[ 66%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 75%] [32mquux[39;49;00m                                                  [01mwriting output... [39;49;00m[ 83%] [32mqux/index[39;49;00m                                             [01mwriting output... [39;49;00m[ 91%] [32mqux/qux_1[39;49;00m                                             [01mwriting output... [39;49;00m[100%] [32mqux/qux_2[39;49;00m                                             
-[01mbuild succeeded, 1 warning.[39;49;00m
-
-The dummy builder generates no files.
-
-# warning: 
-[91m/tmp/pytest-of-root/pytest-0/toctree-glob/quux.rst: WARNING: document isn't included in any toctree[39;49;00m
-
---------------------------- Captured stdout teardown ---------------------------
-# testroot: root
-# builder: xml
-# srcdir: /tmp/pytest-of-root/pytest-0/test_environment_toctree_basic
-# outdir: /tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/_build/xml
-# status: 
-[01mRunning Sphinx v5.2.0+/f35d2a6cc[39;49;00m
-[01mloading pickled environment... [39;49;00mdone
-s that are out of date
-[01mbuilding [xml]: [39;49;00mtargets for 7 source files that are out of date
-[01mupdating environment: [39;49;00m[new config] 7 added, 0 changed, 0 removed
-[01mreading sources... [39;49;00m[ 14%] [35mbar[39;49;00m                                                  [01mreading sources... [39;49;00m[ 28%] [35mbaz[39;49;00m                                                  [01mreading sources... [39;49;00m[ 42%] [35mfoo[39;49;00m                                                  [01mreading sources... [39;49;00m[ 57%] [35mindex[39;49;00m                                                [01mreading sources... [39;49;00m[ 71%] [35mquux[39;49;00m                                                 [01mreading sources... [39;49;00m[ 85%] [35mqux[39;49;00m                                                  [01mreading sources... [39;49;00m[100%] [35mtocdepth[39;49;00m                                             
-[01mlooking for now-outdated files... [39;49;00mnone found
-[01mpickling environment... [39;49;00mdone
-[01mchecking consistency... [39;49;00mdone
-[01mpreparing documents... [39;49;00mdone
-[01mwriting output... [39;49;00m[ 14%] [32mbar[39;49;00m                                                   [01mwriting output... [39;49;00m[ 28%] [32mbaz[39;49;00m                                                   [01mwriting output... [39;49;00m[ 42%] [32mfoo[39;49;00m                                                   [01mwriting output... [39;49;00m[ 57%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 71%] [32mquux[39;49;00m                                                  [01mwriting output... [39;49;00m[ 85%] [32mqux[39;49;00m                                                   [01mwriting output... [39;49;00m[100%] [32mtocdepth[39;49;00m                                              
-[01mbuild succeeded, 2 warnings.[39;49;00m
-
-The XML files are in ../tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/_build/xml.
-
-# warning: 
-[91m/tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/qux.rst: WARNING: document isn't included in any toctree[39;49;00m
-[91m/tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/tocdepth.rst: WARNING: document isn't included in any toctree[39;49;00m
-
---------------------------- Captured stdout teardown ---------------------------
-# testroot: root
-# builder: xml
-# srcdir: /tmp/pytest-of-root/pytest-0/test_environment_toctree_basic
-# outdir: /tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/_build/xml
-# status: 
-[01mRunning Sphinx v5.2.0+/f35d2a6cc[39;49;00m
-[01mloading pickled environment... [39;49;00mdone
-s that are out of date
-[01mbuilding [xml]: [39;49;00mtargets for 7 source files that are out of date
-[01mupdating environment: [39;49;00m[new config] 7 added, 0 changed, 0 removed
-[01mreading sources... [39;49;00m[ 14%] [35mbar[39;49;00m                                                  [01mreading sources... [39;49;00m[ 28%] [35mbaz[39;49;00m                                                  [01mreading sources... [39;49;00m[ 42%] [35mfoo[39;49;00m                                                  [01mreading sources... [39;49;00m[ 57%] [35mindex[39;49;00m                                                [01mreading sources... [39;49;00m[ 71%] [35mquux[39;49;00m                                                 [01mreading sources... [39;49;00m[ 85%] [35mqux[39;49;00m                                                  [01mreading sources... [39;49;00m[100%] [35mtocdepth[39;49;00m                                             
-[01mlooking for now-outdated files... [39;49;00mnone found
-[01mpickling environment... [39;49;00mdone
-[01mchecking consistency... [39;49;00mdone
-[01mpreparing documents... [39;49;00mdone
-[01mwriting output... [39;49;00m[ 14%] [32mbar[39;49;00m                                                   [01mwriting output... [39;49;00m[ 28%] [32mbaz[39;49;00m                                                   [01mwriting output... [39;49;00m[ 42%] [32mfoo[39;49;00m                                                   [01mwriting output... [39;49;00m[ 57%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 71%] [32mquux[39;49;00m                                                  [01mwriting output... [39;49;00m[ 85%] [32mqux[39;49;00m                                                   [01mwriting output... [39;49;00m[100%] [32mtocdepth[39;49;00m                                              
-[01mbuild succeeded, 2 warnings.[39;49;00m
-
-The XML files are in ../tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/_build/xml.
-
-# warning: 
-[91m/tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/qux.rst: WARNING: document isn't included in any toctree[39;49;00m
-[91m/tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/tocdepth.rst: WARNING: document isn't included in any toctree[39;49;00m
-
---------------------------- Captured stdout teardown ---------------------------
-# testroot: root
-# builder: xml
-# srcdir: /tmp/pytest-of-root/pytest-0/test_environment_toctree_basic
-# outdir: /tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/_build/xml
-# status: 
-[01mRunning Sphinx v5.2.0+/f35d2a6cc[39;49;00m
-[01mloading pickled environment... [39;49;00mdone
-s that are out of date
-[01mbuilding [xml]: [39;49;00mtargets for 7 source files that are out of date
-[01mupdating environment: [39;49;00m[new config] 7 added, 0 changed, 0 removed
-[01mreading sources... [39;49;00m[ 14%] [35mbar[39;49;00m                                                  [01mreading sources... [39;49;00m[ 28%] [35mbaz[39;49;00m                                                  [01mreading sources... [39;49;00m[ 42%] [35mfoo[39;49;00m                                                  [01mreading sources... [39;49;00m[ 57%] [35mindex[39;49;00m                                                [01mreading sources... [39;49;00m[ 71%] [35mquux[39;49;00m                                                 [01mreading sources... [39;49;00m[ 85%] [35mqux[39;49;00m                                                  [01mreading sources... [39;49;00m[100%] [35mtocdepth[39;49;00m                                             
-[01mlooking for now-outdated files... [39;49;00mnone found
-[01mpickling environment... [39;49;00mdone
-[01mchecking consistency... [39;49;00mdone
-[01mpreparing documents... [39;49;00mdone
-[01mwriting output... [39;49;00m[ 14%] [32mbar[39;49;00m                                                   [01mwriting output... [39;49;00m[ 28%] [32mbaz[39;49;00m                                                   [01mwriting output... [39;49;00m[ 42%] [32mfoo[39;49;00m                                                   [01mwriting output... [39;49;00m[ 57%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 71%] [32mquux[39;49;00m                                                  [01mwriting output... [39;49;00m[ 85%] [32mqux[39;49;00m                                                   [01mwriting output... [39;49;00m[100%] [32mtocdepth[39;49;00m                                              
-[01mbuild succeeded, 2 warnings.[39;49;00m
-
-The XML files are in ../tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/_build/xml.
-
-# warning: 
-[91m/tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/qux.rst: WARNING: document isn't included in any toctree[39;49;00m
-[91m/tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/tocdepth.rst: WARNING: document isn't included in any toctree[39;49;00m
-
---------------------------- Captured stdout teardown ---------------------------
-# testroot: root
-# builder: xml
-# srcdir: /tmp/pytest-of-root/pytest-0/test_environment_toctree_basic
-# outdir: /tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/_build/xml
-# status: 
-[01mRunning Sphinx v5.2.0+/f35d2a6cc[39;49;00m
-[01mloading pickled environment... [39;49;00mdone
-s that are out of date
-[01mbuilding [xml]: [39;49;00mtargets for 7 source files that are out of date
-[01mupdating environment: [39;49;00m[new config] 7 added, 0 changed, 0 removed
-[01mreading sources... [39;49;00m[ 14%] [35mbar[39;49;00m                                                  [01mreading sources... [39;49;00m[ 28%] [35mbaz[39;49;00m                                                  [01mreading sources... [39;49;00m[ 42%] [35mfoo[39;49;00m                                                  [01mreading sources... [39;49;00m[ 57%] [35mindex[39;49;00m                                                [01mreading sources... [39;49;00m[ 71%] [35mquux[39;49;00m                                                 [01mreading sources... [39;49;00m[ 85%] [35mqux[39;49;00m                                                  [01mreading sources... [39;49;00m[100%] [35mtocdepth[39;49;00m                                             
-[01mlooking for now-outdated files... [39;49;00mnone found
-[01mpickling environment... [39;49;00mdone
-[01mchecking consistency... [39;49;00mdone
-[01mpreparing documents... [39;49;00mdone
-[01mwriting output... [39;49;00m[ 14%] [32mbar[39;49;00m                                                   [01mwriting output... [39;49;00m[ 28%] [32mbaz[39;49;00m                                                   [01mwriting output... [39;49;00m[ 42%] [32mfoo[39;49;00m                                                   [01mwriting output... [39;49;00m[ 57%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 71%] [32mquux[39;49;00m                                                  [01mwriting output... [39;49;00m[ 85%] [32mqux[39;49;00m                                                   [01mwriting output... [39;49;00m[100%] [32mtocdepth[39;49;00m                                              
-[01mbuild succeeded, 2 warnings.[39;49;00m
-
-The XML files are in ../tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/_build/xml.
-
-# warning: 
-[91m/tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/qux.rst: WARNING: document isn't included in any toctree[39;49;00m
-[91m/tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/tocdepth.rst: WARNING: document isn't included in any toctree[39;49;00m
-
---------------------------- Captured stdout teardown ---------------------------
-# testroot: root
-# builder: xml
-# srcdir: /tmp/pytest-of-root/pytest-0/test_environment_toctree_basic
-# outdir: /tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/_build/xml
-# status: 
-[01mRunning Sphinx v5.2.0+/f35d2a6cc[39;49;00m
-[01mloading pickled environment... [39;49;00mdone
-s that are out of date
-[01mbuilding [xml]: [39;49;00mtargets for 7 source files that are out of date
-[01mupdating environment: [39;49;00m[new config] 7 added, 0 changed, 0 removed
-[01mreading sources... [39;49;00m[ 14%] [35mbar[39;49;00m                                                  [01mreading sources... [39;49;00m[ 28%] [35mbaz[39;49;00m                                                  [01mreading sources... [39;49;00m[ 42%] [35mfoo[39;49;00m                                                  [01mreading sources... [39;49;00m[ 57%] [35mindex[39;49;00m                                                [01mreading sources... [39;49;00m[ 71%] [35mquux[39;49;00m                                                 [01mreading sources... [39;49;00m[ 85%] [35mqux[39;49;00m                                                  [01mreading sources... [39;49;00m[100%] [35mtocdepth[39;49;00m                                             
-[01mlooking for now-outdated files... [39;49;00mnone found
-[01mpickling environment... [39;49;00mdone
-[01mchecking consistency... [39;49;00mdone
-[01mpreparing documents... [39;49;00mdone
-[01mwriting output... [39;49;00m[ 14%] [32mbar[39;49;00m                                                   [01mwriting output... [39;49;00m[ 28%] [32mbaz[39;49;00m                                                   [01mwriting output... [39;49;00m[ 42%] [32mfoo[39;49;00m                                                   [01mwriting output... [39;49;00m[ 57%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 71%] [32mquux[39;49;00m                                                  [01mwriting output... [39;49;00m[ 85%] [32mqux[39;49;00m                                                   [01mwriting output... [39;49;00m[100%] [32mtocdepth[39;49;00m                                              
-[01mbuild succeeded, 2 warnings.[39;49;00m
-
-The XML files are in ../tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/_build/xml.
-
-# warning: 
-[91m/tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/qux.rst: WARNING: document isn't included in any toctree[39;49;00m
-[91m/tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/tocdepth.rst: WARNING: document isn't included in any toctree[39;49;00m
-
---------------------------- Captured stdout teardown ---------------------------
-# testroot: root
-# builder: xml
-# srcdir: /tmp/pytest-of-root/pytest-0/test_environment_toctree_basic
-# outdir: /tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/_build/xml
-# status: 
-[01mRunning Sphinx v5.2.0+/f35d2a6cc[39;49;00m
-[01mloading pickled environment... [39;49;00mdone
-s that are out of date
-[01mbuilding [xml]: [39;49;00mtargets for 7 source files that are out of date
-[01mupdating environment: [39;49;00m[new config] 7 added, 0 changed, 0 removed
-[01mreading sources... [39;49;00m[ 14%] [35mbar[39;49;00m                                                  [01mreading sources... [39;49;00m[ 28%] [35mbaz[39;49;00m                                                  [01mreading sources... [39;49;00m[ 42%] [35mfoo[39;49;00m                                                  [01mreading sources... [39;49;00m[ 57%] [35mindex[39;49;00m                                                [01mreading sources... [39;49;00m[ 71%] [35mquux[39;49;00m                                                 [01mreading sources... [39;49;00m[ 85%] [35mqux[39;49;00m                                                  [01mreading sources... [39;49;00m[100%] [35mtocdepth[39;49;00m                                             
-[01mlooking for now-outdated files... [39;49;00mnone found
-[01mpickling environment... [39;49;00mdone
-[01mchecking consistency... [39;49;00mdone
-[01mpreparing documents... [39;49;00mdone
-[01mwriting output... [39;49;00m[ 14%] [32mbar[39;49;00m                                                   [01mwriting output... [39;49;00m[ 28%] [32mbaz[39;49;00m                                                   [01mwriting output... [39;49;00m[ 42%] [32mfoo[39;49;00m                                                   [01mwriting output... [39;49;00m[ 57%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 71%] [32mquux[39;49;00m                                                  [01mwriting output... [39;49;00m[ 85%] [32mqux[39;49;00m                                                   [01mwriting output... [39;49;00m[100%] [32mtocdepth[39;49;00m                                              
-[01mbuild succeeded, 2 warnings.[39;49;00m
-
-The XML files are in ../tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/_build/xml.
-
-# warning: 
-[91m/tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/qux.rst: WARNING: document isn't included in any toctree[39;49;00m
-[91m/tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/tocdepth.rst: WARNING: document isn't included in any toctree[39;49;00m
-
---------------------------- Captured stdout teardown ---------------------------
-# testroot: root
-# builder: xml
-# srcdir: /tmp/pytest-of-root/pytest-0/test_environment_toctree_basic
-# outdir: /tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/_build/xml
-# status: 
-[01mRunning Sphinx v5.2.0+/f35d2a6cc[39;49;00m
-[01mloading pickled environment... [39;49;00mdone
-s that are out of date
-[01mbuilding [xml]: [39;49;00mtargets for 7 source files that are out of date
-[01mupdating environment: [39;49;00m[new config] 7 added, 0 changed, 0 removed
-[01mreading sources... [39;49;00m[ 14%] [35mbar[39;49;00m                                                  [01mreading sources... [39;49;00m[ 28%] [35mbaz[39;49;00m                                                  [01mreading sources... [39;49;00m[ 42%] [35mfoo[39;49;00m                                                  [01mreading sources... [39;49;00m[ 57%] [35mindex[39;49;00m                                                [01mreading sources... [39;49;00m[ 71%] [35mquux[39;49;00m                                                 [01mreading sources... [39;49;00m[ 85%] [35mqux[39;49;00m                                                  [01mreading sources... [39;49;00m[100%] [35mtocdepth[39;49;00m                                             
-[01mlooking for now-outdated files... [39;49;00mnone found
-[01mpickling environment... [39;49;00mdone
-[01mchecking consistency... [39;49;00mdone
-[01mpreparing documents... [39;49;00mdone
-[01mwriting output... [39;49;00m[ 14%] [32mbar[39;49;00m                                                   [01mwriting output... [39;49;00m[ 28%] [32mbaz[39;49;00m                                                   [01mwriting output... [39;49;00m[ 42%] [32mfoo[39;49;00m                                                   [01mwriting output... [39;49;00m[ 57%] [32mindex[39;49;00m                                                 [01mwriting output... [39;49;00m[ 71%] [32mquux[39;49;00m                                                  [01mwriting output... [39;49;00m[ 85%] [32mqux[39;49;00m                                                   [01mwriting output... [39;49;00m[100%] [32mtocdepth[39;49;00m                                              
-[01mbuild succeeded, 2 warnings.[39;49;00m
-
-The XML files are in ../tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/_build/xml.
-
-# warning: 
-[91m/tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/qux.rst: WARNING: document isn't included in any toctree[39;49;00m
-[91m/tmp/pytest-of-root/pytest-0/test_environment_toctree_basic/tocdepth.rst: WARNING: document isn't included in any toctree[39;49;00m
-
-============================= slowest 25 durations =============================
-0.21s setup    tests/test_environment_toctree.py::test_process_doc
-0.04s call     tests/test_environment_toctree.py::test_process_doc
-0.02s call     tests/test_environment_toctree.py::test_glob
-0.01s call     tests/test_environment_toctree.py::test_toctree_index
-0.01s setup    tests/test_environment_toctree.py::test_glob
-0.01s setup    tests/test_environment_toctree.py::test_get_toctree_for_maxdepth
-0.01s setup    tests/test_environment_toctree.py::test_get_toc_for_only
-0.01s setup    tests/test_environment_toctree.py::test_get_toc_for
-
-(17 durations < 0.005s hidden.  Use -vv to show these durations.)
-[36m[1m=========================== short test summary info ============================[0m
-[32mPASSED[0m tests/test_environment_toctree.py::[1mtest_process_doc[0m
-[32mPASSED[0m tests/test_environment_toctree.py::[1mtest_glob[0m
-[32mPASSED[0m tests/test_environment_toctree.py::[1mtest_get_toc_for[0m
-[32mPASSED[0m tests/test_environment_toctree.py::[1mtest_get_toc_for_only[0m
-[32mPASSED[0m tests/test_environment_toctree.py::[1mtest_get_toc_for_tocdepth[0m
-[32mPASSED[0m tests/test_environment_toctree.py::[1mtest_get_toctree_for[0m
-[32mPASSED[0m tests/test_environment_toctree.py::[1mtest_get_toctree_for_collapse[0m
-[32mPASSED[0m tests/test_environment_toctree.py::[1mtest_get_toctree_for_maxdepth[0m
-[32mPASSED[0m tests/test_environment_toctree.py::[1mtest_get_toctree_for_includehidden[0m
-[31mFAILED[0m tests/test_environment_toctree.py::[1mtest_toctree_index[0m - AssertionError: The node[entries] is not [(None, 'genindex'), (None, 'modin...
-[31m========================= [31m[1m1 failed[0m, [32m9 passed[0m[31m in 0.45s[0m[31m ==========================[0m
-py39: exit 1 (0.75 seconds) /testbed> python -X dev -X warn_default_encoding -m pytest -rA --durations 25 tests/roots/test-toctree-index/conf.py tests/roots/test-toctree-index/foo.rst tests/roots/test-toctree-index/index.rst tests/test_environment_toctree.py pid=113
-  py39: FAIL code 1 (0.75=setup[0.00]+cmd[0.75] seconds)
-  evaluation failed :( (0.81 seconds)
-+ git checkout f35d2a6cc726f97d0e859ca7a0e1729f7da8a6c8 tests/test_environment_toctree.py
-Updated 1 path from a38c6b4b1

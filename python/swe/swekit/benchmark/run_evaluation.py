@@ -99,7 +99,7 @@ class EvaluationManager(WithLogger):
 
     def get_issue_config(self, issue) -> IssueConfig:
         issue_description = build_issue_description(
-            issue["hints_text"], issue["problem_statement"], self.include_hints
+            issue["repo"], issue["hints_text"], issue["problem_statement"], self.include_hints
         )
         test_spec = make_test_spec(issue)
         eval_script = test_spec.eval_script

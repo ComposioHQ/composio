@@ -1,8 +1,0 @@
-{
-    "django__django-17084": {
-        "patch_is_None": true,
-        "patch_exists": false,
-        "patch_successfully_applied": false,
-        "resolved": false
-    }
-}

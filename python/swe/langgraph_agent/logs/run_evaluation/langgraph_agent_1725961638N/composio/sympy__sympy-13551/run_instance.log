@@ -1,2 +1,0 @@
-2024-09-10 15:18:25,339 - INFO - Environment image sweb.env.arm64.c795f4b88616b8462021ed:latest found for sympy__sympy-13551
-Building instance image sweb.eval.arm64.sympy__sympy-13551:latest for sympy__sympy-13551

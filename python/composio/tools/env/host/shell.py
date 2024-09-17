@@ -59,6 +59,7 @@ class HostShell(Shell):
         super().__init__()
         self._id = generate_id()
         self.environment = environment or {}
+        self.logger.debug(f"HostShell initialized with ID: {self._id}")
 
     def setup(self) -> None:
         """Setup host shell."""
@@ -71,41 +72,69 @@ class HostShell(Shell):
             text=True,
             bufsize=1,
         )
+        self.logger.debug(f"Subprocess created with PID: {self._process.pid}")
+        initial_data = self._read(wait=False)
         self.logger.debug(
-            "Initial data from session: %s - %s",
-            self.id,
-            self._read(wait=False),
+            f"Initial data from session: {self.id} - {initial_data}",
         )
 
         # Load development environment if available
         if _DEV_SOURCE.exists():
-            self.logger.debug("Loading development environment")
+            self.logger.debug(f"Loading development environment from {_DEV_SOURCE}")
             self.exec(f"source {_DEV_SOURCE}")
+        else:
+            self.logger.debug(f"Development environment source not found at {_DEV_SOURCE}")
 
         # Setup environment
+        self.logger.debug("Setting up environment variables")
         for key, value in self.environment.items():
+            self.logger.debug(f"Setting environment variable: {key}")
             self.exec(f"export {key}={value}")
             time.sleep(0.05)
+        self.logger.debug("Environment setup complete")
 
     def _has_command_exited(self, cmd: str) -> bool:
-        """Waif for command to exit."""
-        _cmd, *_ = cmd.split(" ")
+        """Wait for command to exit."""
+        self.logger.debug(f"Checking if command has exited: {cmd}")
+        # Split the command and remove any environment variable assignments
+        cmd_parts = [part for part in cmd.split() if '=' not in part]
+        if not cmd_parts:
+            self.logger.debug("Only environment variables set, considering command exited")
+            return True  # If only env vars were set, consider it exited
+
+        _cmd = cmd_parts[0]
+        self.logger.debug(f"Checking _cmd: {_cmd}")
         if _cmd in _NOWAIT_CMDS:
-            time.sleep(0.3)
+            self.logger.debug(f"Command {_cmd} is in NOWAIT_CMDS, waiting 0.5 seconds")
+            time.sleep(0.5)
             return True
 
+        self.logger.debug("Running 'ps -e' to check for running processes")
         output = subprocess.run(  # pylint: disable=subprocess-run-check
             ["ps", "-e"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         ).stdout.decode()
-        return all(_cmd.lstrip().rstrip() not in output for _cmd in cmd.split("&&"))
+        self.logger.debug(f"ps -e output (truncated): {output[:200]}...")
+        # Remove any environment variable assignments from cmd
+        cmd_parts = [part for part in cmd.split() if '=' not in part]
+        cmd_without_env_vars = " ".join(cmd_parts)
+        self.logger.debug(f"Command without env vars: {cmd_without_env_vars}")
+        return all(_cmd.strip() not in output for _cmd in cmd_without_env_vars.split("&&"))
+        # return False
 
     def _get_exit_code(self) -> int:
         """Get exit code of the last process."""
+        self.logger.debug("Getting exit code")
         self._write(ECHO_EXIT_CODE)
-        *_, exit_code = self._read(wait=False).get(STDOUT).strip().split("\n")  # type: ignore
+        read_result = self._read(wait=False)
+        self.logger.debug(f"Read result for exit code: {read_result}")
+        stdout = read_result.get(STDOUT, "").strip()
+        self.logger.debug(f"STDOUT for exit code: {stdout}")
+        *_, exit_code = stdout.split("\n")
+        self.logger.debug(f"Raw exit code: {exit_code}")
         if len(exit_code) == 0:
+            self.logger.debug("Empty exit code, returning 0")
             return 0
         return int(exit_code)
 
@@ -113,9 +142,10 @@ class HostShell(Shell):
         self,
         cmd: t.Optional[str] = None,
         wait: bool = True,
-        timeout: float = 120.0,
+        timeout: float = 300.0,
     ) -> t.Dict:
         """Read data from a subprocess with a timeout."""
+        self.logger.debug(f"Reading data. Command: {cmd}, Wait: {wait}, Timeout: {timeout}")
         stderr = t.cast(t.IO[str], self._process.stderr).fileno()
         stdout = t.cast(t.IO[str], self._process.stdout).fileno()
         buffer = {stderr: b"", stdout: b""}
@@ -125,54 +155,72 @@ class HostShell(Shell):
         end_time = time.time() + timeout
         while time.time() < end_time:
             if wait and not self._has_command_exited(cmd=str(cmd)):
+                self.logger.debug("Command not exited, waiting 0.5 seconds")
                 time.sleep(0.5)
                 continue
 
+            self.logger.debug("Selecting readable file descriptors")
             readables, _, _ = select.select([stderr, stdout], [], [], 0.1)
             if not readables:
+                self.logger.debug("No readable file descriptors, breaking loop")
                 break
             for fd in readables:
                 data = os.read(fd, 4096)
                 if data:
                     buffer[fd] += data
+                    self.logger.debug(f"Read {len(data)} bytes from {'stderr' if fd == stderr else 'stdout'}")
             time.sleep(0.05)
 
         if self._process.poll() is not None:
+            self.logger.error(f"Subprocess exited unexpectedly. Exit code: {self._process.returncode}")
             raise RuntimeError(
                 f"Subprocess exited unexpectedly.\nCurrent buffer: {buffer}"
             )
 
         if time.time() >= end_time:
+            self.logger.error("Timeout reached while reading from subprocess")
             raise TimeoutError(
                 "Timeout reached while reading from subprocess.\nCurrent "
                 f"buffer: {buffer}"
             )
 
-        return {
+        result = {
             STDOUT: buffer[stdout].decode(),
             STDERR: buffer[stderr].decode(),
         }
+        self.logger.debug(f"Read result: {result}")
+        return result
 
     def _write(self, cmd: str) -> None:
         """Write command to shell."""
+        self.logger.debug(f"Writing command: {cmd}")
         try:
             stdin = t.cast(t.IO[str], self._process.stdin)
-            os.write(stdin.fileno(), self.sanitize_command(cmd=cmd))
+            sanitized_cmd = self.sanitize_command(cmd=cmd)
+            self.logger.debug(f"Sanitized command: {sanitized_cmd}")
+            os.write(stdin.fileno(), sanitized_cmd)
             stdin.flush()
+            self.logger.debug("Command written and flushed")
         except BrokenPipeError as e:
+            self.logger.error(f"BrokenPipeError occurred: {e}")
             raise RuntimeError(str(e)) from e
 
     def exec(self, cmd: str) -> t.Dict:
         """Execute command on container."""
+        self.logger.debug(f"Executing command: {cmd}")
         self._write(cmd=cmd)
-        return {
+        result = {
             **self._read(cmd=cmd, wait=True),
             EXIT_CODE: self._get_exit_code(),
         }
+        self.logger.debug(f"Execution result: {result}")
+        return result
 
     def teardown(self) -> None:
         """Stop and remove the running shell."""
+        self.logger.debug("Tearing down HostShell")
         self._process.kill()
+        self.logger.debug("Process killed")
 
 
 class SSHShell(Shell):
