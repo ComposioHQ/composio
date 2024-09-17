@@ -130,7 +130,7 @@ EXAMPLES = {
     },
     "upload_file": {
         "plugin": "crew_ai",
-        "file": EXAMPLES_PATH / "attachment" / "send_attachment.py",
+        "file": EXAMPLES_PATH / "miscellaneous" / "attachment" / "send_attachment.py",
         "match": {
             "type": "stdout",
             "values": ["'labelIds': ['SENT']"],
