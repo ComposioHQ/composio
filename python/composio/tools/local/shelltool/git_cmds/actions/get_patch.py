@@ -49,17 +49,6 @@ class GetPatchCmd(LocalAction[GetPatchRequest, GetPatchResponse]):
         cmd = ["git add -u"]
         if len(request.new_file_path) > 0:
             cmd = [f"git add {new_files}", "git add -u"]
-        cmd.append(
-            """
-            git diff --cached -- . \
-            ':!**/test*/**' \
-            ':!**/tests/**' \
-            ':!**/*test*.*' \
-            ':!**/spec/**' \
-            ':!**/*spec*.*'
-        """.strip()
-        )
-
         output = self.shells.get(request.shell_id).exec(cmd=" && ".join(cmd))
         return GetPatchResponse(
             stdout=output[STDOUT],

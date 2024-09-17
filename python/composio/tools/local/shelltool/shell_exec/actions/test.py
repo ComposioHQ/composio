@@ -6,18 +6,7 @@ from pydantic import BaseModel, Field
 
 from composio.tools.base.local import LocalAction
 from composio.tools.env.constants import STDERR, STDOUT
-
-
-class ShellRequest(BaseModel):
-    """Shell request abstraction."""
-
-    shell_id: str = Field(
-        default="",
-        description=(
-            "ID of the shell where this command will be executed, if not "
-            "provided the recent shell will be used to execute the action"
-        ),
-    )
+from composio.tools.local.shelltool.shell_exec.actions.exec import ShellRequest
 
 
 class TestExecRequest(ShellRequest):
