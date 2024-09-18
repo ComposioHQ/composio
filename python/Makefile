@@ -83,11 +83,7 @@ fmt: format-code
 
 .PHONY: check-code
 check-code:
-	tox -e isort-check
-	tox -e black-check
-	tox -e flake8
-	tox -e mypy
-	tox -e pylint
+	tox run-parallel -e isort-check,black-check,flake8,mypy,pylint
 
 .PHONY: chk
 chk: check-code
