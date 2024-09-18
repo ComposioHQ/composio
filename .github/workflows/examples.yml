@@ -43,6 +43,7 @@ jobs:
       run:
         working-directory: ${{ inputs.working-directory }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.10"]
@@ -98,7 +99,3 @@ jobs:
           SLACK_TITLE: "Example Tests Failed"
           SLACK_MSG_AUTHOR: ${{ inputs.author || github.actor }}
           SLACK_MESSAGE: ${{ inputs.commit_message || github.event.head_commit.message }}
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
