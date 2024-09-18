@@ -2,7 +2,6 @@
 Test the auto-generate Enum
 """
 
-from pathlib import Path
 from typing import Dict, List
 from unittest import mock
 
@@ -96,7 +95,6 @@ class TestDisableRemoteCaching:
     def test_error(self) -> None:
         """Test `NO_REMOTE_ENUM_FETCHING` set to True."""
         enum = Action.GITHUB_META_ROOT
-        enum._path = Path("temp")  # pylint: disable=protected-access
         with pytest.raises(
             ComposioSDKError,
             match=(
@@ -105,7 +103,7 @@ class TestDisableRemoteCaching:
                 "`composio apps update` and try again"
             ),
         ):
-            enum.load()
+            enum._cache_from_remote()  # pylint: disable=protected-access
 
 
 def test_tag_enum() -> None:
