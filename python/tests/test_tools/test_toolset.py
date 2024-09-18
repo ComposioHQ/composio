@@ -3,6 +3,7 @@ Test composio toolset.
 """
 
 import logging
+import re
 from unittest import mock
 
 import pytest
@@ -98,6 +99,39 @@ class TestValidateTools:
             match=f"Error installing {self.package}",
         ):
             self.toolset.validate_tools(apps=[App.BROWSER_TOOL])
+
+
+class TestConnectedAccountProvider:
+    connected_account = "some_account_id"
+
+    def test_invalid_account_id(self) -> None:
+        with pytest.raises(
+            ComposioSDKError,
+            match=re.escape(
+                f"Invalid connected accounts found: [('GITHUB', '{self.connected_account}')]"
+            ),
+        ):
+            ComposioToolSet(
+                connected_account_ids={
+                    App.GITHUB: self.connected_account,
+                }
+            )
+
+    def test_using_provided_account_id(self) -> None:
+        def _patch(*_, **kwargs):
+            assert kwargs.get("connected_account_id") == self.connected_account
+
+        with mock.patch("composio.client.Entity.get_connection"):
+            toolset = ComposioToolSet(
+                connected_account_ids={
+                    App.GITHUB: self.connected_account,
+                }
+            )
+            setattr(toolset, "_execute_remote", _patch)
+            toolset.execute_action(
+                action=Action.GITHUB_META_ROOT,
+                params={},
+            )
 
 
 def test_api_key_missing() -> None:
