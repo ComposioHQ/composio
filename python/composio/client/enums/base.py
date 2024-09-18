@@ -2,6 +2,7 @@
 Enum helper base.
 """
 
+import os
 import typing as t
 import warnings
 from pathlib import Path
@@ -24,6 +25,10 @@ TAGS_CACHE = LOCAL_CACHE_DIRECTORY / "tags"
 APPS_CACHE = LOCAL_CACHE_DIRECTORY / "apps"
 ACTIONS_CACHE = LOCAL_CACHE_DIRECTORY / "actions"
 TRIGGERS_CACHE = LOCAL_CACHE_DIRECTORY / "triggers"
+
+NO_REMOTE_ENUM_FETCHING = (
+    os.environ.get("COMPOSIO_NO_REMOTE_ENUM_FETCHING", "false") == "true"
+)
 
 
 class EnumStringNotFound(ComposioSDKError):
@@ -197,6 +202,16 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         return None
 
     def _cache_from_remote(self) -> EntityType:
+        if NO_REMOTE_ENUM_FETCHING:
+            raise ComposioSDKError(
+                message=(
+                    f"No metadata found for enum `{self.slug}`, "
+                    "You might be trying to use an app or action "
+                    "that is deprecated, run `composio apps update` "
+                    "and try again"
+                )
+            )
+
         from composio.client import Composio  # pylint: disable=import-outside-toplevel
         from composio.client.endpoints import (  # pylint: disable=import-outside-toplevel
             v2,

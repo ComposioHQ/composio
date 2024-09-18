@@ -1,8 +1,15 @@
 import typing as t
 
 import typing_extensions as te
-from anthropic.types.beta.tools import ToolUseBlock, ToolsBetaMessage
-from anthropic.types.beta.tools.tool_param import ToolParam
+
+
+try:
+    from anthropic.types.beta.tools import ToolUseBlock, ToolsBetaMessage
+    from anthropic.types.beta.tools.tool_param import ToolParam
+except ModuleNotFoundError:
+    from anthropic.types.tool_use_block import ToolUseBlock
+    from anthropic.types.tool_param import ToolParam
+    from anthropic.types.message import Message as ToolsBetaMessage
 
 from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
@@ -10,7 +17,7 @@ from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import ClaudeSchema, SchemaType
 
 
-class ComposioToolset(
+class ComposioToolSet(
     BaseComposioToolSet,
     runtime="claude",
     description_char_limit=1024,
@@ -22,7 +29,7 @@ class ComposioToolset(
     ```python
         import anthropic
         import dotenv
-        from composio_claude import App, ComposioToolset
+        from composio_claude import App, ComposioToolSet
 
 
         # Load environment variables from .env
@@ -30,7 +37,7 @@ class ComposioToolset(
 
         # Initialize tools.
         claude_client = anthropic.Anthropic()
-        composio_tools = ComposioToolset()
+        composio_tools = ComposioToolSet()
 
         # Define task.
         task = "Star a repo composiohq/composio on GitHub"
