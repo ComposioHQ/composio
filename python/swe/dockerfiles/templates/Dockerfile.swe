@@ -21,11 +21,7 @@ RUN git checkout {{ basecommit}}
 WORKDIR /home/user
 
 RUN mkdir -p /home/user/.composio/tmp
-<<<<<<< HEAD
-COPY deeplake /home/user/.composio/tmp/{{ reponame }}/deeplake
-=======
 COPY deeplake /home/user/.composio/tmp/{{ reponame }}
->>>>>>> master
 COPY fqdn_cache.json /home/user/.composio/tmp/{{ reponame }}
 
 {% if dependencies -%}
@@ -44,6 +40,8 @@ RUN /home/user/.dev/bin/python -m pip install -r _requirements.txt || echo "$?"
 
 {% endif -%}
 
+WORKDIR /home/user/{{ reponame }}
+
 {% if preinstall -%}
 # Pre install
 {% for cmd in preinstall -%}
@@ -56,8 +54,6 @@ RUN {{ cmd }}
 RUN /home/user/.dev/bin/python -m {{ install }} || echo "$?"
 
 ENV HOME=/home/user/
-
-WORKDIR /home/user/{{ reponame }}
 
 # Switch to root
 USER root
