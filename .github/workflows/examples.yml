@@ -85,11 +85,10 @@ jobs:
           python -m pip install plugins/${{matrix.package}}
           python -m pip install '.[all]'
           python -m pip install 'numpy<2' python-dotenv
-          
-          composio apps update
 
-          CI=false COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} PLUGIN_TO_TEST=${{matrix.package}} COMPOSIO_LOGGING_LEVEL='debug' pytest -vv tests/test_example.py
-          CI=false COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} PLUGIN_TO_TEST=${{matrix.package}} COMPOSIO_LOGGING_LEVEL='debug' pytest -vv tests/test_load_tools.py
+          COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' composio apps update
+          COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' PLUGIN_TO_TEST=${{matrix.package}} CI=false pytest -vv tests/test_example.py
+          COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' PLUGIN_TO_TEST=${{matrix.package}} CI=false pytest -vv tests/test_load_tools.py
       - name: Slack Notification on Failure
         if: ${{ failure() && !contains(github.event.head_commit.message, 'release') && !contains(github.event.head_commit.message, 'Release') }}
         uses: rtCamp/action-slack-notify@v2
@@ -98,3 +97,7 @@ jobs:
           SLACK_TITLE: "Example Tests Failed"
           SLACK_MSG_AUTHOR: ${{ inputs.author || github.actor }}
           SLACK_MESSAGE: ${{ inputs.commit_message || github.event.head_commit.message }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
