@@ -1,6 +1,6 @@
 {
   "name": "composio-core",
-  "version": "0.1.17-4",
+  "version": "0.1.18",
   "description": "",
   "main": "lib/src/index.js",
   "scripts": {
@@ -71,6 +71,7 @@
     "open": "^8.4.0",
     "openai": "^4.50.0",
     "pusher-js": "8.4.0-rc2",
+    "resolve-package-path": "^4.0.3",
     "ts-node": "^10.9.2",
     "uuid": "^10.0.0",
     "winston": "^3.13.1",
