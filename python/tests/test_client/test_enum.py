@@ -2,13 +2,16 @@
 Test the auto-generate Enum
 """
 
+from pathlib import Path
 from typing import Dict, List
 from unittest import mock
 
+import pytest
 from pydantic import BaseModel
 
 from composio import action
-from composio.client.enums import Action, App, Tag, Trigger
+from composio.client.enums import Action, App, Tag, Trigger, base
+from composio.exceptions import ComposioSDKError
 from composio.tools.base.local import LocalAction, LocalTool
 
 
@@ -81,6 +84,28 @@ class TestBase:
     def test_load_remote_trigger(self, _patch) -> None:
         enum = Trigger(value=Trigger.GITHUB_COMMIT_EVENT.slug)
         assert enum.slug == Trigger.GITHUB_COMMIT_EVENT.slug
+
+
+class TestDisableRemoteCaching:
+    def setup_method(self) -> None:
+        base.NO_REMOTE_ENUM_FETCHING = True
+
+    def teardown_method(self) -> None:
+        base.NO_REMOTE_ENUM_FETCHING = False
+
+    def test_error(self) -> None:
+        """Test `NO_REMOTE_ENUM_FETCHING` set to True."""
+        enum = Action.GITHUB_META_ROOT
+        enum._path = Path("temp")  # pylint: disable=protected-access
+        with pytest.raises(
+            ComposioSDKError,
+            match=(
+                "No metadata found for enum `GITHUB_META_ROOT`, You might be "
+                "trying to use an app or action that is deprecated, run "
+                "`composio apps update` and try again"
+            ),
+        ):
+            enum.load()
 
 
 def test_tag_enum() -> None:
