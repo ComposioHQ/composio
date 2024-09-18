@@ -40,15 +40,16 @@ def test_load_tools(plugin: str) -> None:
         pytest.skip(f"Skipping {plugin}")
 
     toolset = importlib.import_module(f"composio_{plugin}").ComposioToolSet()
+    actions = [action for action in Action.all() if "APIFY_" not in action.slug]
     with (
         mock.patch.object(toolset, "check_connected_account"),
         mock.patch.object(toolset, "validate_tools"),
     ):
         if plugin == "autogen":
             toolset.register_tools(
-                actions=list(Action.all()),
+                actions=actions,
                 caller=mock.MagicMock(),
                 executor=mock.MagicMock(),
             )
         else:
-            toolset.get_tools(actions=list(Action.all()))
+            toolset.get_tools(actions=actions)

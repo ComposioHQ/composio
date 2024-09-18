@@ -179,17 +179,17 @@ EXAMPLES = {
     #     },
     #     "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     # },
-    "claude": {
-        "plugin": "claude",
-        "file": PLUGINS / "claude" / "claude_demo.py",
-        "match": {
-            "type": "stdout",
-            "values": ["Action executed successfully"],
-        },
-        # TODO(@kaavee): Add Anthropic API key
-        "env": {"COMPOSIO_API_KEY": COMPOSIO_API_KEY},
-    },
-    # TODO: Fix and add camel
+    # TODO(@kaavee): Add Anthropic API key
+    # "claude": {
+    #     "plugin": "claude",
+    #     "file": PLUGINS / "claude" / "claude_demo.py",
+    #     "match": {
+    #         "type": "stdout",
+    #         "values": ["Action executed successfully"],
+    #     },
+    #     "env": {"COMPOSIO_API_KEY": COMPOSIO_API_KEY},
+    # },
+    # TODO: Add camel
 }
 
 
