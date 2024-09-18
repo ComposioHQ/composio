@@ -37,10 +37,10 @@ llm = ChatOpenAI(openai_api_key="sk-<OPENAI KEY>")
 Initialize the Composio toolset for interacting with GitHub.
 
 ```python
-from composio_crewai import ComposioToolset, Action, App
+from composio_crewai import ComposioToolSet, Action, App
 
 # Initialize the toolset with GitHub application
-tools = ComposioToolset(apps=[App.GITHUB])
+tools = ComposioToolSet(apps=[App.GITHUB])
 ```
 
 #### 3. Execute the Agent
@@ -84,11 +84,11 @@ Verify the agent's actions and responses to ensure the task was completed succes
 - **Filter Specific Actions:** Limit the actions an agent can perform for enhanced security and operational focus.
 
 ```python
-toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE])
+toolsGithubCreateIssue = ComposioToolSet(actions=[Action.GITHUB_CREATE_ISSUE])
 ```
 
 - **Filter Specific Apps:** Restrict the agent's access to certain applications for streamlined operations.
 
 ```python
-toolsAsanaGithub = ComposioToolset(apps=[App.ASANA, App.GITHUB])
+toolsAsanaGithub = ComposioToolSet(apps=[App.ASANA, App.GITHUB])
 ```

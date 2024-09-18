@@ -33,7 +33,7 @@ class ComposioToolSet(
     Example:
     ```python
         import dotenv
-        from composio_openai import App, ComposioToolset
+        from composio_openai import App, ComposioToolSet
         from openai import OpenAI
 
 
@@ -42,7 +42,7 @@ class ComposioToolSet(
 
         # Initialize tools.
         openai_client = OpenAI()
-        composio_tools = ComposioToolset()
+        composio_tools = ComposioToolSet()
 
         # Define task.
         task = "Star a repo composiohq/composio on GitHub"

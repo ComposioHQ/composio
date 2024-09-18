@@ -5,7 +5,7 @@ Anthropic claude demo.7
 import anthropic
 import dotenv
 
-from composio_claude import App, ComposioToolset
+from composio_claude import App, ComposioToolSet
 
 
 # Load environment variables from .env
@@ -13,7 +13,7 @@ dotenv.load_dotenv()
 
 # Initialize tools.
 claude_client = anthropic.Anthropic()
-composio_toolset = ComposioToolset()
+composio_toolset = ComposioToolSet()
 
 # Define task.
 task = "Star a repo composiohq/composio on GitHub"

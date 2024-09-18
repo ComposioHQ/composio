@@ -158,7 +158,7 @@ class ComposioToolSet(WithLogger):
             needs to be JSON serialisable dictionary. For example
 
             ```python
-            toolset = ComposioToolset(
+            toolset = ComposioToolSet(
                 ...,
                 metadata={
                     App.IMAGEANALYSER: {
@@ -195,7 +195,7 @@ class ComposioToolSet(WithLogger):
                     response["results"] = response["results"][:100]
                 return response
 
-            toolset = ComposioToolset(
+            toolset = ComposioToolSet(
                 ...,
                 processors={
                     "pre": {

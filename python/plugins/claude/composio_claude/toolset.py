@@ -17,7 +17,7 @@ from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import ClaudeSchema, SchemaType
 
 
-class ComposioToolset(
+class ComposioToolSet(
     BaseComposioToolSet,
     runtime="claude",
     description_char_limit=1024,
@@ -29,7 +29,7 @@ class ComposioToolset(
     ```python
         import anthropic
         import dotenv
-        from composio_claude import App, ComposioToolset
+        from composio_claude import App, ComposioToolSet
 
 
         # Load environment variables from .env
@@ -37,7 +37,7 @@ class ComposioToolset(
 
         # Initialize tools.
         claude_client = anthropic.Anthropic()
-        composio_tools = ComposioToolset()
+        composio_tools = ComposioToolSet()
 
         # Define task.
         task = "Star a repo composiohq/composio on GitHub"
