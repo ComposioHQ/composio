@@ -292,7 +292,9 @@ def _handle_oauth(
     )
     click.echo(f"⚠ Waiting for {app_name} authentication...")
     connection.wait_until_active(client=client)
-    click.echo(f"✔ {app_name} added successfully!")
+    click.echo(
+        f"✔ {app_name} added successfully with ID: {connection.connectedAccountId}"
+    )
 
 
 def _handle_basic_auth(
@@ -304,7 +306,7 @@ def _handle_basic_auth(
     integration: t.Optional[IntegrationModel] = None,
 ) -> None:
     """Handle basic auth."""
-    entity.initiate_connection(
+    connection = entity.initiate_connection(
         app_name=app_name.lower(),
         auth_mode=auth_mode,
         auth_config=_collect_input_fields(
@@ -314,7 +316,8 @@ def _handle_basic_auth(
         integration=integration,
         use_composio_auth=False,
         force_new_integration=True,
-    ).save_user_access_data(
+    )
+    connection.save_user_access_data(
         client=client,
         field_inputs=_collect_input_fields(
             fields=auth_scheme.fields,
@@ -322,4 +325,6 @@ def _handle_basic_auth(
         ),
         entity_id=entity.id,
     )
-    click.echo(f"✔ {app_name} added successfully!")
+    click.echo(
+        f"✔ {app_name} added successfully with ID: {connection.connectedAccountId}"
+    )
