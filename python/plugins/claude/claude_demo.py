@@ -1,5 +1,5 @@
 """
-Anthropic claude demo.
+Anthropic claude demo.7
 """
 
 import anthropic
@@ -21,8 +21,17 @@ task = "Star a repo composiohq/composio on GitHub"
 # Get GitHub tools that are pre-configured
 actions = composio_toolset.get_tools(apps=[App.GITHUB])
 
+# Get executor
+try:
+    # anthropic<0.27.0
+    executor = claude_client.beta.tools
+except AttributeError:
+    # anthropic>=0.27.0
+    executor = claude_client
+
+
 # Get response from the LLM
-response = claude_client.beta.tools.messages.create(
+response = executor.messages.create(
     model="claude-3-opus-20240229",
     max_tokens=1024,
     tools=actions,

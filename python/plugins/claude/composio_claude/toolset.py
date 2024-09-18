@@ -1,8 +1,15 @@
 import typing as t
 
 import typing_extensions as te
-from anthropic.types.beta.tools import ToolUseBlock, ToolsBetaMessage
-from anthropic.types.beta.tools.tool_param import ToolParam
+
+
+try:
+    from anthropic.types.beta.tools import ToolUseBlock, ToolsBetaMessage
+    from anthropic.types.beta.tools.tool_param import ToolParam
+except ModuleNotFoundError:
+    from anthropic.types.tool_use_block import ToolUseBlock
+    from anthropic.types.tool_param import ToolParam
+    from anthropic.types.message import Message as ToolsBetaMessage
 
 from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
