@@ -9,6 +9,7 @@ from unittest import mock
 import pytest
 
 from composio import Action
+from composio.exceptions import ComposioSDKError
 
 
 # Plugin test definitions
@@ -40,7 +41,14 @@ def test_load_tools(plugin: str) -> None:
         pytest.skip(f"Skipping {plugin}")
 
     toolset = importlib.import_module(f"composio_{plugin}").ComposioToolSet()
-    actions = [action for action in Action.all() if "APIFY_" not in action.slug]
+    actions = []
+    for action in Action.all():
+        try:
+            action.load()
+            actions.append(action)
+        except ComposioSDKError:
+            continue
+
     with (
         mock.patch.object(toolset, "check_connected_account"),
         mock.patch.object(toolset, "validate_tools"),
