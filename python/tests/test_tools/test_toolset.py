@@ -48,11 +48,13 @@ def test_uninitialize_app() -> None:
     with pytest.raises(
         ComposioSDKError,
         match=(
-            "No connected account found for app `apify`; "
-            "Run `composio add apify` to fix this"
+            "No connected account found for app `asana`; "
+            "Run `composio add asana` to fix this"
         ),
     ):
-        ComposioToolSet().get_action_schemas(actions=[Action.APIFY_CREATE_APIFY_ACTOR])
+        ComposioToolSet().get_action_schemas(
+            actions=[Action.ASANA_ADD_A_PROJECT_TO_A_TASK]
+        )
 
 
 class TestValidateTools:
