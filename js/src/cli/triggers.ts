@@ -123,13 +123,13 @@ export class TriggerAdd {
       }
     }
 
-    await composioClient.triggers.setup(
+   const triggerSetupData = await composioClient.triggers.setup(
       connection.id,
       triggerName,
       configValue,
     );
 
-    console.log(chalk.green(`Trigger ${triggerName} setup to app ${appName}`));
+    console.log(chalk.green(`Trigger ${triggerName} setup to app ${appName} with id ${triggerSetupData?.triggerId}`));
   }
 }
 

@@ -48,12 +48,27 @@ export default class AddCommand {
     });
 
     if (connection.items.length > 0 && !options.force) {
-      console.log(chalk.green("Connection already exists for", appName));
-      return;
+      await this.shouldForceConnectionSetup()
     }
 
     // @ts-ignore
     await this.setupConnections(firstIntegration.id);
+  }
+
+  async shouldForceConnectionSetup() {
+    const { shouldForce } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'shouldForce',
+        message: 'A connection already exists. Do you want to force a new connection?',
+        default: false,
+      },
+    ]);
+
+    if (!shouldForce) {
+      console.log(chalk.yellow('Operation cancelled. Existing connection will be used.'));
+      process.exit(0);
+    }
   }
 
   private async waitUntilConnected(
