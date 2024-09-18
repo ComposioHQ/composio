@@ -1,0 +1,16 @@
+
+codecov
+coverage
+cycler
+numpy
+pillow
+pyparsing
+pytest
+pytest-cov
+pytest-faulthandler
+pytest-rerunfailures
+pytest-timeout
+pytest-xdist
+python-dateutil
+tornado
+tox

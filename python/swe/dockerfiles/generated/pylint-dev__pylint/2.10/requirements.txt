@@ -1,0 +1,19 @@
+black==21.8b0;python_full_version>="3.6.2"
+flake8==3.9.2
+isort==5.9.3
+mypy==0.910
+
+astroid==2.8.0  # Pinned to a specific version for tests
+pytest~=6.2
+pytest-benchmark~=3.4
+
+coveralls~=3.2
+coverage~=5.5
+pre-commit~=2.15;python_full_version>="3.6.2"
+tbump~=6.3.2
+pyenchant~=3.2
+pytest-cov~=2.12
+pytest-profiling~=1.7
+pytest-xdist~=2.3
+types-pkg_resources==0.1.3
+types-toml==0.1.5

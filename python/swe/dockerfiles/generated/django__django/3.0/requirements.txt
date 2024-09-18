@@ -1,0 +1,16 @@
+asgiref ~= 3.2
+argon2-cffi >= 16.1.0
+bcrypt
+docutils
+geoip2
+jinja2 >= 2.9.2
+numpy
+Pillow != 5.4.0
+pylibmc; sys_platform != 'win32'
+python-memcached >= 1.59
+pytz
+pywatchman; sys_platform != 'win32'
+PyYAML
+selenium
+sqlparse >= 0.2.2
+tblib >= 1.5.0
