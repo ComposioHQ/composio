@@ -1,11 +1,12 @@
 import os
 from composio_openai import Action, ComposioToolSet
 from openai import OpenAI
+from dotenv import load_dotenv
 
 from composio.client.collections import TriggerEventData
+load_dotenv()
 
-
-channel_id = os.getenv("CHANNEL_ID", "")
+channel_id = os.getenv("CHANNEL_ID", "general")
 if channel_id == "":
     channel_id = input("Enter Channel id:")
 
@@ -79,7 +80,7 @@ def review_new_pr(event: TriggerEventData) -> None:
         thread=thread,
     )
 
-
+    
 print("Listener started!")
 print("Create a pr to get the review")
 listener.listen()
