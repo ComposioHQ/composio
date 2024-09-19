@@ -69,10 +69,12 @@ class ConnectedAccountModel(BaseModel):
     createdAt: str
     updatedAt: str
     appUniqueId: str
+    appName: str
     integrationId: str
     connectionParams: AuthConnectionParamsModel
 
     clientUniqueUserId: t.Optional[str] = None
+    entityId: t.Optional[str] = None
 
     # Override arbitrary model config.
     model_config: ConfigDict = ConfigDict(  # type: ignore
