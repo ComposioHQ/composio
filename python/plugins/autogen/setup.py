@@ -22,6 +22,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    install_requires=["composio_core==0.5.24", "pyautogen>=0.2.19"],
+    install_requires=["composio_core==0.5.24", "pyautogen>=0.2.19", "flaml==2.2.0"],
     include_package_data=True,
 )
