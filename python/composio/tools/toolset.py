@@ -30,7 +30,7 @@ from composio.client.collections import (
     TriggerSubscription,
 )
 from composio.client.enums.base import EnumStringNotFound
-from composio.client.exceptions import ComposioClientError
+from composio.client.exceptions import ComposioClientError, HTTPError
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
@@ -72,6 +72,9 @@ class ProcessorsType(te.TypedDict):
 
     post: te.NotRequired[t.Dict[_KeyType, _ProcessorType]]
     """Response processors."""
+
+    schema: te.NotRequired[t.Dict[_KeyType, _ProcessorType]]
+    """Schema processors"""
 
 
 def _check_agentops() -> bool:
@@ -136,6 +139,7 @@ class ComposioToolSet(WithLogger):
         logging_level: LogLevel = LogLevel.INFO,
         output_dir: t.Optional[Path] = None,
         verbosity_level: t.Optional[int] = None,
+        connected_account_ids: t.Optional[t.Dict[AppType, str]] = None,
         **kwargs: t.Any,
     ) -> None:
         """
@@ -207,7 +211,8 @@ class ComposioToolSet(WithLogger):
             ```
         :param verbosity_level: This defines the size of the log object that will
             be printed on the console.
-
+        :param connection_ids: Use this to define connection IDs to use when executing
+            an action for a specific app.
         """
         super().__init__(
             logging_level=logging_level,
@@ -237,7 +242,9 @@ class ComposioToolSet(WithLogger):
             self.logger.debug("`api_key` is not set when initializing toolset.")
 
         self._processors = (
-            processors if processors is not None else {"post": {}, "pre": {}}
+            processors
+            if processors is not None
+            else {"post": {}, "pre": {}, "schema": {}}
         )
         self._metadata = metadata or {}
         self._workspace_id = workspace_id
@@ -249,6 +256,37 @@ class ComposioToolSet(WithLogger):
 
         self.logger.debug("Loading local tools")
         load_local_tools()
+
+        self._connected_account_ids = self._validating_connection_ids(
+            connected_account_ids=connected_account_ids or {}
+        )
+
+    def _validating_connection_ids(
+        self,
+        connected_account_ids: t.Dict[AppType, str],
+    ) -> t.Dict[App, str]:
+        """Validate connection IDs."""
+        valid = {}
+        invalid = []
+        entity = self.client.get_entity(id=self.entity_id)
+        for app, connected_account_id in connected_account_ids.items():
+            self.logger.debug(f"Validating {app} {connected_account_id=}")
+            try:
+                entity.get_connection(
+                    app=app,
+                    connected_account_id=connected_account_id,
+                )
+                valid[App(app)] = connected_account_id
+            except HTTPError:
+                invalid.append((str(app), connected_account_id))
+
+        if len(invalid) == 0:
+            return valid
+
+        raise ComposioSDKError(message=f"Invalid connected accounts found: {invalid}")
+
+    def _get_connected_account(self, action: ActionType) -> t.Optional[str]:
+        return self._connected_account_ids.get(App(Action(action).app))
 
     def _try_get_github_access_token_for_current_entity(self) -> t.Optional[str]:
         """Try and get github access token for current entiry."""
@@ -496,7 +534,7 @@ class ComposioToolSet(WithLogger):
     def _get_processor(
         self,
         key: _KeyType,
-        type_: te.Literal["post", "pre"],
+        type_: te.Literal["post", "pre", "schema"],
     ) -> t.Optional[_ProcessorType]:
         """Get processor for given app or action"""
         processor = self._processors.get(type_, {}).get(key)  # type: ignore
@@ -512,12 +550,12 @@ class ComposioToolSet(WithLogger):
         self,
         key: _KeyType,
         data: t.Dict,
-        type_: te.Literal["pre", "post"],
+        type_: te.Literal["pre", "post", "schema"],
     ) -> t.Dict:
         processor = self._get_processor(key=key, type_=type_)
         if processor is not None:
             self.logger.info(
-                f"Running {'request' if type_ == 'pre' else 'response'}"
+                f"Running {'request' if type_ == 'pre' else 'response' if type_ == 'post' else 'schema'}"
                 f" through: {processor.__name__}"
             )
             data = processor(data)
@@ -543,6 +581,17 @@ class ComposioToolSet(WithLogger):
                 type_="post",
             ),
             type_="post",
+        )
+
+    def _process_schema_properties(self, action: Action, properties: t.Dict) -> t.Dict:
+        return self._process(
+            key=App(action.app),
+            data=self._process(
+                key=action,
+                data=properties,
+                type_="schema",
+            ),
+            type_="schema",
         )
 
     @_record_action_if_available
@@ -571,8 +620,13 @@ class ComposioToolSet(WithLogger):
         if not action.is_runtime:
             params = self._process_request(action=action, request=params)
             metadata = self._add_metadata(action=action, metadata=metadata)
+            connected_account_id = connected_account_id or self._get_connected_account(
+                action=action
+            )
 
-        self.logger.info(f"Executing `{action.slug}` with {params=} and {metadata=}")
+        self.logger.info(
+            f"Executing `{action.slug}` with {params=} and {metadata=} {connected_account_id=}"
+        )
         response = (
             self._execute_local(
                 action=action,
@@ -723,7 +777,10 @@ class ComposioToolSet(WithLogger):
             action_item.description = action_item.description[
                 : self._description_char_limit
             ]
-
+        action_item.parameters.properties = self._process_schema_properties(
+            action=Action(action_item.name.upper()),
+            properties=action_item.parameters.properties,
+        )
         return action_item
 
     def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:

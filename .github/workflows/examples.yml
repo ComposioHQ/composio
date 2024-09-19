@@ -18,6 +18,9 @@ on:
       commit_message:
         required: false
         type: string
+      dont_notify:
+        required: false
+        type: boolean
   workflow_dispatch:
     inputs:
       working-directory:
@@ -90,7 +93,7 @@ jobs:
 
           CI=false COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} PLUGIN_TO_TEST=${{matrix.package}} COMPOSIO_LOGGING_LEVEL='debug' pytest -vv tests/test_example.py
       - name: Slack Notification on Failure
-        if: ${{ failure() && !contains(github.event.head_commit.message, 'release') && !contains(github.event.head_commit.message, 'Release') }}
+        if: ${{ failure() && github.ref == 'refs/heads/master' && !contains(github.event.head_commit.message, 'release') && !contains(github.event.head_commit.message, 'Release') && !inputs.dont_notify }}
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_TECH_WEBHOOK }}

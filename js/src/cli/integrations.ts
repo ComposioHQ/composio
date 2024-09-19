@@ -14,7 +14,7 @@ export default class ConnectionsCommand {
     const command = this.program.command("integrations");
 
     command
-      .description("List all integrations you created")
+      .description("List all integrations you have created or connected")
       .option("-a, --active", "Show only active integrations")
       .action(this.handleAction.bind(this));
   }

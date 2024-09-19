@@ -55,6 +55,9 @@ class Scroll(LocalAction[ScrollRequest, ScrollResponse]):
     - A dictionary of line numbers and their content for the new view window.
     - An error message if no file is open or if the file is not found.
 
+    Use SearchWord Action to search for a specific word in the file in case
+    the file is long, as scrolling is not efficient for large files.
+
     Raises:
     - FileNotFoundError: If the file is not found.
     """
