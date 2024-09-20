@@ -1,0 +1,132 @@
+---
+title: "Integrations"
+sidebarTitle: "Integrations"
+icon: "plug"
+description: "Allow your users to connect with any Apps."
+---
+
+# Integration YAML Configuration
+
+This README provides an overview of the `integration.yaml` file structure used for configuring app integrations, with a focus on custom fields.
+
+## File Structure
+
+The `integration.yaml` file typically includes the following key sections:
+
+1. **Basic Information**
+   - `name`: App name
+   - `unique_key`: Unique identifier for the app
+   - `description`: Brief description of the app
+   - `logo`: URL to the app's logo
+   - `categories`: List of categories the app belongs to. Examples include:
+     - productivity
+     - marketing
+     - social
+     - crm
+   - `docs`: Link to the app's documentation
+
+2. **Authentication Schemes**
+   - `auth_schemes`: List of authentication methods supported
+     - `scheme_name`: Name of the auth scheme
+     - `auth_mode`: Authentication mode (Supported modes: OAUTH2, BASIC, API_KEY, OAUTH1)
+     - For OAuth2:
+       - `authorization_url`: OAuth authorization URL
+       - `token_url`: Token endpoint URL
+       - `default_scopes`: Default OAuth scopes
+       - `available_scopes`: List of all available scopes
+       - `authorization_params`: Additional parameters for authorization (e.g., `response_type`, `user_scopes`)
+     - For OAuth1:
+       - `authorization_url`: OAuth authorization URL
+       - `request_url`: Request token URL
+       - `token_url`: Access token URL
+       - `signature_method`: Signature method (e.g., HMAC-SHA1)
+       - `default_scopes`: Default OAuth scopes
+       - `scope_separator`: Character used to separate scopes
+     - For API Key:
+       
+     - For Basic Auth:
+       `username` and `password` fields are required. You can use them in the proxy/header section directly like:
+       ```yaml
+       proxy:
+         headers:
+           username: "{{username}}"
+           password: "{{password}}"
+       ```
+
+3. **Endpoints**
+   - `get_current_user_endpoint`: Endpoint for retrieving current user info. This is used to check if the auth is valid and refresh the token if it is expired.
+
+4. **Custom Fields**
+   Custom fields are defined within the `auth_schemes` section and provide additional configuration options for the integration. They are typically found under the `fields` key of an auth scheme.
+
+   Common attributes for custom fields include:
+   - `name`: Unique identifier for the field
+   - `displayName`: Human-readable name for the field
+   - `description`: Detailed explanation of the field's purpose
+   - `type`: Data type of the field (e.g., string, boolean)
+   - `required`: Whether the field is mandatory
+   - `expected_from_customer`: Indicates if the end customer needs to provide this information
+   - `default`: Default value for the field (if applicable)
+
+   Examples of custom fields:
+
+   a. API Key field:
+   ```yaml
+   fields:
+     - name: api_key
+       displayName: API Key
+       description: "Your API key for authentication."
+       type: string
+       required: true
+       expected_from_customer: true
+   ```
+
+   b. Instance URL field (e.g., for Salesforce):
+   ```yaml
+   fields:
+     - name: instanceUrl
+       displayName: Instance URL
+       description: "The base URL for your instance, used for API requests."
+       type: string
+       required: true
+       expected_from_customer: true
+   ```
+
+   c. Subdomain field (e.g., for PostHog):
+   ```yaml
+   fields:
+     - name: subdomain
+       displayName: Sub Domain
+       description: "Your PostHog subdomain (e.g., 'app' for app.posthog.com)."
+       type: string
+       required: true
+       default: "app"
+   ```
+
+5. **Additional Configuration**
+   - `callback_url`: URL for OAuth callback
+   - `token_response_metadata`: List of metadata fields expected in the token response
+   - `proxy`: Configuration for API request proxying. This section defines the data to be used in the request. It can use the fields defined via jinja templating `{{field_name}}`. It can include:
+     - `base_url`: The base URL for API requests
+     - `headers`: Custom headers to be included in the request
+     - `query_params`: Custom query parameters to be included in the request
+     - `path_params`: Custom path parameters to be included in the request
+
+   Example of a proxy configuration:
+   ```yaml
+   proxy:
+     base_url: "https://api.example.com/v1"
+     headers:
+       Authorization: "Bearer {{access_token}}"
+       Content-Type: "application/json"
+     query_params:
+       api_key: "{{api_key}}"
+   ```
+
+   In this example, `{{access_token}}` and `{{api_key}}` are placeholders that will be replaced with actual values from the authentication process or custom fields.
+
+## Usage of Custom Fields
+
+Custom fields are used to gather necessary information from users or provide default configurations for the integration. They can be referenced in other parts of the configuration using placeholders, typically in the format `{{field_name}}`.
+
+For example, in the proxy configuration:
