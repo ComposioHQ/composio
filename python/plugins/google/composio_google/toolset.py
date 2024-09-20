@@ -174,10 +174,9 @@ class ComposioToolset(
         def convert_map_composite(obj):
             if isinstance(obj, MapComposite):
                 return {k: convert_map_composite(v) for k, v in obj.items()}
-            elif isinstance(obj, (list, tuple)):
+            if isinstance(obj, (list, tuple)):
                 return [convert_map_composite(item) for item in obj]
-            else:
-                return obj
+            return obj
 
         args = convert_map_composite(function_call.args)
 
