@@ -3,27 +3,27 @@ Google AI Python Gemini demo.
 """
 
 import os
+
 import dotenv
-from vertexai.generative_models import GenerativeModel, ChatSession
-from composio_google import App, ComposioToolSet
+from composio_google import App, ComposioToolset
+from vertexai.generative_models import ChatSession, GenerativeModel
+
 
 # Load environment variables from .env
 dotenv.load_dotenv()
 
 # Initialize tools
-composio_toolset = ComposioToolSet()
+composio_toolset = ComposioToolset()
 
 # Get GitHub tools that are pre-configured
-tools = composio_toolset.get_tools(apps=[App.GITHUB])
-
-# Create a Tool object from the FunctionDeclarations
-tool = composio_toolset.create_tool(tools)
+tool = composio_toolset.get_tool(apps=[App.GITHUB])
 
 # Initialize the Gemini model
-model = GenerativeModel("gemini-pro", tools=[tool])
+model = GenerativeModel("gemini-1.5-pro", tools=[tool])
 
 # Start a chat session
 chat = model.start_chat()
+
 
 def main():
     # Define task
@@ -33,20 +33,12 @@ def main():
     response = chat.send_message(task)
 
     print("Model response:")
-    print(response.text)
+    print(response)
 
-    # Handle function calls if any
-    for candidate in response.candidates:
-        for part in candidate.content.parts:
-            if hasattr(part, 'function_call'):
-                function_call = part.function_call
-                print("\nFunction call detected:")
-                print(f"Function name: {function_call.name}")
-                print(f"Arguments: {function_call.args}")
-                
-                result = composio_toolset.execute_function_call(function_call)
-                print("\nFunction call result:")
-                print(result)
+    result = composio_toolset.handle_response(response)
+    print("Function call result:")
+    print(result)
+
 
 if __name__ == "__main__":
     main()

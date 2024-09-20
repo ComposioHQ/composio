@@ -5,9 +5,13 @@ Google AI Python Gemini tool spec.
 import typing as t
 
 import typing_extensions as te
+from proto.marshal.collections.maps import MapComposite
 from vertexai.generative_models import (
-    Tool,
+    Content,
     FunctionDeclaration,
+    GenerationResponse,
+    Part,
+    Tool,
 )
 
 from composio import Action, ActionType, AppType, TagType
@@ -54,9 +58,8 @@ class ComposioToolset(
         print(response.text)
 
         # Handle function calls if any
-        if response.candidates[0].content.parts[-1].function_call:
-            function_call = response.candidates[0].content.parts[-1].function_call
-            result = composio_toolset.execute_function_call(function_call)
+        result = composio_toolset.handle_response(response)
+        if result:
             print(result)
     ```
     """
@@ -71,10 +74,24 @@ class ComposioToolset(
         description = schema.get("description", schema["name"])
         parameters = json_schema_to_model(schema["parameters"])
 
+        # Clean up properties by removing 'examples' field
+        properties = parameters.schema().get("properties", {})
+        cleaned_properties = {}
+        for prop_name, prop_schema in properties.items():
+            cleaned_prop = {k: v for k, v in prop_schema.items() if k != "examples"}
+            cleaned_properties[prop_name] = cleaned_prop
+
+        # Create cleaned parameters
+        cleaned_parameters = {
+            "type": "object",
+            "properties": cleaned_properties,
+            "required": parameters.schema().get("required", []),
+        }
+
         return FunctionDeclaration(
             name=action,
             description=description,
-            parameters=parameters.schema(),
+            parameters=cleaned_parameters,
         )
 
     @te.deprecated("Use `ComposioToolSet.get_tools` instead")
@@ -82,7 +99,7 @@ class ComposioToolset(
         self,
         actions: t.Sequence[ActionType],
         entity_id: t.Optional[str] = None,
-    ) -> t.List[FunctionDeclaration]:
+    ) -> Tool:
         """
         Get composio tools wrapped as Google AI Python Gemini FunctionDeclaration objects.
 
@@ -91,15 +108,15 @@ class ComposioToolset(
 
         :return: Composio tools wrapped as `FunctionDeclaration` objects
         """
-        return self.get_tools(actions=actions, entity_id=entity_id)
+        return self.get_tool(actions=actions, entity_id=entity_id)
 
-    def get_tools(
+    def get_tool(
         self,
         actions: t.Optional[t.Sequence[ActionType]] = None,
         apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
-    ) -> t.List[FunctionDeclaration]:
+    ) -> Tool:
         """
         Get composio tools wrapped as Google AI Python Gemini FunctionDeclaration objects.
 
@@ -111,15 +128,19 @@ class ComposioToolset(
         :return: Composio tools wrapped as `FunctionDeclaration` objects
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
-        return [
-            self._wrap_tool(
-                schema=tool.model_dump(
-                    exclude_none=True,
-                ),
-                entity_id=entity_id or self.entity_id,
-            )
-            for tool in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
-        ]
+        return Tool(
+            function_declarations=[
+                self._wrap_tool(
+                    schema=tool.model_dump(
+                        exclude_none=True,
+                    ),
+                    entity_id=entity_id or self.entity_id,
+                )
+                for tool in self.get_action_schemas(
+                    actions=actions, apps=apps, tags=tags
+                )
+            ]
+        )
 
     def execute_function_call(
         self,
@@ -133,17 +154,43 @@ class ComposioToolset(
         :param entity_id: Entity ID to use for executing the function call.
         :return: Object containing output data from the function call.
         """
+
+        def convert_map_composite(obj):
+            if isinstance(obj, MapComposite):
+                return {k: convert_map_composite(v) for k, v in obj.items()}
+            elif isinstance(obj, (list, tuple)):
+                return [convert_map_composite(item) for item in obj]
+            else:
+                return obj
+
+        args = convert_map_composite(function_call.args)
+
         return self.execute_action(
             action=Action(value=function_call.name),
-            params=function_call.args,
+            params=args,
             entity_id=entity_id or self.entity_id,
         )
 
-    def create_tool(self, functions: t.List[FunctionDeclaration]) -> Tool:
+    def handle_response(
+        self,
+        response: GenerationResponse,
+        entity_id: t.Optional[str] = None,
+    ) -> t.List[t.Dict]:
         """
-        Create a Tool object from a list of FunctionDeclarations.
+        Handle response from Google AI Python Gemini model.
 
-        :param functions: List of FunctionDeclaration objects.
-        :return: Tool object containing the function declarations.
+        :param response: Generation response from the Gemini model.
+        :param entity_id: Entity ID to use for executing the function call.
+        :return: A list of output objects from the function calls.
         """
-        return Tool(function_declarations=functions)
+        outputs = []
+        for candidate in response.candidates:
+            for part in candidate.content.parts:
+                if isinstance(part, Part) and part.function_call:
+                    outputs.append(
+                        self.execute_function_call(
+                            function_call=part.function_call,
+                            entity_id=entity_id or self.entity_id,
+                        )
+                    )
+        return outputs
