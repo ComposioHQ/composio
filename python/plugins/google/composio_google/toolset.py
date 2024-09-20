@@ -185,12 +185,42 @@ class ComposioToolset(
         """
         outputs = []
         for candidate in response.candidates:
-            for part in candidate.content.parts:
-                if isinstance(part, Part) and part.function_call:
-                    outputs.append(
-                        self.execute_function_call(
-                            function_call=part.function_call,
-                            entity_id=entity_id or self.entity_id,
+            if hasattr(candidate.content, 'parts'):
+                for part in candidate.content.parts:
+                    if isinstance(part, Part) and part.function_call:
+                        outputs.append(
+                            self.execute_function_call(
+                                function_call=part.function_call,
+                                entity_id=entity_id or self.entity_id,
+                            )
                         )
-                    )
         return outputs
+
+    def execute_function_call(
+        self,
+        function_call: t.Any,
+        entity_id: t.Optional[str] = None,
+    ) -> t.Dict:
+        """
+        Execute a function call.
+
+        :param function_call: Function call metadata from Gemini model response.
+        :param entity_id: Entity ID to use for executing the function call.
+        :return: Object containing output data from the function call.
+        """
+
+        def convert_map_composite(obj):
+            if isinstance(obj, MapComposite):
+                return {k: convert_map_composite(v) for k, v in obj.items()}
+            elif isinstance(obj, (list, tuple)):
+                return [convert_map_composite(item) for item in obj]
+            else:
+                return obj
+
+        args = convert_map_composite(function_call.args) if function_call.args is not None else {}
+
+        return self.execute_action(
+            action=Action(value=function_call.name),
+            params=args,
+            entity_id=entity_id or self.entity_id,
+        )

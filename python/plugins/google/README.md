@@ -49,18 +49,11 @@ actions = toolset.get_tools(apps=[App.GITHUB])
 This step involves configuring and executing the agent to carry out actions, such as starring a GitHub repository.
 
 ```python
-my_task = "Star a repo composiohq/composio on GitHub"
+# Define task
+task = "Star a repo composiohq/composio on GitHub"
 
-# Create a chat completion request to decide on the action
-response = openai_client.chat.completions.create(model="gpt-4-turbo-preview",
-    tools=actions, # Passing actions we fetched earlier.
-    messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": my_task}
-        ]
-    )
-
-pprint(response)
+# Send a message to the model
+response = chat.send_message(task)
 ```
 
 ### Step 4: Validate Execution Response
@@ -68,6 +61,6 @@ pprint(response)
 Execute the following code to validate the response, ensuring that the intended task has been successfully completed.
 
 ```python
-result = toolset.handle_tool_calls(response)
-pprint(result)
+result = composio_toolset.handle_response(response)
+print("Function call result:", result)
 ```
