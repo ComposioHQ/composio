@@ -15,6 +15,7 @@ from vertexai.generative_models import (
 )
 
 from composio import Action, ActionType, AppType, TagType
+from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.utils.shared import json_schema_to_model
 
@@ -64,22 +65,36 @@ class ComposioToolset(
     ```
     """
 
+    def validate_entity_id(self, entity_id: str) -> str:
+        """Validate entity ID."""
+        if (
+            self.entity_id != DEFAULT_ENTITY_ID
+            and entity_id != DEFAULT_ENTITY_ID
+            and self.entity_id != entity_id
+        ):
+            raise ValueError(
+                "separate `entity_id` can not be provided during "
+                "initialization and handling tool calls"
+            )
+        if self.entity_id != DEFAULT_ENTITY_ID:
+            entity_id = self.entity_id
+        return entity_id
+
     def _wrap_tool(
         self,
         schema: t.Dict[str, t.Any],
-        entity_id: t.Optional[str] = None,
     ) -> FunctionDeclaration:
         """Wraps composio tool as Google AI Python Gemini FunctionDeclaration object."""
         action = schema["name"]
-        description = schema.get("description", schema["name"])
+        description = schema.get("description", action)
         parameters = json_schema_to_model(schema["parameters"])
 
         # Clean up properties by removing 'examples' field
         properties = parameters.schema().get("properties", {})
-        cleaned_properties = {}
-        for prop_name, prop_schema in properties.items():
-            cleaned_prop = {k: v for k, v in prop_schema.items() if k != "examples"}
-            cleaned_properties[prop_name] = cleaned_prop
+        cleaned_properties = {
+            prop_name: {k: v for k, v in prop_schema.items() if k != "examples"}
+            for prop_name, prop_schema in properties.items()
+        }
 
         # Create cleaned parameters
         cleaned_parameters = {
@@ -127,6 +142,7 @@ class ComposioToolset(
 
         :return: Composio tools wrapped as `FunctionDeclaration` objects
         """
+        entity_id = self.validate_entity_id(entity_id or self.entity_id)
         self.validate_tools(apps=apps, actions=actions, tags=tags)
         return Tool(
             function_declarations=[
@@ -134,7 +150,6 @@ class ComposioToolset(
                     schema=tool.model_dump(
                         exclude_none=True,
                     ),
-                    entity_id=entity_id or self.entity_id,
                 )
                 for tool in self.get_action_schemas(
                     actions=actions, apps=apps, tags=tags
@@ -145,7 +160,7 @@ class ComposioToolset(
     def execute_function_call(
         self,
         function_call: t.Any,
-        entity_id: t.Optional[str] = None,
+        entity_id: t.Optional[str] = DEFAULT_ENTITY_ID,
     ) -> t.Dict:
         """
         Execute a function call.
@@ -154,6 +169,7 @@ class ComposioToolset(
         :param entity_id: Entity ID to use for executing the function call.
         :return: Object containing output data from the function call.
         """
+        entity_id = self.validate_entity_id(entity_id or self.entity_id)
 
         def convert_map_composite(obj):
             if isinstance(obj, MapComposite):
@@ -168,7 +184,7 @@ class ComposioToolset(
         return self.execute_action(
             action=Action(value=function_call.name),
             params=args,
-            entity_id=entity_id or self.entity_id,
+            entity_id=entity_id,
         )
 
     def handle_response(
@@ -183,44 +199,16 @@ class ComposioToolset(
         :param entity_id: Entity ID to use for executing the function call.
         :return: A list of output objects from the function calls.
         """
+        entity_id = self.validate_entity_id(entity_id or self.entity_id)
         outputs = []
         for candidate in response.candidates:
-            if hasattr(candidate.content, 'parts'):
+            if isinstance(candidate.content, Content) and candidate.content.parts:
                 for part in candidate.content.parts:
                     if isinstance(part, Part) and part.function_call:
                         outputs.append(
                             self.execute_function_call(
                                 function_call=part.function_call,
-                                entity_id=entity_id or self.entity_id,
+                                entity_id=entity_id,
                             )
                         )
         return outputs
-
-    def execute_function_call(
-        self,
-        function_call: t.Any,
-        entity_id: t.Optional[str] = None,
-    ) -> t.Dict:
-        """
-        Execute a function call.
-
-        :param function_call: Function call metadata from Gemini model response.
-        :param entity_id: Entity ID to use for executing the function call.
-        :return: Object containing output data from the function call.
-        """
-
-        def convert_map_composite(obj):
-            if isinstance(obj, MapComposite):
-                return {k: convert_map_composite(v) for k, v in obj.items()}
-            elif isinstance(obj, (list, tuple)):
-                return [convert_map_composite(item) for item in obj]
-            else:
-                return obj
-
-        args = convert_map_composite(function_call.args) if function_call.args is not None else {}
-
-        return self.execute_action(
-            action=Action(value=function_call.name),
-            params=args,
-            entity_id=entity_id or self.entity_id,
-        )

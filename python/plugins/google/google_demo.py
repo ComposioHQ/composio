@@ -1,12 +1,9 @@
 """
 Google AI Python Gemini demo.
 """
-
-import os
-
 import dotenv
 from composio_google import App, ComposioToolset
-from vertexai.generative_models import ChatSession, GenerativeModel
+from vertexai.generative_models import GenerativeModel
 
 
 # Load environment variables from .env
