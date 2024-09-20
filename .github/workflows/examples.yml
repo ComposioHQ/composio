@@ -38,6 +38,9 @@ on:
       commit_message:
         required: false
         type: string
+      dont_notify:
+        required: false
+        type: boolean
 
 jobs:
   run-tests:
