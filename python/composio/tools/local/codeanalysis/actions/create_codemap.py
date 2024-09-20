@@ -1,7 +1,7 @@
-from curses import meta
 import json
 import os
 import shutil
+from curses import meta
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict
@@ -74,7 +74,7 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
             metadata["create_fqdn"] = True
         if "is_python" not in metadata:
             metadata["is_python"] = True
-        
+
         self.REPO_DIR = os.path.normpath(os.path.abspath(metadata["dir_to_index_path"]))
         self.failed_files: list[str] = []
 
@@ -146,6 +146,7 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
         from tqdm.auto import tqdm
 
         from composio.tools.local.codeanalysis import chunker, embedder, tool_utils
+
         python_files = tool_utils.find_python_files(self.REPO_DIR)
         chunking = chunker.Chunking(self.REPO_DIR)
         chunks, metadatas, ids = [], [], []
@@ -157,7 +158,9 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
             with open(file, "r", encoding="utf-8") as f:
                 file_content = f.read()
 
-            chunk, metadata, id = chunking.chunk(file_content, file, is_python=is_python)
+            chunk, metadata, id = chunking.chunk(
+                file_content, file, is_python=is_python
+            )
             num_lines[file] = len(file_content.splitlines())
             chunks.extend(chunk)
             metadatas.extend(metadata)

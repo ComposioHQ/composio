@@ -105,6 +105,7 @@ def count_length_without_whitespace(s: Union[str, bytes]) -> int:
 
     raise TypeError(f"Input must be str or bytes, not {type(s).__name__}")
 
+
 def chunk_default(file_content: str, max_chunk_size: int) -> List[Span]:
     """
     Default chunking function for non-Python files.
@@ -134,6 +135,8 @@ def chunk_default(file_content: str, max_chunk_size: int) -> List[Span]:
         curr_chunk = Span(end_line, end_line)
 
     return chunks
+
+
 def chunker(tree, source_code_bytes, max_chunk_size=512 * 3, coalesce=50):
     """
     Chunk the abstract syntax tree (AST) of source code into manageable spans.
