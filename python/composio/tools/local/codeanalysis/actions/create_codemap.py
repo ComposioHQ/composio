@@ -1,3 +1,4 @@
+from curses import meta
 import json
 import os
 import shutil
@@ -69,6 +70,11 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
     def execute(
         self, request: CreateCodeMapRequest, metadata: Dict
     ) -> CreateCodeMapResponse:
+        if "create_fqdn" not in metadata:
+            metadata["create_fqdn"] = True
+        if "is_python" not in metadata:
+            metadata["is_python"] = True
+        
         self.REPO_DIR = os.path.normpath(os.path.abspath(metadata["dir_to_index_path"]))
         self.failed_files: list[str] = []
 
@@ -87,13 +93,13 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
         os.makedirs(TREE_SITTER_FOLDER, exist_ok=True)
         self.fqdn_cache_file = os.path.join(self.save_dir, FQDN_FILE)
 
-        self._process(status)
+        self._process(status, metadata)
 
         return CreateCodeMapResponse(
             result=f"Indexing completed for {metadata['dir_to_index_path']}"
         )
 
-    def _process(self, status: Dict[str, Any]) -> None:
+    def _process(self, status: Dict[str, Any], metadata: Dict[str, Any]) -> None:
         """
         Process the indexing operation based on the current status.
 
@@ -114,19 +120,19 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
         """
         try:
             if status["status"] == Status.LOADING_FQDNS:
-                self.load_all_fqdns()
+                if metadata["create_fqdn"]:
+                    self.load_all_fqdns()
                 status = self._update_status(self.REPO_DIR, Status.LOADING_INDEX)
-
             if status["status"] == Status.LOADING_INDEX:
-                self.create_index()
+                self.create_index(metadata["is_python"])
                 status = self._update_status(self.REPO_DIR, Status.COMPLETED)
         except Exception as e:
             self._update_status(self.REPO_DIR, Status.FAILED)
             raise ExecutionFailed(
-                message=f"Failed to create index, error encountered while {str(status['status'])}"
+                message=f"Failed to create index, error encountered while {str(status['status'])}: {e}"
             ) from e
 
-    def create_index(self):
+    def create_index(self, is_python: bool):
         """
         Create an index of the Python files in the repository.
 
@@ -140,7 +146,6 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
         from tqdm.auto import tqdm
 
         from composio.tools.local.codeanalysis import chunker, embedder, tool_utils
-
         python_files = tool_utils.find_python_files(self.REPO_DIR)
         chunking = chunker.Chunking(self.REPO_DIR)
         chunks, metadatas, ids = [], [], []
@@ -152,7 +157,7 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
             with open(file, "r", encoding="utf-8") as f:
                 file_content = f.read()
 
-            chunk, metadata, id = chunking.chunk(file_content, file)
+            chunk, metadata, id = chunking.chunk(file_content, file, is_python=is_python)
             num_lines[file] = len(file_content.splitlines())
             chunks.extend(chunk)
             metadatas.extend(metadata)

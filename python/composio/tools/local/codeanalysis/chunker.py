@@ -105,7 +105,35 @@ def count_length_without_whitespace(s: Union[str, bytes]) -> int:
 
     raise TypeError(f"Input must be str or bytes, not {type(s).__name__}")
 
+def chunk_default(file_content: str, max_chunk_size: int) -> List[Span]:
+    """
+    Default chunking function for non-Python files.
+    """
 
+    def find_end_line(start_line: int, file_content: str) -> int:
+        """
+        Find the end line for a given start line in the file content.
+        """
+        end_line = start_line
+        curr_chunk_size = 0
+        lines = file_content.splitlines()
+        while end_line < len(lines) and curr_chunk_size < max_chunk_size:
+            curr_chunk_size += len(lines[end_line])
+            end_line += 1
+        return end_line
+
+    curr_chunk = Span(0, 0)
+    chunks = []
+    lines = file_content.splitlines()
+    while curr_chunk.start < len(lines):
+        start_line = curr_chunk.start
+        end_line = find_end_line(start_line, file_content)
+        chunks.append(Span(start_line, end_line))
+        if end_line >= len(lines):
+            break
+        curr_chunk = Span(end_line, end_line)
+
+    return chunks
 def chunker(tree, source_code_bytes, max_chunk_size=512 * 3, coalesce=50):
     """
     Chunk the abstract syntax tree (AST) of source code into manageable spans.
@@ -228,16 +256,20 @@ class Chunking:
         self,
         file_content: str,
         file_path: str,
+        is_python: bool = True,
         score: float = 1.0,
         additional_metadata: Dict[str, str] = {},
         max_chunk_size: int = 512 * 3,
     ) -> Tuple[List[str], List[Dict[str, Any]], List[str]]:
-        parser = Parser()
-        parser.set_language(self.language)
-        tree = parser.parse(file_content.encode("utf-8"))
+        if is_python:
+            parser = Parser()
+            parser.set_language(self.language)
+            tree = parser.parse(file_content.encode("utf-8"))
 
-        source_code_bytes = file_content.encode("utf-8")
-        spans = chunker(tree, source_code_bytes, max_chunk_size)
+            source_code_bytes = file_content.encode("utf-8")
+            spans = chunker(tree, source_code_bytes, max_chunk_size)
+        else:
+            spans = chunk_default(file_content, max_chunk_size)
 
         ids = [f"{file_path}:{span.start}:{span.end}" for span in spans]
         chunks = [span.extract(file_content) for span in spans]
@@ -274,6 +306,7 @@ def construct_chunks(  # pylint: disable=unused-argument
     Returns:
         List[str]: List of formatted chunks with additional context.
     """
+    # import pdb; pdb.set_trace()
     formatted_chunks = []
     for chunk, metadata in zip(chunks, metadatas):
         file_path = metadata["file_path"]
