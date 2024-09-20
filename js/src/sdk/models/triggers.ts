@@ -55,6 +55,11 @@ export class Triggers {
             }
         })
 
+        if(error) {
+            console.log(error)
+            throw Error("Failed to setup trigger")
+        }
+
         return data as unknown as {status:"string",triggerId:string};
     }
 

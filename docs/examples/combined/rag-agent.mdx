@@ -1,0 +1,467 @@
+---
+title: "RAG Tool Agent"
+sidebarTitle: "RAG Tool Agent"
+icon: "database"
+description: "This project involves setting up and running a system of agents to add content to a RAG (Retrieval-Augmented Generation) tool, perform queries, and return relevant information. We use Composio to setup this Local Tool and OpenAI GPT-4o to power the agents. Follow this guide to set up and run the project."
+---
+
+
+
+
+<Tabs>
+    <Tab title="Python">
+    <Card color="#7bee0c" title="RAG Agent GitHub Repository" icon="github" href="https://github.com/ComposioHQ/composio/tree/fix/master/python/examples/rag_agent">
+  Explore the complete source code for the RAG Agent project. This repository contains all the necessary files and scripts to set up and run the RAG system using CrewAI and Composio.
+  <CardBody>
+  </CardBody>
+</Card>
+
+<Steps>
+    <Step title="Imports and Environment Setup">
+    In your Python script, import the necessary libraries and set up your environment variables.
+    <CodeGroup>
+        ```python Import libraries
+        import os
+        import dotenv
+        from textwrap import dedent
+        from composio_langchain import Action, App, ComposioToolSet
+        from langchain_openai import ChatOpenAI
+        from composio.local_tools import ragtool
+
+        # Load environment variables
+        dotenv.load_dotenv()
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Initialize Language Model and Define Tools">
+    Initialize the language model with OpenAI API key and model name, and set up the necessary tools for the agents.
+    <CodeGroup>
+        ```python LLM and Tools
+        # Initialize the LLM with the OpenAI GPT-4o model and API key
+        llm = ChatOpenAI(model="gpt-4o")
+
+        # Initialize the Composio ToolSet
+        toolset = ComposioToolSet()
+
+        # Get the RAG tool from the Composio ToolSet
+        tools = toolset.get_tools(apps=[App.RAGTOOL])
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define the RAG Agent">
+    Define the RAG agent with its role, goal, backstory, and tools.
+    <CodeGroup>
+        ```python Set up Agents
+        # Define the RAG Agent
+        rag_agent = Agent(
+            role="RAG Agent",
+            goal=dedent(
+                """\
+                Add relevant content to the RAG tool to enrich its knowledge base.
+                Formulate a query to retrieve information from the RAG tool based on user input.
+                After retrieval and addition of content, evaluate whether the goal given by the user input is achieved. If yes, stop execution."""
+            ),
+            verbose=True,
+            memory=True,
+            backstory=dedent(
+                """\
+                You are an expert in understanding user requirements, forming accurate queries,
+                and enriching the knowledge base with relevant content."""
+            ),
+            llm=llm,
+            allow_delegation=False,
+            tools=tools,
+        )
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define Tasks for Adding Content">
+    Create tasks to add content to the RAG tool for enriching its knowledge base.
+    <CodeGroup>
+        ```python Creating Tasks
+        from composio_langchain import Task  # Ensure Task is imported
+
+        # User-provided description of the data to be added
+        additional_content_list = [
+            "Paris is the capital of France. It is known for its art, fashion, and culture.",
+            "Berlin is the capital of Germany. It is famous for its history and vibrant culture.",
+            "Tokyo is the capital of Japan. It is known for its technology and cuisine.",
+            "Canberra is the capital of Australia. It is known for its modern architecture and museums.",
+            # Add more data as needed
+        ]
+
+        # Define the task for adding content to the RAG tool
+        add_content_tasks = [
+            Task(
+                description=dedent(
+                    f"""\
+                    Add the following content to the RAG tool to enrich its knowledge base: {content}"""
+                ),
+                expected_output="Content was added to the RAG tool",
+                tools=tools,
+                agent=rag_agent,
+                allow_delegation=False,
+            )
+            for content in additional_content_list
+        ]
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define and Execute Query Task">
+    Create and execute the task for querying the RAG tool based on user input.
+    <CodeGroup>
+        ```python Python - Query task
+        # User-provided query
+        user_query = "What is the capital of France?"
+
+        # Define the task for executing the RAG tool query
+        query_task = Task(
+            description=dedent(
+                f"""\
+                Formulate a query based on this input: {user_query}.
+                Retrieve relevant information using the RAG tool and return the results."""
+            ),
+            expected_output="Results of the RAG tool query were returned. Stop once the goal is achieved.",
+            tools=tools,
+            agent=rag_agent,
+            allow_delegation=False,
+        )
+        ```
+
+    </CodeGroup>
+    </Step>
+
+    <Step title="Create Crew and Execute Process">
+    Define the crew with the agent and tasks, then execute the process.
+    <CodeGroup>
+        ```python Final step
+        # Define the crew with the agent and tasks
+        crew = Crew(
+            agents=[rag_agent],
+            tasks=[add_content_tasks ,query_task],
+            process=Process.sequential,
+        )
+
+        # Kickoff the process and print the result
+        result = crew.kickoff()
+        print(result)
+        ```
+    </CodeGroup>
+    </Step>
+
+</Steps>
+    </Tab>
+
+    <Tab title="Javascript">
+    <Card color="#7bee0c" title="RAG Agent GitHub Repository" icon="github" href="https://github.com/ComposioHQ/composio/tree/master/js/examples/docs-example/rag_tool_agent">
+  Explore the complete source code for the RAG Agent project. This repository contains all the necessary files and scripts to set up and run the RAG system using CrewAI and Composio.
+  <CardBody>
+  </CardBody>
+  </Card>
+<Steps>
+    <Step title="Imports and Environment Setup">
+    Import the necessary libraries and set up your environment variables.
+    <CodeGroup>
+        ```javascript Import libraries
+        import dotenv from 'dotenv';
+        import { ExecEnv, LangchainToolSet } from 'composio-core';
+        import { ChatOpenAI } from '@langchain/openai';
+        import { AgentExecutor, createOpenAIToolsAgent } from 'langchain/agents';
+        import { pull } from 'langchain/hub';
+
+        // Load environment variables
+        dotenv.config();
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Initialize Language Model and Define Tools">
+    Initialize the language model with OpenAI API key and model name, and set up the necessary tools for the agents.
+    <CodeGroup>
+
+        ```javascript LLM and Tools
+        // Initialize the LLM with the OpenAI GPT-4-turbo model
+        const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
+
+        // Initialize the Composio ToolSet
+        const composioToolset = new LangchainToolSet({
+            apiKey: process.env.COMPOSIO_API_KEY,
+            workspaceEnv: ExecEnv.DOCKER
+        });
+
+        // Get the RAG tool actions from the Composio ToolSet
+        const tools = await composioToolset.getActions({
+            actions: ["ragtool_add_content", "ragtool_query"]
+        });
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define the RAG Agent">
+    Define the RAG agent with its llm, prompt and tools.
+    <CodeGroup>
+
+
+        ```javascript Creating Agents
+        const prompt = await pull("hwchase17/openai-functions-agent");
+        
+        const agent = await createOpenAIToolsAgent({
+            llm,
+            tools,
+            prompt,
+        });
+
+        const agentExecutor = new AgentExecutor({
+            agent,
+            tools,
+            verbose: true,
+        });
+        
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Adding Content">
+    Create tasks to add content to the RAG tool for enriching its knowledge base.
+    <CodeGroup>
+        ```javascript Add Content
+        async function addContentToRAG(content) {
+            const result = await agentExecutor.invoke({
+                input: `Add the following content to the RAG tool to enrich its knowledge base: ${content}`
+            });
+            console.log(result.output);
+            return result.output;
+        }
+
+        // Example content to add
+        const additionalContentList = [
+            "Paris is the capital of France. It is known for its art, fashion, and culture.",
+            "Berlin is the capital of Germany. It is famous for its history and vibrant culture.",
+            "Tokyo is the capital of Japan. It is known for its technology and cuisine.",
+            "Canberra is the capital of Australia. It is known for its modern architecture and museums.",
+        ];
+
+        // Add content to RAG tool
+        for (const content of additionalContentList) {
+            await addContentToRAG(content);
+        }
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define and Execute Query Task">
+    Create and execute the task for querying the RAG tool based on user input.
+    <CodeGroup>
+
+                
+        ```javascript Query Function
+        async function queryRAG(userQuery) {
+            const result = await agentExecutor.invoke({
+                input: `Formulate a query based on this input: ${userQuery}. 
+                        Retrieve relevant information using the RAG tool and return the results.`
+            });
+            console.log(result.output);
+            return result.output;
+        }
+
+        // Example usage
+        const userQuery = "What is the capital of France?";
+        const queryResult = await queryRAG(userQuery);
+        console.log("Query Result:", queryResult);
+        ```
+    </CodeGroup>
+    </Step>
+
+</Steps>
+    </Tab>
+</Tabs>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Putting it All Together
+<CodeGroup>
+    ```python Python Final Code
+    import os
+    import dotenv
+    from textwrap import dedent
+    from composio_langchain import Action, App, ComposioToolSet
+    from crewai import Agent, Crew, Process, Task
+    from langchain_openai import ChatOpenAI
+    from composio.tools.local import ragtool
+    
+    # Load environment variables from .env file
+    dotenv.load_dotenv()
+    
+    # Initialize the ComposioToolSet
+    toolset = ComposioToolSet()
+    
+    # Get the RAG tool from the Composio ToolSet
+    tools = toolset.get_tools(apps=[App.RAGTOOL])
+    
+    # Initialize the ChatOpenAI model with GPT-4 and API key from environment variables
+    llm = ChatOpenAI(model="gpt-4o")
+    
+    # User-provided description of the data to be added and the query
+    additional_content_list = [
+        "Paris is the capital of France. It is known for its art, fashion, and culture.",
+        "Berlin is the capital of Germany. It is famous for its history and vibrant culture.",
+        "Tokyo is the capital of Japan. It is known for its technology and cuisine.",
+        "Canberra is the capital of Australia. It is known for its modern architecture and museums.",
+        # Add more data as needed
+    ]
+    
+    user_query = "What is the capital of France?"  # Edit the query for the action you want it to perform
+    
+    # Define the RAG Agent
+    rag_agent = Agent(
+        role="RAG Agent",
+        goal=dedent(
+            """\
+            Add relevant content to the RAG tool to enrich its knowledge base.
+            Formulate a query to retrieve information from the RAG tool based on user input.
+            After retrieval and addition of content, evaluate whether the goal given by the user input is achieved. If yes, stop execution."""
+        ),
+        verbose=True,
+        memory=True,
+        backstory=dedent(
+            """\
+            You are an expert in understanding user requirements, forming accurate queries,
+            and enriching the knowledge base with relevant content."""
+        ),
+        llm=llm,
+        allow_delegation=False,
+        tools=tools,
+    )
+    
+    # Define the task for adding content to the RAG tool
+    
+    
+    total_content = ""
+    for content in additional_content_list:
+      total_content +=content
+    
+    add_content_tasks = Task(
+            description=dedent(
+                f"""\
+                Add the following content to the RAG tool to enrich its knowledge base: {total_content}"""
+            ),
+            expected_output="Content was added to the RAG tool",
+            tools=tools,
+            agent=rag_agent,
+            allow_delegation=False,
+        )
+    # Define the task for executing the RAG tool query
+    query_task = Task(
+        description=dedent(
+            f"""\
+            Formulate a query based on this input: {user_query}.
+            Retrieve relevant information using the RAG tool and return the results."""
+        ),
+        expected_output="Results of the RAG tool query were returned. Stop once the goal is achieved.",
+        tools=tools,
+        agent=rag_agent,
+        allow_delegation=False,
+    )
+    
+    # Define the crew with the agent and tasks
+    crew = Crew(
+        agents=[rag_agent],
+        tasks=[add_content_tasks,query_task],
+        process=Process.sequential,
+    )
+    
+    # Kickoff the process and print the result
+    result = crew.kickoff()
+    print(result)
+    ```
+
+    ```javascript Javascript Final Code
+
+    import dotenv from 'dotenv';
+    import { ExecEnv, LangchainToolSet } from 'composio-core';
+    import { ChatOpenAI } from '@langchain/openai';
+    import { AgentExecutor, createOpenAIToolsAgent } from 'langchain/agents';
+    import { pull } from 'langchain/hub';
+
+    dotenv.config();
+
+    (async () => {
+        const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
+
+        const composioToolset = new LangchainToolSet({
+            apiKey: process.env.COMPOSIO_API_KEY,
+            workspaceEnv: ExecEnv.DOCKER
+        });
+
+        const tools = await composioToolset.getActions({
+            actions: ["ragtool_add_content", "ragtool_query"]
+        });
+
+        const prompt = await pull("hwchase17/openai-functions-agent");
+        
+        const agent = await createOpenAIToolsAgent({
+            llm,
+            tools,
+            prompt,
+        });
+
+        const agentExecutor = new AgentExecutor({
+            agent,
+            tools,
+            verbose: true,
+        });
+
+        async function addContentToRAG(content) {
+            const result = await agentExecutor.invoke({
+                input: `Add the following content to the RAG tool to enrich its knowledge base: ${content}`
+            });
+            console.log(result.output);
+            return result.output;
+        }
+
+        async function queryRAG(userQuery) {
+            const result = await agentExecutor.invoke({
+                input: `Formulate a query based on this input: ${userQuery}. 
+                        Retrieve relevant information using the RAG tool and return the results.`
+            });
+            console.log(result.output);
+            return result.output;
+        }
+
+        // Example content to add
+        const additionalContentList = [
+            "Paris is the capital of France. It is known for its art, fashion, and culture.",
+            "Berlin is the capital of Germany. It is famous for its history and vibrant culture.",
+            "Tokyo is the capital of Japan. It is known for its technology and cuisine.",
+            "Canberra is the capital of Australia. It is known for its modern architecture and museums.",
+        ];
+
+        // Add content to RAG tool
+        for (const content of additionalContentList) {
+            await addContentToRAG(content);
+        }
+
+        // Example query
+        const userQuery = "What is the capital of France?";
+        const queryResult = await queryRAG(userQuery);
+        console.log("Query Result:", queryResult);
+    })();
+    ```
+</CodeGroup>
+

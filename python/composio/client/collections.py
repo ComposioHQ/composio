@@ -13,6 +13,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from unittest import mock
 
 import pysher
+import requests
 import typing_extensions as te
 from pydantic import BaseModel, ConfigDict, Field
 from pysher.channel import Channel
@@ -68,10 +69,12 @@ class ConnectedAccountModel(BaseModel):
     createdAt: str
     updatedAt: str
     appUniqueId: str
+    appName: str
     integrationId: str
     connectionParams: AuthConnectionParamsModel
 
     clientUniqueUserId: t.Optional[str] = None
+    entityId: t.Optional[str] = None
 
     # Override arbitrary model config.
     model_config: ConfigDict = ConfigDict(  # type: ignore
@@ -504,7 +507,7 @@ class TriggerSubscription(logging.WithLogger):
             ("integration_id", data.metadata.connection.integrationId),
         ):
             value = filters.get(name)
-            if value is None or value == check:
+            if value is None or str(value).lower() == check.lower():
                 continue
 
             self.logger.debug(
@@ -620,6 +623,31 @@ class _PusherClient(logging.WithLogger):
 
     def connect(self, timeout: float = 15.0) -> TriggerSubscription:
         """Connect to Pusher channel for given client ID."""
+        # Make a request to the Pusher webhook endpoint
+        headers = {
+            "Content-Type": "application/json",
+        }
+        data = {
+            "time": int(time.time() * 1000),  # Current time in milliseconds
+            "events": [
+                {
+                    "name": "channel_occupied",
+                    "channel": f"private-{self.client_id}_triggers",
+                }
+            ],
+        }
+
+        try:
+            response = requests.post(
+                f"{self.base_url}/v1/triggers/pusher",
+                headers=headers,
+                json=data,
+                timeout=timeout,
+            )
+            response.raise_for_status()
+        except requests.RequestException as e:
+            self.logger.error(f"Failed to send Pusher webhook: {e}")
+
         pusher = pysher.Pusher(
             key=PUSHER_KEY,
             cluster=PUSHER_CLUSTER,

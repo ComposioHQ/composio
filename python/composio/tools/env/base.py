@@ -293,17 +293,21 @@ class RemoteWorkspace(Workspace):
             method="post",
             json={
                 "apps": list(map(str, apps or [])),
-                "actions": list(map(str, actions or [])),
+                "actions": list(
+                    map(str, filter(lambda x: not hasattr(x, "enum"), actions or []))
+                ),
                 "tags": list(map(str, tags or [])),
             },
             timeout=600,
         )
+        if request.status_code != 200:
+            raise ComposioSDKError(f"Error installing dependencies: {request.text}")
+
         response = request.json()
-        print(response)
-        # if response["error"] is not None:
-        #     raise ComposioSDKError(
-        #         f"Error installing dependencies: {response['error']}"
-        #     )
+        if response["error"] is not None:
+            raise ComposioSDKError(
+                f"Error installing dependencies: {response['error']}"
+            )
 
     def execute_action(
         self,
