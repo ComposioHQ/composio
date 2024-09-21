@@ -5,7 +5,7 @@ from composio.tools.base.local import LocalAction, LocalTool
 from .actions import CreateVectorIndex, GenerateEmbeddings, RunQuery
 
 
-class RagtoolEmbedTool(LocalTool, autoload=True):
+class RagEmbedTool(LocalTool, autoload=True):
     """Rag Tool"""
 
     logo = "https://raw.githubusercontent.com/ComposioHQ/composio/master/python/docs/imgs/logos/Ragtool.png"

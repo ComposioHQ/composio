@@ -1,1 +1,1 @@
-from tool import RagtoolEmbedTool
+from tool import RagEmbedTool
