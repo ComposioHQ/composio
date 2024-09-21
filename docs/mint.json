@@ -124,6 +124,7 @@
             "javascript/vercel",
             "javascript/openai",
             "javascript/langchain",
+            "framework/google",
             "framework/lyzr",
             "framework/praisonai",
             "framework/julep",
