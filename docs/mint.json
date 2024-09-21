@@ -1,0 +1,325 @@
+{
+  "name": "Composio",
+  "theme": "venus",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "openapi": [
+    "/composio.yaml"
+  ],
+  "favicon": "/favicon1.png",
+  "colors": {
+    "primary": "#343434",
+    "light": "#fff",
+    "dark": "#9a4dff",
+    "ultraLight": "#9a4dff",
+    "ultraDark": "#9a4dff",
+    "background": {
+      "dark": "#181818",
+      "light": "#fafafa"
+    }
+  },
+  "seo": {
+    "indexHiddenPages": false
+  },
+  "modeToggle": {
+    "default": "dark",
+    "isHidden": false
+  },
+  "feedback": {
+    "suggestEdit": true,
+    "raiseIssue": true,
+    "thumbsRating": true
+  },
+  "search": {
+    "prompt": "Make my agents useful ..."
+  },
+  "metadata": {
+    "og:image": "https://framerusercontent.com/images/YwaNXXQETYRs9LymxFCnTjp83Q.svg",
+    "og:description": "Composio enables your agents to connect with Various Tools and work with them",
+    "og:site_name": "Composio Docs",
+    "twitter:site": "https://twitter.com/KaranVaidya6"
+  },
+  "topbarLinks": [
+    {
+      "name": "Discord",
+      "url": "https://dub.composio.dev/discord"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Dashboard",
+    "url": "https://app.composio.dev"
+  },
+  "topAnchor": {
+    "name": "Documentation",
+    "icon": "book-open"
+  },
+  "primaryTab": {
+    "name": "Get Started"
+  },
+  "tabs": [
+    {
+      "name": "Guides",
+      "url": "patterns"
+    },
+    {
+      "name": "Examples",
+      "url": "examples"
+    },
+    {
+      "name": "API",
+      "url": "api-reference"
+    }
+  ],
+  "anchors": [
+  ],
+  "navigation": [
+    {
+      "group": "Introduction",
+      "pages": [
+        "introduction/intro/overview",
+        "introduction/intro/quickstart",
+        "introduction/intro/quickstart_2",
+        "introduction/intro/quickstart_3"
+      ]
+    },
+    {
+      "group": "Basics",
+      "pages": [
+        "introduction/foundations/basic",
+        "introduction/foundations/components/entity/entity-guide",
+        "introduction/foundations/components/actions/action-guide",
+        "introduction/foundations/components/triggers/trigger-guide",
+        "introduction/foundations/components/local_tools",
+        "introduction/foundations/components/integrations/custom-integration",
+        {
+          "group": "Advanced",
+          "pages": [
+            "introduction/foundations/components/integrations/integration-guide",
+            "introduction/foundations/components/actions/processing",
+            "introduction/foundations/components/workspace",
+            "introduction/foundations/components/list_local_tools"
+          ]
+        }
+      ]
+    },
+    {
+      "group":"Supported Frameworks",
+
+      "pages":[
+        "framework/langchain",
+        "framework/llamaindex",
+        "framework/crewai",
+        "framework/groq",
+        "framework/openai",
+        "framework/autogen",
+        {
+          "group": "Other Frameworks",
+          "pages": [
+            "framework/langgraph",
+            "framework/phidata",
+            "framework/camelai",
+            "javascript/cloudflare",
+            "javascript/vercel",
+            "javascript/openai",
+            "javascript/langchain",
+            "framework/lyzr",
+            "framework/praisonai",
+            "framework/julep",
+            "framework/griptape"
+          ]
+        }
+      ]
+      
+
+    },
+    
+    {
+      "group": "SweKit",
+      "pages": [
+        "swekit-js/introduction",
+        "swekit/introduction",
+        "swekit/benchmarks"
+      ]
+    },
+     {
+      "group": "Guides",
+      "pages": [
+      {
+        "group": "Patterns",
+        "pages": [
+          "patterns/functions/multiple-users",
+          "patterns/functions/triggers"
+        ]
+      },
+      {
+        "group": "Using CLI",
+        "pages": [
+          "patterns/cli/install",
+          "patterns/cli/trigger"
+        ]
+      },
+      {
+        "group": "How Tos",
+        "pages": [
+          "patterns/howtos/get_api_key",
+          "patterns/howtos/usecase",
+          "patterns/howtos/tool-finding",
+          "patterns/howtos/listing-connections",
+          "patterns/howtos/listing-integrations"
+        ] 
+      },
+      {
+        "group": "Going to Production",
+        "pages": [
+          "patterns/production-guide/prod"
+        ]
+      }
+    ]
+    },
+    {
+      "group": "Examples",
+      "pages": [
+        "examples/combined/calendar-agent",
+        "examples/combined/code-execution-agent",
+        "examples/combined/rag-agent",
+        "examples/combined/research_agent",
+        "examples/combined/sql-agent",
+        "examples/combined/newsletter_summarizer"
+        ]
+    },
+    {
+      "group": "Endpoints",
+      "icon": "robot",
+      "pages": [
+  {
+    "group": "Client Auth",
+    "pages": [
+      "api-reference/client-auth/get-user-info"
+    ]
+  },
+  {
+    "group": "App",
+    "pages": [
+      "api-reference/app/get-apps"
+    ]
+  },
+  {
+    "group": "App Connector",
+    "pages": [
+      "api-reference/app-connector/list-global-connectors",
+      "api-reference/app-connector/create-connector",
+      "api-reference/app-connector/get-connector-info",
+      "api-reference/app-connector/delete-connector",
+      "api-reference/app-connector/patch-connector"
+    ]
+  },
+  {
+    "group": "Actions Controller",
+    "pages": [
+      "api-reference/actions-controller-v-2/list-actions",
+      "api-reference/actions-controller-v-2/execute-action",
+      "api-reference/actions-controller-v-2/execute-action-proxy",
+       "api-reference/actions-controller-v-1/get-action"
+    ]
+  },
+  {
+    "group": "Connections",
+    "pages": [
+      "api-reference/connections/get-connections",
+      "api-reference/connections/initiate-connection",
+      "api-reference/connections/get-connection",
+      "api-reference/connections/delete-connection",
+      "api-reference/connections/disable-connection",
+      "api-reference/connections/enable-connection"
+    ]
+  },
+  {
+    "group": "Triggers",
+    "pages": [
+      "api-reference/triggers/list-triggers",
+      "api-reference/triggers/handle-trigger",
+      "api-reference/triggers/enable-trigger",
+      "api-reference/triggers/get-trigger",
+      "api-reference/triggers/get-active-triggers",
+      "api-reference/triggers/disable-trigger",
+      "api-reference/triggers/delete-trigger",
+      "api-reference/triggers/set-callback-url",
+      "api-reference/triggers/set-callback-url-1",
+      "api-reference/triggers/get-webhook-url",
+      "api-reference/triggers/get-logs"
+    ]
+  },
+  {
+    "group": "Logs",
+    "pages": [
+      "api-reference/logs/get-logs"
+    ]
+  }
+]
+    }
+  ],
+  "integrations": {
+    "intercom": "dvp1uc7s"
+  },
+  "footerSocials": {
+    "linkedin": "https://www.linkedin.com/company/composio-dev/",
+    "x": "https://twitter.com/composiohq",
+    "github": "https://github.com/composiohq"
+  },
+  "analytics": {
+    "ga4": {
+      "measurementId": "G-3DBLETRPXH"
+    },
+    "posthog": {
+      "apiKey": "phc_Gz8DBv1ZMbOwt3hE8sJZwKGsDl5FtMSkvBNSR0HC07c"
+    },
+    "plausible": {
+        "domain": "composio.dev"
+    }
+  },
+  "api": {
+    "playground": {
+      "mode": "show"
+    }
+  },
+  "redirects": [
+    {
+      "source": "/introduction/foundations/howtos/get_api_key",
+      "destination": "/patterns/howtos/get_api_key"
+    },
+    {
+      "source": "/sdk/cli/trigger",
+      "destination": "/patterns/cli/trigger"
+    },
+    {
+      "source": "/guides/:slug1*",
+      "destination": "/examples/:slug1*"
+    },
+    {
+      "source": "/apps/usecases/langchain_blogs/:slug2*",
+      "destination": "https://composio.dev/tools/:slug2*"
+    },
+    {
+      "source": "/apps/usecases/crewai/:slug2*",
+      "destination": "https://composio.dev/tools/:slug2*"
+    },
+    {
+      "source": "/apps/usecases/autogen_blogs/:slug2*",
+      "destination": "https://composio.dev/tools/:slug2*"
+    },
+    {
+      "source": "/apps/:slug2*",
+      "destination": "https://composio.dev/tools/:slug2*"
+    },
+    {
+      "source": "/apps",
+      "destination": "https://composio.dev/tools/"
+    },
+    {
+      "source": "/python/local_tools",
+      "destination": "/introduction/foundations/components/local_tools"
+    }
+  ]
+}

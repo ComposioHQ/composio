@@ -1,0 +1,32 @@
+[MASTER]
+ignore-patterns=
+ignore=
+
+[MESSAGES CONTROL]
+disable=C0114,C0115,C0116,C0301,C0103,W0603,R1715,W0621,R0903,W0237,W0511,W0622,R0913,R0902,W0221,C0302,R0801,C0411,C0412,W0719,W0718,R0914,R0916,R0912,R0911,W0102,C0325,E0401,W0246,E0611,R0401,E1101,E1120
+
+# To discuss
+# W0621: redefined-outer-name
+# W0622: redefined-builtin
+
+# Disabled
+# W0511: fixme
+# R0903: too-few-public-methods
+# R0913: too-many-arguments
+# R0801: Similar lines
+# C0411: wrong-import-order
+# C0412: ungrouped-imports
+# E0401: import-error
+# W0246: useless-parent-delegation
+# E0611: no-name-in-module
+# R0401: cyclic-import
+
+# Design issues to discuss
+# R0914: too-many-locals
+# W0221: arguments-differ
+# W0237: arguments-renamed
+# R0902: too-many-instance-attributes
+# C0302: too-many-lines
+
+[IMPORTS]
+ignored-modules=semver,click,aiohttp,anthropic,autogen,composio,composio_autogen,composio_claude,composio_crewai,composio_griptape,composio_julep,composio_langchain,composio_lyzr,composio_openai,crewai,dotenv,griptape,julep,langchain,langchain_core,langchain_openai,lyzr_automata,schema,pytest

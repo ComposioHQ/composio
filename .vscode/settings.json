@@ -1,0 +1,26 @@
+{
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  "files.exclude": {
+    "**/venv": true,
+    "**/__pycache__": true,
+    "**/.mypy_cache": true,
+    "**/.pytest_cache": true,
+    "**/*.egg-info": true,
+    "**/.tox": true,
+    "**/.cache": true,
+    "**/build/**": true,
+    "**/dist/**": true
+  },
+  "search.exclude": {
+    "**/venv": true,
+    "**/__pycache__": true,
+    "**/.mypy_cache": true,
+    "**/.pytest_cache": true,
+    "**/*.egg-info": true,
+    "**/.tox": true,
+    "**/.cache": true,
+    "**/build/**": true,
+    "**/dist/**": true
+  }
+}

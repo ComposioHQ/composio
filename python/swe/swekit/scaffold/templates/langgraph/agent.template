@@ -1,0 +1,156 @@
+"""CrewAI SWE Agent"""
+
+import os
+
+import dotenv
+
+#from custom_tools import say
+from langchain_openai import ChatOpenAI
+
+from typing import Literal, Annotated, Sequence, TypedDict
+import operator
+from dotenv import load_dotenv
+from langchain.globals import set_llm_cache
+from langchain_community.cache import SQLiteCache
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_openai import ChatOpenAI
+from langgraph.graph import END, START, StateGraph
+from langgraph.prebuilt import ToolNode
+from composio_langgraph import Action, App, ComposioToolSet, WorkspaceType
+from prompts import autonomous_engineer_system_prompt,github_create_issue_prompt
+
+# Load environment variables from .env
+dotenv.load_dotenv()
+
+# Initialize tool.
+openai_client = ChatOpenAI(
+    api_key=os.environ["OPENAI_API_KEY"],  # type: ignore
+    model="gpt-4-1106-preview",
+)
+composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Host())
+
+# Get required tools
+tools = [
+    *composio_toolset.get_tools(
+        apps=[
+            App.FILETOOL,
+            App.SHELLTOOL,
+        ]
+    ),
+    *composio_toolset.get_actions(
+        actions=[
+            say,  # This is just here as an example of a custom tool, you can remove it
+        ]
+    ),
+]
+
+pr_tools = [
+    *composio_toolset.get_tools(
+        apps=[
+            App.GITHUB,
+        ]
+    ),
+]
+
+tool_node = ToolNode(tools)
+
+# Define AgentState
+class AgentState(TypedDict):
+    messages: Annotated[Sequence[BaseMessage], operator.add]
+    sender: str
+
+# Agent names
+coding_agent_name = "Coder"
+tool_node_name = "call_tool"
+pr_agent_name = "PRCreator"
+pr_tool_node_name = "pr_tool"
+
+# Helper function for agent nodes
+def create_agent_node(agent, name):
+    def agent_node(state):
+        result = agent.invoke(state)
+        if not isinstance(result, ToolMessage):
+            result = AIMessage(**result.dict(exclude={"type", "name"}), name=name)
+        return {"messages": [result], "sender": name}
+
+    return agent_node
+
+
+# Create agents
+def create_agent(system_prompt, tools):
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", system_prompt),
+            MessagesPlaceholder(variable_name="messages"),
+        ]
+    )
+    llm = ChatOpenAI(temperature=0, streaming=True, model="gpt-4-1106-preview")
+    # anthropic = ChatAnthropic(temperature=0, streaming=True, model_name="claude-3-5-sonnet-20240620")
+    return prompt | llm.bind_tools(tools)
+
+
+coding_agent = create_agent(autonomous_engineer_system_prompt, tools)
+coding_node = create_agent_node(coding_agent, coding_agent_name)
+
+pr_agent = create_agent(github_create_issue_prompt, pr_tools)
+pr_node = create_agent_node(pr_agent, pr_agent_name)
+
+# Router function
+def router(state) -> Literal["call_tool", "__end__", "continue",]:
+    # print("state",state)
+    last_message = state["messages"][-1]
+    if last_message.tool_calls:
+        return "call_tool"
+    if "PATCH COMPLETED AND PR WAS CREATED" in last_message.content:
+        return "__end__"
+    return "continue"
+
+
+# Create workflow
+workflow = StateGraph(AgentState)
+
+# add agents
+workflow.add_node(coding_agent_name, coding_node)
+workflow.add_node(tool_node_name, tool_node)
+workflow.add_node(pr_agent_name, pr_node)
+workflow.add_node(pr_tool_node_name,pr_node)
+
+# add start and end
+workflow.add_edge(START, coding_agent_name)
+workflow.add_edge(coding_agent_name, pr_agent_name)
+
+# add conditional edges for tool calling
+workflow.add_conditional_edges(
+    tool_node_name,
+    lambda x: x["sender"],
+    {coding_agent_name: coding_agent_name},
+)
+
+workflow.add_conditional_edges(
+  pr_tool_node_name,
+  lambda x: x["sender"],
+  {pr_agent_name: pr_agent_name}
+)
+
+workflow.add_conditional_edges(
+    coding_agent_name,
+    router,
+    {
+        "continue": coding_agent_name,
+        "call_tool": tool_node_name,
+        "__end__": END,
+    },
+)
+
+workflow.add_conditional_edges(
+    pr_agent_name,
+    router,
+    {
+        "continue": pr_agent_name,
+        "pr_tool": pr_tool_node_name,
+        "__end__": END,
+    },
+)
+
+graph = workflow.compile()

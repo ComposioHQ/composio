@@ -1,0 +1,9 @@
+node_modules/
+dist/
+/types/*
+lib/
+*.log
+ks/test-results/*
+coverage/
+jest_html_reporters.html
+html-report/

@@ -1,0 +1,192 @@
+---
+title: "News Summary"
+sidebarTitle: "News Summary"
+icon: "newspaper"
+description: "This guide provides detailed instructions on how to create an application that
+retrieves the latest news articles and generates summaries using Langchain and Composio."
+---
+<Card color="#7bee0c" title="News Summary Agent GitHub Repository" icon="github" href="https://www.github.com/ComposioHQ/composio/blob/master/python/examples/news_summary/">
+  Explore the complete source code for the News Summary Agent project. This repository contains all the necessary files and scripts to set up and run the News Summary Agent using Langchain and Composio.
+  <CardBody>
+    - Clone the repository to get started
+    - Follow the setup instructions in the README
+    - Experiment with and customize the News Summary Agent
+  </CardBody>
+</Card>
+
+<Steps>
+    <Step title="Run the `setup.sh` file">
+    > Fork and Clone this [repository](https://git.new/composio), Navigate to the Project Directory 
+
+    `cd python/examples/news_summary`
+
+    Make the setup.sh Script Executable (if necessary): On Linux or macOS, you might need to make the setup.sh script executable:
+    <CodeGroup>
+        ```bash Run Command
+       chmod +x setup.sh
+
+       # run the setup.sh file
+       ./setup.sh
+        ```
+        Fill in the .env file after running the script.
+    </CodeGroup>
+    </Step>
+
+    <Step title="Import base packages">
+    Begin by importing the necessary packages:
+    <CodeGroup>
+        ```python Import statements
+        import os
+        import dotenv
+        #To use Open Source LLMs from huggingface
+        from langchain_community.llms import HuggingFaceEndpoint
+        from langchain_community.chat_models.huggingface import ChatHuggingFace
+        #Langchain Utilities for Agents
+        from langchain.agents import AgentExecutor
+        from langchain.agents.format_scratchpad import format_log_to_str
+        from langchain.agents.output_parsers import ReActJsonSingleInputOutputParser
+        from langchain import hub
+        from langchain.tools.render import render_text_description
+        #Importing Composio
+        from composio_langchain import ComposioToolSet, App
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Initialise Language Model and Define tools">
+    We'll initialize our language model and set up the necessary tools for our agents.
+    We will be using serpapi tool, So that our agent can execute actions using this tool.      
+    <CodeGroup>
+        ```python LLM and Tools 
+        dotenv.load_dotenv()
+
+        llm = HuggingFaceEndpoint(repo_id="HuggingFaceH4/zephyr-7b-beta", huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"))
+
+        chat_model = ChatHuggingFace(llm=llm,  huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"))
+        # Import from composio_langchain
+
+
+        # setup tools
+        composio_toolset = ComposioToolSet()
+        #we use composio to add the tools we need
+        #this gives agents, the ability to use tools, in this case we need SERPAPI
+        tools = composio_toolset.get_tools(apps=[App.SERPAPI])
+
+    ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Setup ReAct Style Prompt Template">
+    Set up the prompt template using Langchain Hub:
+    <CodeGroup>
+        ```python Prompt Template
+        #We use Langchain Hub for the Prompt Template
+
+        prompt = hub.pull("hwchase17/react-json")
+        prompt = prompt.partial(
+            tools=render_text_description(tools),
+            tool_names=", ".join([t.name for t in tools]),
+        )
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define the Agent">
+    Define the agent to process the news retrieval and summarization
+    <CodeGroup>
+        ```python Agents
+        chat_model_with_stop = chat_model.bind(stop=["\nInvalidStop"])
+        agent = (
+            {
+                "input": lambda x: x["input"],
+                "agent_scratchpad": lambda x: format_log_to_str(x["intermediate_steps"]),
+            }
+            | prompt
+            | chat_model_with_stop
+            | ReActJsonSingleInputOutputParser()
+        )
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Executing the Agent">
+    Use the agent to find the latest AI news and summarize it:
+    <CodeGroup>
+        ```python Execute Agents
+        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
+        agent_executor.return_intermediate_steps = True
+        res = agent_executor.invoke(
+            {
+                "input": "Use SERP to find the latest AI news, take only description of article."
+            }
+        )
+        res2 = agent_executor.invoke({
+            "input": res['output']+' Summarize this'
+        })
+        ```
+    </CodeGroup>
+    </Step>
+
+</Steps>
+
+## Putting it All Together
+
+<CodeGroup>
+    ```python Final Code
+    from langchain import hub
+    from langchain.agents import AgentExecutor
+    from langchain.agents.format_scratchpad import format_log_to_str
+    from langchain.agents.output_parsers import ReActJsonSingleInputOutputParser
+    from langchain.tools.render import render_text_description
+    from langchain_community.llms import HuggingFaceEndpoint
+    from langchain_community.chat_models.huggingface import ChatHuggingFace
+    from composio_langchain import ComposioToolSet, App
+    import os
+    import dotenv
+
+    dotenv.load_dotenv()
+
+    llm = HuggingFaceEndpoint(repo_id="HuggingFaceH4/zephyr-7b-beta", huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"))
+    chat_model = ChatHuggingFace(llm=llm,  huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"))
+
+    # setup tools
+    composio_toolset = ComposioToolSet()
+    # we use composio to add the tools we need
+    # this gives agents, the ability to use tools, in this case we need SERPAPI
+    tools = composio_toolset.get_tools(apps=[App.SERPAPI])
+
+    # setup ReAct style prompt
+    prompt = hub.pull("hwchase17/react-json")
+    prompt = prompt.partial(
+        tools=render_text_description(tools),
+        tool_names=", ".join([t.name for t in tools]),
+    )
+
+    # define the agent
+    chat_model_with_stop = chat_model.bind(stop=["\nInvalidStop"])
+    agent = (
+        {
+            "input": lambda x: x["input"],
+            "agent_scratchpad": lambda x: format_log_to_str(x["intermediate_steps"]),
+        }
+        | prompt
+        | chat_model_with_stop
+        | ReActJsonSingleInputOutputParser()
+    )
+
+    # instantiate AgentExecutor
+    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
+    agent_executor.return_intermediate_steps = True
+    res = agent_executor.invoke(
+        {
+            "input": "Use SERP to find the one latest AI news, take only description of article."
+        }
+    )
+
+    res2 = agent_executor.invoke({
+        "input": res['output']+' Summarize this'
+    })
+    ```
+
+</CodeGroup>
+

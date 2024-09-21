@@ -1,0 +1,71 @@
+"""CamelAI SWE Agent"""
+
+import os
+
+import dotenv
+
+from custom_tools import say
+from langchain_openai import ChatOpenAI
+
+from typing import Literal, Annotated, Sequence, TypedDict
+from colorama import Fore
+from camel.agents import ChatAgent
+from camel.configs import ChatGPTConfig
+from camel.messages import BaseMessage
+from camel.models import ModelFactory
+from camel.types import ModelPlatformType, ModelType
+from camel.utils import print_text_animated
+from composio_camel import ComposioToolSet, Action, WorkspaceType, App
+from prompts import autonomous_engineer_system_prompt, DESCRIPTION
+
+# Load environment variables from .env
+dotenv.load_dotenv()
+
+composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Host())
+
+# Get required tools
+tools = [
+    *composio_toolset.get_tools(
+        apps=[
+            App.FILETOOL,
+            App.SHELLTOOL,
+        ]
+    ),
+    *composio_toolset.get_actions(
+        actions=[
+            say,  # This is just here as an example of a custom tool, you can remove it
+            # Action.GITHUB_CREATE_A_PULL_REQUEST
+        ]
+    ),
+]
+
+assistant_model_config = ChatGPTConfig(
+    temperature=0.0,
+    tools=tools,
+)
+
+model = ModelFactory.create(
+    model_platform=ModelPlatformType.OPENAI,
+    model_type=ModelType.GPT_4_TURBO,
+    model_config_dict=assistant_model_config.__dict__,
+)
+
+
+# set up agent
+assistant_sys_msg = BaseMessage.make_assistant_message(
+    role_name="Autonomous Engineer",
+    content=autonomous_engineer_system_prompt,
+)
+
+agent = ChatAgent(
+    assistant_sys_msg,
+    model,
+    tools=tools,
+)
+agent.reset()
+
+prompt = DESCRIPTION
+user_msg = BaseMessage.make_user_message(role_name="User", content=prompt)
+print(Fore.YELLOW + f"User prompt:\n{prompt}\n")
+
+

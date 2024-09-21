@@ -1,0 +1,10 @@
+{
+	"scripts": {
+		"dev": "mintlify dev",
+		"generate": "npx @mintlify/scraping@latest openapi-file ./composio_openapi.json -o api-reference"
+	},
+	"dependencies": {
+		"axios": "^1.6.8",
+		"mintlify": "^4.0.172"
+	}
+}

@@ -1,0 +1,37 @@
+from inputs import from_github
+
+from agent import composio_toolset,agent
+from composio_camel import Action
+from prompts import DESCRIPTION
+from camel.messages import BaseMessage
+from camel.utils import print_text_animated
+from colorama import Fore
+
+
+def main() -> None:
+    """Run the agent."""
+    repo, issue = from_github()
+    user_msg = BaseMessage.make_user_message(role_name="User", content=DESCRIPTION)
+    try:
+        final_state = agent.step(f"repo:{repo} and issue:{issue}")
+
+        for msg in response.msgs:
+            print_text_animated(Fore.GREEN + f"Agent response:\n{msg.content}\n")
+        return msg.content
+    except Exception as e:
+        print(e)
+    response = composio_toolset.execute_action(
+        action=Action.FILETOOL_GIT_PATCH,
+        params={},
+    )
+    data = response.get("data", {})
+    if data.get("error") and len(data["error"]) > 0:
+        print("Error:", data["error"])
+    elif data.get("patch"):
+        print("=== Generated Patch ===\n" + data["patch"])
+    else:
+        print("No output available")
+
+
+if __name__ == "__main__":
+    main()

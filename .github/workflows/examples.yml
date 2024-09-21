@@ -1,0 +1,105 @@
+name: Example Tests
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        required: true
+        type: string
+      api_key:
+        required: false
+        type: string
+      base_url:
+        required: false
+        type: string
+      author:
+        required: false
+        type: string
+      commit_message:
+        required: false
+        type: string
+      dont_notify:
+        required: false
+        type: boolean
+  workflow_dispatch:
+    inputs:
+      working-directory:
+        required: true
+        type: string
+      api_key:
+        required: false
+        type: string
+      base_url:
+        required: false
+        type: string
+      author:
+        required: false
+        type: string
+      commit_message:
+        required: false
+        type: string
+      dont_notify:
+        required: false
+        type: boolean
+
+jobs:
+  run-tests:
+    name: Run Example Tests
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+        package:
+          [
+            autogen,
+            camel,
+            claude,
+            crew_ai,
+            griptape,
+            julep,
+            langchain,
+            llamaindex,
+            lyzr,
+            openai,
+            langgraph,
+            phidata,
+          ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run Tests
+        env:
+          DOCKER_USER: ${{secrets.DOCKER_USER}}
+          OPENAI_API_KEY: ${{secrets.OPENAI_API_KEY}}
+          JULEP_API_KEY: ${{secrets.JULEP_API_KEY}}
+          JULEP_API_URL: ${{secrets.JULEP_API_URL}}
+          LISTENNOTES_API_KEY: ${{secrets.LISTENNOTES_API_KEY}}
+          COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY_RELEASE }}
+          COMPOSIO_BASE_URL: ${{ inputs.base_url || secrets.COMPOSIO_BASE_URL || 'https://backend.composio.dev/api' }}
+        run: |
+          sudo apt-get update --fix-missing
+          sudo apt-get autoremove
+          sudo apt-get autoclean
+
+          python -m pip install --upgrade pip pipenv pytest
+          python -m pip install plugins/${{matrix.package}}
+          python -m pip install '.[all]'
+          python -m pip install 'numpy<2' python-dotenv
+          
+          composio apps update
+
+          CI=false COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} PLUGIN_TO_TEST=${{matrix.package}} COMPOSIO_LOGGING_LEVEL='debug' pytest -vv tests/test_example.py
+      - name: Slack Notification on Failure
+        if: ${{ failure() && github.ref == 'refs/heads/master' && !contains(github.event.head_commit.message, 'release') && !contains(github.event.head_commit.message, 'Release') && !inputs.dont_notify }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_TECH_WEBHOOK }}
+          SLACK_TITLE: "Example Tests Failed"
+          SLACK_MSG_AUTHOR: ${{ inputs.author || github.actor }}
+          SLACK_MESSAGE: ${{ inputs.commit_message || github.event.head_commit.message }}

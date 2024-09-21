@@ -1,0 +1,6 @@
+{
+    // Comments are supported, like tsconfig.json
+    "entryPoints": ["src/frameworks/langchain.ts","src/frameworks/openai.ts", "src/sdk/index.ts","src/sdk/models/*.ts","src/sdk/client/types.gen.ts"],
+    "out": "docs",
+}
+

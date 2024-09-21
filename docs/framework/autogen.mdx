@@ -1,0 +1,146 @@
+---
+title: "Using Composio With Autogen"
+sidebarTitle: "Autogen"
+icon: "robot"
+description: "Integrate Composio with Autogen agents to let them seamlessly interact with external apps"
+---
+
+**Composio enables** your **Autogen agents** to **connect** with many **tools**!
+
+### Install Packages & Connect a Tool
+
+<Tip>
+  Goal: Star a repository on GitHub with natural language & Autogen Agent
+</Tip>
+
+These commands prepare your environment for seamless interaction between Autogen and Github.
+
+<CodeGroup>
+  ```bash Run Command 
+  pip install composio-autogen
+  ```
+</CodeGroup>
+
+<Steps>
+
+<Step title="Connect GitHub account">
+
+- Connect a user Jessica's Github account to allow your agents to utilize GitHub functionalities.
+<Tabs>
+<Tab title="CLI">
+<CodeGroup>
+```bash Authenticate GitHub Account 
+composio add github -e "Jessica"
+```
+</CodeGroup>
+</Tab>
+<Tab title="Python">
+<CodeGroup>
+```python Authenticate Jessica's GitHub Account 
+from composio_autogen import ComposioToolSet, App
+
+toolset = ComposioToolSet(entity_id="Jessica")
+
+entity = toolset.get_entity()
+
+request = entity.initiate_connection(App.GITHUB)
+
+print(
+    f"Open this URL in your browser: {request.redirectUrl}"
+)
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+</Step>
+
+<Step title="Import Base Packages & Create default Autogen Agent">
+<CodeGroup>
+  ```python Default Imports & Configuration
+  from autogen import AssistantAgent, UserProxyAgent
+  import os
+
+  llm_config = {"config_list": [{"model": "gpt-4-turbo", "api_key": os.environ["OPENAI_API_KEY"]}]}
+
+  chatbot = AssistantAgent(
+   "chatbot",
+   system_message="Reply TERMINATE when the task is done or when user's content is empty",
+   llm_config=llm_config,
+  )
+
+  # create a UserProxyAgent instance named "user_proxy"
+  user_proxy = UserProxyAgent(
+   "user_proxy",
+   is_termination_msg=lambda x: x.get("content", "") and "TERMINATE" in x.get("content", ""),
+   human_input_mode="NEVER", # Don't take input from User
+   code_execution_config = {"use_docker": False}
+  )
+  ```
+
+</CodeGroup>
+</Step>
+<Step title="Fetch all Github Autogen Tools via Composio">
+<CodeGroup>
+  ```python Tools For Github
+  # Import from composio_autogen
+  from composio_autogen import ComposioToolSet, App, Action
+
+  # Initialise the Composio Tool Set
+
+  composio_toolset = ComposioToolSet(entity_id="Jessica")
+
+  # Register the preferred Applications, with right executor.
+
+  composio_toolset.register_tools(tools=[App.GITHUB],caller=chatbot, executor=user_proxy)
+  ```
+</CodeGroup>
+</Step>
+<Step title="Execute the Task via Agent">
+<CodeGroup>
+  ```python Autogen Agent executes the task
+
+  task = "Star a repo composiohq/composio on GitHub"
+
+  response = user_proxy.initiate_chat(chatbot,message=task)
+
+  print(response.chat_history)
+  ```
+
+</CodeGroup>
+</Step>
+<Step title="Check Response">
+<CodeGroup>
+  ```bash Executing Agents
+  [{'content': 'I have starred the repository "docs" for you on GitHub under the account "composiohq".', 'role': 'user'}, 
+  {'content': '', 'role': 'assistant'}, {'content': 'TERMINATE', 'role': 'user'}]
+  ```
+
+</CodeGroup>
+
+</Step>
+</Steps>
+### Use Specific Actions
+<CodeGroup>
+  ```bash Filter Specific Action
+  # To restrict agents from using all the actions, filter specific actions 
+  composio_toolset.register_actions(actions=[Action.GITHUB_CREATE_ISSUE])
+  ```
+</CodeGroup>
+
+### Use Specific Apps
+
+<CodeGroup>
+  ```bash Filter Specific App 
+  # To restrict agents from using all tools, filter specific tools 
+  composio_toolset.register_tools(apps=[App.ASANA, App.GITHUB])
+  ```
+</CodeGroup>
+
+### Filter apps actions by tags
+
+<CodeGroup>
+  ```bash Filter Actions by Tags 
+  # To restrict agents from using all actions, filter the actions by tags 
+  composio_toolset.register_tools(apps=[App.ASANA], tags=[Tag.ASANA_TASKS]) 
+  ```
+</CodeGroup>

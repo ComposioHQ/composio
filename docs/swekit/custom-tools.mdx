@@ -1,0 +1,64 @@
+---
+title: "Adding Custom Tools"
+sidebarTitle: "Custom Tools"
+icon: "puzzle-piece"
+description: "Learn how to extend the capabilities of your SWE agents by adding custom tools."
+---
+
+## Adding Custom Tools
+
+Custom tools allow you to enhance the functionality of your SWE agents by integrating new capabilities. Adding a custom tool is as simple as writing a new Python function.
+
+### Example: Adding a 'Cow Say' Tool
+
+Here's an example of how to add a custom tool using the `@action` decorator from Composio:
+<CodeGroup>
+``` python Custom Tool Example
+from composio import action
+
+# tool name is "cow"
+# requires cowsay library
+@action(toolname="cow", requires=["cowsay"])
+def say(message: str) -> str:
+    """
+    cow will say whatever you want it to say.
+    :param message: Message string
+    :return greeting: Formatted message.
+    """
+    import cowsay
+    return cowsay.get_output_string("cow", message)
+```
+</CodeGroup>
+
+
+### Dependency Management
+
+When adding custom tools, ensure that you manage dependencies appropriately. The `requires` parameter allows you to specify any external libraries needed by your tool.
+
+### Integrating Custom Tools
+
+Once you've added your custom tool, you can integrate it into your toolset as follows:
+
+<CodeGroup>
+``` python Integrating Custom Tools
+from custom_tools import say
+
+from composio import ComposioToolSet
+
+composio_toolset = ComposioToolSet()
+
+tools = [
+  *composio_toolset.get_tools(apps=[
+      # ... other tools
+  ]),
+  *composio_toolset.get_tools(
+    actions=[
+      say, # Your custom tool
+  ]
+)]
+```
+</CodeGroup>
+
+### Using Custom Tools in Your Agents
+
+After integrating your custom tools, you can use them directly in your agents' code, enhancing their capabilities and enabling them to perform a wider range of tasks.
