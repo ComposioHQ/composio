@@ -68,8 +68,8 @@ def review_new_pr(event: TriggerEventData) -> None:
     print("here in the function")
     payload = event.payload
     thread_id = payload.get("threadId")
-    message = payload.get("snippet")
-    sender_mail = extract_sender_email(payload["payload"])
+    message = payload.get("messageText")
+    sender_mail = payload.get("sender")    
     if sender_mail is None:
         print("No sender email found")
         return
