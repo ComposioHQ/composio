@@ -81,6 +81,12 @@ export class Triggers {
         }).then(res => res.data)
     }
 
+    delete(data: { triggerInstanceId: string }): any {
+        return apiClient.triggers.deleteTrigger({
+            path: data
+        }).then(res => res.data)
+    }
+
     async subscribe(fn: (data: TriggerData) => void, filters:{
         appName?: string,
         triggerId?  : string;
