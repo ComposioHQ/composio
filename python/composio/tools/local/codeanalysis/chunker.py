@@ -309,7 +309,6 @@ def construct_chunks(  # pylint: disable=unused-argument
     Returns:
         List[str]: List of formatted chunks with additional context.
     """
-    # import pdb; pdb.set_trace()
     formatted_chunks = []
     for chunk, metadata in zip(chunks, metadatas):
         file_path = metadata["file_path"]
