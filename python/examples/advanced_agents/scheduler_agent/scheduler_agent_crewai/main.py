@@ -60,10 +60,8 @@ def callback_new_message(event: TriggerEventData) -> None:
     print("here in the function")
     payload = event.payload
     thread_id = payload.get("threadId")
-    message = payload.get("snippet")
-    sender_mail = extract_sender_email(payload["payload"])
-    if sender_mail is None:
-        print("No sender email found")
+    message = payload.get("messageText")
+sender_mail = payload.get("sender")        print("No sender email found")
         return
     print(sender_mail)
     # Correct the description by concatenating strings
