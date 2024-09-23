@@ -3,6 +3,7 @@
 import importlib
 from pathlib import Path
 
+from composio.tools.local.airtabletool import AirtableTool
 from composio.tools.local.browsertool import BrowserTool
 from composio.tools.local.clickup.clickup import ClickupLocal
 from composio.tools.local.codeformat import CodeFormatTool
@@ -32,6 +33,7 @@ from composio.tools.base.abs import ToolRegistry, tool_registry
 TOOLS_PATH = Path(__file__).parent
 
 TOOLS = [
+    AirtableTool,
     CodeIndexTool,
     CodeFormatTool,
     ClickupLocal,

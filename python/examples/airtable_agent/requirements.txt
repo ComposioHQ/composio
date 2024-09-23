@@ -1,0 +1,7 @@
+../.. -e .
+python-dotenv
+composio-langchain
+crewai
+langchain
+langchain-openai
+pyairtable

@@ -16,6 +16,7 @@ from composio.client.enums.base import APPS_CACHE, AppData, _AnnotatedEnum, enum
 class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     """Class to represent `App` entity."""
 
+    AIRTABLETOOL: "App"
     APIFY: "App"
     ASANA: "App"
     ATTIO: "App"
