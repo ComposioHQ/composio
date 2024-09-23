@@ -15,13 +15,13 @@ export default class AddCommand {
       .description("Add a new app")
       .argument("<app-name>", "The name of the app")
       .option("-f, --force", "Force the connection setup")
-      .option("--skip-default-connector-auth", "Skip the default connector auth prompt")
+      .option("--skip-default-connector", "Skip the default connector auth prompt")
       .action(this.handleAction.bind(this));
   }
 
   private async handleAction(
     appName: string,
-    options: { force?: boolean, skipDefaultConnectorAuth?: boolean },
+    options: { force?: boolean, skipDefaultConnector?: boolean },
   ): Promise<void> {
     const composioClient = new Composio();
     let integration: GetConnectorListResDTO | undefined =
@@ -31,10 +31,10 @@ export default class AddCommand {
       });
 
     let firstIntegration: GetConnectorListResDTO | undefined;
-    if (integration?.items?.length === 0 || options.force || options.skipDefaultConnectorAuth) {
+    if (integration?.items?.length === 0 || options.force || options.skipDefaultConnector) {
       firstIntegration = (await this.createIntegration(
         appName,
-        options.skipDefaultConnectorAuth,
+        options.skipDefaultConnector,
       )) as GetConnectorListResDTO;
     }else{
       firstIntegration = (integration as GetConnectorListResDTO)?.items[0] as GetConnectorListResDTO;
