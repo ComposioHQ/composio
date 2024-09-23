@@ -72,7 +72,7 @@ class AppUpdateCommand {
           // if package is used then we need to update the constants file in the package folder
           constantFilePath = path.join(
             constantPath as string,
-            "./lib/src/constants.js",
+            "../lib/src/constants.js",
           );
         }
       } catch (e) {

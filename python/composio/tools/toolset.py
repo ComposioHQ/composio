@@ -30,7 +30,7 @@ from composio.client.collections import (
     TriggerSubscription,
 )
 from composio.client.enums.base import EnumStringNotFound
-from composio.client.exceptions import ComposioClientError
+from composio.client.exceptions import ComposioClientError, HTTPError
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
@@ -139,6 +139,7 @@ class ComposioToolSet(WithLogger):
         logging_level: LogLevel = LogLevel.INFO,
         output_dir: t.Optional[Path] = None,
         verbosity_level: t.Optional[int] = None,
+        connected_account_ids: t.Optional[t.Dict[AppType, str]] = None,
         **kwargs: t.Any,
     ) -> None:
         """
@@ -210,7 +211,8 @@ class ComposioToolSet(WithLogger):
             ```
         :param verbosity_level: This defines the size of the log object that will
             be printed on the console.
-
+        :param connection_ids: Use this to define connection IDs to use when executing
+            an action for a specific app.
         """
         super().__init__(
             logging_level=logging_level,
@@ -254,6 +256,37 @@ class ComposioToolSet(WithLogger):
 
         self.logger.debug("Loading local tools")
         load_local_tools()
+
+        self._connected_account_ids = self._validating_connection_ids(
+            connected_account_ids=connected_account_ids or {}
+        )
+
+    def _validating_connection_ids(
+        self,
+        connected_account_ids: t.Dict[AppType, str],
+    ) -> t.Dict[App, str]:
+        """Validate connection IDs."""
+        valid = {}
+        invalid = []
+        entity = self.client.get_entity(id=self.entity_id)
+        for app, connected_account_id in connected_account_ids.items():
+            self.logger.debug(f"Validating {app} {connected_account_id=}")
+            try:
+                entity.get_connection(
+                    app=app,
+                    connected_account_id=connected_account_id,
+                )
+                valid[App(app)] = connected_account_id
+            except HTTPError:
+                invalid.append((str(app), connected_account_id))
+
+        if len(invalid) == 0:
+            return valid
+
+        raise ComposioSDKError(message=f"Invalid connected accounts found: {invalid}")
+
+    def _get_connected_account(self, action: ActionType) -> t.Optional[str]:
+        return self._connected_account_ids.get(App(Action(action).app))
 
     def _try_get_github_access_token_for_current_entity(self) -> t.Optional[str]:
         """Try and get github access token for current entiry."""
@@ -587,8 +620,13 @@ class ComposioToolSet(WithLogger):
         if not action.is_runtime:
             params = self._process_request(action=action, request=params)
             metadata = self._add_metadata(action=action, metadata=metadata)
+            connected_account_id = connected_account_id or self._get_connected_account(
+                action=action
+            )
 
-        self.logger.info(f"Executing `{action.slug}` with {params=} and {metadata=}")
+        self.logger.info(
+            f"Executing `{action.slug}` with {params=} and {metadata=} {connected_account_id=}"
+        )
         response = (
             self._execute_local(
                 action=action,

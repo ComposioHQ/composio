@@ -214,7 +214,7 @@ export class RemoteWorkspace extends Workspace {
         if (!response.error) {
             return response.data;
         }
-        if(response.error?.includes("Invalid value")) {
+        if (response.error?.includes("Invalid value")) {
             return {
                 status: "NOT_FOUND",
                 error: `Action ${action} does not exist or supported.`,

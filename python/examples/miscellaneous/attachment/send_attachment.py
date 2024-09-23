@@ -37,7 +37,7 @@ crewai_agent = Agent(
 
 # Define task
 task = Task(
-    description="Send an email to testcomposio@gmail.com with attachment as ./examples/attachment/send_attachment.py",
+    description="Send an email to testcomposio@gmail.com with attachment as ./examples/miscellaneous/attachment/send_attachment.py",
     agent=crewai_agent,
     expected_output="if the email was sent",
 )

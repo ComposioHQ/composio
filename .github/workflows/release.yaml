@@ -80,6 +80,7 @@ jobs:
             praisonai,
             langgraph,
             phidata,
+            google,
           ]
     runs-on: ${{ matrix.os }}
     steps:
