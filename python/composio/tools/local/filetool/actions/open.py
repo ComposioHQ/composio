@@ -63,10 +63,10 @@ class OpenFile(LocalAction[OpenFileRequest, OpenFileResponse]):
                 lines=content,
             )
         except FileNotFoundError as e:
-            raise ExecutionFailed(f"File not found: {str(e)}")
+            raise ExecutionFailed(f"File not found: {str(e)}") from e
         except IsADirectoryError as e:
-            raise ExecutionFailed(f"Cannot open a directory: {str(e)}")
+            raise ExecutionFailed(f"Cannot open a directory: {str(e)}") from e
         except PermissionError as e:
-            raise ExecutionFailed(f"Permission denied: {str(e)}")
+            raise ExecutionFailed(f"Permission denied: {str(e)}") from e
         except IOError as e:
-            raise ExecutionFailed(f"Error reading file: {str(e)}")
+            raise ExecutionFailed(f"Error reading file: {str(e)}") from e
