@@ -56,7 +56,11 @@ class OpenFile(LocalAction[OpenFileRequest, OpenFileResponse]):
 
             content = file.format_text(lines=file.read())
             if len(content) == 0:
-                return OpenFileResponse(error="File is empty")
+                file.goto(0)
+                content_full = file.format_text(lines=file.read())
+                if len(content_full) == 0:
+                    return OpenFileResponse(error="File is empty")
+                return OpenFileResponse(error="Reached the end of the file")
 
             return OpenFileResponse(
                 message="File opened successfully. 100 lines after the cursor displayed.",
