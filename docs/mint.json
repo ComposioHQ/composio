@@ -5,9 +5,7 @@
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
   },
-  "openapi": [
-    "/composio.yaml"
-  ],
+  "openapi": ["/composio.yaml"],
   "favicon": "/favicon1.png",
   "colors": {
     "primary": "#343434",
@@ -72,16 +70,20 @@
       "url": "api-reference"
     }
   ],
-  "anchors": [
-  ],
+  "anchors": [],
   "navigation": [
     {
       "group": "Introduction",
       "pages": [
         "introduction/intro/overview",
-        "introduction/intro/quickstart",
-        "introduction/intro/quickstart_2",
-        "introduction/intro/quickstart_3"
+        {
+          "group": "Quickstart",
+          "pages": [
+            "introduction/intro/quickstart",
+            "introduction/intro/quickstart_2",
+            "introduction/intro/quickstart_3"
+          ]
+        }
       ]
     },
     {
@@ -105,9 +107,9 @@
       ]
     },
     {
-      "group":"Supported Frameworks",
+      "group": "Supported Frameworks",
 
-      "pages":[
+      "pages": [
         "framework/langchain",
         "framework/llamaindex",
         "framework/crewai",
@@ -131,10 +133,8 @@
           ]
         }
       ]
-      
-
     },
-    
+
     {
       "group": "SweKit",
       "pages": [
@@ -143,40 +143,35 @@
         "swekit/benchmarks"
       ]
     },
-     {
+    {
       "group": "Guides",
       "pages": [
-      {
-        "group": "Patterns",
-        "pages": [
-          "patterns/functions/multiple-users",
-          "patterns/functions/triggers"
-        ]
-      },
-      {
-        "group": "Using CLI",
-        "pages": [
-          "patterns/cli/install",
-          "patterns/cli/trigger"
-        ]
-      },
-      {
-        "group": "How Tos",
-        "pages": [
-          "patterns/howtos/get_api_key",
-          "patterns/howtos/usecase",
-          "patterns/howtos/tool-finding",
-          "patterns/howtos/listing-connections",
-          "patterns/howtos/listing-integrations"
-        ] 
-      },
-      {
-        "group": "Going to Production",
-        "pages": [
-          "patterns/production-guide/prod"
-        ]
-      }
-    ]
+        {
+          "group": "Patterns",
+          "pages": [
+            "patterns/functions/multiple-users",
+            "patterns/functions/triggers"
+          ]
+        },
+        {
+          "group": "Using CLI",
+          "pages": ["patterns/cli/install", "patterns/cli/trigger"]
+        },
+        {
+          "group": "How Tos",
+          "pages": [
+            "patterns/howtos/get_api_key",
+            "patterns/howtos/usecase",
+            "patterns/howtos/tool-finding",
+            "patterns/howtos/listing-connections",
+            "patterns/howtos/listing-integrations"
+          ]
+        },
+        {
+          "group": "Going to Production",
+          "pages": ["patterns/production-guide/prod"]
+        }
+      ]
     },
     {
       "group": "Examples",
@@ -187,77 +182,71 @@
         "examples/combined/research_agent",
         "examples/combined/sql-agent",
         "examples/combined/newsletter_summarizer"
-        ]
+      ]
     },
     {
       "group": "Endpoints",
       "icon": "robot",
       "pages": [
-  {
-    "group": "Client Auth",
-    "pages": [
-      "api-reference/client-auth/get-user-info"
-    ]
-  },
-  {
-    "group": "App",
-    "pages": [
-      "api-reference/app/get-apps"
-    ]
-  },
-  {
-    "group": "App Connector",
-    "pages": [
-      "api-reference/app-connector/list-global-connectors",
-      "api-reference/app-connector/create-connector",
-      "api-reference/app-connector/get-connector-info",
-      "api-reference/app-connector/delete-connector",
-      "api-reference/app-connector/patch-connector"
-    ]
-  },
-  {
-    "group": "Actions Controller",
-    "pages": [
-      "api-reference/actions-controller-v-2/list-actions",
-      "api-reference/actions-controller-v-2/execute-action",
-      "api-reference/actions-controller-v-2/execute-action-proxy",
-       "api-reference/actions-controller-v-1/get-action"
-    ]
-  },
-  {
-    "group": "Connections",
-    "pages": [
-      "api-reference/connections/get-connections",
-      "api-reference/connections/initiate-connection",
-      "api-reference/connections/get-connection",
-      "api-reference/connections/delete-connection",
-      "api-reference/connections/disable-connection",
-      "api-reference/connections/enable-connection"
-    ]
-  },
-  {
-    "group": "Triggers",
-    "pages": [
-      "api-reference/triggers/list-triggers",
-      "api-reference/triggers/handle-trigger",
-      "api-reference/triggers/enable-trigger",
-      "api-reference/triggers/get-trigger",
-      "api-reference/triggers/get-active-triggers",
-      "api-reference/triggers/disable-trigger",
-      "api-reference/triggers/delete-trigger",
-      "api-reference/triggers/set-callback-url",
-      "api-reference/triggers/set-callback-url-1",
-      "api-reference/triggers/get-webhook-url",
-      "api-reference/triggers/get-logs"
-    ]
-  },
-  {
-    "group": "Logs",
-    "pages": [
-      "api-reference/logs/get-logs"
-    ]
-  }
-]
+        {
+          "group": "Client Auth",
+          "pages": ["api-reference/client-auth/get-user-info"]
+        },
+        {
+          "group": "App",
+          "pages": ["api-reference/app/get-apps"]
+        },
+        {
+          "group": "App Connector",
+          "pages": [
+            "api-reference/app-connector/list-global-connectors",
+            "api-reference/app-connector/create-connector",
+            "api-reference/app-connector/get-connector-info",
+            "api-reference/app-connector/delete-connector",
+            "api-reference/app-connector/patch-connector"
+          ]
+        },
+        {
+          "group": "Actions Controller",
+          "pages": [
+            "api-reference/actions-controller-v-2/list-actions",
+            "api-reference/actions-controller-v-2/execute-action",
+            "api-reference/actions-controller-v-2/execute-action-proxy",
+            "api-reference/actions-controller-v-1/get-action"
+          ]
+        },
+        {
+          "group": "Connections",
+          "pages": [
+            "api-reference/connections/get-connections",
+            "api-reference/connections/initiate-connection",
+            "api-reference/connections/get-connection",
+            "api-reference/connections/delete-connection",
+            "api-reference/connections/disable-connection",
+            "api-reference/connections/enable-connection"
+          ]
+        },
+        {
+          "group": "Triggers",
+          "pages": [
+            "api-reference/triggers/list-triggers",
+            "api-reference/triggers/handle-trigger",
+            "api-reference/triggers/enable-trigger",
+            "api-reference/triggers/get-trigger",
+            "api-reference/triggers/get-active-triggers",
+            "api-reference/triggers/disable-trigger",
+            "api-reference/triggers/delete-trigger",
+            "api-reference/triggers/set-callback-url",
+            "api-reference/triggers/set-callback-url-1",
+            "api-reference/triggers/get-webhook-url",
+            "api-reference/triggers/get-logs"
+          ]
+        },
+        {
+          "group": "Logs",
+          "pages": ["api-reference/logs/get-logs"]
+        }
+      ]
     }
   ],
   "integrations": {
@@ -276,7 +265,7 @@
       "apiKey": "phc_Gz8DBv1ZMbOwt3hE8sJZwKGsDl5FtMSkvBNSR0HC07c"
     },
     "plausible": {
-        "domain": "composio.dev"
+      "domain": "composio.dev"
     }
   },
   "api": {
