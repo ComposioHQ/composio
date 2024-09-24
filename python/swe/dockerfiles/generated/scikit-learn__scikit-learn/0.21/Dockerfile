@@ -21,19 +21,18 @@ RUN git checkout bfc4a566423e036fbdc9fb02765fd893e4860c85
 WORKDIR /home/user
 
 RUN mkdir -p /home/user/.composio/tmp
-COPY deeplake /home/user/.composio/tmp/scikit-learn/deeplake
+COPY deeplake /home/user/.composio/tmp/scikit-learn
 COPY fqdn_cache.json /home/user/.composio/tmp/scikit-learn
 
-WORKDIR /home/user/scikit-learn
-# Install dependecies
+# Install dependencies
 RUN /home/user/.dev/bin/python -m pip install "numpy==1.19.2" "scipy==1.5.2" "cython" "pytest" "pandas" "matplotlib" --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org || echo "$?"
+
+WORKDIR /home/user/scikit-learn
 
 # Install package
 RUN /home/user/.dev/bin/python -m pip install -v --no-use-pep517 --no-build-isolation -e . || echo "$?"
 
 ENV HOME=/home/user/
-
-WORKDIR /home/user/scikit-learn
 
 # Switch to root
 USER root

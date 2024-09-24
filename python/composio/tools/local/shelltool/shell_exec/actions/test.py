@@ -57,7 +57,7 @@ class TestCommand(LocalAction[TestExecRequest, TestExecResponse]):
         command = metadata.get("test_command")
         self.logger.debug(f"Executing {command} @ {shell}")
         cwd = shell.exec(cmd=f'cd {project_path}')
-        install = shell.exec(cmd=f'python -m pip install -e .')
+        # install = shell.exec(cmd=f'python -m pip install -e .')
         output = shell.exec(cmd=f"{command}")
         self.logger.debug(output)
         return TestExecResponse(

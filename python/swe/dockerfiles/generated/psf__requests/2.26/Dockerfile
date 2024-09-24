@@ -21,18 +21,18 @@ RUN git checkout 39d0fdd9096f7dceccbc8f82e1eda7dd64717a8e
 WORKDIR /home/user
 
 RUN mkdir -p /home/user/.composio/tmp
-COPY deeplake /home/user/.composio/tmp/requests/deeplake
+COPY deeplake /home/user/.composio/tmp/requests
 COPY fqdn_cache.json /home/user/.composio/tmp/requests
 
-# Install dependecies
+# Install dependencies
 RUN /home/user/.dev/bin/python -m pip install "pytest" || echo "$?"
+
+WORKDIR /home/user/requests
 
 # Install package
 RUN /home/user/.dev/bin/python -m pip install . || echo "$?"
 
 ENV HOME=/home/user/
-
-WORKDIR /home/user/requests
 
 # Switch to root
 USER root

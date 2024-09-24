@@ -42,7 +42,7 @@ class GetClassInfo(
     def execute(
         self, request: GetClassInfoRequest, metadata: Dict
     ) -> GetClassInfoResponse:
-        repo_name = os.path.basename(metadata["dir_to_index_path"])
+        repo_name = os.path.basename(metadata["dir_to_index_path"].rstrip("/"))
 
         self.load_fqdn_cache(repo_name)
         query_class_name = request.class_name

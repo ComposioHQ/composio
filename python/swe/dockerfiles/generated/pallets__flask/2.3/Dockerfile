@@ -21,24 +21,24 @@ RUN git checkout 7ee9ceb71e868944a46e1ff00b506772a53a4f1d
 WORKDIR /home/user
 
 RUN mkdir -p /home/user/.composio/tmp
-COPY deeplake /home/user/.composio/tmp/flask/deeplake
+COPY deeplake /home/user/.composio/tmp/flask
 COPY fqdn_cache.json /home/user/.composio/tmp/flask
 
-# Install dependecies
+# Install dependencies
 RUN /home/user/.dev/bin/python -m pip install "click==8.1.3" "itsdangerous==2.1.2" "Jinja2==3.1.2" "MarkupSafe==2.1.1" "Werkzeug==2.3.7" || echo "$?"
 
-# Install dependecies
+# Install dependencies
 COPY requirements.txt _requirements.txt
 
 # Install from requirements.txt
 RUN /home/user/.dev/bin/python -m pip install -r _requirements.txt || echo "$?"
 
+WORKDIR /home/user/flask
+
 # Install package
 RUN /home/user/.dev/bin/python -m pip install -e . || echo "$?"
 
 ENV HOME=/home/user/
-
-WORKDIR /home/user/flask
 
 # Switch to root
 USER root

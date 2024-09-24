@@ -21,21 +21,21 @@ RUN git checkout d65c9ca20ddf81ef91199e6d819f9d3506ef477c
 WORKDIR /home/user
 
 RUN mkdir -p /home/user/.composio/tmp
-COPY deeplake /home/user/.composio/tmp/matplotlib/deeplake
+COPY deeplake /home/user/.composio/tmp/matplotlib
 COPY fqdn_cache.json /home/user/.composio/tmp/matplotlib
 
-# Install dependecies
+# Install dependencies
 COPY requirements.txt _requirements.txt
 
 # Install from requirements.txt
 RUN /home/user/.dev/bin/python -m pip install -r _requirements.txt || echo "$?"
 
+WORKDIR /home/user/matplotlib
+
 # Install package
 RUN /home/user/.dev/bin/python -m pip install -e . || echo "$?"
 
 ENV HOME=/home/user/
-
-WORKDIR /home/user/matplotlib
 
 # Switch to root
 USER root

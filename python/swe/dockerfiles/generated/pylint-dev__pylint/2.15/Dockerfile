@@ -21,21 +21,21 @@ RUN git checkout ca80f03a43bc39e4cc2c67dc99817b3c9f13b8a6
 WORKDIR /home/user
 
 RUN mkdir -p /home/user/.composio/tmp
-COPY deeplake /home/user/.composio/tmp/pylint/deeplake
+COPY deeplake /home/user/.composio/tmp/pylint
 COPY fqdn_cache.json /home/user/.composio/tmp/pylint
 
-# Install dependecies
+# Install dependencies
 COPY requirements.txt _requirements.txt
 
 # Install from requirements.txt
 RUN /home/user/.dev/bin/python -m pip install -r _requirements.txt || echo "$?"
 
+WORKDIR /home/user/pylint
+
 # Install package
 RUN /home/user/.dev/bin/python -m pip install -e . || echo "$?"
 
 ENV HOME=/home/user/
-
-WORKDIR /home/user/pylint
 
 # Switch to root
 USER root

@@ -21,18 +21,18 @@ RUN git checkout 3f8c8c2377cb8e0daaf8073e8d03ac7d87580813
 WORKDIR /home/user
 
 RUN mkdir -p /home/user/.composio/tmp
-COPY deeplake /home/user/.composio/tmp/sympy/deeplake
+COPY deeplake /home/user/.composio/tmp/sympy
 COPY fqdn_cache.json /home/user/.composio/tmp/sympy
 
-# Install dependecies
+# Install dependencies
 RUN /home/user/.dev/bin/python -m pip install "mpmath==1.3.0" "flake8-comprehensions" "flake8" || echo "$?"
+
+WORKDIR /home/user/sympy
 
 # Install package
 RUN /home/user/.dev/bin/python -m pip install -e . || echo "$?"
 
 ENV HOME=/home/user/
-
-WORKDIR /home/user/sympy
 
 # Switch to root
 USER root

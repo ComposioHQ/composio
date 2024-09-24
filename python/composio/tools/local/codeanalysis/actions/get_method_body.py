@@ -49,7 +49,7 @@ class GetMethodBody(
     def execute(
         self, request: GetMethodBodyRequest, metadata: Dict
     ) -> GetMethodBodyResponse:
-        repo_name = os.path.basename(metadata["dir_to_index_path"])
+        repo_name = os.path.basename(metadata["dir_to_index_path"].rstrip("/"))
 
         self.load_fqdn_cache(repo_name)
         method_artefacts = self.get_method_artefacts(

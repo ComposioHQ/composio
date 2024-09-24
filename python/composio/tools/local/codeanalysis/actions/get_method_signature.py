@@ -49,7 +49,7 @@ class GetMethodSignature(
     def execute(
         self, request: GetMethodSignatureRequest, metadata: Dict
     ) -> GetMethodSignatureResponse:
-        repo_name = os.path.basename(metadata["dir_to_index_path"])
+        repo_name = os.path.basename(metadata["dir_to_index_path"].rstrip("/"))
 
         self.load_fqdn_cache(repo_name)
         method_artefacts = self.get_method_artefacts(

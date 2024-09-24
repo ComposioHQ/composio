@@ -111,7 +111,7 @@ class HostShell(Shell):
 
         output = (
             subprocess.run(  # pylint: disable=subprocess-run-check
-                ["ps", "-e"],
+                ["ps", "-ef"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )

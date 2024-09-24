@@ -21,18 +21,18 @@ RUN git checkout 8aba863a634f40560e25055d179220f0eefabe9a
 WORKDIR /home/user
 
 RUN mkdir -p /home/user/.composio/tmp
-COPY deeplake /home/user/.composio/tmp/pytest/deeplake
+COPY deeplake /home/user/.composio/tmp/pytest
 COPY fqdn_cache.json /home/user/.composio/tmp/pytest
 
-# Install dependecies
+# Install dependencies
 RUN /home/user/.dev/bin/python -m pip install "atomicwrites==1.4.1" "attrs==23.1.0" "more-itertools==10.1.0" "packaging==23.1" "pluggy==0.13.1" "py==1.11.0" "six==1.16.0" "wcwidth==0.2.6" || echo "$?"
+
+WORKDIR /home/user/pytest
 
 # Install package
 RUN /home/user/.dev/bin/python -m pip install -e . || echo "$?"
 
 ENV HOME=/home/user/
-
-WORKDIR /home/user/pytest
 
 # Switch to root
 USER root

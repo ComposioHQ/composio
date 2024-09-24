@@ -21,18 +21,18 @@ RUN git checkout aa55975c7d3f6c9f6d7f68accc41bb7cadf0eb9a
 WORKDIR /home/user
 
 RUN mkdir -p /home/user/.composio/tmp
-COPY deeplake /home/user/.composio/tmp/pytest/deeplake
+COPY deeplake /home/user/.composio/tmp/pytest
 COPY fqdn_cache.json /home/user/.composio/tmp/pytest
 
-# Install dependecies
+# Install dependencies
 RUN /home/user/.dev/bin/python -m pip install "attrs==23.1.0" "iniconfig==2.0.0" "packaging==23.1" "pluggy==0.13.1" "py==1.11.0" "tomli==2.0.1" || echo "$?"
+
+WORKDIR /home/user/pytest
 
 # Install package
 RUN /home/user/.dev/bin/python -m pip install -e . || echo "$?"
 
 ENV HOME=/home/user/
-
-WORKDIR /home/user/pytest
 
 # Switch to root
 USER root

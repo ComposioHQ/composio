@@ -21,21 +21,21 @@ RUN git checkout b9cf764be62e77b4777b3a75ec256f6209a57671
 WORKDIR /home/user
 
 RUN mkdir -p /home/user/.composio/tmp
-COPY deeplake /home/user/.composio/tmp/django/deeplake
+COPY deeplake /home/user/.composio/tmp/django
 COPY fqdn_cache.json /home/user/.composio/tmp/django
 
-# Install dependecies
+# Install dependencies
 COPY requirements.txt _requirements.txt
 
 # Install from requirements.txt
 RUN /home/user/.dev/bin/python -m pip install -r _requirements.txt || echo "$?"
 
+WORKDIR /home/user/django
+
 # Install package
 RUN /home/user/.dev/bin/python -m python setup.py install || echo "$?"
 
 ENV HOME=/home/user/
-
-WORKDIR /home/user/django
 
 # Switch to root
 USER root
