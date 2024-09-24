@@ -103,25 +103,25 @@ Create an agent, set up an executor, and invoke tasks to perform GitHub API call
   ```python python
   task = "Star a repo composiohq/composio on GitHub"
 
-  agent = create_react_agent(llm, tools, prompt)
+  agent = create_react_agent(llm, tools)
   agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
   # Execute using agent_executor
-  agent_executor.invoke({"input": task})
+  inputs = {"messages": [("user",  task)]}
+  agent_executor.invoke(input=inputs)
   ```
   ```javascript javascript
   // Create an OpenAI functions agent with the provided LLM, tools, and prompt
   const agent = await createReactAgent({
         llm,
         tools: tools,
-        prompt,
     });
 
   // Initialize the agent executor with verbosity enabled
   const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
 
   // Invoke the agent to perform the task of starring a GitHub repository
-  const response = await agentExecutor.invoke({ input: "Star a repo composiohq/composio on GitHub" });
+  const response = await agentExecutor.invoke({"messages": [("user",  task)]});
 
   // Output the response from the agent execution
   console.log(response);

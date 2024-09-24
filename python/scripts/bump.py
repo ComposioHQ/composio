@@ -34,6 +34,7 @@ TO_REPLACE = (
     "composio_langgraph==",
     "composio_praisonai==",
     "composio_camel==",
+    "composio_google==",
 )
 
 

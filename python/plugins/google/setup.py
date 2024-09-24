@@ -1,5 +1,5 @@
 """
-Setup configuration for Composio CrewAI plugin
+Setup configuration for Composio Google AI Python Gemini plugin
 """
 
 from pathlib import Path
@@ -8,11 +8,11 @@ from setuptools import setup
 
 
 setup(
-    name="composio_crewai",
+    name="composio_google",
     version="0.5.27",
-    author="Himanshu",
-    author_email="himanshu@composio.dev",
-    description="Use Composio to get an array of tools with your CrewAI agent.",
+    author="Assistant",
+    author_email="karan@composio.dev",
+    description="Use Composio to get an array of tools with your Google AI Python Gemini model.",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
     url="https://github.com/ComposioHQ/composio",
@@ -22,6 +22,9 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    install_requires=["composio_langchain==0.5.27", "crewai"],
+    install_requires=[
+        "composio_core==0.5.27",
+        "google-cloud-aiplatform>=1.38.0",
+    ],
     include_package_data=True,
 )

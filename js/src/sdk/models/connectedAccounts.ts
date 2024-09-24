@@ -32,6 +32,12 @@ export class ConnectedAccounts {
         }).then(res => res.data)
     }
 
+    delete(data: { connectedAccountId: string }) {
+        return apiClient.connections.deleteConnection({
+            path: data
+        }).then(res => res.data)
+    }
+
     async initiate(
         data: any
     ): Promise<ConnectionRequest> {

@@ -122,15 +122,15 @@ export class Integrations {
      * @returns {CancelablePromise<CreateIntegrationResponse>} A promise that resolves to the created integration model.
      * @throws {ApiError} If the request fails.
      */
-    create(
+    async create(
         data: CreateIntegrationData["requestBody"]
-    ): any {
+    ): Promise<any> {
 
         if (!data?.authConfig) {
             data!.authConfig = {};
         }
 
-        return apiClient.appConnector.createConnector({
+        const {data: res} = await apiClient.appConnector.createConnector({
             body: {
                 name: data?.name!,
                 appId: data?.appId!,
@@ -138,10 +138,10 @@ export class Integrations {
                 authScheme: data?.authScheme,
                 useComposioAuth: data?.useComposioAuth!,
                 forceNewIntegration: true
-            }
-        }).then(res=>{
-            return res.data
-        });
+            },
+            throwOnError: true
+        })
+        return res;
     }
 
     delete(data: AppConnectorControllerDeleteConnectorData): any {

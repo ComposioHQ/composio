@@ -15,12 +15,13 @@ export default class AddCommand {
       .description("Add a new app")
       .argument("<app-name>", "The name of the app")
       .option("-f, --force", "Force the connection setup")
+      .option("--skip-default-connector-auth", "Skip the default connector auth prompt")
       .action(this.handleAction.bind(this));
   }
 
   private async handleAction(
     appName: string,
-    options: { force?: boolean },
+    options: { force?: boolean, skipDefaultConnectorAuth?: boolean },
   ): Promise<void> {
     const composioClient = new Composio();
     let integration: GetConnectorListResDTO | undefined =
@@ -29,14 +30,15 @@ export default class AddCommand {
         appName: appName.toLowerCase(),
       });
 
-
-    if (integration?.items.length === 0) {
-      integration = (await this.createIntegration(
+    let firstIntegration: GetConnectorListResDTO | undefined;
+    if (integration?.items?.length === 0 || options.force || options.skipDefaultConnectorAuth) {
+      firstIntegration = (await this.createIntegration(
         appName,
+        options.skipDefaultConnectorAuth,
       )) as GetConnectorListResDTO;
+    }else{
+      firstIntegration = (integration as GetConnectorListResDTO)?.items[0] as GetConnectorListResDTO;
     }
-
-    const firstIntegration = (integration as GetConnectorListResDTO)?.items[0];
     if (!firstIntegration) {
       console.log(chalk.red("No integration found or created"));
       return;
@@ -131,19 +133,34 @@ export default class AddCommand {
     }
   }
 
-  private async createIntegration(appName: string) {
+  private async createIntegration(appName: string , skipDefaultConnectorAuth: boolean = false) {
     const composioClient = new Composio();
     const app = await composioClient.apps.get({
       appKey: appName.toLowerCase(),
     });
-
 
     if (app.no_auth) {
         console.log(chalk.green(`The app '${appName}' does not require authentication. You can connect it directly.\n`));
         process.exit(0);
     }
 
+    const testConnectors = app.testConnectors || [];
+  
     const config: Record<string, any> = {};
+
+    let useComposioAuth = true;
+    if (!app.no_auth && testConnectors.length > 0 && !skipDefaultConnectorAuth) {
+      const { doYouWantToUseComposioAuth } = await inquirer.prompt({
+        type: "confirm",
+        name: "doYouWantToUseComposioAuth",
+        message: "Do you want to use Composio Auth?",
+      });
+      useComposioAuth = doYouWantToUseComposioAuth;
+    }
+
+    if(skipDefaultConnectorAuth){
+      useComposioAuth = false;
+    }
 
     const { integrationName } = await inquirer.prompt({
       type: "input",
@@ -160,28 +177,18 @@ export default class AddCommand {
     // @ts-ignore
     const authSchema = app.auth_schemes[0]?.auth_mode;
 
-    // @ts-ignore
-    if (app?.testConnectors?.length > 0 || app.no_auth) {
-      let useComposioAuth = false;
-      if (!app.no_auth) {
-        const { doYouWantToUseComposioAuth } = await inquirer.prompt({
-          type: "confirm",
-          name: "doYouWantToUseComposioAuth",
-          message: "Do you want to use Composio Auth?",
-        });
-        useComposioAuth = doYouWantToUseComposioAuth;
-      }
-
-      config.useComposioAuth = useComposioAuth;
-      return this.setupIntegration(app, authSchema, useComposioAuth, config);
+    if (useComposioAuth) {
+      useComposioAuth = true;
+      return this.setupIntegration(app, authSchema, useComposioAuth, config, integrationName);
     }
 
+    console.log("\n\nWe'll require you to enter the credentials for the app manually.\n\n");
 
     const authConfig = await this.collectInputFields(
       // @ts-ignore
       app.auth_schemes[0].fields,
     );
-    return this.setupIntegration(app, authSchema, false, authConfig);
+    return this.setupIntegration(app, authSchema, useComposioAuth, authConfig, integrationName);
   }
 
   async collectInputFields(
@@ -221,19 +228,18 @@ export default class AddCommand {
     authMode: any,
     useComposioAuth: boolean,
     config: Record<string, any>,
+    name: string,
   ) {
     const composioClient = new Composio();
-    await composioClient.integrations.create({
-      appId: app.id,
+    const integration = await composioClient.integrations.create({
+      appId: app.appId,
       authScheme: authMode,
       useComposioAuth,
-
+      name,
       authConfig: config,
     });
+    
 
-    return composioClient.integrations.list({
-      // @ts-ignore
-      appName: app.name.toLowerCase(),
-    });
+    return integration;
   }
 }
