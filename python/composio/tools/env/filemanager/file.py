@@ -120,6 +120,9 @@ class File(WithLogger):
         :param line: Line number to go to.
         :return: None
         """
+        total_lines = self.total_lines()
+        if line > total_lines:
+            raise Exception(f"Line number {line} is out of bounds for file with {total_lines} lines")
         self._start = line
         self._end = line + self._window
 
