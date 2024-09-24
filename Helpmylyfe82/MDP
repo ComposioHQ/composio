@@ -1,0 +1,111 @@
+https://github.com/Celticfan24/Helpmylyfe82-MDP.gitecho "# Helpmylyfe82-MDP" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/Celticfan24/Helpmylyfe82-MDP.git
+git push -u origin main_gh-HELPMYLYFE82-godaddysites-com-o.helpmylyfe82
+1. Create a TXT record in your DNS configuration for the following hostname: _gh-HELPMYLYFE82-godaddysites-com-o.helpmylyfe82.godaddysites.com
+2. Use this code for the value of the TXT record: c2c17816ad. Please note that the code will expire in 7 days.
+3. Wait until your DNS configuration changes. This could take up to 72 hours to propagate.
+// Using BACS, without IBAN or address
+const request: PaymentInitiationRecipientCreateRequest = {
+  name: 'John Doe',
+  bacs: {
+    account: '26207729',
+    sort_code: '560029',
+  },
+};
+try {
+  const response = await plaidClient.paymentInitiationRecipientCreate(request);
+  const recipientID = response.data.recipient_id;
+} catch (error) {
+  // handle error
+}{
+  "webhook_type": "AUTH",
+  "webhook_code": "AUTOMATICALLY_VERIFIED",
+  "item_id": "eVBnVMp7zdTJLkRNr33Rs6zr7KNJqBFL9DrE6",
+  "account_id": "dVzbVMLjrxTnLjX4G66XUp5GLklm4oiZy88yK",
+  "environment": "production",
+  "error": null
+}{
+  "webhook_type": "BANK_TRANSFERS",
+  "webhook_code": "BANK_TRANSFERS_EVENTS_UPDATE",
+  "environment": "production"
+}{
+  "accounts": [
+    {
+      "account_id": "vzeNDwK7KQIm4yEog683uElbp9GRLEFXGK98D",
+      "balances": {
+        "available": 100,
+        "current": 110,
+        "limit": null,
+        "iso_currency_code": "USD",
+        "unofficial_currency_code": null
+      },
+      "mask": "9606",
+      "name": "Plaid Checking",
+      "official_name": "Plaid Gold Checking",
+      "subtype": "checking",
+      "type": "depository"
+    }
+  ],
+  "numbers": {
+    "ach": [
+      {
+        "account": "9900009606",
+        "account_id": "vzeNDwK7KQIm4yEog683uElbp9GRLEFXGK98D",
+        "routing": "011401533",
+        "wire_routing": "021000021"
+      }
+    ],
+    "eft": [
+      {
+        "account": "111122223333",
+        "account_id": "vzeNDwK7KQIm4yEog683uElbp9GRLEFXGK98D",
+        "institution": "021",
+        "branch": "01140"
+      }
+    ],
+    "international": [
+      {
+        "account_id": "vzeNDwK7KQIm4yEog683uElbp9GRLEFXGK98D",
+        "bic": "NWBKGB21",
+        "iban": "GB29NWBK60161331926819"
+      }
+    ],
+    "bacs": [
+      {
+        "account": "31926819",
+        "account_id": "vzeNDwK7KQIm4yEog683uElbp9GRLEFXGK98D",
+        "sort_code": "601613"
+      }
+    ]
+  },
+  "item": {
+    "available_products": [
+      "balance",
+      "identity",
+      "payment_initiation",
+      "transactions"
+    ],
+    "billed_products": [
+      "assets",
+      "auth"
+    ],
+    "consent_expiration_time": null,
+    "error": null,
+    "institution_id": "ins_117650",
+    "item_id": "DWVAAPWq4RHGlEaNyGKRTAnPLaEmo8Cvq7na6",
+    "update_type": "background",
+    "webhook": "https://www.genericwebhookurl.com/webhook"
+  },
+  "request_id": "m8MDnv9okwxFNBV"
+}const request: AuthGetRequest = {
+  access_token: accessToken,
+};
+try {
+  const response = await plaidClient.authGet(request);
+  const accountData = response.data.accounts;
+  const numbers = response.data.numbers;
+https://t.me/latest_Releases/1579
