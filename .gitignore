@@ -48,3 +48,4 @@ python/swe/agentic/SWE-bench_Verified/
 python/swe/agentic/test*
 python/swe/agentic/train*
 python/swe/agentic/langgraph_agent/logs/
+python/swe/agentic/langgraph_agent/secret.sh
