@@ -27,7 +27,7 @@ The `integration.yaml` file typically includes the following key sections:
 
 2. **Authentication Schemes**
    - `auth_schemes`: List of authentication methods supported
-     - `scheme_name`: Name of the auth scheme
+     - `name`: Name of the auth scheme
      - `auth_mode`: Authentication mode (Supported modes: OAUTH2, BASIC, API_KEY, OAUTH1)
      - For OAuth2:
        - `authorization_url`: OAuth authorization URL
@@ -61,7 +61,7 @@ The `integration.yaml` file typically includes the following key sections:
 
    Common attributes for custom fields include:
    - `name`: Unique identifier for the field
-   - `displayName`: Human-readable name for the field
+   - `display_name`: Human-readable name for the field
    - `description`: Detailed explanation of the field's purpose
    - `type`: Data type of the field (e.g., string, boolean)
    - `required`: Whether the field is mandatory
@@ -74,7 +74,7 @@ The `integration.yaml` file typically includes the following key sections:
    ```yaml
    fields:
      - name: api_key
-       displayName: API Key
+       display_name: API Key
        description: "Your API key for authentication."
        type: string
        required: true
@@ -85,7 +85,7 @@ The `integration.yaml` file typically includes the following key sections:
    ```yaml
    fields:
      - name: instanceUrl
-       displayName: Instance URL
+       display_name: Instance URL
        description: "The base URL for your instance, used for API requests."
        type: string
        required: true
@@ -96,7 +96,7 @@ The `integration.yaml` file typically includes the following key sections:
    ```yaml
    fields:
      - name: subdomain
-       displayName: Sub Domain
+       display_name: Sub Domain
        description: "Your PostHog subdomain (e.g., 'app' for app.posthog.com)."
        type: string
        required: true
