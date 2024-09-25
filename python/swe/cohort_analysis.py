@@ -10,6 +10,8 @@ base_file = "/Users/shrey/Desktop/Composio-dev/composio/python/swe/temp/experime
 logs_file = "/Users/shrey/Desktop/Composio-dev/composio/python/swe/temp/langgraph_agent/logs/run_evaluation"
 composio_coder = "/Users/shrey/.composio_coder/logs/"
 
+instances = load_swebench_dataset(name="princeton-nlp/SWE-bench_Verified")
+
 def get_resolved_unresolved(repo, relevant_runs):
     resolved = set()
     unresolved = set()
@@ -49,8 +51,23 @@ def get_predictions(instance):
                 return data[0]["model_patch"]
     return None
 
+def get_instance(pattern=None, version=None):
+    instances_list = []
+    for instance in instances:
+        if pattern and version:
+            if pattern in instance["instance_id"] and instance["version"] == version:
+                instances_list.append(instance)
+        elif pattern and not version:
+            if pattern in instance["instance_id"]:
+                instances_list.append(instance)
+        elif not pattern and version:
+            if instance["version"] == version:
+                instances_list.append(instance)
+        else:
+            instances_list.append(instance)
+    return sorted(instances_list, key=lambda x: x["instance_id"])
+
 def main(args):
-    instances = load_swebench_dataset(name="princeton-nlp/SWE-bench_Verified")
     method = args.method
     start_run_id = args.start_run_id
     end_run_id = args.end_run_id
@@ -72,18 +89,6 @@ def main(args):
             shutil.copytree(folder, f"./temp/langgraph_agent/logs/run_evaluation/langgraph_agent_final/composio/{key}", dirs_exist_ok=True, ignore_dangling_symlinks=True)
     total = resolved.union(unresolved)
 
-    # print(sorted(list(unresolved)))
-
-    # mismatch_keys = set()
-    # for key in tqdm(total, desc="Checking final patches"):
-    #     final_patch = open(os.path.join(final_folders[key], "patch.diff"), "r").read()
-    #     composio_patch = get_predictions(key)
-    #     if final_patch != composio_patch:
-    #         print(f"Mismatch for {key}")
-    #         mismatch_keys.add(key)
-    # print(len(mismatch_keys))
-        # assert final_patch == composio_patch
-
     print("Resolved by us: ", len(resolved))
     print(f"Resolved by {method}: {len(set(data['resolved']) & total)}")
     print(f"Total: {len(total)}\n")
@@ -98,7 +103,7 @@ def main(args):
     temp = (set(data['resolved']) & set(total)).difference(resolved)
     for t in sorted(temp):
         print(f"\"{t}\"")
-    # print(get_predictions("scikit-learn__scikit-learn-25232"))
+    # print(get_predictions("sphinx-doc__sphinx-7440"))
 
 
 

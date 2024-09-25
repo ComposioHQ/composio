@@ -29,6 +29,11 @@ RUN /home/user/.dev/bin/python -m pip install "py==1.11.0" "packaging==23.1" "at
 
 WORKDIR /home/user/pytest
 
+RUN git add -u
+RUN git config --global user.email "example@example.com"
+RUN git config --global user.name "composio"
+RUN git commit -m "fix: setup complete"
+
 # Install package
 RUN /home/user/.dev/bin/python -m pip install -e . || echo "$?"
 

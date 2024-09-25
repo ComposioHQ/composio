@@ -112,6 +112,7 @@ class EvaluationManager(WithLogger):
             issue_desc=issue_description,
             test_command=test_command,
             eval_script=eval_script,
+            install_repo_script=test_spec.install_repo_script,
         )
 
     def get_patch_for_issue(self, workspace_id: str, issue):

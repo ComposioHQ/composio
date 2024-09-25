@@ -40,6 +40,11 @@ RUN sed -i "s/'packaging',/'packaging', 'markupsafe<=2.0.1',/" setup.py
 RUN sed -i 's/sphinxcontrib-htmlhelp>=2.0.0/sphinxcontrib-htmlhelp>=2.0.0,<=2.0.4/' setup.py
 RUN sed -i 's/sphinxcontrib-serializinghtml>=1.1.5/sphinxcontrib-serializinghtml>=1.1.5,<=1.1.9/' setup.py
 
+RUN git add -u
+RUN git config --global user.email "example@example.com"
+RUN git config --global user.name "composio"
+RUN git commit -m "fix: setup complete"
+
 # Install package
 RUN /home/user/.dev/bin/python -m pip install -e .[test] || echo "$?"
 
