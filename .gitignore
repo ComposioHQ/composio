@@ -42,3 +42,9 @@ python/swe/dockerfiles/generated2
 python/swe/dockerfiles/logs
 python/swe/logs
 indexed
+
+python/swe/agentic/experiments/
+python/swe/agentic/SWE-bench_Verified/
+python/swe/agentic/test*
+python/swe/agentic/train*
+python/swe/agentic/langgraph_agent/logs/
