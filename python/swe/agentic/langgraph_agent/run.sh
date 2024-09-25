@@ -1,7 +1,5 @@
 #! /bin/bash
 
-bash secret.sh
-
 instances_unresolved=(
 
 # "astropy__astropy-13236"   # test command
