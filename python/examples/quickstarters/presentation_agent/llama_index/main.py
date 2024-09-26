@@ -6,8 +6,12 @@ from llama_index.llms.openai import OpenAI
 from llama_index.llms.groq import Groq
 from dotenv import load_dotenv
 from pathlib import Path
-
+import os
 load_dotenv()
+import agentops
+AGENTOPS_API_KEY = os.environ["AGENTOPS_API_KEY"]
+agentops.init(AGENTOPS_API_KEY)
+
 llm = OpenAI(model='gpt-4o')
 #Settings.llm = Groq(model="llama3-groq-70b-8192-tool-use-preview")
 #llm = Groq(model="llama3-groq-70b-8192-tool-use-preview")
