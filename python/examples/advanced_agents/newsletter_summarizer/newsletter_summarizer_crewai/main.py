@@ -15,7 +15,7 @@ toolset = ComposioToolSet()
 gmail_tools = toolset.get_tools(apps=[App.GMAIL])
 
 # Initialize the ChatOpenAI model with GPT-4 and API key from environment variables
-llm = ChatGroq(model="llama3.1-70b-versatile", stop_sequences=["\n\n"])
+llm = ChatGroq(model="llama-3.1-70b-versatile", stop_sequences=["\n\n"])
 
 # Define the Email Fetcher Agent
 email_fetcher_agent = Agent(
