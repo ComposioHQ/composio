@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Composio SWEBench-Agent-v1 is a cutting-edge open-source software engineering assistant that achieves state-of-the-art accuracy on the SWE Bench. This agent is built using [Composio's SWEKit framework](https://docs.composio.dev/swekit/introduction), which allows for the creation of various specialized software engineering agents. SWEKit, integrated with the Langgraph agentic platform, provides a powerful and flexible foundation for developing task-specific software engineering assistants.
+The Composio SWEBench-Agent-v1 is a cutting-edge open-source software engineering assistant that achieves OSS state-of-the-art accuracy on the SWE Bench. This agent is built using [Composio's SWEKit framework](https://docs.composio.dev/swekit/introduction), which allows for the creation of various specialized software engineering agents. SWEKit, integrated with the Langgraph agentic platform, provides a powerful and flexible foundation for developing task-specific software engineering assistants.
 
 ## Key Components
 
@@ -50,7 +50,7 @@ For more detailed usage examples and advanced configurations, please refer to ou
 
 Our Composio SWEBench-Agent-v1 has demonstrated state-of-the-art OSS performance on the SWE Bench, showcasing its capabilities in handling diverse software engineering tasks.
 
-The agent achieved an impressive 43.6% accuracy on the SWE Bench Verified dataset, successfully solving 218 out of 500 issues. This performance underscores the agent's proficiency in tackling a wide range of software engineering challenges and positions it as a leading solution in the field of automated software engineering assistance.
+The agent achieved an impressive 43.4% accuracy on the SWE Bench Verified dataset, successfully solving 217 out of 500 issues. This performance underscores the agent's proficiency in tackling a wide range of software engineering challenges and positions it as a leading solution in the field of automated software engineering assistance.
 
 These results highlight the effectiveness of our multi-agent architecture and the power of Composio's SWEKit toolset in creating highly capable software engineering agents.
 
