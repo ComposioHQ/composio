@@ -1,4 +1,4 @@
-# RAG Agent Guide
+# Presentation Agent Guide
 
 This guide provides detailed steps to create an agent that creates Presentations based on Google Sheets, it leverages LlamaIndex, Composio, and ChatGPT to read the sheets, plot graphs, find key insights and create presentations. Ensure you have Python 3.8 or higher installed.
 
