@@ -54,6 +54,10 @@ The agent achieved an impressive 43.4% accuracy on the SWE Bench Verified datase
 
 These results highlight the effectiveness of our multi-agent architecture and the power of Composio's SWEKit toolset in creating highly capable software engineering agents.
 
+> **Note:**
+> 1. The agent doesn't have any access to the information about failing and passing test cases from the SWE Bench dataset, that is used to evaluate the agent's performance.
+> 2. The agent doesn't have access to the internet. It only has access to the code in the repository and the commit history.
+
 ## Other SWEKit Agents
 
 While this README focuses on the SWEBench-Agent-v1, it's important to note that the SWEKit framework enables the creation of various specialized agents. Some potential applications include:
@@ -73,4 +77,4 @@ We welcome contributions from the community! Please see our [CONTRIBUTING.md](ht
 - [Composio](https://composio.dev) for providing the [SWEKit framework](https://docs.composio.dev/swekit/introduction) and essential tools.
 - [Langgraph](https://github.com/langchain-ai/langgraph) for the agentic platform.
 - [SWE Bench](https://github.com/ComposioHQ/swe-bench) for providing the benchmark and dataset.
-For more information about SWEKit and our various agents, please [contact us](https://composio.dev) or visit our [project page](https://github.com/ComposioHQ/swe-agent).
+For more information about SWEKit and our various agents, please contact us at `tech@composio.dev` or visit our [project page](https://github.com/ComposioHQ/swe-agent).
