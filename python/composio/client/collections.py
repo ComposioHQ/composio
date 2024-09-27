@@ -1238,6 +1238,7 @@ class ComposioWorkspaceStatus(str, enum.Enum):
 
 class ComposioWorkspaceInfo(BaseModel):
     id: str
+    name: str
     clientAutoId: str
 
     context: ComposioWorkspaceFlyIoContext
@@ -1250,6 +1251,7 @@ class ComposioWorkspaceInfo(BaseModel):
 
 class ComposioWorkspaceInfoMinimal(BaseModel):
     id: str
+    name: str
     status: ComposioWorkspaceStatus
 
     totalUpTime: int
@@ -1345,6 +1347,13 @@ class Workspaces(Collection[ComposioWorkspaceInfo]):
         raise TimeoutError(
             f"Timedout while waiting for status to reach {status} for workspace {id}"
         )
+
+    def find(self, name: str) -> t.Optional[str]:
+        """Find ID for the given workspace name."""
+        for wrk in self.get():
+            if wrk.name == name:
+                return wrk.id
+        return None
 
     def start(self, id: str) -> None:
         """Trigger start for the given workspace ID."""

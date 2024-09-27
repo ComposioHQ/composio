@@ -2,6 +2,7 @@
 Composio workspace manager.
 """
 
+import math
 import typing as t
 from datetime import datetime
 from uuid import uuid4
@@ -12,7 +13,20 @@ from composio.cli.context import Context, pass_context
 from composio.cli.utils.decorators import handle_exceptions
 from composio.cli.utils.params import EnumParam
 from composio.client.collections import ComposioWorkspaceStatus
-from composio.client.exceptions import HTTPError
+
+
+def _fill(string: str, length: int) -> str:
+    _length = len(string)
+    if _length > length:
+        return string[: length - 6] + "...   "
+    return string + (" " * (length - _length))
+
+
+def _get_workspace_id(name: str, context: Context) -> str:
+    id = context.client.workspaces.find(name=name)
+    if id is None:
+        raise click.ClickException(f"Workspace with ID {id} not found")
+    return id
 
 
 @click.group(name="workspaces", invoke_without_command=True)
@@ -35,12 +49,18 @@ def _workspaces(
         return
 
     workspaces = context.client.workspaces.get()
+    if len(workspaces) == 0:
+        context.console.print("[yellow]No workspaces found[/yellow]")
+        return
+
     context.console.print(
-        "[bold]ID                                     "
-        + "Status        "
-        + "TotalUptime[/bold]"
+        "[bold]"
+        + _fill("Name", 30)
+        + _fill("Status", 13)
+        + _fill("TotalUptime", 13)
+        + "[/bold]"
     )
-    context.console.print("[bold]" + ("-" * 64) + "[/bold]")
+    context.console.print("[bold]" + ("-" * 60) + "[/bold]")
     for workspace in workspaces:
         if status is not None and workspace.status != status:
             continue
@@ -50,8 +70,15 @@ def _workspaces(
         uptime = workspace.totalUpTime
         if workspace.status == ComposioWorkspaceStatus.RUNNING:
             uptime += datetime.now().timestamp() - workspace.sessionStart.timestamp()  # type: ignore
-        context.console.print(f"[bold]{workspace.id}[/bold]   {value}   {int(uptime)}")
-    context.console.print("[bold]" + ("-" * 64) + "[/bold]")
+
+        context.console.print(
+            "[bold]"
+            + _fill(workspace.name, 30)
+            + "[/bold]"
+            + _fill(value, 13)
+            + _fill(str(math.ceil(int(uptime) / 60)) + " minutes", 13)
+        )
+    context.console.print("[bold]" + ("-" * 60) + "[/bold]")
 
 
 @_workspaces.command(name="provision")
@@ -79,16 +106,13 @@ def _provision(context: Context, environment: t.Tuple[str, ...]) -> None:
 
 
 @_workspaces.command(name="start")
-@click.argument("id")
+@click.argument("name")
 @handle_exceptions()
 @pass_context
-def _start(context: Context, id: str) -> None:
+def _start(context: Context, name: str) -> None:
     """Stop workspace with given ID"""
-    try:
-        workspace = context.client.workspaces.get(id=id)
-    except HTTPError as e:
-        raise click.ClickException(f"Workspace with ID {id} not found") from e
-
+    id = _get_workspace_id(name=name, context=context)
+    workspace = context.client.workspaces.get(id=id)
     if workspace.status not in (
         ComposioWorkspaceStatus.PROVISIONED,
         ComposioWorkspaceStatus.STOPPED,
@@ -105,16 +129,13 @@ def _start(context: Context, id: str) -> None:
 
 
 @_workspaces.command(name="stop")
-@click.argument("id")
+@click.argument("name")
 @handle_exceptions()
 @pass_context
-def _stop(context: Context, id: str) -> None:
+def _stop(context: Context, name: str) -> None:
     """Stop workspace with given ID"""
-    try:
-        workspace = context.client.workspaces.get(id=id)
-    except HTTPError as e:
-        raise click.ClickException(f"Workspace with ID {id} not found") from e
-
+    id = _get_workspace_id(name=name, context=context)
+    workspace = context.client.workspaces.get(id=id)
     if workspace.status not in (ComposioWorkspaceStatus.RUNNING,):
         raise click.ClickException(
             "Workspace needs to be in `RUNNING` state to trigger a stop"
@@ -127,11 +148,12 @@ def _stop(context: Context, id: str) -> None:
 
 
 @_workspaces.command(name="remove")
-@click.argument("id")
+@click.argument("name")
 @handle_exceptions()
 @pass_context
-def _remove(context: Context, id: str) -> None:
+def _remove(context: Context, name: str) -> None:
     """Remove workspace with given ID"""
+    id = _get_workspace_id(name=name, context=context)
     context.console.print(f"Removing [bold]{id}[/bold]")
     context.client.workspaces.remove(id=id)
     context.client.workspaces.wait(id=id, status=ComposioWorkspaceStatus.SUSPENDED)

@@ -10,7 +10,7 @@ def create_latest_version_warning_hook(version: str):
         try:
             request = requests.get(
                 "https://pypi.org/pypi/composio-core/json",
-                timeout=10.0,
+                timeout=1.5,
             )
             if request.status_code != 200:
                 return
