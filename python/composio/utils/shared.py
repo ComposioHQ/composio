@@ -34,6 +34,7 @@ FALLBACK_VALUES = {
     "null": None,
 }
 
+reserved_names = ["validate"]
 
 def json_schema_to_pydantic_type(
     json_schema: t.Dict[str, t.Any],
@@ -112,7 +113,6 @@ def json_schema_to_pydantic_field(
     default = json_schema.get("default")
 
     # Check if the field name is a reserved Pydantic name
-    reserved_names = ["validate"]
     if name in reserved_names:
         alias = name
         name = f"{name}_"
@@ -231,7 +231,7 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
         }
 
         # Add alias if the field name is a reserved Pydantic name
-        if prop_name in ["validate", "schema", "fields", "json"]:
+        if prop_name in reserved_names:
             field_kwargs["alias"] = prop_name
             field_kwargs["title"] = f"{prop_name}_"
         else:
