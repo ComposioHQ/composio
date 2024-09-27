@@ -94,7 +94,7 @@ def json_schema_to_pydantic_field(
     name: str,
     json_schema: t.Dict[str, t.Any],
     required: t.List[str],
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[str, t.Type, FieldInfo]:
     """
     Converts a JSON schema property to a Pydantic field definition.
 
@@ -115,12 +115,13 @@ def json_schema_to_pydantic_field(
 
     # Check if the field name is a reserved Pydantic name
     if name in reserved_names:
-        alias = name
         name = f"{name}_"
+        alias = name
     else:
         alias = None
 
     return (
+        name,
         t.cast(
             t.Type,
             json_schema_to_pydantic_type(
@@ -156,10 +157,12 @@ def json_schema_to_fields_dict(json_schema: t.Dict[str, t.Any]) -> t.Dict[str, t
     ```
 
     """
-    field_definitions = {
-        name: json_schema_to_pydantic_field(name, prop, json_schema.get("required", []))
-        for name, prop in json_schema.get("properties", {}).items()
-    }
+    field_definitions = {}
+    for name, prop in json_schema.get("properties", {}).items():
+        updated_name, pydantic_type, pydantic_field = json_schema_to_pydantic_field(
+            name, prop, json_schema.get("required", [])
+        )
+        field_definitions[updated_name] = (pydantic_type, pydantic_field)
     return field_definitions  # type: ignore
 
 
@@ -173,12 +176,10 @@ def json_schema_to_model(json_schema: t.Dict[str, t.Any]) -> t.Type[BaseModel]:
     model_name = json_schema.get("title")
     field_definitions = {}
     for name, prop in json_schema.get("properties", {}).items():
-        pydantic_type, pydantic_field = json_schema_to_pydantic_field(
+        updated_name, pydantic_type, pydantic_field = json_schema_to_pydantic_field(
             name, prop, json_schema.get("required", [])
         )
-        if pydantic_field.alias is not None:
-            name = f"{name}_"
-        field_definitions[name] = (pydantic_type, pydantic_field)
+        field_definitions[updated_name] = (pydantic_type, pydantic_field)
     return create_model(model_name, **field_definitions)  # type: ignore
 
 
