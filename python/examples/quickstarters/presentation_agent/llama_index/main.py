@@ -16,9 +16,9 @@ llm = OpenAI(model='gpt-4o')
 #Settings.llm = Groq(model="llama3-groq-70b-8192-tool-use-preview")
 #llm = Groq(model="llama3-groq-70b-8192-tool-use-preview")
 
-GOOGLE_SHEET_ID = '1i8OwCM_o2E4tmpZ18-2Jgu8G42ntPWoUgGhfbcyxnoo'
+GOOGLE_SHEET_ID = '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms'
 #GOOGLE_SHEET_LINK + 'https://docs.google.com/spreadsheets/d/1i8OwCM_o2E4tmpZ18-2Jgu8G42ntPWoUgGhfbcyxnoo/edit?gid=0#gid=0z'
-composio_toolset = ComposioToolSet(output_dir=Path("/Users/composio/Desktop/sample-projects/ppt_builder"))
+composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_tools(actions=[Action.CODEINTERPRETER_EXECUTE_CODE,
                                             Action.CODEINTERPRETER_GET_FILE_CMD,
                                             Action.CODEINTERPRETER_RUN_TERMINAL_CMD,
@@ -34,9 +34,8 @@ prefix_messages = [
                 Extract key insights and generate relevant charts based on this data. 
                 Finally, create a well-structured presentation that includes these charts and any necessary images, ensuring 
                 that the formatting is professional and visually appealing. 
-                When utilizing the Gooxgle Sheets tool, only the spreadsheet ID should be passed as input parameters.
+                When utilizing the Google Sheets tool, only the spreadsheet ID should be passed as input parameters.
                 NOTE: Mostly the user passes small sheets, so try to read the whole sheet at once and not via ranges.
-
                 """
         )
     )
@@ -60,6 +59,7 @@ task = f"""
     
     Ensure that the ppt is detailed and has proper formatting 
     that makes it look good. The graphs in it should be factual. 
+    Try to have a few charts and few table with top data points.
     NOTE: Mostly the user passes small sheets, so try to read the whole sheet at once and not via ranges.
 """
 response = agent.chat(task)
