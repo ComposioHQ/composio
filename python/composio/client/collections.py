@@ -1239,7 +1239,7 @@ class ComposioWorkspaceStatus(str, enum.Enum):
 class ComposioWorkspaceInfo(BaseModel):
     id: str
     clientAutoId: str
-    
+
     context: ComposioWorkspaceFlyIoContext
     status: ComposioWorkspaceStatus
 
