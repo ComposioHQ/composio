@@ -1239,7 +1239,8 @@ class ComposioWorkspaceStatus(str, enum.Enum):
 class ComposioWorkspaceInfo(BaseModel):
     id: str
     clientAutoId: str
-    flyIoContext: ComposioWorkspaceFlyIoContext
+    
+    context: ComposioWorkspaceFlyIoContext
     status: ComposioWorkspaceStatus
 
     createdAt: datetime

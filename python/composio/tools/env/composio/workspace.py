@@ -40,12 +40,12 @@ class ComposioWorkspace(RemoteWorkspace):
         data = client.workspaces.get(id=id)
         workspace = cls(
             config=Config(
-                composio_api_key=data.flyIoContext.composio_api_key,
-                composio_base_url=data.flyIoContext.composio_base_url,
-                github_access_token=data.flyIoContext.github_access_token,
-                environment=data.flyIoContext.environment,
-                image=data.flyIoContext.image,
-                ports=[config.model_dump() for config in data.flyIoContext.ports],  # type: ignore
+                composio_api_key=data.context.composio_api_key,
+                composio_base_url=data.context.composio_base_url,
+                github_access_token=data.context.github_access_token,
+                environment=data.context.environment,
+                image=data.context.image,
+                ports=[config.model_dump() for config in data.context.ports],  # type: ignore
                 persistent=persistent,
             )
         )
