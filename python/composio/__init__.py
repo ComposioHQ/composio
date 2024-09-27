@@ -20,6 +20,7 @@ from composio.client.enums import (  # noqa: E402
 )
 from composio.tools import ComposioToolSet  # noqa: E402
 from composio.tools.base.runtime import action  # noqa: E402
+from composio.tools.env.composio.workspace import ComposioWorkspace  # noqa: E402
 from composio.tools.env.factory import (  # noqa: E402
     WorkspaceConfigType,
     WorkspaceFactory,
@@ -47,6 +48,7 @@ __all__ = (
     "Shell",
     "action",
     "LogLevel",
+    "ComposioWorkspace",
 )
 
 __version__ = "0.5.23"

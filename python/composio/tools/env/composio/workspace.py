@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 from composio.client import Composio
 from composio.client.collections import ComposioWorkspaceStatus
+from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import RemoteWorkspace, WorkspaceConfigType
 from composio.tools.env.flyio.client import PortRequest
 
@@ -32,6 +33,55 @@ class ComposioWorkspace(RemoteWorkspace):
         self.image = config.image
         self._port_requests = config.ports or []
         self.client = Composio.get_latest()
+
+    @classmethod
+    def load(cls, id: str, persistent: bool = True) -> "ComposioWorkspace":
+        client = Composio.get_latest()
+        data = client.workspaces.get(id=id)
+        workspace = cls(
+            config=Config(
+                composio_api_key=data.flyIoContext.composio_api_key,
+                composio_base_url=data.flyIoContext.composio_base_url,
+                github_access_token=data.flyIoContext.github_access_token,
+                environment=data.flyIoContext.environment,
+                image=data.flyIoContext.image,
+                ports=[config.model_dump() for config in data.flyIoContext.ports],  # type: ignore
+                persistent=persistent,
+            )
+        )
+
+        workspace.id = id
+        if data.status == ComposioWorkspaceStatus.SUSPENDED:
+            raise ComposioSDKError(message=f"Workspace {id} is suspended")
+
+        if data.status in ComposioWorkspaceStatus.RUNNING:
+            return workspace
+
+        if data.status in ComposioWorkspaceStatus.STOPPING:
+            workspace.client.workspaces.wait(
+                id=workspace.id,
+                status=ComposioWorkspaceStatus.STOPPED,
+                timeout=300.0,
+                interval=5.0,
+            )
+
+        if data.status in ComposioWorkspaceStatus.STOPPED:
+            workspace.client.workspaces.start(id=workspace.id)
+
+        workspace.client.workspaces.wait(
+            id=workspace.id,
+            status=ComposioWorkspaceStatus.RUNNING,
+            timeout=300.0,
+            interval=5.0,
+        )
+        workspace.url = f"https://composio-{workspace.id}.fly.dev:8000/api"
+        workspace.host = t.cast(str, urlparse(url=workspace.url).hostname)
+
+        ports = []
+        for r in workspace._port_requests:
+            ports += [p["port"] for p in r["ports"]]
+        workspace.ports = ports
+        return workspace
 
     def setup(self) -> None:
         """Setup workspace."""
