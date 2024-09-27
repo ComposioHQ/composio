@@ -2210,6 +2210,7 @@ class Action(_AnnotatedEnum[ActionData], path=ACTIONS_CACHE):
     GMAIL_GET_ATTACHMENT: "Action"
     GMAIL_LIST_LABELS: "Action"
     GMAIL_LIST_THREADS: "Action"
+    GMAIL_REMOVE_LABEL: "Action"
     GMAIL_REPLY_TO_THREAD: "Action"
     GMAIL_SEND_EMAIL: "Action"
     GOOGLECALENDAR_CREATE_EVENT: "Action"
