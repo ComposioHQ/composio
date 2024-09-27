@@ -19,6 +19,7 @@ from composio.cli.serve import _serve
 from composio.cli.triggers import _triggers
 from composio.cli.utils.params import EnumParam
 from composio.cli.whoami import _whoami
+from composio.cli.workspaces import _workspaces
 from composio.core.cls.catch_all_exceptions import CatchAllExceptions, handle_exceptions
 from composio.core.cls.did_you_mean import DYMGroup
 from composio.utils import logging
@@ -84,5 +85,6 @@ composio.add_command(_actions)
 composio.add_command(_triggers)
 composio.add_command(_integrations)
 composio.add_command(_connections)
+composio.add_command(_workspaces)
 composio.add_command(_execute)
 composio.add_command(_serve)

@@ -111,11 +111,17 @@ class _V1(Endpoint):
         Endpoint /v1/integrations
         """
 
+    class _Workspaces(Endpoint):
+        """
+        Endpoint /v1/workspaces
+        """
+
     cli: _CLI
     apps: _Apps
     actions: _Actions
     triggers: _Triggers
     integrations: _Integrations
+    workspaces: _Workspaces
 
 
 class _V2(Endpoint):

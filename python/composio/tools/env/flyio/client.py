@@ -92,7 +92,7 @@ class PortRequest(te.TypedDict):
 class FlyIO(WithLogger):
     """FlyIO client."""
 
-    machine: str
+    _machine: str
 
     def __init__(
         self,
@@ -100,6 +100,7 @@ class FlyIO(WithLogger):
         image: t.Optional[str] = None,
         flyio_token: t.Optional[str] = None,
         environment: t.Optional[t.Dict] = None,
+        appname: t.Optional[str] = None,
         ports: t.Optional[t.List[PortRequest]] = None,
     ) -> None:
         """Initialize FlyIO client."""
@@ -116,7 +117,7 @@ class FlyIO(WithLogger):
         self.flyio_token = flyio_token
         self.access_token = access_token
         self.image = image or DEFAULT_IMAGE
-        self.app_name = f"composio-{uuid.uuid4().hex.replace('-', '')}"
+        self.app_name = appname or f"composio-{uuid.uuid4().hex.replace('-', '')}"
         self.url = f"https://{self.app_name}.fly.dev:8000/api"
         self.gql = gql.Client(
             transport=RequestsHTTPTransport(
@@ -126,6 +127,15 @@ class FlyIO(WithLogger):
                 },
             )
         )
+
+    @property
+    def machine(self) -> str:
+        """Machine ID."""
+        if hasattr(self, "_machine"):
+            return self._machine
+
+        self._machine = self._get_machine_id()
+        return self._machine
 
     def _request(
         self,
@@ -144,6 +154,12 @@ class FlyIO(WithLogger):
             },
             timeout=timeout,
         )
+
+    def _get_machine_id(self) -> str:
+        (machine,) = self._request(
+            method="get", endpoint=f"/apps/{self.app_name}/machines"
+        ).json()
+        return machine["id"]
 
     def _create_app(self) -> None:
         self._request(
@@ -213,7 +229,7 @@ class FlyIO(WithLogger):
                 time.sleep(1)
 
     def _create_machine(self) -> None:
-        self.machine = (
+        self._machine = (
             self._request(
                 method="post",
                 endpoint=f"/apps/{self.app_name}/machines",

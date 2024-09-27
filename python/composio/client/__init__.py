@@ -23,6 +23,7 @@ from composio.client.collections import (
     IntegrationModel,
     Integrations,
     Triggers,
+    Workspaces,
 )
 from composio.client.endpoints import v1
 from composio.client.enums import (
@@ -80,6 +81,7 @@ class Composio(BaseClient):
         self.integrations = Integrations(client=self)
         self.active_triggers = ActiveTriggers(client=self)
         self.connected_accounts = ConnectedAccounts(client=self)
+        self.workspaces = Workspaces(client=self)
         _clients.append(self)
 
     @staticmethod

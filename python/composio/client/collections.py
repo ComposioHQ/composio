@@ -3,6 +3,7 @@ Composio server object collections
 """
 
 import base64
+import enum
 import json
 import os
 import time
@@ -10,6 +11,7 @@ import traceback
 import typing as t
 import warnings
 from concurrent.futures import Future, ThreadPoolExecutor
+from datetime import datetime
 from unittest import mock
 
 import pysher
@@ -1176,3 +1178,193 @@ class Integrations(Collection[IntegrationModel]):
             self.client.http.get(url=str(self.endpoint / integration_id))
         )
         return IntegrationModel(**response.json())
+
+
+class ComposioWorkspaceExternalPortConfig(BaseModel):
+    """External port config."""
+
+    port: int = Field(
+        ...,
+        description="External port to map (Port 8000 is reserved for the tooling server).",
+    )
+    handlers: t.List[str] = Field(
+        default_factory=list,
+        description="List of protocol handlers (`http` will be used if not provided).",
+    )
+
+
+class ComposioWorkspacePortRequest(BaseModel):
+    """
+    Port request
+
+    Read more at: https://fly.io/docs/machines/api/machines-resource/#create-a-machine-with-services
+    """
+
+    ports: t.List[ComposioWorkspaceExternalPortConfig] = Field(
+        ...,
+        description="List of public port configurations (Port 8000 is reserved for the tooling server).",
+    )
+    internal_port: int = Field(
+        ...,
+        description="Internal port number (Port 8000 is reserved for the tooling server).",
+    )
+    protocol: t.Literal["tcp", "udp"] = Field(
+        ...,
+        description="Protocol handler.",
+    )
+
+
+class ComposioWorkspaceFlyIoContext(BaseModel):
+    access_token: str
+    composio_api_key: str
+    composio_base_url: str
+    github_access_token: str
+
+    image: t.Optional[str] = None
+    ports: t.Optional[t.List[ComposioWorkspacePortRequest]] = None
+    environment: t.Optional[t.Dict[str, str]] = None
+
+
+class ComposioWorkspaceStatus(str, enum.Enum):
+    PROVISIONED = "PROVISIONED"
+    ERROR = "ERROR"
+    STARTING = "STARTING"
+    RUNNING = "RUNNING"
+    STOPPING = "STOPPING"
+    STOPPED = "STOPPED"
+    SUSPENDING = "SUSPENDING"
+    SUSPENDED = "SUSPENDED"
+
+
+class ComposioWorkspaceInfo(BaseModel):
+    id: str
+    clientAutoId: str
+    flyIoContext: ComposioWorkspaceFlyIoContext
+    status: ComposioWorkspaceStatus
+
+    createdAt: datetime
+    totalUpTime: int
+    sessionStart: t.Optional[datetime] = None
+
+
+class ComposioWorkspaceInfoMinimal(BaseModel):
+    id: str
+    status: ComposioWorkspaceStatus
+
+    totalUpTime: int
+    sessionStart: t.Optional[datetime] = None
+
+
+class Workspaces(Collection[ComposioWorkspaceInfo]):
+    """Server object for composio workspaces."""
+
+    model = ComposioWorkspaceInfo
+    endpoint = v1.workspaces
+
+    @t.overload  # type: ignore
+    def get(self) -> t.List[ComposioWorkspaceInfoMinimal]:
+        pass
+
+    @t.overload  # type: ignore
+    def get(self, id: t.Optional[str] = None) -> ComposioWorkspaceInfo:
+        pass
+
+    def get(  # type: ignore
+        self,
+        id: t.Optional[str] = None,
+    ) -> t.Union[ComposioWorkspaceInfo, t.List[ComposioWorkspaceInfoMinimal]]:
+        """Get a workspace or list of workspaces."""
+        if id is not None:
+            return self._get_workspace(id=id)
+        return self._list_workspaces()
+
+    def create(
+        self,
+        access_token: str,
+        composio_api_key: str,
+        composio_base_url: str,
+        github_access_token: str,
+        environment: t.Optional[t.Dict[str, str]] = None,
+        ports: t.Optional[t.List[t.Dict]] = None,
+        image: t.Optional[str] = None,
+    ) -> str:
+        """Create a workspace and return ID"""
+        response = self._raise_if_required(
+            response=self.client.http.post(
+                url=str(self.endpoint),
+                json={
+                    "access_token": access_token,
+                    "composio_api_key": composio_api_key,
+                    "composio_base_url": composio_base_url,
+                    "github_access_token": github_access_token,
+                    "environment": environment,
+                    "image": image,
+                    "ports": ports,
+                },
+            )
+        )
+        return response.json().get("id")
+
+    def _get_workspace(self, id: str) -> ComposioWorkspaceInfo:
+        response = self._raise_if_required(
+            response=self.client.http.get(
+                url=str(self.endpoint / id),
+            )
+        )
+        return ComposioWorkspaceInfo.model_validate(response.json())
+
+    def _list_workspaces(self) -> t.List[ComposioWorkspaceInfoMinimal]:
+        response = self._raise_if_required(
+            response=self.client.http.get(
+                url=str(self.endpoint),
+            )
+        )
+        return [
+            ComposioWorkspaceInfoMinimal.model_validate(workspace)
+            for workspace in response.json().get("items", [])
+        ]
+
+    def status(self, id: str) -> ComposioWorkspaceStatus:
+        """Status for the workspace with given ID."""
+        return self.get(id=id).status
+
+    def wait(
+        self,
+        id: str,
+        status: ComposioWorkspaceStatus,
+        timeout: float = 120.0,
+        interval: float = 3.0,
+    ) -> None:
+        """Wait for workspace to reach status."""
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            if self.status(id=id) == status:
+                return
+            time.sleep(interval)
+        raise TimeoutError(
+            f"Timedout while waiting for status to reach {status} for workspace {id}"
+        )
+
+    def start(self, id: str) -> None:
+        """Trigger start for the given workspace ID."""
+        self._raise_if_required(
+            response=self.client.http.post(
+                url=str(self.endpoint / id / "start"),
+            )
+        )
+
+    def stop(self, id: str) -> None:
+        """Trigger stop for the given workspace ID."""
+        self._raise_if_required(
+            response=self.client.http.post(
+                url=str(self.endpoint / id / "stop"),
+            )
+        )
+
+    def remove(self, id: str) -> None:
+        """Stop the given workspace."""
+        self._raise_if_required(
+            response=self.client.http.delete(
+                url=str(self.endpoint / id),
+            )
+        )

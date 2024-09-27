@@ -4,6 +4,8 @@ import typing as t
 
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import Workspace, WorkspaceConfigType
+from composio.tools.env.composio.workspace import ComposioWorkspace
+from composio.tools.env.composio.workspace import Config as ComposioWorkspaceConfig
 from composio.tools.env.docker.workspace import Config as DockerWorkspaceConfig
 from composio.tools.env.docker.workspace import DockerWorkspace
 from composio.tools.env.e2b.workspace import Config as E2BWorkspaceConfig
@@ -23,6 +25,7 @@ class WorkspaceType:
 
     Host = HostWorkspaceConfig
     Docker = DockerWorkspaceConfig
+    Composio = ComposioWorkspaceConfig
     FlyIO = FlyIOWorkspaceConfig
     E2B = E2BWorkspaceConfig
 
@@ -60,6 +63,9 @@ class WorkspaceFactory:
 
         if isinstance(config, DockerWorkspaceConfig):
             return DockerWorkspace(config=config)
+
+        if isinstance(config, ComposioWorkspaceConfig):
+            return ComposioWorkspace(config=config)
 
         if isinstance(config, E2BWorkspaceConfig):
             return E2BWorkspace(config=config)
