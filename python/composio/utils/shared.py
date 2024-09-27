@@ -36,6 +36,7 @@ FALLBACK_VALUES = {
 
 reserved_names = ["validate"]
 
+
 def json_schema_to_pydantic_type(
     json_schema: t.Dict[str, t.Any],
 ) -> t.Union[t.Type, t.Optional[t.Any]]:
