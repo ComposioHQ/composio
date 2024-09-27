@@ -93,6 +93,7 @@ jobs:
           python -m pip install plugins/${{matrix.package}}
           python -m pip install '.[all]'
           python -m pip install 'numpy<2' python-dotenv
+          python -m pip install unstructured
 
           COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' composio apps update
           COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' PLUGIN_TO_TEST=${{matrix.package}} CI=false pytest -vv tests/test_example.py

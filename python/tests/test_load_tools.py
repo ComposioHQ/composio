@@ -17,8 +17,8 @@ PLUGINS = (
     "autogen",
     "camel",
     "claude",
-    "crew_ai",
-    "griptape",
+    "crewai",
+    # "griptape", # TODO(@kaavee315): Handle oneOf in Griptape
     "julep",
     "langchain",
     "llamaindex",
