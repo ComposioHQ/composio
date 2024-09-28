@@ -25,7 +25,7 @@ By contributing and submitting a pull request to the Composio repository, you ha
 * Pull requests can be made on our GitHub (look for the "hacktoberfest" topic)
 * We have issues listed down with the tag "hacktoberfest" in the Composio GitHub repo to which you can contribute & raise a PR.
 * Our Project maintainers will review & accept your pull/merge requests for them to count toward your total
-* Participants with four pull/merge requests accepted between October 1 and October 31 will receive a unique digital reward from the folks at Hacktoberfest!
+* Participants with four pull/merge requests accepted between October 1 and October 31 will receive a swag pack from the folks at Hacktoberfest!
 * More details: https://hacktoberfest.com/participation/
 
 ## Get Started
@@ -43,7 +43,7 @@ Our team has put together some resources to help you on your Hacktoberfest journ
 * Composio Github repo: https://github.com/ComposioHQ/composio
 * Composio Docs: https://docs.composio.dev/introduction/intro/overview
 * Composio SDK & APIs:
-* SuperAGI Blog: https://composio.dev/blog/
+* Composio Blog: https://composio.dev/blog/
 * Contribution Guide: https://github.com/ComposioHQ/composio/blob/master/CONTRIBUTING.md
 
 ## Features
@@ -57,20 +57,16 @@ Our team has put together some resources to help you on your Hacktoberfest journ
 
 ## 💬 Community
 
-Join Composio Community to share your ideas, suggestions, or questions and connect with other users and contributors.
+Join [Composio Community](https://dub.composio.dev/discord) to connect with other Composio users and developers.
 
 ## 🌱 Contributing
 
-Interested in making a contribution? We warmly welcome and value all kinds of contributions to Composio! For more details on how you can contribute, take a look at our Contribution Guide.
+Interested in making a contribution? We warmly welcome and value all kinds of contributions to Composio! For more details on how you can contribute, take a look at our [Contribution Guide](https://github.com/ComposioHQ/composio/blob/master/CONTRIBUTING.md).
 
 A big thank you to all our ❤︎ contributors for their support!
 
 ## 🔥 We are Hiring!
 
-Looking for a passionate and creative team? We are actively hiring engineers for the following positions:
-
-* Dev-Rel
-* Quality assurance engineer
-* Integrations engineer
+We're on the lookout for a [DevRel superstar](https://composio.notion.site/Dev-Rel-105c2287139c456a8e790e41ff13224e) to join our Composio crew!
 
 Contact us: [tech@composio.dev](mailto:tech@composio.dev) or [abhay@composio.dev](mailto:abhay@composio.dev).
