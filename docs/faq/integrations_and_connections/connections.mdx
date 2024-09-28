@@ -1,49 +1,9 @@
 ---
-title: "Managing Integrations and Connected Accounts in Composio"
-sidebarTitle: "Integrations & Connected Accounts"
+title: "Managing Connected Accounts in Composio"
+sidebarTitle: "How do I get all my Connected Account?"
 icon: "plug"
 description: "Learn how to retrieve and manage integrations and connected accounts for entities in Composio."
 ---
-
-# Managing Integrations and Connected Accounts
-
-In Composio, integrations allow users to link their accounts with external apps, enabling agents to take actions on their behalf. Connected accounts represent the actual connections between your users and these integrated services.
-
-## Retrieving All Integrations
-
-To get a list of all available integrations in your Composio account, you can use the following methods:
-
-<Tabs>
-<Tab title="Python">
-<CodeGroup>
-```python python
-from composio import Composio
-composio_client = Composio(api_key="YOUR_COMPOSIO_API_KEY")
-integrations = composio_client.integrations.get()
-print(integrations)
-```
-</CodeGroup>
-</Tab>
-<Tab title="JavaScript">
-<CodeGroup>
-```javascript javascript
-import { Composio } from "composio-core";
-const client = new Composio(process.env.COMPOSIO_API_KEY);
-const integrations = await client.integrations.get();
-console.log(integrations);
-```
-</CodeGroup>
-</Tab>
-<Tab title="CLI">
-<CodeGroup>
-```bash CLI
-composio integrations
-```
-</CodeGroup>
-</Tab>
-</Tabs>
-
-This will return a list of all integrations available in your Composio account, including their details such as name, description, and configuration options.
 
 ## Getting Connected Accounts for an Entity
 

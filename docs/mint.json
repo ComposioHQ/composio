@@ -109,7 +109,9 @@
       "group":"Commonly Asked Questions",
         "pages":[
           "faq/entities_doc/entities",
-          "faq/integrations_and_connections/integrations_and_connections"
+          "faq/integrations_and_connections/integrations",
+          "faq/integrations_and_connections/connections"
+
         ]
     },
     {
