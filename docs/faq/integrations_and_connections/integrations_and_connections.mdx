@@ -1,0 +1,136 @@
+---
+title: "Managing Integrations and Connected Accounts in Composio"
+sidebarTitle: "Integrations & Connected Accounts"
+icon: "plug"
+description: "Learn how to retrieve and manage integrations and connected accounts for entities in Composio."
+---
+
+# Managing Integrations and Connected Accounts
+
+In Composio, integrations allow users to link their accounts with external apps, enabling agents to take actions on their behalf. Connected accounts represent the actual connections between your users and these integrated services.
+
+## Retrieving All Integrations
+
+To get a list of all available integrations in your Composio account, you can use the following methods:
+
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python python
+from composio import Composio
+composio_client = Composio(api_key="YOUR_COMPOSIO_API_KEY")
+integrations = composio_client.integrations.get()
+print(integrations)
+```
+</CodeGroup>
+</Tab>
+<Tab title="JavaScript">
+<CodeGroup>
+```javascript javascript
+import { Composio } from "composio-core";
+const client = new Composio(process.env.COMPOSIO_API_KEY);
+const integrations = await client.integrations.get();
+console.log(integrations);
+```
+</CodeGroup>
+</Tab>
+<Tab title="CLI">
+<CodeGroup>
+```bash CLI
+composio integrations
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+
+This will return a list of all integrations available in your Composio account, including their details such as name, description, and configuration options.
+
+## Getting Connected Accounts for an Entity
+
+To retrieve all connected accounts for a specific entity (user), you can use the following methods:
+
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python python
+from composio import Composio
+composio_client = Composio(api_key="YOUR_COMPOSIO_API_KEY")
+Replace 'user_email_or_unique_id' with the actual entity identifier
+entity = composio_client.get_entity(id='user_email_or_unique_id')
+try:
+    connected_accounts = entity.get_connections()
+    print(connected_accounts)
+except Exception as e:
+    print(f"Error retrieving connected accounts: {str(e)}")
+```
+</CodeGroup>
+</Tab>
+<Tab title="JavaScript">
+<CodeGroup>
+```javascript javascript
+import { Composio } from "composio-core";
+const client = new Composio(process.env.COMPOSIO_API_KEY);
+// Replace 'user_email_or_unique_id' with the actual entity identifier
+const entity = await client.getEntity('user_email_or_unique_id');
+try {
+    const connectedAccounts = await entity.getConnections();
+    console.log(connectedAccounts);
+} catch (error) {
+    console.error("Error retrieving connected accounts:", error);
+}
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+
+This will return a list of all connected accounts for the specified entity, including details about each connection such as the integration it's connected to and its current status.
+
+## Getting a Specific Connected Account
+
+If you need to retrieve a specific connected account for an entity, you can use the following method:
+
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python python
+from composio import Composio
+composio_client = Composio(api_key="YOUR_COMPOSIO_API_KEY")
+entity = composio_client.get_entity(id='user_email_or_unique_id')
+try:
+    connected_account = entity.get_connection(app="slack")
+    print(connected_account)
+except Exception as e:
+    print(f"No connected account found for Slack: {str(e)}")
+```
+</CodeGroup>
+</Tab>
+<Tab title="JavaScript">
+<CodeGroup>
+```javascript javascript
+import { Composio } from "composio-core";
+const client = new Composio(process.env.COMPOSIO_API_KEY);
+const entity = await client.getEntity('user_email_or_unique_id');
+try {
+    const connectedAccount = await entity.getConnection("slack");
+    console.log(connectedAccount);
+} catch (error) {
+    console.error("No connected account found for Slack:", error);
+}
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+
+Replace "slack" with the name of the specific integration you're looking for.
+
+## Best Practices
+
+1. Always handle exceptions when retrieving connected accounts, as the user might not have any connections or there might be authentication issues.
+
+2. Use meaningful identifiers for your entities to make it easier to manage and retrieve their connected accounts.
+
+3. Regularly check and update the status of connected accounts to ensure they remain active and functional.
+
+4. When displaying integrations or connected accounts to users, consider showing relevant information such as the last sync time, connection status, and any actions that might be required (e.g., re-authentication).
+
+By effectively managing integrations and connected accounts, you can provide a seamless experience for your users while leveraging the power of external services through Composio.

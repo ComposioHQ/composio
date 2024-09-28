@@ -52,10 +52,9 @@ Follow these 5 steps to connect your user to Google Calendar and create an event
 </Step>
 
 <Step title="Authenticate Google Calendar Account">
-    We'll use **`Jessica`** as our example user. Choose your method:
-
-    <Tabs>
-        <Tab title="CLI (Quickest)">
+We'll use Jessica as our example user. There are multiple ways to authenticate an account:
+<Tabs>
+    <Tab title="CLI">
             <CodeGroup>
                 ```bash Authenticate Jessica's Google Calendar Account
                 composio add googlecalendar -e "Jessica" # Launches Google Calendar login
@@ -90,7 +89,9 @@ Follow these 5 steps to connect your user to Google Calendar and create an event
             </CodeGroup>
         </Tab>
     </Tabs>
-
+    <Info>
+    You can create and authenticate entities using any of the above methods (Python and Javascript). The CLI is just one of several options available.
+    </Info>
     <Warning>
         Ensure you complete the authentication process by following the URL provided in your console.
     </Warning>

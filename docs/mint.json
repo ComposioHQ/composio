@@ -48,7 +48,7 @@
     }
   ],
   "topbarCtaButton": {
-    "name": "Dashboard",
+    "name": "Start Building With Composio",
     "url": "https://app.composio.dev"
   },
   "topAnchor": {
@@ -93,6 +93,7 @@
         "introduction/foundations/components/triggers/trigger-guide",
         "introduction/foundations/components/local_tools",
         "introduction/foundations/components/integrations/custom-integration",
+        "introduction/foundations/components/no_auth_apps/no_auth_guide",
         {
           "group": "Advanced",
           "pages": [
@@ -103,6 +104,13 @@
           ]
         }
       ]
+    },
+    {
+      "group":"Commonly Asked Questions",
+        "pages":[
+          "faq/entities_doc/entities",
+          "faq/integrations_and_connections/integrations_and_connections"
+        ]
     },
     {
       "group":"Supported Frameworks",
