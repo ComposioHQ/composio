@@ -1,0 +1,4 @@
+2024-09-28 14:10:26,660 - WARNING - Only Anthropic>=0.32.0 supported. v0.28.0 found.
+2024-09-28 14:10:27,885 - INFO - Session Replay: https://app.agentops.ai/drilldown?session_id=1766b6c3-7c2a-405e-bd48-b05912dad972
+2024-09-28 14:10:31,560 - INFO - Analytics for this run - LLM calls: 0 | Tool calls: 0 | Actions: 0 | Errors: 0 | Duration: 2.6s | Cost: $0.00
+2024-09-28 14:10:31,561 - INFO - Session Replay: https://app.agentops.ai/drilldown?session_id=1766b6c3-7c2a-405e-bd48-b05912dad972
