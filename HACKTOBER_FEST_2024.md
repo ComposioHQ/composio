@@ -1,66 +1,82 @@
-# Hacktoberfest 2024
-
-By contributing and submitting a pull request to the Composio repository, you have the chance to receive a Digital Reward from Composio.
+# 🎃 Composio Hacktoberfest 2024
 
 <p align="center">
-  <a href="https://composio.dev//#gh-dark-mode-only">
+  <a href="https://composio.dev/#gh-dark-mode-only">
     <img src="./python/docs/imgs/composio_white_font.svg" width="318px" alt="Composio logo" />
   </a>
-  <a href="https://composio.dev//#gh-light-mode-only">
+  <a href="https://composio.dev/#gh-light-mode-only">
     <img src="./python/docs/imgs/composio_black_font.svg" width="318px" alt="Composio Logo" />
   </a>
 </p>
 
-## About Composio
+<p align="center">
+  <strong>Contribute to Composio and earn a Digital Reward!</strong>
+</p>
 
-**Composio is a tool set for AI Agents and LLMs, designed to streamline and optimize the connection and interaction between your AI Agents/LLMs and different APIs/services.**
+<p align="center">
+  <a href="https://docs.composio.dev/introduction/intro/quickstart">Quick Start</a> •
+  <a href="https://app.composio.dev/">Dashboard</a> •
+  <a href="https://dub.composio.dev/discord">Join Community</a>
+</p>
 
-## Here's what you need to know to participate in the Hacktoberfest:
 
-* Register anytime between **September 23** and **October 31** at https://hacktoberfest.com/participation/
-* Pull requests can be made on our GitHub (look for the "hacktoberfest" topic)
-* We have issues listed down with the tag "hacktoberfest" in the Composio GitHub repo to which you can contribute & raise a PR.
-* Our Project maintainers will review & accept your pull/merge requests for them to count toward your total
-* Participants with four pull/merge requests accepted between October 1 and October 31 will receive a swag pack from the folks at Hacktoberfest!
-* More details: https://hacktoberfest.com/participation/
+<p align="center">
+  <img src="./docs/media/hacktober-fest-2024.png" alt="Hacktoberfest 2024">
+</p>
 
-## Get Started
 
-To try Composio, the easiest way is to sign up and log in to Composio Cloud. To verify your identity and the pull requests you've raised, please fill out this Google Form with as much detail as possible. We will review your submission and reach out to you shortly. To speed up the process, feel free to join our Discord community for quicker assistance.
+## 🚀 About Composio
 
-[Quick Start](https://docs.composio.dev/introduction/intro/quickstart) | [Dashboard](https://app.composio.dev/)
+Composio is a cutting-edge toolset for AI Agents and LLMs, designed to streamline and optimize the connection and interaction between your AI Agents/LLMs and various APIs/services.
+
+### Key Features
+
+- 🛠 **100+ tools**: Ever-expanding tools catalog with support for custom additions
+- 🔐 **Managed Auth**: Built-in auth management for less developer overhead
+- 📈 **30% increase in reliability**: Simplified JSON structures, improved variable names, and enhanced error handling
+- 🤖 **Powerful RPA tools**: Spin up MacOS/Ubuntu instances on-the-fly for agent control and remote code execution
+- 🔒 **SOC Type 2**: 100% compliant with maximum data security
+- 🏠 **Self Hosting**: One-click installation across all platforms
+
+## 🎉 Hacktoberfest 2024 Participation
+
+Join us in celebrating open source during Hacktoberfest 2024! Here's what you need to know:
+
+1. **Register**: Sign up between **September 23** and **October 31** at [hacktoberfest.com](https://hacktoberfest.com/participation/)
+2. **Contribute**: Make pull requests to our GitHub repos (look for the "hacktoberfest" topic)
+3. **Get Recognized**: Participants with four accepted pull/merge requests between October 1 and October 31 will receive a swag pack from Hacktoberfest!
+
+### How to Participate
+
+1. Find issues tagged with "hacktoberfest" in the Composio GitHub repo
+2. Submit your pull requests
+3. Our maintainers will review and accept your contributions
+4. Fill out [this Google Form](https://forms.gle/your-form-link-here) to verify your identity and contributions
+
+For quicker assistance, join our [Discord community](https://dub.composio.dev/discord)!
 
 ## 🛠️ Resources to Kickstart Your Journey
 
-Our team has put together some resources to help you on your Hacktoberfest journey:
-
-* Composio Github repo: https://github.com/ComposioHQ/composio
-* Composio Docs: https://docs.composio.dev/introduction/intro/overview
-* Composio SDK & APIs: https://docs.composio.dev/swekit-js/introduction
-* Composio Blog: https://composio.dev/blog/
-* Contribution Guide: https://github.com/ComposioHQ/composio/blob/master/CONTRIBUTING.md
-
-## Features
-
-- 100+ tools - Ever expanding tools catalog with the support to easily add custom tools
-- Managed Auth - Built-in auth management provides engineers less things to worry about
-- 30% increase in reliability - We simplify JSON structures, improve variables names, better error handling
-- Powerful RPA tools - Spin up a MacOS/Ubuntu instance on the fly & let the agents take control. Execute code remotely
-- SOC Type 2 - 100% compliant and maximum security of user's data.
-- Self Hosting - One click installation of integration across all platform, one code is all you need.
-
-## 💬 Community
-
-Join [Composio Community](https://dub.composio.dev/discord) to connect with other Composio users and developers.
+- [Composio GitHub Repo](https://github.com/ComposioHQ/composio)
+- [Composio Documentation](https://docs.composio.dev/introduction/intro/overview)
+- [Composio SDK & APIs](https://docs.composio.dev/swekit-js/introduction)
+- [Composio Blog](https://composio.dev/blog/)
+- [Contribution Guide](https://github.com/ComposioHQ/composio/blob/master/CONTRIBUTING.md)
 
 ## 🌱 Contributing
 
-Interested in making a contribution? We warmly welcome and value all kinds of contributions to Composio! For more details on how you can contribute, take a look at our [Contribution Guide](https://github.com/ComposioHQ/composio/blob/master/CONTRIBUTING.md).
+We warmly welcome and value all kinds of contributions to Composio! Check out our [Contribution Guide](https://github.com/ComposioHQ/composio/blob/master/CONTRIBUTING.md) for more details.
 
-A big thank you to all our ❤︎ contributors for their support!
+A big thank you to all our ❤️ contributors for their support!
 
-## 🔥 We are Hiring!
+## 🔥 We're Hiring!
 
-We're on the lookout for a [DevRel](https://composio.notion.site/Dev-Rel-105c2287139c456a8e790e41ff13224e) to join our Composio crew!
+Join the Composio crew! We're looking for a passionate [DevRel](https://composio.notion.site/Dev-Rel-105c2287139c456a8e790e41ff13224e) to join our team.
 
-Contact us: [tech@composio.dev](mailto:tech@composio.dev) or [abhay@composio.dev](mailto:abhay@composio.dev).
+Contact us: [tech@composio.dev](mailto:tech@composio.dev) or [abhay@composio.dev](mailto:abhay@composio.dev)
+
+---
+
+<p align="center">
+  Made with ❤️ by the Composio Team
+</p>
