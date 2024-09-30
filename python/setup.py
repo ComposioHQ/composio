@@ -45,7 +45,7 @@ core_requires = [
     "pyperclip>=1.8.2,<2",
     "jsonref>=1.1.0",
     "inflection>=0.5.1",
-    "semver>=3.0.0",
+    "semver>=2.13.0",
     # TODO: Extract as workspace dependencies
     "fastapi",  # Tool API
     "uvicorn",  # Tool server
@@ -76,7 +76,7 @@ all_requirements = core_requires + tools_require
 
 setup(
     name="composio_core",
-    version="0.5.26",
+    version="0.5.28",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",

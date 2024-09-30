@@ -35,7 +35,7 @@ def scan_for_package_data(
 
 setup(
     name="swekit",
-    version="0.2.26",
+    version="0.2.28",
     author="Shubhra",
     author_email="shubhra@composio.dev",
     description="Tools for running a SWE agent using Composio platform",
@@ -63,7 +63,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "pydantic>=2.7.4",
-        "swebench==1.1.0",
+        "swebench==2.0.13",
         "datasets>=2.20.0",
         "gitpython>=3.1.43",
         "composio_core>=0.4.3",
