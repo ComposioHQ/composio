@@ -2,8 +2,6 @@
 
 By contributing and submitting a pull request to the Composio repository, you have the chance to receive a Digital Reward from Composio.
 
-[Participate & win reward creative]
-
 <p align="center">
   <a href="https://composio.dev//#gh-dark-mode-only">
     <img src="./python/docs/imgs/composio_white_font.svg" width="318px" alt="Composio logo" />
@@ -16,8 +14,6 @@ By contributing and submitting a pull request to the Composio repository, you ha
 ## About Composio
 
 **Composio is a tool set for AI Agents and LLMs, designed to streamline and optimize the connection and interaction between your AI Agents/LLMs and different APIs/services.**
-
-[Composio platform / how it works creative]
 
 ## Here's what you need to know to participate in the Hacktoberfest:
 
@@ -32,9 +28,7 @@ By contributing and submitting a pull request to the Composio repository, you ha
 
 To try Composio, the easiest way is to sign up and log in to Composio Cloud. To verify your identity and the pull requests you've raised, please fill out this Google Form with as much detail as possible. We will review your submission and reach out to you shortly. To speed up the process, feel free to join our Discord community for quicker assistance.
 
-[Quick start button creative] - https://docs.composio.dev/introduction/intro/quickstart
-
-[Cloud version button] - app.composio.dev
+[Quick Start](https://docs.composio.dev/introduction/intro/quickstart) | [Dashboard](https://app.composio.dev/)
 
 ## 🛠️ Resources to Kickstart Your Journey
 
@@ -67,6 +61,6 @@ A big thank you to all our ❤︎ contributors for their support!
 
 ## 🔥 We are Hiring!
 
-We're on the lookout for a [DevRel superstar](https://composio.notion.site/Dev-Rel-105c2287139c456a8e790e41ff13224e) to join our Composio crew!
+We're on the lookout for a [DevRel](https://composio.notion.site/Dev-Rel-105c2287139c456a8e790e41ff13224e) to join our Composio crew!
 
 Contact us: [tech@composio.dev](mailto:tech@composio.dev) or [abhay@composio.dev](mailto:abhay@composio.dev).
