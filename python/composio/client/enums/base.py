@@ -316,6 +316,8 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         """String representation."""
         return t.cast(str, self._slug)
 
+    __repr__ = __str__
+
     def __eq__(self, other: object) -> bool:
         """Check equivalence of two objects."""
         if not isinstance(other, (str, _AnnotatedEnum)):

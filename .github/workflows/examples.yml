@@ -49,6 +49,7 @@ jobs:
       run:
         working-directory: ${{ inputs.working-directory }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.10"]
@@ -82,6 +83,7 @@ jobs:
           LISTENNOTES_API_KEY: ${{secrets.LISTENNOTES_API_KEY}}
           COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY_RELEASE }}
           COMPOSIO_BASE_URL: ${{ inputs.base_url || secrets.COMPOSIO_BASE_URL || 'https://backend.composio.dev/api' }}
+          # TODO(@kaavee): Add Anthropic API key
         run: |
           sudo apt-get update --fix-missing
           sudo apt-get autoremove
@@ -91,10 +93,11 @@ jobs:
           python -m pip install plugins/${{matrix.package}}
           python -m pip install '.[all]'
           python -m pip install 'numpy<2' python-dotenv
-          
-          composio apps update
+          python -m pip install unstructured
 
-          CI=false COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} PLUGIN_TO_TEST=${{matrix.package}} COMPOSIO_LOGGING_LEVEL='debug' pytest -vv tests/test_example.py
+          COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' composio apps update
+          COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' PLUGIN_TO_TEST=${{matrix.package}} CI=false pytest -vv tests/test_example.py
+          COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' PLUGIN_TO_TEST=${{matrix.package}} CI=false pytest -vv tests/test_load_tools.py
       - name: Slack Notification on Failure
         if: ${{ failure() && github.ref == 'refs/heads/master' && !contains(github.event.head_commit.message, 'release') && !contains(github.event.head_commit.message, 'Release') && !inputs.dont_notify }}
         uses: rtCamp/action-slack-notify@v2
