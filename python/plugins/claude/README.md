@@ -38,9 +38,9 @@ client = anthropic.Anthropic()
 
 This step involves fetching and integrating GitHub tools provided by Composio, enabling enhanced functionality for LangChain operations.
 ```python
-from composio_claude import App, ComposioToolset
+from composio_claude import App, ComposioToolSet
 
-toolset = ComposioToolset()
+toolset = ComposioToolSet()
 actions = toolset.get_tools(tools=App.GITHUB)
 ```
 
