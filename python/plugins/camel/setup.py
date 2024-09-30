@@ -22,6 +22,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    install_requires=["composio_core==0.5.26", "camel-ai>=0.1.5.7"],
+    install_requires=["composio_core==0.5.26", "camel-ai>=0.1.5.7", "pillow"],
     include_package_data=True,
 )
