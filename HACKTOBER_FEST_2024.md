@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <strong>Contribute to Composio and earn a Digital Reward!</strong>
+  <strong>Contribute to Composio and earn ton of swag!</strong>
 </p>
 
 <p align="center">
