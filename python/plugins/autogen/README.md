@@ -25,7 +25,7 @@ Setup your environment by importing necessary packages and configuring the Autog
 
 ```python
 from autogen import AssistantAgent, UserProxyAgent
-from composio_autogen import ComposioToolset, App, Action
+from composio_autogen import ComposioToolSet, App, Action
 import os
 
 # Configuration for the language model
@@ -52,10 +52,10 @@ user_proxy = UserProxyAgent(
 Initialize and register the necessary tools for interacting with GitHub.
 
 ```python
-from composio_autogen import ComposioToolset, App, Action
+from composio_autogen import ComposioToolSet, App, Action
 
 # Initialize Composio Toolset
-composio_tools = ComposioToolset()
+composio_tools = ComposioToolSet()
 
 # Register tools with appropriate executors
 composio_tools.register_tools(tools=[App.GITHUB], caller=chatbot, executor=user_proxy)
