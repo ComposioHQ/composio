@@ -39,9 +39,6 @@ program.addHelpText("before", (options) => {
     formatLine(""),
     formatLine(`  ${chalk.bold("⚙️ Options:")}\n`),
     formatLine(
-      `    ${chalk.magenta("-V, --version")} 📌 Output the version number`,
-    ),
-    formatLine(
       `    ${chalk.magenta("-h, --help")}    ℹ️ Display help for command`,
     ),
     formatLine(""),

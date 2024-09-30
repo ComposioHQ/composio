@@ -22,7 +22,7 @@ export default class LoginCommand {
         "-n, --no-browser",
         "No browser will be opened, you will have to manually copy the link and paste it in your browser",
       )
-      .description("Login to Composio")
+      .description("Authenticate and login to Composio")
       .action(this.handleAction.bind(this));
   }
 

@@ -18,8 +18,8 @@ sql_tools = ComposioToolSet(output_dir=Path.home() / "composio_output").get_tool
 
 code_interpreter_agent = Agent(
     role="Python Code Interpreter Agent",
-    goal=f"""Run I a code to get achieve a task given by the user""",
-    backstory="""You are an agent that helps users run Python code.""",
+    goal=f"""Run I a code to get achieve a task given by the user.""",
+    backstory="""You are an agent that helps users run Python code.  If you are generating any chart, please download the file at the end using get file action""",
     verbose=True,
     tools=code_interpreter_tools,
     llm=llm,

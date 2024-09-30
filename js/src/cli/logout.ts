@@ -9,7 +9,7 @@ export default class LogoutCommand {
     this.program = program;
     this.program
       .command("logout")
-      .description("Logout from Composio")
+      .description("Clear authentication and logout from Composio")
       .action(this.handleAction.bind(this));
   }
 
