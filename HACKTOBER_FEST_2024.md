@@ -36,7 +36,7 @@ Our team has put together some resources to help you on your Hacktoberfest journ
 
 * Composio Github repo: https://github.com/ComposioHQ/composio
 * Composio Docs: https://docs.composio.dev/introduction/intro/overview
-* Composio SDK & APIs:
+* Composio SDK & APIs: https://docs.composio.dev/swekit-js/introduction
 * Composio Blog: https://composio.dev/blog/
 * Contribution Guide: https://github.com/ComposioHQ/composio/blob/master/CONTRIBUTING.md
 
