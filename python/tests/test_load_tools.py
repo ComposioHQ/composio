@@ -19,7 +19,7 @@ PLUGINS = (
     "claude",
     "crewai",
     # "griptape", # TODO(@kaavee315): Handle oneOf in Griptape
-    "julep",
+    # "julep", # TODO: Update the julep plugin implementation
     "langchain",
     "llamaindex",
     "lyzr",
