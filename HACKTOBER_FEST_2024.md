@@ -83,23 +83,6 @@ Participants who have at least 4 accepted pull requests (PRs) during the event p
 In the week following the event, we will share links for you to redeem your swag. Most items are expected to arrive in November. However, delivery times may vary depending on your location and when you place your t-shirt order.
 </details>
 
-<details>
-<summary>Are there internship opportunities available at Composio?</summary>
-
-Yes, Composio offers internship opportunities! We're always looking for talented individuals to join our team. For the most up-to-date information on available positions and how to apply, please visit our careers page at [insert careers page URL here].
-</details>
-
-<details>
-<summary>How can I participate in Hacktoberfest with Composio?</summary>
-
-To participate:
-1. Sign up for Hacktoberfest at [hacktoberfest.com](https://hacktoberfest.com/).
-2. Look for issues labeled "Hacktoberfest" in our repository.
-3. Fork the repository and create a pull request addressing one of these issues.
-4. Wait for your PR to be reviewed and merged.
-</details>
-
-<details>
 <summary>What types of contributions count towards Hacktoberfest?</summary>
 
 Contributions that count include:
@@ -110,23 +93,6 @@ Contributions that count include:
 
 Please note that spam or low-quality PRs will not be counted.
 </details>
-
-<details>
-<summary>I'm new to open source. How can I get started?</summary>
-
-We welcome newcomers! Here are some steps to get started:
-1. Familiarize yourself with Git and GitHub basics.
-2. Read our contributing guidelines in the CONTRIBUTING.md file.
-3. Look for issues labeled "good first issue" or "beginner-friendly".
-4. Don't hesitate to ask questions in the issue comments if you need clarification.
-</details>
-
-<details>
-<summary>How can I contact the Composio team if I have more questions?</summary>
-
-For additional questions, please [insert preferred contact method here, e.g., "open an issue in this repository" or "email us at support@composio.com"].
-</details>
-
 
 ## 🔥 We're Hiring!
 
