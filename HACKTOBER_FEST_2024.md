@@ -51,7 +51,6 @@ Join us in celebrating open source during Hacktoberfest 2024! Here's what you ne
 1. Find issues tagged with "hacktoberfest" in the Composio GitHub repo
 2. Submit your pull requests
 3. Our maintainers will review and accept your contributions
-4. Fill out [this Google Form](https://forms.gle/your-form-link-here) to verify your identity and contributions
 
 For quicker assistance, join our [Discord community](https://dub.composio.dev/discord)!
 
