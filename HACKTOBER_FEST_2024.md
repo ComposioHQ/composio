@@ -69,6 +69,31 @@ We warmly welcome and value all kinds of contributions to Composio! Check out ou
 
 A big thank you to all our ❤️ contributors for their support!
 
+## Frequently Asked Questions (FAQs)
+
+### Who is eligible for Holopin badge and Composio swag?
+Participants who have at least 4 accepted pull requests (PRs) during the event period are eligible for Hacktoberfest Holopin badges and Composio swag.
+
+### When will I receive my Composio swag?
+In the week following the event, we will share links for you to redeem your swag. Most items are expected to arrive in November. However, delivery times may vary depending on your location and when you place your t-shirt order.
+
+### How can I participate in Hacktoberfest with Composio?
+To participate:
+1. Sign up for Hacktoberfest at [hacktoberfest.com](https://hacktoberfest.com/).
+2. Look for issues labeled "Hacktoberfest" in our repository.
+3. Fork the repository and create a pull request addressing one of these issues.
+4. Wait for your PR to be reviewed and merged.
+
+### What types of contributions count towards Hacktoberfest?
+Contributions that count include:
+- Pull requests that add new features
+- Bug fixes
+- Documentation improvements
+- Test additions or improvements
+
+Please note that spam or low-quality PRs will not be counted.
+
+
 ## 🔥 We're Hiring!
 
 Join the Composio crew! We're looking for a passionate [DevRel](https://composio.notion.site/Dev-Rel-105c2287139c456a8e790e41ff13224e) to join our team.
