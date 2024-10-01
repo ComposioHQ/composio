@@ -23,32 +23,20 @@ description: "Quickstart-2: Learn how to authenticate and manage multiple users 
 
 Follow these 5 steps to connect your user to Google Calendar and create an event
 
-
+<Tabs>
+<Tab title="Python">
 <Steps>
-
 <Step title="Install Composio">
-    Choose your preferred language:
 
-    <Tabs>
-        <Tab title="Python">
             <CodeGroup>
                 ```bash Install Composio
                 pip install composio_core composio_openai
                 ```
             </CodeGroup>
-        </Tab>
-        <Tab title="JavaScript">
-            <CodeGroup>
-                ```bash Install Composio
-                npm install composio-core openai
-                pip install composio_core  # for CLI (optional)
-                ```
-            </CodeGroup>
             <Note>
                 CLI binary package coming soon. Skip `pip install` if not using CLI.
             </Note>
-        </Tab>
-    </Tabs>
+
 </Step>
 
 <Step title="Authenticate Google Calendar Account">
@@ -74,20 +62,6 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
                 ```
             </CodeGroup>
         </Tab>
-        <Tab title="JavaScript">
-            <CodeGroup>
-                ```javascript Authenticate Jessica's Google Calendar Account
-                import { Composio } from "composio-core";
-
-                const client = new Composio(process.env.COMPOSIO_API_KEY);
-
-                const entity = await client.getEntity("Jessica");
-                const connection = await entity.initiateConnection('googlecalendar');
-
-                console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
-                ```
-            </CodeGroup>
-        </Tab>
     </Tabs>
     <Info>
     You can create and authenticate entities using any of the above methods (Python and Javascript). The CLI is just one of several options available.
@@ -101,8 +75,6 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
 <Step title="Initialize Composio and OpenAI">
     Set up your development environment:
 
-    <Tabs>
-        <Tab title="Python">
             <CodeGroup>
                 ```python Initialize Composio and OpenAI
                 from composio_openai import ComposioToolSet, Action
@@ -112,25 +84,7 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
                 composio_toolset = ComposioToolSet(entity_id="Jessica")
                 ```
             </CodeGroup>
-        </Tab>
-        <Tab title="JavaScript">
-            <CodeGroup>
-                ```javascript Initialize Composio and OpenAI
-                import { OpenAI } from "openai";
-                import { OpenAIToolSet } from "composio-core";
 
-                const openai_client = new OpenAI({
-                    apiKey: process.env.OPENAI_API_KEY
-                });
-
-                const composio_toolset = new OpenAIToolSet({
-                    apiKey: process.env.COMPOSIO_API_KEY,
-                    entityId: "Jessica",
-                });
-                ```
-            </CodeGroup>
-        </Tab>
-    </Tabs>
 
     <Tip>
         Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
@@ -141,8 +95,6 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
 <Step title="Fetch Google Calendar Actions & Interact with LLM">
     Now, let's create a Google Calendar event using natural language:
 
-    <Tabs>
-        <Tab title="Python">
             <CodeGroup>
                 ```python Fetch Google Calendar Actions & Interact with LLM
                 tools = composio_toolset.get_tools(actions=[Action.GOOGLECALENDAR_CREATE_EVENT])
@@ -159,8 +111,103 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
                 )
                 ```
             </CodeGroup>
-        </Tab>
-        <Tab title="JavaScript">
+</Step>
+
+<Step title="Execute Tool Calls">
+    Finally, let's execute the action determined by the LLM:
+
+            <CodeGroup>
+                ```python Execute Tool Calls
+                result = composio_toolset.handle_tool_calls(response)
+                print(result)
+                ```
+            </CodeGroup>
+</Step>
+</Steps>
+
+</Tab>
+
+
+
+<Tab title="JavaScript">
+<Steps>
+<Step title="Install Composio">
+    Choose your preferred language:
+
+ 
+            <CodeGroup>
+                ```bash Install Composio
+                npm install composio-core openai
+                pip install composio_core  # for CLI (optional)
+                ```
+            </CodeGroup>
+            <Note>
+                CLI binary package coming soon. Skip `pip install` if not using CLI.
+            </Note>
+</Step>
+
+<Step title="Authenticate Google Calendar Account">
+We'll use Jessica as our example user. There are multiple ways to authenticate an account:
+<Tabs>
+    <Tab title="CLI">
+            <CodeGroup>
+                ```bash Authenticate Jessica's Google Calendar Account
+                composio add googlecalendar -e "Jessica" # Launches Google Calendar login
+                ```
+            </CodeGroup>
+    </Tab>
+    <Tab title="JavaScript">
+            <CodeGroup>
+                ```javascript Authenticate Jessica's Google Calendar Account
+                import { Composio } from "composio-core";
+
+                const client = new Composio(process.env.COMPOSIO_API_KEY);
+
+                const entity = await client.getEntity("Jessica");
+                const connection = await entity.initiateConnection('googlecalendar');
+
+                console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
+                ```
+            </CodeGroup>
+    </Tab>
+    </Tabs>
+    <Info>
+    You can create and authenticate entities using any of the above methods (Python and Javascript). The CLI is just one of several options available.
+    </Info>
+    <Warning>
+        Ensure you complete the authentication process by following the URL provided in your console.
+    </Warning>
+
+</Step>
+
+<Step title="Initialize Composio and OpenAI">
+    Set up your development environment:
+
+            <CodeGroup>
+                ```javascript Initialize Composio and OpenAI
+                import { OpenAI } from "openai";
+                import { OpenAIToolSet } from "composio-core";
+
+                const openai_client = new OpenAI({
+                    apiKey: process.env.OPENAI_API_KEY
+                });
+
+                const composio_toolset = new OpenAIToolSet({
+                    apiKey: process.env.COMPOSIO_API_KEY,
+                    entityId: "Jessica",
+                });
+                ```
+            </CodeGroup>
+    <Tip>
+        Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
+    </Tip>
+
+</Step>
+
+<Step title="Fetch Google Calendar Actions & Interact with LLM">
+    Now, let's create a Google Calendar event using natural language:
+
+
             <CodeGroup>
                 ```javascript Fetch Google Calendar Actions & Interact with LLM
                 const tools = await composio_toolset.getActions({
@@ -177,8 +224,46 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
                 });
                 ```
             </CodeGroup>
+
+</Step>
+
+<Step title="Execute Tool Calls">
+    Finally, let's execute the action determined by the LLM:
+
+
+            <CodeGroup>
+                ```javascript Execute Tool Calls
+                const result = await composio_toolset.handleToolCall(response);
+                console.log(result);
+                ```
+            </CodeGroup>
+</Step>
+
+</Steps>
+</Tab>
+
+
+
+<Tab title="API">
+<Steps>
+<Step title="Authenticate Google Calendar Account">
+We'll use Jessica as our example user. There are multiple ways to authenticate an account:
+    <Tab title="CLI">
+            <CodeGroup>
+                ```bash Authenticate Jessica's Google Calendar Account
+                composio add googlecalendar -e "Jessica" # Launches Google Calendar login
+                ```
+            </CodeGroup>
         </Tab>
-        <Tab title="API">
+    <Warning>
+        Ensure you complete the authentication process by following the URL provided in your console.
+    </Warning>
+
+</Step>
+
+
+<Step title="Fetch Google Calendar Actions & Interact with LLM">
+    Now, let's create a Google Calendar event using natural language:
             You can get a list of Actions for a particular App like this. In this case, we obtain all the Google Calendar Actions:
             <CodeGroup>
                 ```curl Fetch Google Calendar Actions & Interact with LLM
@@ -187,31 +272,11 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
                 --header 'X-API-Key: ADD YOUR API KEY HERE'
                 ```
             </CodeGroup>
-        </Tab>
-    </Tabs>
 </Step>
 
 <Step title="Execute Tool Calls">
     Finally, let's execute the action determined by the LLM:
 
-    <Tabs>
-        <Tab title="Python">
-            <CodeGroup>
-                ```python Execute Tool Calls
-                result = composio_toolset.handle_tool_calls(response)
-                print(result)
-                ```
-            </CodeGroup>
-        </Tab>
-        <Tab title="JavaScript">
-            <CodeGroup>
-                ```javascript Execute Tool Calls
-                const result = await composio_toolset.handleToolCall(response);
-                console.log(result);
-                ```
-            </CodeGroup>
-        </Tab>
-        <Tab title="API">
             <CodeGroup>
                 ```curl Execute Tool Calls
                 curl --request POST \
@@ -227,11 +292,12 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
                 }'
                 ```
             </CodeGroup>
-        </Tab>
-    </Tabs>
 </Step>
-
 </Steps>
+</Tab>
+</Tabs>
+
+
 
 ## What Just Happened? 🎉
 
