@@ -83,6 +83,7 @@ Participants who have at least 4 accepted pull requests (PRs) during the event p
 In the week following the event, we will share links for you to redeem your swag. Most items are expected to arrive in November. However, delivery times may vary depending on your location and when you place your t-shirt order.
 </details>
 
+<details>
 <summary>What types of contributions count towards Hacktoberfest?</summary>
 
 Contributions that count include:
