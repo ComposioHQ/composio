@@ -1,84 +1,71 @@
 ---
-title: "Managing Connected Accounts in Composio"
-sidebarTitle: "How do I get all my Connected Account?"
-icon: "plug"
-description: "Learn how to retrieve and manage integrations and connected accounts for entities in Composio."
+title: "Listing Connected Accounts in Composio"
+sidebarTitle: "How do I get all my Connected Accounts?"
+icon: "user"
+description: "Managing and monitoring your connections is essential to show your users what integrations they have connected."
 ---
 
-## Getting Connected Accounts for an Entity
-
-To retrieve all connected accounts for a specific entity (user), you can use the following methods:
-
+### Listing All Connections
+To view all the connections associated with your Composio account, use the following command:
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
-```python python
+```python List all connections via Python
 from composio import Composio
-composio_client = Composio(api_key="YOUR_COMPOSIO_API_KEY")
-#Replace 'user_email_or_unique_id' with the actual entity identifier
-entity = composio_client.get_entity(id='user_email_or_unique_id')
-try:
-    connected_accounts = entity.get_connections()
-    print(connected_accounts)
-except Exception as e:
-    print(f"Error retrieving connected accounts: {str(e)}")
+
+client = Composio()
+
+entity = composio_client.get_entity(id=USER_ID)
+
+print(composio_client.)
+
+print(composio_client.connected_accounts.get())
 ```
 </CodeGroup>
 </Tab>
-<Tab title="JavaScript">
+<Tab title="CLI">
 <CodeGroup>
-```javascript javascript
-import { Composio } from "composio-core";
-const client = new Composio(process.env.COMPOSIO_API_KEY);
-// Replace 'user_email_or_unique_id' with the actual entity identifier
-const entity = await client.getEntity('user_email_or_unique_id');
-try {
-    const connectedAccounts = await entity.getConnections();
-    console.log(connectedAccounts);
-} catch (error) {
-    console.error("Error retrieving connected accounts:", error);
-}
+```bash List all connections via CLI
+composio connections
 ```
 </CodeGroup>
 </Tab>
-</Tabs>
-
-This will return a list of all connected accounts for the specified entity, including details about each connection such as the integration it's connected to and its current status.
-
-## Getting a Specific Connected Account
-
-If you need to retrieve a specific connected account for an entity, you can use the following method:
-
-<Tabs>
-<Tab title="Python">
-<CodeGroup>
-```python python
-from composio import Composio
-composio_client = Composio(api_key="YOUR_COMPOSIO_API_KEY")
-entity = composio_client.get_entity(id='user_email_or_unique_id')
-try:
-    connected_account = entity.get_connection(app="slack")
-    print(connected_account)
-except Exception as e:
-    print(f"No connected account found for Slack: {str(e)}")
-```
-</CodeGroup>
+<Tab title="JS">
+Coming Soon! 
 </Tab>
-<Tab title="JavaScript">
-<CodeGroup>
-```javascript javascript
-import { Composio } from "composio-core";
-const client = new Composio(process.env.COMPOSIO_API_KEY);
-const entity = await client.getEntity('user_email_or_unique_id');
-try {
-    const connectedAccount = await entity.getConnection("slack");
-    console.log(connectedAccount);
-} catch (error) {
-    console.error("No connected account found for Slack:", error);
-}
-```
-</CodeGroup>
+<Tab title="API">
+Coming Soon! 
 </Tab>
 </Tabs>
 
 
+### Getting Connection Details
+To get detailed information about a specific connection, use the get command followed by the connection ID. For example, to get details of a connection with the ID 123, you would use:
+
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python Get connection details via Python
+from composio import Composio
+
+client = Composio()
+
+print(composio_client.connected_accounts.get(id=123))
+```
+</CodeGroup>
+</Tab>
+<Tab title="CLI">
+
+<CodeGroup>
+```bash Get connection details via CLI
+composio connections get 123
+```
+</CodeGroup>
+</Tab>
+<Tab title="JS">
+Coming Soon! 
+</Tab>
+<Tab title="API">
+Coming Soon! 
+</Tab>
+</Tabs>
