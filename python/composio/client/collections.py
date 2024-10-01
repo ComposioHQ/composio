@@ -1192,12 +1192,6 @@ class Logs(Collection[LogRecord]):
     model = LogRecord
     endpoint = v1.logs
 
-    def push(self, record: t.Dict) -> bool:
+    def push(self, record: t.Dict) -> None:
         """Push logs to composio."""
-        response = self._raise_if_required(
-            response=self.client.http.post(
-                url=str(self.endpoint),
-                json=record,
-            )
-        )
-        return response.json().get("isIngested", False)
+        self.client.http.post(url=str(self.endpoint), json=record)
