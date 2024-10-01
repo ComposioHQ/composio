@@ -15,7 +15,7 @@ To retrieve all connected accounts for a specific entity (user), you can use the
 ```python python
 from composio import Composio
 composio_client = Composio(api_key="YOUR_COMPOSIO_API_KEY")
-Replace 'user_email_or_unique_id' with the actual entity identifier
+#Replace 'user_email_or_unique_id' with the actual entity identifier
 entity = composio_client.get_entity(id='user_email_or_unique_id')
 try:
     connected_accounts = entity.get_connections()
@@ -81,16 +81,4 @@ try {
 </Tab>
 </Tabs>
 
-Replace "slack" with the name of the specific integration you're looking for.
 
-## Best Practices
-
-1. Always handle exceptions when retrieving connected accounts, as the user might not have any connections or there might be authentication issues.
-
-2. Use meaningful identifiers for your entities to make it easier to manage and retrieve their connected accounts.
-
-3. Regularly check and update the status of connected accounts to ensure they remain active and functional.
-
-4. When displaying integrations or connected accounts to users, consider showing relevant information such as the last sync time, connection status, and any actions that might be required (e.g., re-authentication).
-
-By effectively managing integrations and connected accounts, you can provide a seamless experience for your users while leveraging the power of external services through Composio.
