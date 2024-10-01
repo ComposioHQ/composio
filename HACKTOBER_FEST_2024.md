@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <strong>Contribute to Composio and earn ton of swag!</strong>
+  <strong>Contribute to Composio and earn a ton of swag!</strong>
 </p>
 
 <p align="center">
@@ -44,7 +44,7 @@ Join us in celebrating open source during Hacktoberfest 2024! Here's what you ne
 
 1. **Register**: Sign up between **September 23** and **October 31** at [hacktoberfest.com](https://hacktoberfest.com/participation/)
 2. **Contribute**: Make pull requests to our GitHub repos (look for the "hacktoberfest" topic)
-3. **Get Recognized**: Participants with four accepted pull/merge requests between October 1 and October 31 will receive a swag pack from Composio and Holopin badge from Hacktoberfest!
+3. **Get Recognized**: Participants with four accepted pull/merge requests between October 1 and October 31 will receive a swag pack from Composio and a Holopin badge from Hacktoberfest!
 
 ### How to Participate
 
@@ -104,4 +104,7 @@ Contact us: [tech@composio.dev](mailto:tech@composio.dev) or [abhay@composio.dev
 
 <p align="center">
   Made with ❤️ by the Composio Team
+</p>
+<p align="center">
+  "If you find Composio Repo helpful, be sure to give us a ⭐️!"
 </p>
