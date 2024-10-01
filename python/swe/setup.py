@@ -72,10 +72,10 @@ setup(
         "rich",
     ],
     extras_require={
-        'langgraph': [
+        "langgraph": [
             "langchain-aws==0.1.17",
             "langgraph>=0.2.16",
-            "composio_langgraph>=0.5.13"
+            "composio_langgraph>=0.5.13",
         ]
-    }
+    },
 )

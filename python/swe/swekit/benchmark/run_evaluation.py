@@ -1,16 +1,17 @@
 import datetime
 import json
 import os
+import random
 import traceback
 import typing as t
 from pathlib import Path
 
 from pydantic import BaseModel, Field
+from swebench.harness.test_spec import make_test_spec
 from tqdm import tqdm
 
 from composio import WorkspaceConfigType, WorkspaceFactory, WorkspaceType
 from composio.utils.logging import WithLogger
-from swebench.harness.test_spec import make_test_spec
 
 from swekit.benchmark.utils import (
     build_issue_description,
@@ -20,7 +21,6 @@ from swekit.benchmark.utils import (
 )
 from swekit.config.constants import LOCAL_CACHE_DIRECTORY_NAME, LOGS_DIR
 from swekit.config.store import IssueConfig
-import random
 
 
 def _get_logs_dir() -> Path:
@@ -29,7 +29,10 @@ def _get_logs_dir() -> Path:
         Path.home()
         / LOCAL_CACHE_DIRECTORY_NAME
         / LOGS_DIR
-        / (str(int(datetime.datetime.now().timestamp())) + str(random.randint(1000, 9999)))
+        / (
+            str(int(datetime.datetime.now().timestamp()))
+            + str(random.randint(1000, 9999))
+        )
     )
 
 
@@ -104,7 +107,10 @@ class EvaluationManager(WithLogger):
 
     def get_issue_config(self, issue) -> IssueConfig:
         issue_description = build_issue_description(
-            issue["repo"], issue["hints_text"], issue["problem_statement"], self.include_hints
+            issue["repo"],
+            issue["hints_text"],
+            issue["problem_statement"],
+            self.include_hints,
         )
         test_spec = make_test_spec(issue)
         eval_script = test_spec.eval_script
@@ -176,7 +182,7 @@ class EvaluationManager(WithLogger):
         if self.dry_run:
             self.show_info_and_exit()
             return
-        
+
         for count, issue in tqdm(  # type: ignore
             iterable=enumerate(list(self.issues), 1),
             total=len(self.issues),
@@ -205,7 +211,9 @@ class EvaluationManager(WithLogger):
                         num_instances=self.num_instances,
                     )
                 except Exception as e:
-                    self.logger.error(f"Error setting up workspace: {traceback.format_exc()}")
+                    self.logger.error(
+                        f"Error setting up workspace: {e}. Traceback: {traceback.format_exc()}"
+                    )
                     continue
 
                 issue_config = self.get_issue_config(issue)
@@ -220,7 +228,9 @@ class EvaluationManager(WithLogger):
                     WorkspaceFactory.close(id=workspace_id)
 
             except Exception as e:
-                self.logger.error(f"Error processing issue {issue_config.issue_id}: {e}")
+                self.logger.error(
+                    f"Error processing issue {issue_config.issue_id}: {e}"
+                )
                 raise e
 
     def score_evaluation(self, run_id: str):

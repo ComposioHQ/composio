@@ -1,21 +1,22 @@
 # pylint: disable=logging-fstring-interpolation
+import concurrent.futures
 import datetime
 import glob
 import json
 import typing as t
 
 import docker
-import concurrent.futures
 from datasets import Dataset, load_dataset
 from docker import errors as docker_errors
+from swebench.harness.run_evaluation import main as run_evaluation
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from composio import Action, WorkspaceFactory, WorkspaceType
 from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import get as get_logger
 from composio.utils.url import get_api_url_base
-from swebench.harness.run_evaluation import main as run_evaluation
+
 from composio_crewai import ComposioToolSet
-from tenacity import retry, stop_after_attempt, wait_exponential
 
 
 logger = get_logger(name="run_evaluation")
@@ -45,16 +46,18 @@ def get_issues_dataset(dataset_name, test_split, test_instance_ids=[]) -> Datase
 def get_score(logs_dir, run_id, dataset_name):
     temp = []
     for files in glob.glob(f"{logs_dir}/agent_logs_*.json"):
-        pred = json.load(open(files, 'r'))
+        pred = json.load(open(files, "r"))
         for key, value in pred.items():
-            temp.append({
-                "instance_id": key,
-                "model_patch": value[0]['agent_output'],
-                "model_name_or_path": "composio",
-            })
+            temp.append(
+                {
+                    "instance_id": key,
+                    "model_patch": value[0]["agent_output"],
+                    "model_name_or_path": "composio",
+                }
+            )
     with open(f"{logs_dir}/predictions.json", "w") as f:
         json.dump(temp, f, indent=4)
-    
+
     run_evaluation(
         dataset_name=dataset_name,
         split="test",
@@ -66,18 +69,19 @@ def get_score(logs_dir, run_id, dataset_name):
         force_rebuild=False,
         cache_level="env",
         clean=False,
-        run_id=run_id
+        run_id=run_id,
     )
 
 
 def build_issue_description(repo, hints, problem_statement, include_hints):
     if not problem_statement or not problem_statement.strip():
         raise ValueError("problem statement is empty")
-    tmpl = f"""You have the repository {repo} cloned in the workspace. You are at the root of the repository. Here is the issue, that you have to solve all on your own:\n{problem_statement}. You can only make changes in the core repository {repo}.\n"""
+    tmpl = f"""You have the repository {repo} cloned in the workspace. You are at the root of the repository. Here is the issue, that you have to solve all on your own:\n{problem_statement}. You can only make changes in the core repository {repo}.\n"""  # noqa: E501
     if include_hints and hints:
         tmpl += f"""\n\nHere are few hints to solve the issue described in problem_statement: \n{hints}"""
 
     return tmpl
+
 
 @retry(stop=stop_after_attempt(1), wait=wait_exponential(multiplier=1, min=4, max=10))
 def build_image_and_container(
@@ -179,7 +183,9 @@ def setup_workspace(
             )
             for _ in range(num_instances)
         ]
-        workspace_ids = [future.result() for future in concurrent.futures.as_completed(futures)]
+        workspace_ids = [
+            future.result() for future in concurrent.futures.as_completed(futures)
+        ]
     repo_to_workspace_map[repo] = workspace_ids
     return workspace_ids
 
@@ -225,4 +231,8 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-    get_score(logs_dir="/Users/shrey/.composio_coder/logs/17272671278194/", run_id="langgraph_agent_temp", dataset_name="princeton-nlp/SWE-bench_Verified")
+    get_score(
+        logs_dir="/Users/shrey/.composio_coder/logs/17272671278194/",
+        run_id="langgraph_agent_temp",
+        dataset_name="princeton-nlp/SWE-bench_Verified",
+    )
