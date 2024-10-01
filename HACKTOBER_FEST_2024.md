@@ -69,7 +69,7 @@ We warmly welcome and value all kinds of contributions to Composio! Check out ou
 
 A big thank you to all our ❤️ contributors for their support!
 
-## Frequently Asked Questions (FAQs)
+## ❓ Frequently Asked Questions (FAQs)
 
 <details>
 <summary>Who is eligible for badges and swag?</summary>
