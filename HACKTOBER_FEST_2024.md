@@ -44,7 +44,7 @@ Join us in celebrating open source during Hacktoberfest 2024! Here's what you ne
 
 1. **Register**: Sign up between **September 23** and **October 31** at [hacktoberfest.com](https://hacktoberfest.com/participation/)
 2. **Contribute**: Make pull requests to our GitHub repos (look for the "hacktoberfest" topic)
-3. **Get Recognized**: Participants with four accepted pull/merge requests between October 1 and October 31 will receive a swag pack from Hacktoberfest!
+3. **Get Recognized**: Participants with four accepted pull/merge requests between October 1 and October 31 will receive a swag pack from Composio and Holopin badge from Hacktoberfest!
 
 ### How to Participate
 
