@@ -1,0 +1,289 @@
+---
+title: "🚀 Quick Start - 3"
+sidebarTitle: "Quick Start - Part 3"
+icon: "rocket"
+description: "Quickstart-3: Learn how to use Triggers with Composio."
+---
+
+## Composio Quick Start
+
+Set up Triggers that automatically execute Actions. 
+
+Follow these 5 steps to list your emails as soon as you receive them:
+
+<Info>
+    **What you'll achieve:** By the end of this guide, you'll have an AI agent capable of listing all the emails you receive as soon as you receive them.
+</Info>
+
+
+<Tabs>
+</Tabs>
+<Steps>
+
+<Step title="Install Composio">
+    Choose your preferred language:
+
+    <Tabs>
+        <Tab title="Python">
+            <CodeGroup>
+                ```bash Install Composio
+                pip install composio_core composio_openai
+                ```
+            </CodeGroup>
+        </Tab>
+        <Tab title="JavaScript">
+            <CodeGroup>
+                ```bash Install Composio
+                npm install composio-core openai
+                pip install composio_core  # for CLI (optional)
+                ```
+            </CodeGroup>
+            <Note>
+                CLI binary package coming soon. Skip `pip install` if not using CLI.
+            </Note>
+        </Tab>
+    </Tabs>
+</Step>
+
+<Step title="Authenticate Gmail Account">
+    We'll use **`Jessica`** as our example user. Choose your method:
+
+    <Tabs>
+        <Tab title="CLI (Quickest)">
+            <CodeGroup>
+                ```bash Authenticate Gmail Account
+                composio add gmail -e "Jessica" # Launches Gmail login
+                ```
+            </CodeGroup>
+        </Tab>
+        <Tab title="Python">
+            <CodeGroup>
+                ```python Authenticate Gmail Account
+                from composio import ComposioToolSet, App
+
+                toolset = ComposioToolSet(entity_id="Jessica")
+                entity = toolset.get_entity()
+                request = entity.initiate_connection(App.GMAIL)
+
+                print(f"Open this URL to authenticate: {request.redirectUrl}")
+                ```
+            </CodeGroup>
+        </Tab>
+        <Tab title="JavaScript">
+            <CodeGroup>
+                ```javascript Authenticate Gmail Account
+                import { Composio } from "composio-core";
+
+                const client = new Composio(process.env.COMPOSIO_API_KEY);
+
+                const entity = await client.getEntity("Jessica");
+                const connection = await entity.initiateConnection('gmail');
+
+                console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
+                ```
+            </CodeGroup>
+        </Tab>
+    </Tabs>
+
+    <Warning>
+        Ensure you complete the authentication process by following the URL provided in your console.
+    </Warning>
+
+</Step>
+
+<Step title="Enable Triggers">
+    <Tabs>
+        <Tab title="Using CLI">
+            <CodeGroup>
+                ```bash Enable Triggers
+                # In CLI
+                composio triggers enable gmail_new_gmail_message
+                # trigger_name is the name of the trigger - gmail_new_gmail_message
+
+                ## To disable a trigger
+                composio triggers disable <trigger_name>
+                ```
+            </CodeGroup>
+        </Tab>
+        <Tab title="Using Python Code">
+            <CodeGroup>
+                ```python Enable Triggers
+                from composio import Composio, Action
+
+                client = Composio()
+                entity = client.get_entity(id="Jessica")
+
+                # config is optional, it can be used to pass additional parameters for the trigger
+                entity.enable_trigger(app=App.GMAIL, trigger_name="gmail_new_gmail_message", config={}) # Enable trigger
+
+                # entity.disable_trigger("gmail_new_gmail_message") # Disable trigger via ID
+                ```
+            </CodeGroup>
+        </Tab>
+        <Tab title="Using JavaScript Code">
+            <CodeGroup>
+                ```javascript Enable Triggers
+                // Coming soon!
+                ```
+            </CodeGroup>
+        </Tab>
+        <Tab title="Using API">
+            When you initiate a connection, you receive the connectionAccountID:
+            <CodeGroup>
+                ```bash Enable Triggers
+                curl --request POST \
+                --url https://backend.composio.dev/api/v1/triggers/enable/{connectedAccountId}/GMAIL_NEW_GMAIL_MESSAGE \
+                --header 'Content-Type: application/json' \
+                --header 'X-API-Key: <x-api-key>' \
+                --data '{
+                    "triggerConfig": {}
+                }'
+                ```
+            </CodeGroup>
+        </Tab>
+        <Tab title="Using Dashboard">
+            <div
+                style={{
+                    width: '100%',
+                    position: 'relative',
+                    paddingTop: '56.25%',
+                }}>
+                <iframe
+                    src="https://app.supademo.com/embed/cly4qu1q001istgvzirl1sj8y"
+                    frameBorder="0"
+                    title="Direct Action Execution"
+                    allow="clipboard-write"
+                    webkitallowfullscreen="true"
+                    mozallowfullscreen="true"
+                    allowfullscreen
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        border: '3px solid #5E43CE',
+                        borderRadius: '10px',
+                    }}
+                />
+            </div>
+        </Tab>
+    </Tabs>
+</Step>
+
+<Step title="Initialize Composio and OpenAI">
+    Set up your development environment:
+
+    <Tabs>
+        <Tab title="Python">
+            <CodeGroup>
+                ```python Initialize Composio and OpenAI
+                from composio_openai import ComposioToolSet, Action
+                from openai import OpenAI
+
+                openai_client = OpenAI()
+                composio_toolset = ComposioToolSet()
+                ```
+            </CodeGroup>
+        </Tab>
+        <Tab title="JavaScript">
+            <CodeGroup>
+                ```javascript Initialize Composio and OpenAI
+                import { OpenAI } from "openai";
+                import { OpenAIToolSet } from "composio-core";
+
+                const openai_client = new OpenAI({
+                    apiKey: process.env.OPENAI_API_KEY
+                });
+
+                const composio_toolset = new OpenAIToolSet({
+                    apiKey: process.env.COMPOSIO_API_KEY,
+                });
+                ```
+            </CodeGroup>
+        </Tab>
+    </Tabs>
+
+    <Tip>
+        Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
+    </Tip>
+
+</Step>
+
+<Step title="Create a Trigger Listener">
+    <Tabs>
+        <Tab title="Using Python Code">
+            <CodeGroup>
+                ```python Create a Trigger Listener
+                listener = composio_toolset.create_trigger_listener()
+
+                ## Triggers when a new event has taken place
+                @listener.callback(filters={"trigger_name": "gmail_new_gmail_message"})
+                def callback_function(event):
+                    ## Your Code Here ##
+                    ## Parse event data and do something with it
+                    payload = event.payload
+                    thread_id = payload.get("threadId")
+                    message = payload.get("snippet")
+                    sender_mail = extract_sender_email(payload["payload"])
+                    print(sender_mail + ":" + message)
+
+                listener.listen()
+                ```
+            </CodeGroup>
+        </Tab>
+        <Tab title="Using JavaScript Code">
+            <CodeGroup>
+                ```javascript Create a Trigger Listener
+                import { LangchainToolSet } from "composio-core"; // or any other toolset
+
+                const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY });
+                const composio_client = toolset.client;
+
+                // If not using LangchainToolSet
+                // import { Composio } from "composio-core";
+                // const composio_client = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+
+                // Subscribe to triggers and perform actions
+                composio_client.triggers.subscribe((data) => {
+                    console.log("trigger received", data);
+                });
+                ```
+            </CodeGroup>
+        </Tab>
+        <Tab title="Using Webhook">
+            Coming soon!
+        </Tab>
+    </Tabs>
+</Step>
+
+</Steps>
+
+## What Just Happened? 🎉
+
+Congratulations! You've just:
+
+1. 🔐 Authenticated your Gmail account with Composio
+2. 🛠 Enabled Triggers
+3. 🧠 Passed these triggers to an AI language model
+4. ⭐ Instructed the AI to list all emails received
+5. ✅ Successfully executed the trigger and actions on Gmail
+
+<Frame caption="Explore Advanced Composio Features">
+    <Card title="Level Up Your Composio Skills" icon="rocket" iconType="duotone">
+        <CardGroup cols={2}>
+            <Card title="Compatible Agentic Frameworks" icon="brain" href="/framework/langchain">
+                Integrate with popular agentic frameworks
+            </Card>
+            <Card title="Authorize a User's Account" icon="brain" href="/introduction/foundations/components/entity/entity-guide">
+                Authorize a user's account to perform actions and subscribe to triggers
+            </Card>
+            <Card title="Execute Actions" icon="wand-magic-sparkles" href="/introduction/foundations/components/actions/action-guide">
+                Execute actions on behalf of a user
+            </Card>
+            <Card title="Triggers" icon="bolt" href="/introduction/foundations/components/triggers/trigger-guide">
+                Subscribe to triggers to execute actions automatically
+            </Card>
+        </CardGroup>
+    </Card>
+</Frame>

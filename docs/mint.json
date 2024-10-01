@@ -48,7 +48,7 @@
     }
   ],
   "topbarCtaButton": {
-    "name": "Dashboard",
+    "name": "Get your API Key",
     "url": "https://app.composio.dev"
   },
   "topAnchor": {
@@ -93,6 +93,7 @@
         "introduction/foundations/components/triggers/trigger-guide",
         "introduction/foundations/components/local_tools",
         "introduction/foundations/components/integrations/custom-integration",
+        "introduction/foundations/components/no_auth_apps/no_auth_guide",
         {
           "group": "Advanced",
           "pages": [
@@ -103,6 +104,19 @@
           ]
         }
       ]
+    },
+    {
+      "group":"Commonly Asked Questions",
+        "pages":[
+          "faq/api_key/api_key",
+          "faq/api_key/cli",
+          "faq/entities_doc/entities",
+          "faq/integrations_and_connections/integrations",
+          "faq/integrations_and_connections/connections",
+          "faq/integrations_and_connections/list_of_tools"
+
+
+        ]
     },
     {
       "group":"Supported Frameworks",

@@ -12,32 +12,19 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
 <Info>
     **What you'll achieve:** By the end of this guide, you'll have an AI agent capable of starring GitHub repositories using natural language commands.
 </Info>
-
+<Tabs>
+<Tab title="Python">
 <Steps>
 
     <Step title="Install Composio">
-        Choose your preferred language:
-
-        <Tabs>
-            <Tab title="Python">
                 <CodeGroup>
                     ```bash Install Packages
                     pip install composio_core composio_openai
                     ```
                 </CodeGroup>
-            </Tab>
-            <Tab title="JavaScript">
-                <CodeGroup>
-                    ```bash Install Packages
-                    npm install composio-core openai
-                    pip install composio_core  # for CLI (optional)
-                    ```
-                </CodeGroup>
                 <Note>
                     CLI binary package coming soon. Skip `pip install` if not using CLI.
                 </Note>
-            </Tab>
-        </Tabs>
     </Step>
 
     <Step title="Authenticate GitHub Account">
@@ -61,6 +48,97 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                     request = entity.initiate_connection(App.GITHUB)
 
                     print(f"Open this URL to authenticate: {request.redirectUrl}")
+                    ```
+                </CodeGroup>
+            </Tab>
+        </Tabs>
+
+        <Warning>
+            Ensure you complete the authentication process by following the URL provided in your console.
+        </Warning>
+
+    </Step>
+
+    <Step title="Initialize Composio and OpenAI">
+        Set up your development environment
+                <CodeGroup>
+                    ```python Initialize Clients
+                    from composio_openai import ComposioToolSet, Action
+                    from openai import OpenAI
+
+                    openai_client = OpenAI()
+                    composio_toolset = ComposioToolSet()
+                    ```
+                </CodeGroup>
+
+        <Tip>
+            Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
+        </Tip>
+
+    </Step>
+
+    <Step title="Fetch GitHub Actions & Interact with LLM">
+        Now, let's star a repository using natural language:
+
+                <CodeGroup>
+                    ```python Star a repo using LLM
+                    tools = composio_toolset.get_tools(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
+
+                    task = "Star the repo composiohq/composio on GitHub"
+
+                    response = openai_client.chat.completions.create(
+                    model="gpt-4-turbo-preview",
+                    tools=tools,
+                    messages=
+                        [
+                            {"role": "system", "content": "You are a helpful assistant."},
+                            {"role": "user", "content": task},
+                        ],
+                    )
+                    ```
+                </CodeGroup>
+    </Step>
+
+    <Step title="Execute Tool Calls">
+        Finally, let's execute the action determined by the LLM:
+
+                <CodeGroup>
+                    ```python Execute Function calls
+                    result = composio_toolset.handle_tool_calls(response)
+                    print(result)
+                    ```
+                </CodeGroup>
+    </Step>
+
+</Steps>
+
+</Tab>
+
+<Tab title="Javascript">
+<Steps>
+
+    <Step title="Install Composio">
+        Choose your preferred language:
+
+                <CodeGroup>
+                    ```bash Install Packages
+                    npm install composio-core openai
+                    pip install composio_core  # for CLI (optional)
+                    ```
+                </CodeGroup>
+                <Note>
+                    CLI binary package coming soon. Skip `pip install` if not using CLI.
+                </Note>
+    </Step>
+
+    <Step title="Authenticate GitHub Account">
+        Choose your method:
+
+        <Tabs>
+            <Tab title="CLI (Quickest)">
+                <CodeGroup>
+                    ```bash Authenticate GitHub Account
+                    composio add github # Launches GitHub login
                     ```
                 </CodeGroup>
             </Tab>
@@ -91,19 +169,6 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
     <Step title="Initialize Composio and OpenAI">
         Set up your development environment:
 
-        <Tabs>
-            <Tab title="Python">
-                <CodeGroup>
-                    ```python Initialize Clients
-                    from composio_openai import ComposioToolSet, Action
-                    from openai import OpenAI
-
-                    openai_client = OpenAI()
-                    composio_toolset = ComposioToolSet()
-                    ```
-                </CodeGroup>
-            </Tab>
-            <Tab title="JavaScript">
                 <CodeGroup>
                     ```javascript Initialize Clients
                     import { OpenAI } from "openai";
@@ -118,8 +183,6 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                 });
                     ```
                 </CodeGroup>
-            </Tab>
-        </Tabs>
 
         <Tip>
             Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
@@ -130,27 +193,6 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
     <Step title="Fetch GitHub Actions & Interact with LLM">
         Now, let's star a repository using natural language:
 
-        <Tabs>
-            <Tab title="Python">
-                <CodeGroup>
-                    ```python Star a repo using LLM
-                    tools = composio_toolset.get_tools(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
-
-                    task = "Star the repo composiohq/composio on GitHub"
-
-                    response = openai_client.chat.completions.create(
-                    model="gpt-4-turbo-preview",
-                    tools=tools,
-                    messages=
-                        [
-                            {"role": "system", "content": "You are a helpful assistant."},
-                            {"role": "user", "content": task},
-                        ],
-                    )
-                    ```
-                </CodeGroup>
-            </Tab>
-            <Tab title="JavaScript">
                 <CodeGroup>
                     ```javascript Star a repo using LLM
                     const tools = await composio_toolset.getActions({
@@ -167,63 +209,25 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                 });
                     ```
                 </CodeGroup>
-            </Tab>
-            <Tab title="API">
-            You can get a list of Actions for a particular App like this. In this case we obtain all the Github Actions
-            <CodeGroup>
-              ```curl curl
-              curl --request GET \
-              --url 'https://backend.composio.dev/api/v2/actions?appNames=GITHUB' \
-              --header 'X-API-Key: ADD YOUR API KEY HERE'
-              ```
-            </CodeGroup>
-            </Tab>
-        </Tabs>
     </Step>
 
     <Step title="Execute Tool Calls">
         Finally, let's execute the action determined by the LLM:
 
-        <Tabs>
-            <Tab title="Python">
-                <CodeGroup>
-                    ```python Execute Function calls
-                    result = composio_toolset.handle_tool_calls(response)
-                    print(result)
-                    ```
-                </CodeGroup>
-            </Tab>
-            <Tab title="JavaScript">
                 <CodeGroup>
                     ```javascript Execute Function calls
                     const result = await composio_toolset.handleToolCall(response);
                     console.log(result);
                     ```
                 </CodeGroup>
-            </Tab>
 
-            <Tab title="API">
-            <CodeGroup>
-            ```curl curl
-              curl --request POST \
-              --url https://backend.composio.dev/api/v2/actions/GITHUB_STAR_A_REPO/execute \
-              --header 'Content-Type: application/json' \
-              --header 'X-API-Key: ADD YOUR API KEY HERE' \
-              --data '{
-              "entityId": "default",
-              "input": {
-                  "repo": "composio",
-                  "owner": "composiohq"
-              }
-              }'
-             ```
-            </CodeGroup>
-            </Tab>
 
-        </Tabs>
     </Step>
 
 </Steps>
+
+</Tab>
+</Tabs>
 
 
 ## What Just Happened? 🎉
