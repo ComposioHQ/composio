@@ -1,91 +1,62 @@
 # pylint: disable=logging-fstring-interpolation
-
-import concurrent.futures
 import datetime
 import glob
 import json
-import os
 import typing as t
 
 import docker
+import concurrent.futures
 from datasets import Dataset, load_dataset
 from docker import errors as docker_errors
-from swebench.harness.run_evaluation import main as run_evaluation
 
 from composio import Action, WorkspaceFactory, WorkspaceType
 from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import get as get_logger
 from composio.utils.url import get_api_url_base
-
+from swebench.harness.run_evaluation import main as run_evaluation
 from composio_crewai import ComposioToolSet
-
-
-DATASET_NAME = os.environ.get("DATASET_NAME", "princeton-nlp/SWE-bench_Verified")
-PATH_TESTBED = "testbed/"
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 
 logger = get_logger(name="run_evaluation")
 
 
-def get_issues_dataset(test_split, test_instance_ids=[]) -> Dataset:
+def get_issues_dataset(dataset_name, test_split, test_instance_ids=[]) -> Dataset:
     test_dataset = t.cast(
         Dataset,
         load_dataset(
-            DATASET_NAME,
+            dataset_name,
             split=f"test[{test_split}]",
         ),
     )
-    print(f"Original test_dataset size: {len(test_dataset)}")
-    print(f"Number of test_instance_ids: {len(test_instance_ids)}")
-    print(f"First few test_instance_ids: {test_instance_ids[:5]}")
+    logger.info(f"Original test_dataset size: {len(test_dataset)}")
+    logger.info(f"Number of test_instance_ids: {len(test_instance_ids)}")
+    logger.info(f"First few test_instance_ids: {test_instance_ids[:5]}")
 
     if len(test_instance_ids) > 0:
         test_dataset = test_dataset.filter(
             lambda x: x["instance_id"] in test_instance_ids
         )
 
-    print(f"Filtered test_dataset size: {len(test_dataset)}")
+    logger.info(f"Filtered test_dataset size: {len(test_dataset)}")
     return test_dataset
 
 
-def get_score(logs_dir, run_id):
+def get_score(logs_dir, run_id, dataset_name):
     temp = []
     for files in glob.glob(f"{logs_dir}/agent_logs_*.json"):
-        pred = json.load(open(files, "r"))
+        pred = json.load(open(files, 'r'))
         for key, value in pred.items():
-            temp.append(
-                {
-                    "instance_id": key,
-                    "model_patch": value[0]["agent_output"],
-                    "model_name_or_path": "composio",
-                }
-            )
+            temp.append({
+                "instance_id": key,
+                "model_patch": value[0]['agent_output'],
+                "model_name_or_path": "composio",
+            })
     with open(f"{logs_dir}/predictions.json", "w") as f:
         json.dump(temp, f, indent=4)
-
-    # Remove dangling Docker images
-    import subprocess
-
-    try:
-        subprocess.run(
-            'docker rmi $(docker images -f "dangling=true" -q)',
-            shell=True,
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        logger.info("Successfully removed dangling Docker images")
-    except subprocess.CalledProcessError as e:
-        logger.warning(
-            f"Failed to remove dangling Docker images: {e.stderr.decode().strip()}"
-        )
-    except Exception as e:
-        logger.error(
-            f"An error occurred while trying to remove dangling Docker images: {str(e)}"
-        )
-
+    
     run_evaluation(
-        dataset_name=DATASET_NAME,
+        dataset_name=dataset_name,
         split="test",
         instance_ids=[],
         predictions_path=f"{logs_dir}/predictions.json",
@@ -95,86 +66,20 @@ def get_score(logs_dir, run_id):
         force_rebuild=False,
         cache_level="env",
         clean=False,
-        run_id=run_id,
+        run_id=run_id
     )
 
 
 def build_issue_description(repo, hints, problem_statement, include_hints):
     if not problem_statement or not problem_statement.strip():
         raise ValueError("problem statement is empty")
-    tmpl = f"""You have the repository {repo} cloned in the workspace. You are at the root of the repository. Here is the issue, that you have to solve all on your own:\n{problem_statement}. You can only make changes in the core repository {repo}.\n"""  # noqa: E501
+    tmpl = f"""You have the repository {repo} cloned in the workspace. You are at the root of the repository. Here is the issue, that you have to solve all on your own:\n{problem_statement}. You can only make changes in the core repository {repo}.\n"""
     if include_hints and hints:
         tmpl += f"""\n\nHere are few hints to solve the issue described in problem_statement: \n{hints}"""
 
     return tmpl
 
-
-def get_workspace_from_repo_map(repo, repo_to_workspace_map, base_commit):
-    workspace_id = repo_to_workspace_map.get(repo)
-    if not workspace_id or not workspace_id.strip():
-        return None
-
-    print("Resetting repository to base commit")
-    composio_toolset = ComposioToolSet(workspace_id=workspace_id)
-    composio_toolset.execute_action(
-        action=Action.FILETOOL_GIT_CLONE,
-        params={
-            "repo_name": repo,
-            "just_reset": True,
-            "commit_id": base_commit,
-        },
-    )
-    return workspace_id
-
-
-def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
-    if not repo_to_image_id_map.get(repo):
-        logger.info("repo: %s not found in repo-to-image-map", repo)
-        return ""
-    logger.info("Using saved image")
-    start_time = datetime.datetime.now()
-    composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Host())
-    workspace = WorkspaceFactory.new(
-        config=WorkspaceType.Docker(
-            image=repo_to_image_id_map[repo],
-            composio_api_key=composio_toolset.api_key,
-            composio_base_url=composio_toolset._base_url or get_api_url_base(),
-            github_access_token=composio_toolset._try_get_github_access_token_for_current_entity(),
-        ),
-    )
-    workspace_id = workspace.id
-    composio_toolset.set_workspace_id(
-        workspace_id=workspace_id,
-    )
-
-    workspace_creation_time = datetime.datetime.now() - start_time
-    cd_resp = composio_toolset.execute_action(
-        action=Action.SHELL_EXEC_COMMAND,
-        params={
-            "cmd": f"cd /{repo.split('/')[-1]}",
-        },
-    )
-    if isinstance(cd_resp, dict) and cd_resp.get("status") == "failure":
-        raise Exception(f"Error changing directory: {cd_resp['details']}")
-    logger.info(
-        "workspace is created, workspace-id is: %s, creation time: %s",
-        workspace_id,
-        workspace_creation_time,
-    )
-    logger.info("Resetting repository to base commit")
-    reset_resp = composio_toolset.execute_action(
-        action=Action.FILETOOL_GIT_CLONE,
-        params={
-            "repo_name": repo,
-            "just_reset": True,
-            "commit_id": base_commit,
-        },
-    )
-    if isinstance(reset_resp, dict) and not reset_resp.get("success"):
-        raise Exception(f"Error resetting repository: {reset_resp['error']}")
-    return workspace_id
-
-
+@retry(stop=stop_after_attempt(1), wait=wait_exponential(multiplier=1, min=4, max=10))
 def build_image_and_container(
     repo, base_commit, workspace_env=WorkspaceType.Docker, image_name=DEFAULT_IMAGE
 ):
@@ -199,6 +104,7 @@ def build_image_and_container(
         )
     else:
         raise ValueError(f"Unsupported workspace environment: {workspace_env}")
+    logger.info("Workspace created")
     workspace_creation_time = datetime.datetime.now() - start_time
     logger.info(
         "workspace is created, workspace-id is: %s, creation time: %s",
@@ -273,9 +179,7 @@ def setup_workspace(
             )
             for _ in range(num_instances)
         ]
-        workspace_ids = [
-            future.result() for future in concurrent.futures.as_completed(futures)
-        ]
+        workspace_ids = [future.result() for future in concurrent.futures.as_completed(futures)]
     repo_to_workspace_map[repo] = workspace_ids
     return workspace_ids
 
@@ -321,7 +225,4 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-    get_score(
-        logs_dir="/Users/shrey/.composio_coder/logs/17266821626867/",
-        run_id="langgraph_agent_temp",
-    )
+    get_score(logs_dir="/Users/shrey/.composio_coder/logs/17272671278194/", run_id="langgraph_agent_temp", dataset_name="princeton-nlp/SWE-bench_Verified")

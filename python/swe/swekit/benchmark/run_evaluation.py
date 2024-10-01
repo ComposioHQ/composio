@@ -1,19 +1,16 @@
 import datetime
 import json
 import os
-import random
-import time
+import traceback
 import typing as t
 from pathlib import Path
 
 from pydantic import BaseModel, Field
-from swebench.harness.test_spec import make_test_spec
 from tqdm import tqdm
 
-from composio import Action, WorkspaceConfigType, WorkspaceFactory, WorkspaceType
+from composio import WorkspaceConfigType, WorkspaceFactory, WorkspaceType
 from composio.utils.logging import WithLogger
-
-from composio_crewai import ComposioToolSet
+from swebench.harness.test_spec import make_test_spec
 
 from swekit.benchmark.utils import (
     build_issue_description,
@@ -23,6 +20,7 @@ from swekit.benchmark.utils import (
 )
 from swekit.config.constants import LOCAL_CACHE_DIRECTORY_NAME, LOGS_DIR
 from swekit.config.store import IssueConfig
+import random
 
 
 def _get_logs_dir() -> Path:
@@ -31,16 +29,17 @@ def _get_logs_dir() -> Path:
         Path.home()
         / LOCAL_CACHE_DIRECTORY_NAME
         / LOGS_DIR
-        / (
-            str(int(datetime.datetime.now().timestamp()))
-            + str(random.randint(1000, 9999))
-        )
+        / (str(int(datetime.datetime.now().timestamp())) + str(random.randint(1000, 9999)))
     )
 
 
 class EvaluationConfig(BaseModel):
     """Benchmark evaluation config."""
 
+    dataset_name: str = Field(
+        default="princeton-nlp/SWE-bench_Verified",
+        description="dataset name",
+    )
     test_range: str = Field(
         default="20:30",
         description="slice for the test split range",
@@ -86,9 +85,11 @@ class EvaluationManager(WithLogger):
         super().__init__()
 
         self.issues = get_issues_dataset(
+            dataset_name=config.dataset_name,
             test_split=config.test_range,
             test_instance_ids=config.test_instance_ids,
         )
+        self.dataset_name = config.dataset_name
         self.dry_run = config.dry_run
         self.include_hints = config.include_hints
         self.logs_dir = os.path.expanduser(config.logs_dir)
@@ -103,10 +104,7 @@ class EvaluationManager(WithLogger):
 
     def get_issue_config(self, issue) -> IssueConfig:
         issue_description = build_issue_description(
-            issue["repo"],
-            issue["hints_text"],
-            issue["problem_statement"],
-            self.include_hints,
+            issue["repo"], issue["hints_text"], issue["problem_statement"], self.include_hints
         )
         test_spec = make_test_spec(issue)
         eval_script = test_spec.eval_script
@@ -121,40 +119,6 @@ class EvaluationManager(WithLogger):
             eval_script=eval_script,
             install_repo_script=test_spec.install_repo_script,
         )
-
-    def get_patch_for_issue(self, workspace_id: str, issue):
-        composio_toolset = ComposioToolSet(workspace_id=workspace_id)
-        self.logger.info(
-            f"Agent run finished, getting patch for issue: {issue['instance_id']}"
-        )
-        get_patch_resp = composio_toolset.execute_action(
-            action=Action.FILETOOL_GIT_PATCH,
-            params={},
-        )
-        self.logger.info(f"Get patch response: {get_patch_resp}")
-        if not get_patch_resp.get("successfull", False):
-            error_message = get_patch_resp.get("error")
-            if error_message:
-                raise Exception(f"Error in get_patch: {error_message}")
-            else:
-                raise Exception("Unknown error occurred in get_patch")
-
-        patch_data = get_patch_resp.get("data", {})
-        if not patch_data:
-            raise Exception("No data found in the patch response")
-
-        patch = patch_data.get("patch")
-        if not patch:
-            error = patch_data.get("error")
-            if error:
-                self.logger.error(f"Error in patch data: {error}")
-                return None
-            else:
-                self.logger.error("No patch found in the response data")
-                return None
-
-        self.logger.info(f"Final Patch: {patch}")
-        return patch
 
     def save_agent_run(self, issue_config, issue_patch):
         Path(str(self.logs_dir)).mkdir(parents=True, exist_ok=True)
@@ -212,14 +176,15 @@ class EvaluationManager(WithLogger):
         if self.dry_run:
             self.show_info_and_exit()
             return
-
+        
         for count, issue in tqdm(  # type: ignore
-            iterable=enumerate(self.issues, 1),
+            iterable=enumerate(list(self.issues), 1),
             total=len(self.issues),
             desc="Processing issues",
         ):
             try:
-                repo = issue["repo"]
+                issue = dict(issue)  # Typecast issue to dict
+                repo = str(issue.get("repo"))
                 self.logger.info(
                     f"Processing issue: {count} with repoMap: {self.repo_to_workspace_map} "
                     f"Repo: {repo} "
@@ -229,31 +194,20 @@ class EvaluationManager(WithLogger):
                 image_name = self.image_name or f"composio/swe:{tag}"
                 self.logger.info(f"Using image: {image_name}")
 
-                for attempt in range(3):
-                    try:
-                        workspace_ids = setup_workspace(
-                            repo,
-                            self.repo_to_workspace_map,
-                            self.repo_to_image_id_map,
-                            issue["base_commit"],
-                            self.workspace_env,
-                            image_name,
-                            num_instances=self.num_instances,
-                        )
-                        break  # If successful, exit the retry loop
-                    except Exception as e:
-                        self.logger.error(
-                            f"Error setting up workspace (attempt {attempt + 1}/3): {e}"
-                        )
-                        if attempt < 2:  # If this wasn't the last attempt
-                            self.logger.info("Retrying in 5 seconds...")
-                            time.sleep(5)  # Wait for 5 seconds before retrying
-                        else:
-                            self.logger.error(
-                                "All attempts to set up workspace failed. Skipping this issue."
-                            )
-                else:
-                    continue  # Skip to the next iteration of the outer loop if all attempts failed
+                try:
+                    workspace_ids = setup_workspace(
+                        repo,
+                        self.repo_to_workspace_map,
+                        self.repo_to_image_id_map,
+                        issue["base_commit"],
+                        self.workspace_env,
+                        image_name,
+                        num_instances=self.num_instances,
+                    )
+                except Exception as e:
+                    self.logger.error(f"Error setting up workspace: {traceback.format_exc()}")
+                    continue
+
                 issue_config = self.get_issue_config(issue)
                 self.logger.debug(
                     "found patch-id: %s and install_commit_id: %s",
@@ -261,21 +215,21 @@ class EvaluationManager(WithLogger):
                     issue["environment_setup_commit"],
                 )
                 issue_patch = agent_func(workspace_ids, issue_config)
-                # issue_patch = self.get_patch_for_issue(workspace_id, issue)
                 self.save_agent_run(issue_config, issue_patch)
                 for workspace_id in workspace_ids:
                     WorkspaceFactory.close(id=workspace_id)
 
             except Exception as e:
-                self.logger.error(f"Error processing issue {issue['instance_id']}: {e}")
+                self.logger.error(f"Error processing issue {issue_config.issue_id}: {e}")
                 raise e
 
     def score_evaluation(self, run_id: str):
-        get_score(self.logs_dir, run_id)
+        get_score(self.logs_dir, run_id, self.dataset_name)
 
 
 def evaluate(
     runnable: t.Callable,
+    dataset_name: str = "princeton-nlp/SWE-bench_Verified",
     test_range: str = "20:22",
     workspace_type: t.Type[WorkspaceConfigType] = WorkspaceType.Docker,
     dry_run: bool = True,
@@ -294,6 +248,7 @@ def evaluate(
 
     manager = EvaluationManager(
         EvaluationConfig(
+            dataset_name=dataset_name,
             test_range=test_range,
             dry_run=dry_run,
             include_hints=include_hints,
