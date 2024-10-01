@@ -1,0 +1,71 @@
+---
+title: "Listing Connected Accounts in Composio"
+sidebarTitle: "How do I get all my Connected Accounts?"
+icon: "user"
+description: "Managing and monitoring your connections is essential to show your users what integrations they have connected."
+---
+
+### Listing All Connections
+To view all the connections associated with your Composio account, use the following command:
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python List all connections via Python
+from composio import Composio
+
+client = Composio()
+
+entity = composio_client.get_entity(id=USER_ID)
+
+print(composio_client.)
+
+print(composio_client.connected_accounts.get())
+```
+</CodeGroup>
+</Tab>
+<Tab title="CLI">
+<CodeGroup>
+```bash List all connections via CLI
+composio connections
+```
+</CodeGroup>
+</Tab>
+<Tab title="JS">
+Coming Soon! 
+</Tab>
+<Tab title="API">
+Coming Soon! 
+</Tab>
+</Tabs>
+
+
+### Getting Connection Details
+To get detailed information about a specific connection, use the get command followed by the connection ID. For example, to get details of a connection with the ID 123, you would use:
+
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python Get connection details via Python
+from composio import Composio
+
+client = Composio()
+
+print(composio_client.connected_accounts.get(id=123))
+```
+</CodeGroup>
+</Tab>
+<Tab title="CLI">
+
+<CodeGroup>
+```bash Get connection details via CLI
+composio connections get 123
+```
+</CodeGroup>
+</Tab>
+<Tab title="JS">
+Coming Soon! 
+</Tab>
+<Tab title="API">
+Coming Soon! 
+</Tab>
+</Tabs>

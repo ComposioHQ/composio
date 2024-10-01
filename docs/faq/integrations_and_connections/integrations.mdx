@@ -1,0 +1,69 @@
+---
+title: "Listing Integrations in Composio"
+sidebarTitle: "How do I get all my Integrations?"
+icon: "user"
+description: "This page will help you manage integrations in Composio"
+---
+
+### Listing All Integrations
+To retrieve a complete list of your integrations, you can use the following code snippets.
+
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python List all integrations via Python
+from composio import Composio
+
+composio_client = Composio()
+
+print(composio_client.integrations.get())
+```
+</CodeGroup>
+</Tab>
+<Tab title="CLI">
+<CodeGroup>
+```bash List all integrations via CLI
+composio integrations
+```
+</CodeGroup>
+</Tab>
+<Tab title="JS">
+Coming Soon! 
+</Tab>
+<Tab title="API">
+Coming Soon! 
+</Tab>
+</Tabs>
+
+This command will display a comprehensive list of all connections, providing an overview of the various users linked to your account.
+
+### Getting Integration Details
+To get detailed information about a specific integration, use the get command followed by the integration ID. For example, to get details of a connection with the ID 123, you would use:
+
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python Get integration details via Python
+from composio import Composio
+
+client = Composio()
+
+print(composio_client.integrations.get(id=123))
+```
+</CodeGroup>
+</Tab>
+<Tab title="CLI">
+
+<CodeGroup>
+```bash bash
+composio integrations get 123
+```
+</CodeGroup>
+</Tab>
+<Tab title="JS">
+Coming Soon! 
+</Tab>
+<Tab title="API">
+Coming Soon! 
+</Tab>
+</Tabs>
