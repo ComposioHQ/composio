@@ -1,8 +1,8 @@
 import typing as t
 
-from composio import ActionType, AppType, TagType
+from composio import Action, ActionType, AppType, TagType
 from composio.tools.toolset import ComposioToolSet as BaseComposioToolSet
-from composio_crewai import ComposioToolSet as CrewAIToolSet
+from composio_langchain import ComposioToolSet as LangchainToolSet
 from letta.schemas.tool import Tool
 
 class ComposioToolSet(
@@ -47,5 +47,5 @@ class ComposioToolSet(
 
         :return: Composio tools wrapped as `StructuredTool` objects
         """
-        crewai_tools = CrewAIToolSet().get_tools(apps=apps, actions=actions, tags=tags, entity_id=entity_id)
-        return [Tool.from_crewai(tool) for tool in crewai_tools]
+        langchain_tools = LangchainToolSet().get_tools(apps=apps, actions=actions, tags=tags, entity_id=entity_id)
+        return [Tool.from_langchain(tool) for tool in langchain_tools]
