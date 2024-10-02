@@ -24,7 +24,7 @@ setup(
     python_requires=">=3.9,<4",
     install_requires=[
         "letta>=0.1.6",
-        "composio_langchain==0.5.28",
+        "composio_crewai==0.5.28",
     ],
     include_package_data=True,
 )

@@ -1,6 +1,6 @@
 from composio import Action, App, Tag, Trigger, WorkspaceType
 
-from composio_langchain.toolset import ComposioToolSet
+from composio_letta.toolset import ComposioToolSet
 
 
 __all__ = (
