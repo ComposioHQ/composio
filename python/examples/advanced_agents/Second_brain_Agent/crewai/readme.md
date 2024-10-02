@@ -1,6 +1,6 @@
 # Second Brain Agent Guide
 
-This guide provides detailed steps to create a Second Brain Agent that leverages Composio, LlamaIndex and Groq to schedule your events based on received emails. Ensure you have Python 3.8 or higher installed.
+This guide provides detailed steps to create a Second Brain Agent that leverages Composio, CrewAI and Groq to schedule your events based on received emails. Ensure you have Python 3.8 or higher installed.
 
 ## Steps to Run
 

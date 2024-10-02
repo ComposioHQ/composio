@@ -17,7 +17,7 @@ llm = ChatOpenAI(model='gpt-4o')
 
 GOOGLE_SHEET_ID = '1i8OwCM_o2E4tmpZ18-2Jgu8G42ntPWoUgGhfbcyxnoo'
 #GOOGLE_SHEET_LINK + 'https://docs.google.com/spreadsheets/d/1i8OwCM_o2E4tmpZ18-2Jgu8G42ntPWoUgGhfbcyxnoo/edit?gid=0#gid=0z'
-composio_toolset = ComposioToolSet(output_dir=Path("/Users/composio/Desktop/sample-projects/ppt_builder"))
+composio_toolset = ComposioToolSet(output_dir=Path("./"))
 tools = composio_toolset.get_tools(actions=[Action.CODEINTERPRETER_EXECUTE_CODE,
                                             Action.CODEINTERPRETER_GET_FILE_CMD,
                                             Action.CODEINTERPRETER_RUN_TERMINAL_CMD,
