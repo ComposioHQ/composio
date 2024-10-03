@@ -115,8 +115,12 @@ export class AIHelper {
         console.log('AI request completed successfully');
         return new Response(JSON.stringify({ message:resp }), { status: 200 });
       } catch (err) {
-        console.error('Error in handleAIRequest:', err);
-        return new Response('Something went wrong', { status: 500 });
-      }
+        console.error('Specific error in handleAIRequest:', err);
+        if (err instanceof TypeError) {
+          return new Response(JSON.stringify({ error: 'Invalid input type' }), { status: 400 });
+        }
+        // ... handle other specific error types ...
+        return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+      }      
     }
   }

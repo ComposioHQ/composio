@@ -1,5 +1,5 @@
 #:schema node_modules/wrangler/config-schema.json
-name = "realttime-document-editor"
+name = "gmail_sender"
 main = "src/index.js"
 compatibility_date = "2024-09-25"
 compatibility_flags=["nodejs_compat"]
@@ -15,4 +15,4 @@ bindings = [
 tag = "v1" # Should be unique for each entry
 new_classes = ["AIHelper"]
 [vars]
-COMPOSIO_API_KEY = <ADD YOUR KEY HERE>
+COMPOSIO_API_KEY = "kj8gowob8yrxsrm0ga559c"
