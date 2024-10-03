@@ -102,7 +102,7 @@
 ## 🤔 Why Composio?
 
 We believe AI Based Agents/Workflows are the future.
-Composio is the best toolset to integrate AI Agents to best Agentic Tools and use them to accomplish tasks.
+Composio is the best toolset to integrate AI Agents with the best Agentic Tools and use them to accomplish tasks.
 
 <img alt="Illustration" src="./docs/imgs/banner.gif" style="border-radius: 5px"/>
 
@@ -120,8 +120,8 @@ Composio is the best toolset to integrate AI Agents to best Agentic Tools and us
 - **Frameworks**: Use tools with agent frameworks like **OpenAI, Claude, LlamaIndex, Langchain, CrewAI, Autogen, Gemini, Julep, Lyzr**, and more in a single line of code.
 - **Managed Authorisation**: Supports six different auth protocols. _Access Token, Refresh token, OAuth, API Keys, JWT, and more_ abstracted out so you can focus on the building agents.
 - **Accuracy**: Get _up to 40% better agentic accuracy_ in your tool calls due to better tool designs.
-- **Embeddable**: Whitelabel in the backend of your applications managing Auth & Integrations for all your users & agents and maintain a consistent experience.
-- **Pluggable**: Designed to be extended with additional Tools, Frameworks and Authorisation Protocols very easily.
+- **Embeddable**: Whitelabel in the backend of your applications, managing Auth & Integrations for all your users & agents and maintaining a consistent experience.
+- **Pluggable**: Designed to be extended with additional Tools, Frameworks and Authorization Protocols very easily.
 
 ## 🚀 Getting Started with Python
 
