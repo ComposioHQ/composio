@@ -1,6 +1,5 @@
 # Import necessary libraries
 import os
-from tkinter import END  # For accessing environment variables
 import dotenv  # For loading environment variables from a .env file
 # Import modules from Composio and LlamaIndex
 import re
@@ -11,7 +10,7 @@ from llama_index.core.llms import ChatMessage
 from llama_index.llms.openai import OpenAI
 from composio.client.collections import TriggerEventData
 from composio_llamaindex import Action, App, ComposioToolSet
-
+import json
 # Load environment variables from a .env file
 dotenv.load_dotenv()
 
@@ -25,6 +24,12 @@ RESPOND_ONLY_IF_TAGGED = (
 llm = OpenAI(model="gpt-4o")
 
 composio_toolset = ComposioToolSet()
+composio_tools = composio_toolset.get_tools(
+    actions=[Action.LINEAR_CREATE_LINEAR_ISSUE,
+             Action.LINEAR_LIST_LINEAR_PROJECTS,
+             Action.LINEAR_LIST_LINEAR_TEAMS,
+             Action.GMAIL_SEND_EMAIL]
+)
 slack_listener = composio_toolset.create_trigger_listener()
 gmail_listener = composio_toolset.create_trigger_listener()
 
@@ -39,9 +44,7 @@ def proc():
     )
     slack_listener.listen()
 
-composio_tools = composio_toolset.get_tools(
-    apps=[App.LINEAR, App.GMAIL]
-)
+
 
 
 
