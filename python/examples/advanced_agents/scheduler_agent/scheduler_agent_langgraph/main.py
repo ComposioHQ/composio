@@ -119,6 +119,7 @@ workflow.add_conditional_edges(
     {
         "continue": SCHEDULER_AGENT_NAME,
         "call_tool": TOOL_NODE_NAME,
+        "__end__": "__end__",
     },
 )
 
@@ -155,7 +156,7 @@ def callback_new_message(event: TriggerEventData) -> None:
     payload = event.payload
     print(payload)
     thread_id = payload.get("threadId")
-    email_content = payload.get("snippet")
+    email_content = payload.get("messageText")
     email_sender = payload["sender"]
 
     if email_sender is None:
