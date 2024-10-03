@@ -75,9 +75,9 @@ composio connections
 ```javascript javascript
 import { Composio } from "composio-core";
 const composio_client = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
-const apps = await composio_client.apps.list();
+const connections = await composio_client.getEntity("<entity_id>").getConnections();
 
-console.log(apps);
+console.log(connections);
 ```
 </CodeGroup>
 </Tab>
