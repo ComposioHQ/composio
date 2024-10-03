@@ -49,7 +49,10 @@ entity.disable_trigger("<tigger_id>") # Disable trigger via ID
 <Tab title="Using Javascript Code">
 <CodeGroup>
 ```javascript Enable Trigger using javascript code
-Coming soon!
+import { Composio } from "composio-core";
+
+const client = new Composio({ apiKey: "<x-api-key>" });
+let trigger = await client.triggers.enable({ triggerId });
 ```
 </CodeGroup>
 </Tab>
@@ -121,15 +124,9 @@ listener.listen()
 <Tab title="Using Javascript Code">
 <CodeGroup>
 ```Javascript Create a trigger listener
-import { LangchainToolSet } from "composio-core"; // or any other toolset
+import { Composio } from "composio-core"; // or any other toolset
 
-const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY }); /
-const composio_client = toolset.client
-
-// If not using LangchainToolSet
-// import {Composio} from "composio-core";  
-//const composio_client = new Composio({apiKey: process.env.COMPOSIO_API_KEY});
-
+const composio_client = new Composio({ apiKey: "<x-api-key>" });
 
 // Subscribe to triggers and perform actions
 composio_client.triggers.subscribe((data) => {
@@ -139,7 +136,7 @@ composio_client.triggers.subscribe((data) => {
 </CodeGroup>
 </Tab>
 <Tab title="Using Webhook">
-Coming soon!
+You can set webhook url in the dashboard.
 </Tab>
 </Tabs>
 

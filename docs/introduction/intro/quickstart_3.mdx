@@ -231,16 +231,9 @@ Follow these 5 steps to list your emails as soon as you receive them:
         </Tab>
         <Tab title="Using JavaScript Code">
             <CodeGroup>
-                ```javascript Create a Trigger Listener
-                import { LangchainToolSet } from "composio-core"; // or any other toolset
-
-                const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY });
-                const composio_client = toolset.client;
-
-                // If not using LangchainToolSet
-                // import { Composio } from "composio-core";
-                // const composio_client = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
-
+                ```javascript Subscribe to Triggers
+                import { Composio } from "composio-core"; // or any other toolset
+                const composio_client = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
                 // Subscribe to triggers and perform actions
                 composio_client.triggers.subscribe((data) => {
                     console.log("trigger received", data);
