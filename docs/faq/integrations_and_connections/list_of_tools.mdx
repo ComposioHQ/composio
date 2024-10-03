@@ -1,0 +1,97 @@
+---
+title: "Listing all tools, actions, and more"
+sidebarTitle: "How do I list all the tools connected to my Account?"
+icon: "magnifying-glass"
+description: "This section will walk you through discovering and managing the tools, integrations, actions, and more."
+---
+
+### Listing All Tools
+
+You can list all available applications in Composio along with their logos, descriptions, and more.
+
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python python
+from composio import Composio
+
+client = Composio()
+print(client.apps.get()) 
+# print all apps supported
+```
+</CodeGroup>
+</Tab>
+<Tab title="CLI">
+<CodeGroup>
+```bash bash
+composio apps
+```
+</CodeGroup>
+</Tab>
+<Tab title="JS">
+Coming soon!
+</Tab>
+</Tabs>
+
+### Listing All Connected Tools for a User
+
+You can list all connected tools for a user, which includes information about the applications they have integrated with Composio.
+
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python Get all connections for a user
+from composio import Composio
+
+composio_client = Composio()
+
+USER_ID = "default"
+
+entity = composio_client.get_entity(id=USER_ID)
+
+print(entity.get_connections())
+
+```
+</CodeGroup>
+</Tab>
+<Tab title="CLI">
+<CodeGroup>
+```bash 
+composio connections  
+# no user level filtering
+```
+</CodeGroup>
+</Tab>
+<Tab title="JS">
+Coming soon!
+</Tab>
+</Tabs>
+
+### Listing all Actions
+
+All actions supported by the Composio along with function signatures and parameter descriptions.
+
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python python
+from composio import Composio
+
+client = Composio()
+print(client.actions.get(limit=10))
+# print all actions supported
+```
+</CodeGroup>
+</Tab>
+<Tab title="CLI">
+<CodeGroup>
+```bash bash
+composio actions --limit 10
+```
+</CodeGroup>
+</Tab>
+<Tab title="JS">
+Coming soon!
+</Tab>
+
+</Tabs>
