@@ -29,7 +29,15 @@ composio apps
 </CodeGroup>
 </Tab>
 <Tab title="JS">
-Coming soon!
+<CodeGroup>
+```javascript javascript
+import { Composio } from "composio-core";
+const composio_client = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+const apps = await composio_client.apps.list();
+
+console.log(apps);
+```
+</CodeGroup>
 </Tab>
 </Tabs>
 
@@ -63,7 +71,15 @@ composio connections
 </CodeGroup>
 </Tab>
 <Tab title="JS">
-Coming soon!
+<CodeGroup>
+```javascript javascript
+import { Composio } from "composio-core";
+const composio_client = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+const connections = await composio_client.getEntity("<entity_id>").getConnections();
+
+console.log(connections);
+```
+</CodeGroup>
 </Tab>
 </Tabs>
 
@@ -91,7 +107,15 @@ composio actions --limit 10
 </CodeGroup>
 </Tab>
 <Tab title="JS">
-Coming soon!
+<CodeGroup>
+```javascript javascript
+import { Composio } from "composio-core";
+const composio_client = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
+const actions = await composio_client.actions.list();
+
+console.log(actions);
+```
+</CodeGroup>
 </Tab>
 
 </Tabs>
