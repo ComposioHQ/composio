@@ -17,7 +17,7 @@ These commands prepare your environment for seamless interaction between Letta a
 
 <CodeGroup>
 ```bash Run Command
-pip install letta composio-langchain
+pip install letta composio-langchain python-dotenv
 
 #Check all supported apps
 composio apps
@@ -41,9 +41,13 @@ composio add github -e "Jessica"
 
 <CodeGroup>
 ```python Default Imports
-from letta import create_client 
+import dotenv
+from composio_langchain import Action, ComposioToolSet
+from letta import create_client, LLMConfig
 from letta.schemas.tool import Tool
-from composio_langchain import Action
+
+# Load environment variables from .env
+dotenv.load_dotenv()
 ```
 </CodeGroup>
 
@@ -64,6 +68,7 @@ composio_tool = Tool.get_composio_tool(action=Action.GITHUB_STAR_A_REPOSITORY_FO
 ```python Creating the Letta Agent
 agent_state = client.create_agent(
     name="Github Agent", 
+    llm_config=LLMConfig.default_config("gpt-4")
 )
 
 client.add_tool(composio_tool)
