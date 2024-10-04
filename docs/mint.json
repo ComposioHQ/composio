@@ -122,15 +122,16 @@
       "group":"Supported Frameworks",
 
       "pages":[
-        "framework/langchain",
         "framework/llamaindex",
         "framework/crewai",
+        "framework/langchain",
         "framework/groq",
         "framework/openai",
-        "framework/autogen",
+        "framework/letta",
         {
           "group": "Other Frameworks",
           "pages": [
+            "framework/autogen",
             "framework/langgraph",
             "framework/phidata",
             "framework/camelai",
