@@ -1,0 +1,111 @@
+---
+title: "Using Composio With Letta"
+sidebarTitle: "Letta"
+icon: "people-group"
+description: "Integrate Composio with Letta agents to let them seamlessly interact with external apps"
+---
+
+**Composio enables** your **Letta agents** to **connect** with many **tools**!
+
+![image](https://i.imgur.com/nsvUP8m.png)
+
+<Tip>
+  Goal: Star a repository on GitHub with natural language & Letta Agent
+</Tip>
+
+### Install Packages & Connect a Tool
+
+These commands prepare your environment for seamless interaction between Letta and GitHub.
+
+<CodeGroup>
+```bash Run Command
+pip install letta composio-langchain python-dotenv
+```
+</CodeGroup>
+
+### Goal: Use Letta Agent to Interact with GitHub using Composio
+
+<Steps>
+<Step title="Connect GitHub Account">
+- Connect a user, Jessica's GitHub account, to allow our agents to utilize GitHub functionalities.
+<CodeGroup>
+```bash Authenticate GitHub Account 
+composio add github -e "Jessica"
+```
+</CodeGroup>
+</Step>
+
+<Step title="Import Base Packages">
+
+<CodeGroup>
+```python Default Imports
+import dotenv
+from composio_langchain import Action, ComposioToolSet
+from letta import create_client, LLMConfig
+from letta.schemas.tool import Tool
+
+# Load environment variables from .env
+# Set your OpenAI API Key in a .env file
+dotenv.load_dotenv()
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Fetch All Tools via Composio">
+
+<CodeGroup>
+```python Tools For GitHub
+composio_tool = Tool.get_composio_tool(action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Create the Letta Agent">
+
+<CodeGroup>
+```python Creating the Letta Agent
+client = create_client() 
+
+agent_state = client.create_agent(
+    name="GitHub Agent", 
+)
+
+client.add_tool(composio_tool)
+
+response = client.send_message(agent_id=agent_state.id, role="user", message="Star the repo composiohq/composio")
+print("Usage:", response.usage)
+print("Agent messages:", response.messages)
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Check Response">
+
+<CodeGroup>
+```bash After Executing the Agent
+Usage completion_tokens=62 prompt_tokens=2363 total_tokens=2425 step_count=1
+Agent messages [
+    InternalMonologue(id='message-eff2fc99-437b-41b1-be3f-862aaabf5908', date=datetime.datetime(2024, 10, 4, 2, 25, 6, 417853, tzinfo=datetime.timezone.utc), 
+    message_type='internal_monologue', internal_monologue='Interesting. Chad wants to discuss a repository. I should respond by asking about his interest in it. '),
+    FunctionCallMessage(id='message-eff2fc99-437b-41b1-be3f-862aaabf5908', 
+    date=datetime.datetime(2024, 10, 4, 2, 25, 6, 417853, tzinfo=datetime.timezone.utc), 
+    message_type='function_call', 
+    function_call=FunctionCall(name='send_message', arguments='{\n  "message": "It seems you\'re interested in the composiohq/composio repository. What particular aspects have piqued your curiosity, Chad?"\n}')), 
+    FunctionReturn(id='message-e5c7d6ee-1dbe-4011-b952-47631282aadc', date=datetime.datetime(2024, 10, 4, 2, 25, 6, 418469, tzinfo=datetime.timezone.utc), message_type='function_return', 
+    function_return='{\n  "status": "OK",\n  "message": "None",\n  "time": "2024-10-04 02:25:06 AM UTC+0000"\n}', 
+    status='success')]
+```
+</CodeGroup>
+</Step>
+</Steps>
+
+### Use Specific Actions
+<CodeGroup>
+    ```bash Filter Specific Action
+    # To restrict agents from using all the actions, filter specific actions
+    composio_tool = Tool.get_composio_tool(action=Action.GITHUB_CREATE_ISSUE)
+    ```
+</CodeGroup>
+
