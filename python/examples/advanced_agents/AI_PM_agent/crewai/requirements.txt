@@ -1,3 +1,4 @@
 composio-crewai
 langchain-openai
 python-dotenv
+agentops

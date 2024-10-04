@@ -19,7 +19,10 @@ BOT_USER_ID = os.environ[
 RESPOND_ONLY_IF_TAGGED = (
     True  # Set to True to have the bot respond only when tagged in a message
 )
-from langchain_cerebras import ChatCerebras
+import agentops
+agentops.init(os.environ["AGENTOPS_API_KEY"])
+
+#from langchain_cerebras import ChatCerebras
 
 #llm = ChatCerebras(model="llama3.1-70b")
 llm = ChatOpenAI(model="gpt-4o")
@@ -34,7 +37,7 @@ composio_tools = composio_toolset.get_tools(
 slack_listener = composio_toolset.create_trigger_listener()
 gmail_listener = composio_toolset.create_trigger_listener()
 
-def proc():
+def proc(mail_message, sender_mail):
     print("listener")
     composio_toolset.execute_action(
         action=Action.SLACKBOT_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL,
@@ -79,7 +82,6 @@ def callback_new_message(event: TriggerEventData) -> None:
     # Extract channel and timestamp information from the event payload
     channel_id = payload.get("channel", "")
     ts = payload.get("ts", "")
-    thread_ts = payload.get("thread_ts", ts)
 
     
     issue_task = Task(
@@ -94,23 +96,25 @@ def callback_new_message(event: TriggerEventData) -> None:
             6. If the user does not give project_id or team_id find them out by using Linear Tool's actions.
             """
         ),
-        expected_output="issue was created"
+        expected_output="issue was created",
+        agent=issue_creator_agent,
+        tools=composio_tools
     )
     
     crew = Crew(
         agents=[issue_creator_agent],
         tasks=[issue_task],
+        process=Process.sequential,
         tools = composio_tools
     )
 
     result = crew.kickoff()
     print(result)
     composio_toolset.execute_action(
-        action=Action.SLACKBOT_CHAT_POST_MESSAGE,
+        action=Action.SLACKBOT_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL,
         params={
             "channel": channel_id,
-            "text": result.response,
-            "thread_ts": thread_ts,
+            "text": result.raw,
         },
     )
         
@@ -132,9 +136,9 @@ def callback_new_message(event: TriggerEventData) -> None:
     print(sender_mail)
     print("WAITING FOR SLACK CONFIRMATION")
     composio_toolset_1 = ComposioToolSet(
-        processors={
+    processors={
         "pre": {
-            Action.LINEAR_CREATE_LINEAR_ISSUE: proc()
+            Action.LINEAR_CREATE_LINEAR_ISSUE: proc(mail_message, sender_mail)
             },
         }
     )

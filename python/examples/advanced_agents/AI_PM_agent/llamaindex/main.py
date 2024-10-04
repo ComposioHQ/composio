@@ -20,6 +20,8 @@ BOT_USER_ID = os.environ[
 RESPOND_ONLY_IF_TAGGED = (
     True  # Set to True to have the bot respond only when tagged in a message
 )
+import agentops
+agentops.init(os.environ["AGENTOPS_API_KEY"])
 
 llm = OpenAI(model="gpt-4o")
 
