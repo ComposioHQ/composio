@@ -4,6 +4,7 @@ from tkinter import END  # For accessing environment variables
 import dotenv  # For loading environment variables from a .env file
 # Import modules from Composio and LlamaIndex
 import re
+import json
 from datetime import datetime
 from composio_llamaindex import App, ComposioToolSet, Action
 from llama_index.core.agent import FunctionCallingAgentWorker
@@ -66,23 +67,21 @@ agent = FunctionCallingAgentWorker(
 
 # Callback function for handling new messages in a Slack channel
 @slack_listener.callback(filters={"trigger_name": "slackbot_receive_message"})
-def callback_new_message(event: TriggerEventData) -> None:
+def callback_new_message_(event: TriggerEventData) -> None:
     print("Recieved new messsage")
     payload = event.payload
     user_id = payload.get("user", "")
 
     # Ignore messages from the bot itself to prevent self-responses
     if user_id == BOT_USER_ID:
-        return "Bot ignored"
+        print("Bot ignored")
 
     message = payload.get("text", "")
 
     # Respond only if the bot is tagged in the message, if configured to do so
     if RESPOND_ONLY_IF_TAGGED and f"<@{BOT_USER_ID}>" not in message:
         print(f"Bot not tagged, ignoring message - {message} - {BOT_USER_ID}")
-        return (
-            f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}"
-        )
+        print(f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}")
 
     # Extract channel and timestamp information from the event payload
     channel_id = payload.get("channel", "")
@@ -148,11 +147,7 @@ def callback_new_message(event: TriggerEventData) -> None:
     print(sender_mail)
     print("WAITING FOR SLACK CONFIRMATION")
     composio_toolset_1 = ComposioToolSet(
-        processors={
-        "pre": {
-            Action.LINEAR_CREATE_LINEAR_ISSUE: proc()
-            },
-        }
+        processors={"pre": {Action.LINEAR_CREATE_LINEAR_ISSUE: proc()}, }
     )
 
 
