@@ -11,11 +11,11 @@ const config = {
 // Function to set up the GitHub connection for the user if it doesn't exist
 async function setupUserConnectionIfNotExists(toolset, entityId, c) {
   const entity = await toolset.client.getEntity(entityId);
-  const connection = await entity.getConnection('github');
+  const connection = await entity.getConnection('gmail');
 
   if (!connection) {
     // If the user hasn't connected their GitHub account
-    const connection = await entity.initiateConnection('github');
+    const connection = await entity.initiateConnection('gmail');
     console.log('Log in via: ', connection.redirectUrl);
     c.json({ redirectUrl: connection.redirectUrl, message: 'Please log in to continue and then call this API again' });
   }
@@ -37,7 +37,7 @@ app.post('/help', async (c) => {
     // Get the required tools for the AI task
     const tools = await toolset.getActions({ actions: ['gmail_fetch_emails','gmail_send_email'] }, entity.id);
     const instruction = `
-            "Fetch the most recent newsletter emails from the inbox. "
+            "Fetch the most recent newsletter emails from the inbox using action gmail_fetch_emails"
         "Look for emails with subjects containing words like 'newsletter', 'update', or 'digest'. "
         "Retrieve the content of these emails, including any important links or attachments. "
         "Pay special attention to newsletters from reputable sources and industry leaders."
@@ -76,7 +76,9 @@ app.post('/help', async (c) => {
     const toolCallResp = await c.env.AI.run(config.model, {
       messages,
       tools,
+      prompt: instruction
     });
+    console.log("toolCallResp", toolCallResp);
 
     // Handle the tool call response
     await toolset.handleToolCall(toolCallResp, entity.id);
