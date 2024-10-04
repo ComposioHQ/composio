@@ -124,10 +124,10 @@
       "pages":[
         "framework/llamaindex",
         "framework/crewai",
+        "framework/letta",
         "framework/langchain",
         "framework/groq",
         "framework/openai",
-        "framework/letta",
         {
           "group": "Other Frameworks",
           "pages": [

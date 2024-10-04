@@ -13,23 +13,23 @@ description: "Integrate Composio with Letta agents to let them seamlessly intera
 
 ### Install Packages & Connect a Tool
 
-These commands prepare your environment for seamless interaction between Letta and Github.
+These commands prepare your environment for seamless interaction between Letta and GitHub.
 
 <CodeGroup>
 ```bash Run Command
 pip install letta composio-langchain python-dotenv
 
-#Check all supported apps
+#L
+# Check all supported apps
 composio apps
 ```
 </CodeGroup>
 
-### Goal: Use Letta Agent to Interact with Github using Composio
-
+### Goal: Use Letta Agent to Interact with GitHub using Composio
 
 <Steps>
-<Step title="Connect Github account">
-- Connect a user Jessica's Github account to allow our agents to utilize GitHub functionalities.
+<Step title="Connect GitHub Account">
+- Connect a user, Jessica's GitHub account, to allow our agents to utilize GitHub functionalities.
 <CodeGroup>
 ```bash Authenticate GitHub Account 
 composio add github -e "Jessica"
@@ -47,36 +47,37 @@ from letta import create_client, LLMConfig
 from letta.schemas.tool import Tool
 
 # Load environment variables from .env
+# Set your OpenAI API Key in a .env file
 dotenv.load_dotenv()
 ```
 </CodeGroup>
 
 </Step>
 
-<Step title="Fetch all Tools via Composio">
+<Step title="Fetch All Tools via Composio">
 
 <CodeGroup>
-```python Tools For Github
+```python Tools For GitHub
 composio_tool = Tool.get_composio_tool(action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER)
 ```
 </CodeGroup>
 </Step>
 
-<Step title="Create the Agent">
+<Step title="Create the Letta Agent">
 
 <CodeGroup>
 ```python Creating the Letta Agent
+client = create_client() 
+
 agent_state = client.create_agent(
-    name="Github Agent", 
-    llm_config=LLMConfig.default_config("gpt-4")
+    name="GitHub Agent", 
 )
 
 client.add_tool(composio_tool)
 
 response = client.send_message(agent_id=agent_state.id, role="user", message="Star the repo composiohq/composio")
-print("Usage", response.usage)
-print("Agent messages", response.messages)
-
+print("Usage:", response.usage)
+print("Agent messages:", response.messages)
 ```
 </CodeGroup>
 
@@ -95,11 +96,13 @@ Agent messages [
     message_type='function_call', 
     function_call=FunctionCall(name='send_message', arguments='{\n  "message": "It seems you\'re interested in the composiohq/composio repository. What particular aspects have piqued your curiosity, Chad?"\n}')), 
     FunctionReturn(id='message-e5c7d6ee-1dbe-4011-b952-47631282aadc', date=datetime.datetime(2024, 10, 4, 2, 25, 6, 418469, tzinfo=datetime.timezone.utc), message_type='function_return', 
-    function_return='{\n  "status": "OK",\n  "message": "None",\n  "time": "2024-10-04 02:25:06 AM UTC+0000"\n}', status='success')]
+    function_return='{\n  "status": "OK",\n  "message": "None",\n  "time": "2024-10-04 02:25:06 AM UTC+0000"\n}', 
+    status='success')]
 ```
 </CodeGroup>
 </Step>
 </Steps>
+
 ### Use Specific Actions
 <CodeGroup>
     ```bash Filter Specific Action
