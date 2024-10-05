@@ -8,8 +8,8 @@ from pathlib import Path
 import os
 
 load_dotenv()
-#llm = OpenAI(model='gpt-4o')
-llm = Groq(model="llama3-groq-70b-8192-tool-use-preview")
+llm = OpenAI(model='gpt-4o')
+#llm = Groq(model="llama3-groq-70b-8192-tool-use-preview")
 
 composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_tools(apps = [App.EMBED_TOOL, App.RAGTOOL, App.WEBTOOL, App.SERPAPI, App.FILETOOL])
@@ -46,12 +46,20 @@ while True:
         a = input('Enter the url or image path to add in the vector store:')
         task = f"""
         This is the item you've to add to the vector store: {a}.
-        If its an image use Embed tool and if its a url scrape the text content and add it in RAG vector store
+        If its an image use Embed tool and if its a url Web scrape the TEXT Content and not The HTML elements and add it in RAG vector store
        
         The vector store/ Folder path should exist in {vector_store_path}.
         If its an image, the vector name should be Images
     
         """
+        agent = FunctionCallingAgentWorker(
+            tools=tools,  # Tools available for the agent to use
+            llm=llm,  # Language model for processing requests
+            prefix_messages=prefix_messages,  # Initial system messages for context
+            max_function_calls=10,  # Maximum number of function calls allowed
+            allow_parallel_tool_calls=False,  # Disallow parallel tool calls
+            verbose=True,  # Enable verbose output
+        ).as_agent()
         response = agent.chat(task)
         print(response)
     elif x == 'query':
@@ -60,6 +68,15 @@ while True:
         Vector store exists in {vector_store_path}
         Query is {a}. Query either the rag tool for textual content and embed tool for image related content
         """
+
+        agent = FunctionCallingAgentWorker(
+            tools=tools,  # Tools available for the agent to use
+            llm=llm,  # Language model for processing requests
+            prefix_messages=prefix_messages,  # Initial system messages for context
+            max_function_calls=10,  # Maximum number of function calls allowed
+            allow_parallel_tool_calls=False,  # Disallow parallel tool calls
+            verbose=True,  # Enable verbose output
+        ).as_agent()
         response = agent.chat(task)
         print(response)
     else:
