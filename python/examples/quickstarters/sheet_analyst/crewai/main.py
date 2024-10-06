@@ -1,6 +1,6 @@
 from crewai import Agent, Task, Crew
 from langchain_openai import ChatOpenAI
-from composio_crewai import ComposioToolSet, Action, App
+from composio_crewai import ComposioToolSet, WorkspaceType, App
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -14,7 +14,7 @@ while True:
         break
 
     # Get All the tools
-    composio_toolset = ComposioToolSet(output_dir=Path.home() / "composio_output")
+    composio_toolset = ComposioToolSet(output_dir=Path.home() / "composio_output", workspace_config=WorkspaceType.E2B())
     tools = composio_toolset.get_tools(apps=[App.GOOGLESHEETS, App.CODEINTERPRETER])
 
     # Define agent
