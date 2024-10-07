@@ -23,11 +23,11 @@ TIMEZONE: Optional[Any] = datetime.now().astimezone().tzinfo
 
 # Initialize ComposioToolSet and OpenAI
 composio_toolset: ComposioToolSet = ComposioToolSet(api_key=COMPOSIO_API_KEY)
-#llm: OpenAI = OpenAI(model="gpt-4o")
-llm = Cerebras(model="llama3.1-70b", api_key=os.environ["CEREBRAS_API_KEY"])
+llm: OpenAI = OpenAI(model="gpt-4o")
+#llm = Cerebras(model="llama3.1-70b", api_key=os.environ["CEREBRAS_API_KEY"])
 
 # Define tools
-schedule_tool = composio_toolset.get_actions(
+schedule_tool = composio_toolset.get_tools(
     actions=[
         Action.GOOGLECALENDAR_FIND_FREE_SLOTS,
         Action.GOOGLECALENDAR_CREATE_EVENT,
@@ -35,7 +35,7 @@ schedule_tool = composio_toolset.get_actions(
     ]
 )
 
-slack_tools = composio_toolset.get_actions(
+slack_tools = composio_toolset.get_tools(
     actions=[
         Action.SLACKBOT_CHAT_POST_MESSAGE,
     ]
@@ -60,7 +60,7 @@ def proc() -> None:
 
 # Listens to user response on Slack
 @slack_listener.callback(filters={"trigger_name": "slackbot_receive_message"})
-def review_new_pr(event: TriggerEventData) -> None:
+def callback_new_message(event: TriggerEventData) -> None:
     print("Received a new message from Slack.")
     payload: Dict[str, Any] = event.payload
     user_id: str = payload.get("user", "")
@@ -85,12 +85,11 @@ def review_new_pr(event: TriggerEventData) -> None:
     thread_ts: str = payload.get("thread_ts", ts)
 
     print(f"Channel ID: {channel_id}, Timestamp: {ts}, Thread Timestamp: {thread_ts}")
-
-    prefix_messages: List[ChatMessage] = [
-        ChatMessage(
-            role=MessageRole.SYSTEM,
-            content=(
-                f"""
+    prefix_messages = [
+    ChatMessage(
+        role="system",
+        content=(
+            f"""
                     You are an AI assistant specialized in creating calendar events based on email information. 
                     Current DateTime: {DATE_TIME}. All the conversations happen in IST timezone.
                     Analyze email, and create event on calendar depending on the email content. 
@@ -99,10 +98,10 @@ def review_new_pr(event: TriggerEventData) -> None:
             ),
         )
     ]
-    
+
     print("Creating agent for analyzing email...")
     agent = FunctionCallingAgentWorker(
-        tools=list(schedule_tool),  # Tools available for the agent to use
+        tools=schedule_tool,  # Tools available for the agent to use
         llm=llm,  # Language model for processing requests
         prefix_messages=prefix_messages,  # Initial system messages for context
         max_function_calls=10,  # Maximum number of function calls allowed
@@ -139,23 +138,26 @@ def review_new_pr(event: TriggerEventData) -> None:
 # Gmail listener Function
 # We initialize mail content variable mail_message and sender mail here
 @gmail_listener.callback(filters={"trigger_name": "GMAIL_NEW_GMAIL_MESSAGE"})
-def callback_new_message(event: TriggerEventData) -> None:
-    print("New Gmail message received.")
-    payload: Dict[str, Any] = event.payload
-    global mail_message
-    global sender_mail
-    thread_id: Optional[str] = payload.get("threadId")
-    
-    mail_message = payload.get("messageText")
-    sender_mail = payload.get("sender")
-    
-    if sender_mail is None:
-        print("No sender email found. Exiting...")
-        return
-    
-    print(f"Sender Email: {sender_mail}")
-    print("Waiting for Slack confirmation...")
-    proc()
+def callback_gmail_message(event: TriggerEventData) -> None:
+    try:
+        print("New Gmail message received.")
+        payload: Dict[str, Any] = event.payload
+        global mail_message
+        global sender_mail
+        thread_id: Optional[str] = payload.get("threadId")
+        
+        mail_message = payload.get("messageText")
+        sender_mail = payload.get("sender")
+        
+        if sender_mail is None:
+            print("No sender email found. Exiting...")
+            return
+        
+        print(f"Sender Email: {sender_mail}")
+        print("Waiting for Slack confirmation...")
+        proc()
+    except Exception as e:
+        print(f"Error in callback_gmail_message: {e}")
 
 print("GMAIL LISTENING... Waiting for new messages.")
 gmail_listener.listen()

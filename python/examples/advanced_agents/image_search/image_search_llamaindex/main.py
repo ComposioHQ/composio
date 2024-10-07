@@ -8,7 +8,8 @@ from composio_llamaindex import App, ComposioToolSet
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage
 from llama_index.llms.openai import OpenAI
-
+#from llama_index.llms.groq import Groq
+#from llama_index.llms.cerebras import Cerebras
 # Import embedtool from composio.tools.local
 from composio.tools.local import embedtool
 
@@ -20,10 +21,13 @@ dotenv.load_dotenv()
 toolset = ComposioToolSet()
 
 # Retrieve tools from Composio, specifically the EMBEDTOOL app
-tools = toolset.get_tools(apps=[App.EMBEDTOOL])
+tools = toolset.get_tools(apps=[App.EMBED_TOOL])
 
 # Initialize an OpenAI instance with the GPT-4o model
 llm = OpenAI(model="gpt-4o")
+#llm = Groq(model="mixtral-8x7b-32768")
+#llm = Cerebras(model="llama3.1-70b")
+
 
 # Define the system message for the agent
 prefix_messages = [

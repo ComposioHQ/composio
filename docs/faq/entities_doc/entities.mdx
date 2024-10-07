@@ -1,0 +1,147 @@
+---
+title: "What are Entities?"
+sidebarTitle: "What are Entities?"
+icon: "plug"
+description: "This section will walk you through the use of Entities which help you manage multiple users and their authentication using Composio."
+---
+
+### Introduction to Entities
+
+In Composio, an entity encapsulates all associated accounts for either a user or an organization. This consolidation simplifies the administration of multiple accounts, allowing you to manage them seamlessly. An entity can be identified using any unique identifier, such as an email address.
+
+### Creating and Managing Entities
+
+To create or retrieve an entity for a user, you can use their unique identifier. Here’s an example in Python:
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python Python Code Snippet to get an entity (user)
+from composio import Composio
+
+composio_client = Composio(api_key="COMPOSIO_API_KEY")
+entity = composio_client.get_entity(id='user_email_id')
+```
+</CodeGroup>
+</Tab>
+<Tab title="JS">
+<CodeGroup>
+```javascript JS Code Snippet to get an entity (user)
+import { OpenAIToolSet } from "composio-core";
+
+const openai_client = new OpenAI({
+    apiKey: process.env.OPENAIKEY
+});
+const entity = toolset.client.getEntity(id='user_email_id');
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+
+Once you have the entity, you can manage the connected accounts. If an account is not connected, you can prompt the user to connect their account.
+
+### Getting Connected Accounts
+
+To get the connected accounts for an entity, you can use the following code:
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python Python Code Snippet to get a connected account
+try:
+    connected_account  = entity.get_connection(app="slack")
+except Exception as e:
+    print("No connected account found")
+```
+</CodeGroup>
+</Tab>
+<Tab title="JS">
+<CodeGroup>
+```javascript JS Code Snippet to get a connected account
+const connected_account  = await entity.getConnection("slack");
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+
+This code attempts to retrieve the connected account for Slack. If no connected account is found, it catches the exception and prints a message.
+
+### Performing Actions on Behalf of Users
+
+Composio allows you to perform actions on behalf of users. For example, you can fetch all available actions that can be performed on GitHub:
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python python
+actions = entity.get_tools(app_name=App.GITHUB)
+```
+</CodeGroup>
+</Tab>
+<Tab title="JS">
+<CodeGroup>
+```javascript javascript
+const actions = entity.getActions(app_name=App.GITHUB);
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+
+With the actions fetched, you can configure an agent to perform tasks on GitHub on behalf of the user. Here’s an example:
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python python
+
+from composio_openai import ComposioToolSet, App
+from openai import OpenAI
+
+openai_client = OpenAI(api_key="******OPENAIKEY******")
+tool_set = ComposioToolSet(entity_id="melissa")
+actions = tool_set.get_tools(apps=[App.GITHUB])
+
+my_task = "Star a repo composiohq/composio on GitHub"
+
+response = openai_client.chat.completions.create(
+    model="gpt-4-turbo-preview",
+    tools=actions,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": my_task},
+    ],
+)
+tool_set.handle_tool_calls(response=response, entity_id="melissa")
+```
+</CodeGroup>
+</Tab>
+<Tab title="JS">
+<CodeGroup>
+```javascript javascript
+import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core";
+
+const openai_client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
+
+const toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+const tools = await toolset.getActions({actions: ['github_star_repo']})
+
+const task = "Star a repo composiohq/composio on GitHub"
+
+const response = await openai_client.chat.completions.create({
+    model: "gpt-4-turbo-preview",
+    tools: tools,
+    messages: [
+        {role: "system", content: "You are a helpful assistant."},
+        {role: "user", content: task},
+    ],
+});
+
+await toolset.handleToolCall(response, "melissa");
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+
+In this example, an agent is configured to star a repository on GitHub on behalf of the user. The OpenAI API is used to process the request and perform the action.

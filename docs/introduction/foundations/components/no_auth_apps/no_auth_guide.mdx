@@ -1,0 +1,40 @@
+---
+title: "Apps Requiring No Authentication"
+sidebarTitle: "No Auth Apps"
+icon: "unlock"
+description: "Learn how to add and update apps that don't require authentication in Composio."
+---
+
+## Apps Requiring No Authentication
+Some apps in Composio don't require authentication to use. These apps can be added and updated easily using the Composio CLI. This guide will walk you through the process.
+
+## Adding a No-Auth App
+To add an app that doesn't require authentication, use the following command:
+```bash 
+composio add app_name
+```
+Replace app_name with the name of the app you want to add. For example:
+
+```bash
+composio add codeinterpreter
+```
+This command will add the CodeInterpreter to your Composio environment without requiring any authentication steps.
+
+## Updating Apps
+After adding a no-auth app (or any app), it's a good practice to update your apps to ensure you have the latest version and features. To update all your apps, use the following command:
+
+
+```python
+composio apps update
+```
+This command will check for updates for all your installed apps, including those that don't require authentication, and apply any available updates.
+## List of Common No-Auth Apps
+Here are some examples of apps that typically don't require authentication:
+
+- WeatherMap
+- CodeInterpreter
+- Hackernews
+
+<Note>
+While these apps don't require authentication, always check the specific app's documentation in case there are any additional setup steps or API key requirements.
+</Note>

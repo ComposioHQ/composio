@@ -1,17 +1,15 @@
 # Import necessary libraries
+from json import tool
 import os
-from tkinter import END  # For accessing environment variables
 import dotenv  # For loading environment variables from a .env file
 # Import modules from Composio and LlamaIndex
 import re
 from datetime import datetime
-from composio_llamaindex import App, ComposioToolSet, Action
-from llama_index.core.agent import FunctionCallingAgentWorker
-from llama_index.core.llms import ChatMessage
-from llama_index.llms.openai import OpenAI
+from composio_crewai import ComposioToolSet, App, Action
+from crewai import Agent, Task, Crew, Process
+from langchain_openai import ChatOpenAI
 from composio.client.collections import TriggerEventData
-from composio_llamaindex import Action, App, ComposioToolSet
-
+import json
 # Load environment variables from a .env file
 dotenv.load_dotenv()
 
@@ -21,14 +19,25 @@ BOT_USER_ID = os.environ[
 RESPOND_ONLY_IF_TAGGED = (
     True  # Set to True to have the bot respond only when tagged in a message
 )
+import agentops
+agentops.init(os.environ["AGENTOPS_API_KEY"])
 
-llm = OpenAI(model="gpt-4o")
+#from langchain_cerebras import ChatCerebras
+
+#llm = ChatCerebras(model="llama3.1-70b")
+llm = ChatOpenAI(model="gpt-4o")
 
 composio_toolset = ComposioToolSet()
+composio_tools = composio_toolset.get_tools(
+    actions=[Action.LINEAR_CREATE_LINEAR_ISSUE,
+             Action.LINEAR_LIST_LINEAR_PROJECTS,
+             Action.LINEAR_LIST_LINEAR_TEAMS,
+             Action.GMAIL_SEND_EMAIL]
+)
 slack_listener = composio_toolset.create_trigger_listener()
 gmail_listener = composio_toolset.create_trigger_listener()
 
-def proc():
+def proc(mail_message, sender_mail):
     print("listener")
     composio_toolset.execute_action(
         action=Action.SLACKBOT_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL,
@@ -39,29 +48,15 @@ def proc():
     )
     slack_listener.listen()
 
-composio_tools = composio_toolset.get_tools(
-    apps=[App.LINEAR, App.GMAIL]
-)
 
 
-
-prefix_messages = [
-    ChatMessage(
-        role="system",
-        content=(
-            "You are an agent that creates issues in Linear based on customer feedback emails"
-        ),
-    )
-]
-
-agent = FunctionCallingAgentWorker(
-    tools=composio_tools,
+issue_creator_agent = Agent(
+    role="Linear Expert",
+    goal="You are an agent that creates issues in Linear based on customer feedback emails",
+    backstory="You are an expert in using Linear and creating issues on it.",
     llm=llm,
-    prefix_messages=prefix_messages,
-    max_function_calls=10,
-    allow_parallel_tool_calls=False,
-    verbose=True,
-).as_agent()
+    tools=composio_tools,
+)
 
 
 # Callback function for handling new messages in a Slack channel
@@ -87,30 +82,11 @@ def callback_new_message(event: TriggerEventData) -> None:
     # Extract channel and timestamp information from the event payload
     channel_id = payload.get("channel", "")
     ts = payload.get("ts", "")
-    thread_ts = payload.get("thread_ts", ts)
 
     
-
-    YES_OR_NO_prefix_messages = [
-    ChatMessage(
-        role="system",
-        content=(
-            "Find team id and project id and create an issue on Linear. Ask the user once, if he says find it out. Stop asking"
-            "Once the issue is created, say the issue is created and end the workflow. EXIT"
-        ),
-    )
-]
-    tools = composio_toolset.get_tools(apps=[App.LINEAR])
-    # Process the message and post the response in the same channel or thread
-    check_agent = FunctionCallingAgentWorker(
-    tools=tools,
-    llm=llm,
-    prefix_messages=YES_OR_NO_prefix_messages,
-    max_function_calls=10,
-    allow_parallel_tool_calls=False,
-    verbose=True,
-    ).as_agent()
-    query_task = f"""
+    issue_task = Task(
+        description=(
+            f"""
             2. If you decide to create an issue, Create it on Linear.
             3. If you decide to create an issue it should be a summary of the email content.
             4. The email content is {mail_message} and sender email is {sender_mail}
@@ -119,14 +95,26 @@ def callback_new_message(event: TriggerEventData) -> None:
             message:{message}
             6. If the user does not give project_id or team_id find them out by using Linear Tool's actions.
             """
-    result = check_agent.chat(query_task)
+        ),
+        expected_output="issue was created",
+        agent=issue_creator_agent,
+        tools=composio_tools
+    )
+    
+    crew = Crew(
+        agents=[issue_creator_agent],
+        tasks=[issue_task],
+        process=Process.sequential,
+        tools = composio_tools
+    )
+
+    result = crew.kickoff()
     print(result)
     composio_toolset.execute_action(
-        action=Action.SLACKBOT_CHAT_POST_MESSAGE,
+        action=Action.SLACKBOT_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL,
         params={
             "channel": channel_id,
-            "text": result.response,
-            "thread_ts": thread_ts,
+            "text": result.raw,
         },
     )
         
@@ -148,9 +136,9 @@ def callback_new_message(event: TriggerEventData) -> None:
     print(sender_mail)
     print("WAITING FOR SLACK CONFIRMATION")
     composio_toolset_1 = ComposioToolSet(
-        processors={
+    processors={
         "pre": {
-            Action.LINEAR_CREATE_LINEAR_ISSUE: proc()
+            Action.LINEAR_CREATE_LINEAR_ISSUE: proc(mail_message, sender_mail)
             },
         }
     )
@@ -159,4 +147,5 @@ def callback_new_message(event: TriggerEventData) -> None:
 print("GMAIL LISTENING")
 
 gmail_listener.listen()
+
 
