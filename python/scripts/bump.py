@@ -12,8 +12,6 @@ from pathlib import Path
 
 from semver import VersionInfo
 
-from composio import __version__
-
 
 class BumpType(Enum):
     MAJOR = "major"
@@ -49,7 +47,7 @@ def _bump_setup(file: Path, bump_type: BumpType) -> None:
     update = _get_bumped_version(current=version, btype=bump_type)
     print(f"Next version {update}")
     content = content.replace(f'version="{version}"', f'version="{update}"')
-    print(f"Bumping dependencies")
+    print("Bumping dependencies")
     for chunk in content.split('"'):
         if not chunk.startswith("composio") or ">" not in chunk:
             continue
@@ -58,9 +56,13 @@ def _bump_setup(file: Path, bump_type: BumpType) -> None:
             VersionInfo.parse,
             version_range.replace("=", "").replace(">", "").replace("<", "").split(","),
         )
-        min_version._patch = max_version.patch - (max_version.patch % 10)
-        update = f"{dependency}>={min_version},<={_get_bumped_version(current=max_version, btype=bump_type)}"
-        content = content.replace(chunk, update)
+        min_version._patch = max_version.patch - (  # pylint: disable=protected-access
+            max_version.patch % 10
+        )
+        content = content.replace(
+            chunk,
+            f"{dependency}>={min_version},<={_get_bumped_version(current=max_version, btype=bump_type)}",
+        )
     file.write_text(content, encoding="utf-8")
     print(f"Bumped {file} to {update}")
 

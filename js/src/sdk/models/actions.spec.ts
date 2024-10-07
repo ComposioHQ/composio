@@ -59,7 +59,7 @@ describe("Apps class tests", () => {
             }
         });
 
-        expect(executionResult).toHaveProperty('successfull', true);
+        expect(executionResult).toHaveProperty('successful', true);
         //@ts-ignore
         expect((executionResult as any).data).toHaveProperty('stdout', 'Hello World\n');
         expect((executionResult as any).data).toHaveProperty('stderr', '');
