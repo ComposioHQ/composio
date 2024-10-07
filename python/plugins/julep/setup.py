@@ -22,6 +22,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    install_requires=["composio_openai==0.5.28", "julep>=0.3.2"],
+    install_requires=["composio_openai>=0.5.20,<=0.5.28", "julep>=0.3.2"],
     include_package_data=True,
 )
