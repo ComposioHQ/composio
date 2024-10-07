@@ -1,3 +1,4 @@
 composio-llamaindex
 llama-index
 python-dotenv
+agentops

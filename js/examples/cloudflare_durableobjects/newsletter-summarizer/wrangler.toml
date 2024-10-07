@@ -1,0 +1,20 @@
+
+#:schema node_modules/wrangler/config-schema.json
+name = "gmail_sender"
+main = "src/index.js"
+compatibility_date = "2024-09-25"
+compatibility_flags=["nodejs_compat"]
+
+[ai]
+binding = "AI"
+
+[durable_objects]
+bindings = [
+  { name = "AI_HELPER", class_name = "AIHelper" }
+]
+[[migrations]]
+tag = "v1" # Should be unique for each entry
+new_classes = ["AIHelper"]
+[vars]
+COMPOSIO_API_KEY=KEY 
+OPENAI_API_KEY=KEY

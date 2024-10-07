@@ -2,11 +2,11 @@
 
 # Create a virtual environment
 echo "Creating virtual environment..."
-python3 -m venv ~/.venvs/secondbrain
+python3 -m venv ~/.venvs/human_in_the_loop
 
 # Activate the virtual environment
 echo "Activating virtual environment..."
-source ~/.venvs/secondbrain/bin/activate
+source ~/.venvs/human_in_the_loop/bin/activate
 
 # Install libraries from requirements.txt 
 echo "Installing libraries from requirements.txt..."
@@ -17,8 +17,15 @@ echo "Login to your Composio acount"
 composio login
 
 # Add trello tool
-echo "Add tool. Finish the flow"
-composio add serpapi
+
+echo "Add slackbot tool. Finish the flow"
+composio add slackbot
+composio add gmail
+
+echo "Enable Slackbot triggers"
+composio triggers enable slackbot_receive_message
+composio triggers enable slackbot_receive_thread_reply
+composio triggers enable new_gmail_message
 
 # Copy env backup to .env file
 if [ -f ".env.example" ]; then

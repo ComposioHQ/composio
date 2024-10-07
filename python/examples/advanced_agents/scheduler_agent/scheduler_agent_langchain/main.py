@@ -11,6 +11,8 @@ from langchain_openai import ChatOpenAI
 
 from composio.client.collections import TriggerEventData
 
+load_dotenv()
+
 llm = ChatOpenAI(model="gpt-4-turbo")
 # llm = ChatGroq(model='llama3-70b-8192', api_key=os.environ['GROQ_API_KEY'])
 
@@ -56,8 +58,8 @@ def callback_new_message(event: TriggerEventData) -> None:
     print("here in the function")
     payload = event.payload
     thread_id = payload.get("threadId")
-    message = payload.get("snippet")
-    sender_mail = extract_sender_email(payload["payload"])
+    message = payload.get("messageText")
+    sender_mail = payload.get("sender")
     if sender_mail is None:
         print("No sender email found")
         return
