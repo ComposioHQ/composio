@@ -121,8 +121,8 @@ def callback_function(event):
     # Parse event data and perform actions
     payload = event.payload
     thread_id = payload.get("threadId")
-    message = payload.get("snippet")
-    sender_mail = extract_sender_email(payload["payload"])
+    message = payload.get("messageText")
+    sender_mail = payload.get("sender")
     print(sender_mail + ":" + message)
 
 listener.listen()
@@ -260,7 +260,7 @@ Congratulations! You've just:
 1. 🔐 Authenticated your Gmail account with Composio
 2. 🛠 Enabled Triggers
 3. 🧠 Passed these triggers to an AI language model
-4. ⭐ Instructed the AI to list all emails received
+4. ⭐ All the emails received were listed
 5. ✅ Successfully executed the trigger and actions on Gmail
 
 <Frame caption="Explore Advanced Composio Features">
