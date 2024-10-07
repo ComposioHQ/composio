@@ -1,18 +1,18 @@
 # Contributing
 
-Contributions to the framework, its plugins, related tools and tools are welcome, and they are greatly appreciated! Every little bit helps, and credit will always be given.
+Contributions to the framework, its plugins, and related tools are welcome, and they are greatly appreciated! Every little bit helps, and credit will always be given.
 
 There are various ways to contribute:
 
 - If you need support, want to report a bug or ask for features, you can check the [Issues page](https://github.com/composiohq/composio/issues) and raise an issue, if applicable.
-- If you would like to contribute a bug fix or feature then [Submit a pull request](https://github.com/composiohq/composio/pulls).
+- If you would like to contribute a bug fix or feature, then [Submit a pull request](https://github.com/composiohq/composio/pulls).
 - If you have other kinds of feedback, you can contact one of the [authors](https://github.com/composiohq/composio/blob/master/AUTHORS.md) by email.
 
 > Before reading on, please have a look at the [code of conduct](https://github.com/composiohq/composio/blob/master/CODE_OF_CONDUCT.md).
 
 ## A few simple rules
 
-- Before working on a feature, reach out to one of the core developers or discuss the feature in an issue. The framework caters a diverse audience and new features require upfront coordination.
+- Before working on a feature, reach out to one of the core developers or discuss the feature in an issue. The framework caters to a diverse audience, and new features require upfront coordination.
 - Include unit tests for 100% coverage if possible when you contribute new features, as they help to a) prove that your code works correctly, and b) guard against future breaking changes to lower the maintenance cost.
 - Bug fixes also generally require unit tests, because the presence of bugs usually indicates insufficient test coverage.
 - Keep API compatibility in mind when you change code in the `composio`. Although `composio` does not have a LTS release yet there are a lot of downstream dependencies which would be affected by a breaking changes, so if there are any breaking changes on your PR try to maintain backwards compatibility by introducing a [deprecation warning](https://github.com/composiohq/composio/blob/master/python/composio/utils/decorators.py#L15) on the existing API and discussing the breaking changes with maintainers.
