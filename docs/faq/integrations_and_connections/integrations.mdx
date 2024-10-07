@@ -61,7 +61,19 @@ composio integrations get 123
 </CodeGroup>
 </Tab>
 <Tab title="JS">
-Coming Soon! 
+```javascript javascript    
+import { Composio } from "composio-core";
+
+const client = new Composio(
+  process.env.COMPOSIO_API_KEY
+);
+
+const integration = await integrations.get({
+  integrationId: "123",
+});
+
+console.log(integration)
+```
 </Tab>
 <Tab title="API">
 Coming Soon! 
