@@ -11,9 +11,6 @@
 
   <br /> <br />
 </p>
-<p>
-  <a href="https://github.com/composiohq/composio/blob/master/README.md">EN</a> | <a href="https://github.com/composiohq/composio/blob/master/README-CN.md">CN</a> | <a href="https://github.com/composiohq/composio/blob/master/README-JP.md">JP</a>
-</p>
 
 <p align="center">
   <a href="https://composio.dev//#gh-dark-mode-only">
@@ -60,21 +57,26 @@
 </p>
 </div>
 
+<p><h3>
+  <a href="https://github.com/composiohq/composio/blob/master/README.md">English</a> | <a href="https://github.com/composiohq/composio/blob/master/README-CN.md">中国人</a> | <a href="https://github.com/composiohq/composio/blob/master/README-JP.md">日本語</a>
+</h3></p>
+
 <hr>
 <div align="center">
-<p >
+<p ><h3>
     <b>✨ Socials >></b>
     <a href="https://dub.composio.dev/JoinHQ">Discord</a> <b>|</b>
     <a href="https://www.youtube.com/@Composio">Youtube</a> <b>|</b>
     <a href="https://twitter.com/composiohq">Twitter</a> <b>|</b>
     <a href="https://www.linkedin.com/company/composio-dev"> Linkedin </a>
-</p>
-<p align="center">
+</h3></p>
+  
+<p align="center"><h3>
     <b>⛏️ Contribute >></b>
     <a href="https://github.com/composiodev/composio/issues/new?assignees=&labels=type%3A+bug&template=bug_report.yml&title=%F0%9F%90%9B+Bug+Report%3A+">Report Bugs</a> <b>|</b>
     <a href="https://github.com/composiodev/composio/issues/new?assignees=&labels=feature&template=feature_request.yml&title=%F0%9F%9A%80+Feature%3A+">Request Feature</a> <b>|</b>
     <a href="https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md">Contribute</a>
-</p>
+</h3></p>
 </div>
 
 ## 📋 Table of contents
