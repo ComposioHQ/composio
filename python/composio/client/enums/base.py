@@ -221,9 +221,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         data: t.Union[AppData, TriggerData, ActionData]
 
         if self._model is AppData:
-            response = client.http.get(
-                url=str(client.apps.endpoint / self.slug),
-            ).json()
+            response = client.http.get(url=str(client.apps.endpoint / self.slug)).json()
             data = AppData(
                 name=response["name"],
                 path=self._path / self._slug,
@@ -250,7 +248,11 @@ class _AnnotatedEnum(t.Generic[EntityType]):
                 name=response["name"],
                 app=response["appName"],
                 tags=response["tags"],
-                no_auth=False,  # TOFIX: Get this from the backend
+                no_auth=(
+                    client.http.get(url=str(client.apps.endpoint / response["appName"]))
+                    .json()
+                    .get("no_auth", False)
+                ),
                 is_local=False,
                 is_runtime=False,
                 shell=False,
@@ -313,6 +315,8 @@ class _AnnotatedEnum(t.Generic[EntityType]):
     def __str__(self) -> str:
         """String representation."""
         return t.cast(str, self._slug)
+
+    __repr__ = __str__
 
     def __eq__(self, other: object) -> bool:
         """Check equivalence of two objects."""

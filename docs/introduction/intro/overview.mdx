@@ -1,34 +1,11 @@
 ---
-title: "Overview"
+title: "What is Composio"
 sidebarTitle: "Overview"
 icon: "bolt"
 description: "Empower your AI agents with Composio - a platform for managing and integrating tools with LLMs & AI agents using Function Calling."
 ---
 
-## What is Composio?
-
-Composio is your gateway to AI integrations:
-
-- **Seamless Connections:** Link AI agents to APIs, RPCs, shells, file systems, and web browsers
-- **Secure Authentication:** Manage user-level auth across multiple accounts and tools
-- **Language Agnostic:** Integrate with any programming language through our API-first approach
-- **Optimized Performance:** Improve security and cost-efficiency with tailored execution environments
-- **Comprehensive Logging:** Track and analyze every function call made by your LLMs
-
-<Frame caption="Composio The hub for Seamless Integrations for AI Agents & LLMs">
-  <img
-    src="/media/intro.jpg"
-    alt="Composio platform diagram showing connections between AI agents, various software tools, and agentic frameworks"
-  />
-</Frame>
-
-Unlock the full potential of your AI agents with Composio's powerful integration capabilities.
-
-<hr />
-
-# Get Started with Composio
-
-Dive into Composio with our introduction video and quickstart guide. These resources will help you understand the platform's capabilities and get you up and running in no time.
+Composio simplifies the whole integration process and enabling seamless communication between AI and real-world systems.
 
 Here's a product demo (2 mins)
 
@@ -43,112 +20,46 @@ Here's a product demo (2 mins)
   allowfullscreen
 ></iframe>
 
-Check out our Quickstart guide and start building with Composio
+### Learn more about Composio
 
-<Card
-  title="Quickstart"
-  color="#7bee0c"
-  href="quickstart"
-  icon="terminal"
-  iconType="solid"
-  horizontal
->
-  Getting started with Composio
-</Card>
-
-## Features
-
-### Authentication Management 🔐
-
-Composio handles the auth for your users, allowing you to execute **tools on behalf of a specific user.**
-
-### Managed Execution Environment 🚀
-
-Composio enables you to:
-
-- **Improve performance**, security, and cost efficiency by **optimising execution environments** at an individual tool level
-- Utilize supported execution environments: **Local, Docker, E2B, Fly.io, Lambda, and more**
-
-### Tools & Triggers Execution Logs 📊
-
-Execution logs allow you to:
-
-- **Inspect every function called by the LLM**, including input arguments and return values
-- **Track timestamps for each execution** to understand and optimize latency
-- **Measure Accuracy** of each tool call
-
-### Custom Tools 🛠
-
-With Composio, you can:
-
-- Import custom API Definitions (OpenAPI, Postman, Swagger) to automatically add support for your custom tools
-- Leverage support for different Authentication methods: **API Key, OAuth2, Basic Auth, Bearer Token, and more**
-
-### Supported Tools 🌐
-
-Composio offers support with 150+ Apps. Including AI Apps, Productivity Tools, System Tools, Google Apps, and much more...
+Dive into Composio with our quickstart guide and other resources. This will help you understand the platform’s capabilities and get you up and running in no time.
 
 <CardGroup cols={2}>
   <Card
-    title="AI Tools"
+    title="QuickStart Guide"
     color="#7bee0c"
-    href="https://composio.dev/tools?filter=ai-apps"
+    href="quickstart"
     icon="robot"
     iconType="duotone"
   >
-    Integrate the AI functionality with AI Apps
+    Setup Composio in less than 2 minutes
   </Card>
   <Card
-    title="Productivity Agent"
+    title="Supported tools"
     color="#7bee0c"
-    href="https://composio.dev/tools?filter=productivity-agent"
+    href="/apps"
     icon="gear"
     iconType="duotone"
   >
-  Boost up your productivity with Productivity Tools
+ Get Support of 150+ tools including OpenAI, Discord, Google, etc
   </Card>
   <Card
-    title="Website Apps"
+    title="Basics"
     color="#7bee0c"
-    href="https://composio.dev/tools?filter=website-apps"
-    icon="link"
-    iconType="duotone"
-  >
-  Enhance your efficiency with powerful Website Apps
-  </Card>
-  <Card
-    title="Commerce Apps"
-    color="#7bee0c"
-    href="https://composio.dev/tools?filter=commerce-apps"
+    href="/introduction/foundations/basic"
     icon="users"
     iconType="duotone"
   >
-  Supercharge your business with powerful Commerce Apps
-  </Card>
-
-</CardGroup>
-- [View Full List of Supported Apps](/apps)
-
-## Examples
-
-<CardGroup cols={2}>
-  <Card
-    title="Python Examples"
-    color="#7bee0c"
-    href="/guides/python/investment-analyst"
-    icon="python"
-    iconType="duotone"
-  >
-    Agents built using Composio in Python
+Go through the basic concepts on which Composio works
   </Card>
   <Card
-    title="JavaScript Examples"
+    title="API Integration"
     color="#7bee0c"
-    href="/guides/javascript/calendar-agent"
-    icon="js"
+    href="/api-reference/client-auth/get-user-info"
+    icon="link"
     iconType="duotone"
   >
-    Agents built using Composio in JavaScript
+Try and Integrate the Composio Backend API
   </Card>
 
 </CardGroup>
@@ -157,6 +68,53 @@ Composio offers support with 150+ Apps. Including AI Apps, Productivity Tools, S
   While you're here, why not [give us a
   star](https://github.com/ComposioHQ/composio)? It helps us a lot!
 </Note>
+
+### Supported frameworks
+
+Composio supports multiple AI Frameworks that can bs used to built AI-powered applications feasibly.
+
+<CardGroup cols={2}>
+  <Card
+    title="LlamaIndex"
+    color="#7bee0c"
+    href="/framework/llamaindex"
+    icon="robot"
+    iconType="duotone"
+  >
+    Connect custom data sources to LLMs
+  </Card>
+  <Card
+    title="Crew AI"
+    color="#7bee0c"
+    href="/framework/crewai"
+    icon="gear"
+    iconType="duotone"
+  >
+Enable multiple AI agents to work together efficiently on complex tasks
+  </Card>
+  <Card
+    title="LangChain"
+    color="#7bee0c"
+    href="/framework/langchain"
+    icon="link"
+    iconType="duotone"
+  >
+Build context-aware, reasoning applications the leverages the APIs
+  </Card>
+  <Card
+    title="Groq"
+    color="#7bee0c"
+    href="/framework/groq"
+    icon="users"
+    iconType="duotone"
+  >
+Deep learning inference processing for a wide range of AI applications
+  </Card>
+
+</CardGroup>
+
+- [View Full List of Frameworks](/framework/llamaindex)
+
 ### Composio Flow
 
 <Frame caption="Composio Flow: Seamlessly connecting AI agents to 150+ external tools">
@@ -168,7 +126,7 @@ Composio offers support with 150+ Apps. Including AI Apps, Productivity Tools, S
 
 ## Next Step
 
-Follow our Quickstart guide and start building with Composio
+Checkout our Quickstart guide and start building with Composio
 
 <Card
   title="Quickstart"
@@ -176,7 +134,7 @@ Follow our Quickstart guide and start building with Composio
   href="quickstart"
   icon="terminal"
   iconType="solid"
-  horizontal
+  horizontal="true"
 >
   Getting started with Composio
 </Card>

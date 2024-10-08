@@ -32,7 +32,7 @@ from lyzr_automata.pipelines.linear_sync_pipeline import LinearSyncPipeline
 import os
 import dotenv
 dotenv.load_dotenv()
-from composio_lyzr import ComposioToolset, App, Action
+from composio_lyzr import ComposioToolSet, App, Action
 
 open_ai_text_completion_model = OpenAIModel(
     api_key=os.environ["OPENAI_API_KEY"],
@@ -49,7 +49,7 @@ lyzr_agent = Agent(
         prompt_persona="You are AI agent that is responsible for taking actions on Github on users behalf. You need to take action on Github using Github APIs"
     )
 
-composio_toolset = ComposioToolset()
+composio_toolset = ComposioToolSet()
 composio_tool = composio_toolset.get_lyzr_tool(Action.GITHUB_STAR_REPO)
 
 task = Task(

@@ -1,0 +1,56 @@
+---
+title: "💻 Using Composio CLI"
+sidebarTitle: "How to use CLI?"
+icon: "gear"
+description: "Learn how to install and use the Composio CLI for managing your agent interactions."
+---
+
+<Warning>Composio requires python 3.9 and pip.</Warning>
+
+Composio CLI is a command-line interface that allows you to interact with the Composio API. It's a powerful tool for managing your active connections, triggers, and actions.
+
+### Installation and Basic Commands
+
+<Steps>
+<Step title="Install Composio CLI">
+**Begin by installing the CLI** to start managing your agent interactions seamlessly.
+  <CodeGroup>
+  ```bash Install
+  pip install composio-core
+  ```
+  </CodeGroup>
+</Step>
+<Step title="Login to Composio">
+**Authenticate your session** by logging into your Composio account.
+  <CodeGroup>
+  ```bash Login 
+  composio login
+  ```
+  </CodeGroup>
+</Step>
+
+<Step title="Update all Apps & Actions">
+**Keep your tools up-to-date** by refreshing all applications and actions through the CLI.
+  <CodeGroup>
+  ```bash Update CLI
+  composio apps update
+  ```
+  </CodeGroup>
+</Step>
+<Step title="Verify Current User Identity">
+**Confirm your identity** with the CLI to ensure correct user session.
+  <CodeGroup>
+  ```bash Print API Key
+  composio whoami
+  ```
+  </CodeGroup>
+</Step>
+<Step title="Logout from Composio">
+**Securely end your session** by logging out from the Composio CLI.
+  <CodeGroup>
+  ```bash Logout
+  composio logout
+  ```
+  </CodeGroup>
+</Step>
+</Steps>

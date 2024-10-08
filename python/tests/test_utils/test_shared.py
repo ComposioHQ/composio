@@ -54,9 +54,10 @@ def test_json_schema_to_pydantic_field() -> None:
     result = shared.json_schema_to_pydantic_field(name, json_schema, required)
 
     # Check the output
-    assert result[0] == str
-    assert result[1].description == "The account owner of the repository."
-    assert result[1].default == ...
+    assert result[0] == "owner"
+    assert result[1] == str
+    assert result[2].description == "The account owner of the repository."
+    assert result[2].default == ...
 
 
 def test_json_schema_to_fields_dict() -> None:
