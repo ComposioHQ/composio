@@ -114,21 +114,6 @@
       ]
     },
     {
-      "group":"Commonly Asked Questions",
-        "pages":[
-          "faq/api_key/api_key",
-          "faq/api_key/cli",
-          "faq/entities_doc/entities",
-          "faq/integrations_and_connections/integrations",
-          "faq/integrations_and_connections/connections",
-          "faq/integrations_and_connections/list_of_tools",
-          "faq/without_LLM/execute_without_agents",
-          "faq/supported_llms/supported_llm"
-
-
-        ]
-    },
-    {
       "group":"Supported Frameworks",
 
       "pages":[
@@ -168,6 +153,21 @@
         "swekit/introduction",
         "swekit/benchmarks"
       ]
+    },
+    {
+      "group":"Commonly Asked Questions",
+        "pages":[
+          "faq/api_key/api_key",
+          "faq/api_key/cli",
+          "faq/entities_doc/entities",
+          "faq/integrations_and_connections/integrations",
+          "faq/integrations_and_connections/connections",
+          "faq/integrations_and_connections/list_of_tools",
+          "faq/without_LLM/execute_without_agents",
+          "faq/supported_llms/supported_llm"
+
+
+        ]
     },
      {
       "group": "Guides",
