@@ -24,6 +24,7 @@ from composio.client import Composio, Entity
 from composio.client.collections import (
     ActionModel,
     AppAuthScheme,
+    AuthConnectionParamsModel,
     ConnectedAccountModel,
     FileType,
     SuccessExecuteActionResponseModel,
@@ -384,12 +385,16 @@ class ComposioToolSet(WithLogger):
         action: Action,
         params: t.Dict,
         metadata: t.Optional[t.Dict] = None,
+        entity_id: t.Optional[str] = None,
     ) -> t.Dict:
         """Execute a local action."""
         response = self.workspace.execute_action(
             action=action,
             request_data=params,
-            metadata=metadata or {},
+            metadata={
+                **(metadata or {}),
+                "entity_id": entity_id or self.entity_id,
+            },
         )
         if isinstance(response, BaseModel):
             return response.model_dump()
@@ -600,7 +605,7 @@ class ComposioToolSet(WithLogger):
         action: ActionType,
         params: dict,
         metadata: t.Optional[t.Dict] = None,
-        entity_id: str = DEFAULT_ENTITY_ID,
+        entity_id: t.Optional[str] = None,
         connected_account_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
     ) -> t.Dict:
@@ -632,12 +637,13 @@ class ComposioToolSet(WithLogger):
                 action=action,
                 params=params,
                 metadata=metadata,
+                entity_id=entity_id,
             )
             if action.is_local
             else self._execute_remote(
                 action=action,
                 params=params,
-                entity_id=entity_id,
+                entity_id=entity_id or self.entity_id,
                 connected_account_id=connected_account_id,
                 text=text,
             )
@@ -782,6 +788,27 @@ class ComposioToolSet(WithLogger):
             properties=action_item.parameters.properties,
         )
         return action_item
+
+    def get_auth_params(
+        self,
+        app: AppType,
+        connection_id: t.Optional[str] = None,
+    ) -> t.Optional[AuthConnectionParamsModel]:
+        """Get authentication parameters for given app."""
+        app = App(app)
+        if app.is_local:
+            return None
+
+        try:
+            connection_id = (
+                connection_id
+                or self.client.get_entity(id=self.entity_id).get_connection(app=app).id
+            )
+            return self.client.connected_accounts.get(
+                connection_id=connection_id
+            ).connectionParams
+        except ComposioClientError:
+            return None
 
     def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:
         """Create trigger subscription."""
