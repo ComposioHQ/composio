@@ -16,7 +16,7 @@ from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import get as get_logger
 from composio.utils.url import get_api_url_base
 
-from composio_crewai import ComposioToolSet
+from composio import ComposioToolSet
 
 
 logger = get_logger(name="run_evaluation")
