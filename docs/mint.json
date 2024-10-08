@@ -122,7 +122,8 @@
           "faq/integrations_and_connections/integrations",
           "faq/integrations_and_connections/connections",
           "faq/integrations_and_connections/list_of_tools",
-          "faq/without_LLM/execute_without_agents"
+          "faq/without_LLM/execute_without_agents",
+          "faq/supported_llms/supported_llm"
 
 
         ]
