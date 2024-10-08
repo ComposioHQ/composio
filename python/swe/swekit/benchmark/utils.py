@@ -11,12 +11,10 @@ from docker import errors as docker_errors
 from swebench.harness.run_evaluation import main as run_evaluation
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from composio import Action, WorkspaceFactory, WorkspaceType
+from composio import Action, ComposioToolSet, WorkspaceFactory, WorkspaceType
 from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import get as get_logger
 from composio.utils.url import get_api_url_base
-
-from composio import ComposioToolSet
 
 
 logger = get_logger(name="run_evaluation")
