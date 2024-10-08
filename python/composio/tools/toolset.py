@@ -404,7 +404,7 @@ class ComposioToolSet(WithLogger):
 
         self._log_ingester.log(
             connection_id=None,
-            provider_name=action.name,
+            provider_name=action.app,
             action_name=action.name,
             request=params,
             response=response,
