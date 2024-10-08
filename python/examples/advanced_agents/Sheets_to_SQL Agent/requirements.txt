@@ -1,4 +1,0 @@
-composio-openai
-google-cloud
-google-auth
-google-auth-ouathlib
