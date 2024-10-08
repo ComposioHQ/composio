@@ -39,7 +39,9 @@ refactor_debug.ipynb
 python/dockerfiles/e2b-dev/composio
 python/dockerfiles/composio
 python/swe/dockerfiles/generated
-python/swe/dockerfiles/logs
+python/swe/dockerfiles/logs*
 python/swe/logs
 python/swe/tests/logs_dir
 python/swe/dockerfiles/indexed
+python/swe/agentic
+python/swe/dockerfiles/generated*
