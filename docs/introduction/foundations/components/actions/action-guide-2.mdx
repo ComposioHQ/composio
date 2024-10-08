@@ -1,166 +1,63 @@
 ---
-title: "🛠️ What else can I do with Actions?"
-sidebarTitle: "Actions - FAQs"
+title: "🛠️ How can I execute Actions with my AI Agent?"
+sidebarTitle: "Execute Actions with Agents"
 icon: "wand-magic-sparkles"
-description: "Understand more about Actions"
+description: "Execute Actions with Agents"
 ---
 
-<AccordionGroup>
-<Accordion title="How can I select Actions based on the Action ID?">
-<Tabs>
-<Tab title="Python">
-    ```python Selecting Actions via Name
 
-    from composio_openai import ComposioToolSet, Action 
-    # you can choose framework of your choice using composio_framework
-    # ex. from composio_langchain import ComposioToolSet, Action
-
-    tool_set = ComposioToolSet()
-
-    tools = tool_set.get_tools(actions=[Action.GITHUB_CREATE_AN_ISSUE])
-
-    print(tools)
-    ```
-</Tab>
-
-<Tab title="Javascript">
-    ```javascript Selecting Actions via Name
-    import dotenv from 'dotenv';
-    dotenv.config();
-
-    import { OpenAIToolSet } from "composio-core";
-
-    const toolset = new OpenAIToolSet({
-        apiKey: process.env.COMPOSIO_API_KEY,
-      });
-
-    const tools = await toolset.getActions({actions: ['github_issues_create']});
-    ```
-</Tab>
-</Tabs>
-
-</Accordion>
-
-<Accordion title="How do I find an Action for my Use Case?">
-
-<Tabs>
-
-  <Tab title="Python">
-  <CodeGroup>
-  ```Python Selecting Actions using natural language use-case
-
-  use_case="Star a repo on github"
-
-  # can pass multiple apps
-  action_enums=tool_set.find_actions_by_use_case(App.GITHUB,App.SLACK,use_case=use_case)
-
-  tools = tool_set.get_tools(actions=action_enums)
-
-  # use tools as per your framework
-  ```
-  </CodeGroup>
-  </Tab>
-
-  <Tab title="Javascript">
-  <CodeGroup>
-  ```Javascript Selecting Actions using natural language use-case
-import { LangchainToolSet } from "composio-core";
-
-const toolset = new LangchainToolSet({
-    apiKey: process.env.COMPOSIO_API_KEY,
-    entityId: "default"
-});
-
-const actionsList = await toolset.client.actions.list({
-    useCase: "create github issues"
-});
-
-const actions = await toolset.getActions({
-    actions: actionsList.items.map((action) => {
-        return action.name;
-    })
-})
-  ```
-  </CodeGroup>
-  </Tab>
-
-  <Tab title="CLI">
-  <CodeGroup>
-  ```bash Selecting Actions using natural language use-case
-  composio actions --use-case 'get channel messages' --app 'slack'
-  ```
-  </CodeGroup>
-  </Tab>
-</Tabs>
-</Accordion>
+    <CodeGroup>
+      ```python Python
+      from langchain.agents import create_openai_functions_agent, AgentExecutor
+      from langchain import hub
+      from langchain_openai import ChatOpenAI
+      from composio_langchain import ComposioToolSet, Action, App
+      import os
 
 
+      llm = ChatOpenAI(model="gpt-4o")
 
-<Accordion title="Can I filter and get Actions in an App based on tags?">
+      prompt = hub.pull("hwchase17/openai-functions-agent")
 
-<Tabs>
-<Tab title="Python">
-<CodeGroup>
-```python Selecting Actions via Apps & Tags
-tools = tool_set.get_tools(apps=[App.GITHUB]) 
+      # Get All the tools
+      tool_set = ComposioToolSet()
+      tools = tool_set.get_tools(apps=[App.GITHUB], tags=[])
 
-# Filter by tags
-tag = "users"
+      # Define task
+      task = "Star a repo composiohq/composio on GitHub"
 
-action_enums = toolset.find_actions_by_tags(
-    App.GITHUB,
-    tags=[tag], 
-)
+      agent = create_openai_functions_agent(llm, tools, prompt)
+      agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-tools = tool_set.get_tools(actions=action_enums)
-```
-</CodeGroup>
-</Tab>
+      # Execute using agent_executor
+      agent_executor.invoke({"input": task})
+      ```
+      ```javascript Javascript
+      import { LangchainToolSet } from "composio-core";
+      import { ChatOpenAI } from "@langchain/openai";
+      import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
+      import { pull } from "langchain/hub";
 
-<Tab title="Javascript">
-<CodeGroup>
-```javascript Selecting Actions via Apps
-import { LangchainToolSet } from "composio-core";
 
-const toolset = new LangchainToolSet({
-    apiKey: process.env.COMPOSIO_API_KEY,
-    entityId: "default"
-});
+      (async () => {
+        const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
+        const composioToolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY });
+        const tools = await composioToolset.getActions({ actions: ["github_issues_create"] });
+        const prompt = await pull("hwchase17/openai-functions-agent");
 
-const actionsList = await toolset.client.actions.list({
-     apps: "github"
-});
+        const agent = await createOpenAIFunctionsAgent({ llm, tools, prompt });
+        const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+        const issueDetails = {
+            TITLE: "Sample issue",
+            DESCRIPTION: "Sample issue for the repo - himanshu-dixit/custom-repo-breaking"
+        };
 
-const actions = await toolset.getActions({
-    actions: actionsList.items.map((action) => {
-        return action.name;
-    })
-})
-```
-</CodeGroup>
-</Tab>
-
-<Tab title="CLI">
-<CodeGroup>
-```bash Selecting Actions via Apps
-composio actions --app 'github' --tag 'code' 
-# Don't use tag if you want all actions
-```
-</CodeGroup>
-</Tab>
-
-</Tabs>
-
-</Accordion>
-
-<Accordion title="How can I List Actions Via API?">
-<CodeGroup>
-```curl curl
-curl --request GET \
-  --url https://backend.composio.dev/api/v2/actions \
-  --header 'X-API-Key: <x-api-key>'
-```
-</CodeGroup>
-</Accordion>
-
-</AccordionGroup>
+        const result = await agentExecutor.invoke({
+          input: `Create a GitHub issue with the following details: ${JSON.stringify(issueDetails)}`
+        });
+        return result.output;
+      })();
+      ```
+    </CodeGroup>
+    This code demonstrates how to use LLMs to execute an action. 
+    Composio supports multiple frameworks for creating Agents including LlamaIndex, CrewAI, Letta, Langchain, you can see it in the **Supported Frameworks** section.
