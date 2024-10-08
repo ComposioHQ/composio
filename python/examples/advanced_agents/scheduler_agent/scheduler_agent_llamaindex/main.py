@@ -1,5 +1,6 @@
 # Import necessary libraries
-import os  # For accessing environment variables
+import os
+import time  # For accessing environment variables
 import dotenv  # For loading environment variables from a .env file
 # Import modules from Composio and LlamaIndex
 import re
@@ -11,7 +12,6 @@ from llama_index.llms.openai import OpenAI
 
 from composio.client.collections import TriggerEventData
 
-
 # Load environment variables from a .env file
 dotenv.load_dotenv()
 
@@ -20,7 +20,7 @@ composio_toolset = ComposioToolSet()
 
 # Retrieve tools from Composio, specifically the EMBEDTOOL app
 # Define the tools
-schedule_tool = composio_toolset.get_actions(
+schedule_tool = composio_toolset.get_tools(
     actions=[
         Action.GOOGLECALENDAR_FIND_FREE_SLOTS,
         Action.GOOGLECALENDAR_CREATE_EVENT,
@@ -33,16 +33,6 @@ llm = OpenAI(model="gpt-4o")
 
 date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 timezone = datetime.now().astimezone().tzinfo
-
-# Define the tools
-tools = composio_toolset.get_actions(
-        actions=[
-        Action.GITHUB_GET_CODE_CHANGES_IN_PR,
-        Action.GITHUB_PULLS_CREATE_REVIEW_COMMENT,
-        Action.GITHUB_ISSUES_CREATE,
-        Action.SLACKBOT_CHAT_POST_MESSAGE,
-        ]
-)
 
 def extract_sender_email(payload):
     delivered_to_header_found = False
@@ -62,14 +52,14 @@ def extract_sender_email(payload):
 
 # Create a trigger listener
 listener = composio_toolset.create_trigger_listener()
-@listener.callback(filters={"trigger_name": "github_pull_request_event"})
+@listener.callback(filters={"trigger_name": "GMAIL_NEW_GMAIL_MESSAGE"})
 def review_new_pr(event: TriggerEventData) -> None:
     # Using the information from Trigger, execute the agent
     print("here in the function")
     payload = event.payload
     thread_id = payload.get("threadId")
-    message = payload.get("snippet")
-    sender_mail = extract_sender_email(payload["payload"])
+    message = payload.get("messageText")
+    sender_mail = payload.get("sender")
     if sender_mail is None:
         print("No sender email found")
         return
@@ -81,7 +71,7 @@ def review_new_pr(event: TriggerEventData) -> None:
         content=(
             f"""
                 You are an AI assistant specialized in creating calendar events based on email information. 
-                Current DateTime: {date_time}. All the conversations happen in IST timezone.
+                Current DateTime: {date_time} and timezone {timezone}. All the conversations happen in IST timezone.
                 Pass empty config ("config": {{}}) for the function calls, if you get an error about not passing config.
                 Analyze email, and create event on calendar depending on the email content. 
                 You should also draft an email in response to the sender of the previous email  
@@ -91,7 +81,7 @@ def review_new_pr(event: TriggerEventData) -> None:
         )
     ]
     agent = FunctionCallingAgentWorker(
-    tools=tools,  # Tools available for the agent to use
+    tools=schedule_tool,  # Tools available for the agent to use
     llm=llm,  # Language model for processing requests
     prefix_messages=prefix_messages,  # Initial system messages for context
     max_function_calls=10,  # Maximum number of function calls allowed
@@ -116,5 +106,5 @@ def review_new_pr(event: TriggerEventData) -> None:
     print(response)
 
 print("Listener started!")
-print("Create a pr to get the review")
+print("Waiting for email")
 listener.listen()

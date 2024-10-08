@@ -1,0 +1,189 @@
+---
+title: "Research Agent"
+sidebarTitle: "Research Agent"
+icon: "book"
+description: "This guide provides detailed steps to create a Demo Assistant using Composio and OpenAI. You will build a system capable of interacting with GitHub to create issues and fetch user information."
+---
+This project is an example that uses Composio to seamlessly interact with GitHub through an AI assistant. It automatically creates issues and retrieves user information based on user input.
+
+
+
+
+<Tabs>
+<Tab title="Python">
+<Card color="#7bee0c" title="Research Agent GitHub Repository" icon="github" href="https://github.com/ComposioHQ/composio/tree/master/python/examples/quickstarters/arxiv-research-reporter">
+  Explore the complete source code for the Demo Assistant project. This repository contains all the necessary files and scripts to set up and run the Demo Assistant using Composio and OpenAI.
+  <CardBody>
+  </CardBody>
+</Card>
+<Steps>
+
+    <Step title="Import base packages">
+    Next, we'll import the essential libraries for our project.
+    <CodeGroup>
+        ```python Import statements
+        import os
+        import dotenv
+        from composio_llamaindex import Action, ComposioToolSet  # pylint: disable=import-error
+        from llama_index.core.llms import ChatMessage  # pylint: disable=import-error
+        from llama_index.llms.openai import OpenAI  # pylint: disable=import-error
+        from llama_index.agent.openai import OpenAIAgent
+        from llama_index.tools.arxiv.base import ArxivToolSpec
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Initialize LLM">
+    We'll initialize our LLM and set up the necessary configurations.
+    <CodeGroup>
+        ```python Python - Initialize LLM
+        dotenv.load_dotenv()
+
+        llm = OpenAI(model="gpt-4o")
+
+        research_topic = "LLM agents function calling"
+        target_repo = "composiohq/composio"
+        n_issues = 3
+        
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define Main Function">
+    Define the main function for Python that will handle incoming requests and interact with the OpenAI API.
+    <CodeGroup>
+        ```python Define Main
+        def main():
+            # Get All the tools
+            composio_toolset = ComposioToolSet()
+            tools = composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_AN_ISSUE])
+            arxiv_tool = ArxivToolSpec()
+
+            prefix_messages = [
+                ChatMessage(
+                    role="system",
+                    content=(
+                        "You are now a integration agent, and whatever you are "
+                        "requested, you will try to execute utilizing your tools."
+                    ),
+                )
+            ]
+
+            agent = OpenAIAgent.from_tools(
+                tools=tools + arxiv_tool.to_tool_list(),
+                llm=llm,
+                prefix_messages=prefix_messages,
+                max_function_calls=10,
+                allow_parallel_tool_calls=False,
+                verbose=True,
+            )
+
+            response = agent.chat(
+                f"Please research on Arxiv about `{research_topic}`, Organize "
+                f"the top {n_issues} results as {n_issues} issues for "
+                f"a github repository, finally raise those issues with proper, "
+                f"title, body, implementation guidance and reference in "
+                f"{target_repo} repo,  as well as relevant tags and assignee as "
+                "the repo owner."
+            )
+
+            print("Response:", response)
+        
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Start the Server">
+    Finally, we'll Run the main on Python to execute the Agent
+    <CodeGroup>
+        ```python Main function 
+        if __name__ == "__main__":
+            main()
+
+        ```
+    </CodeGroup>
+    </Step>
+
+</Steps>
+</Tab>
+
+</Tabs>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Putting it All Together
+
+<CodeGroup>
+```python Python Final code
+import os
+import dotenv
+from composio_llamaindex import Action, ComposioToolSet  # pylint: disable=import-error
+from llama_index.core.llms import ChatMessage  # pylint: disable=import-error
+from llama_index.llms.openai import OpenAI  # pylint: disable=import-error
+from llama_index.agent.openai import OpenAIAgent
+from llama_index.tools.arxiv.base import ArxivToolSpec
+
+# Load environment variables from .env
+dotenv.load_dotenv()
+
+llm = OpenAI(model="gpt-4o")
+
+research_topic = "LLM agents function calling"
+target_repo = "composiohq/composio"
+n_issues = 3
+
+
+def main():
+    # Get All the tools
+    composio_toolset = ComposioToolSet()
+    tools = composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_AN_ISSUE])
+    arxiv_tool = ArxivToolSpec()
+
+    prefix_messages = [
+        ChatMessage(
+            role="system",
+            content=(
+                "You are now a integration agent, and what  ever you are "
+                "requested, you will try to execute utilizing your tools."
+            ),
+        )
+    ]
+
+    agent = OpenAIAgent.from_tools(
+        tools=tools + arxiv_tool.to_tool_list(),
+        llm=llm,
+        prefix_messages=prefix_messages,
+        max_function_calls=10,
+        allow_parallel_tool_calls=False,
+        verbose=True,
+    )
+
+    response = agent.chat(
+        f"Please research on Arxiv about `{research_topic}`, Organize "
+        f"the top {n_issues} results as {n_issues} issues for "
+        f"a github repository, finally raise those issues with proper, "
+        f"title, body, implementation guidance and reference in "
+        f"{target_repo} repo,  as well as relevant tags and assignee as "
+        "the repo owner."
+    )
+
+    print("Response:", response)
+
+
+if __name__ == "__main__":
+    main()
+
+```
+</CodeGroup>
