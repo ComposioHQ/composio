@@ -1,0 +1,83 @@
+---
+title: "🛠️ Use Composio without LLMs"
+sidebarTitle: "Can I use Composio without LLMs/Agents?"
+icon: "wand-magic-sparkles"
+description: "Perform Actions with your account or on behalf of your users without a LLM"
+---
+
+
+Yes, Composio lets you perform actions with your account or on behalf of your users using the wide variety of tools that include Github, Gmail, Google Calendar, Jira and so on. Feel free to check all the [tools](https://app.composio.dev/apps) we support. 
+
+<Tabs>
+  <Tab title="Python">
+    <Steps>
+      <Step title="Install package">
+        ```python Installing required dependencies 
+        pip install composio-core
+
+        #login to composio
+        composio login
+        #connect your account to the app 
+        composio add github -e "Jessica"
+        ```
+      </Step>
+      <Step title="Execute Action">
+        
+      ```python Star a repo
+        from composio import ComposioToolSet, Action
+
+        tool_set = ComposioToolSet(entity_id="Jessica")
+        #If you did not run 'composio login' in the CLI, you can use API Key like this:
+        #tool_set = ComposioToolSet(api_key, entity_id="Jessica")
+
+        #You can change the repo you want to star by modifying the parameters
+        tool_set.execute_action(
+            action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
+            params={"owner": "composiohq", "repo": "composio"},
+            entity_id="Jessica",
+        )
+      ```
+
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="JavaScript">
+    <Steps>
+      <Step title="Install package">
+        ```javascript Install the required dependencies
+        npm install composio-core
+
+        //login to composio
+        composio login
+        //connect your account to the app 
+        composio add github -e "Jessica"
+        ```
+      </Step>
+      <Step title="Select Action">
+        ```javascript
+        import { OpenAIToolSet } from "composio-core";
+
+        //Pass api key if you haven't run composio login
+        const toolset = new OpenAIToolSet({
+            apiKey: process.env.COMPOSIO_API_KEY,
+            entityId: "Jessica"
+        });
+
+        await toolset.executeAction(
+          'github_star_a_repository_for_the_authenticated_user',
+            {
+                owner: 'composiohq',
+                repo: 'composio'
+            },
+          "Jessica"
+        );
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## What just happened?
+
+Congratulations! You just Executed an Action without an LLM🎉
