@@ -1,0 +1,179 @@
+---
+title: "Code Execution Agent"
+sidebarTitle: "Code Execution Agent"
+icon: "code"
+description: "The project generates and executes code based on user-defined problems. It utilizes the Composio and connects your AI Agent to E2B's Code Interpreter to facilitate code execution, allowing users to input a problem statement and receive executable code as output. The agent is designed to operate in a sandbox environment, ensuring safe execution and accurate results. Key functionalities include code generation, execution, and result interpretation, making it an invaluable resource for developers and data scientists alike."
+---
+
+
+
+<Tabs>
+
+<Tab title="JavaScript">
+
+<Steps>
+    <Step title="Import Required Packages">
+    Import necessary packages for the Code Execution Agent:
+    <CodeGroup>
+
+        ```javascript Import statements
+        import dotenv from 'dotenv';
+        import { ChatOpenAI } from "@langchain/openai";
+        import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+        import { pull } from "langchain/hub";
+        import { LangchainToolSet } from "composio-core";
+
+        dotenv.config();
+        ```
+
+    </CodeGroup>
+    </Step>
+
+    <Step title="Initialize Composio Toolset">
+    Set up the Composio toolset and get the required tools:
+    <CodeGroup>
+        ```javascript Connect to CodeInterpreter
+        const toolset = new LangchainToolSet({ 
+            apiKey: process.env.COMPOSIO_API_KEY
+        });
+
+        const tools = await toolset.getActions({ 
+            actions: ["codeinterpreter_create_sandbox", "codeinterpreter_execute_code"] 
+        });
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Set up the AI Model">
+    Initialize the OpenAI ChatGPT model:
+    <CodeGroup>
+        ```javascript Initialise Model
+        const llm = new ChatOpenAI({ 
+            model: "gpt-4o",
+            apiKey: process.env.OPEN_AI_API_KEY
+        });
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Create the AI Agent">
+    Set up the agent's prompt and create the OpenAI Functions Agent:
+    <CodeGroup>
+        ```javascript Setup Agent
+        const prompt = await pull("hwchase17/openai-functions-agent");
+        const agent = await createOpenAIFunctionsAgent({ llm, tools, prompt });
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Set up the Agent Executor">
+    Create the AgentExecutor to run the agent:
+    <CodeGroup>
+        ```javascript Creating Agent Executor
+        const agentExecutor = new AgentExecutor({ 
+            agent, 
+            tools, 
+            verbose: true,
+        });
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define the Code Execution Function">
+    Create the main function to generate and execute code:
+    <CodeGroup>
+        ```javascript Main Function
+        async function executeCodeAgent(userProblem) {
+            // Generate code
+            console.log("Generating code for the problem...");
+            const codeGenerationResult = await agentExecutor.invoke({ 
+                input: `Generate Python code to solve the following problem: ${userProblem}. 
+                        Only provide the code, no explanations.`
+            });
+            const generatedCode = codeGenerationResult.output;
+            console.log("Generated Code:", generatedCode);
+
+            // Execute code
+            console.log("\nExecuting the generated code...");
+            const executionResult = await agentExecutor.invoke({ 
+                input: `Execute the following Python code:\n${generatedCode}`
+            });
+            console.log("\nExecution Result:", executionResult.output);
+        }
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Run the Code Execution Agent">
+    Execute the agent with a sample problem:
+    <CodeGroup>
+        ```javascript Run the Agent
+        const userProblem = "Create a list of prime numbers up to 50";
+        executeCodeAgent(userProblem).catch(error => console.error("An error occurred:", error));
+        ```
+    </CodeGroup>
+    </Step>
+</Steps>
+
+</Tab>
+</Tabs>
+
+
+
+## Complete Code
+
+Here's the complete JavaScript code for the Code Execution Agent:
+
+<CodeGroup>
+
+    ```javascript JavaScript Final Code
+    import dotenv from 'dotenv';
+    import { ChatOpenAI } from "@langchain/openai";
+    import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+    import { pull } from "langchain/hub";
+    import { LangchainToolSet } from "composio-core";
+
+    dotenv.config();
+
+    async function executeCodeAgent(userProblem) {
+        const toolset = new LangchainToolSet({ 
+            apiKey: process.env.COMPOSIO_API_KEY
+        });
+
+        const tools = await toolset.getActions({ 
+            actions: ["codeinterpreter_create_sandbox", "codeinterpreter_execute_code"] 
+        });
+
+        const llm = new ChatOpenAI({ 
+            model: "gpt-4o",
+            apiKey: process.env.OPEN_AI_API_KEY
+        });
+
+        const prompt = await pull("hwchase17/openai-functions-agent");
+        const agent = await createOpenAIFunctionsAgent({ llm, tools, prompt });
+
+        const agentExecutor = new AgentExecutor({ 
+            agent, 
+            tools, 
+            verbose: true,
+        });
+
+        console.log("Generating code for the problem...");
+        const codeGenerationResult = await agentExecutor.invoke({ 
+            input: `Generate Python code to solve the following problem: ${userProblem}. 
+                    Only provide the code, no explanations.`
+        });
+        const generatedCode = codeGenerationResult.output;
+        console.log("Generated Code:", generatedCode);
+
+        console.log("\nExecuting the generated code...");
+        const executionResult = await agentExecutor.invoke({ 
+            input: `Execute the following Python code:\n${generatedCode}`
+        });
+        console.log("\nExecution Result:", executionResult.output);
+    }
+
+    const userProblem = "Create a list of prime numbers up to 50";
+    executeCodeAgent(userProblem).catch(error => console.error("An error occurred:", error));
+    ```
+</CodeGroup>
