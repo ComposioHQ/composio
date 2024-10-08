@@ -197,13 +197,31 @@
     {
       "group": "Examples",
       "pages": [
-        "examples/combined/calendar-agent",
-        "examples/combined/code-execution-agent",
-        "examples/combined/rag-agent",
-        "examples/combined/research_agent",
-        "examples/combined/sql-agent",
-        "examples/combined/newsletter_summarizer"
-        ]
+        {
+            "group": "Python Examples",
+            "pages": [
+                "examples/combined/rag-agent-python",
+                "examples/combined/code-execution-agent-python",
+                "examples/combined/calendar-agent-python",
+                "examples/combined/newsletter-summarizer-python",
+                "examples/combined/research-agent-python",
+                "examples/combined/sql-agent-python"
+                
+            ]
+        },
+        {
+            "group": "JavaScript Examples",
+            "pages": [
+              "examples/combined/rag-agent-javascript",
+              "examples/combined/code-execution-agent-javascript",
+              "examples/combined/calendar-agent-javascript",
+              "examples/combined/newsletter-summarizer-javascript",
+              "examples/combined/research-agent-javascript",
+              "examples/combined/sql-agent-javascript"
+            ]
+        }
+      ]
+      
     },
     {
       "group": "Endpoints",
@@ -301,6 +319,14 @@
     }
   },
   "redirects": [
+    {
+      "source":"/apps/gitlab",
+      "destination":"https://app.composio.dev/apps"
+    },
+    {
+      "source":"/apps/bitbucket",
+      "destination":"https://app.composio.dev/apps"
+    },
     {
       "source": "/introduction/foundations/howtos/get_api_key",
       "destination": "/patterns/howtos/get_api_key"

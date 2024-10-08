@@ -1,0 +1,237 @@
+---
+title: "Newsletter Summarizer"
+sidebarTitle: "Newsletter Summarizer"
+icon: "book"
+description: "This project serves as an example of how to use Composio to seamlessly fetch and summarize newsletter emails. It automatically retrieves recent newsletters, summarizes their content, and sends a well-formatted email to the specified recipient."
+---
+
+
+
+
+<Tabs>
+
+    <Tab title="Javascript">
+    <Card color="#7bee0c" title="Newsletter Summarizer GitHub Repository" icon="github" href="https://github.com/ComposioHQ/composio/tree/master/js/examples/newsletter_summarizer/newsletter_summarizer_cloudflare">
+  Explore the complete source code for the Newsletter Summarizer project. This repository contains all the necessary files and scripts to set up and run the Newsletter Summarizer using Composio and Cloudflare.
+  <CardBody>
+  </CardBody>
+</Card>
+    <Steps>
+        <Step title="Import base packages">
+    Next, we'll import the essential libraries for our project.
+    <CodeGroup>
+        ```javascript JS - Import statements
+        import express from 'express';
+        import { OpenAI } from "openai";
+        import { OpenAIToolSet, Action } from "composio-core";
+        ```
+    </CodeGroup>
+    </Step>
+    <Step title="Initialize Express App">
+    We'll initialize our Express application and set up the necessary configurations.
+    <CodeGroup>
+
+        ```javascript Initialize Express App
+        const app = express();
+        const PORT = process.env.PORT || 2001;
+        const research_topic = "LLM agents function calling"
+        const target_repo = "composiohq/composio"
+        app.use(express.json());
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define Webhook Endpoint">
+    Define the webhook endpoint for JS and the main function for Python that will handle incoming requests and interact with the OpenAI API.
+    <CodeGroup>
+
+        ```javascript Define Webhook
+        app.get('/webhook', async (req, res) => {
+            try {
+                const body = `Please research on Arxiv about \`${researchTopic}\`, organize 
+                the top ${nIssues} results as ${nIssues} issues for 
+                a GitHub repository, and finally raise those issues with proper 
+                title, body, implementation guidance, and references in 
+                the ${targetRepo} repo, as well as relevant tags and assignees as 
+                the repo owner.`;
+                
+                const toolset = new OpenAIToolSet({
+                    apiKey: process.env.COMPOSIO_API_KEY,
+                });
+                const tools = await toolset.get_actions([
+                    Action.SERPAPI_SEARCH,
+                    Action.GITHUB_USERS_GET_AUTHENTICATED,
+                    Action.GITHUB_ISSUES_CREATE
+                ]);
+                const client = new OpenAI({});
+                const assistant = await client.beta.assistants.create({
+                    model: "gpt-4-turbo",
+                    description: "This is a test assistant",
+                    instructions: "You are a helpful assistant that takes actions on user's GitHub",
+                    tools: tools,
+                });
+                const thread = await client.beta.threads.create({
+                    messages: [{
+                        role: "user",
+                        content: body
+                    }]
+                });
+                let run = await client.beta.threads.runs.create(thread.id, {
+                    assistant_id: assistant.id,
+                });
+                run = await toolset.wait_and_handle_assistant_tool_calls(client, run, thread);
+                
+                // Check if the run is completed
+                if (run.status === "completed") {
+                    let messages = await client.beta.threads.messages.list(thread.id);
+                    console.log(messages.data);
+                    return messages.data;
+                } else if (run.status === "requires_action") {
+                    console.log(run.status);
+                    return await toolset.handle_assistant_message(run);
+                } else {
+                    console.error("Run did not complete:", run);
+                }
+            } catch (error) {
+                console.error(error);
+                res.status(500).send('Internal Server Error');
+            }
+        });
+        ```
+    </CodeGroup>
+    </Step>
+    <Step title="Start the Server">
+    Finally, we'll start the Express server for JS to listen for incoming requests.
+    <CodeGroup>
+
+        ```javascript Start Server
+        app.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
+        });
+        ```
+    </CodeGroup>
+    </Step>
+</Steps>
+</Tab>
+</Tabs>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Putting It All Together
+
+<CodeGroup>
+    ```javascript Javascript Final Code
+    import { Hono } from 'hono';
+    import { CloudflareToolSet } from "composio-core";
+    const app = new Hono();
+
+    // Configuration for the AI model
+    const config = {
+        model: '@hf/nousresearch/hermes-2-pro-mistral-7b',
+    };
+
+    // Function to set up the GitHub connection for the user if it doesn't exist
+    async function setupUserConnectionIfNotExists(toolset, entityId, c) {
+        const entity = await toolset.client.getEntity(entityId);
+        const connection = await entity.getConnection('github');
+
+        if (!connection) {
+            // If the user hasn't connected their GitHub account
+            const connection = await entity.initiateConnection('github');
+            console.log('Log in via: ', connection.redirectUrl);
+            c.json({ redirectUrl: connection.redirectUrl, message: 'Please log in to continue and then call this API again.' });
+        }
+
+        return connection;
+    }
+
+    // POST endpoint to handle the AI request
+    app.post('/help', async (c) => {
+        // Initialize the CloudflareToolSet with the API key
+        const toolset = new CloudflareToolSet({
+            apiKey: c.env.COMPOSIO_API_KEY,
+        });
+
+        try {
+            const entity = await toolset.client.getEntity('default');
+            await setupUserConnectionIfNotExists(toolset, entity.id, c);
+            // Get the required tools for the AI task
+            const tools = await toolset.getActions({ actions: ['gmail_fetch_emails', 'gmail_send_email'] }, entity.id);
+            const instruction = `
+                "Fetch the most recent newsletter emails from the inbox. "
+                "Look for emails with subjects containing words like 'newsletter', 'update', or 'digest'. "
+                "Retrieve the content of these emails, including any important links or attachments. "
+                "Pay special attention to newsletters from reputable sources and industry leaders."
+                "Compose and send an email containing the summarized newsletter content. "
+                "Use the Gmail API to send the email to investtradegame@gmail.com. "
+                "Ensure the email has a clear, engaging subject line and well-formatted content. "
+                "Use the following structure for the email:\n\n"
+                f"Subject: Your Weekly News Digest - {datetime.now().strftime('%B %d, %Y')}\n\n"
+                "<h1>Weekly News Digest</h1>\n\n"
+                "<p>Dear Reader,</p>\n\n"
+                "<p>Here's your curated summary of this week's top news items and insights:</p>\n\n"
+                "[Insert summarized content here]\n\n"
+                "Each main section should be separated by a horizontal rule, like this:\n"
+                "<hr>\n\n"
+                "Structure the content logically, with clear sections for each summarized newsletter or topic area.\n"
+                "Use appropriate HTML formatting such as <strong> for headlines, "
+                "<ul> and <li> for bullet points, and <br> for line breaks to enhance readability.\n\n"
+                "Include relevant links using HTML anchor tags: <a href='URL'>Link Text</a>\n\n"
+                "Include a brief introduction at the beginning to set the context and a conclusion at the end "
+                "to summarize the key takeaways and trends observed across the newsletters.\n\n"
+                "<footer>\n"
+                "<p>For more details on these stories, click on the provided links or stay tuned to our next update. "
+                "If you have any questions or feedback, please don't hesitate to reach out.</p>\n\n"
+                "<p>Best regards,<br>Your Newsletter Summary Team</p>\n"
+                "</footer>\n\n"
+                "Important: Ensure all HTML tags are properly closed and nested correctly."
+            `;
+
+            // Set up the initial messages for the AI model
+            let messages = [
+                { role: 'system', content: '' },
+                { role: 'user', content: instruction },
+            ];
+
+            // Run the AI model with the messages and tools
+            const toolCallResp = await c.env.AI.run(config.model, {
+                messages,
+                tools,
+            });
+
+            // Handle the tool call response
+            await toolset.handleToolCall(toolCallResp, entity.id);
+            return c.json({ messages: "Mails found" });
+        } catch (err) {
+            console.log(err);
+            return c.text('Something went wrong', 500);
+        }
+    });
+
+    export default app;
+    ```
+</CodeGroup>
+
+
