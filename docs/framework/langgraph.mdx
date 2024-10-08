@@ -101,7 +101,7 @@ tool_node = ToolNode(tools)
 <CodeGroup>
     ```python Define model
     model = ChatOpenAI(temperature=0, streaming=True)
-    model_with_tools = model.bind_tools(functions)
+    model_with_tools = model.bind_tools(tools)
     ```
 </CodeGroup>
 
