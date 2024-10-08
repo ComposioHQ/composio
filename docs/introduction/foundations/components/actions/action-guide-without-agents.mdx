@@ -1,13 +1,13 @@
 ---
 title: "🛠️ How to Use Actions"
-sidebarTitle: "Actions"
+sidebarTitle: "Actions without Agents"
 icon: "wand-magic-sparkles"
 description: "Perform Actions with your account or on behalf of your users"
 ---
 
 ## Using Actions
 
-Composio lets you perform actions with your account or on behalf of your users using the wide variety of tools that include Github, Gmail, Google Calendar, Jira and so on. Feel free to check all the [tools](https://app.composio.dev/apps) we support. 
+Composio lets you perform actions with your account or on behalf of your users. Feel free to check all the [tools](https://app.composio.dev/apps) we support. 
 
 ## Why Actions?
 
@@ -38,7 +38,7 @@ To optimize LLM performance, it's crucial to select a **focused set of actions**
 
         #You can change the repo you want to star by modifying the parameters
         tool_set.execute_action(
-            action=Action.GITHUB_STAR_A_REPO,
+            action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
             params={"owner": "composiohq", "repo": "composio"},
             entity_id="Jessica",
         )
@@ -71,7 +71,7 @@ To optimize LLM performance, it's crucial to select a **focused set of actions**
         });
 
         await toolset.executeAction(
-          'github_star_a_repo',
+          'github_star_a_repository_for_the_authenticated_user',
             {
                 owner: 'composiohq',
                 repo: 'composio'
@@ -83,6 +83,28 @@ To optimize LLM performance, it's crucial to select a **focused set of actions**
     </Steps>
   </Tab>
 </Tabs>
+
+## Execute Actions with Natural Language
+You can also execute Actions by passing in natural language prompts without specific parameters
+<CodeGroup>
+```python Python
+  tool_set.execute_action(
+      action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
+      params={},
+      text="Star the repo composiohq/composio",
+      entity_id="Jessica",
+  )
+```
+
+```javascript JavaScript
+  await toolset.executeAction(
+    'github_star_a_repository_for_the_authenticated_user',
+    {},
+    "Jessica",
+    "Star the repo composiohq/composio"
+  );
+```
+</CodeGroup>
 
 ## What just happened?
 

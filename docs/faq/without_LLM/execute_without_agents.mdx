@@ -32,7 +32,7 @@ Yes, Composio lets you perform actions with your account or on behalf of your us
 
         #You can change the repo you want to star by modifying the parameters
         tool_set.execute_action(
-            action=Action.GITHUB_STAR_A_REPO,
+            action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
             params={"owner": "composiohq", "repo": "composio"},
             entity_id="Jessica",
         )
@@ -65,7 +65,7 @@ Yes, Composio lets you perform actions with your account or on behalf of your us
         });
 
         await toolset.executeAction(
-          'github_star_a_repo',
+          'github_star_a_repository_for_the_authenticated_user',
             {
                 owner: 'composiohq',
                 repo: 'composio'

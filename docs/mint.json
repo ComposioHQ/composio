@@ -93,8 +93,8 @@
           "group":"Actions",
           "icon":"hammer" ,
           "pages":[
-            "introduction/foundations/components/actions/action-guide",
-            "introduction/foundations/components/actions/action-guide-2",
+            "introduction/foundations/components/actions/action-guide-with-agents",
+            "introduction/foundations/components/actions/action-guide-without-agents",
             "introduction/foundations/components/actions/action-guide-3"
           ]
         },
