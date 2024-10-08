@@ -1,0 +1,166 @@
+---
+title: "🛠️ What else can I do with Actions?"
+sidebarTitle: "Actions - FAQs"
+icon: "wand-magic-sparkles"
+description: "Understand more about Actions"
+---
+
+<AccordionGroup>
+<Accordion title="How can I select Actions based on the Action ID?">
+<Tabs>
+<Tab title="Python">
+    ```python Selecting Actions via Name
+
+    from composio_openai import ComposioToolSet, Action 
+    # you can choose framework of your choice using composio_framework
+    # ex. from composio_langchain import ComposioToolSet, Action
+
+    tool_set = ComposioToolSet()
+
+    tools = tool_set.get_tools(actions=[Action.GITHUB_CREATE_AN_ISSUE])
+
+    print(tools)
+    ```
+</Tab>
+
+<Tab title="Javascript">
+    ```javascript Selecting Actions via Name
+    import dotenv from 'dotenv';
+    dotenv.config();
+
+    import { OpenAIToolSet } from "composio-core";
+
+    const toolset = new OpenAIToolSet({
+        apiKey: process.env.COMPOSIO_API_KEY,
+      });
+
+    const tools = await toolset.getActions({actions: ['github_issues_create']});
+    ```
+</Tab>
+</Tabs>
+
+</Accordion>
+
+<Accordion title="How do I find an Action for my Use Case?">
+
+<Tabs>
+
+  <Tab title="Python">
+  <CodeGroup>
+  ```Python Selecting Actions using natural language use-case
+
+  use_case="Star a repo on github"
+
+  # can pass multiple apps
+  action_enums=tool_set.find_actions_by_use_case(App.GITHUB,App.SLACK,use_case=use_case)
+
+  tools = tool_set.get_tools(actions=action_enums)
+
+  # use tools as per your framework
+  ```
+  </CodeGroup>
+  </Tab>
+
+  <Tab title="Javascript">
+  <CodeGroup>
+  ```Javascript Selecting Actions using natural language use-case
+import { LangchainToolSet } from "composio-core";
+
+const toolset = new LangchainToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+    entityId: "default"
+});
+
+const actionsList = await toolset.client.actions.list({
+    useCase: "create github issues"
+});
+
+const actions = await toolset.getActions({
+    actions: actionsList.items.map((action) => {
+        return action.name;
+    })
+})
+  ```
+  </CodeGroup>
+  </Tab>
+
+  <Tab title="CLI">
+  <CodeGroup>
+  ```bash Selecting Actions using natural language use-case
+  composio actions --use-case 'get channel messages' --app 'slack'
+  ```
+  </CodeGroup>
+  </Tab>
+</Tabs>
+</Accordion>
+
+
+
+<Accordion title="Can I filter and get Actions in an App based on tags?">
+
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python Selecting Actions via Apps & Tags
+tools = tool_set.get_tools(apps=[App.GITHUB]) 
+
+# Filter by tags
+tag = "users"
+
+action_enums = toolset.find_actions_by_tags(
+    App.GITHUB,
+    tags=[tag], 
+)
+
+tools = tool_set.get_tools(actions=action_enums)
+```
+</CodeGroup>
+</Tab>
+
+<Tab title="Javascript">
+<CodeGroup>
+```javascript Selecting Actions via Apps
+import { LangchainToolSet } from "composio-core";
+
+const toolset = new LangchainToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+    entityId: "default"
+});
+
+const actionsList = await toolset.client.actions.list({
+     apps: "github"
+});
+
+const actions = await toolset.getActions({
+    actions: actionsList.items.map((action) => {
+        return action.name;
+    })
+})
+```
+</CodeGroup>
+</Tab>
+
+<Tab title="CLI">
+<CodeGroup>
+```bash Selecting Actions via Apps
+composio actions --app 'github' --tag 'code' 
+# Don't use tag if you want all actions
+```
+</CodeGroup>
+</Tab>
+
+</Tabs>
+
+</Accordion>
+
+<Accordion title="How can I List Actions Via API?">
+<CodeGroup>
+```curl curl
+curl --request GET \
+  --url https://backend.composio.dev/api/v2/actions \
+  --header 'X-API-Key: <x-api-key>'
+```
+</CodeGroup>
+</Accordion>
+
+</AccordionGroup>
