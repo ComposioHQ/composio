@@ -6,14 +6,16 @@ from composio_llamaindex import App, ComposioToolSet, Action
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage
 from llama_index.llms.groq import Groq
+from llama_index.llms.openai import OpenAI
 from datetime import datetime
 from llama_index.core import Settings
 
 # Load environment variables from .env file
 dotenv.load_dotenv()
-Settings.llm = Groq(model="llama3-groq-70b-8192-tool-use-preview", api_key=os.environ["GROQ_API_KEY"])
-llm = Groq(model="llama-3.2-3b-preview", api_key=os.environ["GROQ_API_KEY"])
-
+#Settings.llm = Groq(model="llama3-groq-70b-8192-tool-use-preview", api_key=os.environ["GROQ_API_KEY"])
+#llm = Groq(model="llama-3.2-3b-preview", api_key=os.environ["GROQ_API_KEY"])
+Settings.llm = OpenAI(model="gpt-4o")
+llm = OpenAI(model="gpt-4o")
 
 # Initialize the ComposioToolSet
 toolset = ComposioToolSet()

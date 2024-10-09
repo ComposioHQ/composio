@@ -53,7 +53,7 @@ def extract_sender_email(payload):
 # Create a trigger listener
 listener = composio_toolset.create_trigger_listener()
 @listener.callback(filters={"trigger_name": "GMAIL_NEW_GMAIL_MESSAGE"})
-def review_new_pr(event: TriggerEventData) -> None:
+def callback_new_message(event: TriggerEventData) -> None:
     # Using the information from Trigger, execute the agent
     print("here in the function")
     payload = event.payload

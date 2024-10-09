@@ -10,7 +10,7 @@ from langchain_openai import ChatOpenAI
 
 load_dotenv()
 llm = ChatOpenAI(model='gpt-4o')
-#llm = ChatGroq(model="llama3-groq-70b-8192-tool-use-preview")
+#llm = ChatCerebras(model="llama3-groq-70b-8192-tool-use-preview")
 
 composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_tools(apps = [App.EMBED_TOOL, App.RAGTOOL, App.WEBTOOL, App.SERPAPI, App.FILETOOL])
