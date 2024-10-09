@@ -12,7 +12,7 @@ import axios from 'axios';
 import { getPackageJsonDir } from './utils/projectUtils';
 import { isNewerVersion } from './utils/other';
 import { getClientBaseConfig } from './utils/config';
-
+import chalk from 'chalk';
 export class Composio {
     /**
      * The Composio class serves as the main entry point for interacting with the Composio SDK.
@@ -37,6 +37,15 @@ export class Composio {
     constructor(apiKey?: string, baseUrl?: string, runtime?: string) {
         // // Parse the base URL and API key, falling back to environment variables or defaults if not provided.
         const { baseURL: baseURLParsed, apiKey: apiKeyParsed } =  getClientBaseConfig(baseUrl, apiKey);
+
+        if(!apiKeyParsed){
+
+            console.log(chalk.yellow("Oops! We couldn't find your API key. You can set it by:\n"));
+            console.log(chalk.white("1. Running 'composio login' after installing `npm install -g composio-core`"));
+            console.log(chalk.white("2. Setting the COMPOSIO_API_KEY environment variable"));
+            console.log(chalk.white("3. Passing api key as a parameter to the Composio constructor \n "));
+            throw new Error("Please provide an API key. ");
+        }
 
         // Initialize the BackendClient with the parsed API key and base URL.
         this.backendClient = new BackendClient(apiKeyParsed, baseURLParsed, runtime);
