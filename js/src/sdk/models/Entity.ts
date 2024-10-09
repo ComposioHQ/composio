@@ -155,11 +155,29 @@ export class Entity {
         authMode?: any,
         authConfig?: { [key: string]: any; },
         redirectUrl?: string,
-        integrationId?: string
+        integrationId?: string,
+        connectionData?: Record<string, any>,
     ): Promise<ConnectionRequest> {
 
         // Get the app details from the client
         const app = await this.apps.get({ appKey: appName });
+
+        const isTestConnectorAvailable = app.testConnectors && app.testConnectors.length > 0;
+
+        if (!isTestConnectorAvailable && app.no_auth === false ) {
+            if (!authMode) {
+                // @ts-ignore
+                console.log("Auth schemes not provided, available auth schemes and authConfig")
+                // @ts-ignore
+                for (const authScheme of app.auth_schemes) {
+                    // @ts-ignore
+                    console.log("autheScheme:", authScheme.name,"\n", "fields:", authScheme.fields);
+                }
+
+                throw new Error(`Please pass authMode and authConfig.`);
+            }
+        }
+
         const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
 
         let integration = integrationId ? await this.integrations.get({ integrationId: integrationId }) : null;
@@ -174,6 +192,7 @@ export class Entity {
             });
         }
 
+ 
         if (!integration && !authMode) {
             integration = await this.integrations.create({
                 appId: app.appId!,
@@ -187,6 +206,8 @@ export class Entity {
             integrationId: integration!.id!,
             userUuid: this.id,
             redirectUri: redirectUrl,
+            data: connectionData
         });
+
     }
 }
