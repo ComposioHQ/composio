@@ -89,7 +89,15 @@
       "pages": [
         "introduction/foundations/basic",
         "introduction/foundations/components/entity/entity-guide",
-        "introduction/foundations/components/actions/action-guide",
+        {
+          "group":"Actions",
+          "icon":"hammer" ,
+          "pages":[
+            "introduction/foundations/components/actions/action-guide-with-agents",
+            "introduction/foundations/components/actions/action-guide-without-agents",
+            "introduction/foundations/components/actions/action-guide-3"
+          ]
+        },
         "introduction/foundations/components/triggers/trigger-guide",
         "introduction/foundations/components/local_tools",
         "introduction/foundations/components/integrations/custom-integration",
@@ -104,19 +112,6 @@
           ]
         }
       ]
-    },
-    {
-      "group":"Commonly Asked Questions",
-        "pages":[
-          "faq/api_key/api_key",
-          "faq/api_key/cli",
-          "faq/entities_doc/entities",
-          "faq/integrations_and_connections/integrations",
-          "faq/integrations_and_connections/connections",
-          "faq/integrations_and_connections/list_of_tools"
-
-
-        ]
     },
     {
       "group":"Supported Frameworks",
@@ -159,6 +154,21 @@
         "swekit/benchmarks"
       ]
     },
+    {
+      "group":"Commonly Asked Questions",
+        "pages":[
+          "faq/api_key/api_key",
+          "faq/api_key/cli",
+          "faq/entities_doc/entities",
+          "faq/integrations_and_connections/integrations",
+          "faq/integrations_and_connections/connections",
+          "faq/integrations_and_connections/list_of_tools",
+          "faq/without_LLM/execute_without_agents",
+          "faq/supported_llms/supported_llm"
+
+
+        ]
+    },
      {
       "group": "Guides",
       "pages": [
@@ -197,13 +207,31 @@
     {
       "group": "Examples",
       "pages": [
-        "examples/combined/calendar-agent",
-        "examples/combined/code-execution-agent",
-        "examples/combined/rag-agent",
-        "examples/combined/research_agent",
-        "examples/combined/sql-agent",
-        "examples/combined/newsletter_summarizer"
-        ]
+        {
+            "group": "Python Examples",
+            "pages": [
+                "examples/combined/rag-agent-python",
+                "examples/combined/code-execution-agent-python",
+                "examples/combined/calendar-agent-python",
+                "examples/combined/newsletter-summarizer-python",
+                "examples/combined/research-agent-python",
+                "examples/combined/sql-agent-python"
+                
+            ]
+        },
+        {
+            "group": "JavaScript Examples",
+            "pages": [
+              "examples/combined/rag-agent-javascript",
+              "examples/combined/code-execution-agent-javascript",
+              "examples/combined/calendar-agent-javascript",
+              "examples/combined/newsletter-summarizer-javascript",
+              "examples/combined/research-agent-javascript",
+              "examples/combined/sql-agent-javascript"
+            ]
+        }
+      ]
+      
     },
     {
       "group": "Endpoints",
@@ -301,6 +329,14 @@
     }
   },
   "redirects": [
+    {
+      "source":"/apps/gitlab",
+      "destination":"https://app.composio.dev/apps"
+    },
+    {
+      "source":"/apps/bitbucket",
+      "destination":"https://app.composio.dev/apps"
+    },
     {
       "source": "/introduction/foundations/howtos/get_api_key",
       "destination": "/patterns/howtos/get_api_key"

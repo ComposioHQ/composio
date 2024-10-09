@@ -13,13 +13,13 @@ llm = ChatOpenAI(model="gpt-4-turbo")
 
 composio_toolset = ComposioToolSet()
 
-schedule_tool = composio_toolset.get_actions(
+schedule_tool = composio_toolset.get_tools(
     actions=[
         Action.GOOGLECALENDAR_FIND_FREE_SLOTS,
         Action.GOOGLECALENDAR_CREATE_EVENT,
     ]
 )
-email_tool = composio_toolset.get_actions(actions=[Action.GMAIL_CREATE_EMAIL_DRAFT])
+email_tool = composio_toolset.get_tools(actions=[Action.GMAIL_CREATE_EMAIL_DRAFT])
 date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 timezone = datetime.now().astimezone().tzinfo
 

@@ -22,6 +22,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    install_requires=["composio_core==0.5.30", "griptape>=0.24.2"],
+    install_requires=["composio_core>=0.5.20,<=0.5.30", "griptape>=0.24.2"],
     include_package_data=True,
 )

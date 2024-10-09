@@ -1,16 +1,25 @@
+
 #!/bin/bash
 
 # Create a virtual environment
 echo "Creating virtual environment..."
-python3 -m venv ~/.venvs/data_analyst_agent
+python3 -m venv ~/.venvs/calendar_agent
 
 # Activate the virtual environment
 echo "Activating virtual environment..."
-source ~/.venvs/data_analyst_agent/bin/activate
+source ~/.venvs/calendar_agent/bin/activate
 
 # Install libraries from requirements.txt 
 echo "Installing libraries from requirements.txt..."
 pip install -r requirements.txt
+
+# Login to your account
+echo "Login to your Composio account"
+composio login
+
+# Add calendar tool
+echo "Add Google calendar tool. Finish the flow"
+composio add googlecalendar 
 
 # Copy env backup to .env file
 if [ -f ".env.example" ]; then

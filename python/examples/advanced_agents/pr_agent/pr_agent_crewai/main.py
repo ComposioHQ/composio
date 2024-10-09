@@ -52,7 +52,7 @@ llm = ChatOpenAI(model="gpt-4o")
 # Create CrewAI agent
 code_reviewer = Agent(
     role="Code Reviewer",
-    goal=system_goal,
+    goal="Review the code successfully",
     backstory="You are an experienced software engineer with a keen eye for code quality and best practices.",
     verbose=True,
     allow_delegation=False,

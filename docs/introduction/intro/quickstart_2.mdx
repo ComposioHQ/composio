@@ -9,6 +9,7 @@ description: "Quickstart-2: Learn how to authenticate and manage multiple users 
 
 - Composio allows you to authenticate and manage multiple users in your app.
 - Each **unique user is represented by a unique entity id**
+- You can **create entities using Python, JavaScript and CLI** 
 
 ### Introduction to Connected Accounts
 
@@ -42,13 +43,6 @@ Follow these 5 steps to connect your user to Google Calendar and create an event
 <Step title="Authenticate Google Calendar Account">
 We'll use Jessica as our example user. There are multiple ways to authenticate an account:
 <Tabs>
-    <Tab title="CLI">
-            <CodeGroup>
-                ```bash Authenticate Jessica's Google Calendar Account
-                composio add googlecalendar -e "Jessica" # Launches Google Calendar login
-                ```
-            </CodeGroup>
-        </Tab>
         <Tab title="Python">
             <CodeGroup>
                 ```python Authenticate Jessica's Google Calendar Account
@@ -244,17 +238,15 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
 
 
 
-<Tab title="API">
+<Tab title="CLI">
 <Steps>
 <Step title="Authenticate Google Calendar Account">
 We'll use Jessica as our example user. There are multiple ways to authenticate an account:
-    <Tab title="CLI">
             <CodeGroup>
                 ```bash Authenticate Jessica's Google Calendar Account
                 composio add googlecalendar -e "Jessica" # Launches Google Calendar login
                 ```
             </CodeGroup>
-        </Tab>
     <Warning>
         Ensure you complete the authentication process by following the URL provided in your console.
     </Warning>

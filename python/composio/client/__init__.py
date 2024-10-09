@@ -22,6 +22,7 @@ from composio.client.collections import (
     ConnectionRequestModel,
     IntegrationModel,
     Integrations,
+    Logs,
     Triggers,
 )
 from composio.client.endpoints import v1
@@ -80,6 +81,7 @@ class Composio(BaseClient):
         self.integrations = Integrations(client=self)
         self.active_triggers = ActiveTriggers(client=self)
         self.connected_accounts = ConnectedAccounts(client=self)
+        self.logs = Logs(client=self)
         _clients.append(self)
 
     @staticmethod
