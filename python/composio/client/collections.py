@@ -1178,3 +1178,20 @@ class Integrations(Collection[IntegrationModel]):
             self.client.http.get(url=str(self.endpoint / integration_id))
         )
         return IntegrationModel(**response.json())
+
+
+class LogRecord(BaseModel):
+    pass
+
+
+class Logs(Collection[LogRecord]):
+    """
+    Logs endpoint.
+    """
+
+    model = LogRecord
+    endpoint = v1.logs
+
+    def push(self, record: t.Dict) -> None:
+        """Push logs to composio."""
+        self.client.http.post(url=str(self.endpoint), json=record)
