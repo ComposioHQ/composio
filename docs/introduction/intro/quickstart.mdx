@@ -2,50 +2,54 @@
 title: "🚀 Quick Start"
 sidebarTitle: "Quick Start (Python & JS)"
 icon: "rocket"
-description: "Learn how to integrate OpenAI with GitHub using Composio in just 5 minutes."
+description: "Learn how to use Composio to integrate OpenAI with GitHub, enabling AI-powered repository starring through natural language commands in just 5 minutes."
 ---
 
 ## Composio Quick Start
 
-Turn natural language into GitHub actions in minutes. Follow these 5 steps to star a repo using AI:
+Composio empowers you to turn natural language into GitHub actions using AI. In this guide, we'll demonstrate how to use Composio and OpenAI to star a GitHub repository using natural language commands. This process showcases the powerful integration between AI language models and real-world actions on platforms like GitHub.
 
 <Info>
-    **What you'll achieve:** By the end of this guide, you'll have an AI agent capable of starring GitHub repositories using natural language commands.
+    **What you'll achieve:** By the end of this guide, you'll have set up an AI-powered system capable of understanding natural language instructions and executing GitHub actions, specifically starring a repository.
 </Info>
+
 <Tabs>
 <Tab title="Python">
 <Steps>
 
     <Step title="Install Composio">
-                <CodeGroup>
-                    ```bash Install Packages
-                    pip install composio_core composio_openai
+        Composio is a toolkit that facilitates AI-powered interactions with various services, including GitHub. Let's begin by installing the necessary packages:
+        <CodeGroup>
+            ```bash Install Packages
+            pip install composio_core composio_openai
 
-                    composio login
-                    ```
-                </CodeGroup>
-                <Note>
-                    CLI binary package coming soon. Skip `pip install` if not using CLI.
-                </Note>
+            composio login
+            ```
+        </CodeGroup>
+        <Note>
+            A CLI binary package is coming soon. If you're not using the CLI, you can skip the `composio login` command.
+        </Note>
     </Step>
 
     <Step title="Authenticate GitHub Account">
-        Choose your method:
+        To perform actions on GitHub, we need to securely authenticate your account with Composio. This step ensures that Composio can interact with GitHub on your behalf.
+
+        Choose your preferred authentication method:
 
         <Tabs>
             <Tab title="CLI (Quickest)">
                 <CodeGroup>
                     ```bash Authenticate GitHub Account
-                    composio add github # Launches GitHub login
+                    composio add github # Launches GitHub login process
                     ```
                 </CodeGroup>
             </Tab>
             <Tab title="Python">
                 <CodeGroup>
-                    ```python Authenticate Jessica's GitHub Account
+                    ```python Authenticate GitHub Account
                     from composio import ComposioToolSet, App
 
-                    toolset = ComposioToolSet(entity_id="Jessica")
+                    toolset = ComposioToolSet(entity_id="YourUsername")
                     entity = toolset.get_entity()
                     request = entity.initiate_connection(App.GITHUB)
 
@@ -56,60 +60,65 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
         </Tabs>
 
         <Warning>
-            Ensure you complete the authentication process by following the URL provided in your console.
+            Make sure to complete the authentication process by following the URL provided in your console. This step is crucial for establishing a secure connection between Composio and your GitHub account.
         </Warning>
 
     </Step>
 
     <Step title="Initialize Composio and OpenAI">
-        Set up your development environment
-                <CodeGroup>
-                    ```python Initialize Clients
-                    from composio_openai import ComposioToolSet, Action
-                    from openai import OpenAI
+        Now we'll set up the Composio and OpenAI clients. Composio provides the tools to interact with GitHub, while OpenAI powers the natural language understanding and decision-making process.
+        <CodeGroup>
+            ```python Initialize Clients
+            from composio_openai import ComposioToolSet, Action
+            from openai import OpenAI
 
-                    openai_client = OpenAI()
-                    composio_toolset = ComposioToolSet()
-                    ```
-                </CodeGroup>
+            openai_client = OpenAI()  # Initializes the OpenAI client for AI capabilities
+            composio_toolset = ComposioToolSet()  # Initializes Composio for GitHub interactions
+            ```
+        </CodeGroup>
 
         <Tip>
-            Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
+            Ensure you've set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` as environment variables before running this code. These keys are essential for authenticating with Composio and OpenAI services respectively.
         </Tip>
 
     </Step>
 
     <Step title="Fetch GitHub Actions & Interact with LLM">
-        Now, let's star a repository using natural language:
+        In this step, we'll retrieve the specific GitHub action for starring repositories and prepare our AI model to understand and execute this task.
 
-                <CodeGroup>
-                    ```python Star a repo using LLM
-                    tools = composio_toolset.get_tools(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
+        <CodeGroup>
+            ```python Star a repo using LLM
+            # Fetch the GitHub 'star repository' action from Composio
+            tools = composio_toolset.get_tools(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
 
-                    task = "Star the repo composiohq/composio on GitHub"
+            # Define the task in natural language
+            task = "Star the repo composiohq/composio on GitHub"
 
-                    response = openai_client.chat.completions.create(
-                    model="gpt-4-turbo-preview",
-                    tools=tools,
-                    messages=
-                        [
-                            {"role": "system", "content": "You are a helpful assistant."},
-                            {"role": "user", "content": task},
-                        ],
-                    )
-                    ```
-                </CodeGroup>
+            # Use OpenAI to interpret the task and determine the appropriate action
+            response = openai_client.chat.completions.create(
+                model="gpt-4-turbo-preview",
+                tools=tools,
+                messages=[
+                    {"role": "system", "content": "You are an AI assistant capable of interacting with GitHub."},
+                    {"role": "user", "content": task},
+                ],
+            )
+            ```
+        </CodeGroup>
+        This code fetches the GitHub 'star repository' action, presents a natural language task to the AI, and uses OpenAI to interpret the task and determine the appropriate GitHub action to take.
     </Step>
 
     <Step title="Execute Tool Calls">
-        Finally, let's execute the action determined by the LLM:
+        Finally, we'll execute the action determined by the AI. This step translates the AI's decision into an actual GitHub operation - starring the repository.
 
-                <CodeGroup>
-                    ```python Execute Function calls
-                    result = composio_toolset.handle_tool_calls(response)
-                    print(result)
-                    ```
-                </CodeGroup>
+        <CodeGroup>
+            ```python Execute Function calls
+            # Execute the action determined by the AI
+            result = composio_toolset.handle_tool_calls(response)
+            print(result)
+            ```
+        </CodeGroup>
+        This code takes the AI's response, which includes the determined action to star the repository, and executes it using Composio's tools. The result of the operation is then printed.
     </Step>
 
 </Steps>
@@ -120,42 +129,44 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
 <Steps>
 
     <Step title="Install Composio">
-        Choose your preferred language:
+        Composio enables AI-powered interactions with various services, including GitHub. Let's start by installing the necessary packages:
 
-                <CodeGroup>
-                    ```bash Install Packages
-                    npm install composio-core openai
-                    pip install composio_core  # for CLI (optional)
-                    ```
-                </CodeGroup>
-                <Note>
-                    CLI binary package coming soon. Skip `pip install` if not using CLI.
-                </Note>
+        <CodeGroup>
+            ```bash Install Packages
+            npm install composio-core openai
+            pip install composio_core  # for CLI (optional)
+            ```
+        </CodeGroup>
+        <Note>
+            A CLI binary package is coming soon. If you're not using the CLI, you can skip the `pip install composio_core` command.
+        </Note>
     </Step>
 
     <Step title="Authenticate GitHub Account">
-        Choose your method:
+        To perform actions on GitHub, we need to securely authenticate your account with Composio. This step ensures that Composio can interact with GitHub on your behalf.
+
+        Choose your preferred authentication method:
 
         <Tabs>
             <Tab title="CLI (Quickest)">
                 <CodeGroup>
                     ```bash Authenticate GitHub Account
                     composio login
-                    
-                    composio add github # Launches GitHub login
+
+                    composio add github # Launches GitHub login process
                     ```
                 </CodeGroup>
             </Tab>
             <Tab title="JavaScript">
                 <CodeGroup>
-                    ```javascript Authenticate Jessica's GitHub Account
+                    ```javascript Authenticate GitHub Account
                     import { Composio } from "composio-core";
 
                     const client = new Composio(
-                    process.env.COMPOSIO_API_KEY
+                        process.env.COMPOSIO_API_KEY
                     );
 
-                    const entity = await client.getEntity("Jessica");
+                    const entity = await client.getEntity("YourUsername");
                     const connection = await entity.initiateConnection('github');
 
                     console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
@@ -165,67 +176,74 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
         </Tabs>
 
         <Warning>
-            Ensure you complete the authentication process by following the URL provided in your console.
+            Make sure to complete the authentication process by following the URL provided in your console. This step is crucial for establishing a secure connection between Composio and your GitHub account.
         </Warning>
 
     </Step>
 
     <Step title="Initialize Composio and OpenAI">
-        Set up your development environment:
+        Now we'll set up the Composio and OpenAI clients. Composio provides the tools to interact with GitHub, while OpenAI powers the natural language understanding and decision-making process.
 
-                <CodeGroup>
-                    ```javascript Initialize Clients
-                    import { OpenAI } from "openai";
-                    import { OpenAIToolSet } from "composio-core";
+        <CodeGroup>
+            ```javascript Initialize Clients
+            import { OpenAI } from "openai";
+            import { OpenAIToolSet } from "composio-core";
 
-                    const openai_client = new OpenAI({
-                    apiKey: process.env.OPENAI_API_KEY
-                });
+            const openai_client = new OpenAI({
+                apiKey: process.env.OPENAI_API_KEY
+            });
 
-                    const composio_toolset = new OpenAIToolSet({
-                    apiKey: process.env.COMPOSIO_API_KEY,
-                });
-                    ```
-                </CodeGroup>
+            const composio_toolset = new OpenAIToolSet({
+                apiKey: process.env.COMPOSIO_API_KEY,
+            });
+            ```
+        </CodeGroup>
 
         <Tip>
-            Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
+            Ensure you've set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` as environment variables before running this code. These keys are essential for authenticating with Composio and OpenAI services respectively.
         </Tip>
 
     </Step>
 
     <Step title="Fetch GitHub Actions & Interact with LLM">
-        Now, let's star a repository using natural language:
+        In this step, we'll retrieve the specific GitHub action for starring repositories and prepare our AI model to understand and execute this task.
 
-                <CodeGroup>
-                    ```javascript Star a repo using LLM
-                    const tools = await composio_toolset.getActions({
-                    actions: ["github_star_a_repository_for_the_authenticated_user"]
-                });
+        <CodeGroup>
+            ```javascript Star a repo using LLM
+            // Fetch the GitHub 'star repository' action from Composio
+            const tools = await composio_toolset.getActions({
+                actions: ["github_star_a_repository_for_the_authenticated_user"]
+            });
 
-                    const instruction = "Star the repo composiohq/composio on GitHub";
+            // Define the task in natural language
+            const instruction = "Star the repo composiohq/composio on GitHub";
 
-                    const response = await openai_client.chat.completions.create({
-                    model: "gpt-4-turbo-preview",
-                    messages: [{ role: "user", content: instruction }],
-                    tools: tools,
-                    tool_choice: "auto",
-                });
-                    ```
-                </CodeGroup>
+            // Use OpenAI to interpret the task and determine the appropriate action
+            const response = await openai_client.chat.completions.create({
+                model: "gpt-4-turbo-preview",
+                messages: [
+                    { role: "system", content: "You are an AI assistant capable of interacting with GitHub." },
+                    { role: "user", content: instruction }
+                ],
+                tools: tools,
+                tool_choice: "auto",
+            });
+            ```
+        </CodeGroup>
+        This code fetches the GitHub 'star repository' action, presents a natural language task to the AI, and uses OpenAI to interpret the task and determine the appropriate GitHub action to take.
     </Step>
 
     <Step title="Execute Tool Calls">
-        Finally, let's execute the action determined by the LLM:
+        Finally, we'll execute the action determined by the AI. This step translates the AI's decision into an actual GitHub operation - starring the repository.
 
-                <CodeGroup>
-                    ```javascript Execute Function calls
-                    const result = await composio_toolset.handleToolCall(response);
-                    console.log(result);
-                    ```
-                </CodeGroup>
-
-
+        <CodeGroup>
+            ```javascript Execute Function calls
+            // Execute the action determined by the AI
+            const result = await composio_toolset.handleToolCall(response);
+            console.log(result);
+            ```
+        </CodeGroup>
+        This code takes the AI's response, which includes the determined action to star the repository, and executes it using Composio's tools. The result of the operation is then logged to the console.
     </Step>
 
 </Steps>
@@ -236,19 +254,21 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
 
 ## What Just Happened? 🎉
 
-Congratulations! You've just:
+Congratulations! You've just completed a powerful workflow that demonstrates the integration of AI with real-world actions:
 
-1. 🔐 Authenticated your GitHub account with Composio
-2. 🛠 Fetched GitHub actions 
-3. 🧠 Passed these actions to an AI language model
-4. ⭐ Instructed the AI to star the `composiohq/composio` repository
-5. ✅ Successfully executed the action on GitHub
+1. 🔐 Authenticated your GitHub account with Composio, ensuring secure access to your GitHub actions.
+2. 🛠 Fetched GitHub actions, specifically the ability to star repositories, making them available to the AI.
+3. 🧠 Utilized an AI language model (via OpenAI) to interpret a natural language command and determine the appropriate GitHub action.
+4. ⭐ Instructed the AI to star the `composiohq/composio` repository using natural language.
+5. ✅ Successfully executed the AI-determined action on GitHub, resulting in a starred repository.
+
+This demonstration showcases how Composio bridges the gap between AI language models and real-world actions on platforms like GitHub, enabling powerful, language-driven automation of tasks.
 
 <br/>
 
 ## Next Steps
 <CardGroup cols={1}>
 <Card title="QuickStart - II" icon="user" href="/introduction/intro/quickstart_2">
-    Let's authenticate your user account to perform actions.
+    Let's explore more advanced features and authenticate additional user accounts to perform a wider range of actions.
 </Card>
 </CardGroup>
