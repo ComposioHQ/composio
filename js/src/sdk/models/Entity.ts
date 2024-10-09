@@ -164,7 +164,7 @@ export class Entity {
 
         const isTestConnectorAvailable = app.testConnectors && app.testConnectors.length > 0;
 
-        if ((!isTestConnectorAvailable && app.no_auth === false )|| true) {
+        if (!isTestConnectorAvailable && app.no_auth === false ) {
             if (!authMode) {
                 // @ts-ignore
                 console.log("Auth schemes not provided, available auth schemes and authConfig")

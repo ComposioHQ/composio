@@ -44,7 +44,7 @@ export class Composio {
             console.log(chalk.white("1. Running 'composio login' after installing `npm install -g composio-core`"));
             console.log(chalk.white("2. Setting the COMPOSIO_API_KEY environment variable"));
             console.log(chalk.white("3. Passing api key as a parameter to the Composio constructor \n "));
-            throw new Error("Please provide an API key. ");
+            throw new Error("Please provide an API key.");
         }
 
         // Initialize the BackendClient with the parsed API key and base URL.
