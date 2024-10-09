@@ -24,8 +24,8 @@ from composio.client import Composio, Entity
 from composio.client.collections import (
     ActionModel,
     AppAuthScheme,
-    AuthConnectionParamsModel,
     ConnectedAccountModel,
+    ConnectionParams,
     FileType,
     SuccessExecuteActionResponseModel,
     TriggerSubscription,
@@ -811,7 +811,7 @@ class ComposioToolSet(WithLogger):
         self,
         app: AppType,
         connection_id: t.Optional[str] = None,
-    ) -> t.Optional[AuthConnectionParamsModel]:
+    ) -> t.Optional[ConnectionParams]:
         """Get authentication parameters for given app."""
         app = App(app)
         if app.is_local:
@@ -822,9 +822,7 @@ class ComposioToolSet(WithLogger):
                 connection_id
                 or self.client.get_entity(id=self.entity_id).get_connection(app=app).id
             )
-            return self.client.connected_accounts.get(
-                connection_id=connection_id
-            ).connectionParams
+            return self.client.connected_accounts.info(connection_id=connection_id)
         except ComposioClientError:
             return None
 
