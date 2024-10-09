@@ -1,0 +1,169 @@
+---
+title: "Code Execution Agent"
+sidebarTitle: "Code Execution Agent"
+icon: "code"
+description: "The project generates and executes code based on user-defined problems. It utilizes the Composio and connects your AI Agent to E2B's Code Interpreter to facilitate code execution, allowing users to input a problem statement and receive executable code as output. The agent is designed to operate in a sandbox environment, ensuring safe execution and accurate results. Key functionalities include code generation, execution, and result interpretation, making it an invaluable resource for developers and data scientists alike."
+---
+
+
+
+<Tab title="Python">
+<Card color="#7bee0c" title="RAG Agent GitHub Repository" icon="github" href="https://github.com/ComposioHQ/composio/blob/master/python/examples/quickstarters/code_execution_agent/main.py">
+  Explore the complete source code for the RAG Agent project. This repository contains all the necessary files and scripts to set up and run the RAG system using CrewAI and Composio.
+</Card>
+<Steps>
+    <Step title="Import Required Packages">
+    Import necessary packages for the Code Execution Agent:
+    <CodeGroup>
+        ```python Import libraries
+        import os
+        from composio_langchain import Action, App, ComposioToolSet
+        from crewai import Agent, Crew, Process, Task
+        ```
+
+    </CodeGroup>
+    </Step>
+
+    <Step title="Initialize Composio Toolset">
+    Set up the Composio toolset and get the required tools:
+    <CodeGroup>
+        ```python Connect to CodeInterpreter
+        composio_toolset = ComposioToolSet()
+        tools = composio_toolset.get_tools(apps=[App.CODEINTERPRETER])
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Set up the AI Model">
+    Initialize the OpenAI ChatGPT model:
+    <CodeGroup>
+        ```python Initialise Model
+        from langchain_openai import ChatOpenAI
+
+        llm = ChatOpenAI(model="gpt-4o")
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Create the AI Agent">
+    Set up the agent's prompt and create the OpenAI Functions Agent:
+    <CodeGroup>
+        ```python Set up the Agent
+        python_executor_agent = Agent(
+        role="Python Code Executor",
+        goal="Execute Python code in a Jupyter notebook cell and return the results.",
+        verbose=True,
+        memory=True,
+        backstory="You are an expert in executing Python code and interpreting results in a sandbox environment.",
+        allow_delegation=False,
+        tools=tools,
+        )
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Set up the Agent Executor">
+    Create the AgentExecutor to run the agent:
+    <CodeGroup>
+        ```python Defining Task
+        python_code = """
+            def calculate_sum(a, b):
+                return a + b
+
+            result = calculate_sum(5, 3)
+            print(result)
+        """
+
+        execute_code_task = Task(
+            description="Execute the following Python code and return the results:\n\n"
+            + python_code,
+            expected_output="Execution of Python code returned the results.",
+            tools=tools,
+            agent=python_executor_agent,
+            allow_delegation=False,
+        )
+        
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define the Code Execution Function">
+    Create the main function to generate and execute code:
+    <CodeGroup>
+        ```python Creating a Crew
+        crew = Crew(
+            agents=[python_executor_agent],
+            tasks=[execute_code_task],
+            process=Process.sequential,
+        )
+
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Run the Code Execution Agent">
+    Execute the agent with a sample problem:
+    <CodeGroup>
+        ```python Python - Run
+        result = crew.kickoff()
+        print(result)
+        ```
+    </CodeGroup>
+    </Step>
+</Steps>
+
+</Tab>
+
+
+
+
+
+## Complete Code
+
+Here's the complete Python Code:
+<CodeGroup>
+    ```python Python Final Code
+    import os
+    from composio_langchain import Action, App, ComposioToolSet
+    from crewai import Agent, Crew, Process, Task
+
+    toolset = ComposioToolSet()
+    tools = toolset.get_tools(apps=[App.CODEINTERPRETER])
+
+    python_executor_agent = Agent(
+        role="Python Code Executor",
+        goal="Execute Python code in a Jupyter notebook cell and return the results.",
+        verbose=True,
+        memory=True,
+        backstory="You are an expert in executing Python code and interpreting results in a sandbox environment.",
+        allow_delegation=False,
+        tools=tools,
+    )
+
+    python_code = """
+    def calculate_sum(a, b):
+        return a + b
+
+    result = calculate_sum(5, 3)
+    print(result)
+    """
+
+    execute_code_task = Task(
+        description="Execute the following Python code and return the results:\n\n"
+        + python_code,
+        expected_output="Execution of Python code returned the results.",
+        tools=tools,
+        agent=python_executor_agent,
+        allow_delegation=False,
+    )
+
+    crew = Crew(
+        agents=[python_executor_agent],
+        tasks=[execute_code_task],
+        process=Process.sequential,
+    )
+
+    result = crew.kickoff()
+    print(result)
+    ```
+</CodeGroup>
