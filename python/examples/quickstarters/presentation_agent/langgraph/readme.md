@@ -1,6 +1,6 @@
-# Data Analyst Agent Guide
+# Presentation Agent Guide
 
-This guide provides detailed steps to create a Data Analyst agent that leverages CrewAI, Composio, and ChatGPT to perform data analysis. Ensure you have Python 3.8 or higher installed.
+This guide provides detailed steps to create an agent that creates Presentations based on Google Sheets, it leverages Langgraph, Composio, and ChatGPT to read the sheets, plot graphs, find key insights and create presentations. Ensure you have Python 3.8 or higher installed.
 
 ## Steps to Run
 **Navigate to the Project Directory:**
@@ -23,7 +23,7 @@ add necessary tools:
 Now, Fill in the .env file with your secrets.
 ### 2. Run the python script
 ```shell
-python cookbook/examples/data_analyst_agent/main.py
+python main.py
 ```
 
 

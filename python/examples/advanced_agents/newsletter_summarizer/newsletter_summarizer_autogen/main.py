@@ -1,31 +1,33 @@
-from composio_llamaindex import ComposioToolSet, App, Action
-from llama_index.core.agent import FunctionCallingAgentWorker
-from llama_index.core.llms import ChatMessage
-from llama_index.core import Settings
-from llama_index.llms.openai import OpenAI
-from llama_index.llms.groq import Groq
-from llama_index.llms.cerebras import Cerebras
-from dotenv import load_dotenv
-from pathlib import Path
+# Import necessary libraries
+import os  # For accessing environment variables
+
+import dotenv  # For loading environment variables from a .env file
+
+# Import modules from Autogen and ComposioAutogen
+from autogen.agentchat import AssistantAgent, UserProxyAgent
+from composio_autogen import Action, App, ComposioToolSet
 from datetime import datetime
 
-load_dotenv()
+from python.composio.cli import apps
+
+# Load environment variables from a .env file
+dotenv.load_dotenv()
+
+api_key = os.getenv("OPENAI_API_KEY", "")
+if api_key == "":
+    api_key = input("Enter OpenAI API Key:")
+    os.environ["OPENAI_API_KEY"] = api_key
 
 
-llm = OpenAI(model="gpt-4o")
-#llm = Groq(model="llama-3.1-70b-versatile", stop_sequences=["\n\n"])
-#llm = Cerebras(model="llama3.1-70b")
+# Define the LLM configuration with the model and API key
+llm_config = {
+    "config_list": [{"model": "gpt-4o", "api_key": os.environ["OPENAI_API_KEY"]}]
+}
 
-toolset = ComposioToolSet()
-
-# Get the Gmail tools from the ComposioToolSet
-gmail_tools = toolset.get_tools(apps=[App.GMAIL])
-
-prefix_messages = [
-    ChatMessage(
-        role="system",
-        content=(
-            f"""
+# Initialize a Chatbot AssistantAgent
+chatbot = AssistantAgent(
+    "chatbot",
+    system_message=f"""
             You are an AI assistant that is assigned the following tasks and is an expert in all of the below mentioned work:
             1. Fetch recent newsletter emails from the inbox. Please look for labels 'newsletter' only for last 7 days. Don't add any other unnecessary filters.
                 You are an expert in retrieving and organizing email content, with a keen eye for identifying relevant newsletters. Today's date is {datetime.now().strftime('%B %d, %Y')}. You are writing an email to a reader who is interested in the stock market and trading.
@@ -34,19 +36,35 @@ prefix_messages = [
 
             3. Send the summarized newsletter content via email to investtradegame@gmail.com with a professional and engaging format
                 You are an expert in composing and sending emails with well-formatted, visually appealing content. You have a knack for creating engaging subject lines and structuring information for easy readability. Today's date is {datetime.now().strftime('%B %d, %Y')}. You are writing an email to a reader who is interested in the stock market and trading.
-                """
-        )
-    )
-]
+            
+                ONCE YOU'RE DONE REPLY WITH TERMINATE
+                
+                """,  # System message for termination
+    llm_config=llm_config,  # Language model configuration
+)
 
-agent = FunctionCallingAgentWorker(
-    tools=gmail_tools,  # Tools available for the agent to use
-    llm=llm,  # Language model for processing requests
-    prefix_messages=prefix_messages,  # Initial system messages for context
-    max_function_calls=10,  # Maximum number of function calls allowed
-    allow_parallel_tool_calls=False,  # Disallow parallel tool calls
-    verbose=True,  # Enable verbose output
-).as_agent()
+# Initialize a UserProxyAgent
+user_proxy = UserProxyAgent(
+    "user_proxy",
+    is_termination_msg=lambda x: x.get("content", "")
+    and "TERMINATE"
+    in x.get("content", ""),  # Lambda function to check for termination message
+    human_input_mode="NEVER",  # No human input mode
+    code_execution_config={
+        "use_docker": False
+    },  # Configuration for code execution without Docker
+)
+
+# Initialize a ComposioToolSet with the API key from environment variables
+composio_toolset = ComposioToolSet()
+
+# Register tools with the ComposioToolSet, specifying the caller (chatbot) and executor (user_proxy)
+composio_toolset.register_tools(
+    apps=[App.GMAIL],  # Tools to be registered
+    caller=chatbot,  # The chatbot that calls the tools
+    executor=user_proxy,  # The user proxy that executes the tools
+)
+
 task = f"""
         1. "Fetch the most recent newsletter emails from the inbox. "
         "Look for emails with subjects containing words like 'newsletter', 'update', or 'digest'. "
@@ -87,5 +105,8 @@ task = f"""
         "Important: Ensure all HTML tags are properly closed and nested correctly."
 
 """
-response = agent.chat(task)
+# Initiate chat between the user proxy and the chatbot with the given task
+response = user_proxy.initiate_chat(chatbot, message=task)
 
+# Print the chat history
+print(response.chat_history)
