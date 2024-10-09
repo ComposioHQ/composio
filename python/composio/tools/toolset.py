@@ -50,7 +50,7 @@ from composio.tools.env.factory import HostWorkspaceConfig, WorkspaceFactory
 from composio.tools.local import load_local_tools
 from composio.tools.local.handler import LocalClient
 from composio.utils.enums import get_enum_key
-from composio.utils.logging import LogLevel, WithLogger
+from composio.utils.logging import LogIngester, LogLevel, WithLogger
 from composio.utils.url import get_api_url_base
 
 
@@ -108,6 +108,7 @@ class ComposioToolSet(WithLogger):
 
     _runtime: str = "composio"
     _description_char_limit: int = 1024
+    _log_ingester_client: t.Optional[LogIngester] = None
 
     def __init_subclass__(
         cls,
@@ -313,6 +314,12 @@ class ComposioToolSet(WithLogger):
             return None
 
     @property
+    def _log_ingester(self) -> LogIngester:
+        if self._log_ingester_client is None:
+            self._log_ingester_client = LogIngester()
+        return self._log_ingester_client
+
+    @property
     def api_key(self) -> str:
         if self._api_key is None:
             raise ApiKeyNotProvidedError()
@@ -391,8 +398,19 @@ class ComposioToolSet(WithLogger):
             request_data=params,
             metadata=metadata or {},
         )
+
         if isinstance(response, BaseModel):
-            return response.model_dump()
+            response = response.model_dump()
+
+        self._log_ingester.log(
+            connection_id=None,
+            provider_name=action.app,
+            action_name=action.name,
+            request=params,
+            response=response,
+            is_error=not response.get("successful", False),
+        )
+
         return response
 
     def _execute_remote(
