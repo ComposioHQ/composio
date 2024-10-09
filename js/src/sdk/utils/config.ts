@@ -78,9 +78,12 @@ export const writeToFile = (filePath: string, data: any) => {
 export function setCliConfig(apiKey: string, baseUrl: string) {
     // Get the current user data
     const userData = getUserDataJson();
+    // Update the API key
     userData.api_key = apiKey;
-    if(!!baseUrl){
+    // Update the base URL if provided
+    if (!!baseUrl) {
         userData.base_url = baseUrl;
     }
-    fs.writeFileSync(userDataPath, JSON.stringify(userData, null, 2));
+    // Write the updated user data to the file
+    writeToFile(userDataPath, userData);
 }

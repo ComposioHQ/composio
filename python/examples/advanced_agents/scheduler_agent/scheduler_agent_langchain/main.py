@@ -76,7 +76,8 @@ def callback_new_message(event: TriggerEventData) -> None:
             action to create the event at a free slot and send the invite to {sender_mail}.
             If an event was created, draft a confirmation email for the created event. 
             The receiver of the mail is: {sender_mail}, the subject should be meeting scheduled and body
-            should describe what the meeting is about
+            should describe what the meeting is about.
+            The date is {date_time} and timezone is {timezone}
             """
     # Execute the agent
     res = agent_executor.invoke({"input": query_task})

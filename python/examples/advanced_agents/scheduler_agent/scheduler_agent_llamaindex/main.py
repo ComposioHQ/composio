@@ -1,5 +1,6 @@
 # Import necessary libraries
-import os  # For accessing environment variables
+import os
+import time  # For accessing environment variables
 import dotenv  # For loading environment variables from a .env file
 # Import modules from Composio and LlamaIndex
 import re
@@ -10,7 +11,6 @@ from llama_index.core.llms import ChatMessage
 from llama_index.llms.openai import OpenAI
 
 from composio.client.collections import TriggerEventData
-
 
 # Load environment variables from a .env file
 dotenv.load_dotenv()
@@ -53,7 +53,7 @@ def extract_sender_email(payload):
 # Create a trigger listener
 listener = composio_toolset.create_trigger_listener()
 @listener.callback(filters={"trigger_name": "GMAIL_NEW_GMAIL_MESSAGE"})
-def review_new_pr(event: TriggerEventData) -> None:
+def callback_new_message(event: TriggerEventData) -> None:
     # Using the information from Trigger, execute the agent
     print("here in the function")
     payload = event.payload
@@ -71,7 +71,7 @@ def review_new_pr(event: TriggerEventData) -> None:
         content=(
             f"""
                 You are an AI assistant specialized in creating calendar events based on email information. 
-                Current DateTime: {date_time}. All the conversations happen in IST timezone.
+                Current DateTime: {date_time} and timezone {timezone}. All the conversations happen in IST timezone.
                 Pass empty config ("config": {{}}) for the function calls, if you get an error about not passing config.
                 Analyze email, and create event on calendar depending on the email content. 
                 You should also draft an email in response to the sender of the previous email  

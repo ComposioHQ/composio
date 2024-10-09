@@ -2,11 +2,11 @@
 
 # Create a virtual environment
 echo "Creating virtual environment..."
-python3 -m venv ~/.venvs/data_analyst_agent
+python3 -m venv ~/.venvs/presentation_agent
 
 # Activate the virtual environment
 echo "Activating virtual environment..."
-source ~/.venvs/data_analyst_agent/bin/activate
+source ~/.venvs/presentation_agent/bin/activate
 
 # Install libraries from requirements.txt 
 echo "Installing libraries from requirements.txt..."
