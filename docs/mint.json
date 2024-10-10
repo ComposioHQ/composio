@@ -85,23 +85,28 @@
       ]
     },
     {
-      "group": "Basics",
+      "group": "Core Concepts",
       "pages": [
-        "introduction/foundations/basic",
-        "introduction/foundations/components/entity/entity-guide",
         {
-          "group":"Actions",
-          "icon":"hammer" ,
+          "group":"Basics",
           "pages":[
-            "introduction/foundations/components/actions/action-guide-with-agents",
-            "introduction/foundations/components/actions/action-guide-without-agents",
-            "introduction/foundations/components/actions/action-guide-3"
+            "introduction/foundations/basic",
+            "introduction/foundations/components/entity/entity-guide",
+            {
+              "group":"Actions",
+              "icon":"hammer" ,
+              "pages":[
+                "introduction/foundations/components/actions/action-guide-with-agents",
+                "introduction/foundations/components/actions/action-guide-without-agents",
+                "introduction/foundations/components/actions/action-guide-3"
+              ]
+            },
+            "introduction/foundations/components/triggers/trigger-guide",
+            "introduction/foundations/components/local_tools",
+            "introduction/foundations/components/integrations/custom-integration",
+            "introduction/foundations/components/no_auth_apps/no_auth_guide"
           ]
         },
-        "introduction/foundations/components/triggers/trigger-guide",
-        "introduction/foundations/components/local_tools",
-        "introduction/foundations/components/integrations/custom-integration",
-        "introduction/foundations/components/no_auth_apps/no_auth_guide",
         {
           "group": "Advanced",
           "pages": [
