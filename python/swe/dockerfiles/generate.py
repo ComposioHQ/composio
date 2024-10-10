@@ -3,7 +3,8 @@ from pathlib import Path
 
 import click
 from jinja2 import Environment, FileSystemLoader
-from swebench import MAP_VERSION_TO_INSTALL, get_eval_refs, get_instances
+from swebench import MAP_REPO_VERSION_TO_SPECS
+from swebench.harness.utils import load_swebench_dataset
 
 from composio.utils.logging import WithLogger
 
@@ -51,17 +52,11 @@ class DockerfileGenerator(WithLogger):
         self.install_composio_path = TEMPLATES_DIR / "install_composio.sh"
 
         self.instance_ids = None
-        if predictions_path:
-            self.instance_ids = {
-                p["instance_id"] for p in get_instances(instance_path=predictions_path)
-            }
-            self.logger.info(f"Found {len(self.instance_ids)} in predictions file")
-
         self.image_prefix = "swe-bench"
 
     def generate(self):
-        task_instances = get_eval_refs(data_path_or_name=self.dataset)
-        task_instance_groups = group_task_instances(task_instances.values())
+        task_instances = load_swebench_dataset(name=self.dataset)
+        task_instance_groups = group_task_instances(task_instances)
         for repo, versions in task_instance_groups.items():
             self.logger.info(f"Repo {repo} with {set(versions.keys())} versions")
             for version, instances in versions.items():
@@ -80,7 +75,7 @@ class DockerfileGenerator(WithLogger):
                     repository=repo,
                     version=version,
                     setup_ref_instance=instances[0],
-                    specifications=MAP_VERSION_TO_INSTALL[repo][version],
+                    specifications=MAP_REPO_VERSION_TO_SPECS[repo][version],
                 )
 
     def generate_base(self, version: str) -> str:
