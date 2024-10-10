@@ -132,6 +132,18 @@ class ConnectionRequestModel(BaseModel):
         )
 
 
+class ConnectionAuthParam(BaseModel):
+    in_: str = Field(alias="in")
+    name: str
+    value: str
+
+
+class ConnectionParams(BaseModel):
+    body: t.Dict
+    base_url: str
+    parameters: t.List[ConnectionAuthParam]
+
+
 class ConnectedAccounts(Collection[ConnectedAccountModel]):
     """Collection of connected accounts."""
 
@@ -225,6 +237,14 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
             )
         )
         return ConnectionRequestModel(**response.json())
+
+    def info(self, connection_id: str) -> ConnectionParams:
+        response = self._raise_if_required(
+            self.client.http.get(
+                url=str(self.endpoint / connection_id / "info"),
+            )
+        )
+        return ConnectionParams(**response.json())
 
 
 class AuthSchemeField(BaseModel):
