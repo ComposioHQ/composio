@@ -43,6 +43,7 @@ core_requires = [
     "rich>=13.7.1,<14",
     "importlib-metadata>=4.8.1",
     "pyperclip>=1.8.2,<2",
+    "Pillow>=9.0.0",
     "jsonref>=1.1.0",
     "inflection>=0.5.1",
     "semver>=2.13.0",
