@@ -1,5 +1,5 @@
 
-import { ConnectionsControllerGetConnectionsData, ConnectionsControllerGetConnectionData, ConnectionsControllerGetConnectionsResponse, GetConnectionsResponseDto } from "../client";
+import { ConnectionsControllerGetConnectionsData, ConnectionsControllerGetConnectionData, ConnectionsControllerGetConnectionsResponse, GetConnectionsResponseDto, GetConnectionInfoData, GetConnectionInfoResponse } from "../client";
 import client from "../client/client";
 import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
@@ -87,13 +87,27 @@ export class ConnectionRequest {
         return apiClient.connections.initiateConnection({
             body: {
                 // @ts-ignore
-                integrationId: connectedAccount.integrationId,
+                integrationId: connectedAccount.data.integrationId,
                 //@ts-ignore
                 data: data.fieldInputs,
                 redirectUri: data.redirectUrl,
                 userUuid: data.entityId,
             } 
         });
+    }
+
+    /**
+     * Get the authentication information for the connection.
+     * @param {Object} data The data to get the authentication information.
+     * @param {string} data.connectedAccountId The unique identifier of the connected account.
+     * @returns {Promise<Object>} The authentication information for the connection.
+     */
+    async getAuthInfo(data: GetConnectionInfoData["path"]): Promise<GetConnectionInfoResponse> {
+        const res = await client.connections.getConnectionInfo({ path: data });
+        if (res.error) {
+            throw res.error;
+        }
+        return res.data!;
     }
 
     /**
