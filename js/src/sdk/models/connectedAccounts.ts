@@ -87,7 +87,7 @@ export class ConnectionRequest {
         return apiClient.connections.initiateConnection({
             body: {
                 // @ts-ignore
-                integrationId: connectedAccount.integrationId,
+                integrationId: connectedAccount.data.integrationId,
                 //@ts-ignore
                 data: data.fieldInputs,
                 redirectUri: data.redirectUrl,
