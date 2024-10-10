@@ -482,6 +482,17 @@ export type AuthConfigDTO = {
     user_scopes?: Array<(string)>;
 };
 
+
+export type GetConnectionInfoData = {
+    path: {
+        connectedAccountId: string;
+    };
+};
+
+export type GetConnectionInfoResponse = GetConnectionInfoResponseDTO;
+
+export type GetConnectionInfoError = unknown;
+
 export type CreateConnectorPayloadDTO = {
     /**
      * Name of the connector
@@ -784,6 +795,20 @@ export type GetConnectionsResponseDto = {
     items: Array<ConnectionParams>;
     totalPages: number;
     page: number;
+};
+
+export type GetConnectionInfoResponseDTO = {
+    base_url: string;
+    parameters: Array<Parameter>;
+    body: {
+        [key: string]: unknown;
+    };
+};
+
+export type Parameter = {
+    name: string;
+    in: string;
+    value: string;
 };
 
 export type GetConnectionsQueryDto = {
