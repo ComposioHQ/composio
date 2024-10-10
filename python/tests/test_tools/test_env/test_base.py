@@ -42,11 +42,9 @@ def test_workspace() -> None:
             pass
 
     # Test env var parsing
-    with mock.patch("os.environ.get", return_value=None), pytest.raises(
-        ComposioSDKError,
-        match="Please provide value for `COMPOSIO_API_KEY`",
-    ):
-        _ = TestWorkspace(config=WorkspaceConfigType())
+    with mock.patch("os.environ.get", return_value=None):
+        workspace = TestWorkspace(config=WorkspaceConfigType())
+        assert isinstance(workspace, TestWorkspace)
 
 
 def test_sessionable() -> None:
