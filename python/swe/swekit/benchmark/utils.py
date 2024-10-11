@@ -74,7 +74,7 @@ def get_score(logs_dir, run_id, dataset_name):
 def build_issue_description(repo, hints, problem_statement, include_hints):
     if not problem_statement or not problem_statement.strip():
         raise ValueError("problem statement is empty")
-    tmpl = f"""You have the repository {repo} cloned in the workspace. You are at the root of the repository. Here is the issue, that you have to solve all on your own:\n{problem_statement}. You can only make changes in the core repository {repo}.\n"""  # noqa: E501
+    tmpl = f"""You have the repository {repo} cloned in the workspace. You are at the root of the repository. Here is the issue, that you have to solve all on your own:\n\n{problem_statement}\n\n. You can only make changes in the core repository {repo}.\n\n"""  # noqa: E501
     if include_hints and hints:
         tmpl += f"""\n\nHere are few hints to solve the issue described in problem_statement: \n{hints}"""
 
@@ -230,7 +230,7 @@ def check_and_pull_image(image_name):
 
 if __name__ == "__main__":
     get_score(
-        logs_dir="/Users/shrey/.composio_coder/logs/17272671278194/",
+        logs_dir="/Users/shrey/.composio_coder/logs/17286398988283/",
         run_id="langgraph_agent_temp",
         dataset_name="princeton-nlp/SWE-bench_Verified",
     )
