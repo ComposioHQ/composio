@@ -36,6 +36,8 @@ class RealtimeAgent:
         self.audio_queue = asyncio.Queue()
         self.running = True
         self.loop = asyncio.get_event_loop()
+        self.audio_buffer_size = 4096  # Increase buffer size
+        self.last_audio_sent_time = 0
 
     async def connect(self):
         headers = {
@@ -97,10 +99,11 @@ class RealtimeAgent:
                 accumulated_audio += audio_data
                 self.audio_queue.task_done()
 
-                # Send when accumulated_audio reaches a certain size
-                if len(accumulated_audio) >= 4096:
+                # Send when accumulated_audio reaches the buffer size or after a time threshold
+                current_time = time.time()
+                if len(accumulated_audio) >= self.audio_buffer_size or (current_time - self.last_audio_sent_time) > 0.5:
                     encoded_audio = base64.b64encode(accumulated_audio).decode('utf-8')
-                    logging.debug(f"Sending accumulated audio data of size: {len(accumulated_audio)} bytes.")
+                    logging.info(f"Sending accumulated audio data of size: {len(accumulated_audio)} bytes.")
                     if self.ws.closed:
                         logging.warning("WebSocket is closed. Exiting send_audio.")
                         break
@@ -111,6 +114,7 @@ class RealtimeAgent:
                     }))
                     # Commit the audio buffer
                     await self.ws.send(json.dumps({"type": "input_audio_buffer.commit"}))
+                    logging.info("Audio buffer committed.")
                     # Reset the accumulator
                     accumulated_audio = b""
             except Exception as e:
@@ -123,7 +127,7 @@ class RealtimeAgent:
         if len(audio_bytes) == 0:
             logging.warning("Captured empty audio buffer.")
         else:
-            logging.debug(f"Captured audio buffer of size: {len(audio_bytes)} bytes.")
+            logging.info(f"Captured audio buffer of size: {len(audio_bytes)} bytes.")
         asyncio.run_coroutine_threadsafe(
             self.audio_queue.put(audio_bytes),
             self.loop
@@ -138,9 +142,13 @@ class RealtimeAgent:
         while self.running:
             try:
                 response = await self.ws.recv()
-                logging.info(f"Received response: {response}")
+                logging.info(f"Received event: {response}")
                 event = json.loads(response)
-                if event["type"] == "response.audio.delta":
+                if event["type"] == "input_audio_buffer.speech_started":
+                    logging.info("Speech detected by server VAD.")
+                elif event["type"] == "input_audio_buffer.speech_stopped":
+                    logging.info("End of speech detected by server VAD.")
+                elif event["type"] == "response.audio.delta":
                     audio_chunk = base64.b64decode(event["delta"])
                     await self.play_audio(audio_chunk)
                 elif event["type"] == "response.function_call_arguments.done":
