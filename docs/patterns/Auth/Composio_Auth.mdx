@@ -1,45 +1,82 @@
 ---
-title: "Using only Composio for Auth "
-sidebarTitle: "Using Composio only Auth"
-icon: "user"
-description: "Code Snippets for only Composio Auth"
+title: "Customizing Authentication with Composio"
+sidebarTitle: "Custom Authentication"
+icon: "key"
+description: "Seamlessly integrate Composio's authentication into your application"
 ---
 
-## Complete Whitelabelling Using Composio
+Composio allows you to create a fully customized authentication experience for your users while leveraging our powerful backend infrastructure.
+
+## Implementing Custom Authentication
 
 ### Using Your Own Developer App
-When using your own developer app with Composio, it's important to properly configure the redirect URL. Here's how to do it:
-1. Obtain the redirect URL after creating a connection request, ask your user to authenticate on that link.
-2. After the user has connected their account - they’ll be redirected to the redirectURL you specified in query params
-3. This ensures that after the OAuth flow is completed, users are redirected back to your application correctly.
+
+1. Create your developer app in the third-party service (e.g., GitHub, Google).
+2. Configure the redirect URL in your developer app settings to match Composio's requirements.
+3. Use the obtained client ID and secret when setting up your Composio integration.
 
 ### Specifying a Custom Redirect URL
-When initiating a new connection, you can specify a custom redirect URL. This is useful for ensuring users are directed to the right page in your application after the authentication flow is complete. Here's an example:
+
+When initiating a new connection, you can specify a custom redirect URL to ensure users are directed back to the appropriate page in your application after the authentication flow completes.
+
 <CodeGroup>
+
 ```python Python
-COMING SOON
+from composio import ComposioToolSet
+
+composio = ComposioToolSet(api_key="YOUR_API_KEY")
+
+request = composio.connectedAccounts.initiate(
+    integrationId="YOUR_INTEGRATION_ID",
+    redirectUrl="https://your-app.com/auth/callback",
+    entityId="user@example.com",
+    data={
+        "subdomain": "your_subdomain"
+    }
+)
+
+print("Redirect URL:", request.redirectUrl)
 ```
 
-```javascript Javascript
+```javascript JavaScript
+import { OpenAIToolSet } from "composio-core";
+
+const composio = new OpenAIToolSet({ apiKey: "YOUR_API_KEY" });
+
 const connectedAccountRequest = await composio.connectedAccounts.initiate({
+    integrationId: "YOUR_INTEGRATION_ID",
+    redirectUrl: "https://your-app.com/auth/callback",
+    entityId: "user@example.com",
     data: {
-        "subdomain": "your_subdomain"
-    },
-    integrationId: "integration_id",
-    redirectUrl: "https://your-website.com/auth/callback",
-    entityId: "user_id"
+        subdomain: "your_subdomain"
+    }
 });
 
-console.log("Redirect url", connectedAccountRequest.redirectUrl);
+console.log("Redirect URL:", connectedAccountRequest.redirectUrl);
 ```
+
 </CodeGroup>
 
 ### Handling the Redirect
-After the user has connected their account, they'll be redirected to the specified redirectUrl with query parameters containing important information:
-**status**: Can be either 'ACTIVE' or 'ERROR'
-**connectedAccountId**: The connected account ID for this user on Composio
-**appName**: The name of the connected app
-You can use these parameters to update your application's state and provide appropriate feedback to the user.
 
-## Self-Hosting
-If you're interested in self-hosting, please get in touch with us [here](soham@composio.dev).
+After the authentication process, users are redirected to your specified URL with the following query parameters:
+
+| Parameter | Description |
+|-----------|-------------|
+| `status` | Either 'ACTIVE' or 'ERROR' |
+| `connectedAccountId` | The unique ID for this user's connected account in Composio |
+| `appName` | The name of the connected application |
+
+Use these parameters to update your application's state and provide appropriate feedback to the user.
+
+## Self-Hosting Options
+
+For enterprises requiring on-premises solutions, Composio offers self-hosting options. This allows you to maintain full control over your authentication infrastructure while still benefiting from Composio's powerful features.
+
+To explore self-hosting possibilities, please contact our sales team at [sales@composio.dev](mailto:sales@composio.dev).
+
+## Next Steps
+
+- [Learn more about Integrations](/patterns/Auth/Integrations)
+- [Explore Connected Accounts in depth](/patterns/Auth/Connected_Accounts)
+- [Understand Authentication Flows](/patterns/Auth/Basics)

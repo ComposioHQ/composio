@@ -72,7 +72,8 @@ This step is the same as the normal flow, but there is an additional property th
 <Accordion title="How to Get Connection Info?">
 <CodeGroup>
 ```python Python
-COMING SOON
+connected_account = toolset.client.connected_accounts.get(connection_id="1")
+print(connected_account)
 ```
 
 ```javascript Javascript
@@ -95,18 +96,7 @@ const authInfo = composio.connectedAccounts.getAuthInfo({
 </CodeGroup>
 </Accordion>
 
-<Accordion title="How to check if the Connection was successful?">
-The user authenticates their account, after clicking on the RedirectURL. After this the user can use their Account ID and check status.
-<CodeGroup>
-```python Python
-COMING SOON
-```
 
-```javascript Javascript
-COMING SOON
-```
-</CodeGroup>
-</Accordion>
 
 <Accordion title="How to Fetch Connection parameters?">
 <CodeGroup>
@@ -134,11 +124,13 @@ console.log(toolset.client.connected_accounts.get(connection_id=ACCOUNT_ID.conne
 <Accordion title="Was the Connection successful?">
 <CodeGroup>
 ```python Python 
+#You can also get Connected Account ID within the redirectURL
 #You can go to https://app.composio.dev/connections?page=1&status=ACTIVE and retrieve the Account ID
 print(composio.client.connected_accounts.get(connection_id=ACCOUNT_ID).status)
 ```
 
 ```javascript Javascript
+//You can also get Connected Account ID within the redirectURL
 //You can go to https://app.composio.dev/connections?page=1&status=ACTIVE and retrieve the Account ID
 console.log(toolset.client.connectedAccounts.get({
     connectedAccountId: ACCOUNT_ID
@@ -148,20 +140,18 @@ console.log(toolset.client.connectedAccounts.get({
 </Accordion>
 
 <Accordion title="What if the Connection fails?">
-<CodeGroup>
-</CodeGroup>
+You can fetch the Connected Account ID status and if it has failed, you can prompt the user to try connecting again
 </Accordion>
 
 <Accordion title="How do I manage the scope of my User's Connected Account?">
-<CodeGroup>
-```python Python
-COMING SOON
-```
-
-```javascript Javascript
-COMING SOON
-```
-</CodeGroup>
+![Manage Scope](/patterns/Auth/gifs/scope_integrations.gif)
 </Accordion>
 
 </AccordionGroup>
+
+## Next Steps
+<CardGroup cols={1}>
+<Card title="Using Composio only for Authentication" icon="user" href="/patterns/Auth/Composio_Auth">
+Authenticate your users using Composio only
+</Card>
+</CardGroup>
