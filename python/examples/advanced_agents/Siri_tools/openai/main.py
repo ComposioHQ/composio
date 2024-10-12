@@ -7,7 +7,7 @@ import numpy as np
 import base64
 from dotenv import load_dotenv
 from openai import OpenAI
-from composio_openai import App, ComposioToolSet
+from composio_openai import Action, ComposioToolSet
 from composio.client.collections import TriggerEventData
 import logging
 
@@ -31,13 +31,8 @@ REALTIME_API_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-previ
 class RealtimeAgent:
     def __init__(self):
         self.ws = None
-        self.tools = composio_toolset.get_tools(apps=[App.GMAIL, App.SLACK])
-        self.assistant = openai_client.beta.assistants.create(
-            model="gpt-4-turbo-preview",
-            instructions="You are an AI assistant that helps the user manage emails and Slack messages.",
-            tools=self.tools,
-        )
-        self.thread = openai_client.beta.threads.create()
+        self.tools = composio_toolset.get_realtime_tools(actions=[Action.GMAIL_SEND_EMAIL, Action.SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL, Action.GMAIL_CREATE_EMAIL_DRAFT])
+        print(self.tools)
         self.audio_queue = asyncio.Queue()
         self.running = True
         self.loop = asyncio.get_event_loop()
@@ -56,6 +51,7 @@ class RealtimeAgent:
                 "turn_detection": {
                     "type": "server_vad"
                 },
+                "tools": self.tools
             }
         }))
 
@@ -82,7 +78,12 @@ class RealtimeAgent:
             
             # Send response.create to prompt the assistant to respond
             await self.ws.send(json.dumps({
-                "type": "response.create"
+                "type": "response.create",
+                "response": {
+                    "modalities": ["text", "audio"],
+                    "tools": self.tools,
+                    "instructions": "You are an AI assistant that helps the user manage emails and Slack messages. You get a user's slack messages. Your job is to tell the user about the new messages and ask if they want to respond. You can also respond to messages via functions if the user asks you for it."
+                }
             }))
             logging.info("Sent response.create to prompt assistant's reply.")
         else:
@@ -142,10 +143,9 @@ class RealtimeAgent:
                 if event["type"] == "response.audio.delta":
                     audio_chunk = base64.b64decode(event["delta"])
                     await self.play_audio(audio_chunk)
-                elif event["type"] == "input_audio_buffer.speech_stopped":
-                    logging.info("User stopped speaking. Processing command...")
-                    user_command = event.get("text", "")
-                    await self.process_user_command(user_command)
+                elif event["type"] == "response.function_call_arguments.done":
+                    function_call = event["function_call"]
+                    await self.handle_function_call(function_call)
             except websockets.exceptions.ConnectionClosedError as e:
                 logging.error(f"WebSocket connection closed: {e}")
                 self.running = False
@@ -155,18 +155,32 @@ class RealtimeAgent:
                 self.running = False
                 break
 
-    async def process_user_command(self, command):
-        messages = [
-            {"role": "user", "content": command}
-        ]
-        response = openai_client.chat.completions.create(
-            model="gpt-4-turbo-preview",
-            tools=self.tools,
-            messages=messages,
-            tool_choice="auto"
-        )
-        # Handle tool calls using Composio
-        composio_toolset.handle_tool_calls(response)
+    async def handle_function_call(self, function_call):
+        function_name = function_call["name"]
+        arguments = json.loads(function_call["arguments"])
+        
+        # Handle the function call using Composio
+        result = composio_toolset.handle_tool_call(function_name, arguments)
+        
+        # Send the function call output back to the conversation
+        await self.ws.send(json.dumps({
+            "type": "conversation.item.create",
+            "item": {
+                "type": "function_call_output",
+                "name": function_name,
+                "output": json.dumps(result)
+            }
+        }))
+        
+        # Trigger a new response to continue the conversation
+        await self.ws.send(json.dumps({
+            "type": "response.create",
+            "response": {
+                "modalities": ["text", "audio"],
+                "tools": self.tools,
+                "instructions": "You are an AI assistant that helps the user manage emails and Slack messages. You get a user's slack messages. Your job is to tell the user about the new messages and ask if they want to respond. You can also respond to messages via functions if the user asks you for it."
+            }
+        }))
 
     async def start(self):
         while True:
