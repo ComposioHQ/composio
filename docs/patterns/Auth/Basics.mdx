@@ -1,0 +1,53 @@
+---
+title: "Basics of Auth with Composio"
+sidebarTitle: "Auth Basics"
+icon: "user"
+description: "Authentication Basics"
+---
+
+You can easily use Composio to Authenticate your users in various apps.
+
+## Supported apps
+Composio supports over 150+ apps including Github, Gmail, Jira, MailChimp etc., 
+
+## Supported Auth flows
+There are multiple Authentication flows we support:
+
+1. **OAUTH:** Composio authenticates users by redirecting them to a third-party service (e.g., GitHub, Google) where they approve access.
+2. **BASIC:** Composio allows the client to authenticate by sending a username and password directly to the third-party app.
+3. **API_KEY:** Composio allows the client to authenticate by using an API Key.
+
+## Integrations
+
+Integrations allow users to link their accounts with external apps, enabling agents to take actions on their behalf.
+Integrations are tool configurations (eg. Permissions to ask for when connecting an account, ClientID/Secret in the case of OAuth) that will be used to connect your users account to Composio.
+
+### Where can I see my Integrations?
+You can view all active integrations and monitor live connections or users by visiting the Dashboard.
+
+### How can I use Integrations to connect my user's accounts?
+Once an integration is established, it can be utilized by an unlimited number of users to connect their accounts.
+So ideally you will only build one integration per tool or application and allow all your users to connect using it.
+
+
+## Connected Accounts
+
+A Connected Account is created, when your user connects their account under your Integration. 
+This object securely stores authentication data such as access tokens and refresh tokens.
+
+### How are these users represented?
+
+Each unique user is represented by a unique entity id.
+If you have **two users, Jessica and Melissa**, they will have unique entity ids
+​
+### What can I do with this?
+
+Your entire Authentication requirements for your users is handled by Composio. 
+You can also execute various Actions on behalf of your users.
+
+## Next Steps
+<CardGroup cols={1}>
+<Card title="Going in Depth into Integrations" icon="user" href="/patterns/Auth/Integrations">
+    Let's authenticate your user account to perform actions.
+</Card>
+</CardGroup>

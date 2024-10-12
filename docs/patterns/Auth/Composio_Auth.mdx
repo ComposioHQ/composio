@@ -1,0 +1,45 @@
+---
+title: "Using only Composio for Auth "
+sidebarTitle: "Using Composio only Auth"
+icon: "user"
+description: "Code Snippets for only Composio Auth"
+---
+
+## Complete Whitelabelling Using Composio
+
+### Using Your Own Developer App
+When using your own developer app with Composio, it's important to properly configure the redirect URL. Here's how to do it:
+1. Obtain the redirect URL after creating a connection request, ask your user to authenticate on that link.
+2. After the user has connected their account - they’ll be redirected to the redirectURL you specified in query params
+3. This ensures that after the OAuth flow is completed, users are redirected back to your application correctly.
+
+### Specifying a Custom Redirect URL
+When initiating a new connection, you can specify a custom redirect URL. This is useful for ensuring users are directed to the right page in your application after the authentication flow is complete. Here's an example:
+<CodeGroup>
+```python Python
+COMING SOON
+```
+
+```javascript Javascript
+const connectedAccountRequest = await composio.connectedAccounts.initiate({
+    data: {
+        "subdomain": "your_subdomain"
+    },
+    integrationId: "integration_id",
+    redirectUrl: "https://your-website.com/auth/callback",
+    entityId: "user_id"
+});
+
+console.log("Redirect url", connectedAccountRequest.redirectUrl);
+```
+</CodeGroup>
+
+### Handling the Redirect
+After the user has connected their account, they'll be redirected to the specified redirectUrl with query parameters containing important information:
+**status**: Can be either 'ACTIVE' or 'ERROR'
+**connectedAccountId**: The connected account ID for this user on Composio
+**appName**: The name of the connected app
+You can use these parameters to update your application's state and provide appropriate feedback to the user.
+
+## Self-Hosting
+If you're interested in self-hosting, please get in touch with us [here](soham@composio.dev).

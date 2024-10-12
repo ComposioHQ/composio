@@ -28,10 +28,20 @@ composio integrations
 </CodeGroup>
 </Tab>
 <Tab title="JS">
-Coming Soon! 
-</Tab>
-<Tab title="API">
-Coming Soon! 
+```javascript List all integrations via JS
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet({
+    apiKey: COMPOSIO_API_KEY
+});
+
+async function listIntegrations() {
+    const res = await toolset.client.integrations.list();
+    console.log(res);
+}
+
+listIntegrations();
+```
 </Tab>
 </Tabs>
 
@@ -44,11 +54,11 @@ To get detailed information about a specific integration, use the get command fo
 <Tab title="Python">
 <CodeGroup>
 ```python Get integration details via Python
-from composio import Composio
+from composio import ComposioToolSet
 
-client = Composio()
+client_toolset = ComposioToolSet(api_key=COMPOSIO_API_KEY)
 
-print(composio_client.integrations.get(id=123))
+print(client_toolset.client.integrations.get(id=123))
 ```
 </CodeGroup>
 </Tab>
@@ -61,9 +71,6 @@ composio integrations get 123
 </CodeGroup>
 </Tab>
 <Tab title="JS">
-Coming Soon! 
-</Tab>
-<Tab title="API">
 Coming Soon! 
 </Tab>
 </Tabs>

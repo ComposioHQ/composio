@@ -1,0 +1,167 @@
+---
+title: "Connected Accounts - In depth"
+sidebarTitle: "In depth into Connected Accounts"
+icon: "user"
+description: "Code Snippets for Connected Accounts"
+---
+
+<AccordionGroup>
+<Accordion title="How to Create a Connection with an Integration for Non OAuth Apps?">
+<CodeGroup>
+
+```python Python
+COMING SOON
+```
+
+```javascript Javascript
+from composio import ComposioToolSet
+
+composio = ComposioToolSet(api_key=COMPOSIO_API_KEY, entity_id="Jessica")
+integrationInfo = composio.integrations.get({
+     integrationId: "<Linear Integration ID>"
+})
+
+const authScheme = integrationInfo.authScheme;
+const expectedInputFields = await integrationInfo.expectedInputFields;
+
+console.log(expectedInputFields)
+// Based on the expectedInputFields value, you can pass in the parameters in the connectedAccounts.initiate() function
+await composio.connectedAccounts.initiate({
+    data: {
+	    "api-key": "linear_api_key"
+    },
+    integrationId: "linear-integration-id",
+    entityId: "utkarsh"
+})
+```
+</CodeGroup>
+</Accordion>
+
+<Accordion title="How to Create a Connection with an Integration for OAuth Apps?">
+<CodeGroup>
+```python Python
+COMING SOON
+```
+
+```javascript Javascript
+const connectedAccountRequest = await composio.connectedAccounts.initiate({
+    data: {
+	    "subdomain": "your_subdomain"
+    },
+    integrationId: "integration_id",
+    redirectUrl: "https://your-website.com/composio/add", // will be called after oauth flow
+    entityId: "utkarsh"
+})
+
+console.log("Redirect url", connectedAccountRequest.redirectUrl); 
+```
+</CodeGroup>
+This step is the same as the normal flow, but there is an additional property that you can specify - which is the endpoint where the user will be redirected after completion/error.
+
+- After creating a connection request, you’ll get the `redirectUrl` in the output - use it and ask your user to authenticate their account.
+
+</Accordion>
+
+<Accordion title="What after Redirect?">
+- After the user has connected their account - they’ll be redirected to the redirectURL you specified with all the information you’ll need to link and manage their accounts in query params. Here’s the list of query params:
+    - status - can be either ‘ACTIVE’ or ‘ERROR’
+    - connectedAccountId - Refers to the connected account id for this user on composio. You can store this, and use it to perform actions on behalf of the user.
+    - appName
+</Accordion>
+
+<Accordion title="How to Get Connection Info?">
+<CodeGroup>
+```python Python
+COMING SOON
+```
+
+```javascript Javascript
+const authInfo = composio.connectedAccounts.getAuthInfo({
+		connectedAccountId: "<composio_connected_account_id>"
+})
+
+// The above code returns an output in the following format:
+{
+	"base_url": "",
+	"params": [{
+		"name": "x-api-key",
+		"in": "header",
+		"value": "<api-key>"
+	}],
+	"body": {}
+}
+// With this, you can perform Actions on behalf of your User
+```
+</CodeGroup>
+</Accordion>
+
+<Accordion title="How to check if the Connection was successful?">
+The user authenticates their account, after clicking on the RedirectURL. After this the user can use their Account ID and check status.
+<CodeGroup>
+```python Python
+COMING SOON
+```
+
+```javascript Javascript
+COMING SOON
+```
+</CodeGroup>
+</Accordion>
+
+<Accordion title="How to Fetch Connection parameters?">
+<CodeGroup>
+```python Python
+from composio import ComposioToolSet
+composio = ComposioToolSet(api_key=COMPOSIO_API_KEY,entity_id="Jessica")
+
+#You can go to https://app.composio.dev/connections?page=1&status=ACTIVE and retrieve the Account ID 
+print(composio.client.connected_accounts.get(connection_id=ACCOUNT_ID).connectionParams)
+```
+
+```javascript Javascript
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet({
+    apiKey: COMPOSIO_API_KEY
+})
+
+//You can go to https://app.composio.dev/connections?page=1&status=ACTIVE and retrieve the Account ID
+console.log(toolset.client.connected_accounts.get(connection_id=ACCOUNT_ID.connectionParams))
+```
+</CodeGroup>
+</Accordion>
+
+<Accordion title="Was the Connection successful?">
+<CodeGroup>
+```python Python 
+#You can go to https://app.composio.dev/connections?page=1&status=ACTIVE and retrieve the Account ID
+print(composio.client.connected_accounts.get(connection_id=ACCOUNT_ID).status)
+```
+
+```javascript Javascript
+//You can go to https://app.composio.dev/connections?page=1&status=ACTIVE and retrieve the Account ID
+console.log(toolset.client.connectedAccounts.get({
+    connectedAccountId: ACCOUNT_ID
+}).status)
+```
+</CodeGroup>
+</Accordion>
+
+<Accordion title="What if the Connection fails?">
+<CodeGroup>
+</CodeGroup>
+</Accordion>
+
+<Accordion title="How do I manage the scope of my User's Connected Account?">
+<CodeGroup>
+```python Python
+COMING SOON
+```
+
+```javascript Javascript
+COMING SOON
+```
+</CodeGroup>
+</Accordion>
+
+</AccordionGroup>

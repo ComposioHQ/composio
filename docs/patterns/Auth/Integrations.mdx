@@ -1,0 +1,133 @@
+---
+title: "Integrations - In depth"
+sidebarTitle: "In depth into Integrations"
+icon: "user"
+description: "Code Snippets for Integrations"
+---
+
+<AccordionGroup>
+<Accordion title="How to Create an Integration?">
+
+![Creating an Integration with Dashboard](/patterns/Auth/gifs/integration.gif)
+
+1. Login at [Composio's Website](apps.composio.dev)
+2. Go to the Tools section
+3. Click on any app you want to integrate
+4. Click on Setup on [App Name] Integration
+5. Choose your integration name and click Save
+6. Then Click on "Connect to [App Name]" and Authenticate with your Account
+7. Congratulations! Integration was successful!
+</Accordion>
+
+<Accordion title="How to fetch an Existing Integration?">
+
+<Tabs>
+<Tab title="Python">
+<CodeGroup>
+```python List all integrations via Python
+from composio import ComposioToolSet
+
+composio_client = ComposioToolSet()
+
+print(composio_client.integrations.get())
+```
+</CodeGroup>
+</Tab>
+
+<Tab title="JS">
+```javascript List all integrations via JS
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet({
+    apiKey: COMPOSIO_API_KEY
+})
+
+const res = await toolset.client.integrations.list()
+console.log(res)
+```
+</Tab>
+</Tabs>
+
+</Accordion>
+
+<Accordion title="Auth Flow for Non OAuth Apps">
+<CodeGroup>
+```python Python
+COMING SOON 
+```
+
+```javascript Javascript
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet({
+    apiKey: COMPOSIO_API_KEY
+})
+
+const res = await toolset.client.integrations.list()
+
+const integrationInfo = await toolset.client.integrations.get({
+    integrationId: INTEGRATION_ID
+});
+
+const expectedInputFields = await integrationInfo.expectedInputFields;
+console.log(expectedInputFields)
+//You can use the expectedInputFields to create a Connected Account for your users instantly
+
+//Creating a Connected Account for an Example App Linear after checking the Input Fields output above
+await composio.connectedAccounts.initiate({
+    data: {
+	    "api-key": "<linear_api_key>"
+    },
+    integrationId: "<linear-integration-id>",
+    entityId: "utkarsh"
+})
+```
+</CodeGroup>
+</Accordion>
+
+<Accordion title="Auth Flow for OAuth Apps">
+<CodeGroup>
+```python Python
+COMING SOON 
+```
+
+```javascript Javascript
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet({
+    apiKey: COMPOSIO_API_KEY
+})
+
+const res = await toolset.client.integrations.list()
+
+const integrationInfo = await toolset.client.integrations.get({
+    integrationId: INTEGRATION_ID
+});
+
+const expectedInputFields = await integrationInfo.expectedInputFields;
+console.log(expectedInputFields)
+//You can use the expectedInputFields to create a Connected Account for your users instantly
+
+//Creating a Connected Account for an Example App with OAuth after checking the Input Fields output above
+const connectedAccountRequest = await composio.connectedAccounts.initiate({
+    data: {
+	    "subdomain": "<your_subdomain>"
+    },
+    integrationId: "<integration_id>",
+    redirectUrl: "https://your-website.com/composio/add", // will be called after oauth flow
+    entityId: "utkarsh"
+})
+
+console.log("Redirect url", connectedAccountRequest.redirectUrl);
+```
+</CodeGroup>
+</Accordion>
+
+<Accordion title="Customising Scope while creating Integration">
+![Customising Scope while creating Integration](/patterns/Auth/gifs/scope_integrations.gif)
+- When you're creating your integration, click on "choose scope and setup dev app (advanced)"
+- Set your scope accordingly to proceed with creating your integration
+
+</Accordion>
+
+</AccordionGroup>
