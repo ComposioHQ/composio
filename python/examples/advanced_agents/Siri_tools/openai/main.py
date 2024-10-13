@@ -11,6 +11,8 @@ from composio_openai import Action, ComposioToolSet
 from composio.client.collections import TriggerEventData
 import logging
 import time
+import queue
+import types
 
 logging.basicConfig(level=logging.INFO)
 
@@ -24,6 +26,7 @@ composio_toolset = ComposioToolSet()
 # Audio settings
 SAMPLE_RATE = 24000
 CHANNELS = 1
+CHUNK = 1024  # Frames per buffer
 
 # OpenAI Realtime API URL
 REALTIME_API_URL = (
@@ -31,7 +34,29 @@ REALTIME_API_URL = (
 )
 
 
-# Maintain a single WebSocket connection
+# Function to send a message to Slack
+def send_slack_message(arguments):
+    try:
+        # Using Composio ToolSet's Slack send function
+        result = composio_toolset.handle_tool_calls(arguments)
+        logging.info(f"Message sent to Slack: {arguments}")
+        return {"status": "success", "message": "Message sent to Slack"}
+    except Exception as e:
+        logging.error(f"Failed to send message to Slack: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+# Function to send an email
+def send_email(arguments):
+    try:
+        result = composio_toolset.handle_tool_calls(arguments)
+        logging.info(f"Email sent: {arguments}")
+        return {"status": "success", "message": "Email sent"}
+    except Exception as e:
+        logging.error(f"Failed to send email: {e}")
+        return {"status": "error", "message": str(e)}
+
+
 class RealtimeAgent:
     def __init__(self):
         self.ws = None
@@ -42,21 +67,22 @@ class RealtimeAgent:
                 Action.GMAIL_CREATE_EMAIL_DRAFT,
             ]
         )
-        print(self.tools)
-        self.audio_queue = asyncio.Queue()
-        self.audio_playback_queue = asyncio.Queue()
+        self.audio_input_queue = queue.Queue()
+        self.audio_playback_queue = queue.Queue()
         self.running = True
-        self.loop = asyncio.get_event_loop()
-        self.audio_buffer_size = 4096  # Increase buffer size
-        self.last_audio_sent_time = 0
+        self.assistant_speaking = False
+        self.state = "WAITING_FOR_ASSISTANT"  # Initial state
 
-        # Initialize the audio output stream for smooth playback
-        self.audio_output_stream = sd.OutputStream(
-            samplerate=SAMPLE_RATE,
-            channels=CHANNELS,
-            dtype="int16",
-        )
-        self.audio_output_stream.start()
+        # Variables to handle function calls
+        self.function_call_arguments = ""
+        self.current_function_call = None
+
+        # Audio buffer size for sending
+        self.audio_buffer_size = 4096  # Adjust as needed
+
+        # Audio input and output streams
+        self.audio_input_stream = None
+        self.audio_output_stream = None
 
     async def connect(self):
         headers = {
@@ -71,8 +97,25 @@ class RealtimeAgent:
                 {
                     "type": "session.update",
                     "session": {
-                        "turn_detection": {"type": "server_vad"},
+                        "modalities": ["text", "audio"],
+                        "turn_detection": {
+                            "type": "server_vad",
+                            "threshold": 0.5,
+                            "silence_duration_ms": 400,
+                            "prefix_padding_ms": 300,
+                        },
                         "tools": self.tools,
+                        "input_audio_format": "pcm16",
+                        "output_audio_format": "pcm16",
+                        "voice": "alloy",
+                        "instructions": (
+                            "You are an AI assistant that helps the user manage emails and Slack messages. "
+                            "When a new message arrives, you should inform the user by reading it out loud. "
+                            "If the user wants to respond, you should collect their response and use the appropriate function "
+                            "to send their message back to Slack or Gmail. "
+                            "You have access to the following functions: 'SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL', 'GMAIL_SEND_EMAIL', 'GMAIL_CREATE_EMAIL_DRAFT'. "
+                            "Use function calls to perform actions on behalf of the user."
+                        ),
                     },
                 }
             )
@@ -104,8 +147,11 @@ class RealtimeAgent:
                             "tools": self.tools,
                             "instructions": (
                                 "You are an AI assistant that helps the user manage emails and Slack messages. "
-                                "You receive the user's Slack messages. Your job is to tell the user about the new messages "
-                                "and ask if they want to respond. You can also respond to messages via functions if the user asks you for it."
+                                "When a new message arrives, you should inform the user by reading it out loud. "
+                                "If the user wants to respond, you should collect their response and use the appropriate function "
+                                "to send their message back to Slack or Gmail. "
+                                "You have access to the following functions: 'SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL', 'GMAIL_SEND_EMAIL', 'GMAIL_CREATE_EMAIL_DRAFT'. "
+                                "Use function calls to perform actions on behalf of the user."
                             ),
                         },
                     }
@@ -119,69 +165,71 @@ class RealtimeAgent:
         accumulated_audio = b""
         while self.running:
             try:
-                audio_data = await self.audio_queue.get()
-                accumulated_audio += audio_data
-                self.audio_queue.task_done()
+                # Get audio data from the queue
+                while not self.audio_input_queue.empty():
+                    audio_data = self.audio_input_queue.get()
+                    accumulated_audio += audio_data
+                    self.audio_input_queue.task_done()
+                    logging.debug(f"Accumulated audio data: {len(audio_data)} bytes.")
 
-                # Send when accumulated_audio reaches the buffer size or after a time threshold
-                current_time = time.time()
-                if (
-                    len(accumulated_audio) >= self.audio_buffer_size
-                    or (current_time - self.last_audio_sent_time) > 0.5
-                ):
-                    encoded_audio = base64.b64encode(accumulated_audio).decode("utf-8")
-                    logging.info(
-                        f"Sending accumulated audio data of size: {len(accumulated_audio)} bytes."
-                    )
-                    if self.ws.closed:
-                        logging.warning("WebSocket is closed. Exiting send_audio.")
-                        break
-                    # Append the accumulated audio data
-                    await self.ws.send(
-                        json.dumps(
-                            {
-                                "type": "input_audio_buffer.append",
-                                "audio": encoded_audio,
-                            }
+                if self.state == "USER_SPEAKING" and accumulated_audio:
+                    if len(accumulated_audio) >= self.audio_buffer_size:
+                        encoded_audio = base64.b64encode(accumulated_audio).decode(
+                            "utf-8"
                         )
-                    )
-                    # Commit the audio buffer
-                    await self.ws.send(
-                        json.dumps({"type": "input_audio_buffer.commit"})
-                    )
-                    logging.info("Audio buffer committed.")
-                    # Reset the accumulator
-                    accumulated_audio = b""
-                    self.last_audio_sent_time = current_time
+                        if self.ws.closed:
+                            logging.warning("WebSocket is closed. Exiting send_audio.")
+                            break
+                        # Append the accumulated audio data
+                        await self.ws.send(
+                            json.dumps(
+                                {
+                                    "type": "input_audio_buffer.append",
+                                    "audio": encoded_audio,
+                                }
+                            )
+                        )
+                        logging.info(
+                            f"Sent {len(accumulated_audio)} bytes of audio data to assistant."
+                        )
+                        accumulated_audio = b""
+                else:
+                    # Not user's turn to speak, discard accumulated audio
+                    if accumulated_audio:
+                        logging.debug(
+                            f"Discarding {len(accumulated_audio)} bytes of audio data."
+                        )
+                        accumulated_audio = b""
+                await asyncio.sleep(0.01)  # Sleep a bit to prevent tight loop
             except Exception as e:
                 logging.error(f"Exception in send_audio: {e}")
                 self.running = False
                 break
 
-    def audio_callback(self, indata, frames, time_info, status):
-        audio_bytes = indata.tobytes()
-        if len(audio_bytes) == 0:
-            logging.warning("Captured empty audio buffer.")
-        else:
-            # Optionally, you can log the size of the captured audio buffer
-            pass
-        asyncio.run_coroutine_threadsafe(self.audio_queue.put(audio_bytes), self.loop)
+    def audio_input_callback(self, indata, frames, time_info, status):
+        if self.state == "USER_SPEAKING":
+            audio_bytes = indata.tobytes()
+            self.audio_input_queue.put(audio_bytes)
+            logging.debug(f"Captured audio data: {len(audio_bytes)} bytes.")
+        return None
 
     async def play_audio(self, audio_chunk):
-        # Add the audio_chunk to the playback queue
-        await self.audio_playback_queue.put(audio_chunk)
+        self.audio_playback_queue.put(audio_chunk)
+        logging.debug(f"Queued {len(audio_chunk)} bytes of audio for playback.")
 
     async def audio_playback_handler(self):
         while self.running:
             try:
-                audio_chunk = await self.audio_playback_queue.get()
-                # Correctly convert the audio_chunk to a NumPy array
-                audio_array = np.frombuffer(audio_chunk, dtype=np.int16)
-                # Reshape the array to match the expected shape (frames, channels)
-                audio_array = np.reshape(audio_array, (-1, CHANNELS))
-                # Write the audio data to the output stream
-                self.audio_output_stream.write(audio_array)
-                self.audio_playback_queue.task_done()
+                # Check if there's audio data to play
+                if not self.audio_playback_queue.empty():
+                    audio_chunk = self.audio_playback_queue.get()
+                    audio_array = np.frombuffer(audio_chunk, dtype=np.int16)
+                    audio_array = audio_array.reshape(-1, CHANNELS)
+                    self.audio_output_stream.write(audio_array)
+                    logging.debug(f"Played {len(audio_chunk)} bytes of audio.")
+                    self.audio_playback_queue.task_done()
+                else:
+                    await asyncio.sleep(0.01)
             except Exception as e:
                 logging.error(f"Exception in audio_playback_handler: {e}")
                 break
@@ -190,18 +238,79 @@ class RealtimeAgent:
         while self.running:
             try:
                 response = await self.ws.recv()
-                logging.info(f"Received event: {response}")
+                logging.debug(f"Received event: {response}")
                 event = json.loads(response)
+
                 if event["type"] == "input_audio_buffer.speech_started":
-                    logging.info("Speech detected by server VAD.")
+                    logging.info("User started speaking.")
+                    self.state = "USER_SPEAKING"
+
                 elif event["type"] == "input_audio_buffer.speech_stopped":
-                    logging.info("End of speech detected by server VAD.")
+                    logging.info("User stopped speaking.")
+                    self.state = "WAITING_FOR_ASSISTANT"
+                    # Commit the audio buffer after user stops speaking
+                    await self.ws.send(
+                        json.dumps({"type": "input_audio_buffer.commit"})
+                    )
+                    logging.debug("Audio buffer committed after user stopped speaking.")
+
+                elif event["type"] == "response.audio.start":
+                    logging.info("Assistant started speaking.")
+                    self.assistant_speaking = True
+                    self.state = "ASSISTANT_SPEAKING"
+
+                elif event["type"] == "response.audio.end":
+                    logging.info("Assistant finished speaking.")
+                    self.assistant_speaking = False
+                    # Wait for response.done to change the state
+
                 elif event["type"] == "response.audio.delta":
                     audio_chunk = base64.b64decode(event["delta"])
                     await self.play_audio(audio_chunk)
+
+                elif event["type"] == "response.done":
+                    logging.info("Assistant response complete.")
+                    # Allow user to speak again
+                    # await asyncio.sleep(4)  # Pause for 2 seconds (adjust as needed)/
+                    self.state = "USER_SPEAKING"
+                    logging.info("Ready to capture user input.")
+
+                elif event["type"] == "response.output_item.added":
+                    item = event.get("item", {})
+                    if item.get("type") == "function_call":
+                        # Handle function call initiation
+                        self.current_function_call = {
+                            "name": item.get("name"),
+                            "call_id": item.get("call_id"),
+                            "response_id": event.get("response_id"),
+                            "item_id": event.get("item_id"),
+                            "output_index": event.get("output_index"),
+                        }
+                        self.function_call_arguments = ""
+                        logging.info(
+                            f"Function call initiated: {self.current_function_call['name']}"
+                        )
+
+                elif event["type"] == "response.function_call_arguments.delta":
+                    delta = event.get("delta", "")
+                    self.function_call_arguments += delta
+                    logging.debug(f"Accumulated function call arguments: {delta}")
+
                 elif event["type"] == "response.function_call_arguments.done":
-                    function_call = event["function_call"]
+                    arguments_json = self.function_call_arguments
+                    call_id = event.get("call_id")
+                    function_call = {
+                        "arguments": arguments_json,
+                        "call_id": call_id,
+                    }
                     await self.handle_function_call(function_call)
+                    logging.info("Function call arguments received and handled.")
+                    self.function_call_arguments = ""
+                    self.current_function_call = None
+
+                elif event["type"] == "error":
+                    logging.error(f"Error from API: {event.get('message')}")
+
             except websockets.exceptions.ConnectionClosedError as e:
                 logging.error(f"WebSocket connection closed: {e}")
                 self.running = False
@@ -212,25 +321,53 @@ class RealtimeAgent:
                 break
 
     async def handle_function_call(self, function_call):
-        function_name = function_call["name"]
-        arguments = json.loads(function_call["arguments"])
+        if not self.current_function_call:
+            logging.error("No current function call to handle.")
+            return
 
-        # Handle the function call using Composio
-        result = composio_toolset.handle_tool_call(function_name, arguments)
+        function_name = self.current_function_call.get("name")
+        call_id = self.current_function_call.get("call_id")
+        arguments_json = function_call["arguments"]
 
-        # Send the function call output back to the conversation
+        # Parse the arguments
+        try:
+            arguments = json.loads(arguments_json)
+        except json.JSONDecodeError as e:
+            logging.error(f"Failed to parse function call arguments: {e}")
+            arguments = {}
+
+        logging.info(
+            f"Function call received: {function_name} with arguments {arguments}"
+        )
+        print(function_call)
+
+        # Directly execute the action
+        try:
+            result = composio_toolset.execute_action(
+                action=Action(value=function_name),
+                params=arguments,
+                entity_id=None,
+            )
+            logging.info(f"Function call result: {result}")
+        except Exception as e:
+            logging.error(f"Error handling function call: {e}")
+            result = {"status": "error", "message": str(e)}
+
+        # Send the function call output back to the assistant
         await self.ws.send(
             json.dumps(
                 {
                     "type": "conversation.item.create",
                     "item": {
                         "type": "function_call_output",
+                        "call_id": call_id,
                         "name": function_name,
                         "output": json.dumps(result),
                     },
                 }
             )
         )
+        logging.info(f"Sent function call output for '{function_name}'.")
 
         # Trigger a new response to continue the conversation
         await self.ws.send(
@@ -242,37 +379,69 @@ class RealtimeAgent:
                         "tools": self.tools,
                         "instructions": (
                             "You are an AI assistant that helps the user manage emails and Slack messages. "
-                            "You receive the user's Slack messages. Your job is to tell the user about the new messages "
-                            "and ask if they want to respond. You can also respond to messages via functions if the user asks you for it."
+                            "When a new message arrives, you should inform the user by reading it out loud. "
+                            "If the user wants to respond, you should collect their response and use the appropriate function "
+                            "to send their message back to Slack or Gmail. "
+                            "You have access to the following functions: 'SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL', 'GMAIL_SEND_EMAIL', 'GMAIL_CREATE_EMAIL_DRAFT'. "
+                            "Use function calls to perform actions on behalf of the user."
                         ),
                     },
                 }
             )
         )
+        logging.info("Sent response.create to continue the conversation.")
 
     async def start(self):
         while True:
             try:
-                self.audio_queue = asyncio.Queue()
-                self.audio_playback_queue = asyncio.Queue()
+                self.audio_input_queue = queue.Queue()
+                self.audio_playback_queue = queue.Queue()
                 self.running = True
+                self.assistant_speaking = False
+                self.state = "WAITING_FOR_ASSISTANT"
                 await self.connect()
-                # Start the audio input stream
-                stream = sd.InputStream(
+
+                # Start the audio input and output streams
+                self.audio_input_stream = sd.InputStream(
                     samplerate=SAMPLE_RATE,
                     channels=CHANNELS,
-                    callback=self.audio_callback,
-                    dtype="int16",  # Ensure PCM16 format
+                    dtype="int16",
+                    callback=self.audio_input_callback,
+                    blocksize=CHUNK,
                 )
-                with stream:
-                    tasks = [
-                        asyncio.create_task(self.send_audio()),
-                        asyncio.create_task(self.receive_events()),
-                        asyncio.create_task(self.audio_playback_handler()),
-                    ]
-                    await asyncio.gather(*tasks)
+                self.audio_output_stream = sd.OutputStream(
+                    samplerate=SAMPLE_RATE,
+                    channels=CHANNELS,
+                    dtype="int16",
+                    blocksize=CHUNK,
+                )
+                self.audio_input_stream.start()
+                self.audio_output_stream.start()
+
+                logging.info("Audio streams started.")
+
+                tasks = [
+                    asyncio.create_task(self.send_audio()),
+                    asyncio.create_task(self.receive_events()),
+                    asyncio.create_task(self.audio_playback_handler()),
+                ]
+                await asyncio.gather(*tasks)
             except Exception as e:
                 logging.error(f"Exception in agent.start(): {e}")
+            finally:
+                # Clean up resources
+                if self.audio_input_stream is not None:
+                    self.audio_input_stream.stop()
+                    self.audio_input_stream.close()
+                    logging.info("Audio input stream closed.")
+                if self.audio_output_stream is not None:
+                    self.audio_output_stream.stop()
+                    self.audio_output_stream.close()
+                    logging.info("Audio output stream closed.")
+                if self.ws is not None and not self.ws.closed:
+                    await self.ws.close()
+                    logging.info("WebSocket connection closed.")
+                self.running = False
             logging.info("WebSocket connection closed. Reconnecting in 5 seconds...")
             await asyncio.sleep(5)
 
@@ -316,7 +485,9 @@ def handle_slack_message(event: TriggerEventData):
     message = payload.get("text", "")
     channel_id = payload.get("channel", "")
     user_id = payload.get("user", "")
-    print(f"New Slack message in channel {channel_id} from user {user_id}: {message}")
+    logging.info(
+        f"New Slack message in channel {channel_id} from user {user_id}: {message}"
+    )
     context = (
         f"New Slack message in channel {channel_id} from user {user_id}: {message}"
     )
