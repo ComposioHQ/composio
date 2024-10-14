@@ -880,6 +880,12 @@ class ActionModel(BaseModel):
     description: t.Optional[str] = None
 
 
+class CustomAuthObject(BaseModel):
+    name: str
+    value: str
+    in_: t.Literal["header", "path", "query", "subdomain"]
+
+
 class Actions(Collection[ActionModel]):
     """Collection of composio actions.."""
 
@@ -1032,6 +1038,7 @@ class Actions(Collection[ActionModel]):
         entity_id: str = "default",
         connected_account: t.Optional[str] = None,
         text: t.Optional[str] = None,
+        auth_params: t.Optional[t.List[CustomAuthObject]] = None,
     ) -> t.Dict:
         """
         Execute an action on the specified entity with optional connected account.
@@ -1042,6 +1049,7 @@ class Actions(Collection[ActionModel]):
         :param connected_account: Optional connected account ID if required for the action.
         :return: A dictionary containing the response from the executed action.
         """
+        # TOFIX: Remvoe this
         if action.is_local:
             return self.client.local.execute_action(action=action, request_data=params)
 
@@ -1100,15 +1108,21 @@ class Actions(Collection[ActionModel]):
                 "an app which requires authentication"
             )
 
+        endpoint = "execute"
+        request = {
+            "connectedAccountId": connected_account,
+            "input": modified_params,
+            "entityId": entity_id,
+            "text": text,
+        }
+        if auth_params is not None:
+            endpoint = "execute_custom_auth"
+            request["params"] = [p.model_dump() for p in auth_params]  # type: ignore
+
         return self._raise_if_required(
             self.client.http.post(
-                url=str(self.endpoint / action.slug / "execute"),
-                json={
-                    "connectedAccountId": connected_account,
-                    "input": modified_params,
-                    "entityId": entity_id,
-                    "text": text,
-                },
+                url=str(self.endpoint / action.slug / endpoint),
+                json=request,
             )
         ).json()
 

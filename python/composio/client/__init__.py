@@ -20,6 +20,7 @@ from composio.client.collections import (
     ConnectedAccountModel,
     ConnectedAccounts,
     ConnectionRequestModel,
+    CustomAuthObject,
     IntegrationModel,
     Integrations,
     Logs,
@@ -232,6 +233,7 @@ class Entity:
         params: t.Dict,
         connected_account_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
+        auth_params: t.Optional[t.List[CustomAuthObject]] = None,
     ) -> t.Dict:
         """
         Execute an action.
@@ -248,6 +250,7 @@ class Entity:
                 params=params,
                 entity_id=self.id,
                 text=text,
+                auth_params=auth_params
             )
 
         connected_account = self.get_connection(
@@ -260,6 +263,7 @@ class Entity:
             entity_id=t.cast(str, connected_account.clientUniqueUserId),
             connected_account=connected_account.id,
             text=text,
+            auth_params=auth_params
         )
 
     def get_connection(

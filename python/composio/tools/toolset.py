@@ -26,6 +26,7 @@ from composio.client.collections import (
     AppAuthScheme,
     ConnectedAccountModel,
     ConnectionParams,
+    CustomAuthObject,
     FileType,
     SuccessExecuteActionResponseModel,
     TriggerSubscription,
@@ -102,6 +103,8 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
 
 class ComposioToolSet(WithLogger):
     """Composio toolset."""
+
+    _custom_auth: t.Dict[App, t.List[CustomAuthObject]]
 
     _connected_accounts: t.Optional[t.List[ConnectedAccountModel]] = None
     _remote_client: t.Optional[Composio] = None
@@ -252,6 +255,7 @@ class ComposioToolSet(WithLogger):
         self._workspace_id = workspace_id
         self._workspace_config = workspace_config
         self._local_client = LocalClient()
+        self._custom_auth = {}
 
         if len(kwargs) > 0:
             self.logger.info(f"Extra kwards while initializing toolset: {kwargs}")
@@ -367,10 +371,16 @@ class ComposioToolSet(WithLogger):
         if self._workspace is not None:
             self._workspace = WorkspaceFactory.get(id=workspace_id)
 
+    def add_auth(self, app: AppType, params: t.List[CustomAuthObject]) -> None:
+        self._custom_auth[App(app)] = params
+
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
         action = Action(action)
         if action.no_auth or action.is_runtime:
+            return
+
+        if App(action.app) in self._custom_auth:
             return
 
         if self._connected_accounts is None:
@@ -433,6 +443,7 @@ class ComposioToolSet(WithLogger):
             params=params,
             text=text,
             connected_account_id=connected_account_id,
+            auth_params=self._custom_auth.get(App(action.app)),
         )
         if self.output_in_file:
             return self._write_to_file(
