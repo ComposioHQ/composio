@@ -33,30 +33,6 @@ REALTIME_API_URL = (
     "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01"
 )
 
-
-# Function to send a message to Slack
-def send_slack_message(arguments):
-    try:
-        # Using Composio ToolSet's Slack send function
-        result = composio_toolset.handle_tool_calls(arguments)
-        logging.info(f"Message sent to Slack: {arguments}")
-        return {"status": "success", "message": "Message sent to Slack"}
-    except Exception as e:
-        logging.error(f"Failed to send message to Slack: {e}")
-        return {"status": "error", "message": str(e)}
-
-
-# Function to send an email
-def send_email(arguments):
-    try:
-        result = composio_toolset.handle_tool_calls(arguments)
-        logging.info(f"Email sent: {arguments}")
-        return {"status": "success", "message": "Email sent"}
-    except Exception as e:
-        logging.error(f"Failed to send email: {e}")
-        return {"status": "error", "message": str(e)}
-
-
 class RealtimeAgent:
     def __init__(self):
         self.ws = None
@@ -265,7 +241,7 @@ class RealtimeAgent:
                     await self.ws.send(
                         json.dumps({"type": "input_audio_buffer.commit"})
                     )
-                    logging.debug("Audio buffer committed after user stopped speaking.")
+                    logging.info("Audio buffer committed after user stopped speaking.")
 
                 elif event["type"] == "response.audio.start":
                     logging.info("Assistant started speaking.")
@@ -320,7 +296,7 @@ class RealtimeAgent:
                     self.current_function_call = None
 
                 elif event["type"] == "error":
-                    logging.error(f"Error from API: {event.get('message')}")
+                    logging.error(f"Error from API: {event}")
 
             except websockets.exceptions.ConnectionClosedError as e:
                 logging.error(f"WebSocket connection closed: {e}")
