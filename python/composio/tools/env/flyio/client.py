@@ -7,12 +7,20 @@ import uuid
 
 import gql
 import gql.transport
-import requests
 import typing_extensions as te
-from gql.transport.requests import RequestsHTTPTransport
 
 from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import WithLogger
+
+
+try:
+    import requests
+    from gql.transport.requests import RequestsHTTPTransport
+
+    FLYIO_DEPENDENCIES_INSTALLED = True
+except ModuleNotFoundError:
+    RequestsHTTPTransport = t.Any
+    FLYIO_DEPENDENCIES_INSTALLED = False
 
 
 FLY_API = "https://api.machines.dev"
