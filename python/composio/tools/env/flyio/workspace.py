@@ -6,8 +6,13 @@ import typing as t
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
+from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import RemoteWorkspace, WorkspaceConfigType
-from composio.tools.env.flyio.client import FlyIO, PortRequest
+from composio.tools.env.flyio.client import (
+    FLYIO_DEPENDENCIES_INSTALLED,
+    FlyIO,
+    PortRequest,
+)
 
 
 @dataclass
@@ -31,6 +36,12 @@ class FlyIOWorkspace(RemoteWorkspace):
 
     def __init__(self, config: Config):
         """Initialize FlyIO workspace."""
+        if not FLYIO_DEPENDENCIES_INSTALLED:
+            raise ComposioSDKError(
+                "`flyio` workspace dependencies are not installed"
+                "run `pip3 install composio-core[flyio]` to install."
+            )
+
         super().__init__(config=config)
         self.image = config.image
         self.token = config.token
