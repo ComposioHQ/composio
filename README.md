@@ -272,35 +272,41 @@ For more details, refer to the [Composio SDK Documentation](https://docs.composi
 
 ### [Javascript Examples](https://docs.composio.dev/guides/javascript/)
 
-
-
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=composiohq/composio&type=Date)](https://star-history.com/#composiohq/composio&Date)
 
+## 📋 Code of Conduct
 
-## 📋 Read Our Code Of Conduct
-
-As part of our open-source community, we hold ourselves and other contributors to a high standard of communication. As a participant and contributor to this project, you agree to abide by our [Code of Conduct](https://github.com/composiodev/composio/blob/master/CODE_OF_CONDUCT.md).
+As an open-source community, we strive to uphold a high standard of communication and collaboration. By participating in this project, you agree to adhere to our [Code of Conduct](https://github.com/composiodev/composio/blob/master/CODE_OF_CONDUCT.md). Together, we can foster a welcoming and inclusive environment for all contributors!
 
 ## 🤗 Contributions
 
-Composio is open-source and we welcome contributions. Please fork the repository, create a new branch for your feature, add your feature or improvement, and send a pull request.
+**Composio is open-source, and we welcome your contributions!** To contribute:
 
-Also go through our [Contribution Guidelines](https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md) and [Code of Conduct](https://github.com/composiodev/composio/blob/master/CODE_OF_CONDUCT.md) before you start.
+1. **Fork the Repository**: Create a copy of the repository on your GitHub account.
+2. **Create a New Branch**: Make a new branch for your feature or improvement.
+3. **Implement Your Changes**: Add your feature or improvement to the new branch.
+4. **Send a Pull Request**: Once you’re ready, submit a pull request for review.
 
-## 🔗 Links
+Before you start, please review our [Contribution Guidelines](https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md) and [Code of Conduct](https://github.com/composiodev/composio/blob/master/CODE_OF_CONDUCT.md).
 
-- [Home page](https://composio.dev?utm_campaign=github-readme)
+Your contributions help us improve Composio for everyone!
+
+## 🔗 Useful Links
+
+- [Home Page](https://composio.dev?utm_campaign=github-readme)
 - [Contribution Guidelines](https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md)
-- [Docs](https://docs.composio.dev/?utm_campaign=github-readme)
+- [Documentation](https://docs.composio.dev/?utm_campaign=github-readme)
 
 ## 🛡️ License
 
-Composio is licensed under the Elastic License - see the [LICENSE](https://github.com/composiodev/composio/blob/master/LICENSE) file for details.
+Composio is licensed under the Elastic License. For more details, please refer to the [LICENSE](https://github.com/composiodev/composio/blob/master/LICENSE) file.
 
-## 💪 Thanks To All Contributors
+## 💪 A Big Thank You to Our Contributors!
+
+Your efforts make Composio what it is! To see the list of all our amazing contributors, click the link below:
 
 <a href="https://github.com/composiohq/composio/graphs/contributors">
-  <img src="https://contributors-img.web.app/image?repo=composiodev/composio" alt="List of Contributors"/>
+  <img src="https://contributors-img.web.app/image?repo=composiodev/composio" alt="List of Contributors" />
 </a>
