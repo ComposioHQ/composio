@@ -1113,6 +1113,21 @@ class Actions(Collection[ActionModel]):
         ).json()
 
 
+class ExpectedFieldInput(BaseModel):
+    name: str
+    type: str
+
+    is_secret: bool
+    description: str
+    displayName: str
+
+    required: bool = True
+    expected_from_customer: bool = True
+
+    default: t.Optional[str] = None
+    get_current_user_endpoint: t.Optional[str] = None
+
+
 class IntegrationModel(BaseModel):
     """Integration data model."""
 
@@ -1124,8 +1139,10 @@ class IntegrationModel(BaseModel):
     enabled: bool
     deleted: bool
     appId: str
-    _count: t.Dict
     appName: str
+    expectedInputFields: t.List[ExpectedFieldInput] = Field(default_factory=lambda: [])
+
+    _count: t.Dict
 
     logo: t.Optional[str] = None
     defaultConnectorId: t.Optional[str] = None
