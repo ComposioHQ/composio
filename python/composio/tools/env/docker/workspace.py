@@ -9,11 +9,6 @@ import typing as t
 from dataclasses import dataclass
 from pathlib import Path
 
-import requests
-from docker import DockerClient, from_env
-from docker.errors import DockerException, NotFound
-from docker.models.containers import Container
-
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import RemoteWorkspace, WorkspaceConfigType
 from composio.tools.env.constants import (
@@ -21,6 +16,22 @@ from composio.tools.env.constants import (
     ENV_COMPOSIO_DEV_MODE,
     ENV_COMPOSIO_TOOLSERVER_IMAGE,
 )
+
+
+try:
+    import requests
+    from docker import DockerClient, from_env
+    from docker.errors import DockerException, NotFound
+    from docker.models.containers import Container
+
+    DOCKER_INSTALLED = True
+except ModuleNotFoundError:
+    DockerClient = t.Any
+    Container = t.Any
+
+    NotFound = Exception
+    DockerException = Exception
+    DOCKER_INSTALLED = False
 
 
 COMPOSIO_PATH = Path(__file__).parent.parent.parent.parent.parent.resolve()
@@ -87,6 +98,13 @@ class DockerWorkspace(RemoteWorkspace):
 
     def __init__(self, config: Config) -> None:
         """Create a docker workspace."""
+        if not DOCKER_INSTALLED:
+            raise ComposioSDKError(
+                "`docker` is required to use docker workspace, "
+                "run `pip3 install composio-core[docker]` or "
+                "`pip3 install docker` to install"
+            )
+
         super().__init__(config=config)
         self.image = config.image or os.environ.get(
             ENV_COMPOSIO_TOOLSERVER_IMAGE,
