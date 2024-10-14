@@ -84,6 +84,10 @@ class RealtimeAgent:
         self.audio_input_stream = None
         self.audio_output_stream = None
 
+        # New additions
+        self.response_done_received = False
+        self.delay_after_speaking = 2.5  # Delay in seconds (adjust as needed)
+
     async def connect(self):
         headers = {
             "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}",
@@ -107,7 +111,7 @@ class RealtimeAgent:
                         "tools": self.tools,
                         "input_audio_format": "pcm16",
                         "output_audio_format": "pcm16",
-                        "voice": "alloy",
+                        "voice": "shimmer",
                         "instructions": (
                             "You are an AI assistant that helps the user manage emails and Slack messages. "
                             "When a new message arrives, you should inform the user by reading it out loud. "
@@ -234,6 +238,15 @@ class RealtimeAgent:
                 logging.error(f"Exception in audio_playback_handler: {e}")
                 break
 
+    async def check_and_set_user_speaking(self):
+        if not self.assistant_speaking and self.response_done_received:
+            # Introduce a delay before transitioning
+            await asyncio.sleep(self.delay_after_speaking)
+            self.state = "USER_SPEAKING"
+            logging.info("Ready to capture user input.")
+            # Reset the flag for the next response
+            self.response_done_received = False
+
     async def receive_events(self):
         while self.running:
             try:
@@ -262,18 +275,16 @@ class RealtimeAgent:
                 elif event["type"] == "response.audio.end":
                     logging.info("Assistant finished speaking.")
                     self.assistant_speaking = False
-                    # Wait for response.done to change the state
+                    await self.check_and_set_user_speaking()
+
+                elif event["type"] == "response.done":
+                    logging.info("Assistant response complete.")
+                    self.response_done_received = True
+                    await self.check_and_set_user_speaking()
 
                 elif event["type"] == "response.audio.delta":
                     audio_chunk = base64.b64decode(event["delta"])
                     await self.play_audio(audio_chunk)
-
-                elif event["type"] == "response.done":
-                    logging.info("Assistant response complete.")
-                    # Allow user to speak again
-                    # await asyncio.sleep(4)  # Pause for 2 seconds (adjust as needed)/
-                    self.state = "USER_SPEAKING"
-                    logging.info("Ready to capture user input.")
 
                 elif event["type"] == "response.output_item.added":
                     item = event.get("item", {})
