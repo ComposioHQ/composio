@@ -10,8 +10,8 @@ import pytest
 
 from composio import Action, App
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
-from composio.tools.toolset import ComposioToolSet
 from composio.tools.base.abs import action_registry, tool_registry
+from composio.tools.toolset import ComposioToolSet
 
 
 def test_get_schemas() -> None:
