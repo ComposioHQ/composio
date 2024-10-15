@@ -414,6 +414,7 @@ class ComposioToolSet(WithLogger):
             request=params,
             response=response,
             is_error=not response.get("successful", False),
+            session_id=self.workspace.id,
         )
 
         return response
@@ -424,6 +425,7 @@ class ComposioToolSet(WithLogger):
         params: t.Dict,
         entity_id: str = DEFAULT_ENTITY_ID,
         connected_account_id: t.Optional[str] = None,
+        session_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
     ) -> t.Dict:
         """Execute a remote action."""
@@ -432,6 +434,7 @@ class ComposioToolSet(WithLogger):
             action=action,
             params=params,
             text=text,
+            session_id=session_id,
             connected_account_id=connected_account_id,
         )
         if self.output_in_file:
@@ -664,6 +667,7 @@ class ComposioToolSet(WithLogger):
                 entity_id=entity_id or self.entity_id,
                 connected_account_id=connected_account_id,
                 text=text,
+                session_id=self.workspace.id,
             )
         )
         response = (
