@@ -231,6 +231,7 @@ class Entity:
         action: Action,
         params: t.Dict,
         connected_account_id: t.Optional[str] = None,
+        session_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
     ) -> t.Dict:
         """
@@ -240,6 +241,7 @@ class Entity:
         :param params: Parameters for executing actions
         :param connected_account_id: Connection ID if you want to use a specific
                 connection
+        :param session_id: ID of the current workspace session
         :return: Dictionary containing execution result
         """
         if action.no_auth:
@@ -247,6 +249,7 @@ class Entity:
                 action=action,
                 params=params,
                 entity_id=self.id,
+                session_id=session_id,
                 text=text,
             )
 
@@ -259,6 +262,7 @@ class Entity:
             params=params,
             entity_id=t.cast(str, connected_account.clientUniqueUserId),
             connected_account=connected_account.id,
+            session_id=session_id,
             text=text,
         )
 
