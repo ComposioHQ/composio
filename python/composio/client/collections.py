@@ -1031,6 +1031,7 @@ class Actions(Collection[ActionModel]):
         params: t.Dict,
         entity_id: str = "default",
         connected_account: t.Optional[str] = None,
+        session_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
     ) -> t.Dict:
         """
@@ -1040,6 +1041,7 @@ class Actions(Collection[ActionModel]):
         :param params: A dictionary of parameters to be passed to the action.
         :param entity_id: The unique identifier of the entity on which the action is executed.
         :param connected_account: Optional connected account ID if required for the action.
+        :param session_id: ID of the current workspace session
         :return: A dictionary containing the response from the executed action.
         """
         if action.is_local:
@@ -1086,10 +1088,13 @@ class Actions(Collection[ActionModel]):
                 self.client.http.post(
                     url=str(self.endpoint / action.name / "execute"),
                     json={
+                        "entityId": entity_id,
                         "appName": action.app,
                         "input": modified_params,
-                        "entityId": entity_id,
                         "text": text,
+                        "sessionInfo": {
+                            "sessionId": session_id,
+                        },
                     },
                 )
             ).json()
