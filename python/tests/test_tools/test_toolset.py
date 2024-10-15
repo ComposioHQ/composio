@@ -130,6 +130,11 @@ class TestConnectedAccountProvider:
                 }
             )
             setattr(toolset, "_execute_remote", _patch)
+            setattr(
+                toolset,
+                "_try_get_github_access_token_for_current_entity",
+                lambda *_: "",
+            )
             toolset.execute_action(
                 action=Action.GITHUB_META_ROOT,
                 params={},
