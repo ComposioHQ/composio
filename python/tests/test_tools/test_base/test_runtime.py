@@ -113,6 +113,22 @@ def test_missing_argspec() -> None:
             return number**2
 
 
+def test_missing_return_type() -> None:
+    with pytest.raises(
+        InvalidRuntimeAction,
+        match="Please add return type on runtime action `square`",
+    ):
+
+        @action(toolname="math")
+        def square(number: int):
+            """
+            Calculate square of a number
+
+            :return result: Square of number
+            """
+            return number**2
+
+
 def test_tool_namespace() -> None:
     """Test to make sure two runtime actions can be defined using one tool name."""
 
