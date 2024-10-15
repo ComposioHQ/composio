@@ -10,7 +10,7 @@ import pytest
 
 from composio import Action, App
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
-from composio.tools import ComposioToolSet
+from composio.tools.toolset import ComposioToolSet
 from composio.tools.base.abs import action_registry, tool_registry
 
 
@@ -147,3 +147,35 @@ def test_api_key_missing() -> None:
         ),
     ):
         _ = toolset.workspace
+
+
+def test_processors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test the `processors` field in `ComposioToolSet` constructor."""
+    preprocessor_called = False
+    postprocessor_called = False
+
+    def preprocess(request: dict) -> dict:
+        nonlocal preprocessor_called
+        preprocessor_called = True
+        return request
+
+    def postprocess(response: dict) -> dict:
+        nonlocal postprocessor_called
+        postprocessor_called = True
+        return response
+
+    toolset = ComposioToolSet(
+        processors={
+            "pre": {
+                App.GMAIL: preprocess,
+            },
+            "post": {
+                App.GMAIL: postprocess,
+            },
+        }
+    )
+
+    monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
+    toolset.execute_action(action=Action.GMAIL_FETCH_EMAILS, params={})
+    assert preprocessor_called
+    assert postprocessor_called
