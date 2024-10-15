@@ -355,6 +355,7 @@ class Entity:
         integration: t.Optional[IntegrationModel] = None,
         use_composio_auth: bool = True,
         force_new_integration: bool = False,
+        connected_account_params: t.Optional[t.Dict] = None,
     ) -> ConnectionRequestModel:
         """
         Initiate an integration connection process for a specified application.
@@ -394,6 +395,7 @@ class Entity:
         return self.client.connected_accounts.initiate(
             integration_id=t.cast(IntegrationModel, integration).id,
             entity_id=self.id,
+            params=connected_account_params,
             redirect_url=redirect_url,
         )
 
