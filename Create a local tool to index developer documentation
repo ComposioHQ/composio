@@ -1,0 +1,64 @@
+import os
+import markdown
+from bs4 import BeautifulSoup
+from whoosh.index import create_in, open_dir
+from whoosh.fields import Schema, TEXT, ID
+from whoosh.qparser import QueryParser
+
+
+# Define schema for indexing
+def get_schema():
+    return Schema(title=TEXT(stored=True), path=ID(stored=True), content=TEXT)
+
+# Function to extract text content from Markdown files
+def extract_content_from_md(file_path):
+    with open(file_path, 'r', encoding='utf-8') as f:
+        text = f.read()
+        html = markdown.markdown(text)
+        soup = BeautifulSoup(html, 'html.parser')
+        return soup.get_text()
+
+# Function to index documentation files
+def index_docs(directory, index_dir):
+    schema = get_schema()
+
+    # Create or open the index directory
+    if not os.path.exists(index_dir):
+        os.mkdir(index_dir)
+        ix = create_in(index_dir, schema)
+    else:
+        ix = open_dir(index_dir)
+
+    writer = ix.writer()
+
+    # Iterate through documentation files
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if file.endswith(".md"):
+                file_path = os.path.join(root, file)
+                content = extract_content_from_md(file_path)
+                writer.add_document(
+                    title=file, path=file_path, content=content
+                )
+                print(f"Indexed {file}")
+    
+    writer.commit()
+
+# Function to search the indexed content
+def search_docs(index_dir, query_str):
+    ix = open_dir(index_dir)
+    with ix.searcher() as searcher:
+        query = QueryParser("content", ix.schema).parse(query_str)
+        results = searcher.search(query)
+        for result in results:
+            print(f"Found in: {result['title']}, path: {result['path']}")
+
+if __name__ == "__main__":
+    # Indexing
+    doc_dir = "./docs"
+    index_dir = "./index"
+    index_docs(doc_dir, index_dir)
+
+    # Searching
+    query = input("Enter search query: ")
+    search_docs(index_dir, query)
