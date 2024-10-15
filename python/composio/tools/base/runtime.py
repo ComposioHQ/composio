@@ -262,7 +262,7 @@ def _get_auth_params(app: str, entity_id: str) -> t.Optional[t.Dict]:
         return None
 
 
-def _build_executable_from_args(
+def _build_executable_from_args(  # pylint: disable=too-many-statements
     f: t.Callable,
     app: str,
 ) -> t.Tuple[t.Callable, t.Type[BaseModel], t.Type[BaseModel], bool,]:
@@ -291,6 +291,11 @@ def _build_executable_from_args(
     }
     shell_argument = None
     auth_params = False
+    if "return" not in argspec.annotations:
+        raise InvalidRuntimeAction(
+            f"Please add return type on runtime action `{f.__name__}`"
+        )
+
     for arg, annot in argspec.annotations.items():
         if annot is Shell:
             shell_argument = arg
@@ -323,7 +328,6 @@ def _build_executable_from_args(
                 description = paramdesc[arg]
 
             default = defaults.get(arg, ...)
-
         if arg == "return":
             if returns is not None:
                 arg, _ = returns
