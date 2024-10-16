@@ -63,7 +63,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "pydantic>=2.7.4",
-        "swebench==2.0.13",
+        "swebench==2.1.0",
         "datasets>=2.20.0",
         "gitpython>=3.1.43",
         "composio_core>=0.5.30,<=0.5.31",
