@@ -86,9 +86,9 @@ class IndexGenerator(WithLogger):
             for k, v in fqdn_index.items():
                 if len(v) >= 1:
                     for x in v:
-                        x[
-                            "global_module"
-                        ] = f"/home/user/{repository.split('/')[-1]}/{k}"
+                        x["global_module"] = (
+                            f"/home/user/{repository.split('/')[-1]}/{k}"
+                        )
                     fqdn_index[k] = v
 
         docker_outdir = Path("generated") / outname / version

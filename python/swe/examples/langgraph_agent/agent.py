@@ -109,7 +109,12 @@ pm_node = create_agent_node(pm_agent, pm_agent_name)
 # Router function
 def router(
     state,
-) -> Literal["call_tool", "pm", "__end__", "continue",]:
+) -> Literal[
+    "call_tool",
+    "pm",
+    "__end__",
+    "continue",
+]:
     last_message = state["messages"][-1]
     sender = state["sender"]
     if last_message.tool_calls:
