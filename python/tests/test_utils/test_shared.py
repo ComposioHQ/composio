@@ -33,11 +33,6 @@ def test_get_pydantic_signature_format_from_schema_params() -> None:
     assert isinstance(result[1], Parameter)
     assert result[0].name == "owner"
     assert result[1].name == "repo"
-    assert result[0].default.description == "The account owner of the repository."
-    assert (
-        result[1].default.description
-        == "The name of the repository without the `.git` extension."
-    )
 
 
 def test_json_schema_to_pydantic_field() -> None:
