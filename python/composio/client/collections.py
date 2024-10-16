@@ -1206,6 +1206,26 @@ class Integrations(Collection[IntegrationModel]):
         )
         return IntegrationModel(**response.json())
 
+    @t.overload  # type: ignore
+    def get(self) -> t.List[IntegrationModel]:
+        ...
+
+    @t.overload
+    def get(self, id: t.Optional[str] = None) -> IntegrationModel:
+        ...
+
+    def get(
+        self, id: t.Optional[str] = None
+    ) -> t.Union[t.List[IntegrationModel], IntegrationModel]:
+        if id is not None:
+            return IntegrationModel(
+                **self._raise_if_required(
+                    self.client.http.get(url=str(self.endpoint / id))
+                ).json()
+            )
+        return super().get({})
+
+    @te.deprecated("`get_id` is deprecated, use `get(id=id)`")
     def get_by_id(
         self,
         integration_id: str,
