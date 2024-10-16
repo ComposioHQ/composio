@@ -5,7 +5,7 @@ Contributions to the framework, its plugins, related tools and tools are welcome
 There are various ways to contribute:
 
 - If you need support, want to report a bug or ask for features, you can check the [Issues page](https://github.com/composiohq/composio/issues) and raise an issue, if applicable.
-- If you would like to contribute a bug fix or feature then [Submit a pull request](https://github.com/composiohq/composio/pulls).
+- If you would like to contribute a bug fix or feature, then [Submit a pull request](https://github.com/composiohq/composio/pulls).
 - If you have other kinds of feedback, you can contact one of the [authors](https://github.com/composiohq/composio/blob/master/AUTHORS.md) by email.
 
 > Before reading on, please have a look at the [code of conduct](https://github.com/composiohq/composio/blob/master/CODE_OF_CONDUCT.md).
@@ -25,9 +25,9 @@ If you have improvements, send us your pull requests!
 
 A team member will be assigned to review your pull requests. All tests are run as part of CI as well as various other checks (code formatting, linters, static type checkers, etc). If there are any problems, feedback is provided via GitHub. Once the pull requests is approved and passes continuous integration checks, you or a team member can merge it.
 
-If you want to contribute, start working through the codebase, navigate to the Github `issues` tab and start looking through interesting issues. If you are not sure of where to start, then start by trying one of the smaller/easier issues here i.e. issues with the `good first issue` label and then take a look at the issues with the `contributions welcome` label. These are issues that we believe are particularly well suited for outside contributions, often because we probably won't get to them right now. If you decide to start on an issue, leave a comment so that other people know that you're working on it. If you want to help out, but not alone, use the issue comment thread to coordinate.
+If you want to contribute, start working through the codebase, navigate to the GitHub `issues` tab and start looking through interesting issues. If you are not sure of where to start, then start by trying one of the smaller/easier issues here i.e. issues with the `good first issue` label and then take a look at the issues with the `contributions welcome` label. These are issues that we believe are particularly well suited for outside contributions, often because we probably won't get to them right now. If you decide to start on an issue, leave a comment so that other people know that you're working on it. If you want to help out, but not alone, use the issue comment thread to coordinate.
 
-*Note:* When openning a PR make sure you open the PR against `development` and not the `master` branch.
+*Note:* When opening a PR make sure you open the PR against `development` and not the `master` branch.
 
 ## Development setup
 
