@@ -17,6 +17,7 @@ from unidiff import PatchSet
 
 from composio.utils.logging import get as get_logger
 
+
 MODEL_GPT4 = "gpt-4-1106"
 PATH_SWE_BENCH_ISSUES = "swe_bench_issues.jsonl"
 PATH_PATCHES_JSON = "patches.json"
