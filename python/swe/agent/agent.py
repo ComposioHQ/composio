@@ -33,17 +33,12 @@ def pop_thought_from_request(request: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     return request
 
 
-def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
+def get_agent_graph(repo_name: str, workspace_id: str):
     import random
     import string
 
     random_string = "".join(random.choices(string.digits, k=6))
-
-    def save_test_response(response: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
-        with open(f"test_response_{random_string}.txt", "w") as f:
-            f.write(response["data"]["stdout"] + "\n" + response["data"]["stderr"])
-
-        return response
+    run_file = f"messages_{random_string}.txt"
 
     bedrock_client = BedrockChat(
         credentials_profile_name="default",
@@ -57,11 +52,7 @@ def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
         metadata={
             App.CODE_ANALYSIS_TOOL: {
                 "dir_to_index_path": f"/home/user/{repo_name}",
-            },
-            App.SHELLTOOL: {
-                "project_path": f"/home/user/{repo_name}",
-                "test_command": test_command,
-            },
+            }
         },
         processors={
             "pre": {
@@ -73,9 +64,6 @@ def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
                 App.FILETOOL: add_thought_to_request,
                 App.CODE_ANALYSIS_TOOL: add_thought_to_request,
                 App.SHELLTOOL: add_thought_to_request,
-            },
-            "post": {
-                Action.SHELLTOOL_TEST_COMMAND: save_test_response,
             },
         },
     )
@@ -118,19 +106,10 @@ def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
         ),
     ]
 
-    test_tools = [
-        *composio_toolset.get_actions(
-            actions=[
-                Action.SHELLTOOL_TEST_COMMAND,
-            ]
-        )
-    ]
-
     # Create two separate tool nodes
     code_analysis_tool_node = ToolNode(code_analysis_tools)
     file_tool_node = ToolNode(file_tools)
     swe_tool_node = ToolNode(swe_tools)
-    test_tool_node = ToolNode(test_tools)
 
     # Define AgentState
     class AgentState(TypedDict):
@@ -181,6 +160,12 @@ def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
                     },
                     name=name,
                 )
+            with open(run_file, "w") as handle:
+                message_str = ""
+                for message in state["messages"]:
+                    message_type = type(message).__name__
+                    message_str += f"{message_type}: {str(message.content)}\n"
+                handle.write(message_str)
             return {"messages": [result], "sender": name}
 
         return agent_node
@@ -209,7 +194,7 @@ def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
     code_analyzer_agent = create_agent(CODE_ANALYZER_PROMPT, code_analysis_tools)
     code_analyzer_node = create_agent_node(code_analyzer_agent, code_analyzer_name)
 
-    editing_agent = create_agent(EDITING_AGENT_PROMPT, file_tools + test_tools)
+    editing_agent = create_agent(EDITING_AGENT_PROMPT, file_tools)
     editing_node = create_agent_node(editing_agent, editor_name)
 
     # Update router function
@@ -222,6 +207,7 @@ def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
         "continue",
         "analyze_code",
         "edit_file",
+        "swe_tool",
     ]:
         messages = state["messages"]
         for message in reversed(messages):
@@ -252,7 +238,6 @@ def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
     workflow.add_node("code_edit_tool", file_tool_node)
     workflow.add_node("code_analysis_tool", code_analysis_tool_node)
     workflow.add_node("swe_tool", swe_tool_node)
-    workflow.add_node("test_tool", test_tool_node)
     # Add start and end
     workflow.add_edge(START, software_engineer_name)
 
@@ -271,11 +256,6 @@ def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
         "swe_tool",
         lambda x: x["sender"],
         {software_engineer_name: software_engineer_name},
-    )
-    workflow.add_conditional_edges(
-        "test_tool",
-        lambda x: x["sender"],
-        {editor_name: editor_name},
     )
 
     # Update conditional edges for the coding agent
@@ -304,6 +284,8 @@ def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
             return "code_analysis_tool"
         if "ANALYSIS COMPLETE" in last_ai_message.content:
             return "done"
+        if "EDIT FILE" in last_ai_message.content:
+            return "edit_file"
         return "continue"
 
     # Add conditional edges for the code analyzer
@@ -313,6 +295,7 @@ def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
         {
             "continue": code_analyzer_name,
             "done": software_engineer_name,
+            "edit_file": editor_name,
             "code_analysis_tool": "code_analysis_tool",
         },
     )
@@ -327,13 +310,7 @@ def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
             last_ai_message = messages[-1]
 
         if last_ai_message.tool_calls:
-            tool_name = last_ai_message.tool_calls[0]["name"]
-            if tool_name in [x.name for x in file_tools]:
-                return "code_edit_tool"
-            else:
-                return "test_tool"
-        if "EDITING AND TESTING COMPLETED" in last_ai_message.content:
-            return "done"
+            return "code_edit_tool"
         if "EDITING COMPLETED" in last_ai_message.content:
             return "done"
         return "continue"
@@ -345,9 +322,8 @@ def get_agent_graph(repo_name: str, workspace_id: str, test_command: str):
             "continue": editor_name,
             "done": software_engineer_name,
             "code_edit_tool": "code_edit_tool",
-            "test_tool": "test_tool",
         },
     )
 
     graph = workflow.compile()
-    return graph, composio_toolset, f"test_response_{random_string}.txt"
+    return graph, composio_toolset, run_file
