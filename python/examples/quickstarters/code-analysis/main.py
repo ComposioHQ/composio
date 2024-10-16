@@ -10,7 +10,7 @@ llm = ChatOpenAI(model="gpt-4o") # Initialize the language model with OpenAI API
 
 # Get tools
 composio_toolset = ComposioToolSet()
-tools = composio_toolset.get_tools(apps=[App.FILETOOL, App.SHELLTOOL])
+tools = composio_toolset.get_tools(apps=[App.FILETOOL, App.SHELLTOOL, App.CODEINTERPRETER])
 
 # Take directory path as input
 path = str(input("Enter the directory path (e.g. /home/user/programs/hello-world): "))
