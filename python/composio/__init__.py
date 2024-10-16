@@ -8,6 +8,7 @@ sentry.init()
 import atexit  # noqa: E402
 
 from composio.client import Composio  # noqa: E402
+from composio.client.collections import CustomAuthObject  # noqa: E402
 from composio.client.enums import (  # noqa: E402
     Action,
     ActionType,
@@ -41,6 +42,7 @@ __all__ = (
     "ActionType",
     "TriggerType",
     "ComposioToolSet",
+    "CustomAuthObject",
     "WorkspaceType",
     "WorkspaceConfigType",
     "WorkspaceFactory",
