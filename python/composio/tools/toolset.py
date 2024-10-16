@@ -982,7 +982,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         app: AppType,
         auth_mode: t.Optional[str] = None,
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
-        use_composio_auth: bool = True,
+        use_composio_oauth_app: bool = True,
         force_new_integration: bool = False,
     ) -> IntegrationModel:
         app_data = self.client.apps.get(name=str(app))
@@ -992,7 +992,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             name=f"{app}_{timestamp}",
             auth_mode=auth_mode,
             auth_config=auth_config,
-            use_composio_auth=use_composio_auth,
+            use_composio_auth=use_composio_oauth_app,
             force_new_integration=force_new_integration,
         )
 
