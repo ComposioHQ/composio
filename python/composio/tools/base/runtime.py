@@ -395,12 +395,7 @@ def _build_executable_from_request_class(f: t.Callable, app: str) -> t.Callable:
 
 def _parse_schemas(
     f: t.Callable, app: str, runs_on_shell: bool
-) -> t.Tuple[
-    t.Callable,
-    t.Type[BaseModel],
-    t.Type[BaseModel],
-    bool,
-]:
+) -> t.Tuple[t.Callable, t.Type[BaseModel], t.Type[BaseModel], bool]:
     """Parse action callable schemas."""
     argspec = inspect.getfullargspec(f)
     if _is_simple_action(argspec=argspec):
