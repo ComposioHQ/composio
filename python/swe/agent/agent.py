@@ -34,7 +34,6 @@ def pop_thought_from_request(request: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
 
 
 def get_agent_graph(repo_name: str, workspace_id: str):
-
     import random
     import string
 
@@ -65,7 +64,7 @@ def get_agent_graph(repo_name: str, workspace_id: str):
                 App.FILETOOL: add_thought_to_request,
                 App.CODE_ANALYSIS_TOOL: add_thought_to_request,
                 App.SHELLTOOL: add_thought_to_request,
-            }
+            },
         },
     )
     composio_toolset.set_workspace_id(workspace_id)
@@ -161,7 +160,7 @@ def get_agent_graph(repo_name: str, workspace_id: str):
                     },
                     name=name,
                 )
-            with open(run_file, 'w') as handle:
+            with open(run_file, "w") as handle:
                 message_str = ""
                 for message in state["messages"]:
                     message_type = type(message).__name__
@@ -208,7 +207,7 @@ def get_agent_graph(repo_name: str, workspace_id: str):
         "continue",
         "analyze_code",
         "edit_file",
-        "swe_tool"
+        "swe_tool",
     ]:
         messages = state["messages"]
         for message in reversed(messages):
