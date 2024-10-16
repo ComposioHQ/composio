@@ -87,7 +87,7 @@
 我们相信基于 AI 的代理/工作流是未来。
 Composio 是将 AI 代理集成到最佳代理工具并用它们完成任务的最佳工具集。
 
-<img alt="插图" src="./docs/imgs/banner.gif" style="border-radius: 5px"/>
+<img alt="插图" src="./python/docs/imgs/banner.gif" style="border-radius: 5px"/>
 
 ## 🔥 主要特性
 
