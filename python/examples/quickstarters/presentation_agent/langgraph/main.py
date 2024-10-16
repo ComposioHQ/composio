@@ -14,7 +14,7 @@ load_dotenv()
 GOOGLE_SHEET_ID = '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms'
 
 # Initialize the toolset for GitHub
-composio_toolset = ComposioToolSet(output_dir=Path(os.path.dirname(os.path.realpath(__file__))))
+composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_tools(
     apps=[
         App.GOOGLESHEETS,
@@ -65,6 +65,26 @@ task = f"""
     that makes it look good. The graphs in it should be factual. 
     Try to have a few charts and few table with top data points.
     NOTE: Mostly the user passes small sheets, so try to read the whole sheet at once and not via ranges.
+
+    You can test the code to verify installation :
+
+from pptx import Presentation
+
+
+def main():
+    prs = Presentation()
+    title_slide_layout = prs.slide_layouts[0]
+    slide = prs.slides.add_slide(title_slide_layout)
+    title = slide.shapes.title
+    subtitle = slide.placeholders[1]
+
+    title.tetx = "Hello World fromm pptx"
+    subtitle.text = "using python-ppts!!!"
+    prs.save("test.pptx")
+
+
+if __name__ == "__main__":
+    main()
 """
 for chunk in app.stream(
     {

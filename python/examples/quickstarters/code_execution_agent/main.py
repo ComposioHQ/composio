@@ -15,13 +15,24 @@ python_executor_agent = Agent(
     tools=tools,
 )
 
-python_code = """
-def calculate_sum(a, b):
-    return a + b
+python_code =  """
+def factorial(n):
+    if n < 0:
+        return "Factorial is not defined for negative numbers."
+    elif n == 0 or n == 1:
+        return 1
+    else:
+        result = 1
+        for i in range(2, n + 1):
+            result *= i
+        return result
 
-result = calculate_sum(5, 3)
-print(result)
+# Example usage
+number = 5
+result = factorial(number)
+print(f"The factorial of {number} is {result}.")
 """
+
 
 execute_code_task = Task(
     description="Execute the following Python code and return the results:\n\n"
