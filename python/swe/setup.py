@@ -63,7 +63,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "pydantic>=2.7.4",
-        "swebench==2.0.13",
+        "swebench==2.1.0",
         "datasets>=2.20.0",
         "gitpython>=3.1.43",
         "composio_core>=0.5.30,<=0.5.31",
@@ -71,4 +71,12 @@ setup(
         "tqdm==4.66.4",
         "rich",
     ],
+    extras_require={
+        "langgraph": [
+            "langchain-aws==0.1.17",
+            "langgraph>=0.2.16",
+            "composio_langgraph>=0.5.13",
+            "python-dotenv==1.0.1",
+        ]
+    },
 )
