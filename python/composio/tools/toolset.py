@@ -24,12 +24,16 @@ from composio.client import Composio, Entity
 from composio.client.collections import (
     ActionModel,
     AppAuthScheme,
+    AppModel,
     ConnectedAccountModel,
     ConnectionParams,
     FileType,
+    IntegrationModel,
     SuccessExecuteActionResponseModel,
+    TriggerModel,
     TriggerSubscription,
 )
+from composio.client.enums import TriggerType
 from composio.client.enums.base import EnumStringNotFound
 from composio.client.exceptions import ComposioClientError, HTTPError
 from composio.constants import (
@@ -811,25 +815,6 @@ class ComposioToolSet(WithLogger):
         )
         return action_item
 
-    def get_auth_params(
-        self,
-        app: AppType,
-        connection_id: t.Optional[str] = None,
-    ) -> t.Optional[ConnectionParams]:
-        """Get authentication parameters for given app."""
-        app = App(app)
-        if app.is_local:
-            return None
-
-        try:
-            connection_id = (
-                connection_id
-                or self.client.get_entity(id=self.entity_id).get_connection(app=app).id
-            )
-            return self.client.connected_accounts.info(connection_id=connection_id)
-        except ComposioClientError:
-            return None
-
     def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:
         """Create trigger subscription."""
         return self.client.triggers.subscribe(timeout=timeout)
@@ -942,9 +927,43 @@ class ComposioToolSet(WithLogger):
         )
         return formatted_schema_info
 
+    def get_auth_params(
+        self,
+        app: AppType,
+        connection_id: t.Optional[str] = None,
+    ) -> t.Optional[ConnectionParams]:
+        """Get authentication parameters for given app."""
+        app = App(app)
+        if app.is_local:
+            return None
+
+        try:
+            connection_id = (
+                connection_id
+                or self.client.get_entity(id=self.entity_id).get_connection(app=app).id
+            )
+            return self.client.connected_accounts.info(connection_id=connection_id)
+        except ComposioClientError:
+            return None
+
     def get_auth_schemes(self, app: AppType) -> t.List[AppAuthScheme]:
         """Get the list of auth schemes for an app."""
         return self.client.apps.get(name=str(app)).auth_schemes or []
+
+    def get_app(self, app: AppType) -> AppModel:
+        return self.client.apps.get(name=str(App(app)))
+
+    def get_action(self, action: ActionType) -> ActionModel:
+        return self.client.actions.get(actions=[action]).pop()
+
+    def get_trigger(self, trigger: TriggerType) -> TriggerModel:
+        return self.client.triggers.get(triggers=[trigger]).pop()
+
+    def get_integration(self, id: str) -> IntegrationModel:
+        return self.client.integrations.get(id=id)
+
+    def get_connected_account(self, id: str) -> ConnectedAccountModel:
+        return self.client.connected_accounts.get(connection_id=id)
 
     def get_entity(self, id: t.Optional[str] = None) -> Entity:
         """Get entity object for given ID."""
