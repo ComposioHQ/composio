@@ -54,7 +54,6 @@ from composio.utils.enums import get_enum_key
 from composio.utils.logging import LogIngester, LogLevel, WithLogger
 from composio.utils.url import get_api_url_base
 
-
 T = te.TypeVar("T")
 P = te.ParamSpec("P")
 
@@ -531,7 +530,10 @@ class ComposioToolSet(WithLogger):
             return [self._serialize_execute_params(p) for p in param]  # type: ignore
 
         if isinstance(param, dict):
-            return {key: self._serialize_execute_params(val) for key, val in param.items()}  # type: ignore
+            return {
+                key: self._serialize_execute_params(val)  # type: ignore
+                for key, val in param.items()
+            }
 
         raise ValueError(
             "Invalid value found for execute parameters"
@@ -582,6 +584,12 @@ class ComposioToolSet(WithLogger):
                 f" through: {processor.__name__}"
             )
             data = processor(data)
+            # Users may not respect our type annotations and return something that isn't a dict.
+            # If that happens we should show a friendly error message.
+            if not isinstance(data, t.Dict):
+                raise TypeError(
+                    f"Expected {type_}-processor to return 'dict', got {type(data).__name__!r}"
+                )
         return data
 
     def _process_request(self, action: Action, request: t.Dict) -> t.Dict:
@@ -780,20 +788,20 @@ class ComposioToolSet(WithLogger):
                 param_type = param_details["type"]
                 description = param_details.get("description", "").rstrip(".")
                 if description:
-                    param_details[
-                        "description"
-                    ] = f"{description}. Please provide a value of type {param_type}."
+                    param_details["description"] = (
+                        f"{description}. Please provide a value of type {param_type}."
+                    )
                 else:
-                    param_details[
-                        "description"
-                    ] = f"Please provide a value of type {param_type}."
+                    param_details["description"] = (
+                        f"Please provide a value of type {param_type}."
+                    )
 
             if param_name in required_params:
                 description = param_details.get("description", "")
                 if description:
-                    param_details[
-                        "description"
-                    ] = f"{description.rstrip('.')}. This parameter is required."
+                    param_details["description"] = (
+                        f"{description.rstrip('.')}. This parameter is required."
+                    )
                 else:
                     param_details["description"] = "This parameter is required."
 

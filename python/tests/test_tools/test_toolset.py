@@ -151,8 +151,7 @@ def test_api_key_missing() -> None:
 
 def test_processors(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test the `processors` field in `ComposioToolSet` constructor."""
-    preprocessor_called = False
-    postprocessor_called = False
+    preprocessor_called = postprocessor_called = False
 
     def preprocess(request: dict) -> dict:
         nonlocal preprocessor_called
@@ -165,17 +164,28 @@ def test_processors(monkeypatch: pytest.MonkeyPatch) -> None:
         return response
 
     toolset = ComposioToolSet(
-        processors={
-            "pre": {
-                App.GMAIL: preprocess,
-            },
-            "post": {
-                App.GMAIL: postprocess,
-            },
-        }
+        processors={"pre": {App.GMAIL: preprocess}, "post": {App.GMAIL: postprocess}}
     )
-
     monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
+
+    # Happy case
     toolset.execute_action(action=Action.GMAIL_FETCH_EMAILS, params={})
     assert preprocessor_called
     assert postprocessor_called
+
+    # Improperly defined processors
+    preprocessor_called = postprocessor_called = False
+
+    def broken_preprocessor(request: dict) -> None:
+        """Forgets to return the request."""
+        request["something"] = True
+
+    # users may not respect our type annotations
+    toolset = ComposioToolSet(processors={"pre": {App.SERPAPI: broken_preprocessor}})  # type: ignore
+
+    with pytest.raises(TypeError) as excinfo:
+        toolset.execute_action(action=Action.SERPAPI_SEARCH, params={})
+
+    assert (
+        str(excinfo.value) == "Expected pre-processor to return 'dict', got 'NoneType'"
+    )
