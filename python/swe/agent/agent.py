@@ -310,7 +310,6 @@ def get_agent_graph(repo_name: str, workspace_id: str):
             last_ai_message = messages[-1]
 
         if last_ai_message.tool_calls:
-            tool_name = last_ai_message.tool_calls[0]["name"]
             return "code_edit_tool"
         if "EDITING COMPLETED" in last_ai_message.content:
             return "done"

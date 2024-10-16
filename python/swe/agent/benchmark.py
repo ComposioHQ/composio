@@ -5,7 +5,6 @@ import re
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from pdb import run
 from typing import List
 
 from langchain_aws import BedrockChat
@@ -61,7 +60,7 @@ def get_llm_response(system_prompt: str, human_prompt: str) -> str:
                 client.invoke, [("human", human_prompt)]
             )
         return response.content
-    except Exception as e:
+    except Exception:
         return f"Error while calling llm {MODEL}: \n{traceback.format_exc()}\n"
 
 
@@ -103,7 +102,8 @@ If you decide to submit the patch from Provide your response in the following fo
 If you decide to reject the patches and run again, provide your response in the format:
 {{
     "patch": "RUN AGAIN",
-    "reasoning": "The detailed reason why none of the patch can fix the issue. Summarise the patches as well, so that next software engineer has the whole context about the patches and reason of their failures."
+    "reasoning": "The detailed reason why none of the patch can fix the issue. 
+Summarise the patches as well, so that next software engineer has the whole context about the patches and reason of their failures."
 }}
 """.format(
         repo_name=repo_name, issue_desc=issue_desc, patch_str=patch_str
@@ -151,7 +151,7 @@ def choose_patch(
     for run_content in run_contents:
         summary_response = get_llm_response(
             system_prompt="You are an expert summarizer of agent's output.",
-            human_prompt=f"The following is the run of the agent after it tried to fix the issue. Analyse the contents and messages of the run and give a short summary of what the agent did. \n{run_content}. Provide the output in the form of 5-7 chronological points.",
+            human_prompt=f"The following is the run of the agent after it tried to fix the issue. Analyse the contents and messages of the run and give a short summary of what the agent did. \n{run_content}. Provide the output in the form of 5-7 chronological points.",  # noqa: E501
         )
         run_summaries.append(summary_response)
 
@@ -308,12 +308,12 @@ def run_agent_function(
     )
 
     if previous_patch_str != "":
-        issue_desc = f"{issue_config.issue_desc}\n. I have already tried to solve this problem before, but failed for the following reason: \n {previous_patch_str}.\n The previous patches did not fix the issue. Now try again to fix the issue. {issue_config.issue_desc}. \n Output to git tree command {git_tree_response}. Pay attention to the reason why patch failed to solve the issue and try something different to fix the issue."
+        issue_desc = f"{issue_config.issue_desc}\n. I have already tried to solve this problem before, but failed for the following reason: \n {previous_patch_str}.\n The previous patches did not fix the issue. Now try again to fix the issue. {issue_config.issue_desc}. \n Output to git tree command {git_tree_response}. Pay attention to the reason why patch failed to solve the issue and try something different to fix the issue."  # noqa: E501
     else:
         issue_desc = f"{issue_config.issue_desc}.\n Output to git tree command {git_tree_response}"
 
     try:
-        run_result = graph.invoke(
+        graph.invoke(
             {"messages": [HumanMessage(content=issue_desc)]},
             {"recursion_limit": 50},
         )
