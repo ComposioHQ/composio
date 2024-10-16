@@ -36,7 +36,7 @@ from composio.utils import logging
 
 
 def to_trigger_names(
-    triggers: t.Union[t.List[str], t.List[Trigger], t.List[TriggerType]]
+    triggers: t.Union[t.List[str], t.List[Trigger], t.List[TriggerType]],
 ) -> str:
     """Get trigger names as a string."""
     return ",".join([Trigger(trigger).name for trigger in triggers])
