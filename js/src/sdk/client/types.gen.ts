@@ -824,7 +824,7 @@ export type GetConnectionsQueryDto = {
 };
 
 export type InitiateConnectionPayloadDto = {
-    data?: string;
+    data?: Record<string, any>;
     integrationId: string;
     redirectUri?: string;
     userUuid?: string;
