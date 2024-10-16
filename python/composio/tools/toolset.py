@@ -27,6 +27,7 @@ from composio.client.collections import (
     AppModel,
     ConnectedAccountModel,
     ConnectionParams,
+    ExpectedFieldInput,
     FileType,
     IntegrationModel,
     SuccessExecuteActionResponseModel,
@@ -961,6 +962,11 @@ class ComposioToolSet(WithLogger):
 
     def get_integration(self, id: str) -> IntegrationModel:
         return self.client.integrations.get(id=id)
+
+    def get_exepected_input_params_for_integration(
+        self, integration_id: str
+    ) -> t.List[ExpectedFieldInput]:
+        return self.client.integrations.get(id=integration_id).expectedInputFields
 
     def get_connected_account(self, id: str) -> ConnectedAccountModel:
         return self.client.connected_accounts.get(connection_id=id)
