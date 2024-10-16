@@ -11,6 +11,7 @@ import os
 import time
 import typing as t
 import warnings
+from datetime import datetime
 from functools import wraps
 from importlib.util import find_spec
 from pathlib import Path
@@ -27,6 +28,7 @@ from composio.client.collections import (
     AppModel,
     ConnectedAccountModel,
     ConnectionParams,
+    ConnectionRequestModel,
     ExpectedFieldInput,
     FileType,
     IntegrationModel,
@@ -105,7 +107,7 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
     return wrapper  # type: ignore
 
 
-class ComposioToolSet(WithLogger):
+class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     """Composio toolset."""
 
     _connected_accounts: t.Optional[t.List[ConnectedAccountModel]] = None
@@ -974,6 +976,39 @@ class ComposioToolSet(WithLogger):
     def get_entity(self, id: t.Optional[str] = None) -> Entity:
         """Get entity object for given ID."""
         return self.client.get_entity(id=id or self.entity_id)
+
+    def create_integration(
+        self,
+        app: AppType,
+        auth_mode: t.Optional[str] = None,
+        auth_config: t.Optional[t.Dict[str, t.Any]] = None,
+        use_composio_auth: bool = True,
+        force_new_integration: bool = False,
+    ) -> IntegrationModel:
+        app_data = self.client.apps.get(name=str(app))
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        return self.client.integrations.create(
+            app_id=app_data.appId,
+            name=f"{app}_{timestamp}",
+            auth_mode=auth_mode,
+            auth_config=auth_config,
+            use_composio_auth=use_composio_auth,
+            force_new_integration=force_new_integration,
+        )
+
+    def initiate_connection(
+        self,
+        integration_id: str,
+        entity_id: t.Optional[str] = None,
+        redirect_url: t.Optional[str] = None,
+        connected_account_params: t.Optional[t.Dict] = None,
+    ) -> ConnectionRequestModel:
+        return self.client.connected_accounts.initiate(
+            integration_id=integration_id,
+            entity_id=entity_id or self.entity_id,
+            params=connected_account_params,
+            redirect_url=redirect_url,
+        )
 
 
 def _write_file(file_path: t.Union[str, os.PathLike], content: t.Union[str, bytes]):
