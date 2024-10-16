@@ -1207,12 +1207,10 @@ class Integrations(Collection[IntegrationModel]):
         return IntegrationModel(**response.json())
 
     @t.overload  # type: ignore
-    def get(self) -> t.List[IntegrationModel]:
-        ...
+    def get(self) -> t.List[IntegrationModel]: ...
 
     @t.overload
-    def get(self, id: t.Optional[str] = None) -> IntegrationModel:
-        ...
+    def get(self, id: t.Optional[str] = None) -> IntegrationModel: ...
 
     def get(
         self, id: t.Optional[str] = None
