@@ -227,7 +227,7 @@ def _parse_annotated_type(
 
 def _parse_docstring(
     docstr: str,
-) -> t.Tuple[str, t.Dict[str, str], t.Optional[t.Tuple[str, str]],]:
+) -> t.Tuple[str, t.Dict[str, str], t.Optional[t.Tuple[str, str]]]:
     """Parse docstring for descriptions."""
     header, *descriptions = docstr.lstrip().rstrip().split("\n")
     params = {}
@@ -265,7 +265,7 @@ def _get_auth_params(app: str, entity_id: str) -> t.Optional[t.Dict]:
 def _build_executable_from_args(  # pylint: disable=too-many-statements
     f: t.Callable,
     app: str,
-) -> t.Tuple[t.Callable, t.Type[BaseModel], t.Type[BaseModel], bool,]:
+) -> t.Tuple[t.Callable, t.Type[BaseModel], t.Type[BaseModel], bool]:
     """Build execute action from function arguments."""
     argspec = inspect.getfullargspec(f)
     defaults = dict(
@@ -395,7 +395,7 @@ def _build_executable_from_request_class(f: t.Callable, app: str) -> t.Callable:
 
 def _parse_schemas(
     f: t.Callable, app: str, runs_on_shell: bool
-) -> t.Tuple[t.Callable, t.Type[BaseModel], t.Type[BaseModel], bool,]:
+) -> t.Tuple[t.Callable, t.Type[BaseModel], t.Type[BaseModel], bool]:
     """Parse action callable schemas."""
     argspec = inspect.getfullargspec(f)
     if _is_simple_action(argspec=argspec):
