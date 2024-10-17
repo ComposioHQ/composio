@@ -1,5 +1,5 @@
 
-import { ConnectionsControllerGetConnectionsData, ConnectionsControllerGetConnectionData, ConnectionsControllerGetConnectionsResponse, GetConnectionsResponseDto, GetConnectionInfoData, GetConnectionInfoResponse } from "../client";
+import { ConnectionsControllerGetConnectionsData, ConnectionsControllerGetConnectionData, ConnectionsControllerGetConnectionsResponse, GetConnectionsResponseDto, GetConnectionInfoData, GetConnectionInfoResponse, ConnectionsControllerInitiateConnectionData } from "../client";
 import client from "../client/client";
 import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
@@ -39,7 +39,7 @@ export class ConnectedAccounts {
     }
 
     async initiate(
-        data: any
+        data: ConnectionsControllerInitiateConnectionData["body"]
     ): Promise<ConnectionRequest> {
         const res =  await client.connections.initiateConnection({ body: data }).then(res => res.data)
 

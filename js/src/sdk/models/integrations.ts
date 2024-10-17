@@ -1,4 +1,4 @@
-import { AppConnectorControllerDeleteConnectorData } from "../client";
+import { AppConnectorControllerDeleteConnectorData, AppConnectorControllerGetConnectorInfoData, AppConnectorControllerGetConnectorInfoResponse } from "../client";
 import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
 
@@ -11,6 +11,14 @@ export type ListAllIntegrationsData = {
      * Page Size to assume
      */
     pageSize?: number;
+    /**
+     * The name of the app to filter by
+     */
+    appName?: string;
+    /**
+     * Whether to show disabled integrations
+     */
+    showDisabled?: boolean;
 };
 
 export type GetIntegrationData = {
@@ -105,7 +113,7 @@ export class Integrations {
      * @returns {CancelablePromise<GetIntegrationResponse>} A promise that resolves to the details of the integration.
      * @throws {ApiError} If the request fails.
      */
-    get(data: GetIntegrationData): any {
+    get(data: GetIntegrationData): Promise<AppConnectorControllerGetConnectorInfoResponse | undefined> {
         return apiClient.appConnector.getConnectorInfo({
             path: data
         }).then(res => {

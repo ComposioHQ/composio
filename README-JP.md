@@ -86,7 +86,7 @@
 私たちはAIベースのエージェント/ワークフローが未来であると信じています。
 Composioは、AIエージェントを最高のエージェントツールに統合し、それらを使用してタスクを完了するための最良のツールセットです。
 
-<img alt="イラスト" src="./docs/imgs/banner.gif" style="border-radius: 5px"/>
+<img alt="イラスト" src="./python/docs/imgs/banner.gif" style="border-radius: 5px"/>
 
 ## 🔥 主要機能
 

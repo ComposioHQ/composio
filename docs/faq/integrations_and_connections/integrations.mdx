@@ -28,20 +28,20 @@ composio integrations
 </CodeGroup>
 </Tab>
 <Tab title="JS">
-```javascript List all integrations via JS
-import { OpenAIToolSet } from "composio-core";
+```javascript javascript
+import { Composio } from "composio-core";
 
-const toolset = new OpenAIToolSet({
-    apiKey: COMPOSIO_API_KEY
-});
+const client = new Composio(
+  process.env.COMPOSIO_API_KEY
+);
 
-async function listIntegrations() {
-    const res = await toolset.client.integrations.list();
-    console.log(res);
-}
+const integrations = await client.integrations.list();
 
-listIntegrations();
+console.log(integrations)
 ```
+</Tab>
+<Tab title="API">
+Coming Soon! 
 </Tab>
 </Tabs>
 
@@ -71,6 +71,21 @@ composio integrations get 123
 </CodeGroup>
 </Tab>
 <Tab title="JS">
+```javascript javascript    
+import { Composio } from "composio-core";
+
+const client = new Composio(
+  process.env.COMPOSIO_API_KEY
+);
+
+const integration = await integrations.get({
+  integrationId: "123",
+});
+
+console.log(integration)
+```
+</Tab>
+<Tab title="API">
 Coming Soon! 
 </Tab>
 </Tabs>

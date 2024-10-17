@@ -2,7 +2,7 @@
 
 # Create a virtual environment
 echo "Creating virtual environment..."
-python3 virtualenv venv
+python3 -m virtualenv venv
 
 # Activate the virtual environment
 echo "Activating virtual environment..."
