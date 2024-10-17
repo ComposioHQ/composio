@@ -7,6 +7,7 @@ import re
 from unittest import mock
 
 import pytest
+from composio_langchain.toolset import ComposioToolSet as LangchainToolSet
 
 from composio import Action, App
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
@@ -181,11 +182,47 @@ def test_processors(monkeypatch: pytest.MonkeyPatch) -> None:
         request["something"] = True
 
     # users may not respect our type annotations
-    toolset = ComposioToolSet(processors={"pre": {App.SERPAPI: broken_preprocessor}})  # type: ignore
+    broken_toolset = ComposioToolSet(
+        processors={"pre": {App.SERPAPI: broken_preprocessor}}  # type: ignore
+    )
 
     with pytest.raises(TypeError) as excinfo:
-        toolset.execute_action(action=Action.SERPAPI_SEARCH, params={})
+        broken_toolset.execute_action(action=Action.SERPAPI_SEARCH, params={})
 
     assert (
         str(excinfo.value) == "Expected pre-processor to return 'dict', got 'NoneType'"
     )
+
+
+def test_processors_on_execute_action(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test the `processors` field in `execute_action()` methods of ToolSet's."""
+    preprocessor_called = False
+
+    def preprocess(response: dict) -> dict:
+        nonlocal preprocessor_called
+        preprocessor_called = True
+        return response
+
+    toolset = LangchainToolSet()
+    monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
+
+    toolset.get_tools(processors={"pre": {Action.ATTIO_LIST_NOTES: preprocess}})
+    toolset.execute_action(Action.ATTIO_LIST_NOTES, {})
+    assert preprocessor_called
+
+
+def test_processors_on_get_tools(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test the `processors` field in `get_tools()` methods of ToolSet's."""
+    postprocessor_called = False
+
+    def postprocess(response: dict) -> dict:
+        nonlocal postprocessor_called
+        postprocessor_called = True
+        return response
+
+    toolset = LangchainToolSet()
+    monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
+
+    toolset.get_tools(processors={"post": {Action.COMPOSIO_LIST_APPS: postprocess}})
+    toolset.execute_action(Action.COMPOSIO_LIST_APPS, {})
+    assert postprocessor_called

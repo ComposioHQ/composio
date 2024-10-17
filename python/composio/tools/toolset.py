@@ -54,6 +54,7 @@ from composio.utils.enums import get_enum_key
 from composio.utils.logging import LogIngester, LogLevel, WithLogger
 from composio.utils.url import get_api_url_base
 
+
 T = te.TypeVar("T")
 P = te.ParamSpec("P")
 
@@ -62,6 +63,9 @@ _ProcessorType = t.Callable[[t.Dict], t.Dict]
 
 MetadataType = t.Dict[_KeyType, t.Dict]
 ParamType = t.TypeVar("ParamType")
+
+# Enable deprecation warnings
+warnings.simplefilter("always", DeprecationWarning)
 
 
 class ProcessorsType(te.TypedDict):
@@ -242,18 +246,24 @@ class ComposioToolSet(WithLogger):
             self._api_key = None
             self.logger.debug("`api_key` is not set when initializing toolset.")
 
-        self._processors = (
-            processors
-            if processors is not None
-            else {"post": {}, "pre": {}, "schema": {}}
-        )
+        if processors is not None:
+            warnings.warn(
+                "Setting 'processors' on the ToolSet is deprecated, they should"
+                "be provided to the 'get_tools()' method instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            self._processors: ProcessorsType = processors
+        else:
+            self._processors = {"post": {}, "pre": {}, "schema": {}}
+
         self._metadata = metadata or {}
         self._workspace_id = workspace_id
         self._workspace_config = workspace_config
         self._local_client = LocalClient()
 
         if len(kwargs) > 0:
-            self.logger.info(f"Extra kwards while initializing toolset: {kwargs}")
+            self.logger.info(f"Extra kwargs while initializing toolset: {kwargs}")
 
         self.logger.debug("Loading local tools")
         load_local_tools()
@@ -625,6 +635,22 @@ class ComposioToolSet(WithLogger):
             type_="schema",
         )
 
+    def _merge_processors(self, processors: ProcessorsType) -> None:
+        for processor_type in self._processors.keys():
+            if processor_type in processors:
+                processor_type = t.cast(
+                    te.Literal["pre", "post", "schema"], processor_type
+                )
+                new_processors = processors[processor_type]
+
+                if processor_type in self._processors:
+                    existing_processors = self._processors[processor_type]
+                else:
+                    existing_processors = {}
+                    self._processors[processor_type] = existing_processors
+
+                existing_processors.update(new_processors)
+
     @_record_action_if_available
     def execute_action(
         self,
@@ -634,6 +660,8 @@ class ComposioToolSet(WithLogger):
         entity_id: t.Optional[str] = None,
         connected_account_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
+        *,
+        processors: t.Optional[ProcessorsType] = None,
     ) -> t.Dict:
         """
         Execute an action on a given entity.
@@ -648,6 +676,9 @@ class ComposioToolSet(WithLogger):
         """
         action = Action(action)
         params = self._serialize_execute_params(param=params)
+        if processors is not None:
+            self._merge_processors(processors)
+
         if not action.is_runtime:
             params = self._process_request(action=action, request=params)
             metadata = self._add_metadata(action=action, metadata=metadata)
