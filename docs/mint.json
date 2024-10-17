@@ -179,26 +179,11 @@
       "group": "Guides",
       "pages": [
       {
-        "group": "Patterns",
-        "pages": [
-          "patterns/functions/multiple-users",
-          "patterns/functions/triggers"
-        ]
-      },
-      {
         "group":"Authentication",
         "pages":[
-          "patterns/Auth/Basics",
-          "patterns/Auth/Integrations",
-          "patterns/Auth/Connected_Accounts",
-          "patterns/Auth/Composio_Auth"
-        ]
-      },
-      {
-        "group": "Using CLI",
-        "pages": [
-          "patterns/cli/install",
-          "patterns/cli/trigger"
+          "patterns/auth/connected_account",
+          "patterns/auth/integrations",
+          "patterns/auth/multiple-users"
         ]
       },
       {
@@ -212,9 +197,16 @@
         ] 
       },
       {
-        "group": "Going to Production",
+        "group": "Patterns",
         "pages": [
-          "patterns/production-guide/prod"
+          "patterns/functions/triggers"
+        ]
+      },
+      {
+        "group": "Using CLI",
+        "pages": [
+          "patterns/cli/install",
+          "patterns/cli/trigger"
         ]
       }
     ]
