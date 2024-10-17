@@ -55,7 +55,7 @@ core_requirements = [
 ]
 
 e2b_workspace_requirements = [
-    "e2b>=0.17.2a37",  # E2B Workspace
+    "e2b>=0.17.2a37,<1",  # E2B Workspace
     "e2b-code-interpreter",  # E2B workspace
 ]
 
