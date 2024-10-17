@@ -26,7 +26,6 @@ from composio.client.collections import (
     ActionModel,
     AppAuthScheme,
     AppModel,
-    AuthSchemeField,
     ConnectedAccountModel,
     ConnectionParams,
     ConnectionRequestModel,
@@ -978,7 +977,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         """Get entity object for given ID."""
         return self.client.get_entity(id=id or self.entity_id)
 
-    def get_expected_params(
+    def get_auth_scheme_for_app(
         self,
         app: t.Optional[AppType] = None,
         auth_scheme: t.Optional[
@@ -989,9 +988,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 "BASIC",
             ]
         ] = None,
-    ) -> t.List[AuthSchemeField]:
+    ) -> AppAuthScheme:
         auth_schemes = {
-            scheme.auth_mode: scheme.fields
+            scheme.auth_mode: scheme
             for scheme in self.client.apps.get(name=str(app)).auth_schemes or []
         }
 
@@ -1018,6 +1017,35 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 f"available_schems={list(auth_schemes)}"
             )
         )
+
+    def get_expected_params_for_user(
+        self,
+        app: t.Optional[AppType] = None,
+        integration_id: t.Optional[str] = None,
+        entity_id: t.Optional[str] = None,
+    ) -> t.List[ExpectedFieldInput]:
+        if integration_id is None and app is None:
+            raise ComposioSDKError(
+                message="Both `integration_id` and `app` cannot be None"
+            )
+
+        if integration_id is None:
+            try:
+                integration_id = (
+                    self.get_entity(id=entity_id or self.entity_id)
+                    .get_connection(app=app)
+                    .integrationId
+                )
+            except NoItemsFound as e:
+                raise ComposioSDKError(
+                    message=(
+                        f"No existing integration found for `{str(app)}`, "
+                        "Please create an integration and use the ID to "
+                        "initiate connection."
+                    )
+                ) from e
+
+        return self.get_integration(id=integration_id).expectedInputFields
 
     def create_integration(
         self,
