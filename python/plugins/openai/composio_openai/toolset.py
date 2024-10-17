@@ -131,6 +131,32 @@ class ComposioToolSet(
             for schema in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
         ]
 
+    def get_realtime_tools(
+        self,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        tags: t.Optional[t.List[TagType]] = None,
+    ) -> t.List[t.Dict]:
+        """
+        Get composio tools wrapped as OpenAI `ChatCompletionToolParam` objects.
+
+        :param actions: List of actions to wrap
+        :param apps: List of apps to wrap
+        :param tags: Filter the apps by given tags
+
+        :return: Composio tools wrapped as `ChatCompletionToolParam` objects
+        """
+        tools = self.get_tools(actions=actions, apps=apps, tags=tags)
+        return [
+            {
+                "type": "function",
+                "name": tool["function"]["name"],
+                "description": tool["function"].get("description", ""),
+                "parameters": tool["function"].get("parameters", {}),
+            }
+            for tool in tools
+        ]
+
     def execute_tool_call(
         self,
         tool_call: ChatCompletionMessageToolCall,

@@ -374,7 +374,7 @@ def get_pydantic_signature_format_from_schema_params(
             name=param_name,
             kind=Parameter.POSITIONAL_OR_KEYWORD,
             annotation=param_dtype,
-            default=parame_field,
+            default=parame_field.default,
         )
         all_parameters.append(param)
 

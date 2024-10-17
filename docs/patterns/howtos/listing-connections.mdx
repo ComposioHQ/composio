@@ -31,10 +31,30 @@ composio connections
 </CodeGroup>
 </Tab>
 <Tab title="JS">
-Coming Soon! 
+```javascript javascript
+import { Composio } from "composio-core";
+
+const client = new Composio(
+  process.env.COMPOSIO_API_KEY
+);
+
+const connectedAccounts = await client.connectedAccounts.list();
+
+console.log(connectedAccounts)
+```
 </Tab>
 <Tab title="API">
-Coming Soon! 
+```javascript javascript    
+import { Composio } from "composio-core";
+
+const client = new Composio(
+  process.env.COMPOSIO_API_KEY
+);
+
+const connectedAccounts = await client.connectedAccounts.list();
+
+console.log(connectedAccounts)
+```
 </Tab>
 </Tabs>
 
@@ -63,7 +83,17 @@ composio connections get 123
 </CodeGroup>
 </Tab>
 <Tab title="JS">
-Coming Soon! 
+```javascript javascript
+import { Composio } from "composio-core";
+
+const client = new Composio(
+  process.env.COMPOSIO_API_KEY
+);
+
+const connectedAccount = await connectedAccounts.get({ connectedAccountId: `123` });
+
+console.log(connectedAccount)
+```
 </Tab>
 <Tab title="API">
 Coming Soon! 

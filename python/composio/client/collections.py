@@ -36,7 +36,7 @@ from composio.utils import logging
 
 
 def to_trigger_names(
-    triggers: t.Union[t.List[str], t.List[Trigger], t.List[TriggerType]]
+    triggers: t.Union[t.List[str], t.List[Trigger], t.List[TriggerType]],
 ) -> str:
     """Get trigger names as a string."""
     return ",".join([Trigger(trigger).name for trigger in triggers])
@@ -251,13 +251,15 @@ class AuthSchemeField(BaseModel):
     """Auth scheme field."""
 
     name: str
-    description: str
-    type: str
-
     display_name: t.Optional[str] = None
+    description: str
 
+    type: str
+    default: t.Optional[str] = None
     required: bool = False
     expected_from_customer: bool = True
+
+    get_current_user_endpoint: t.Optional[str] = None
 
 
 class AppAuthScheme(BaseModel):
@@ -1031,6 +1033,7 @@ class Actions(Collection[ActionModel]):
         params: t.Dict,
         entity_id: str = "default",
         connected_account: t.Optional[str] = None,
+        session_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
     ) -> t.Dict:
         """
@@ -1040,6 +1043,7 @@ class Actions(Collection[ActionModel]):
         :param params: A dictionary of parameters to be passed to the action.
         :param entity_id: The unique identifier of the entity on which the action is executed.
         :param connected_account: Optional connected account ID if required for the action.
+        :param session_id: ID of the current workspace session
         :return: A dictionary containing the response from the executed action.
         """
         if action.is_local:
@@ -1086,10 +1090,13 @@ class Actions(Collection[ActionModel]):
                 self.client.http.post(
                     url=str(self.endpoint / action.name / "execute"),
                     json={
+                        "entityId": entity_id,
                         "appName": action.app,
                         "input": modified_params,
-                        "entityId": entity_id,
                         "text": text,
+                        "sessionInfo": {
+                            "sessionId": session_id,
+                        },
                     },
                 )
             ).json()
@@ -1201,6 +1208,24 @@ class Integrations(Collection[IntegrationModel]):
         )
         return IntegrationModel(**response.json())
 
+    @t.overload  # type: ignore
+    def get(self) -> t.List[IntegrationModel]: ...
+
+    @t.overload
+    def get(self, id: t.Optional[str] = None) -> IntegrationModel: ...
+
+    def get(
+        self, id: t.Optional[str] = None
+    ) -> t.Union[t.List[IntegrationModel], IntegrationModel]:
+        if id is not None:
+            return IntegrationModel(
+                **self._raise_if_required(
+                    self.client.http.get(url=str(self.endpoint / id))
+                ).json()
+            )
+        return super().get({})
+
+    @te.deprecated("`get_id` is deprecated, use `get(id=id)`")
     def get_by_id(
         self,
         integration_id: str,

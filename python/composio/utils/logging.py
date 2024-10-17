@@ -197,6 +197,7 @@ class LogIngester:
         request,
         response,
         is_error,
+        session_id,
     ) -> None:
         """Log new request."""
         if not hasattr(self, "_queue"):
@@ -210,6 +211,7 @@ class LogIngester:
                 "request": request,
                 "response": response,
                 "isError": is_error,
+                "sessionId": session_id,
             }
         )
 

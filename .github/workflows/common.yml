@@ -56,7 +56,7 @@ jobs:
           pip install tox==4.6.3
       - name: Code style check
         run: |
-          tox -e black-check
+          tox -e black-diff
           tox -e isort-check
           tox -e flake8
       - name: Pylint check
