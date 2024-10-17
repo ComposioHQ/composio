@@ -86,10 +86,10 @@ export class ComposioToolSet {
     }
 
     async getExpectedParamsForUser(
-        app: string | null = null,
-        integrationId: string | null = null,
-        entityId: string | null = null
-    ): Promise<AppConnectorControllerGetConnectorInfoResponse["expectedInputFields"]> {
+        params: { app?: string; integrationId?: string; entityId?: string; authScheme?: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" } = {},
+    ): Promise<{ expectedInputFields: AppConnectorControllerGetConnectorInfoResponse["expectedInputFields"], integrationId: string, authScheme: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" }> {
+        const { app, entityId } = params;
+        let { integrationId } = params;
         if (integrationId === null && app === null) {
             throw new Error(
                 "Both `integration_id` and `app` cannot be None"
@@ -103,26 +103,84 @@ export class ComposioToolSet {
                     showDisabled: false
                 })
                 integrationId = (integrations?.items[0] as any)?.integrationId;
-            } catch (e) {
-                throw new Error(
-                    `No existing integration found for \`${String(app)}\`, ` +
-                    "Please create an integration and use the ID to " +
-                    "initiate connection."
-                );
+            } catch (_) {
+                // do nothing
             }
         }
 
-        const out =  (await this.client.integrations.get({
+        let integration =  integrationId ? (await this.client.integrations.get({
             integrationId: integrationId!
-        }));
-        if(!out) {
+        })) : undefined;
+
+        if(integration) {
+            return {
+                expectedInputFields: integration.expectedInputFields,
+                integrationId: integration.id!,
+                authScheme: integration.authScheme as "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT"
+            }
+        }
+
+        const appInfo = await this.client.apps.get({
+            appKey: app!.toLocaleLowerCase()
+        });
+
+        const preferredAuthScheme = ["OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN", "BASIC_WITH_JWT"];
+
+        let schema: typeof preferredAuthScheme[number] | undefined = params.authScheme;
+        
+        if(!schema) {
+            for(const scheme of preferredAuthScheme) {
+                if(appInfo.auth_schemes?.includes(scheme)) {
+                    schema = scheme;
+                    break;
+                }
+            }
+        }
+
+        const areFieldsRequiredForIntegration = appInfo.testConnectors?.length! > 0 || (appInfo.auth_schemes?.find((_authScheme: any) => _authScheme.mode === schema) as any)?.fields?.filter((field: any) => !field.expected_from_customer)?.length > 0;
+
+        if (areFieldsRequiredForIntegration) {
             throw new Error(
-                `No existing integration found for \`${String(integrationId)}\`, ` +
-                "Please create an integration and use the ID to " +
-                "initiate connection."
+                `No default credentials available for this app, please create new integration by going to app.composio.dev or through CLI - composio add ${appInfo.key}`
             );
         }
-        return out.expectedInputFields;
+
+        const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
+
+        if(appInfo.testConnectors?.length! > 0) {
+            integration = await this.client.integrations.create({
+                appId: appInfo.appId,
+                name: `integration_${timestamp}`,
+                authScheme: schema,
+                authConfig: {},
+                useComposioAuth: true,
+            });
+        }
+
+        if(!schema) {
+            throw new Error(
+                `No supported auth scheme found for \`${String(app)}\`, ` +
+                "Please create an integration and use the ID to " +
+                "get the expected parameters."
+            );
+        }
+
+        integration = await this.client.integrations.create({
+            appId: appInfo.appId,
+            name: `integration_${timestamp}`,
+            authScheme: schema,
+            authConfig: {},
+            useComposioAuth: false,
+        });
+
+        if(!integration) {
+            throw new Error("An unexpected error occurred while creating the integration, please create an integration manually and use its ID to get the expected parameters");
+        }
+        return { 
+            expectedInputFields: integration.expectedInputFields,
+            integrationId: integration.id!,
+            authScheme: integration.authScheme as "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT"
+        }
     }
 
     async setup() {
