@@ -8,7 +8,7 @@ import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
 import axios from "axios";
-import { ExecuteActionResDTO } from "./client/types.gen";
+import { AppConnectorControllerGetConnectorInfoResponse, ExecuteActionResDTO } from "./client/types.gen";
 import {  saveFile } from "./utils/fileUtils";
 import { convertReqParams, converReqParamForActionExecution } from "./utils";
 
@@ -83,6 +83,46 @@ export class ComposioToolSet {
             });
         }
 
+    }
+
+    async getExpectedParamsForUser(
+        app: string | null = null,
+        integrationId: string | null = null,
+        entityId: string | null = null
+    ): Promise<AppConnectorControllerGetConnectorInfoResponse["expectedInputFields"]> {
+        if (integrationId === null && app === null) {
+            throw new Error(
+                "Both `integration_id` and `app` cannot be None"
+            );
+        }
+
+        if (integrationId === null) {
+            try {
+                const integrations = await this.client.integrations.list({
+                    appName: app!,
+                    showDisabled: false
+                })
+                integrationId = (integrations?.items[0] as any)?.integrationId;
+            } catch (e) {
+                throw new Error(
+                    `No existing integration found for \`${String(app)}\`, ` +
+                    "Please create an integration and use the ID to " +
+                    "initiate connection."
+                );
+            }
+        }
+
+        const out =  (await this.client.integrations.get({
+            integrationId: integrationId!
+        }));
+        if(!out) {
+            throw new Error(
+                `No existing integration found for \`${String(integrationId)}\`, ` +
+                "Please create an integration and use the ID to " +
+                "initiate connection."
+            );
+        }
+        return out.expectedInputFields;
     }
 
     async setup() {
