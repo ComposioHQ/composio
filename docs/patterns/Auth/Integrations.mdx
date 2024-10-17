@@ -1,0 +1,46 @@
+---
+title: "Integrations"
+sidebarTitle: "Integrations"
+icon: "puzzle-piece"
+description: "What are Integrations, how to create them and use them to connect user accounts"
+---
+
+### What is an Integration? (Controlling the OAuth Experience)
+
+In Composio, Integration Object refer to configurations used when creating a new connection for a user.
+
+<Note> (eg. Permissions to ask for when connecting an account, ClientID/Secret of custom developer app for OAuth) </Note>
+
+For example 
+- Create an integration for GitHub with OAuth authentication and "Repo Read" permission.
+- Use this integration when users connect their GitHub accounts to ensure consistent, limited access.
+
+### Creating an Integration
+
+<Note> Recommended method to create an integration is via UI. (Only limited integrations are required) </Note>
+
+<Info> One integration can be used by multiple users to connect their accounts. </Info>
+
+![Creating an Integration with Dashboard](/patterns/auth/gifs/integration.gif)
+
+1. Login at [Composio's Website](https://app.composio.dev)
+2. Go to the Tools section
+3. Click on any app you want to integrate
+4. Click on Setup on [App Name] Integration
+5. Choose your integration name and click Save
+6. Then Click on "Connect to [App Name]" and Authenticate with your Account
+7. Congratulations! Integration was successful!
+
+### Creating a new connection using an Integration
+
+You can follow the same steps as mentioned in [Creating a new connection](/patterns/auth/connected_account) and instead of passing app you can pass integration_id.
+
+### Whitelabeling the OAuth Developer App Using Integrations 
+
+Integrations can be used to customise the OAuth Developer App that is shown to the user when initiating a connection.
+
+Create an Integration and toggle on "Use your own Developer App"
+
+Enter your ClientID and ClientSecret and save the integration.
+
+Now you can use this integration and the user in auth flow should see the custom developer app.
