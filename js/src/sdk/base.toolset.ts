@@ -96,13 +96,16 @@ export class ComposioToolSet {
             );
         }
 
-        if (integrationId === null) {
+        if (!integrationId) {
             try {
                 const integrations = await this.client.integrations.list({
                     appName: app!,
                     showDisabled: false
                 })
-                integrationId = (integrations?.items[0] as any)?.integrationId;
+                if (params.authScheme && integrations) {
+                    integrations.items = integrations.items.filter((integration: any) => integration.authScheme === params.authScheme);
+                }
+                integrationId = (integrations?.items[0] as any)?.id;
             } catch (_) {
                 // do nothing
             }
@@ -130,16 +133,18 @@ export class ComposioToolSet {
         
         if(!schema) {
             for(const scheme of preferredAuthScheme) {
-                if(appInfo.auth_schemes?.includes(scheme)) {
+                if(appInfo.auth_schemes?.map((_authScheme: any) => _authScheme.mode).includes(scheme)) {
                     schema = scheme;
                     break;
                 }
             }
         }
 
-        const areFieldsRequiredForIntegration = appInfo.testConnectors?.length! > 0 || (appInfo.auth_schemes?.find((_authScheme: any) => _authScheme.mode === schema) as any)?.fields?.filter((field: any) => !field.expected_from_customer)?.length > 0;
-
-        if (areFieldsRequiredForIntegration) {
+        const areNoFieldsRequiredForIntegration = (appInfo.testConnectors?.length ?? 0) > 0 || ((appInfo.auth_schemes?.find((_authScheme: any) => _authScheme.mode === schema) as any)?.fields?.filter((field: any) => !field.expected_from_customer)?.length ?? 0) == 0;
+        console.log("Test connectors", appInfo.testConnectors?.length == 0);
+        console.log("Auth schemes", (appInfo.auth_schemes?.find((_authScheme: any) => _authScheme.mode === schema) as any)?.fields?.filter((field: any) => !field.expected_from_customer)?.length == 0);
+        console.log("areNoFieldsRequiredForIntegration", areNoFieldsRequiredForIntegration);
+        if (!areNoFieldsRequiredForIntegration) {
             throw new Error(
                 `No default credentials available for this app, please create new integration by going to app.composio.dev or through CLI - composio add ${appInfo.key}`
             );
@@ -155,6 +160,12 @@ export class ComposioToolSet {
                 authConfig: {},
                 useComposioAuth: true,
             });
+
+            return { 
+                expectedInputFields: integration?.expectedInputFields!,
+                integrationId: integration?.id!,
+                authScheme: integration?.authScheme as "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT"
+            }
         }
 
         if(!schema) {
