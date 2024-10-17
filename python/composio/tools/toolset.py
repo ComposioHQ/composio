@@ -29,7 +29,6 @@ from composio.client.collections import (
     ConnectedAccountModel,
     ConnectionParams,
     ConnectionRequestModel,
-    ExpectedFieldInput,
     FileType,
     IntegrationModel,
     SuccessExecuteActionResponseModel,
@@ -1016,79 +1015,95 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             )
         )
 
+    def _get_expected_params_from_integration_id(self, id: str) -> t.Dict:
+        integration = self.get_integration(id=id)
+        return {
+            "integration_id": integration.id,
+            "auth_scheme": integration.authScheme,
+            "expected_params": integration.expectedInputFields,
+        }
+
+    def _get_expected_params_from_app(self, app: AppType) -> t.Dict:
+        for integration in sorted(self.get_integrations(), key=lambda x: x.createdAt):
+            if integration.appName.lower() == str(app).lower():
+                return {
+                    "integration_id": integration.id,
+                    "auth_scheme": integration.authScheme,
+                    "expected_params": integration.expectedInputFields,
+                }
+        raise ValueError(f"No integration found for `{app}`")
+
+    def _can_use_auth_scheme(self, scheme: AppAuthScheme, app: AppModel) -> bool:
+        if (
+            scheme.auth_mode in ("OAUTH2", "OAUTH1")
+            and len(app.testConnectors or []) == 0
+        ):
+            return False
+
+        for field in scheme.fields:
+            if not field.expected_from_customer:
+                return False
+
+        return True
+
     def get_expected_params_for_user(
         self,
         app: t.Optional[AppType] = None,
+        auth_scheme: t.Optional[
+            t.Literal[
+                "OAUTH2",
+                "OAUTH1",
+                "API_KEY",
+                "BASIC",
+            ]
+        ] = None,
         integration_id: t.Optional[str] = None,
-    ) -> t.List[ExpectedFieldInput]:
-        if integration_id is None and app is None:
+    ) -> t.Dict[str, t.Any]:
+        """
+        This method returns a list of parameters that are suppossed to be
+        provided by the user.
+        """
+        # If `integration_id` is provided, use it to fetch the params
+        if integration_id is not None:
+            return self._get_expected_params_from_integration_id(id=integration_id)
+
+        if app is None:
             raise ComposioSDKError(
                 message="Both `integration_id` and `app` cannot be None"
             )
 
-        if integration_id is not None:
-            return self.get_integration(id=integration_id).expectedInputFields
-
-        for integration in sorted(self.get_integrations(), key=lambda x: x.createdAt):
-            print(integration.appName)
-            if integration.appName.lower() == str(app).lower():
-                return integration.expectedInputFields
+        try:
+            # Check if integration is available for an app, and if available
+            # return params from that integration
+            return self._get_expected_params_from_app(app=app)
+        except ValueError:
+            pass
 
         app_data = self.client.apps.get(name=str(app))
-        auth_schemes = {
-            scheme.auth_mode: scheme
-            for scheme in self.client.apps.get(name=str(app)).auth_schemes or []
-        }
-        scheme = None
-        for _scheme in (
-            "OAUTH2",
-            "OAUTH1",
-            "API_KEY",
-            "BASIC",
-        ):
-            if _scheme in auth_schemes:
-                scheme = auth_schemes[_scheme]
-                break
-
-        if scheme is None:
-            raise ComposioSDKError(
-                message=(
-                    f"No existing integration found for `{str(app)}`, "
-                    "Please create an integration and use the ID to "
-                    "initiate connection."
+        # Go through available schemes and check if any scheme can be used
+        # without user inputs to create an integratuib, if yes then create
+        # an integration and return params from there.
+        for scheme in app_data.auth_schemes or []:
+            if auth_scheme is not None and auth_scheme != scheme.auth_mode.upper():
+                continue
+            if self._can_use_auth_scheme(scheme=scheme, app=app_data):
+                integration = self.create_integration(
+                    app=app,
+                    auth_mode=scheme.auth_mode,
                 )
+                return {
+                    "integration_id": integration.id,
+                    "auth_scheme": integration.authScheme,
+                    "expected_params": integration.expectedInputFields,
+                }
+
+        raise ComposioSDKError(
+            message=(
+                f"No existing integration found for `{str(app)}`, "
+                "Please create an integration and use the ID to "
+                "fetch the expected params."
             )
-
-        if (
-            scheme.auth_mode in ("OAUTH2", "OAUTH1")
-            and len(app_data.testConnectors or []) == 0
-        ):
-            raise ComposioSDKError(
-                message=(
-                    f"No existing integration found for `{str(app)}`, "
-                    "Please create an integration and use the ID to "
-                    "initiate connection."
-                )
-            )
-
-        for field in scheme.fields:
-            if not field.expected_from_customer:
-                raise ComposioSDKError(
-                    message=(
-                        f"No existing integration found for `{str(app)}`, "
-                        "Please create an integration and use the ID to "
-                        "initiate connection."
-                    )
-                )
-
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        return self.client.integrations.create(
-            app_id=app_data.appId,
-            name=f"{app}_{timestamp}",
-            auth_mode=scheme.auth_mode,
-            use_composio_auth=False,
-            force_new_integration=True,
-        ).expectedInputFields
+        )
 
     def create_integration(
         self,
