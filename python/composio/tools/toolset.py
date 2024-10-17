@@ -1026,6 +1026,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     def _get_expected_params_from_app(self, app: AppType) -> t.Dict:
         for integration in sorted(self.get_integrations(), key=lambda x: x.createdAt):
             if integration.appName.lower() == str(app).lower():
+                integration = self.get_integration(id=integration.id)
                 return {
                     "integration_id": integration.id,
                     "auth_scheme": integration.authScheme,
