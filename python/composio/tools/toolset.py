@@ -931,18 +931,20 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def get_auth_params(
         self,
-        app: AppType,
+        app: t.Optional[AppType] = None,
         connection_id: t.Optional[str] = None,
+        entity_id: t.Optional[str] = None,
     ) -> t.Optional[ConnectionParams]:
         """Get authentication parameters for given app."""
-        app = App(app)
-        if app.is_local:
-            return None
+        if app is None and connection_id is None:
+            raise ComposioSDKError("Both `app` and `connection_id` cannot be `None`")
 
         try:
             connection_id = (
                 connection_id
-                or self.client.get_entity(id=self.entity_id).get_connection(app=app).id
+                or self.client.get_entity(id=entity_id or self.entity_id)
+                .get_connection(app=app)
+                .id
             )
             return self.client.connected_accounts.info(connection_id=connection_id)
         except ComposioClientError:
