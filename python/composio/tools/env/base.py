@@ -13,6 +13,7 @@ from composio.constants import ENV_COMPOSIO_API_KEY, ENV_COMPOSIO_BASE_URL
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.id import generate_id
 from composio.utils.logging import WithLogger
+from composio.utils.url import get_api_url_base
 
 
 ENV_GITHUB_ACCESS_TOKEN = "GITHUB_ACCESS_TOKEN"
@@ -161,11 +162,11 @@ class Workspace(WithLogger, ABC):
         self.access_token = uuid4().hex.replace("-", "")
         self.composio_api_key = _read_env_var(
             name=ENV_COMPOSIO_API_KEY,
-            default=config.composio_api_key,
+            default=config.composio_api_key or "",
         )
         self.composio_base_url = _read_env_var(
             name=ENV_COMPOSIO_BASE_URL,
-            default=config.composio_base_url,
+            default=config.composio_base_url or get_api_url_base(),
         )
         self.github_access_token = config.github_access_token or os.environ.get(
             ENV_GITHUB_ACCESS_TOKEN, "NO_VALUE"
@@ -175,7 +176,6 @@ class Workspace(WithLogger, ABC):
             ENV_COMPOSIO_API_KEY: self.composio_api_key,
             ENV_COMPOSIO_BASE_URL: self.composio_base_url,
             ENV_GITHUB_ACCESS_TOKEN: self.github_access_token,
-            f"_COMPOSIO_{ENV_GITHUB_ACCESS_TOKEN}": self.github_access_token,
             ENV_ACCESS_TOKEN: self.access_token,
         }
         self.persistent = config.persistent
