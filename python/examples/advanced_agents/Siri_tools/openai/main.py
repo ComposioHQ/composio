@@ -89,10 +89,13 @@ class RealtimeAgent:
                         "output_audio_format": "pcm16",
                         "voice": "shimmer",
                         "instructions": (
-                            "You are an AI assistant that helps the user manage emails and Slack messages. "
-                            "When a new message arrives, you should inform the user by reading it out loud. "
-                            "If the user wants to respond, you should collect their response and use the appropriate function "
+                            "You are an AI assistant that helps the user manage emails and Slack messages."
+                            "Try to be REALLY FUNNY sometimes to add some twists to your replies."
+                            "When a new message arrives tagged with the user's ID, you should inform the user by reading it out loud."
+                            "Please avoid reading the user ID in your replies."
+                            "If the user wants to respond, you should collect their response and use the appropriate function"
                             "to send their message back to Slack or Gmail. "
+                            "If they ask you to create a reply, form a proper response meeting all the requirements and try to be funny."
                             "You have access to the following functions: 'SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL', 'GMAIL_SEND_EMAIL', 'GMAIL_CREATE_EMAIL_DRAFT'. "
                             "Use function calls to perform actions on behalf of the user."
                         ),
@@ -465,6 +468,26 @@ def handle_gmail_message(event: TriggerEventData):
     context = f"New email from {sender} with subject: {subject}"
     asyncio.run(agent.handle_event(context))
 
+def get_slack_channel_name(channel_id):
+    response = composio_toolset.execute_action(action=Action.SLACK_LIST_ALL_SLACK_TEAM_CHANNELS_WITH_VARIOUS_FILTERS, params={"limit": 1000})
+    if response.get('data', {}).get('ok'):
+        channels = response['data'].get('channels', [])
+        for channel in channels:
+            if channel.get('id') == channel_id:
+                return channel.get('name')
+    return channel_id
+
+def get_slack_user_name(user_id):
+    response = composio_toolset.execute_action(action=Action.SLACK_RETRIEVE_DETAILED_USER_INFORMATION, params={"user": user_id})
+    if response.get('data', {}).get('ok'):
+        return response['data'].get('user', {}).get('real_name')
+    return user_id
+
+def get_current_user_info():
+    response = composio_toolset.execute_action(action=Action.SLACK_RETRIEVE_A_USER_S_IDENTITY_DETAILS, params={})
+    if response.get('data', {}).get('ok'):
+        return response['data'].get('user', {}).get('id')
+    return None
 
 @listener.callback(filters={"trigger_name": "slack_receive_message"})
 def handle_slack_message(event: TriggerEventData):
@@ -472,11 +495,15 @@ def handle_slack_message(event: TriggerEventData):
     message = payload.get("text", "")
     channel_id = payload.get("channel", "")
     user_id = payload.get("user", "")
+    channel_name = get_slack_channel_name(channel_id)
+    user_name = get_slack_user_name(user_id)
+    if "U056ZFA33QD" not in message:
+        return
     logging.info(
-        f"New Slack message in channel {channel_id} from user {user_id}: {message}"
+        f"New Slack message in channel {channel_name} from user {user_name}: {message}"
     )
     context = (
-        f"New Slack message in channel {channel_id} from user {user_id}: {message}"
+        f"New Slack message in channel {channel_name} from user {user_name}: {message}"
     )
     asyncio.run(agent.handle_event(context))
 
