@@ -125,7 +125,7 @@ class ComposioToolSet(
             )
             for schema in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
         ]
-    
+
     def get_realtime_tools(
         self,
         actions: t.Optional[t.Sequence[ActionType]] = None,
@@ -142,12 +142,15 @@ class ComposioToolSet(
         :return: Composio tools wrapped as `ChatCompletionToolParam` objects
         """
         tools = self.get_tools(actions=actions, apps=apps, tags=tags)
-        return [{
-            "type": "function", 
-            "name": tool["function"]["name"], 
-            "description": tool["function"].get("description", ""), 
-            "parameters": tool["function"].get("parameters", {})
-        } for tool in tools]
+        return [
+            {
+                "type": "function",
+                "name": tool["function"]["name"],
+                "description": tool["function"].get("description", ""),
+                "parameters": tool["function"].get("parameters", {}),
+            }
+            for tool in tools
+        ]
 
     def execute_tool_call(
         self,
