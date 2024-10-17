@@ -968,11 +968,6 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     def get_integrations(self) -> t.List[IntegrationModel]:
         return self.client.integrations.get()
 
-    def get_exepected_input_params_for_integration(
-        self, integration_id: str
-    ) -> t.List[ExpectedFieldInput]:
-        return self.client.integrations.get(id=integration_id).expectedInputFields
-
     def get_connected_account(self, id: str) -> ConnectedAccountModel:
         return self.client.connected_accounts.get(connection_id=id)
 
@@ -1035,6 +1030,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             return self.get_integration(id=integration_id).expectedInputFields
 
         for integration in sorted(self.get_integrations(), key=lambda x: x.createdAt):
+            print(integration.appName)
             if integration.appName.lower() == str(app).lower():
                 return integration.expectedInputFields
 
