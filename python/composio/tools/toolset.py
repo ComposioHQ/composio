@@ -1090,6 +1090,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 integration = self.create_integration(
                     app=app,
                     auth_mode=scheme.auth_mode,
+                    auth_config={},
+                    use_composio_oauth_app=scheme.auth_mode in ("OAUTH2", "OAUTH1"),
                 )
                 return {
                     "integration_id": integration.id,
