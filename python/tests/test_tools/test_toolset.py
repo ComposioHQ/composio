@@ -4,16 +4,16 @@ Test composio toolset.
 
 import logging
 import re
+import warnings
 from unittest import mock
 
 import pytest
+from composio_langchain.toolset import ComposioToolSet as LangchainToolSet
 
 from composio import Action, App
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.toolset import ComposioToolSet
-
-from composio_langchain.toolset import ComposioToolSet as LangchainToolSet
 
 
 def test_get_schemas() -> None:
@@ -170,9 +170,13 @@ def test_processors(monkeypatch: pytest.MonkeyPatch) -> None:
         postprocessor_called = True
         return response
 
-    toolset = ComposioToolSet(
-        processors={"pre": {App.GMAIL: preprocess}, "post": {App.GMAIL: postprocess}}
-    )
+    with pytest.warns(DeprecationWarning):
+        toolset = ComposioToolSet(
+            processors={
+                "pre": {App.GMAIL: preprocess},
+                "post": {App.GMAIL: postprocess},
+            }
+        )
     monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
 
     # Happy case
