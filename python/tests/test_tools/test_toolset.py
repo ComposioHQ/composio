@@ -215,9 +215,11 @@ def test_processors_on_execute_action(monkeypatch: pytest.MonkeyPatch) -> None:
 
     toolset = LangchainToolSet()
     monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
-
-    toolset.get_tools(processors={"pre": {Action.ATTIO_LIST_NOTES: preprocess}})
-    toolset.execute_action(Action.ATTIO_LIST_NOTES, {})
+    toolset.execute_action(
+        Action.ATTIO_LIST_NOTES,
+        params={},
+        processors={"pre": {Action.ATTIO_LIST_NOTES: preprocess}},
+    )
     assert preprocessor_called
 
 
