@@ -26,6 +26,7 @@ from composio.client.collections import (
     ActionModel,
     AppAuthScheme,
     AppModel,
+    AuthSchemeField,
     ConnectedAccountModel,
     ConnectionParams,
     ConnectionRequestModel,
@@ -38,7 +39,7 @@ from composio.client.collections import (
 )
 from composio.client.enums import TriggerType
 from composio.client.enums.base import EnumStringNotFound
-from composio.client.exceptions import ComposioClientError, HTTPError
+from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
@@ -977,6 +978,47 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         """Get entity object for given ID."""
         return self.client.get_entity(id=id or self.entity_id)
 
+    def get_expected_params(
+        self,
+        app: t.Optional[AppType] = None,
+        auth_scheme: t.Optional[
+            t.Literal[
+                "OAUTH2",
+                "OAUTH1",
+                "API_KEY",
+                "BASIC",
+            ]
+        ] = None,
+    ) -> t.List[AuthSchemeField]:
+        auth_schemes = {
+            scheme.auth_mode: scheme.fields
+            for scheme in self.client.apps.get(name=str(app)).auth_schemes or []
+        }
+
+        if auth_scheme is not None and auth_scheme not in auth_schemes:
+            raise ComposioSDKError(
+                message=f"Auth scheme `{auth_scheme}` not found for app `{app}`"
+            )
+
+        if auth_scheme is not None:
+            return auth_schemes[auth_scheme]
+
+        for scheme in (
+            "OAUTH2",
+            "OAUTH1",
+            "API_KEY",
+            "BASIC",
+        ):
+            if scheme in auth_schemes:
+                return auth_schemes[scheme]
+
+        raise ComposioSDKError(
+            message=(
+                f"Error getting expected params for {app=}, {auth_scheme=}, "
+                f"available_schems={list(auth_schemes)}"
+            )
+        )
+
     def create_integration(
         self,
         app: AppType,
@@ -998,11 +1040,33 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def initiate_connection(
         self,
-        integration_id: str,
+        integration_id: t.Optional[str] = None,
+        app: t.Optional[AppType] = None,
         entity_id: t.Optional[str] = None,
         redirect_url: t.Optional[str] = None,
         connected_account_params: t.Optional[t.Dict] = None,
     ) -> ConnectionRequestModel:
+        if integration_id is None and app is None:
+            raise ComposioSDKError(
+                message="Both `integration_id` and `app` cannot be None"
+            )
+
+        if integration_id is None:
+            try:
+                integration_id = (
+                    self.get_entity(id=entity_id or self.entity_id)
+                    .get_connection(app=app)
+                    .integrationId
+                )
+            except NoItemsFound as e:
+                raise ComposioSDKError(
+                    message=(
+                        f"No existing integration found for `{str(app)}`, "
+                        "Please create an integration and use the ID to "
+                        "initiate connection."
+                    )
+                ) from e
+
         return self.client.connected_accounts.initiate(
             integration_id=integration_id,
             entity_id=entity_id or self.entity_id,
