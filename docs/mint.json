@@ -182,7 +182,7 @@
         "group":"Authentication",
         "pages":[
           "patterns/Auth/connected_account",
-          "patterns/Auth/integrations",
+          "patterns/Auth/Integrations",
           "patterns/Auth/multiple-users"
         ]
       },
