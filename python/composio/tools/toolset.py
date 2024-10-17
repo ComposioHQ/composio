@@ -26,6 +26,7 @@ from composio.client.collections import (
     ActionModel,
     AppAuthScheme,
     AppModel,
+    AuthSchemeField,
     ConnectedAccountModel,
     ConnectionParams,
     ConnectionRequestModel,
@@ -976,6 +977,47 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     def get_entity(self, id: t.Optional[str] = None) -> Entity:
         """Get entity object for given ID."""
         return self.client.get_entity(id=id or self.entity_id)
+
+    def get_expected_params(
+        self,
+        app: t.Optional[AppType] = None,
+        auth_scheme: t.Optional[
+            t.Literal[
+                "OAUTH2",
+                "OAUTH1",
+                "API_KEY",
+                "BASIC",
+            ]
+        ] = None,
+    ) -> t.List[AuthSchemeField]:
+        auth_schemes = {
+            scheme.auth_mode: scheme.fields
+            for scheme in self.client.apps.get(name=str(app)).auth_schemes or []
+        }
+
+        if auth_scheme is not None and auth_scheme not in auth_schemes:
+            raise ComposioSDKError(
+                message=f"Auth scheme `{auth_scheme}` not found for app `{app}`"
+            )
+
+        if auth_scheme is not None:
+            return auth_schemes[auth_scheme]
+
+        for scheme in (
+            "OAUTH2",
+            "OAUTH1",
+            "API_KEY",
+            "BASIC",
+        ):
+            if scheme in auth_schemes:
+                return auth_schemes[scheme]
+
+        raise ComposioSDKError(
+            message=(
+                f"Error getting expected params for {app=}, {auth_scheme=}, "
+                f"available_schems={list(auth_schemes)}"
+            )
+        )
 
     def create_integration(
         self,

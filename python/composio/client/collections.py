@@ -251,13 +251,15 @@ class AuthSchemeField(BaseModel):
     """Auth scheme field."""
 
     name: str
-    description: str
-    type: str
-
     display_name: t.Optional[str] = None
+    description: str
 
+    type: str
+    default: t.Optional[str] = None
     required: bool = False
     expected_from_customer: bool = True
+
+    get_current_user_endpoint: t.Optional[str] = None
 
 
 class AppAuthScheme(BaseModel):
