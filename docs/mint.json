@@ -198,7 +198,8 @@
           "patterns/howtos/usecase",
           "patterns/howtos/tool-finding",
           "patterns/howtos/listing-connections",
-          "patterns/howtos/listing-integrations"
+          "patterns/howtos/listing-integrations",
+          "patterns/admin_webhook/adm_webhook"
         ] 
       },
       {
