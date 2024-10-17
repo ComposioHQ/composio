@@ -413,9 +413,7 @@ class RepoMap:
             mul = (
                 2.0
                 if ident in mentioned_idents
-                else 0.5
-                if ident.startswith("_")
-                else 1.0
+                else 0.5 if ident.startswith("_") else 1.0
             )
 
             for referencer, num_refs in Counter(references[ident]).items():
