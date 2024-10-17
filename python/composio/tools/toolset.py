@@ -29,7 +29,6 @@ from composio.client.collections import (
     ConnectedAccountModel,
     ConnectionParams,
     ConnectionRequestModel,
-    ExpectedFieldInput,
     FileType,
     IntegrationModel,
     SuccessExecuteActionResponseModel,
@@ -932,18 +931,20 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def get_auth_params(
         self,
-        app: AppType,
+        app: t.Optional[AppType] = None,
         connection_id: t.Optional[str] = None,
+        entity_id: t.Optional[str] = None,
     ) -> t.Optional[ConnectionParams]:
         """Get authentication parameters for given app."""
-        app = App(app)
-        if app.is_local:
-            return None
+        if app is None and connection_id is None:
+            raise ComposioSDKError("Both `app` and `connection_id` cannot be `None`")
 
         try:
             connection_id = (
                 connection_id
-                or self.client.get_entity(id=self.entity_id).get_connection(app=app).id
+                or self.client.get_entity(id=entity_id or self.entity_id)
+                .get_connection(app=app)
+                .id
             )
             return self.client.connected_accounts.info(connection_id=connection_id)
         except ComposioClientError:
@@ -965,10 +966,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     def get_integration(self, id: str) -> IntegrationModel:
         return self.client.integrations.get(id=id)
 
-    def get_exepected_input_params_for_integration(
-        self, integration_id: str
-    ) -> t.List[ExpectedFieldInput]:
-        return self.client.integrations.get(id=integration_id).expectedInputFields
+    def get_integrations(self) -> t.List[IntegrationModel]:
+        return self.client.integrations.get()
 
     def get_connected_account(self, id: str) -> ConnectedAccountModel:
         return self.client.connected_accounts.get(connection_id=id)
@@ -1018,34 +1017,98 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             )
         )
 
+    def _get_expected_params_from_integration_id(self, id: str) -> t.Dict:
+        integration = self.get_integration(id=id)
+        return {
+            "integration_id": integration.id,
+            "auth_scheme": integration.authScheme,
+            "expected_params": integration.expectedInputFields,
+        }
+
+    def _get_expected_params_from_app(self, app: AppType) -> t.Dict:
+        for integration in sorted(self.get_integrations(), key=lambda x: x.createdAt):
+            if integration.appName.lower() == str(app).lower():
+                integration = self.get_integration(id=integration.id)
+                return {
+                    "integration_id": integration.id,
+                    "auth_scheme": integration.authScheme,
+                    "expected_params": integration.expectedInputFields,
+                }
+        raise ValueError(f"No integration found for `{app}`")
+
+    def _can_use_auth_scheme(self, scheme: AppAuthScheme, app: AppModel) -> bool:
+        if (
+            scheme.auth_mode in ("OAUTH2", "OAUTH1")
+            and len(app.testConnectors or []) == 0
+        ):
+            return False
+
+        for field in scheme.fields:
+            if not field.expected_from_customer:
+                return False
+
+        return True
+
     def get_expected_params_for_user(
         self,
         app: t.Optional[AppType] = None,
+        auth_scheme: t.Optional[
+            t.Literal[
+                "OAUTH2",
+                "OAUTH1",
+                "API_KEY",
+                "BASIC",
+            ]
+        ] = None,
         integration_id: t.Optional[str] = None,
-        entity_id: t.Optional[str] = None,
-    ) -> t.List[ExpectedFieldInput]:
-        if integration_id is None and app is None:
+    ) -> t.Dict[str, t.Any]:
+        """
+        This method returns a list of parameters that are suppossed to be
+        provided by the user.
+        """
+        # If `integration_id` is provided, use it to fetch the params
+        if integration_id is not None:
+            return self._get_expected_params_from_integration_id(id=integration_id)
+
+        if app is None:
             raise ComposioSDKError(
                 message="Both `integration_id` and `app` cannot be None"
             )
 
-        if integration_id is None:
-            try:
-                integration_id = (
-                    self.get_entity(id=entity_id or self.entity_id)
-                    .get_connection(app=app)
-                    .integrationId
-                )
-            except NoItemsFound as e:
-                raise ComposioSDKError(
-                    message=(
-                        f"No existing integration found for `{str(app)}`, "
-                        "Please create an integration and use the ID to "
-                        "initiate connection."
-                    )
-                ) from e
+        try:
+            # Check if integration is available for an app, and if available
+            # return params from that integration
+            return self._get_expected_params_from_app(app=app)
+        except ValueError:
+            pass
 
-        return self.get_integration(id=integration_id).expectedInputFields
+        app_data = self.client.apps.get(name=str(app))
+        # Go through available schemes and check if any scheme can be used
+        # without user inputs to create an integratuib, if yes then create
+        # an integration and return params from there.
+        for scheme in app_data.auth_schemes or []:
+            if auth_scheme is not None and auth_scheme != scheme.auth_mode.upper():
+                continue
+            if self._can_use_auth_scheme(scheme=scheme, app=app_data):
+                integration = self.create_integration(
+                    app=app,
+                    auth_mode=scheme.auth_mode,
+                    auth_config={},
+                    use_composio_oauth_app=scheme.auth_mode in ("OAUTH2", "OAUTH1"),
+                )
+                return {
+                    "integration_id": integration.id,
+                    "auth_scheme": integration.authScheme,
+                    "expected_params": integration.expectedInputFields,
+                }
+
+        raise ComposioSDKError(
+            message=(
+                f"No existing integration found for `{str(app)}`, "
+                "Please create an integration and use the ID to "
+                "fetch the expected params."
+            )
+        )
 
     def create_integration(
         self,
