@@ -5,6 +5,7 @@ import time
 import typing as t
 import uuid
 
+import requests
 import typing_extensions as te
 
 from composio.tools.env.constants import DEFAULT_IMAGE
@@ -14,7 +15,6 @@ from composio.utils.logging import WithLogger
 try:
     import gql
     import gql.transport
-    import requests
     from gql.transport.requests import RequestsHTTPTransport
 
     FLYIO_DEPENDENCIES_INSTALLED = True
