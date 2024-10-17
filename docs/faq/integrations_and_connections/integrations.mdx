@@ -54,11 +54,11 @@ To get detailed information about a specific integration, use the get command fo
 <Tab title="Python">
 <CodeGroup>
 ```python Get integration details via Python
-from composio import Composio
+from composio import ComposioToolSet
 
-client = Composio()
+client_toolset = ComposioToolSet(api_key=COMPOSIO_API_KEY)
 
-print(composio_client.integrations.get(id=123))
+print(client_toolset.client.integrations.get(id=123))
 ```
 </CodeGroup>
 </Tab>
