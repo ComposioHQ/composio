@@ -141,9 +141,7 @@ export class ComposioToolSet {
         }
 
         const areNoFieldsRequiredForIntegration = (appInfo.testConnectors?.length ?? 0) > 0 || ((appInfo.auth_schemes?.find((_authScheme: any) => _authScheme.mode === schema) as any)?.fields?.filter((field: any) => !field.expected_from_customer)?.length ?? 0) == 0;
-        console.log("Test connectors", appInfo.testConnectors?.length == 0);
-        console.log("Auth schemes", (appInfo.auth_schemes?.find((_authScheme: any) => _authScheme.mode === schema) as any)?.fields?.filter((field: any) => !field.expected_from_customer)?.length == 0);
-        console.log("areNoFieldsRequiredForIntegration", areNoFieldsRequiredForIntegration);
+
         if (!areNoFieldsRequiredForIntegration) {
             throw new Error(
                 `No default credentials available for this app, please create new integration by going to app.composio.dev or through CLI - composio add ${appInfo.key}`
