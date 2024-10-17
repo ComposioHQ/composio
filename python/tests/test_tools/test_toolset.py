@@ -8,12 +8,13 @@ import warnings
 from unittest import mock
 
 import pytest
-from composio_langchain.toolset import ComposioToolSet as LangchainToolSet
 
 from composio import Action, App
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.toolset import ComposioToolSet
+
+from composio_langchain.toolset import ComposioToolSet as LangchainToolSet
 
 
 def test_get_schemas() -> None:
