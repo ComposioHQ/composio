@@ -965,6 +965,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     def get_integration(self, id: str) -> IntegrationModel:
         return self.client.integrations.get(id=id)
 
+    def get_integrations(self) -> t.List[IntegrationModel]:
+        return self.client.integrations.get()
+
     def get_exepected_input_params_for_integration(
         self, integration_id: str
     ) -> t.List[ExpectedFieldInput]:
@@ -1022,30 +1025,74 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self,
         app: t.Optional[AppType] = None,
         integration_id: t.Optional[str] = None,
-        entity_id: t.Optional[str] = None,
     ) -> t.List[ExpectedFieldInput]:
         if integration_id is None and app is None:
             raise ComposioSDKError(
                 message="Both `integration_id` and `app` cannot be None"
             )
 
-        if integration_id is None:
-            try:
-                integration_id = (
-                    self.get_entity(id=entity_id or self.entity_id)
-                    .get_connection(app=app)
-                    .integrationId
+        if integration_id is not None:
+            return self.get_integration(id=integration_id).expectedInputFields
+
+        for integration in sorted(self.get_integrations(), key=lambda x: x.createdAt):
+            if integration.appName.lower() == str(app).lower():
+                return integration.expectedInputFields
+
+        app_data = self.client.apps.get(name=str(app))
+        auth_schemes = {
+            scheme.auth_mode: scheme
+            for scheme in self.client.apps.get(name=str(app)).auth_schemes or []
+        }
+        scheme = None
+        for _scheme in (
+            "OAUTH2",
+            "OAUTH1",
+            "API_KEY",
+            "BASIC",
+        ):
+            if _scheme in auth_schemes:
+                scheme = auth_schemes[_scheme]
+                break
+
+        if scheme is None:
+            raise ComposioSDKError(
+                message=(
+                    f"No existing integration found for `{str(app)}`, "
+                    "Please create an integration and use the ID to "
+                    "initiate connection."
                 )
-            except NoItemsFound as e:
+            )
+
+        if (
+            scheme.auth_mode in ("OAUTH2", "OAUTH1")
+            and len(app_data.testConnectors or []) == 0
+        ):
+            raise ComposioSDKError(
+                message=(
+                    f"No existing integration found for `{str(app)}`, "
+                    "Please create an integration and use the ID to "
+                    "initiate connection."
+                )
+            )
+
+        for field in scheme.fields:
+            if not field.expected_from_customer:
                 raise ComposioSDKError(
                     message=(
                         f"No existing integration found for `{str(app)}`, "
                         "Please create an integration and use the ID to "
                         "initiate connection."
                     )
-                ) from e
+                )
 
-        return self.get_integration(id=integration_id).expectedInputFields
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        return self.client.integrations.create(
+            app_id=app_data.appId,
+            name=f"{app}_{timestamp}",
+            auth_mode=scheme.auth_mode,
+            use_composio_auth=False,
+            force_new_integration=True,
+        ).expectedInputFields
 
     def create_integration(
         self,
