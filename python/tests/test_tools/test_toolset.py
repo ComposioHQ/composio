@@ -4,7 +4,6 @@ Test composio toolset.
 
 import logging
 import re
-import warnings
 from unittest import mock
 
 import pytest
