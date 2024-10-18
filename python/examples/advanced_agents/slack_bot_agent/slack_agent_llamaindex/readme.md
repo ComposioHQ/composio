@@ -6,7 +6,7 @@ This guide provides detailed steps to create a Slack Bot Agent that leverages Co
 ![alt text](https://github.com/composiohq/composio/blob/feat/slack-assistant/python/examples/slack_bot_agent/schematic.png?raw=true)
 
 ## Adding a Slackbot
-![alt text](https://github.com/composiohq/composio/blob/feat/slack-assistant/python/examples/slack_bot_agent/adding_slack_bot.gif?raw=true)
+![alt text](https://github.com/ComposioHQ/composio/blob/master/python/examples/advanced_agents/slack_bot_agent/adding_slack_bot.gif?raw=true)
 
 ## Steps to perform before running
 
