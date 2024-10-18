@@ -1,0 +1,119 @@
+name: " Bug Report"
+description: I would like to report a bug.
+title: "[ BUG] <write a small description here>"
+labels: ["bug"]  # Assuming "bug" is the appropriate label for Composio
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        - Thank you for using Composio and taking the time to report a bug! 
+        - Please try to spend some time understanding the bug and reproduce it if possible.
+        - Take a look at our template and try to add as much detail as possible.
+        - The more details we have, the easier it would be to fix it.
+        - If any heading is not applicable, please set it to `NA`.
+
+  - type: textarea
+    id: something_wrong
+    attributes:
+      label: "What went wrong? "
+      description: Please provide a detailed description of the issue you encountered. Be clear and concise in explaining what is not working as expected.
+      placeholder: The description of the issue you experienced in detail, including any relevant information or context.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: "Expected Behavior"
+      description: Please describe how you expected the system to behave when you encountered the issue.
+      placeholder: The description of the behavior that you expected to see when encountering the issue.
+
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: "Steps to Reproduce Issue"
+      description: If possible, please share the steps to reproduce the issue.
+      placeholder: 
+        - List the steps that lead to the bug.
+        - Include relevant actions and expected outcomes.
+
+  - type: textarea
+    id: solution_proposed
+    attributes:
+      label: "Solution Proposed"
+      description: Any ideas on how this should be solved (optional)
+      placeholder: The potential solution to solve this issue (optional)
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: "Screenshots"
+      description: If applicable, add screenshots to help explain your problem.
+      value: |
+        !["DESCRIPTION"](LINK.png)  # Replace with your screenshot format
+    validations:
+      required: false
+
+  - type: input
+    id: environment
+    attributes:
+      label: "Runtime Environment"
+      description: You can specify your operating system and version, software version, or any other relevant details.
+      placeholder: ex. Windows 10, Composio v1.2.3
+
+  - type: dropdown
+    id: browsers  # Assuming Composio works within browsers
+    attributes:
+      label: "Browsers"
+      description: What browser(s) are you seeing the problem on?
+      multiple: true
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Microsoft Edge
+        - Opera
+        - Brave
+        - Other
+
+  - type: input  # Assuming Composio works with different OS
+    id: os
+    attributes:
+      label: "OS"
+      description: Please select the operating system(s) on which you are experiencing the issue.
+      multiple: true
+      options:
+        - Windows
+        - Linux
+        - Mac
+        - iOS
+        - Android
+        - Other
+
+  - type: textarea  # Assuming Composio has versions
+    id: version_composio
+    attributes:
+      label: "Version of Composio"
+      description: Please provide the version number of Composio you are using (if applicable).
+      placeholder: ex. 1.2.3
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: "Additional Context"
+      description: If you have any additional context or information that may help us understand the problem better, please provide it here.
+      placeholder: This can include any relevant logs, error messages, or other information.
+      render: bash  # Adjust render type if needed
+
+  - type: markdown
+    attributes:
+      value: Thank you for taking the time to report the issue! 
+
+  - type: checkboxes
+    id: terms_checklist_bug
+    attributes:
+      label: "Code of Conduct"
+      description: By submitting this issue, you agree to follow our [Code of Conduct](link_to_your_code_of_conduct) and [Contributing Guidelines](link_to_your_contributing_guidelines) (if applicable).
+      options:
+        - label: "I
