@@ -10,6 +10,7 @@ from phi.tools.function import Function
 from pydantic import validate_call
 
 from composio import Action, ActionType, AppType, TagType
+from composio.tools.toolset import ProcessorsType
 
 from composio_openai import ComposioToolSet as BaseComposioToolSet
 
@@ -68,6 +69,8 @@ class ComposioToolSet(
         actions: t.Optional[t.Sequence[ActionType]] = None,
         apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
+        *,
+        processors: t.Optional[ProcessorsType] = None,
     ) -> t.List[Function]:
         """
         Get composio tools wrapped as Lyzr `Function` objects.
@@ -79,6 +82,8 @@ class ComposioToolSet(
         :return: Composio tools wrapped as `Function` objects
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
+        if processors is not None:
+            self._merge_processors(processors)
         return [
             self._wrap_tool(
                 schema=schema.model_dump(
