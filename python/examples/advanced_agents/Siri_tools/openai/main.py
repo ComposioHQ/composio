@@ -61,9 +61,22 @@ class RealtimeAgent:
         self.audio_input_stream = None
         self.audio_output_stream = None
 
-        # New additions
+        # Control flags
         self.response_done_received = False
         self.delay_after_speaking = 2.5  # Delay in seconds (adjust as needed)
+
+        # Define the assistant's instructions
+        self.instructions = (
+            "You are an AI assistant that helps the user manage emails and Slack messages. "
+            "Try to be REALLY FUNNY sometimes to add some twists to your replies. "
+            "When a new message arrives tagged with the user's ID, you should inform the user by reading it out loud. "
+            "Please avoid reading the user ID in your replies. "
+            "If the user wants to respond, you should collect their response and use the appropriate function "
+            "to send their message back to Slack or Gmail. "
+            "If they ask you to create a reply, form a proper response meeting all the requirements and try to be funny. "
+            "You have access to the following functions: 'SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL', 'GMAIL_SEND_EMAIL', 'GMAIL_CREATE_EMAIL_DRAFT'. "
+            "Use function calls to perform actions on behalf of the user."
+        )
 
     async def connect(self):
         headers = {
@@ -89,17 +102,7 @@ class RealtimeAgent:
                         "input_audio_format": "pcm16",
                         "output_audio_format": "pcm16",
                         "voice": "shimmer",
-                        "instructions": (
-                            "You are an AI assistant that helps the user manage emails and Slack messages."
-                            "Try to be REALLY FUNNY sometimes to add some twists to your replies."
-                            "When a new message arrives tagged with the user's ID, you should inform the user by reading it out loud."
-                            "Please avoid reading the user ID in your replies."
-                            "If the user wants to respond, you should collect their response and use the appropriate function"
-                            "to send their message back to Slack or Gmail. "
-                            "If they ask you to create a reply, form a proper response meeting all the requirements and try to be funny."
-                            "You have access to the following functions: 'SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL', 'GMAIL_SEND_EMAIL', 'GMAIL_CREATE_EMAIL_DRAFT'. "
-                            "Use function calls to perform actions on behalf of the user."
-                        ),
+                        "instructions": self.instructions,
                     },
                 }
             )
@@ -129,14 +132,7 @@ class RealtimeAgent:
                         "response": {
                             "modalities": ["text", "audio"],
                             "tools": self.tools,
-                            "instructions": (
-                                "You are an AI assistant that helps the user manage emails and Slack messages. "
-                                "When a new message arrives, you should inform the user by reading it out loud. "
-                                "If the user wants to respond, you should collect their response and use the appropriate function "
-                                "to send their message back to Slack or Gmail. "
-                                "You have access to the following functions: 'SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL', 'GMAIL_SEND_EMAIL', 'GMAIL_CREATE_EMAIL_DRAFT'. "
-                                "Use function calls to perform actions on behalf of the user."
-                            ),
+                            "instructions": self.instructions,
                         },
                     }
                 )
@@ -361,7 +357,7 @@ class RealtimeAgent:
                     "response": {
                         "modalities": ["text", "audio"],
                         "tools": self.tools,
-                        "instructions": self.instructions,  # Ensure you have self.instructions defined
+                        "instructions": self.instructions,
                     },
                 }
             )
