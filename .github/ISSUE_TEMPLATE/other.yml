@@ -1,0 +1,34 @@
+name: Other
+description: Use this for any other question or discussion related to Composio. Please do not create blank issues.
+title: "[OTHER] <write a small description here>"
+labels: ["question"]  # Assuming "question" is the appropriate label for general discussions
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for using Composio and taking the time to submit this issue! 
+        - This is for any questions, discussions, or feedback you may have about Composio.
+
+  - type: textarea
+    id: issuedescription
+    attributes:
+      label: "What would you like to share or ask?"
+      description: "Provide a clear and concise explanation of your question, discussion topic, or feedback."
+      validations:
+        required: true
+
+  - type: checkboxes
+    id: terms_checklist_discussion
+    attributes:
+      label: "Code of Conduct"
+      description: "By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/ComposioHQ/composio/blob/main/CODE_OF_CONDUCT.md) and [Contributing Guidelines](https://github.com/ComposioHQ/composio/blob/main/CONTRIBUTING.md)."
+      options:
+        - label: "I have checked the [existing issues](https://github.com/ComposioHQ/composio/issues?q=is%3Aissue+)."
+          required: true
+        - label: "I am willing to work on this issue (optional)"
+          required: false
+
+  - type: markdown
+    attributes:
+      value: Thank you for reaching out! We look forward to your question or discussion.
