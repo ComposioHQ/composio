@@ -215,7 +215,7 @@ class ComposioToolSet(
             action = Action(value=function_name)
             params = json.loads(arguments_json)
         except (ValueError, json.JSONDecodeError) as e:
-            raise ValueError(f"Invalid function call data: {e}")
+            raise ValueError(f"Invalid function call data: {e}") from e
 
         result = self.execute_action(
             action=action,

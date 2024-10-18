@@ -323,11 +323,18 @@ class RealtimeAgent:
 
         # Use the ComposioToolSet method to handle the function call
         try:
-            result = composio_toolset.handle_realtime_tool_call(
-                function_name=function_name,
-                arguments_json=arguments_json,
-                entity_id=None,  # Replace with appropriate entity_id if needed
-            )
+            # Parse the JSON arguments
+            try:
+                parsed_arguments = json.loads(arguments_json)
+            except json.JSONDecodeError as json_error:
+                logging.error(f"Error parsing function call arguments: {json_error}")
+                result = {"status": "error", "message": "Invalid JSON in arguments"}
+            else:
+                result = composio_toolset.handle_realtime_tool_call(
+                    function_name=function_name,
+                    arguments_json=parsed_arguments,
+                    entity_id=None,  # Replace with appropriate entity_id if needed
+                )
             logging.info(f"Function call result: {result}")
         except Exception as e:
             logging.error(f"Error handling function call: {e}")
@@ -491,8 +498,8 @@ def handle_slack_message(event: TriggerEventData):
     user_id = payload.get("user", "")
     channel_name = get_slack_channel_name(channel_id)
     user_name = get_slack_user_name(user_id)
-    # if "U056ZFA33QD" not in message:
-    #     return
+    if "U056ZFA33QD" not in message:
+        return
     logging.info(
         f"New Slack message in channel {channel_name} from user {user_name}: {message}"
     )
