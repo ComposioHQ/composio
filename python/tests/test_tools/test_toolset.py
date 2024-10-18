@@ -187,21 +187,23 @@ def test_processors(monkeypatch: pytest.MonkeyPatch) -> None:
     # Improperly defined processors
     preprocessor_called = postprocessor_called = False
 
-    def broken_preprocessor(request: dict) -> None:
-        """Forgets to return the request."""
-        request["something"] = True
+    def weird_postprocessor(reponse: dict) -> None:
+        """Forgets to return the reponse."""
+        reponse["something"] = True
 
     # users may not respect our type annotations
-    broken_toolset = ComposioToolSet(
-        processors={"pre": {App.SERPAPI: broken_preprocessor}}  # type: ignore
+    toolset = ComposioToolSet(
+        processors={"post": {App.SERPAPI: weird_postprocessor}}  # type: ignore
     )
+    monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
 
-    with pytest.raises(TypeError) as excinfo:
-        broken_toolset.execute_action(action=Action.SERPAPI_SEARCH, params={})
+    with pytest.warns(
+        UserWarning,
+        match="Expected post-processor to return 'dict', got 'NoneType'",
+    ):
+        result = toolset.execute_action(action=Action.SERPAPI_SEARCH, params={})
 
-    assert (
-        str(excinfo.value) == "Expected pre-processor to return 'dict', got 'NoneType'"
-    )
+    assert result is None
 
 
 def test_processors_on_execute_action(monkeypatch: pytest.MonkeyPatch) -> None:

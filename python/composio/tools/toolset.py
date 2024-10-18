@@ -67,7 +67,7 @@ T = te.TypeVar("T")
 P = te.ParamSpec("P")
 
 _KeyType = t.Union[AppType, ActionType]
-_ProcessorType = t.Callable[[t.Dict], t.Dict]
+_CallableType = t.Callable[[t.Dict], t.Dict]
 
 MetadataType = t.Dict[_KeyType, t.Dict]
 ParamType = t.TypeVar("ParamType")
@@ -76,16 +76,19 @@ ParamType = t.TypeVar("ParamType")
 warnings.simplefilter("always", DeprecationWarning)
 
 
+ProcessorType = te.Literal["pre", "post", "schema"]
+
+
 class ProcessorsType(te.TypedDict):
     """Request and response processors."""
 
-    pre: te.NotRequired[t.Dict[_KeyType, _ProcessorType]]
+    pre: te.NotRequired[t.Dict[_KeyType, _CallableType]]
     """Request processors."""
 
-    post: te.NotRequired[t.Dict[_KeyType, _ProcessorType]]
+    post: te.NotRequired[t.Dict[_KeyType, _CallableType]]
     """Response processors."""
 
-    schema: te.NotRequired[t.Dict[_KeyType, _ProcessorType]]
+    schema: te.NotRequired[t.Dict[_KeyType, _CallableType]]
     """Schema processors"""
 
 
@@ -581,7 +584,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self,
         key: _KeyType,
         type_: te.Literal["post", "pre", "schema"],
-    ) -> t.Optional[_ProcessorType]:
+    ) -> t.Optional[_CallableType]:
         """Get processor for given app or action"""
         processor = self._processors.get(type_, {}).get(key)  # type: ignore
         if processor is not None:
@@ -608,8 +611,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             # Users may not respect our type annotations and return something that isn't a dict.
             # If that happens we should show a friendly error message.
             if not isinstance(data, t.Dict):
-                raise TypeError(
-                    f"Expected {type_}-processor to return 'dict', got {type(data).__name__!r}"
+                warnings.warn(
+                    f"Expected {type_}-processor to return 'dict', got {type(data).__name__!r}",
+                    stacklevel=2,
                 )
         return data
 
@@ -648,19 +652,19 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def _merge_processors(self, processors: ProcessorsType) -> None:
         for processor_type in self._processors.keys():
-            if processor_type in processors:
-                processor_type = t.cast(
-                    te.Literal["pre", "post", "schema"], processor_type
-                )
-                new_processors = processors[processor_type]
+            if processor_type not in processors:
+                continue
 
-                if processor_type in self._processors:
-                    existing_processors = self._processors[processor_type]
-                else:
-                    existing_processors = {}
-                    self._processors[processor_type] = existing_processors
+            processor_type = t.cast(ProcessorType, processor_type)
+            new_processors = processors[processor_type]
 
-                existing_processors.update(new_processors)
+            if processor_type in self._processors:
+                existing_processors = self._processors[processor_type]
+            else:
+                existing_processors = {}
+                self._processors[processor_type] = existing_processors
+
+            existing_processors.update(new_processors)
 
     @_record_action_if_available
     def execute_action(
