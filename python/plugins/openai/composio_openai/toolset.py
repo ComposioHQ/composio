@@ -20,7 +20,6 @@ from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import OpenAISchema, SchemaType
-from composio.tools.toolset import ProcessorsType
 
 
 class ComposioToolSet(
@@ -102,8 +101,6 @@ class ComposioToolSet(
         actions: t.Optional[t.Sequence[ActionType]] = None,
         apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
-        *,
-        processors: t.Optional[ProcessorsType] = None,
     ) -> t.List[ChatCompletionToolParam]:
         """
         Get composio tools wrapped as OpenAI `ChatCompletionToolParam` objects.
@@ -115,8 +112,6 @@ class ComposioToolSet(
         :return: Composio tools wrapped as `ChatCompletionToolParam` objects
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
-        if processors is not None:
-            self._merge_processors(processors)
         return [
             ChatCompletionToolParam(  # type: ignore
                 **t.cast(
@@ -201,6 +196,33 @@ class ComposioToolSet(
                             )
                         )
         return outputs
+
+    def handle_realtime_tool_call(
+        self,
+        function_name: str,
+        arguments_json: str,
+        entity_id: t.Optional[str] = None,
+    ) -> t.Dict:
+        """
+        Handle a tool call from the Realtime API.
+
+        :param function_name: Name of the function called by the assistant.
+        :param arguments_json: JSON string of the function arguments.
+        :param entity_id: Entity ID to use for executing the function call.
+        :return: Object containing output data from the tool call.
+        """
+        try:
+            action = Action(value=function_name)
+            params = json.loads(arguments_json)
+        except (ValueError, json.JSONDecodeError) as e:
+            raise ValueError(f"Invalid function call data: {e}")
+
+        result = self.execute_action(
+            action=action,
+            params=params,
+            entity_id=entity_id or self.entity_id,
+        )
+        return result
 
     def handle_assistant_tool_calls(
         self,
