@@ -1,6 +1,6 @@
 # Lead Outreach Agent
 
-This guide provides detailed steps to create a Lead Outreach Agent that leverages Composio, agentic frameworks such as LlamaIndex and ChatGPT to write personalised emails for your leads and send it to them instantly. Ensure you have Python 3.8 or higher installed.
+This guide offers comprehensive instructions for creating a Lead Generator Agent that utilizes Composio and agentic frameworks like LlamaIndex and ChatGPT. This agent is designed to effectively generate leads for your business and compile all lead data into a spreadsheet.
 
 ## Steps to Run
 
