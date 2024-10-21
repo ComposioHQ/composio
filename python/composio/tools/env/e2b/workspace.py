@@ -15,7 +15,7 @@ try:
     from e2b import Sandbox
 
     E2B_INSTALLED = True
-except ModuleNotFoundError:
+except ImportError:
     Sandbox = t.Any
     E2B_INSTALLED = False
 
