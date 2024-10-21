@@ -48,7 +48,7 @@ describe("Apps class tests", () => {
     });
 
 
-    it.failing("should execute an action of noauth app", async () => {
+    it("should execute an action of noauth app", async () => {
         const actionName = "codeinterpreter_execute_code";
         const input = { code_to_execute: 'print("Hello World");' };
 
