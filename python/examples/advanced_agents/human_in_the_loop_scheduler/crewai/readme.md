@@ -3,7 +3,7 @@
 This guide provides detailed steps to create a Human in the Loop Scheduler Agent that leverages Composio, agentic frameworks such as CrewAI and Groq, Cerebras and ChatGPT to review PRs every time they're created. Ensure you have Python 3.8 or higher installed.
 
 ## Adding a Slackbot
-![alt text](https://github.com/composiohq/composio/blob/master/python/examples/advanced_agents/slack_bot_agent/adding_slack_bot.gif?raw=trueue)
+![alt text](https://github.com/composiohq/composio/blob/master/python/examples/advanced_agents/slack_bot_agent/adding_slack_bot.gif?raw=true)
 
 ## Steps to perform before running
 
