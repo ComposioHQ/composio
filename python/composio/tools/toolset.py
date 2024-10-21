@@ -148,6 +148,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         output_dir: t.Optional[Path] = None,
         verbosity_level: t.Optional[int] = None,
         connected_account_ids: t.Optional[t.Dict[AppType, str]] = None,
+        *,  # TODO: move all keyword args below this `*` in a future release
+        check_connected_accounts: bool = True,
         **kwargs: t.Any,
     ) -> None:
         """
@@ -265,8 +267,13 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self.logger.debug("Loading local tools")
         load_local_tools()
 
-        self._connected_account_ids = self._validating_connection_ids(
-            connected_account_ids=connected_account_ids or {}
+        self._check_connected_accounts = check_connected_accounts
+        self._connected_account_ids = (
+            self._validating_connection_ids(
+                connected_account_ids=connected_account_ids or {}
+            )
+            if self._check_connected_accounts
+            else {}
         )
 
     def _validating_connection_ids(
@@ -540,7 +547,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             return [self._serialize_execute_params(p) for p in param]  # type: ignore
 
         if isinstance(param, dict):
-            return {key: self._serialize_execute_params(val) for key, val in param.items()}  # type: ignore
+            return {
+                key: self._serialize_execute_params(val) for key, val in param.items()
+            }  # type: ignore
 
         raise ValueError(
             "Invalid value found for execute parameters"
@@ -740,8 +749,15 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 actions=remote_actions,
                 tags=tags,
             )
-            for item in remote_items:
-                self.check_connected_account(action=item.name)
+            if self._check_connected_accounts:
+                for item in remote_items:
+                    self.check_connected_account(action=item.name)
+            else:
+                warnings.warn(
+                    "Not verifying connected accounts for apps."
+                    " Actions may fail when the Agent tries to use them.",
+                    UserWarning,
+                )
             items = items + remote_items
 
         for act in runtime_actions:
