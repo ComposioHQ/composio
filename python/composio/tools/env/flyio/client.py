@@ -18,7 +18,7 @@ try:
     from gql.transport.requests import RequestsHTTPTransport
 
     FLYIO_DEPENDENCIES_INSTALLED = True
-except ModuleNotFoundError:
+except ImportError:
     RequestsHTTPTransport = t.Any
     FLYIO_DEPENDENCIES_INSTALLED = False
 
