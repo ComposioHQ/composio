@@ -134,6 +134,7 @@ class ComposioToolSet(
         entity_id: t.Optional[str] = None,
         *,
         processors: t.Optional[ProcessorsType] = None,
+        check_connected_accounts: bool = True,
     ) -> t.Sequence[FunctionTool]:
         """
         Get composio tools wrapped as LlamaIndex FunctionTool objects.
@@ -155,5 +156,10 @@ class ComposioToolSet(
                 ),
                 entity_id=entity_id or self.entity_id,
             )
-            for tool in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
+            for tool in self.get_action_schemas(
+                actions=actions,
+                apps=apps,
+                tags=tags,
+                check_connected_accounts=check_connected_accounts,
+            )
         ]
