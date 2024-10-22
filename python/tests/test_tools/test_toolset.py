@@ -237,8 +237,11 @@ def test_processors_on_get_tools(monkeypatch: pytest.MonkeyPatch) -> None:
     toolset = LangchainToolSet()
     monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
 
-    toolset.get_tools(processors={"post": {Action.COMPOSIO_LIST_APPS: postprocess}})
-    toolset.execute_action(Action.COMPOSIO_LIST_APPS, {})
+    toolset.get_tools(
+        actions=[Action.COMPOSIO_ENABLE_TRIGGER],
+        processors={"post": {Action.COMPOSIO_ENABLE_TRIGGER: postprocess}},
+    )
+    toolset.execute_action(Action.COMPOSIO_ENABLE_TRIGGER, {})
     assert postprocessor_called
 
 
