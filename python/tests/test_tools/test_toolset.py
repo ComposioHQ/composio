@@ -240,3 +240,19 @@ def test_processors_on_get_tools(monkeypatch: pytest.MonkeyPatch) -> None:
     toolset.get_tools(processors={"post": {Action.COMPOSIO_LIST_APPS: postprocess}})
     toolset.execute_action(Action.COMPOSIO_LIST_APPS, {})
     assert postprocessor_called
+
+
+def test_check_connected_accounts_flag(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test the `check_connected_accounts` flag on `ComposioToolSet()`."""
+
+    # Ensure `check_connected_account()` gets called by default
+    toolset = LangchainToolSet()
+    with mock.patch.object(toolset, "check_connected_account") as mocked:
+        toolset.get_tools(actions=[Action.GMAIL_FETCH_EMAILS])
+        mocked.assert_called_once()
+
+    # Ensure `check_connected_account()` DOES NOT get called when the flag is set
+    toolset = LangchainToolSet(check_connected_accounts=False)
+    with mock.patch.object(toolset, "check_connected_account") as mocked:
+        toolset.get_tools(actions=[Action.GMAIL_FETCH_EMAILS])
+        mocked.assert_not_called()
