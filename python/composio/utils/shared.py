@@ -5,8 +5,8 @@ Shared utils.
 import typing as t
 from inspect import Parameter
 
-from pydantic.v1 import BaseModel, Field, create_model
-from pydantic.v1.fields import FieldInfo
+from pydantic import BaseModel, Field, create_model
+from pydantic.fields import FieldInfo
 
 from composio.utils.logging import get as get_logger
 
