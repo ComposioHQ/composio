@@ -10,8 +10,10 @@ import pytest
 
 from composio import Action, App
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
-from composio.tools import ComposioToolSet
 from composio.tools.base.abs import action_registry, tool_registry
+from composio.tools.toolset import ComposioToolSet
+
+from composio_langchain.toolset import ComposioToolSet as LangchainToolSet
 
 
 def test_get_schemas() -> None:
@@ -130,6 +132,11 @@ class TestConnectedAccountProvider:
                 }
             )
             setattr(toolset, "_execute_remote", _patch)
+            setattr(
+                toolset,
+                "_try_get_github_access_token_for_current_entity",
+                lambda *_: "",
+            )
             toolset.execute_action(
                 action=Action.GITHUB_META_ROOT,
                 params={},
@@ -147,3 +154,89 @@ def test_api_key_missing() -> None:
         ),
     ):
         _ = toolset.workspace
+
+
+def test_processors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test the `processors` field in `ComposioToolSet` constructor."""
+    preprocessor_called = postprocessor_called = False
+
+    def preprocess(request: dict) -> dict:
+        nonlocal preprocessor_called
+        preprocessor_called = True
+        return request
+
+    def postprocess(response: dict) -> dict:
+        nonlocal postprocessor_called
+        postprocessor_called = True
+        return response
+
+    with pytest.warns(DeprecationWarning):
+        toolset = ComposioToolSet(
+            processors={
+                "pre": {App.GMAIL: preprocess},
+                "post": {App.GMAIL: postprocess},
+            }
+        )
+    monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
+
+    # Happy case
+    toolset.execute_action(action=Action.GMAIL_FETCH_EMAILS, params={})
+    assert preprocessor_called
+    assert postprocessor_called
+
+    # Improperly defined processors
+    preprocessor_called = postprocessor_called = False
+
+    def weird_postprocessor(reponse: dict) -> None:
+        """Forgets to return the reponse."""
+        reponse["something"] = True
+
+    # users may not respect our type annotations
+    toolset = ComposioToolSet(
+        processors={"post": {App.SERPAPI: weird_postprocessor}}  # type: ignore
+    )
+    monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
+
+    with pytest.warns(
+        UserWarning,
+        match="Expected post-processor to return 'dict', got 'NoneType'",
+    ):
+        result = toolset.execute_action(action=Action.SERPAPI_SEARCH, params={})
+
+    assert result is None
+
+
+def test_processors_on_execute_action(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test the `processors` field in `execute_action()` methods of ToolSet's."""
+    preprocessor_called = False
+
+    def preprocess(response: dict) -> dict:
+        nonlocal preprocessor_called
+        preprocessor_called = True
+        return response
+
+    toolset = LangchainToolSet()
+    monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
+    toolset.execute_action(
+        Action.ATTIO_LIST_NOTES,
+        params={},
+        processors={"pre": {Action.ATTIO_LIST_NOTES: preprocess}},
+    )
+    assert preprocessor_called
+
+
+def test_processors_on_get_tools(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test the `processors` field in `get_tools()` methods of ToolSet's."""
+    postprocessor_called = False
+
+    def postprocess(response: dict) -> dict:
+        nonlocal postprocessor_called
+        postprocessor_called = True
+        return response
+
+    toolset = LangchainToolSet()
+    monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
+
+    toolset.get_tools(processors={"post": {Action.COMPOSIO_LIST_APPS: postprocess}})
+    toolset.execute_action(Action.COMPOSIO_LIST_APPS, {})
+    assert postprocessor_called

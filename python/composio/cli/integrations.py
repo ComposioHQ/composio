@@ -23,12 +23,8 @@ class IntegrationsExamples(HelpfulCmdBase, DYMGroup):
         + click.style(
             "              # Add a new integration named GitHub\n", fg="black"
         ),
-        click.style("composio integrations remove --id 123", fg="green")
+        click.style("composio integrations remove 123", fg="green")
         + click.style("                # Remove integration with ID 123\n", fg="black"),
-        click.style("composio integrations update --id 456 --name GitLab", fg="green")
-        + click.style(
-            "  # Update integration with ID 456 to name GitLab\n", fg="black"
-        ),
     ]
 
 
@@ -47,3 +43,15 @@ def _integrations(context: Context) -> None:
     for integration in integrations:
         context.console.print(f"• App: {integration.appName}")
         context.console.print(f"  ID: {integration.id}")
+
+
+@_integrations.command(name="remove")
+@click.help_option("--help")
+@click.argument("id", type=str)
+@handle_exceptions()
+@login_required
+@pass_context
+def _remove(context: Context, id: str) -> None:
+    """Remove integration with given ID"""
+    context.client.integrations.remove(id=id)
+    context.console.print(f"[green]Removed integration with {id=}[/green]")

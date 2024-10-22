@@ -1,0 +1,211 @@
+---
+title: "Connected Accounts"
+sidebarTitle: "Connections"
+icon: "link"
+description: "Guide to creating connections for multiple users"
+---
+
+### Introduction to <u>Connected Accounts</u>
+- When a user connects their account, a `connected_account` object is created. 
+- **Connected Account** securely stores **authentication data** such as **api keys, access tokens and refresh tokens**.
+
+### Introduction to <u>Entities</u>
+
+- **Each unique user/tenant** is represented by a **unique entity id**.
+- If you have **two users, Jessica and Melissa**, they will each have **unique entity ids**.
+
+### Connecting an Account for your User
+<Steps>
+<Step title="Collect Parameters Required to create a Connection">
+To create a connected account for your user:
+
+1. Fetch required auth parameters for the application
+2. Collect these parameters from the user
+3. Initiate a new connection request
+
+<Note> Linear: Requires `api_key`, Shopify: Requires `shop_name` for OAuth flow </Note>
+
+<CodeGroup>
+```python Python - Fetch Auth Parameters
+from composio import ComposioToolSet, App
+toolset = ComposioToolSet()
+
+response = toolset.get_expected_params_for_user(app=App.LINEAR) # can use integration_id instead of app
+
+print(response["expected_params"])
+```
+
+```javascript Javascript - Fetch Auth Parameters
+import { Composio, OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet();
+
+const expectedInputFields = await toolset.getExpectedParamsForUser({
+    app: "gmail",
+});
+
+console.log(expectedInputFields)
+```
+</CodeGroup>
+
+Collect the required parameters from your user through your preferred interface (UI, chat, or API).
+
+<Note>
+All parameters should be provided as strings.
+</Note>
+
+</Step>
+
+<Step title="Try creating a connection with the parameters collected">
+
+In the code snippets below replace `user_id` and `redirect_url`
+
+<CodeGroup>
+```python Python - New Connection
+
+# This is the URL that the user will be redirected to after completing the authentication process
+redirect_url = "https://yourwebsite.com/connection/callback"
+
+entity_id = "user_id" # This is the unique identifier for the user
+
+# Collect the parameters from the user
+# Here we are assuming that the user has provided the parameters
+# In a real-world scenario, you would collect these parameters from the user via your app's UI.
+collected_params = {
+    # "api_key": "1234567890" # This is an example, actual values will be different
+}
+
+# Initiate the connection
+connection_request = toolset.initiate_connection(connected_account_params=collected_params,entity_id=entity_id,app=App.LINEAR,redirect_url=redirect_url)
+
+# If the connection method is OAuth, redirect the user to the URL below
+print(connection_request.redirectUrl)
+
+# Check the status of the connection
+print(connection_request.status)
+```
+
+```javascript Javascript - New Connection
+const redirectUrl = "https://yourwebsite.com/connection/callback"
+
+const entityId = "user_id" # This is the unique identifier for the user
+
+// Collect the parameters from the user
+// Here we are assuming that the user has provided the parameters
+// In a real-world scenario, you would collect these parameters from the user via your app's UI.
+const collectedParams = {
+    // "api_key": "1234567890" // This is an example, actual values will be different
+}
+
+const connectionRequest = await toolset.client.connectedAccounts.initiate({
+    data: {
+        ...collectedParams
+    },
+    userUuid: entityId,
+    integrationId: expectedInputFields.integrationId, 
+    redirectUri: redirectUrl
+});
+
+console.log("Click on this link to connect your account", connectionRequest.redirectUrl)
+
+const connectedAccount = await connectionRequest.waitUntilActive(30); // Wait for the connection to be active
+
+console.log("Connected account is active", connectedAccount)
+```
+</CodeGroup>
+
+<Note>
+Some applications require user redirection to complete the authentication process.
+Gmail for example requires redirecting the user to Google's login page.
+</Note>
+
+</Step>
+
+<Step title="Fetch the Connection Params (Status, Access Token, Refresh Token...)">
+
+If you want to use connection params locally and build custom actions - 
+
+<Info>
+Connection status can be `failed`, `initiated` or `active`.
+</Info>
+<CodeGroup>
+```python Python - Fetch the connection status & details (Optional)
+connected_account = toolset.get_connected_account(connection_request.connectedAccountId)
+
+# Get the parameters for your local usage
+print(toolset.get_auth_params(connection_id=connected_account.id))
+
+#print(connected_account.connectionParams) # use this for raw/advanced cases
+```
+
+```javascript Javascript - Fetch the connection params (Optional)
+const connectedAccount = await toolset.client.connectedAccounts.get({
+    connectedAccountId: connectionRequest.connectedAccountId
+})
+
+const connectedAccountAuthParams = await toolset.getAuthParams({
+    connectedAccountId: connectedAccount.connectedAccountId
+})
+
+console.log("Connected account auth params", connectedAccountAuthParams)
+
+//console.log("Connected account raw auth params", connectedAccount.connectionParams)
+
+```
+</CodeGroup>
+
+Example of how connection params would look like 
+
+<CodeGroup>
+``` JSON Auth Params Output
+{
+	"base_url": "", // This is the base URL for the API Ex. https://api.linear.app
+	"params": [{ // This is the list of all the params
+		"name": "x-api-key", 
+		"in": "header", // `in` value could be of type `header`, `query` 
+		"value": "<api-key>"
+	}],
+	"body": {}
+}
+```
+``` Javascript Raw Auth Params Output
+Connected account raw auth params {
+  scope: '********',
+  scopes: '********',
+  id_token: '********',
+  client_id: '********',
+  expires_in: '********',
+  token_type: '********',
+  redirectUrl: 'https://accounts.google.com/o/oauth2/v2/auth?client_id=96-8p515bt7ijf94c2bf4a5lev5jr6r7oc1.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fbackend.composio.dev%2Fapi%2Fv1%2Fauth-apps%2Fadd&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fgmail.modify&response_type=code&access_type=offline&prompt=consent&state=staging_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.30.W9PV-ncrbbPhnjfcgBCN8ZNn9A8V2lzCbXQR2fOXht4&code_challenge=YpyY74p3BJU_-a_mIq4GZyka2FlpnH4APVIfQ&code_challenge_method=S256',
+  callback_url: '********',
+  client_secret: '********',
+  code_verifier: '********',
+  refresh_token: '********',
+  headers: {
+    Authorization: 'Bearer ya29.-BhZtwh0ZLk-',
+  },
+  queryParams: {},
+  base_url: 'https://www.googleapis.com'
+}
+```
+
+</CodeGroup>
+
+
+
+<Note>
+You can fetch connection details after user is redirected back to your app. (If redirect was needed)
+
+`connection_status` & `connectedAccountId` will be available in the query params.
+</Note>
+</Step>
+</Steps>
+
+### Receiving Webhooks alerts on new Connections
+
+Composio provides real-time webhook notifications for new connections. To utilize this feature:
+
+1. Set up webhook alerts in the Composio dashboard
+2. Configure your application to receive and parse the webhook payloads
+
+This allows you to instantly track when users integrate new services with your application.

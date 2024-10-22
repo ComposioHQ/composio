@@ -126,11 +126,11 @@
         "framework/crewai",
         "framework/letta",
         "framework/langchain",
-        "framework/groq",
-        "framework/openai",
         {
           "group": "Other Frameworks",
           "pages": [
+            "framework/groq",
+            "framework/openai",
             "framework/autogen",
             "framework/langgraph",
             "framework/phidata",
@@ -174,21 +174,16 @@
 
         ]
     },
+    
      {
       "group": "Guides",
       "pages": [
       {
-        "group": "Patterns",
-        "pages": [
-          "patterns/functions/multiple-users",
-          "patterns/functions/triggers"
-        ]
-      },
-      {
-        "group": "Using CLI",
-        "pages": [
-          "patterns/cli/install",
-          "patterns/cli/trigger"
+        "group":"Authentication",
+        "pages":[
+          "patterns/Auth/connected_account",
+          "patterns/Auth/Integrations",
+          "patterns/Auth/multiple-users"
         ]
       },
       {
@@ -202,9 +197,16 @@
         ] 
       },
       {
-        "group": "Going to Production",
+        "group": "Patterns",
         "pages": [
-          "patterns/production-guide/prod"
+          "patterns/functions/triggers"
+        ]
+      },
+      {
+        "group": "Using CLI",
+        "pages": [
+          "patterns/cli/install",
+          "patterns/cli/trigger"
         ]
       }
     ]

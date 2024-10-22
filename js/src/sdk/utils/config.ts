@@ -55,14 +55,19 @@ export function getAPISDK(baseUrl?: string, apiKey?: string) {
  * @param data - The data to be written to the file.
  */
 export const writeToFile = (filePath: string, data: any) => {
-    // Get the directory path from the file path
-    const dirPath = path.dirname(filePath);
-    // Create the directory if it doesn't exist
-    if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath, { recursive: true });
+    try{
+        // Get the directory path from the file path
+        const dirPath = path.dirname(filePath);
+        // Create the directory if it doesn't exist
+        if (!fs.existsSync(dirPath)) {
+            fs.mkdirSync(dirPath, { recursive: true });
+        }
+        // Write the data to the file as a formatted JSON string
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    }catch(error){  
+        console.error("Oops! We couldn't save your settings. Here's why:", (error as Error).message);
+        console.log("Need help? Check file permissions for file:", filePath);
     }
-    // Write the data to the file as a formatted JSON string
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
 /**

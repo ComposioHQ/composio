@@ -91,15 +91,19 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
 
             <CodeGroup>
                 ```python Fetch Google Calendar Actions & Interact with LLM
+                from datetime import datetime
+
                 tools = composio_toolset.get_tools(actions=[Action.GOOGLECALENDAR_CREATE_EVENT])
 
-                task = "Create a 1 hour meeting event at 5:30PM tomorrow"
+                task = "Create a 1 hour meeting event at 5:30PM tomorrow regarding OpenAI Integration"
+
+                today = datetime.now().strftime("%Y-%m-%d")
 
                 response = openai_client.chat.completions.create(
                     model="gpt-4-turbo-preview",
                     tools=tools,
                     messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
+                        {"role": "system", "content": f"You are a helpful assistant. Today's date is {today}."},
                         {"role": "user", "content": task},
                     ],
                 )
@@ -208,7 +212,8 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
                     actions: ["googlecalendar_create_event"]
                 });
 
-                const instruction = "Create a 1 hour meeting event at 5:30PM tomorrow";
+                const today = new Date().toDateString();
+                const instruction = `Create a 1 hour meeting event at 5:30PM tomorrow. Today's date is ${today}`;
 
                 const response = await openai_client.chat.completions.create({
                     model: "gpt-4-turbo-preview",
