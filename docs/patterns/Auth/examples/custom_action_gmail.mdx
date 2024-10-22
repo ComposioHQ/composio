@@ -1,0 +1,71 @@
+---
+title: "Build Custom Actions with Existing Tools like Gmail"
+sidebarTitle: "Build your own Custom Action"
+icon: "gear"
+description: "Here's how to build Custom Action"
+---
+
+This guide demonstrates how to build a demo Custom Action on Gmail
+<Steps>
+
+<Step title="Import required dependencies">
+```python Python
+from composio import ComposioToolSet, App, action
+import requests
+
+toolset = ComposioToolSet()
+```
+</Step>
+
+<Step title="Creating our Custom Action">
+```python Python
+@action(toolname="gmail")
+def get_emails(auth: dict) -> str:
+    """
+    Get gmail account information.
+    :input auth: Authentication credentials
+    :input query: Gmail query (provide a description here)  # Update this line
+    :return info: Gmail account information
+    """
+    auth_token = auth['headers']['Authorization']
+    current_dateTime = datetime.datetime.now()
+    tomorrow_dateTime = current_dateTime + datetime.timedelta(days=1) 
+    url = f'https://www.googleapis.com/gmail/v1/users/me/messages?q=in:sent after:{current_dateTime} before:{tomorrow_dateTime}'
+
+    headers = {
+        'Authorization': f'{auth_token}',
+    }
+
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        print("Messages:", response.json())
+    else:
+        print("Error:", response.status_code, response.json())
+    return str(response)
+```
+</Step>
+
+<Step title="Execute the Action">
+```python Python
+print(
+    toolset.execute_action(
+        action=get_emails,
+        params={},
+    )
+)
+```
+</Step>
+</Steps>
+
+### Here's what the Sample Output looks like
+```python Sample Output 
+[2024-10-22 19:47:42,109][INFO] Logging is set to INFO, use `logging_level` argument or `COMPOSIO_LOGGING_LEVEL` change this
+[2024-10-22 19:47:42,261][INFO] Executing `GMAIL_GET_EMAILS` with params={} and metadata=None connected_account_id=None
+Messages: {'resultSizeEstimate': 0}
+[2024-10-22 19:47:45,043][INFO] Got response={'data': {'info': '<Response [200]>'}, 'error': None, 'successful': True} from action=GMAIL_GET_EMAILS with params={}
+{'data': {'info': '<Response [200]>'}, 'error': None, 'successful': True}
+```
+
+
+This is how you can create a Custom Action under an Existing tool like Gmail

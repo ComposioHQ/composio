@@ -1,0 +1,162 @@
+---
+title: "Connecting your User's Gmail Account"
+sidebarTitle: "Example Connection - Gmail"
+icon: "gear"
+description: "Here's how to connect your user to Gmail"
+---
+
+<Tabs>
+    <Tab title="Python">
+    <Steps>
+    <Step title="Fetching Authentication Parameters">
+        ```python Fetch auth params 
+        from composio import ComposioToolSet, App
+        toolset = ComposioToolSet()
+
+        response = toolset.get_expected_params_for_user(app=App.GMAIL) # can use integration_id instead of app
+
+        print(response["expected_params"])
+        ```
+    </Step>
+
+    <Step title="Creating a Connection with Collected Parameters">
+
+        ```python Fetch auth params 
+
+        # This is the URL that the user will be redirected to after completing the authentication process
+        redirect_url = "https://yourwebsite.com/connection/callback"
+
+        entity_id = "user_id" # This is the unique identifier for the user
+
+        # Collect the parameters from the user
+        # Here we are assuming that the user has provided the parameters
+        # In a real-world scenario, you would collect these parameters from the user via your app's UI.
+        collected_params = {
+            "client_id": "1234567890", # Add your actual client id key
+            "client_secret":"23456781", # Add your actual client secret
+            "redirect_url":redirect_url 
+        }
+
+        # Initiate the connection
+        connection_request = toolset.initiate_connection(connected_account_params=collected_params,entity_id=entity_id,app=App.LINEAR,redirect_url=redirect_url)
+
+        # Check the status of the connection
+        print(connection_request.status)
+
+        ```
+
+    </Step>
+
+    <Step title="Execute Action on your User's behalf">
+        ```python Execute action for your user
+        from composio import ComposioToolSet, Action
+        toolset = ComposioToolSet()
+        toolset.execute_action(
+            Action.GMAIL_SEND_EMAIL,
+            params={
+                "recipient_email":"Enter your email",
+                "subject":"Test email",
+                "body":"Hi! this is a test email.",
+            },
+            entity_id="Jessica" #Specify your user's entity_id here to execute action on their behalf
+        )
+        ```
+    </Step>
+
+    <Step title="Get specific Connected Account">
+        ```python Get connected account
+        entity = toolset.client.get_entity(id="your desired entity id")
+        #if you want a list of connections, do not use mention id in the get_entity function
+        print(entity.get_connections())
+        ```
+    </Step>
+    </Steps>
+    </Tab>
+
+
+
+    <Tab title="JavaScript">
+
+    <Steps>
+    <Step title="Fetching Authentication Parameters">
+        ```javascript Fetch auth params 
+        import { Composio, OpenAIToolSet } from "composio-core";
+
+        const toolset = new OpenAIToolSet();
+
+        const expectedInputFields = await toolset.getExpectedParamsForUser({
+            app: "gmail",
+        });
+
+        console.log(expectedInputFields)
+
+        ```
+    </Step>
+
+    <Step title="Creating a Connection with Collected Parameters">
+
+        ```javascript Fetch auth params 
+
+        const redirectUrl = "https://yourwebsite.com/connection/callback"
+
+        const entityId = "user_id" # This is the unique identifier for the user
+
+        // Collect the parameters from the user
+        // Here we are assuming that the user has provided the parameters
+        // In a real-world scenario, you would collect these parameters from the user via your app's UI.
+        const collectedParams = {
+            "client_id": "1234567890", # Add your actual client id key
+            "client_secret":"23456781", # Add your actual client secret
+            "redirect_uri":redirect_url 
+        }
+
+        const connectionRequest = await toolset.client.connectedAccounts.initiate({
+            data: {
+                ...collectedParams
+            },
+            userUuid: entityId,
+            integrationId: expectedInputFields.integrationId, 
+            redirectUri: redirectUrl
+        });
+
+        console.log("Click on this link to connect your account", connectionRequest.redirectUrl)
+
+        const connectedAccount = await connectionRequest.waitUntilActive(30); // Wait for the connection to be active
+
+        console.log("Connected account is active", connectedAccount)
+
+
+        ```
+
+    </Step>
+
+    <Step title="Execute Action on your User's behalf">
+        ```javascript Execute action for your user
+
+        import { OpenAIToolSet } from "composio-core";
+
+        const toolset = new OpenAIToolSet({
+            apiKey: process.env.COMPOSIO_API_KEY,
+            entityId: "Jessica",
+        });
+        const params = {
+            recipient_email: "username@gmail.com",
+            subject: "Test email",
+            body: "Hi! this is a test email.",
+        };
+        const res = await toolset.executeAction("gmail_send_email", params, "Jessica");
+        ```
+    </Step>
+
+    <Step title="Get specific Connected Account">
+        ```javascript Get connected account
+        const openai_client = new OpenAIToolSet({
+            apiKey: process.env.OPENAIKEY
+        });
+        const entity = openai_client.client.getEntity({id:"Jessica"});
+        console.log(await entity.connectedAccounts.list())
+        ```
+    </Step>
+    </Steps>
+    </Tab>
+</Tabs>
