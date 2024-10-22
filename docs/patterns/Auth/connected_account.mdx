@@ -122,7 +122,6 @@ Gmail for example requires redirecting the user to Google's login page.
 </Step>
 
 <Step title="Fetch the Connection Params (Status, Access Token, Refresh Token...)">
-
 If you want to use connection params locally and build custom actions - 
 
 <Info>
@@ -199,6 +198,33 @@ You can fetch connection details after user is redirected back to your app. (If 
 `connection_status` & `connectedAccountId` will be available in the query params.
 </Note>
 </Step>
+
+<Accordion title="How to get all Connected Accounts?">
+<Tabs>
+    <Tab title="Python">
+    <CodeGroup>
+        ```python Get all connected accounts for a specific entity
+        entity = toolset.client.get_entity(id="your desired entity id")
+        #if you want a list of connections, do not use the id parameter in the get_entity function
+        print(entity.get_connections())
+        ```
+    </CodeGroup>
+    </Tab>
+
+    <Tab title="Javascript">
+        ```javascript Get all connected accounts
+        const openai_client = new OpenAIToolSet({
+            apiKey: process.env.OPENAIKEY
+        });
+        //if you want a list of connections, do not use the id parameter in the get_entity function
+        const entity = openai_client.client.getEntity({id:"Jessica"});
+        console.log(await entity.connectedAccounts.list())
+        ```
+    </Tab>
+
+
+</Tabs>
+</Accordion>
 </Steps>
 
 ### Receiving Webhooks alerts on new Connections

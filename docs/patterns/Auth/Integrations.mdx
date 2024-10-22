@@ -31,6 +31,29 @@ For example
 6. Then Click on "Connect to [App Name]" and Authenticate with your Account
 7. Congratulations! Integration was successful!
 
+### Fetching all Integrations
+
+<CodeGroup>
+```python Code for fetching integrations
+from composio import ComposioToolSet
+toolset = ComposioToolSet()
+
+print(toolset.client.integrations.get())
+print(toolset.client.integrations.get_by_id(integration_id="ADD THE ID HERE")) #filter based on integration id
+```
+
+```javascript Code for fetching integrations
+import { OpenAIToolSet } from "composio-core";
+
+const openai_client = new OpenAIToolSet({
+    apiKey: process.env.OPENAIKEY
+});
+
+console.log(openai_client.client.integrations.list()) //lists all integrations
+console.log(await openai_client.client.integrations.get({integrationId:"ADD THE ID HERE"})) //filter based on integration id
+```
+</CodeGroup>
+
 ### Creating a new connection using an Integration
 
 You can follow the same steps as mentioned in [Creating a new connection](/patterns/Auth/connected_account) and instead of passing app you can pass integration_id.
