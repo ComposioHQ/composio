@@ -1761,6 +1761,16 @@ export type ConnectionsControllerDeleteConnectionData = {
     };
 };
 
+export type GetAuthParamsData = {
+    path: {
+        connectedAccountId: string;
+    };
+};
+
+export type GetAuthParamsResponse = unknown;
+
+export type GetAuthParamsError = unknown;
+
 export type ConnectionsControllerDeleteConnectionResponse = unknown;
 
 export type ConnectionsControllerDeleteConnectionError = unknown;

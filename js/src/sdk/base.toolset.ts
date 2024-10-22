@@ -225,6 +225,12 @@ export class ComposioToolSet {
         });
     }
 
+    async getAuthParams(data: {connectedAccountId: string}) {
+        return this.client.connectedAccounts.getAuthParams({
+            connectedAccountId: data.connectedAccountId
+        })
+    }
+
     async getToolsSchema(
         filters: {
             actions?: Optional<Array<string>>;
