@@ -114,7 +114,7 @@ export type ExecuteActionData = {
         text?: string;
 
         /**
-         * The entity id to execute the action on
+         * The custom authentication configuration for executing the action.
          */
         authConfig?: CustomAuthData;
     };
