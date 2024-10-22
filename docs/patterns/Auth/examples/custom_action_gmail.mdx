@@ -29,8 +29,8 @@ def get_emails(auth: dict) -> str:
     :return info: Gmail account information
     """
     auth_token = auth['headers']['Authorization']
-    current_dateTime = datetime.datetime.now()
-    tomorrow_dateTime = current_dateTime + datetime.timedelta(days=1) 
+    current_dateTime = datetime.datetime.now().isoformat() + 'Z'  
+    tomorrow_dateTime = (datetime.datetime.now() + datetime.timedelta(days=1)).isoformat() + 'Z' 
     url = f'https://www.googleapis.com/gmail/v1/users/me/messages?q=in:sent after:{current_dateTime} before:{tomorrow_dateTime}'
 
     headers = {
