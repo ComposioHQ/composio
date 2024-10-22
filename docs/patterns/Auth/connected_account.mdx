@@ -217,7 +217,7 @@ You can fetch connection details after user is redirected back to your app. (If 
             apiKey: process.env.OPENAIKEY
         });
         //if you want a list of connections, do not use the id parameter in the get_entity function
-        const entity = openai_client.client.getEntity({id:"Jessica"});
+        const entity = await openai_client.client.getEntity({id:"Jessica"});
         console.log(await entity.connectedAccounts.list())
         ```
     </Tab>

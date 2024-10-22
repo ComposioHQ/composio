@@ -38,7 +38,7 @@ description: "Here's how to connect your user to Gmail"
         }
 
         # Initiate the connection
-        connection_request = toolset.initiate_connection(connected_account_params=collected_params,entity_id=entity_id,app=App.LINEAR,redirect_url=redirect_url)
+        connection_request = toolset.initiate_connection(connected_account_params=collected_params,entity_id=entity_id,app=App.GMAIL,redirect_url=redirect_url)
 
         # Check the status of the connection
         print(connection_request.status)
