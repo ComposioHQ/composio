@@ -254,5 +254,9 @@ def test_check_connected_accounts_flag() -> None:
     # Ensure `check_connected_account()` DOES NOT get called when the flag is set
     toolset = LangchainToolSet(check_connected_accounts=False)
     with mock.patch.object(toolset, "check_connected_account") as mocked:
-        toolset.get_tools(actions=[Action.GMAIL_FETCH_EMAILS])
+        with pytest.warns(
+            UserWarning,
+            match="Not verifying connected accounts for apps.",
+        ):
+            toolset.get_tools(actions=[Action.GMAIL_FETCH_EMAILS])
         mocked.assert_not_called()
