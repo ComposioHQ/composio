@@ -8,3 +8,4 @@ binding = "AI"
 [vars]
 COMPOSIO_API_KEY = "your_composio_api_key"
 
+
