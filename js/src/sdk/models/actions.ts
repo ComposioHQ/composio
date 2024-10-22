@@ -55,6 +55,40 @@ export type GetListActionsData = {
     filterImportantActions?: boolean;
 }
 
+export type Parameter = {
+    /**
+     * The name of the parameter.
+     */
+    name: string;
+
+    /**
+     * The location of the parameter (e.g., query, header).
+     */
+    in: string;
+
+    /**
+     * The value of the parameter.
+     */
+    value: string | number;
+};
+
+export type CustomAuthData = {
+    /**
+     * The base URL for the custom authentication.
+     */
+    base_url?: string;
+
+    /**
+     * An array of parameters for the custom authentication.
+     */
+    parameters: Parameter[];
+
+    /**
+     * An optional object containing the body for the custom authentication.
+     */
+    body?: Record<string, unknown>;
+}
+
 export type ExecuteActionData = {
     /**
      * The name of the action to execute.
@@ -78,6 +112,11 @@ export type ExecuteActionData = {
          * appropriate input parameters.
          */
         text?: string;
+
+        /**
+         * The entity id to execute the action on
+         */
+        authConfig?: CustomAuthData;
     };
 };
 
