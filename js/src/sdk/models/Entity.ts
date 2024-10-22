@@ -35,7 +35,7 @@ export class Entity {
             actionName: actionName
         });
         if (!action) {
-            throw new Error(`Could not find action: ${actionName}. If you are trying to use local tools, please note that local tools are not supported in the host environment. For more information, see the documentation: https://docs.composio.dev/swekit-js/workspace-env`);
+            throw new Error(`Could not find action: ${actionName}.`);
         }
         const app = await this.apps.get({
             appKey: action.appKey!
