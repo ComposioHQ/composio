@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator with Expiration</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🌈 Temporary QR Code Generator 🌈</h1>
+
+        <div class="input-section">
+            <label for="content">📋 Enter Content:</label>
+            <input type="text" id="content" placeholder="Enter content for QR code" class="input-box">
+
+            <label for="expiration">⏳ Set Expiration:</label>
+            <select id="expiration" class="input-box">
+                <option value="1">1 Day</option>
+                <option value="7">1 Week</option>
+                <option value="30">1 Month</option>
+                <option value="60">2 Month</option>
+                <option value="90">3 Month</option>
+            </select>
+
+            <button id="generate-btn" class="generate-btn">Generate QR Code</button>
+        </div>
+
+        <div id="loading-gif" class="hidden">
+            <img src="https://i.gifer.com/YCZH.gif" alt="Generating QR Code..." width="150px">
+            <p>Generating QR Code...</p>
+        </div>
+
+        <div id="qr-code" class="hidden qr-section"></div>
+        <p id="expiry-message" class="hidden expiry-message"></p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

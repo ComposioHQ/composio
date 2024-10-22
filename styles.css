@@ -1,0 +1,82 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f8ff;
+    color: #333;
+    text-align: center;
+    margin: 20px;
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+h1 {
+    color: #ff69b4;
+    margin-bottom: 20px;
+    font-size: 2.5em;
+}
+
+.input-section {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-top: 10px;
+    font-size: 1.2em;
+}
+
+.input-box {
+    width: 80%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 2px solid #ff69b4;
+    border-radius: 5px;
+    font-size: 1em;
+    transition: all 0.3s ease;
+}
+
+.input-box:focus {
+    outline: none;
+    border-color: #ff1493;
+}
+
+.generate-btn {
+    background-color: #ff69b4;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1.2em;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.generate-btn:hover {
+    background-color: #ff1493;
+}
+
+.qr-section {
+    margin-top: 20px;
+}
+
+.expiry-message {
+    margin-top: 10px;
+    font-size: 1.2em;
+    color: #ff6347;
+}
+
+.hidden {
+    display: none;
+}
+
+#loading-gif {
+    margin-top: 20px;
+    font-size: 1.2em;
+    color: #008080;
+}
