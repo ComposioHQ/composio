@@ -123,12 +123,18 @@ class _V2(Endpoint):
     Endpoint: /v1
     """
 
+    class _Actions(Endpoint):
+        """
+        Endpoint /v1/actions
+        """
+
     class _Triggers(Endpoint):
         """
         Endpoint /v1/triggers
         """
 
     triggers: _Triggers
+    actions: _Actions
 
 
 v1 = _V1(endpoint="v1")

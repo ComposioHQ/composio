@@ -181,9 +181,9 @@
       {
         "group":"Authentication",
         "pages":[
-          "patterns/auth/connected_account",
-          "patterns/auth/integrations",
-          "patterns/auth/multiple-users"
+          "patterns/Auth/connected_account",
+          "patterns/Auth/Integrations",
+          "patterns/Auth/multiple-users"
         ]
       },
       {

@@ -29,6 +29,8 @@ from composio.client.collections import (
     ConnectedAccountModel,
     ConnectionParams,
     ConnectionRequestModel,
+    CustomAuthObject,
+    CustomAuthParameter,
     FileType,
     IntegrationModel,
     SuccessExecuteActionResponseModel,
@@ -65,22 +67,28 @@ T = te.TypeVar("T")
 P = te.ParamSpec("P")
 
 _KeyType = t.Union[AppType, ActionType]
-_ProcessorType = t.Callable[[t.Dict], t.Dict]
+_CallableType = t.Callable[[t.Dict], t.Dict]
 
 MetadataType = t.Dict[_KeyType, t.Dict]
 ParamType = t.TypeVar("ParamType")
+
+# Enable deprecation warnings
+warnings.simplefilter("always", DeprecationWarning)
+
+
+ProcessorType = te.Literal["pre", "post", "schema"]
 
 
 class ProcessorsType(te.TypedDict):
     """Request and response processors."""
 
-    pre: te.NotRequired[t.Dict[_KeyType, _ProcessorType]]
+    pre: te.NotRequired[t.Dict[_KeyType, _CallableType]]
     """Request processors."""
 
-    post: te.NotRequired[t.Dict[_KeyType, _ProcessorType]]
+    post: te.NotRequired[t.Dict[_KeyType, _CallableType]]
     """Response processors."""
 
-    schema: te.NotRequired[t.Dict[_KeyType, _ProcessorType]]
+    schema: te.NotRequired[t.Dict[_KeyType, _CallableType]]
     """Schema processors"""
 
 
@@ -108,6 +116,8 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
 
 class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     """Composio toolset."""
+
+    _custom_auth: t.Dict[App, CustomAuthObject]
 
     _connected_accounts: t.Optional[t.List[ConnectedAccountModel]] = None
     _remote_client: t.Optional[Composio] = None
@@ -249,18 +259,25 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             self._api_key = None
             self.logger.debug("`api_key` is not set when initializing toolset.")
 
-        self._processors = (
-            processors
-            if processors is not None
-            else {"post": {}, "pre": {}, "schema": {}}
-        )
+        if processors is not None:
+            warnings.warn(
+                "Setting 'processors' on the ToolSet is deprecated, they should"
+                "be provided to the 'get_tools()' method instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            self._processors: ProcessorsType = processors
+        else:
+            self._processors = {"post": {}, "pre": {}, "schema": {}}
+
         self._metadata = metadata or {}
         self._workspace_id = workspace_id
         self._workspace_config = workspace_config
         self._local_client = LocalClient()
+        self._custom_auth = {}
 
         if len(kwargs) > 0:
-            self.logger.info(f"Extra kwards while initializing toolset: {kwargs}")
+            self.logger.info(f"Extra kwargs while initializing toolset: {kwargs}")
 
         self.logger.debug("Loading local tools")
         load_local_tools()
@@ -373,10 +390,26 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if self._workspace is not None:
             self._workspace = WorkspaceFactory.get(id=workspace_id)
 
+    def add_auth(
+        self,
+        app: AppType,
+        parameters: t.List[CustomAuthParameter],
+        base_url: t.Optional[str] = None,
+        body: t.Optional[t.Dict] = None,
+    ) -> None:
+        self._custom_auth[App(app)] = CustomAuthObject(
+            body=body or {},
+            base_url=base_url,
+            parameters=parameters,
+        )
+
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
         action = Action(action)
         if action.no_auth or action.is_runtime:
+            return
+
+        if App(action.app) in self._custom_auth:
             return
 
         if self._connected_accounts is None:
@@ -435,14 +468,19 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         text: t.Optional[str] = None,
     ) -> t.Dict:
         """Execute a remote action."""
-        self.check_connected_account(action=action)
+        auth = self._custom_auth.get(App(action.app))
+        if auth is None:
+            self.check_connected_account(action=action)
+
         output = self.client.get_entity(id=entity_id).execute(
             action=action,
             params=params,
-            text=text,
-            session_id=session_id,
             connected_account_id=connected_account_id,
+            session_id=session_id,
+            text=text,
+            auth=auth,
         )
+
         if self.output_in_file:
             return self._write_to_file(
                 action=action,
@@ -540,7 +578,10 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             return [self._serialize_execute_params(p) for p in param]  # type: ignore
 
         if isinstance(param, dict):
-            return {key: self._serialize_execute_params(val) for key, val in param.items()}  # type: ignore
+            return {
+                key: self._serialize_execute_params(val)  # type: ignore
+                for key, val in param.items()
+            }
 
         raise ValueError(
             "Invalid value found for execute parameters"
@@ -567,7 +608,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self,
         key: _KeyType,
         type_: te.Literal["post", "pre", "schema"],
-    ) -> t.Optional[_ProcessorType]:
+    ) -> t.Optional[_CallableType]:
         """Get processor for given app or action"""
         processor = self._processors.get(type_, {}).get(key)  # type: ignore
         if processor is not None:
@@ -591,6 +632,13 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 f" through: {processor.__name__}"
             )
             data = processor(data)
+            # Users may not respect our type annotations and return something that isn't a dict.
+            # If that happens we should show a friendly error message.
+            if not isinstance(data, t.Dict):
+                warnings.warn(
+                    f"Expected {type_}-processor to return 'dict', got {type(data).__name__!r}",
+                    stacklevel=2,
+                )
         return data
 
     def _process_request(self, action: Action, request: t.Dict) -> t.Dict:
@@ -626,6 +674,22 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             type_="schema",
         )
 
+    def _merge_processors(self, processors: ProcessorsType) -> None:
+        for processor_type in self._processors.keys():
+            if processor_type not in processors:
+                continue
+
+            processor_type = t.cast(ProcessorType, processor_type)
+            new_processors = processors[processor_type]
+
+            if processor_type in self._processors:
+                existing_processors = self._processors[processor_type]
+            else:
+                existing_processors = {}
+                self._processors[processor_type] = existing_processors
+
+            existing_processors.update(new_processors)
+
     @_record_action_if_available
     def execute_action(
         self,
@@ -635,6 +699,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         entity_id: t.Optional[str] = None,
         connected_account_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
+        *,
+        processors: t.Optional[ProcessorsType] = None,
     ) -> t.Dict:
         """
         Execute an action on a given entity.
@@ -649,6 +715,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         """
         action = Action(action)
         params = self._serialize_execute_params(param=params)
+        if processors is not None:
+            self._merge_processors(processors)
+
         if not action.is_runtime:
             params = self._process_request(action=action, request=params)
             metadata = self._add_metadata(action=action, metadata=metadata)
