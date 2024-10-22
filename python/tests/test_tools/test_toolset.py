@@ -242,7 +242,7 @@ def test_processors_on_get_tools(monkeypatch: pytest.MonkeyPatch) -> None:
     assert postprocessor_called
 
 
-def test_check_connected_accounts_flag(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_check_connected_accounts_flag() -> None:
     """Test the `check_connected_accounts` flag on `ComposioToolSet()`."""
 
     # Ensure `check_connected_account()` gets called by default
