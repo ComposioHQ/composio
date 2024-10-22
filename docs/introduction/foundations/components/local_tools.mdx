@@ -5,36 +5,48 @@ icon: "gear"
 description: "How to create a Local Tool and add it to your Agent"
 ---
 
-## What are local tools?
-Composio provides you with hundreds of tools and thousands of prebuilt actions, which contains both: 
- 1. Managed and run at Composio's end,
- 2. Running and executed locally at the user's machine. 
+## Overview
 
-The second kind is termed as **Local Tools** and some of its advantages are: 
+**Local Tools** in Composio empower users to execute actions directly on their machines, providing privacy and customization benefits. Composio offers two main types of tools:
 
-* The execution data does not need to leave user's machine,
-* User can add as many new Tools and Actions by themselves, and once added,  can use with any of Composio's supported platforms.
+1. **Composio-Managed Tools:** Executed on Composio’s end.
+2. **Local Tools:** Executed locally on the user’s machine.
 
-We have already added a number of useful local tools and are continuously adding more. 
+This guide focuses on **Local Tools** and outlines how you can create and add your own tools to integrate with Composio’s supported platforms.
 
-* Here's the list of already available [local tools](./list_local_tools).
+### Why Use Local Tools?
 
+Local tools provide several advantages:
 
-* Here's the link to use all of them [out](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local).
+- Data privacy: Execution happens on the user’s machine, ensuring sensitive data doesn’t leave the local environment.
+- Flexibility: Users can create and customize as many tools and actions as needed.
+- Compatibility: Custom tools and actions can be integrated seamlessly across various Composio-supported platforms.
 
+Additionally, you can extend the functionality of existing tools like GitHub, Gmail, or Jira by creating **Custom Actions**. These actions can leverage existing authentication details from user-connected accounts to perform personalized tasks.
 
-## Adding a Custom Local tool in Python
+---
 
-In addition to the existing tools, a user can easily create their own tool and use with any of the supported frameworks of composio.
+## Available Local Tools
 
-<Steps>
-<Step title="Add the action Decorator">
+Composio has already added many useful local tools, and we are continuously expanding the list. 
 
-In your code, add ```@action(toolname=[TOOL_NAME], requires=["LIBRARIES"])``` decorater to the function that returns the response to the LLM.
+- Explore the current list of available [local tools](./list_local_tools).
+- To access the entire repository of tools, visit the [Composio GitHub](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local).
 
-Specify the tool name as the decorater's parameter
-<CodeGroup>
-```python Create a Custom Action using Decorator
+---
+
+## Adding a Local Tool (Python Example)
+
+You can easily create your own local tool in Python and integrate it with Composio. Below are the steps to guide you through the process.
+
+### Step 1: Add the Action Decorator
+
+In your code, add @action(toolname=[TOOL_NAME], requires=["LIBRARIES"]) decorater to the function that returns the response to the LLM.
+
+Specify the tool name as the decorater’s parameter
+
+and save it in a file called local_tool.py
+```python
 from composio import action
 
 @action(toolname="cow", requires=["cowsay"])
@@ -49,40 +61,69 @@ def say(message: str) -> str:
 
     return cowsay.get_output_string("cow", message)
 ```
-</CodeGroup>
-</Step>
 
-<Step title="Import your Action">
+In this example, we create a custom tool called "cow" that uses the `cowsay` library to output a message.
 
-Now that your Custom Action is ready, Import it in your main file and start using it with your LLM.
-Integrate this with any agentic framework you want!
-<CodeGroup>
-```python Use the custom tool
-from composio import action
-from custom_tools import say
+### Step 2: Import and Use Your Custom Action
+
+Once your action is ready, import it into your main file and integrate it with your Composio agent framework.
+
+```python
+from composio import action, ComposioToolSet
+from local_tool import say
 
 composio_toolset = ComposioToolSet()
 
-# Get required tools
+# Retrieve and use the local tool
 tools = [
     *composio_toolset.get_tools(
         actions=[
-            say,  # This is the saved custom tool
+            say,  # This is the action from the tool we created
         ]
     ),
 ]
 ```
-</CodeGroup>
-</Step>
-</Steps>
 
-## Adding a Custom Local tool in Javascript
+---
 
-  <Card title="Coming Soon!">
-  </Card>
-**Examples/Sample Code:**
+## Custom Actions in Composio
 
-There are lot of local tools available in `composio/tools/local` directory, that you can use as a reference. To get started, you should check out the below two tools:
+Composio's **Custom Actions** allow you to expand the capabilities of existing tools by creating actions tailored to specific tasks. These actions can also utilize existing authentication details for services like GitHub to perform operations without requiring additional logins.
 
-- [Mathematical tool](https://github.com/ComposioHQ/composio/blob/master/python/composio/tools/local/mathematical/tool.py): Simple tool to perform mathematical operations.
-- [Greptile tool](https://github.com/ComposioHQ/composio/blob/master/python/composio/tools/local/greptile/tool.py): Tool to integrate with [Greptile](https://www.greptile.com/) framework.
+### Example: Creating a Custom Action to Return Authentication Details
+
+Here’s how you can create a custom action that returns authentication details for a particular service (in this case, GitHub):
+
+```python
+@action(toolname="github")
+def return_auth(auth: dict) -> auth:
+    """
+    Retrieve GitHub account information.
+    """
+    return auth
+
+print(
+    toolset.execute_action(
+        action=return_auth,
+        params={},
+    )
+)
+```
+
+This action returns the authentication details for the connected GitHub account.
+
+---
+
+## Additional Resources and Sample Code
+
+Composio provides several sample tools to help you get started. We recommend reviewing the following tools as references:
+
+- [Mathematical Tool](https://github.com/ComposioHQ/composio/blob/master/python/composio/tools/local/mathematical/tool.py): A simple tool for performing mathematical operations.
+- [Greptile Tool](https://github.com/ComposioHQ/composio/blob/master/python/composio/tools/local/greptile/tool.py): A tool to integrate with the [Greptile](https://www.greptile.com/) framework.
+
+For more information on how to create custom actions, explore our documentation [here](/patterns/functions/custom_actions).
+
+---
+
+By following these steps, you can easily create and manage local tools in Composio, unlocking a wide range of customizable capabilities tailored to your specific use case.
+
