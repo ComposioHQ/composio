@@ -35,7 +35,7 @@ export class Entity {
             actionName: actionName
         });
         if (!action) {
-            throw new Error(`Could not find action: ${actionName}.`);
+            throw new Error(`Could not find action: ${actionName}`);
         }
         const app = await this.apps.get({
             appKey: action.appKey!
