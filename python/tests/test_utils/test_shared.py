@@ -6,6 +6,7 @@ from inspect import Parameter
 
 import pydantic
 import pytest
+from pydantic_core import PydanticUndefined
 
 from composio.utils import shared
 
@@ -55,7 +56,7 @@ def test_json_schema_to_pydantic_field() -> None:
     assert result[0] == "owner"
     assert result[1] is str
     assert result[2].description == "The account owner of the repository."
-    assert result[2].default == ...
+    assert result[2].default == PydanticUndefined
 
 
 def test_json_schema_to_fields_dict() -> None:
@@ -89,7 +90,7 @@ def test_json_schema_to_fields_dict() -> None:
         result["repo"][1].description
         == "The name of the repository without the `.git` extension."
     )
-    assert result["owner"][1].default == ...
+    assert result["owner"][1].default == PydanticUndefined
     assert result["repo"][1].default is None
 
 
