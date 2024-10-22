@@ -234,7 +234,7 @@ class Entity:
         connected_account_id: t.Optional[str] = None,
         session_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
-        auth_params: t.Optional[t.List[CustomAuthObject]] = None,
+        auth: t.Optional[CustomAuthObject] = None,
     ) -> t.Dict:
         """
         Execute an action.
@@ -253,13 +253,23 @@ class Entity:
                 entity_id=self.id,
                 session_id=session_id,
                 text=text,
-                auth_params=auth_params
+            )
+
+        if auth is not None:
+            return self.client.actions.execute(
+                action=action,
+                params=params,
+                entity_id=self.id,
+                session_id=session_id,
+                text=text,
+                auth=auth
             )
 
         connected_account = self.get_connection(
             app=action.app,
             connected_account_id=connected_account_id,
         )
+
         return self.client.actions.execute(
             action=action,
             params=params,
@@ -267,7 +277,7 @@ class Entity:
             connected_account=connected_account.id,
             session_id=session_id,
             text=text,
-            auth_params=auth_params
+            auth=auth
         )
 
     def get_connection(

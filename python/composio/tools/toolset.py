@@ -30,6 +30,7 @@ from composio.client.collections import (
     ConnectionParams,
     ConnectionRequestModel,
     CustomAuthObject,
+    CustomAuthParameter,
     FileType,
     IntegrationModel,
     SuccessExecuteActionResponseModel,
@@ -116,7 +117,7 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
 class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     """Composio toolset."""
 
-    _custom_auth: t.Dict[App, t.List[CustomAuthObject]]
+    _custom_auth: t.Dict[App, CustomAuthObject]
 
     _connected_accounts: t.Optional[t.List[ConnectedAccountModel]] = None
     _remote_client: t.Optional[Composio] = None
@@ -389,8 +390,18 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if self._workspace is not None:
             self._workspace = WorkspaceFactory.get(id=workspace_id)
 
-    def add_auth(self, app: AppType, params: t.List[CustomAuthObject]) -> None:
-        self._custom_auth[App(app)] = params
+    def add_auth(
+        self,
+        app: AppType,
+        parameters: t.List[CustomAuthParameter],
+        base_url: t.Optional[str] = None,
+        body: t.Optional[t.Dict] = None,
+    ) -> None:
+        self._custom_auth[App(app)] = CustomAuthObject(
+            body=body or {},
+            base_url=base_url,
+            parameters=parameters,
+        )
 
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
@@ -457,15 +468,19 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         text: t.Optional[str] = None,
     ) -> t.Dict:
         """Execute a remote action."""
-        self.check_connected_account(action=action)
+        auth = self._custom_auth.get(App(action.app))
+        if auth is None:
+            self.check_connected_account(action=action)
+
         output = self.client.get_entity(id=entity_id).execute(
             action=action,
             params=params,
-            text=text,
-            session_id=session_id,
             connected_account_id=connected_account_id,
-            auth_params=self._custom_auth.get(App(action.app)),
+            session_id=session_id,
+            text=text,
+            auth=auth,
         )
+
         if self.output_in_file:
             return self._write_to_file(
                 action=action,
