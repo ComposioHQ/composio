@@ -16,7 +16,7 @@ class CodeAnalysisTool(LocalTool, autoload=True):
 
     requires = [
         "tree_sitter==0.21.3",
-        "deeplake",
+        "deeplake>3.9,<4",
         "sentence-transformers",
         "tree_sitter_languages",
         "git+https://github.com/DataDog/jedi.git@92d0c807b0dcd115b1ffd0a4ed21e44db127c2fb#egg=jedi",
