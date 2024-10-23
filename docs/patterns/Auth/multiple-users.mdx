@@ -21,9 +21,9 @@ To create or retrieve an entity for a user, you can use their unique identifier.
 <Tab title="Python">
 <CodeGroup>
 ```python Python Code Snippet to get an entity (user)
-from composio import Composio
+from composio import ComposioToolSet
 
-composio_client = Composio(api_key="COMPOSIO_API_KEY")
+composio_client = ComposioToolSet(api_key="COMPOSIO_API_KEY")
 entity = composio_client.get_entity(id='user_email_id')
 ```
 </CodeGroup>
@@ -76,7 +76,10 @@ Composio allows you to perform actions on behalf of users. For example, you can 
 <Tab title="Python">
 <CodeGroup>
 ```python python
-actions = entity.get_tools(app_name=App.GITHUB)
+composio_client = ComposioToolSet(entity_id="Jessica")
+
+print(composio_client.get_action_schemas(apps=[App.GITHUB])) #returns all the available actions 
+print(composio_client.get_agent_instructions(apps=[App.GITHUB])) #returns the important actions 
 ```
 </CodeGroup>
 </Tab>

@@ -64,20 +64,24 @@ To optimize LLM performance, it's crucial to select a **focused set of actions**
         ```javascript
         import { OpenAIToolSet } from "composio-core";
 
-        //Pass api key if you haven't run composio login
-        const toolset = new OpenAIToolSet({
-            apiKey: process.env.COMPOSIO_API_KEY,
-            entityId: "Jessica"
+        const toolset = new OpenAIToolSet();
+
+        const customAuthAction = await toolset.client.actions.execute({
+            actionName: "GITHUB_GITHUB_API_ROOT",
+            requestBody: {
+                appName: "github",
+                authConfig: {
+                    parameters: [{
+                        name: "Authorization",
+                        in: "header",
+                        value: `Bearer YOUR_API_KEY`
+                    }]
+                },
+                input: {}
+            }
         });
 
-        await toolset.executeAction(
-          'github_star_a_repository_for_the_authenticated_user',
-            {
-                owner: 'composiohq',
-                repo: 'composio'
-            },
-          "Jessica"
-        );
+        console.log("Custom auth action response", customAuthAction)
         ```
       </Step>
     </Steps>

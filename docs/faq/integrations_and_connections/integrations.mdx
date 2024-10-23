@@ -55,10 +55,10 @@ To get detailed information about a specific integration, use the get command fo
 <CodeGroup>
 ```python Get integration details via Python
 from composio import ComposioToolSet
+toolset = ComposioToolSet()
 
-client_toolset = ComposioToolSet(api_key=COMPOSIO_API_KEY)
-
-print(client_toolset.client.integrations.get(id=123))
+print(toolset.client.integrations.get())
+print(toolset.client.integrations.get_by_id(integration_id="ADD THE ID HERE")) #filter based on integration id
 ```
 </CodeGroup>
 </Tab>
@@ -72,17 +72,14 @@ composio integrations get 123
 </Tab>
 <Tab title="JS">
 ```javascript javascript    
-import { Composio } from "composio-core";
+import { OpenAIToolSet } from "composio-core";
 
-const client = new Composio(
-  process.env.COMPOSIO_API_KEY
-);
-
-const integration = await integrations.get({
-  integrationId: "123",
+const openai_client = new OpenAIToolSet({
+    apiKey: process.env.OPENAIKEY
 });
 
-console.log(integration)
+console.log(openai_client.client.integrations.list()) //lists all integrations
+console.log(await openai_client.client.integrations.get({integrationId:"ADD THE ID HERE"})) //filter based on integration id
 ```
 </Tab>
 <Tab title="API">

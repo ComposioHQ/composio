@@ -11,15 +11,16 @@ To view all the connections associated with your Composio account, use the follo
 <Tab title="Python">
 <CodeGroup>
 ```python List all connections via Python
-from composio import Composio
+from composio import ComposioToolSet
 
-client = Composio()
+composio_client = ComposioToolSet()
 
-entity = composio_client.get_entity(id=USER_ID)
+entity = composio_client.get_entity(id="YOUR USER'S ENTITY ID")
 
-print(composio_client.)
-
-print(composio_client.connected_accounts.get())
+try:
+    connected_account  = entity.get_connection(app="slack")
+except Exception as e:
+    print("No connected account found")#This code attempts to retrieve the connected account for Slack. 
 ```
 </CodeGroup>
 </Tab>
@@ -56,11 +57,11 @@ To get detailed information about a specific connection, use the get command fol
 <Tab title="Python">
 <CodeGroup>
 ```python Get connection details via Python
-from composio import Composio
+from composio import ComposioToolSet
 
-client = Composio()
+composio_client = ComposioToolSet()
 
-print(composio_client.connected_accounts.get(id=123))
+print(composio_client.client.connected_accounts.get('123'))
 ```
 </CodeGroup>
 </Tab>
