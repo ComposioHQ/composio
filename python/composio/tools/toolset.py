@@ -31,6 +31,7 @@ from composio.client.collections import (
     ConnectionRequestModel,
     CustomAuthObject,
     CustomAuthParameter,
+    ExpectedFieldInput,
     FileType,
     IntegrationModel,
     SuccessExecuteActionResponseModel,
@@ -77,6 +78,13 @@ warnings.simplefilter("always", DeprecationWarning)
 
 
 ProcessorType = te.Literal["pre", "post", "schema"]
+
+
+class IntegrationParams(te.TypedDict):
+
+    integration_id: str
+    auth_scheme: str
+    expected_params: t.List[ExpectedFieldInput]
 
 
 class ProcessorsType(te.TypedDict):
@@ -1086,7 +1094,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             )
         )
 
-    def _get_expected_params_from_integration_id(self, id: str) -> t.Dict:
+    def _get_expected_params_from_integration_id(self, id: str) -> IntegrationParams:
         integration = self.get_integration(id=id)
         return {
             "integration_id": integration.id,
@@ -1094,16 +1102,19 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             "expected_params": integration.expectedInputFields,
         }
 
-    def _get_expected_params_from_app(self, app: AppType) -> t.Dict:
+    def _get_integration_for_app(self, app: AppType) -> IntegrationModel:
         for integration in sorted(self.get_integrations(), key=lambda x: x.createdAt):
             if integration.appName.lower() == str(app).lower():
-                integration = self.get_integration(id=integration.id)
-                return {
-                    "integration_id": integration.id,
-                    "auth_scheme": integration.authScheme,
-                    "expected_params": integration.expectedInputFields,
-                }
+                return self.get_integration(id=integration.id)
         raise ValueError(f"No integration found for `{app}`")
+
+    def _get_expected_params_from_app(self, app: AppType) -> IntegrationParams:
+        integration = self._get_integration_for_app(app=app)
+        return {
+            "integration_id": integration.id,
+            "auth_scheme": integration.authScheme,
+            "expected_params": integration.expectedInputFields,
+        }
 
     def _can_use_auth_scheme(self, scheme: AppAuthScheme, app: AppModel) -> bool:
         if (
@@ -1130,7 +1141,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             ]
         ] = None,
         integration_id: t.Optional[str] = None,
-    ) -> t.Dict[str, t.Any]:
+    ) -> IntegrationParams:
         """
         This method returns a list of parameters that are suppossed to be
         provided by the user.
@@ -1213,11 +1224,12 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
         if integration_id is None:
             try:
-                integration_id = (
-                    self.get_entity(id=entity_id or self.entity_id)
-                    .get_connection(app=app)
-                    .integrationId
-                )
+                integration_id = self._get_integration_for_app(
+                    app=t.cast(
+                        AppType,
+                        app,
+                    )
+                ).id
             except NoItemsFound as e:
                 raise ComposioSDKError(
                     message=(
