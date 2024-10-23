@@ -1139,9 +1139,9 @@ class Actions(Collection[ActionModel]):
         ).json()
 
     @staticmethod
-    def _serialize_auth(auth: t.Optional[CustomAuthObject]) -> t.Dict:
+    def _serialize_auth(auth: t.Optional[CustomAuthObject]) -> t.Optional[t.Dict]:
         if auth is None:
-            return {}
+            return None
 
         data = auth.model_dump(exclude_none=True)
         data["parameters"] = [
@@ -1155,9 +1155,9 @@ class ExpectedFieldInput(BaseModel):
     name: str
     type: str
 
-    is_secret: bool
     description: str
     displayName: str
+    is_secret: bool = False
 
     required: bool = True
     expected_from_customer: bool = True
