@@ -1,0 +1,62 @@
+name: " Feature Request"
+description: "Have any new ideas or features for Composio? Please suggest!"
+title: "<write a small description here>"
+labels: ["✨ enhancement"]  # Assuming "new-feature" is the appropriate label
+body:
+  - type: markdown
+    attributes:
+      value: |
+        - Thank you for using Composio and taking the time to suggest a new feature! 
+    
+
+  - type: textarea
+    id: description_feature
+    attributes:
+      label: "Description"
+      description: "Please describe the missing functionality that this feature would address."
+      placeholder: "A detailed description of the new feature request."
+    validations:
+      required: true
+
+  - type: textarea
+    id: feature_solution_proposed
+    attributes:
+      label: "Proposed Solution"
+      description: "Describe how you envision this functionality implemented in Composio."
+      placeholder: "Include sketches, wireframes, or flowcharts to illustrate your proposal (optional)."
+
+  - type: textarea
+    id: feature_impact_solution
+    attributes:
+      label: "Impact of Solution"
+      description: "How could this feature affect the rest of Composio? Are there any specific considerations?"
+      placeholder: "Describe any relevant information about the feature's impact."
+
+  - type: textarea
+    id: additional_context_feature
+    attributes:
+      label: "Additional Context"
+      description: "Provide any additional information that may help implement this feature (workarounds, third-party solutions, etc.)."
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        You can view our development roadmap on the [Composio website](https://composiohq.com/roadmap) 
+        to see if your feature request is already planned.
+
+  - type: checkboxes
+    id: terms_checklist_feature
+    attributes:
+      label: "Code of Conduct"
+      description: "By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/ComposioHQ/composio/blob/main/CODE_OF_ CONDUCT.md) and [Contributing Guidelines](https://github.com/ComposioHQ/composio/blob/main/CONTRIBUTING.md)."
+      options:
+        - label: "I have checked the [existing issues](https://github.com/ComposioHQ/composio/issues?q=is%3Aissue+)."
+          required: true
+        - label: "I am willing to work on this issue (optional)"
+          required: false
+
+  - type: markdown
+    attributes:
+      value: Thank you for taking the time to suggest a new feature!

@@ -1,0 +1,46 @@
+name: "📄 Documentation Issue"
+description: "Use this form to suggest improvements for our documentation."
+title: "[DOCS] <write a small description here>"
+labels: ["documentation"]  # Assuming "documentation" is the appropriate label
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        - Thank you for using Composio and taking the time to suggest improvements in the documentation! 
+        
+
+  - type: textarea
+    id: docs_description
+    attributes:
+      label: "Issue Description"
+      description: "Please provide a brief summary of the documentation issue you are experiencing or would like to address."
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots_examples_docs
+    attributes:
+      label: "Screenshots or Examples (if applicable)"
+      description: "Please include relevant screenshots or examples to help illustrate the problem."
+
+  - type: textarea
+    id: proposed_solution_docs
+    attributes:
+      label: "Proposed Solution (optional)"
+      description: "If you have a proposed solution for the documentation issue, please provide it here. This can be helpful for speeding up the resolution process."
+
+  - type: checkboxes
+    id: terms_checklist_docs
+    attributes:
+      label: "Code of Conduct"
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/ComposioHQ/composio/blob/main/CODE_OF_CONDUCT.md) and [Contributing Guidelines](https://github.com/ComposioHQ/composio/blob/main/CONTRIBUTING.md) and [Contributing Guidelines](link_to_your_contributing_guidelines) (if applicable).
+      options:
+        - label: "I have checked the [existing issues](https://github.com/ComposioHQ/composio/issues)."
+          required: true
+        - label: "I am willing to work on this issue (optional)"
+          required: false
+
+  - type: markdown
+    attributes:
+      value: Thank you for taking the time to suggest improvements!
