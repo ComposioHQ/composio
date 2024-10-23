@@ -8,6 +8,14 @@ description: "Here's how to connect your user to Linear"
 <Tabs>
     <Tab title="Python">
     <Steps>
+    <Step title="Creating a Linear Integration">
+    To use your Developer App, toggle the "Use your own Developer App" button while creating the Integration
+    ![Creating a linear Integration](patterns/Auth/examples/gif/linear_auth.gif)
+    - You can use Composio's credentials or Use your Developer App's API Key for the Integration.
+    - Depending on the application, you can choose between OAuth2 based or API key based Authentication.
+    - In this case we use API Key based method.
+    - Next lets connect your users.
+    </Step>
     <Step title="Fetching Authentication Parameters">
     <CodeGroup>
         ```python Fetch auth params 
@@ -19,7 +27,20 @@ description: "Here's how to connect your user to Linear"
         print(response["expected_params"])
         ```
     </CodeGroup>
-
+    This is what the output looks like:
+    <CodeGroup>
+    ```shell Output
+    [ExpectedFieldInput(name='api_key', 
+        type='string', 
+        description='Your Linear API key for authentication. Obtain it from your Linear settings.', 
+        displayName='API Key', is_secret=False, 
+        required=True, 
+        expected_from_customer=True, 
+        default=None, 
+        get_current_user_endpoint=None
+    )]
+    ```
+    </CodeGroup>
     </Step>
 
     <Step title="Creating a Connection with Collected Parameters">
@@ -29,23 +50,42 @@ description: "Here's how to connect your user to Linear"
         # This is the URL that the user will be redirected to after completing the authentication process
         redirect_url = "https://yourwebsite.com/connection/callback"
 
-        entity_id = "user_id" # This is the unique identifier for the user
+        entity_id = "Jessica" # This is the unique identifier for the user
 
-        # Collect the parameters from the user
-        # Here we are assuming that the user has provided the parameters
-        # In a real-world scenario, you would collect these parameters from the user via your app's UI.
+        # To connect your user to Linear, we need the API Key you've used while creating the integration
+        # If you've used Composio's credentials then you don't need to worry about this
         collected_params = {
-            "api_key": "1234567890" # Add your actual API Key
+            "api_key": "1234567890" # Add your API Key if you are using your own developer app while creating the integration
+            # Keep the same API Key as the one used while creating an Integration
+            # If you've used Composio's credentials while integrating, you dont have to pass in the API Key 
         }
 
         # Initiate the connection
         connection_request = toolset.initiate_connection(connected_account_params=collected_params,entity_id=entity_id,app=App.LINEAR,redirect_url=redirect_url)
 
         # Check the status of the connection
-        print(connection_request.status)
+        print(connection_request.connectionStatus)
 
         ```
         </CodeGroup>
+        This is what the output looks like:
+        <CodeGroup>
+        ```shell Output
+        ACTIVE #This means the connection was successful
+
+        #If the status is INITIATED or FAILED, You should try initiating the connection again.
+        ```
+        </CodeGroup>
+
+    </Step>
+    <Step title="Get specific Connected Account">
+    <CodeGroup>
+        ```python Get connected account
+        entity = toolset.client.get_entity(id="your desired entity id")
+        #if you want a list of connections, do not use mention id in the get_entity function
+        print(entity.get_connections())
+        ```
+    </CodeGroup>
     </Step>
 
     <Step title="Execute Action on your User's behalf">
@@ -60,14 +100,12 @@ description: "Here's how to connect your user to Linear"
         )
         ```
     </CodeGroup>
-    </Step>
-
-    <Step title="Get specific Connected Account">
+    Here's how the output would look:
     <CodeGroup>
-        ```python Get connected account
-        entity = toolset.client.get_entity(id="your desired entity id")
-        #if you want a list of connections, do not use mention id in the get_entity function
-        print(entity.get_connections())
+        ```shell Output
+        Executing `LINEAR_LIST_LINEAR_PROJECTS` with params={} and metadata={} connected_account_id=None
+        Got response={'successfull': True, 'data': {'projects': [{'id': '9', 'name': 'Test'}]}, 'error': None} from action=LINEAR_LIST_LINEAR_PROJECTS with params={}
+        # This is a sample output, your output values will vary
         ```
     </CodeGroup>
     </Step>
@@ -79,12 +117,25 @@ description: "Here's how to connect your user to Linear"
     <Tab title="JavaScript">
 
     <Steps>
+    <Step title="Creating a Linear Integration">
+    To use your Developer App, toggle the "Use your own Developer App" button while creating the Integration
+    ![Creating a linear Integration](patterns/Auth/examples/gif/linear_auth.gif)
+    - You can use Composio's credentials or Use your Developer App's API Key for the Integration.
+    - Depending on the application, you can choose between OAuth2 based or API key based Authentication.
+    - In this case we use API Key based method.
+    - Next lets connect your users.
+    </Step>
+
     <Step title="Fetching Authentication Parameters">
     <CodeGroup>
         ```javascript Fetch auth params 
         import { Composio, OpenAIToolSet } from "composio-core";
+        //import dotenv from 'dotenv';
 
-        const toolset = new OpenAIToolSet();
+        //dotenv.config();
+        const toolset = new OpenAIToolSet({
+            apiKey: "COMPOSIO_API_KEY"
+        });
 
         const expectedInputFields = await toolset.getExpectedParamsForUser({
             app: "linear",
@@ -93,6 +144,31 @@ description: "Here's how to connect your user to Linear"
         console.log(expectedInputFields)
 
         ```
+    </CodeGroup>
+    Here's how the output would look:
+    <CodeGroup>
+    ```shell Output
+    {
+    //The expectedInputFields s [] if you use Composio's credentials
+    //Since we ve used API Key and our own Developer App we get this output
+    expectedInputFields: [
+            {
+            name: 'api_key',
+            type: 'string',
+            description: 'Your Linear API key for authentication. Obtain it from your Linear settings.',
+            display_name: 'API Key',
+            default: null,
+            required: true,
+            get_current_user_endpoint: null,
+            expected_from_customer: true,
+            is_secret: false,
+            displayName: 'API Key'
+            }
+        ],
+        integrationId: 'e745dad7-c9ba-49ae-96e1-71d1097cd42f',
+        authScheme: 'API_KEY'
+        }
+    ```
     </CodeGroup>
     </Step>
 
@@ -103,13 +179,13 @@ description: "Here's how to connect your user to Linear"
 
         const redirectUrl = "https://yourwebsite.com/connection/callback"
 
-        const entityId = "user_id" // This is the unique identifier for the user
+        const entityId = "Jessica" // This is the unique identifier for the user
 
         // Collect the parameters from the user
         // Here we are assuming that the user has provided the parameters
         // In a real-world scenario, you would collect these parameters from the user via your app's UI.
         const collectedParams = {
-            // "api_key": "1234567890" // This is an example, actual values will be different
+            "api_key": "dvavadv", // This is an example, actual values will be different
         }
 
         const connectionRequest = await toolset.client.connectedAccounts.initiate({
@@ -130,6 +206,139 @@ description: "Here's how to connect your user to Linear"
 
         ```
     </CodeGroup>
+    Here's how the output would look:
+    <CodeGroup>
+    ```shell Output
+    Click on this link to connect your account: https://yourwebsite.com/connection/callback
+    Connected account is active {
+    integrationId: '9',
+    connectionParams: {
+        api_key: 'dvavadv',
+        base_url: 'https://api.linear.app',
+        finalRedirectUri: 'https://yourwebsite.com/connection/callback',
+        headers: {
+        Authorization: 'dvavadv',
+        'x-request-id': '7a24c523-92f8-4277-bfe9-4f2c1544a5e2'
+        },
+        queryParams: {}
+    },
+    appUniqueId: 'linear',
+    meta: { app: { get_current_user_endpoint: null } },
+    memberInfo: {
+        id: '9',
+        clientId: '10',
+        email: 'your_email_id@gmail.com',
+        name: 'your_email_id@gmail.com',
+        role: 'admin',
+        metadata: {
+        survery_data: [Object],
+        has_survey_filled: true,
+        has_completed_onboarding: true
+        },
+        createdAt: '2024-05-23T07:28:41.091Z',
+        updatedAt: '2024-05-23T07:28:50.796Z',
+        deletedAt: null
+    },
+    isDisabled: false,
+    id: '9',
+    memberId: '10',
+    clientUniqueUserId: 'user_id',
+    status: 'ACTIVE',
+    enabled: true,
+    createdAt: '2024-10-23T12:19:49.579Z',
+    updatedAt: '2024-10-23T12:19:49.579Z',
+    member: {
+        id: '10',
+        clientId: '11',
+        email: 'your_email_id@gmail.com',
+        name: 'your_email_id@gmail.com',
+        role: 'admin',
+        metadata: {
+        survery_data: [Object],
+        has_survey_filled: true,
+        has_completed_onboarding: true
+        },
+        createdAt: '2024-05-23T07:28:41.091Z',
+        updatedAt: '2024-05-23T07:28:50.796Z',
+        deletedAt: null
+    },
+    appName: 'linear',
+    entityId: 'Jessica'
+    }
+    ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Get specific Connected Account">
+    <CodeGroup>
+        ```javascript Get connected account
+        const entity = toolset.client.getEntity({id:"Jessica"});
+        //console.log(await entity.connectedAccounts.list()) // Displays all connected accounts
+        console.log(await entity.connectedAccounts.get({connectedAccountId:'9'})) // Displays connected account details based on connected account id       
+        ```
+    </CodeGroup>
+    Connected Account ID can be obtained [here](https://app.composio.dev/connections?page=1&status=ACTIVE)
+
+    Here's what the output would look like:
+    <CodeGroup>
+    ```shell Output
+    Connected account is active {
+    integrationId: '9',
+    connectionParams: {
+        api_key: 'dvavadv',
+        base_url: 'https://api.linear.app',
+        finalRedirectUri: 'https://yourwebsite.com/connection/callback',
+        headers: {
+        Authorization: 'dvavadv',
+        'x-request-id': '7a24c523-92f8-4277-bfe9-4f2c1544a5e2'
+        },
+        queryParams: {}
+    },
+    appUniqueId: 'linear',
+    meta: { app: { get_current_user_endpoint: null } },
+    memberInfo: {
+        id: '9',
+        clientId: '10',
+        email: 'your_email_id@gmail.com',
+        name: 'your_email_id@gmail.com',
+        role: 'admin',
+        metadata: {
+        survery_data: [Object],
+        has_survey_filled: true,
+        has_completed_onboarding: true
+        },
+        createdAt: '2024-05-23T07:28:41.091Z',
+        updatedAt: '2024-05-23T07:28:50.796Z',
+        deletedAt: null
+    },
+    isDisabled: false,
+    id: '9',
+    memberId: '10',
+    clientUniqueUserId: 'Jessica',
+    status: 'ACTIVE',
+    enabled: true,
+    createdAt: '2024-10-23T12:19:49.579Z',
+    updatedAt: '2024-10-23T12:19:49.579Z',
+    member: {
+        id: '10',
+        clientId: '11',
+        email: 'your_email_id@gmail.com',
+        name: 'your_email_id@gmail.com',
+        role: 'admin',
+        metadata: {
+        survery_data: [Object],
+        has_survey_filled: true,
+        has_completed_onboarding: true
+        },
+        createdAt: '2024-05-23T07:28:41.091Z',
+        updatedAt: '2024-05-23T07:28:50.796Z',
+        deletedAt: null
+    },
+    appName: 'linear',
+    entityId: 'Jessica'
+    }
+    ```
+    </CodeGroup>
     </Step>
 
     <Step title="Execute Action on your User's behalf">
@@ -137,32 +346,43 @@ description: "Here's how to connect your user to Linear"
         ```javascript Execute action for your user
 
         import { OpenAIToolSet } from "composio-core";
+        import dotenv from 'dotenv';
 
+        dotenv.config();
         const toolset = new OpenAIToolSet({
-            apiKey: process.env.COMPOSIO_API_KEY,
-            entityId: "Jessica",
+            entityId: "sam-openai",
         });
-        toolset.execute_action({
-            'LINEAR_LIST_LINEAR_PROJECTS',
-            params:{},
-            entity_id:"Jessica" #Specify your user's entity_id here to execute action on their behalf
-        })
+        const output = await toolset.client.actions.execute({
+            actionName:'LINEAR_LIST_LINEAR_PROJECTS',
+            requestBody:{
+                connectedAccountId: "daf502ff-8cbe-40ac-897e-873dbdb49b3b",
+                input:{}
+            },
+        });
+
+        console.log(output['data']['projects'])
         ```
     </CodeGroup>
-    </Step>
-
-    <Step title="Get specific Connected Account">
+    Here's what the output looks like:
     <CodeGroup>
-        ```javascript Get connected account
-        const openai_client = new OpenAIToolSet({
-            apiKey: process.env.OPENAIKEY
-        });
-        const entity = openai_client.client.getEntity({id:"Jessica"});
-        console.log(await entity.connectedAccounts.list())
-        ```
+    ```shell Output
+    [
+        { id: '6b97d9ce-db19-4d9c-bc2a-62e9a34e16c8', name: 'test_project' },
+        # This is a sample project output returned
+    ]
+    ```
     </CodeGroup>
     </Step>
     </Steps>
     </Tab>
 </Tabs>
 
+**Congratulations!** You have successfully completed the following key milestones:
+
+- **Created an Integration with Linear**: You have effectively established an integration with Linear using the API Key method, utilizing your own Developer App.
+
+- **Connected Your User's Linear Account**: You have successfully guided your user through the authentication process, enabling them to connect their Linear account to your application. 
+
+- **Executed an Action**: You have successfully executed an action on Linear. You can execute already existing actions under Linear or create your own [Custom Actions](patterns/Auth/examples/custom_action_gmail.mdx). 
+
+- You can see how to connect your users to [Gmail](patterns/Auth/examples/gmail_example)
