@@ -1155,9 +1155,9 @@ class ExpectedFieldInput(BaseModel):
     name: str
     type: str
 
-    is_secret: bool
     description: str
     displayName: str
+    is_secret: bool = False
 
     required: bool = True
     expected_from_customer: bool = True
