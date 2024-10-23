@@ -75,13 +75,12 @@ from local_tool import say
 composio_toolset = ComposioToolSet()
 
 # Retrieve and use the local tool
-tools = [
-    *composio_toolset.get_tools(
-        actions=[
-            say,  # This is the action from the tool we created
-        ]
-    ),
-]
+tools = composio_toolset.execute_action(
+        actions=say,  # This is the action from the tool we created
+        params={
+            'message':"hello"
+        }),
+print(tools)
 ```
 
 ---
