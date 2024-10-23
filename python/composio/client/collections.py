@@ -1139,9 +1139,9 @@ class Actions(Collection[ActionModel]):
         ).json()
 
     @staticmethod
-    def _serialize_auth(auth: t.Optional[CustomAuthObject]) -> t.Dict:
+    def _serialize_auth(auth: t.Optional[CustomAuthObject]) -> t.Optional[t.Dict]:
         if auth is None:
-            return {}
+            return None
 
         data = auth.model_dump(exclude_none=True)
         data["parameters"] = [
