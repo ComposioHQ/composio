@@ -95,6 +95,7 @@ class ComposioToolSet(
         entity_id: t.Optional[str] = None,
         *,
         processors: t.Optional[ProcessorsType] = None,
+        check_connected_accounts: bool = True,
     ) -> t.List[Tool]:
         """
         Get composio tools wrapped as Lyzr `Tool` objects.
@@ -114,5 +115,10 @@ class ComposioToolSet(
                 schema=schema.model_dump(exclude_none=True),
                 entity_id=entity_id or self.entity_id,
             )
-            for schema in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
+            for schema in self.get_action_schemas(
+                actions=actions,
+                apps=apps,
+                tags=tags,
+                check_connected_accounts=check_connected_accounts,
+            )
         ]
