@@ -21,7 +21,7 @@ For example:
 
 > The `@action` decorator is used to register your function as a custom action for a specific tool, allowing it to use the tool's existing authentication.
 
-Here's how you can create custom actions:
+### Here's how you can create custom actions:
 
 1. Import necessary modules and initialize the ComposioToolSet:
 
@@ -33,14 +33,13 @@ toolset = ComposioToolSet()
 
 2. Create a custom action using the `@action` decorator:
 
-### Simple Action Using Existing Tool Authentication
-
 ```python
 @action(toolname="github")
-def get_info_arg(auth: dict) -> dict:
+def get_info_arg(auth: dict, query:str) -> dict:
     """
     Get github account information using existing GitHub authentication.
 
+    :param query: Passing input query parameter 
     :param auth: Authentication dictionary provided by Composio for GitHub
     :return info: Github account information
     """
@@ -58,9 +57,20 @@ In this example, the `get_info_arg` function is decorated with `@action(toolname
 print(
     toolset.execute_action(
         action=get_info_arg,
-        params={},
+        params={
+            'query':'test_query' 
+        },
     )
 )
+```
+
+Here's what the output should look like:
+
+```shell Output
+[INFO] Logging is set to INFO, use `logging_level` argument or `COMPOSIO_LOGGING_LEVEL` change this
+[INFO] Executing `GITHUB_GET_INFO_ARG` with params={'query': 'test_query'} and metadata=None connected_account_id=None
+[INFO] Got response={'data': {'info': {'headers': {'Authorization': 'Bearer KEY', 'x-request-id': '2c65e8b'}, 'base_url': 'https://api.github.com', 'query_params': {}}}, 'error': None, 'successful'...
+{'data': {'info': {'headers': {'Authorization': 'Bearer KEY', 'x-request-id': '2c65e8b'}, 'base_url': 'https://api.github.com', 'query_params': {}}}, 'error': None, 'successful': True}
 ```
 
 ## Getting Authentication Parameters
@@ -73,4 +83,10 @@ print(
         app=App.GITHUB,
     )
 )
+```
+
+Here's what the output should look like:
+
+```shell Output
+body={} base_url='https://api.github.com' parameters=[ConnectionAuthParam(in_='header', name='Authorization', value='Bearer KEY'), ConnectionAuthParam(in_='header', name='x-request-id', value='48ab67d')]
 ```

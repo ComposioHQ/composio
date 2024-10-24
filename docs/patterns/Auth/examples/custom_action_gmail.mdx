@@ -4,8 +4,11 @@ sidebarTitle: "Build your own Custom Action"
 icon: "gear"
 description: "Here's how to build Custom Action"
 ---
+With Composio you can build your own Actions under existing tools, such actions are called Custom Actions.
+You can build these Actions without having to worry about Authentication.
 
-This guide demonstrates how to build a demo Custom Action on Gmail
+In this example, you can see how to create a Custom Action with Gmail.
+
 <Steps>
 
 <Step title="Import required dependencies">
@@ -21,22 +24,20 @@ toolset = ComposioToolSet()
 <Step title="Creating our Custom Action">
 ```python Python
 @action(toolname="gmail")
-def get_emails(auth: dict) -> str:
+def get_emails(auth: dict, query:str) -> str:
     """
     Get gmail account information.
-    :input auth: Authentication credentials
-    :input query: Gmail query (provide a description here)  # Update this line
+    :param auth: Authentication credentials
+    :param query: Gmail query (provide a description here) 
     :return info: Gmail account information
     """
-    auth_token = auth['headers']['Authorization']
     current_dateTime = datetime.datetime.now().isoformat() + 'Z'  
     tomorrow_dateTime = (datetime.datetime.now() + datetime.timedelta(days=1)).isoformat() + 'Z' 
-    url = f'https://www.googleapis.com/gmail/v1/users/me/messages?q=in:sent after:{current_dateTime} before:{tomorrow_dateTime}'
+    base_url = auth['base_url']
+    url = f"{base_url}/gmail/v1/users/me/messages?q=in:sent after:{current_dateTime} before:{tomorrow_dateTime}"
 
-    headers = {
-        'Authorization': f'{auth_token}',
-    }
-
+    headers = auth['headers']
+    query_params = auth['query_params']
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
@@ -52,21 +53,35 @@ def get_emails(auth: dict) -> str:
 print(
     toolset.execute_action(
         action=get_emails,
-        params={},
+        params={
+            "query":"Newsletters" #this is how you can pass parameters, 
+            # add :params <arg_name>: <description> in the custom action doc string
+        },
     )
 )
+
 ```
 </Step>
 </Steps>
 
 ### Here's what the Sample Output looks like
 ```python Sample Output 
-[2024-10-22 19:47:42,109][INFO] Logging is set to INFO, use `logging_level` argument or `COMPOSIO_LOGGING_LEVEL` change this
-[2024-10-22 19:47:42,261][INFO] Executing `GMAIL_GET_EMAILS` with params={} and metadata=None connected_account_id=None
+Logging is set to INFO, use `logging_level` argument or `COMPOSIO_LOGGING_LEVEL` change this
+Executing `GMAIL_GET_EMAILS` with params={} and metadata=None connected_account_id=None
 Messages: {'resultSizeEstimate': 0}
-[2024-10-22 19:47:45,043][INFO] Got response={'data': {'info': '<Response [200]>'}, 'error': None, 'successful': True} from action=GMAIL_GET_EMAILS with params={}
+Got response={'data': {'info': '<Response [200]>'}, 'error': None, 'successful': True} from action=GMAIL_GET_EMAILS with params={}
 {'data': {'info': '<Response [200]>'}, 'error': None, 'successful': True}
 ```
 
+**Congratulations!** You just created and executed a Custom Action under Gmail!
 
-This is how you can create a Custom Action under an Existing tool like Gmail
+## Advantages of Custom Actions
+
+- **Flexibility**: Custom Actions allow you to tailor functionalities to meet specific needs, enabling unique workflows that standard actions may not cover.
+
+- **Ease of Use**: You can create and manage actions without needing to handle complex authentication processes, simplifying the development process.
+
+- **Integration**: Custom Actions can seamlessly integrate with existing tools, enhancing their capabilities and allowing for more efficient task execution.
+
+
+
