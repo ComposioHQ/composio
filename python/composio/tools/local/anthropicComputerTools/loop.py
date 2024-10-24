@@ -103,6 +103,7 @@ async def sampling_loop(
         "GOOGLESHEETS_CREATE_GOOGLE_SHEET1",
         "GOOGLESHEETS_GET_SPREADSHEET_INFO",
         "GOOGLESHEETS_BATCH_GET",
+        "GOOGLEDOCS_GET_DOCUMENT_BY_ID",
     ]
 
     # Create ComposioIntegratedTool instances for each action

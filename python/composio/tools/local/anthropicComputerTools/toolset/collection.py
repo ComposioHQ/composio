@@ -35,6 +35,7 @@ class ToolCollection:
                 name == "GOOGLESHEETS_CREATE_GOOGLE_SHEET1"
                 or name == "GOOGLESHEETS_GET_SPREADSHEET_INFO"
                 or name == "GOOGLESHEETS_BATCH_GET"
+                or name == "GOOGLEDOCS_GET_DOCUMENT_BY_ID"
             ):
                 return await tool(name=name, **tool_input)
             else:
