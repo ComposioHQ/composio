@@ -294,6 +294,7 @@ Also go through our [Contribution Guidelines](https://github.com/composiodev/com
 - [Home page](https://composio.dev?utm_campaign=github-readme)
 - [Contribution Guidelines](https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md)
 - [Docs](https://docs.composio.dev/?utm_campaign=github-readme)
+- [Ask Composio Guru](https://gurubase.io/g/composio)
 
 ## 🛡️ License
 
