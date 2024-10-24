@@ -14,6 +14,11 @@ description: "Manage all the connected accounts of your Users"
 - When a user connects their account, a `connected_account` object is created. 
 - This object securely stores **authentication data** such as **access tokens and refresh tokens**.
 
+
+<Note>
+For a complete guide on Authentication with Composio, click [here](/patterns/Auth/integrations)
+</Note>
+
 ### Connecting an Account for your User
 <Steps>
 <Step title="Collect Parameters Required to create a Connection">
@@ -58,7 +63,7 @@ All parameters should be provided as strings.
 
 <Step title="Try creating a connection with the parameters collected">
 
-In the code snippets below replace `user_id` and `redirect_url`
+In the code snippets below replace `redirect_url`
 
 <CodeGroup>
 ```python Python - New Connection
@@ -66,7 +71,7 @@ In the code snippets below replace `user_id` and `redirect_url`
 # This is the URL that the user will be redirected to after completing the authentication process
 redirect_url = "https://yourwebsite.com/connection/callback"
 
-entity_id = "user_id" # This is the unique identifier for the user
+entity_id = "Jessica" # This is the unique identifier for the user
 
 # Collect the parameters from the user
 # Here we are assuming that the user has provided the parameters
@@ -88,7 +93,7 @@ print(connection_request.status)
 ```javascript Javascript - New Connection
 const redirectUrl = "https://yourwebsite.com/connection/callback"
 
-const entityId = "user_id" //This is the unique identifier for the user
+const entityId = "Jessica" //This is the unique identifier for the user
 
 // Collect the parameters from the user
 // Here we are assuming that the user has provided the parameters
@@ -205,8 +210,12 @@ You can fetch connection details after user is redirected back to your app. (If 
 <Tab title="Python">
 <CodeGroup>
 ```python Get All Connected Account
+entity = toolset.get_entity(id="Jessica") #filter based on entity id
 try:
-    connected_accounts  = entity.get_connections()
+    connected_accounts  = entity.get_connections() #lists all connections of the entity
+    entity.get_connection(app=App.GITHUB) #filters based on app name
+    entity.get_connection(connected_account_id="9") #filters based on connected account id for an entity
+    print(connected_accounts)
 except NoItemsFound as e:
     print("No connected account found")
 ```
@@ -215,11 +224,18 @@ except NoItemsFound as e:
 <Tab title="Javascript">
 <CodeGroup>
 ```javascript Get All Connected Account
-const openai_client = new OpenAIToolSet({
-    apiKey: process.env.OPENAIKEY
+const tool_set = new OpenAIToolSet({
+    apiKey: process.env.OPENAIKEY,
+    entityId: "Jessica"
 });
-const entity = openai_client.client.getEntity({id:"Jessica"});
-console.log(await entity.connectedAccounts.list())
+//filters based on connected account id for an entity
+console.log(await tool_set.connectedAccounts.get({connectedAccountId:'9'})) 
+//filters connections based on appName for an entity
+console.log(tool_set.client.integrations.get({
+    appName:'linear'
+})) 
+//list all connections based on entityId
+console.log(await tool_set.connectedAccounts.list()) 
 ```
 </CodeGroup>
 
