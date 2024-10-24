@@ -1,13 +1,14 @@
 """
-Agentic sampling loop that calls the Anthropic API and local implementation of anthropic-defined computer use tools.
+Agentic sampling loop that calls the Anthropic API and local implenmentation of anthropic-defined computer use tools.
 """
 
+from math import log
 import platform
 from collections.abc import Callable
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, cast
-
+from typing import Any, Sequence, cast
+from composio_claude import App
 from anthropic import Anthropic, AnthropicBedrock, AnthropicVertex, APIResponse
 from anthropic.types import (
     ToolResultBlockParam,
@@ -21,14 +22,15 @@ from anthropic.types.beta import (
     BetaTextBlockParam,
     BetaToolResultBlockParam,
 )
-
 from toolset import (
-    BashTool, 
-    ComputerTool, 
-    EditTool, 
-    ToolCollection, 
-    ToolResult
+    BashTool,
+    ComputerTool,
+    EditTool,
+    ToolCollection,
+    ToolResult,
+    ComposioIntegratedTool,
 )
+import logging
 
 BETA_FLAG = "computer-use-2024-10-22"
 
@@ -62,10 +64,22 @@ SYSTEM_PROMPT = f"""<SYSTEM_CAPABILITY>
 * The current date is {datetime.today().strftime('%A, %B %-d, %Y')}.
 </SYSTEM_CAPABILITY>
 
+<COMPOSIO_CAPABILITY>
+* You have access to external services through Composio tools when enabled
+* These tools can be used alongside computer control to automate complex tasks
+* For tasks involving external data:
+  1. First fetch the data using Composio tools
+  2. Then use computer controls to interact with local applications
+  3. You can combine these capabilities freely
+</COMPOSIO_CAPABILITY>
+
 <IMPORTANT>
 * When using Firefox, if a startup wizard appears, IGNORE IT.  Do not even click "skip this step".  Instead, click on the address bar where it says "Search or enter address", and enter the appropriate search term or URL there.
 * If the item you are looking at is a pdf, if after taking a single screenshot of the pdf it seems that you want to read the entire document instead of trying to continue to read the pdf from your screenshots + navigation, determine the URL, use curl to download the pdf, install and use pdftotext to convert it to a text file, and then read that text file directly with your StrReplaceEditTool.
 </IMPORTANT>"""
+# DEFAULT_COMPOSIO_APPS = [
+#     App.GITHUB,  # Add whichever apps you want
+# ]
 
 
 async def sampling_loop(
@@ -84,11 +98,23 @@ async def sampling_loop(
     """
     Agentic sampling loop for the assistant/tool interaction of computer use.
     """
-    tool_collection = ToolCollection(
-        ComputerTool(),
-        BashTool(),
-        EditTool(),
-    )
+    # Define the actions you want to support
+    actions = [
+        "GOOGLESHEETS_CREATE_GOOGLE_SHEET1",
+        "GOOGLESHEETS_GET_SPREADSHEET_INFO",
+        "GOOGLESHEETS_BATCH_GET",
+    ]
+
+    # Create ComposioIntegratedTool instances for each action
+    composio_tools = [
+        ComposioIntegratedTool(App.GOOGLESHEETS, action_name=action)
+        for action in actions
+    ]
+
+    base_tools = [ComputerTool(), BashTool(), EditTool()]
+
+    tool_collection = ToolCollection(*base_tools, *composio_tools)
+
     system = (
         f"{SYSTEM_PROMPT}{' ' + system_prompt_suffix if system_prompt_suffix else ''}"
     )
@@ -114,9 +140,8 @@ async def sampling_loop(
             model=model,
             system=system,
             tools=tool_collection.to_params(),
-            betas=[BETA_FLAG],
+            betas=["computer-use-2024-10-22"],
         )
-
         api_response_callback(cast(APIResponse[BetaMessage], raw_response))
 
         response = raw_response.parse()
@@ -131,7 +156,11 @@ async def sampling_loop(
         tool_result_content: list[BetaToolResultBlockParam] = []
         for content_block in cast(list[BetaContentBlock], response.content):
             output_callback(content_block)
+
             if content_block.type == "tool_use":
+                logging.info(f"Executing tool: {content_block.name}")
+                logging.info(f"Executing tool with input: {content_block.input}")
+                logging.info(f"Executing tool with name: {(content_block.name)}")
                 result = await tool_collection.run(
                     name=content_block.name,
                     tool_input=cast(dict[str, Any], content_block.input),

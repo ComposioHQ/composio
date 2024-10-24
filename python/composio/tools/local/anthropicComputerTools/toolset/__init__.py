@@ -3,6 +3,7 @@ from .bash import BashTool
 from .collection import ToolCollection
 from .computer import ComputerTool
 from .edit import EditTool
+from .composio import ComposioIntegratedTool
 
 __ALL__ = [
     BashTool,
@@ -11,4 +12,5 @@ __ALL__ = [
     EditTool,
     ToolCollection,
     ToolResult,
+    ComposioIntegratedTool,  # Add this line
 ]

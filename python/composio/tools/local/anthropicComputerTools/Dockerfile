@@ -104,6 +104,7 @@ ENV PYTHONPATH=/home/computeruse/anthropicComputerTools
 # Now when we modify it later, it exists
 ENV PYTHONPATH="${PYTHONPATH}:/home/computeruse/anthropicComputerTools"
 ENV COMPOSIO_PATH="/home/computeruse/anthropicComputerTools"
+ENV COMPOSIO_API_KEY="246jb4x8mbv1jdusbis892"
 
 ARG DISPLAY_NUM=1
 ARG HEIGHT=768
