@@ -10,13 +10,14 @@ description: "Here's how to connect your user to Gmail"
     <Steps>
 
         <Step title="Creating a Gmail Integration">
+        To use your Developer App, toggle the "Use your own Developer App" button while creating the Integration
         ![Gmail Integration](patterns/Auth/examples/gif/gmail_auth_main.gif)
             - Open the gmail tool in [dashboard](https://app.composio.dev/app/gmail)
             - Select the OAuth2 method of Authentication
             - Toggle the "Use your own Developer App" button while creating the Integration.
             - You can use Composio's credentials or Use your Developer App's API Key for the Integration.
             - Depending on the application, you can choose between OAuth2 based or API key based Authentication.
-            - In this case we use API Key based method.
+            - In this case we use OAuth2 based method.
             - Next lets connect your users.
         </Step>
             <Step title="Fetching Authentication Parameters">
@@ -53,12 +54,7 @@ description: "Here's how to connect your user to Gmail"
 
                 entity_id = "Jessica" # This is the unique identifier for the user
 
-                # Collect the parameters from the user
-                # Here we are assuming that the user has provided the parameters
-                # In a real-world scenario, you would collect these parameters from the user via your app's UI.
-
-                # Based on the expected input parameters output for gmail, 
-                # we need the token parameter for the connection 
+                # To connect your user to Gmail, we need the credentials you've used while creating the integration in the dashboard
                 collected_params = {
                     "token": "1234567890", # Add your actual Bearer Token here
                 }
@@ -77,7 +73,10 @@ description: "Here's how to connect your user to Gmail"
 
                 #If the status is INITIATED or FAILED, You should try initiating the connection again.
                 ```
-                </CodeGroup>
+
+                </CodeGroup>        
+            You can also see the [dashboard](https://app.composio.dev/connections?page=1&status=ALL) for the connection status like this:
+            ![Connection status](/patterns/Auth/examples/gif/connection_status.gif)
             </Step>
 
             <Step title="Get specific Connected Account">
@@ -134,6 +133,7 @@ description: "Here's how to connect your user to Gmail"
                 {'successfull': True, 'data': {'response_data': {'id': '192b9e2d0bd72a93', 'threadId': '192b9e2d0bd72a93', 'labelIds': ['UNREAD', 'SENT', 'INBOX']}}, 'error': None}
                 ```
                 </CodeGroup>
+                You can verify if the Action was executed [here](https://app.composio.dev/logs?status=all&time=1w)
             </Step>
         </Steps>
     </Tab>
@@ -196,9 +196,8 @@ description: "Here's how to connect your user to Gmail"
 
                     const entityId = "Jessica" //This is the unique identifier for the user
 
-                    // Collect the parameters from the user
-                    // Here we are assuming that the user has provided the parameters
-                    // In a real-world scenario, you would collect these parameters from the user via your app's UI.
+                // To connect your user to Gmail, we need the credentials you've used while creating the integration in the dashboard
+
                     const collectedParams = {
                         "token": "1234567890", // Add your actual bearer token
                     }
@@ -231,6 +230,8 @@ description: "Here's how to connect your user to Gmail"
                     Connection failed
                     ```
                     </CodeGroup>
+                You can also see the [dashboard](https://app.composio.dev/connections?page=1&status=ALL) for the connection status like this:
+                ![Connection status](/patterns/Auth/examples/gif/connection_status.gif)
                 </Step>
 
                 <Step title="Get specific Connected Account">
@@ -350,6 +351,8 @@ description: "Here's how to connect your user to Gmail"
                     }
                     ```
                     </CodeGroup>
+                You can verify if the Action was executed [here](https://app.composio.dev/logs?status=all&time=1w)
+
                 </Step>
         </Steps>
     </Tab>
@@ -361,5 +364,5 @@ description: "Here's how to connect your user to Gmail"
 
 - **Connected Your User's Gmail Account**: You have successfully guided your user through the authentication process, enabling them to connect their Gmail account to your application. 
 
-- **Executed an Action**: You have successfully executed an action on Gmail. You can execute already existing actions under Gmail or create your own [Custom Actions](patterns/Auth/examples/custom_action_gmail.mdx). 
+- **Executed an Action**: You have successfully executed an action on Gmail. You can execute already existing actions under Gmail or create your own [Custom Actions](/patterns/Auth/examples/custom_action_gmail). 
 

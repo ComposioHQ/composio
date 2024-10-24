@@ -11,10 +11,13 @@ description: "Here's how to connect your user to Linear"
     <Step title="Creating a Linear Integration">
     To use your Developer App, toggle the "Use your own Developer App" button while creating the Integration
     ![Creating a linear Integration](patterns/Auth/examples/gif/linear_auth.gif)
-    - You can use Composio's credentials or Use your Developer App's API Key for the Integration.
-    - Depending on the application, you can choose between OAuth2 based or API key based Authentication.
-    - In this case we use API Key based method.
-    - Next lets connect your users.
+        - Open the linear tool in [dashboard](https://app.composio.dev/app/linear)
+        - Select the OAuth2 method of Authentication
+        - Toggle the "Use your own Developer App" button while creating the Integration.
+        - You can use Composio's credentials or Use your Developer App's API Key for the Integration.
+        - Depending on the application, you can choose between OAuth2 based or API key based Authentication.
+        - In this case we use API Key based method.
+        - Next lets connect your users.
     </Step>
     <Step title="Fetching Authentication Parameters">
     <CodeGroup>
@@ -76,12 +79,14 @@ description: "Here's how to connect your user to Linear"
         #If the status is INITIATED or FAILED, You should try initiating the connection again.
         ```
         </CodeGroup>
+     You can also see the [dashboard](https://app.composio.dev/connections?page=1&status=ALL) for the connection status like this:
+    ![Connection status](/patterns/Auth/examples/gif/connection_status.gif)
 
     </Step>
     <Step title="Get specific Connected Account">
     <CodeGroup>
         ```python Get connected account
-        entity = toolset.client.get_entity(id="your desired entity id")
+        entity = toolset.client.get_entity(id="Jessica")
         #if you want a list of connections, do not use mention id in the get_entity function
         print(entity.get_connections())
         ```
@@ -108,6 +113,8 @@ description: "Here's how to connect your user to Linear"
         # This is a sample output, your output values will vary
         ```
     </CodeGroup>
+    You can verify if the Action was executed [here](https://app.composio.dev/logs?status=all&time=1w)
+
     </Step>
     </Steps>
     </Tab>
@@ -149,8 +156,8 @@ description: "Here's how to connect your user to Linear"
     <CodeGroup>
     ```shell Output
     {
-    //The expectedInputFields s [] if you use Composio's credentials
-    //Since we ve used API Key and our own Developer App we get this output
+    # The expectedInputFields s [] if you use Composio's credentials
+    # Since we ve used API Key and our own Developer App we get this output
     expectedInputFields: [
             {
             name: 'api_key',
@@ -181,9 +188,9 @@ description: "Here's how to connect your user to Linear"
 
         const entityId = "Jessica" // This is the unique identifier for the user
 
-        // Collect the parameters from the user
-        // Here we are assuming that the user has provided the parameters
-        // In a real-world scenario, you would collect these parameters from the user via your app's UI.
+        
+        // To connect your user to Linear, we need the API Key you've used while creating the integration in the dashboard
+        // If you've used Composio's credentials then you don't need to worry about this
         const collectedParams = {
             "api_key": "dvavadv", // This is an example, actual values will be different
         }
@@ -231,7 +238,7 @@ description: "Here's how to connect your user to Linear"
         name: 'your_email_id@gmail.com',
         role: 'admin',
         metadata: {
-        survery_data: [Object],
+        survey_data: [Object],
         has_survey_filled: true,
         has_completed_onboarding: true
         },
@@ -339,6 +346,8 @@ description: "Here's how to connect your user to Linear"
     }
     ```
     </CodeGroup>
+    You can also see the [dashboard](https://app.composio.dev/connections?page=1&status=ALL) for the connection status like this:
+    ![Connection status](/patterns/Auth/examples/gif/connection_status.gif)
     </Step>
 
     <Step title="Execute Action on your User's behalf">
@@ -372,6 +381,7 @@ description: "Here's how to connect your user to Linear"
     ]
     ```
     </CodeGroup>
+    You can verify if the Action was executed [here](https://app.composio.dev/logs?status=all&time=1w)
     </Step>
     </Steps>
     </Tab>
@@ -383,6 +393,6 @@ description: "Here's how to connect your user to Linear"
 
 - **Connected Your User's Linear Account**: You have successfully guided your user through the authentication process, enabling them to connect their Linear account to your application. 
 
-- **Executed an Action**: You have successfully executed an action on Linear. You can execute already existing actions under Linear or create your own [Custom Actions](patterns/Auth/examples/custom_action_gmail.mdx). 
+- **Executed an Action**: You have successfully executed an action on Linear. You can execute already existing actions under Linear or create your own [Custom Actions](/patterns/Auth/examples/custom_action_gmail). 
 
-- You can see how to connect your users to [Gmail](patterns/Auth/examples/gmail_example)
+- You can see how to connect your users to [Gmail](/patterns/Auth/examples/gmail_example)
