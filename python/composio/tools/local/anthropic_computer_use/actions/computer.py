@@ -1,26 +1,37 @@
-import asyncio
 import base64
-import shlex
 import platform
+import shlex
+import shutil
+import subprocess
+import time
 from enum import Enum
 from pathlib import Path
 from typing import Dict, Literal, TypedDict
 from uuid import uuid4
-import pyautogui
 
+import pyautogui
 from pydantic import BaseModel, Field
 
 from composio.tools.base.local import LocalAction
 
 
+ActionType = Literal[
+    "key",
+    "type",
+    "mouse_move",
+    "left_click",
+    "left_click_drag",
+    "right_click",
+    "middle_click",
+    "double_click",
+    "screenshot",
+    "cursor_position",
+]
+
+
 class Resolution(TypedDict):
     width: int
     height: int
-
-
-class ScalingSource(str, Enum):
-    COMPUTER = "computer"
-    API = "api"
 
 
 MAX_SCALING_TARGETS: dict[str, Resolution] = {
@@ -30,36 +41,35 @@ MAX_SCALING_TARGETS: dict[str, Resolution] = {
 }
 
 
+class ScalingSource(str, Enum):
+    API = "api"
+    COMPUTER = "computer"
+
+
 class ComputerRequest(BaseModel):
-    action: Literal[
-        "key",
-        "type", 
-        "mouse_move",
-        "left_click",
-        "left_click_drag",
-        "right_click",
-        "middle_click", 
-        "double_click",
-        "screenshot",
-        "cursor_position"
-    ] = Field(
+    action: ActionType = Field(
         ...,
-        description="The action to perform on the computer"
+        description="The action to perform on the computer",
     )
     text: str | None = Field(
         default=None,
-        description="Text to type or key sequence to press"
+        description="Text to type or key sequence to press",
     )
     coordinate: tuple[int, int] | None = Field(
         default=None,
-        description="X,Y coordinates for mouse actions"
+        description="X,Y coordinates for mouse actions",
     )
 
 
 class ComputerResponse(BaseModel):
-    execution_details: dict = Field(..., description="Execution details")
-    response_data: str = Field(..., description="Result after executing the action")
-    base64_image: str | None = Field(None, description="Base64 encoded screenshot if applicable")
+    response_data: str = Field(
+        ...,
+        description="Result after executing the action",
+    )
+    base64_image: str | None = Field(
+        None,
+        description="Base64 encoded screenshot if applicable",
+    )
 
 
 class Computer(LocalAction[ComputerRequest, ComputerResponse]):
@@ -73,7 +83,7 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
     _scaling_enabled = True
     _typing_delay_ms = 12
     _typing_group_size = 50
-    
+
     def __init__(self):
         super().__init__()
         self.os = platform.system()
@@ -83,127 +93,119 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
 
     def _get_mouse_tool(self):
         if self.os == "Darwin":
-            return "cliclick"
-        elif self.os == "Linux":
-            return "xdotool"
-        else:
-            raise NotImplementedError(f"Unsupported OS: {self.os}")
+            return shutil.which("cliclick")
+        if self.os == "Linux":
+            return shutil.which("xdotool")
+        raise NotImplementedError(f"Unsupported OS: {self.os}")
 
     def _get_screenshot_tool(self):
         if self.os == "Darwin":
             return "screencapture"
-        elif self.os == "Linux":
+        if self.os == "Linux":
             return "import"
-        else:
-            raise NotImplementedError(f"Unsupported OS: {self.os}")
+        raise NotImplementedError(f"Unsupported OS: {self.os}")
 
-    async def execute(self, request: ComputerRequest, metadata: Dict) -> ComputerResponse:
-        try:
-            if request.action in ("mouse_move", "left_click_drag"):
-                if request.coordinate is None:
-                    raise ValueError(f"coordinate is required for {request.action}")
-                if request.text is not None:
-                    raise ValueError(f"text is not accepted for {request.action}")
-                
-                x, y = self.scale_coordinates(ScalingSource.API, *request.coordinate)
-                
-                if request.action == "mouse_move":
-                    cmd = self._get_mouse_move_cmd(x, y)
-                else:
-                    current_x, current_y = self.get_mouse_position()
-                    cmd = self._get_mouse_drag_cmd(int(current_x), int(current_y), x, y)
-                
-                result = await self.shell(cmd)
+    def execute(self, request: ComputerRequest, metadata: Dict) -> ComputerResponse:
+        if request.action in ("mouse_move", "left_click_drag"):
+            if request.coordinate is None:
+                raise ValueError(f"coordinate is required for {request.action}")
+            if request.text is not None:
+                raise ValueError(f"text is not accepted for {request.action}")
+
+            x, y = self.scale_coordinates(ScalingSource.API, *request.coordinate)
+            if request.action == "mouse_move":
+                cmd = self._get_mouse_move_cmd(x, y)
+            else:
+                current_x, current_y = self.get_mouse_position()
+                cmd = self._get_mouse_drag_cmd(int(current_x), int(current_y), x, y)
+
+            result = self.shell(cmd)
+            return ComputerResponse(
+                response_data=result.response_data or "",
+                base64_image=result.base64_image,
+            )
+
+        elif request.action in ("key", "type"):
+            if request.text is None:
+                raise ValueError(f"text is required for {request.action}")
+            if request.coordinate is not None:
+                raise ValueError(f"coordinate is not accepted for {request.action}")
+
+            if request.action == "key":
+                key_sequence = self.map_keys(request.text)
+                cmd = self._get_key_press_cmd(key_sequence)
+                result = self.shell(cmd)
+            else:
+                results = []
+                for chunk in self.chunks(request.text, self._typing_group_size):
+                    cmd = f"{self.mouse_tool} -w {self._typing_delay_ms} t:{shlex.quote(chunk)}"
+                    results.append(self.shell(cmd, take_screenshot=False))
+
+                screenshot = self.screenshot()
                 return ComputerResponse(
-                    execution_details={"executed": True},
-                    response_data=result.response_data or "",
-                    base64_image=result.base64_image
+                    response_data="".join(r.response_data or "" for r in results),
+                    base64_image=screenshot.base64_image,
                 )
 
-            elif request.action in ("key", "type"):
-                if request.text is None:
-                    raise ValueError(f"text is required for {request.action}")
-                if request.coordinate is not None:
-                    raise ValueError(f"coordinate is not accepted for {request.action}")
+        elif request.action in (
+            "left_click",
+            "right_click",
+            "double_click",
+            "middle_click",
+            "screenshot",
+            "cursor_position",
+        ):
+            if request.text is not None or request.coordinate is not None:
+                raise ValueError(f"No parameters accepted for {request.action}")
 
-                if request.action == "key":
-                    key_sequence = self.map_keys(request.text)
-                    cmd = self._get_key_press_cmd(key_sequence)
-                    result = await self.shell(cmd)
-                else:
-                    results = []
-                    for chunk in self.chunks(request.text, self._typing_group_size):
-                        cmd = f"{self.mouse_tool} -w {self._typing_delay_ms} t:{shlex.quote(chunk)}"
-                        results.append(await self.shell(cmd, take_screenshot=False))
-                    
-                    screenshot = await self.screenshot()
-                    return ComputerResponse(
-                        execution_details={"executed": True},
-                        response_data="".join(r.response_data or "" for r in results),
-                        base64_image=screenshot.base64_image
-                    )
+            if request.action == "screenshot":
+                result = self.screenshot()
+                return ComputerResponse(
+                    response_data="Screenshot taken",
+                    base64_image=result.base64_image,
+                )
+            elif request.action == "cursor_position":
+                x, y = self.get_mouse_position()
+                x, y = self.scale_coordinates(ScalingSource.COMPUTER, int(x), int(y))
+                return ComputerResponse(
+                    response_data=f"X={x},Y={y}",
+                    base64_image=None,
+                )
+            else:
+                cmd = self._get_click_cmd(request.action)
+                result = self.shell(cmd)
+                return ComputerResponse(
+                    response_data=result.response_data or "",
+                    base64_image=result.base64_image,
+                )
 
-            elif request.action in ("left_click", "right_click", "double_click", "middle_click", "screenshot", "cursor_position"):
-                if request.text is not None or request.coordinate is not None:
-                    raise ValueError(f"No parameters accepted for {request.action}")
-
-                if request.action == "screenshot":
-                    result = await self.screenshot()
-                    return ComputerResponse(
-                        execution_details={"executed": True},
-                        response_data="Screenshot taken",
-                        base64_image=result.base64_image
-                    )
-                elif request.action == "cursor_position":
-                    x, y = self.get_mouse_position()
-                    x, y = self.scale_coordinates(ScalingSource.COMPUTER, int(x), int(y))
-                    return ComputerResponse(
-                        execution_details={"executed": True},
-                        response_data=f"X={x},Y={y}",
-                        base64_image=None
-                    )
-                else:
-                    cmd = self._get_click_cmd(request.action)
-                    result = await self.shell(cmd)
-                    return ComputerResponse(
-                        execution_details={"executed": True},
-                        response_data=result.response_data or "",
-                        base64_image=result.base64_image
-                    )
-
-            raise ValueError(f"Invalid action: {request.action}")
-
-        except Exception as e:
-            return ComputerResponse(
-                execution_details={"executed": False, "error": str(e)},
-                response_data=f"Error: {str(e)}",
-                base64_image=None
-            )
+        raise ValueError(f"Invalid action: {request.action}")
 
     def get_screen_size(self):
         """Get the screen size using OS-specific commands."""
         try:
             if self.os == "Darwin":
-                import subprocess
                 import re
+                import subprocess
 
                 cmd = "system_profiler SPDisplaysDataType | grep Resolution"
                 output = subprocess.check_output(cmd, shell=True).decode()
-                resolution_line = output.strip().split('\n')[0]
-                _, resolution = resolution_line.split(': ', 1)
-                match = re.search(r'(\d+)\s*x\s*(\d+)', resolution)
+                resolution_line = output.strip().split("\n")[0]
+                _, resolution = resolution_line.split(": ", 1)
+                match = re.search(r"(\d+)\s*x\s*(\d+)", resolution)
                 if match:
                     width_str, height_str = match.groups()
                     return int(width_str), int(height_str)
             elif self.os == "Linux":
                 import subprocess
+
                 output = subprocess.check_output(["xrandr"]).decode()
                 for line in output.split("\n"):
                     if " connected" in line:
                         mode = line.split()[-1]
                         width, height = map(int, mode.split("x"))
                         return width, height
-            
+
             # If we reach here, we couldn't get the screen size
             raise ValueError("Could not determine screen size")
         except Exception as e:
@@ -217,15 +219,17 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
 
     def _get_mouse_move_cmd(self, x: int, y: int) -> str:
         if self.os == "Darwin":
-            return f"cliclick m:{x},{y}"
+            return f"{self.mouse_tool} m:{x},{y}"
         elif self.os == "Linux":
             return f"xdotool mousemove {x} {y}"
         else:
             raise NotImplementedError(f"Unsupported OS: {self.os}")
 
-    def _get_mouse_drag_cmd(self, start_x: int, start_y: int, end_x: int, end_y: int) -> str:
+    def _get_mouse_drag_cmd(
+        self, start_x: int, start_y: int, end_x: int, end_y: int
+    ) -> str:
         if self.os == "Darwin":
-            return f"cliclick dd:{start_x},{start_y} du:{end_x},{end_y}"
+            return f"{self.mouse_tool} dd:{start_x},{start_y} du:{end_x},{end_y}"
         elif self.os == "Linux":
             return f"xdotool mousemove {start_x} {start_y} mousedown 1 mousemove {end_x} {end_y} mouseup 1"
         else:
@@ -233,7 +237,7 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
 
     def _get_key_press_cmd(self, key_sequence: str) -> str:
         if self.os == "Darwin":
-            return f"cliclick kp:{key_sequence}"
+            return f"{self.mouse_tool} kp:{key_sequence}"
         elif self.os == "Linux":
             return f"xdotool key {key_sequence}"
         else:
@@ -247,7 +251,7 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
                 "middle_click": "mc:.",
                 "double_click": "dc:.",
             }[action]
-            return f"cliclick {click_arg}"
+            return f"{self.mouse_tool} {click_arg}"
         elif self.os == "Linux":
             click_arg = {
                 "left_click": "click 1",
@@ -272,10 +276,10 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
                 break
         if target_dimension is None:
             return x, y
-            
+
         x_scaling_factor = target_dimension["width"] / self.width
         y_scaling_factor = target_dimension["height"] / self.height
-        
+
         if source == ScalingSource.API:
             if x > self.width or y > self.height:
                 raise ValueError(f"Coordinates {x}, {y} are out of bounds")
@@ -289,14 +293,15 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
     @staticmethod
     def chunks(s: str, chunk_size: int) -> list[str]:
         """Split string into chunks of specified size."""
-        return [s[i:i + chunk_size] for i in range(0, len(s), chunk_size)]
+        return [
+            s[i : i + chunk_size] for i in range(0, len(s), chunk_size)  # noqa: E203
+        ]
 
-    async def screenshot(self):
+    def screenshot(self):
         """Take a screenshot and return base64 encoded image."""
         output_dir = Path("/tmp/outputs")
         output_dir.mkdir(parents=True, exist_ok=True)
         path = output_dir / f"screenshot_{uuid4().hex}.png"
-
         if self.os == "Darwin":
             screenshot_cmd = f"screencapture -x {path}"
         elif self.os == "Linux":
@@ -304,35 +309,29 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
         else:
             raise NotImplementedError(f"Unsupported OS: {self.os}")
 
-        result = await self.shell(screenshot_cmd, take_screenshot=False)
-
+        result = self.shell(screenshot_cmd, take_screenshot=False)
         if path.exists():
             base64_image = base64.b64encode(path.read_bytes()).decode()
             return ComputerResponse(
-                execution_details={"executed": True},
                 response_data="Screenshot taken",
-                base64_image=base64_image
+                base64_image=base64_image,
             )
-        raise ValueError(f"Failed to take screenshot: {result.execution_details.get('stderr', '')}")
+        raise ValueError(f"Failed to take screenshot: {result.response_data}")
 
-    async def shell(self, command: str, take_screenshot=True):
+    def shell(self, command: str, take_screenshot=True):
         """Run shell command and return result with optional screenshot."""
-        proc = await asyncio.create_subprocess_shell(
-            command,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+        proc = subprocess.run(
+            shlex.split(command),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
-        stdout, stderr = await proc.communicate()
-        
         base64_image = None
         if take_screenshot:
-            await asyncio.sleep(self._screenshot_delay)
-            screenshot = await self.screenshot()
+            time.sleep(self._screenshot_delay)
+            screenshot = self.screenshot()
             base64_image = screenshot.base64_image
 
         return ComputerResponse(
-            execution_details={"executed": True},
-            response_data=stdout.decode() if stdout else "",
-            base64_image=base64_image
+            response_data=proc.stdout.decode() + proc.stderr.decode(),
+            base64_image=base64_image,
         )
-

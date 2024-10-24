@@ -4,9 +4,9 @@ import re
 import subprocess
 import sys
 import typing as t
+from collections import deque
 from enum import Enum
 from pathlib import Path
-from collections import deque
 
 import typing_extensions as te
 
@@ -57,7 +57,7 @@ class File(WithLogger):
 
     _start: int
     _end: int
-    _history: deque
+    _history: deque  # TOFIX: Possible memory leak
 
     def __init__(
         self,
@@ -579,4 +579,3 @@ class File(WithLogger):
     def __str__(self) -> str:
         """String representation."""
         return f"File(name={self.path})"
-
