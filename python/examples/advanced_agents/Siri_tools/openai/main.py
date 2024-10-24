@@ -33,6 +33,7 @@ REALTIME_API_URL = (
     "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01"
 )
 
+
 class RealtimeAgent:
     def __init__(self):
         self.ws = None
@@ -60,9 +61,22 @@ class RealtimeAgent:
         self.audio_input_stream = None
         self.audio_output_stream = None
 
-        # New additions
+        # Control flags
         self.response_done_received = False
         self.delay_after_speaking = 2.5  # Delay in seconds (adjust as needed)
+
+        # Define the assistant's instructions
+        self.instructions = (
+            "You are an AI assistant that helps the user manage emails and Slack messages. "
+            "Try to be REALLY FUNNY sometimes to add some twists to your replies. "
+            "When a new message arrives tagged with the user's ID, you should inform the user by reading it out loud. "
+            "Please avoid reading the user ID in your replies. "
+            "If the user wants to respond, you should collect their response and use the appropriate function "
+            "to send their message back to Slack or Gmail. "
+            "If they ask you to create a reply, form a proper response meeting all the requirements and try to be funny. "
+            "You have access to the following functions: 'SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL', 'GMAIL_SEND_EMAIL', 'GMAIL_CREATE_EMAIL_DRAFT'. "
+            "Use function calls to perform actions on behalf of the user."
+        )
 
     async def connect(self):
         headers = {
@@ -88,17 +102,7 @@ class RealtimeAgent:
                         "input_audio_format": "pcm16",
                         "output_audio_format": "pcm16",
                         "voice": "shimmer",
-                        "instructions": (
-                            "You are an AI assistant that helps the user manage emails and Slack messages."
-                            "Try to be REALLY FUNNY sometimes to add some twists to your replies."
-                            "When a new message arrives tagged with the user's ID, you should inform the user by reading it out loud."
-                            "Please avoid reading the user ID in your replies."
-                            "If the user wants to respond, you should collect their response and use the appropriate function"
-                            "to send their message back to Slack or Gmail. "
-                            "If they ask you to create a reply, form a proper response meeting all the requirements and try to be funny."
-                            "You have access to the following functions: 'SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL', 'GMAIL_SEND_EMAIL', 'GMAIL_CREATE_EMAIL_DRAFT'. "
-                            "Use function calls to perform actions on behalf of the user."
-                        ),
+                        "instructions": self.instructions,
                     },
                 }
             )
@@ -128,14 +132,7 @@ class RealtimeAgent:
                         "response": {
                             "modalities": ["text", "audio"],
                             "tools": self.tools,
-                            "instructions": (
-                                "You are an AI assistant that helps the user manage emails and Slack messages. "
-                                "When a new message arrives, you should inform the user by reading it out loud. "
-                                "If the user wants to respond, you should collect their response and use the appropriate function "
-                                "to send their message back to Slack or Gmail. "
-                                "You have access to the following functions: 'SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL', 'GMAIL_SEND_EMAIL', 'GMAIL_CREATE_EMAIL_DRAFT'. "
-                                "Use function calls to perform actions on behalf of the user."
-                            ),
+                            "instructions": self.instructions,
                         },
                     }
                 )
@@ -319,25 +316,25 @@ class RealtimeAgent:
         call_id = self.current_function_call.get("call_id")
         arguments_json = function_call["arguments"]
 
-        # Parse the arguments
-        try:
-            arguments = json.loads(arguments_json)
-        except json.JSONDecodeError as e:
-            logging.error(f"Failed to parse function call arguments: {e}")
-            arguments = {}
-
+        # Log the received function call
         logging.info(
-            f"Function call received: {function_name} with arguments {arguments}"
+            f"Function call received: {function_name} with arguments {arguments_json}"
         )
-        print(function_call)
 
-        # Directly execute the action
+        # Use the ComposioToolSet method to handle the function call
         try:
-            result = composio_toolset.execute_action(
-                action=Action(value=function_name),
-                params=arguments,
-                entity_id=None,
-            )
+            # Parse the JSON arguments
+            try:
+                parsed_arguments = json.loads(arguments_json)
+            except json.JSONDecodeError as json_error:
+                logging.error(f"Error parsing function call arguments: {json_error}")
+                result = {"status": "error", "message": "Invalid JSON in arguments"}
+            else:
+                result = composio_toolset.handle_realtime_tool_call(
+                    function_name=function_name,
+                    arguments_json=parsed_arguments,
+                    entity_id=None,  # Replace with appropriate entity_id if needed
+                )
             logging.info(f"Function call result: {result}")
         except Exception as e:
             logging.error(f"Error handling function call: {e}")
@@ -359,7 +356,7 @@ class RealtimeAgent:
         )
         logging.info(f"Sent function call output for '{function_name}'.")
 
-        # Trigger a new response to continue the conversation
+        # Optionally, trigger a new response to continue the conversation
         await self.ws.send(
             json.dumps(
                 {
@@ -367,14 +364,7 @@ class RealtimeAgent:
                     "response": {
                         "modalities": ["text", "audio"],
                         "tools": self.tools,
-                        "instructions": (
-                            "You are an AI assistant that helps the user manage emails and Slack messages. "
-                            "When a new message arrives, you should inform the user by reading it out loud. "
-                            "If the user wants to respond, you should collect their response and use the appropriate function "
-                            "to send their message back to Slack or Gmail. "
-                            "You have access to the following functions: 'SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL', 'GMAIL_SEND_EMAIL', 'GMAIL_CREATE_EMAIL_DRAFT'. "
-                            "Use function calls to perform actions on behalf of the user."
-                        ),
+                        "instructions": self.instructions,
                     },
                 }
             )
@@ -468,26 +458,37 @@ def handle_gmail_message(event: TriggerEventData):
     context = f"New email from {sender} with subject: {subject}"
     asyncio.run(agent.handle_event(context))
 
+
 def get_slack_channel_name(channel_id):
-    response = composio_toolset.execute_action(action=Action.SLACK_LIST_ALL_SLACK_TEAM_CHANNELS_WITH_VARIOUS_FILTERS, params={"limit": 1000})
-    if response.get('data', {}).get('ok'):
-        channels = response['data'].get('channels', [])
+    response = composio_toolset.execute_action(
+        action=Action.SLACK_LIST_ALL_SLACK_TEAM_CHANNELS_WITH_VARIOUS_FILTERS,
+        params={"limit": 1000},
+    )
+    if response.get("data", {}).get("ok"):
+        channels = response["data"].get("channels", [])
         for channel in channels:
-            if channel.get('id') == channel_id:
-                return channel.get('name')
+            if channel.get("id") == channel_id:
+                return channel.get("name")
     return channel_id
 
+
 def get_slack_user_name(user_id):
-    response = composio_toolset.execute_action(action=Action.SLACK_RETRIEVE_DETAILED_USER_INFORMATION, params={"user": user_id})
-    if response.get('data', {}).get('ok'):
-        return response['data'].get('user', {}).get('real_name')
+    response = composio_toolset.execute_action(
+        action=Action.SLACK_RETRIEVE_DETAILED_USER_INFORMATION, params={"user": user_id}
+    )
+    if response.get("data", {}).get("ok"):
+        return response["data"].get("user", {}).get("real_name")
     return user_id
 
+
 def get_current_user_info():
-    response = composio_toolset.execute_action(action=Action.SLACK_RETRIEVE_A_USER_S_IDENTITY_DETAILS, params={})
-    if response.get('data', {}).get('ok'):
-        return response['data'].get('user', {}).get('id')
+    response = composio_toolset.execute_action(
+        action=Action.SLACK_RETRIEVE_A_USER_S_IDENTITY_DETAILS, params={}
+    )
+    if response.get("data", {}).get("ok"):
+        return response["data"].get("user", {}).get("id")
     return None
+
 
 @listener.callback(filters={"trigger_name": "slack_receive_message"})
 def handle_slack_message(event: TriggerEventData):
