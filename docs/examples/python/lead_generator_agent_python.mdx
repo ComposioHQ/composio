@@ -1,0 +1,220 @@
+---
+title: "Lead Generator Agent"
+sidebarTitle: "Lead Generator Agent"
+icon: "user-plus"
+description: "This project demonstrates how to use Composio to create a lead generation agent. It automatically searches for potential leads based on user input, collects relevant information, and organizes it into a Google Sheet."
+---
+
+<Tabs>
+    <Tab title="Python">
+    <Card color="#7bee0c" title="Lead Generator Agent GitHub Repository" icon="github" href="https://github.com/ComposioHQ/composio/tree/master/python/examples/advanced_agents/lead_generator_agent">
+  Explore the complete source code for the Lead Generator Agent project. This repository contains all the necessary files and scripts to set up and run the Lead Generator Agent using Composio and Gradio.
+  <CardBody>
+  </CardBody>
+</Card>
+<Steps>
+    <Step title="Import Base Packages">
+    First, we'll import the necessary libraries for our project.
+    <CodeGroup>
+        ```python Import Statements
+        import gradio as gr
+        from composio_llamaindex import ComposioToolSet, App, Action
+        from llama_index.core.agent import FunctionCallingAgentWorker
+        from llama_index.core.llms import ChatMessage
+        from llama_index.llms.openai import OpenAI
+        from dotenv import load_dotenv
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Initialize Tools and Model">
+    We'll initialize our Composio tools and set up the OpenAI model.
+    <CodeGroup>
+        ```python Models and Tools
+        load_dotenv()
+
+        # Initialize Composio ToolSet and OpenAI model
+        composio_toolset = ComposioToolSet()
+        tools = composio_toolset.get_tools(apps=[App.EXA, App.BROWSERBASE_TOOL, App.GOOGLESHEETS])
+        llm = OpenAI(model="gpt-4")
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define Agent Prefix Messages">
+    Set up the prefix messages that define the agent's role and instructions.
+    <CodeGroup>
+        ```python Define Prefix Messages
+        prefix_messages = [
+            ChatMessage(
+                role="system",
+                content=(
+                    "You are a lead research agent. Depending on the user specification, look for leads."
+                    "Use the browser tools available to you. Find a minimum of 10 relevant people according to the description."
+                    "Include the following elements in the sheet:"
+                    """
+                    Basic Contact Information:
+                    Full Name
+                    Email Address
+                    Phone Number
+                    Company Name (if applicable)
+                    Job Title (if applicable)
+                    Lead Qualification Information:
+                    Industry
+                    Company Size
+                    Pain Points or Needs related to your product/service
+                    Budget Range (if relevant)
+                    Purchase Timeline
+                    Preferred Contact Method
+                    Lead Source Tracking:
+                    Marketing Campaign Name
+                    Landing Page URL
+                    Referral Source (if applicable)
+                    Event/Webinar Attendee (if applicable)
+                    """
+                    "Once the leads have been found, create a google sheet and add in these details."
+                    "If the user gives a google sheet as input then don't create a sheet and add the data in that one."
+                ),
+            )
+        ]
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define Lead Generation Function">
+    Create the function that interacts with the agent to generate leads.
+    <CodeGroup>
+        ```python Define Lead Generation Function
+        def generate_leads(business_name, lead_description):
+            # Initialize the agent worker
+            agent = FunctionCallingAgentWorker(
+                tools=tools,
+                llm=llm,
+                prefix_messages=prefix_messages,
+                max_function_calls=10,
+                allow_parallel_tool_calls=False,
+                verbose=True,
+            ).as_agent()
+            user_input = f"Create a lead list for {business_name}. Description: {lead_description}"
+            response = agent.chat(user_input)
+            return response.response
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Create Gradio Interface">
+    Set up the Gradio interface for user interaction.
+    <CodeGroup>
+        ```python Create Gradio Interface
+        iface = gr.Interface(
+            fn=generate_leads,
+            inputs=[
+                gr.Textbox(label="Business Name", placeholder="Enter your business name"),
+                gr.Textbox(label="Lead Description", placeholder="Describe the kind of leads you want")
+            ],
+            outputs=gr.Markdown(label="Response"),
+            title="Lead Generation Tool",
+            description="Use this tool to generate leads based on your business and specifications."
+        )
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Launch the Interface">
+    Finally, launch the Gradio interface.
+    <CodeGroup>
+        ```python Launch Interface
+        iface.launch()
+        ```
+    </CodeGroup>
+    </Step>
+
+</Steps>
+    
+</Tab>
+    
+</Tabs>
+
+## Putting It All Together
+
+<CodeGroup>
+    ```python Python Final Code
+import gradio as gr
+from composio_llamaindex import ComposioToolSet, App, Action
+from llama_index.core.agent import FunctionCallingAgentWorker
+from llama_index.core.llms import ChatMessage
+from llama_index.llms.openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Initialize Composio ToolSet and OpenAI model
+composio_toolset = ComposioToolSet()
+tools = composio_toolset.get_tools(apps=[App.EXA, App.BROWSERBASE_TOOL, App.GOOGLESHEETS])
+llm = OpenAI(model="gpt-4")
+
+# Set up prefix messages for the agent
+prefix_messages = [
+    ChatMessage(
+        role="system",
+        content=(
+            "You are a lead research agent. Depending on the user specification, look for leads."
+            "Use the browser tools available to you. Find a minimum of 10 relevant people according to the description."
+            "Include the following elements in the sheet:"
+            """
+            Basic Contact Information:
+            Full Name
+            Email Address
+            Phone Number
+            Company Name (if applicable)
+            Job Title (if applicable)
+            Lead Qualification Information:
+            Industry
+            Company Size
+            Pain Points or Needs related to your product/service
+            Budget Range (if relevant)
+            Purchase Timeline
+            Preferred Contact Method
+            Lead Source Tracking:
+            Marketing Campaign Name
+            Landing Page URL
+            Referral Source (if applicable)
+            Event/Webinar Attendee (if applicable)
+            """
+            "Once the leads have been found, create a google sheet and add in these details."
+            "If the user gives a google sheet as input then don't create a sheet and add the data in that one."
+        ),
+    )
+]
+
+def generate_leads(business_name, lead_description):
+    # Initialize the agent worker
+    agent = FunctionCallingAgentWorker(
+        tools=tools,
+        llm=llm,
+        prefix_messages=prefix_messages,
+        max_function_calls=10,
+        allow_parallel_tool_calls=False,
+        verbose=True,
+    ).as_agent()
+    user_input = f"Create a lead list for {business_name}. Description: {lead_description}"
+    response = agent.chat(user_input)
+    return response.response
+
+# Create Gradio Interface
+iface = gr.Interface(
+    fn=generate_leads,
+    inputs=[
+        gr.Textbox(label="Business Name", placeholder="Enter your business name"),
+        gr.Textbox(label="Lead Description", placeholder="Describe the kind of leads you want")
+    ],
+    outputs=gr.Markdown(label="Response"),
+    title="Lead Generation Tool",
+    description="Use this tool to generate leads based on your business and specifications."
+)
+
+# Launch the interface
+iface.launch()
+    ```
+</CodeGroup>
+
