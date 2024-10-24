@@ -181,9 +181,9 @@
       {
         "group":"Authentication",
         "pages":[
-          "patterns/Auth/Integrations",
-          "patterns/Auth/multiple-users",
           "patterns/Auth/connected_account",
+          "patterns/Auth/integrations",
+          "patterns/Auth/multiple-users",
           "patterns/functions/custom_actions",
           "patterns/Auth/examples/linear_example",
           "patterns/Auth/examples/gmail_example",

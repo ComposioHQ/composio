@@ -58,7 +58,7 @@ All parameters should be provided as strings.
 
 <Step title="Try creating a connection with the parameters collected">
 
-In the code snippets below replace `user_id` and `redirect_url`
+In the code snippets below replace `redirect_url`
 
 <CodeGroup>
 ```python Python - New Connection
@@ -66,7 +66,7 @@ In the code snippets below replace `user_id` and `redirect_url`
 # This is the URL that the user will be redirected to after completing the authentication process
 redirect_url = "https://yourwebsite.com/connection/callback"
 
-entity_id = "user_id" # This is the unique identifier for the user
+entity_id = "Jessica" # This is the unique identifier for the user
 
 # Collect the parameters from the user
 # Here we are assuming that the user has provided the parameters
@@ -88,7 +88,7 @@ print(connection_request.status)
 ```javascript Javascript - New Connection
 const redirectUrl = "https://yourwebsite.com/connection/callback"
 
-const entityId = "user_id" # This is the unique identifier for the user
+const entityId = "Jessica" # This is the unique identifier for the user
 
 // Collect the parameters from the user
 // Here we are assuming that the user has provided the parameters
@@ -120,6 +120,44 @@ Gmail for example requires redirecting the user to Google's login page.
 </Note>
 
 </Step>
+
+<Accordion title="How to get all Connected Accounts?">
+<Tabs>
+    <Tab title="Python">
+    <CodeGroup>
+    ```python Get All Connected Account
+    entity = toolset.get_entity(id="Jessica") #filter based on entity id
+    try:
+        connected_accounts  = entity.get_connections() #lists all connections of the entity
+        entity.get_connection(app=App.GITHUB) #filters based on app name
+        entity.get_connection(connected_account_id="9") #filters based on connected account id for an entity
+        print(connected_accounts)
+    except NoItemsFound as e:
+        print("No connected account found")
+    ```
+    </CodeGroup>
+    </Tab>
+    <Tab title="JS">
+    <CodeGroup>
+    ```javascript Get All Connected Account
+    const tool_set = new OpenAIToolSet({
+        apiKey: process.env.OPENAIKEY
+    });
+    //filters based on connected account id for an entity
+    console.log(await tool_set.connectedAccounts.get({connectedAccountId:'9'})) 
+    //filters connections based on appName for an entity
+    console.log(tool_set.client.integrations.get({
+        appName:'linear'
+    })) 
+    //list all connections based on entityId
+    console.log(await tool_set.connectedAccounts.list()) 
+    ```
+    </CodeGroup>
+
+</Tab>
+
+</Tabs>
+</Accordion>
 
 <Step title="Fetch the Connection Params (Status, Access Token, Refresh Token...)">
 If you want to use connection params locally and build custom actions - 
@@ -199,32 +237,7 @@ You can fetch connection details after user is redirected back to your app. (If 
 </Note>
 </Step>
 
-<Accordion title="How to get all Connected Accounts?">
-<Tabs>
-    <Tab title="Python">
-    <CodeGroup>
-        ```python Get all connected accounts for a specific entity
-        entity = toolset.client.get_entity(id="your desired entity id")
-        #if you want a list of connections, do not use the id parameter in the get_entity function
-        print(entity.get_connections())
-        ```
-    </CodeGroup>
-    </Tab>
 
-    <Tab title="Javascript">
-        ```javascript Get all connected accounts
-        const openai_client = new OpenAIToolSet({
-            apiKey: process.env.OPENAIKEY
-        });
-        //if you want a list of connections, do not use the id parameter in the get_entity function
-        const entity = await openai_client.client.getEntity({id:"Jessica"});
-        console.log(await entity.connectedAccounts.list())
-        ```
-    </Tab>
-
-
-</Tabs>
-</Accordion>
 </Steps>
 
 ### Receiving Webhooks alerts on new Connections

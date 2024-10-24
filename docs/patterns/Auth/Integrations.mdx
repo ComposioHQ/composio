@@ -35,11 +35,12 @@ For example
 
 <CodeGroup>
 ```python Code for fetching integrations
-from composio import ComposioToolSet
+from composio import ComposioToolSet, App
 toolset = ComposioToolSet()
 
-print(toolset.client.integrations.get())
-print(toolset.client.integrations.get_by_id(integration_id="ADD THE ID HERE")) #filter based on integration id
+print(toolset.get_integrations()) # get all integrations
+print(toolset._get_integration_for_app(app=App.GMAIL)) #filter based on app
+print(toolset.get_integration(id="ADD THE ID HERE")) #filter based on integration id
 ```
 
 ```javascript Code for fetching integrations
@@ -50,6 +51,9 @@ const openai_client = new OpenAIToolSet({
 });
 
 console.log(openai_client.client.integrations.list()) //lists all integrations
+console.log(openai_client.client.integrations.get({
+    appName:'gmail'
+})) //filter based on app name
 console.log(await openai_client.client.integrations.get({integrationId:"ADD THE ID HERE"})) //filter based on integration id
 ```
 </CodeGroup>
