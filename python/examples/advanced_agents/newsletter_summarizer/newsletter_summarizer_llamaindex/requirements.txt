@@ -1,4 +1,5 @@
 composio-llamaindex
 llama-index-llms-groq
+llama-index-llms-cerebras
 python-dotenv
 datetime

@@ -21,7 +21,7 @@ Follow these 5 steps to list your emails as soon as you receive them:
 
 <Step title="Install Composio">
 <CodeGroup>
-```bash Installing the library
+```shell Installing the library
 pip install composio_core composio_openai
 ```
 </CodeGroup>
@@ -33,7 +33,9 @@ We'll use **`Jessica`** as our example user. Choose your method:
 <Tabs>
 <Tab title="CLI (Quickest)">
 <CodeGroup>
-```bash Add Gmail Integration
+```shell Add Gmail Integration
+composio login 
+
 composio add gmail -e "Jessica" # Launches Gmail login
 ```
 </CodeGroup>
@@ -63,7 +65,7 @@ Ensure you complete the authentication process by following the URL provided in 
 <Tabs>
 <Tab title="Using CLI">
 <CodeGroup>
-```bash CLI
+```shell CLI
 # Enable the trigger
 composio triggers Enable gmail_new_gmail_message
 
@@ -74,7 +76,7 @@ composio triggers disable <trigger_name>
 </Tab>
 <Tab title="Using Python Code">
 <CodeGroup>
-```python 
+```python Python
 from composio import Composio, App
 
 client = Composio()
@@ -121,8 +123,8 @@ def callback_function(event):
     # Parse event data and perform actions
     payload = event.payload
     thread_id = payload.get("threadId")
-    message = payload.get("snippet")
-    sender_mail = extract_sender_email(payload["payload"])
+    message = payload.get("messageText")
+    sender_mail = payload.get("sender")
     print(sender_mail + ":" + message)
 
 listener.listen()
@@ -139,7 +141,7 @@ listener.listen()
 
 <Step title="Install Composio">
 <CodeGroup>
-```bash Install packages
+```shell Install packages
 npm install composio-core openai
 ```
 </CodeGroup>
@@ -151,7 +153,9 @@ We'll use **`Jessica`** as our example user. Choose your method:
 <Tabs>
 <Tab title="CLI (Quickest)">
 <CodeGroup>
-```bash Adding tool via CLI
+```shell Adding tool via CLI
+composio login
+
 composio add gmail -e "Jessica" # Launches Gmail login
 ```
 </CodeGroup>
@@ -182,7 +186,7 @@ Ensure you complete the authentication process by following the URL provided in 
 <Tabs>
 <Tab title="Using CLI">
 <CodeGroup>
-```bash Enabling trigger with CLI
+```shell Enabling trigger with CLI
 composio triggers enable gmail_new_gmail_message
 
 # To disable a trigger
@@ -260,7 +264,7 @@ Congratulations! You've just:
 1. 🔐 Authenticated your Gmail account with Composio
 2. 🛠 Enabled Triggers
 3. 🧠 Passed these triggers to an AI language model
-4. ⭐ Instructed the AI to list all emails received
+4. ⭐ All the emails received were listed
 5. ✅ Successfully executed the trigger and actions on Gmail
 
 <Frame caption="Explore Advanced Composio Features">
@@ -272,7 +276,7 @@ Integrate with popular agentic frameworks
 <Card title="Authorize a User's Account" icon="brain" href="/introduction/foundations/components/entity/entity-guide">
 Authorize a user's account to perform actions and subscribe to triggers
 </Card>
-<Card title="Execute Actions" icon="wand-magic-sparkles" href="/introduction/foundations/components/actions/action-guide">
+<Card title="Execute Actions" icon="wand-magic-sparkles" href="/introduction/foundations/components/actions/action-guide-3">
 Execute actions on behalf of a user
 </Card>
 <Card title="Triggers" icon="bolt" href="/introduction/foundations/components/triggers/trigger-guide">

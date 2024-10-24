@@ -11,8 +11,12 @@ from langgraph.prebuilt import ToolNode
 from composio_langgraph import Action, ComposioToolSet
 from composio.client.collections import TriggerEventData
 
-# Setup
+from datetime import datetime
+from typing import Optional, Any
 load_dotenv()
+
+DATE_TIME: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+TIMEZONE: Optional[Any] = datetime.now().astimezone().tzinfo
 
 # Constants
 SCHEDULER_AGENT_NAME = "Scheduler"
@@ -78,7 +82,7 @@ You are an AI assistant specialized in analyzing emails, creating calendar event
       - Any other relevant details or instructions for the participants
 
 Remember:
-- The current date and time is {DATE_TIME}.
+- The current date and time is {DATE_TIME} and timezone is {TIMEZONE}.
 - All conversations and scheduling occur in the IST timezone.
 - Be courteous and professional in all communications.
 - Always provide a FINAL ANSWER when you've completed all necessary tasks.

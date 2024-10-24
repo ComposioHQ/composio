@@ -9,6 +9,7 @@ description: "Quickstart-2: Learn how to authenticate and manage multiple users 
 
 - Composio allows you to authenticate and manage multiple users in your app.
 - Each **unique user is represented by a unique entity id**
+- You can **create entities using Python, JavaScript and CLI** 
 
 ### Introduction to Connected Accounts
 
@@ -42,13 +43,6 @@ Follow these 5 steps to connect your user to Google Calendar and create an event
 <Step title="Authenticate Google Calendar Account">
 We'll use Jessica as our example user. There are multiple ways to authenticate an account:
 <Tabs>
-    <Tab title="CLI">
-            <CodeGroup>
-                ```bash Authenticate Jessica's Google Calendar Account
-                composio add googlecalendar -e "Jessica" # Launches Google Calendar login
-                ```
-            </CodeGroup>
-        </Tab>
         <Tab title="Python">
             <CodeGroup>
                 ```python Authenticate Jessica's Google Calendar Account
@@ -97,15 +91,19 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
 
             <CodeGroup>
                 ```python Fetch Google Calendar Actions & Interact with LLM
+                from datetime import datetime
+
                 tools = composio_toolset.get_tools(actions=[Action.GOOGLECALENDAR_CREATE_EVENT])
 
-                task = "Create a 1 hour meeting event at 5:30PM tomorrow"
+                task = "Create a 1 hour meeting event at 5:30PM tomorrow regarding OpenAI Integration"
+
+                today = datetime.now().strftime("%Y-%m-%d")
 
                 response = openai_client.chat.completions.create(
                     model="gpt-4-turbo-preview",
                     tools=tools,
                     messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
+                        {"role": "system", "content": f"You are a helpful assistant. Today's date is {today}."},
                         {"role": "user", "content": task},
                     ],
                 )
@@ -214,7 +212,8 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
                     actions: ["googlecalendar_create_event"]
                 });
 
-                const instruction = "Create a 1 hour meeting event at 5:30PM tomorrow";
+                const today = new Date().toDateString();
+                const instruction = `Create a 1 hour meeting event at 5:30PM tomorrow. Today's date is ${today}`;
 
                 const response = await openai_client.chat.completions.create({
                     model: "gpt-4-turbo-preview",
@@ -244,17 +243,15 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
 
 
 
-<Tab title="API">
+<Tab title="CLI">
 <Steps>
 <Step title="Authenticate Google Calendar Account">
 We'll use Jessica as our example user. There are multiple ways to authenticate an account:
-    <Tab title="CLI">
             <CodeGroup>
                 ```bash Authenticate Jessica's Google Calendar Account
                 composio add googlecalendar -e "Jessica" # Launches Google Calendar login
                 ```
             </CodeGroup>
-        </Tab>
     <Warning>
         Ensure you complete the authentication process by following the URL provided in your console.
     </Warning>

@@ -47,6 +47,7 @@ describe("Apps class tests", () => {
         expect((executionResult as any).data).toHaveProperty('authorizations_url');
     });
 
+
     it("should execute an action of noauth app", async () => {
         const actionName = "codeinterpreter_execute_code";
         const input = { code_to_execute: 'print("Hello World");' };

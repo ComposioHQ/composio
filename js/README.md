@@ -1,8 +1,8 @@
 
 <p align="center">
   <picture width="200">
-    <source media="(prefers-color-scheme: dark)" width="172" srcset="https://app.composio.dev/assets/other/js_sdk/assets/logo_dark.svg">
-    <img alt="Text changing depending on mode. Light: 'So light!' Dark: 'So dark!'" width="172" src="https://app.composio.dev/assets/other/js_sdk/assets/logo_light.svg"/>
+    <source media="(prefers-color-scheme: dark)" width="172" srcset="https://github.com/ComposioHQ/composio/blob/fix/docs-images/js/docs/assets/Composio-Logo-dark.svg">
+    <img alt="Text changing depending on mode. Light: 'So light!' Dark: 'So dark!'" width="172" src="https://github.com/ComposioHQ/composio/blob/fix/docs-images/js/docs/assets/Composio-Logo-dark.svg"/>
   </picture>
   <h4 align="center">Composio SDK: Equip your agent with high-quality tools and <br/>build your real-world usecase</h4>
   <hr/>

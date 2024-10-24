@@ -7,6 +7,8 @@ import dotenv
 from langchain_core.messages import BaseMessage, FunctionMessage, HumanMessage
 from langchain_core.utils.function_calling import convert_to_openai_function
 from langchain_openai import ChatOpenAI
+#from langchain_groq import ChatGroq
+#from langchain_cerebras import ChatCerebras
 from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolExecutor, ToolInvocation
 from composio.tools.local import embedtool
@@ -17,11 +19,14 @@ dotenv.load_dotenv()
 
 composio_toolset = ComposioToolSet()
 # Retrieve tools from Composio, specifically the EMBEDTOOL app
-tools = composio_toolset.get_tools(apps=[App.EMBEDTOOL])
+tools = composio_toolset.get_tools(apps=[App.EMBED_TOOL])
 tool_executor = ToolExecutor(tools)
 functions = [convert_to_openai_function(t) for t in tools]
 
 model = ChatOpenAI(model="gpt-4o", temperature=0, streaming=True)
+#model = ChatGroq(model="mixtral-8x7b-32768")
+#model = ChatCerebras(model="llama3.1-70b")
+
 model = model.bind_functions(functions)
 
 

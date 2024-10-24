@@ -20,8 +20,10 @@ from composio.client.collections import (
     ConnectedAccountModel,
     ConnectedAccounts,
     ConnectionRequestModel,
+    CustomAuthObject,
     IntegrationModel,
     Integrations,
+    Logs,
     Triggers,
 )
 from composio.client.endpoints import v1
@@ -80,6 +82,7 @@ class Composio(BaseClient):
         self.integrations = Integrations(client=self)
         self.active_triggers = ActiveTriggers(client=self)
         self.connected_accounts = ConnectedAccounts(client=self)
+        self.logs = Logs(client=self)
         _clients.append(self)
 
     @staticmethod
@@ -229,7 +232,9 @@ class Entity:
         action: Action,
         params: t.Dict,
         connected_account_id: t.Optional[str] = None,
+        session_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
+        auth: t.Optional[CustomAuthObject] = None,
     ) -> t.Dict:
         """
         Execute an action.
@@ -238,6 +243,7 @@ class Entity:
         :param params: Parameters for executing actions
         :param connected_account_id: Connection ID if you want to use a specific
                 connection
+        :param session_id: ID of the current workspace session
         :return: Dictionary containing execution result
         """
         if action.no_auth:
@@ -245,19 +251,33 @@ class Entity:
                 action=action,
                 params=params,
                 entity_id=self.id,
+                session_id=session_id,
                 text=text,
+            )
+
+        if auth is not None:
+            return self.client.actions.execute(
+                action=action,
+                params=params,
+                entity_id=self.id,
+                session_id=session_id,
+                text=text,
+                auth=auth
             )
 
         connected_account = self.get_connection(
             app=action.app,
             connected_account_id=connected_account_id,
         )
+
         return self.client.actions.execute(
             action=action,
             params=params,
             entity_id=t.cast(str, connected_account.clientUniqueUserId),
             connected_account=connected_account.id,
+            session_id=session_id,
             text=text,
+            auth=auth
         )
 
     def get_connection(
@@ -353,6 +373,7 @@ class Entity:
         integration: t.Optional[IntegrationModel] = None,
         use_composio_auth: bool = True,
         force_new_integration: bool = False,
+        connected_account_params: t.Optional[t.Dict] = None,
     ) -> ConnectionRequestModel:
         """
         Initiate an integration connection process for a specified application.
@@ -370,7 +391,6 @@ class Entity:
         app = self.client.apps.get(name=app_name)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         if integration is None and auth_mode is not None:
-            use_composio_auth = use_composio_auth if app.testConnectors and len(app.testConnectors) > 0 else False
             integration = self.client.integrations.create(
                 app_id=app.appId,
                 name=f"{app_name}_{timestamp}",
@@ -392,6 +412,7 @@ class Entity:
         return self.client.connected_accounts.initiate(
             integration_id=t.cast(IntegrationModel, integration).id,
             entity_id=self.id,
+            params=connected_account_params,
             redirect_url=redirect_url,
         )
 

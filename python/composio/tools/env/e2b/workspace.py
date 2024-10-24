@@ -6,18 +6,24 @@ import typing as t
 from dataclasses import dataclass
 from uuid import uuid4
 
-import requests
-from e2b import Sandbox
-
+from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import RemoteWorkspace, WorkspaceConfigType
 
 
-DEFAULT_TEMPLATE = "2h9ws7lsk32jyow50lqz"
+try:
+    import requests
+    from e2b import Sandbox
+
+    E2B_INSTALLED = True
+except ImportError:
+    Sandbox = t.Any
+    E2B_INSTALLED = False
+
 
 TOOLSERVER_PORT = 8000
 TOOLSERVER_URL = "https://{host}/api"
 
-
+DEFAULT_TEMPLATE = "2h9ws7lsk32jyow50lqz"
 ENV_E2B_TEMPLATE = "E2B_TEMPLATE"
 
 
@@ -42,6 +48,13 @@ class E2BWorkspace(RemoteWorkspace):
 
     def __init__(self, config: Config):
         """Initialize E2B workspace."""
+        if not E2B_INSTALLED:
+            raise ComposioSDKError(
+                "`e2b` is required to use e2b workspace, "
+                "run `pip3 install composio-core[e2b]` or "
+                "`pip3 install e2b e2b-code-interpreter` to install",
+            )
+
         super().__init__(config=config)
         template = config.template
         if template is None:

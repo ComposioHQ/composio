@@ -462,7 +462,14 @@ export type GetConnectorInfoResDTO = {
     /**
      * List of required fields expected from the customer
      */
-    expectedInputFields: Array<(string)>;
+    expectedInputFields: Array<{
+        name: string;
+        displayName: string;
+        display_name: string;
+        expected_from_customer: boolean;
+        required: boolean;
+        type: string;
+    }>;
     /**
      * Logo URL of the application associated with the connector
      */
@@ -481,6 +488,17 @@ export type AuthConfigDTO = {
     scopes?: Array<(string)>;
     user_scopes?: Array<(string)>;
 };
+
+
+export type GetConnectionInfoData = {
+    path: {
+        connectedAccountId: string;
+    };
+};
+
+export type GetConnectionInfoResponse = GetConnectionInfoResponseDTO;
+
+export type GetConnectionInfoError = unknown;
 
 export type CreateConnectorPayloadDTO = {
     /**
@@ -786,6 +804,20 @@ export type GetConnectionsResponseDto = {
     page: number;
 };
 
+export type GetConnectionInfoResponseDTO = {
+    base_url: string;
+    parameters: Array<Parameter>;
+    body: {
+        [key: string]: unknown;
+    };
+};
+
+export type Parameter = {
+    name: string;
+    in: string;
+    value: string;
+};
+
 export type GetConnectionsQueryDto = {
     page?: number;
     pageSize?: number;
@@ -799,7 +831,7 @@ export type GetConnectionsQueryDto = {
 };
 
 export type InitiateConnectionPayloadDto = {
-    data?: string;
+    data?: Record<string, any>;
     integrationId: string;
     redirectUri?: string;
     userUuid?: string;
@@ -1728,6 +1760,16 @@ export type ConnectionsControllerDeleteConnectionData = {
         connectedAccountId: string;
     };
 };
+
+export type GetAuthParamsData = {
+    path: {
+        connectedAccountId: string;
+    };
+};
+
+export type GetAuthParamsResponse = unknown;
+
+export type GetAuthParamsError = unknown;
 
 export type ConnectionsControllerDeleteConnectionResponse = unknown;
 

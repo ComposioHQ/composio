@@ -2,15 +2,16 @@ from composio_llamaindex import ComposioToolSet, App, Action
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage
 from llama_index.llms.openai import OpenAI
+from llama_index.llms.cerebras import Cerebras
 from llama_index.llms.groq import Groq
 from dotenv import load_dotenv
 from pathlib import Path
 import os
 
 load_dotenv()
-#llm = OpenAI(model='gpt-4o')
-llm = Groq(model="llama3-groq-70b-8192-tool-use-preview")
-
+llm = OpenAI(model='gpt-4o')
+#llm = Groq(model="llama3-groq-70b-8192-tool-use-preview")
+#llm = Cerebras(model="llama3.1-70b")
 composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_tools(apps = [App.EMBED_TOOL, App.RAGTOOL, App.WEBTOOL, App.SERPAPI, App.FILETOOL])
 
@@ -43,6 +44,14 @@ vector_store_path = "./"
 while True:
     x = input("If you want to add something to the vector store, type 'add' and if you want to query, type 'query':")
     if x == 'add':
+        agent = FunctionCallingAgentWorker(
+            tools=tools,  # Tools available for the agent to use
+            llm=llm,  # Language model for processing requests
+            prefix_messages=prefix_messages,  # Initial system messages for context
+            max_function_calls=10,  # Maximum number of function calls allowed
+            allow_parallel_tool_calls=False,  # Disallow parallel tool calls
+            verbose=True,  # Enable verbose output
+        ).as_agent()
         a = input('Enter the url or image path to add in the vector store:')
         task = f"""
         This is the item you've to add to the vector store: {a}.
@@ -55,6 +64,14 @@ while True:
         response = agent.chat(task)
         print(response)
     elif x == 'query':
+        agent = FunctionCallingAgentWorker(
+            tools=tools,  # Tools available for the agent to use
+            llm=llm,  # Language model for processing requests
+            prefix_messages=prefix_messages,  # Initial system messages for context
+            max_function_calls=10,  # Maximum number of function calls allowed
+            allow_parallel_tool_calls=False,  # Disallow parallel tool calls
+            verbose=True,  # Enable verbose output
+        ).as_agent()
         a = input("What is your query?")
         task = f"""
         Vector store exists in {vector_store_path}

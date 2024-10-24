@@ -4,20 +4,22 @@ from datetime import datetime
 from composio.client.collections import TriggerEventData
 from composio_crewai import Action, ComposioToolSet
 from crewai import Agent, Crew, Task, Process
+from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
+load_dotenv()
 llm = ChatOpenAI(model="gpt-4-turbo")
 # llm = ChatGroq(model='llama3-70b-8192', api_key=os.environ['GROQ_API_KEY'])
 
 composio_toolset = ComposioToolSet()
 
-schedule_tool = composio_toolset.get_actions(
+schedule_tool = composio_toolset.get_tools(
     actions=[
         Action.GOOGLECALENDAR_FIND_FREE_SLOTS,
         Action.GOOGLECALENDAR_CREATE_EVENT,
     ]
 )
-email_tool = composio_toolset.get_actions(actions=[Action.GMAIL_CREATE_EMAIL_DRAFT])
+email_tool = composio_toolset.get_tools(actions=[Action.GMAIL_CREATE_EMAIL_DRAFT])
 date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 timezone = datetime.now().astimezone().tzinfo
 
@@ -30,7 +32,7 @@ email_assistant = Agent(
     Pass empty config ("config": {{}}) for the function calls, if you get an error about not passing config.""",
     verbose=True,
     llm=llm,
-    tools=[schedule_tool],
+    tools=schedule_tool,
     allow_delegation=False,
 )
 
@@ -60,8 +62,8 @@ def callback_new_message(event: TriggerEventData) -> None:
     print("here in the function")
     payload = event.payload
     thread_id = payload.get("threadId")
-    message = payload.get("snippet")
-    sender_mail = extract_sender_email(payload["payload"])
+    message = payload.get("messageText")
+    sender_mail = payload.get("sender")
     if sender_mail is None:
         print("No sender email found")
         return

@@ -1,6 +1,7 @@
 """
 Google AI Python Gemini demo.
 """
+
 import dotenv
 from composio_google import App, ComposioToolset
 from vertexai.generative_models import GenerativeModel

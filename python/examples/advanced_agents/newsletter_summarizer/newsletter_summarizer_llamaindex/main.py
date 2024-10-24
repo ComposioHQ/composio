@@ -1,10 +1,10 @@
-from json import load
 from composio_llamaindex import ComposioToolSet, App, Action
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage
 from llama_index.core import Settings
 from llama_index.llms.openai import OpenAI
 from llama_index.llms.groq import Groq
+from llama_index.llms.cerebras import Cerebras
 from dotenv import load_dotenv
 from pathlib import Path
 from datetime import datetime
@@ -12,8 +12,9 @@ from datetime import datetime
 load_dotenv()
 
 
-
-llm = Groq(model="llama-3.1-70b-versatile", stop_sequences=["\n\n"])
+llm = OpenAI(model="gpt-4o")
+#llm = Groq(model="llama-3.1-70b-versatile", stop_sequences=["\n\n"])
+#llm = Cerebras(model="llama3.1-70b")
 
 toolset = ComposioToolSet()
 

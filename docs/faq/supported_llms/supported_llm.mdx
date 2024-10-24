@@ -1,0 +1,263 @@
+---
+title: "🛠️ What LLMs can I use?"
+sidebarTitle: "Supported LLMs"
+icon: "code"
+description: "Understand more about Actions"
+---
+
+Composio is LLM Agnostic, which means it is not dependent on any specific LLM. You can use any LLM from any of the providers
+including OpenAI, Anthropic, Google, Groq, Cerebras, Ollama and so on.
+
+By default you can use LLMs from any of the frameworks including Langchain, LlamaIndex, Groq etc.,
+<AccordionGroup>
+<Accordion title="Ollama (Open Source Models)">
+<CodeGroup>
+```python Python
+import openai
+from composio_openai import ComposioToolSet, App, Action
+
+openai.base_url = "http://localhost:11434/v1"
+openai.api_key = 'ollama'
+toolset = ComposioToolSet(api_key="COMPOSIO_API_KEY")
+
+messages=[{'role': 'user', 'content': 'Star the repo composiohq/composio'}]
+
+tools = toolset.get_tools(apps=[App.GITHUB])
+response = openai.chat.completions.create(
+	model="llama3.1",
+	messages=messages,
+	tools=tools,
+)
+```
+
+```javascript Javascript
+import OpenAI from 'openai'
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet({apiKey: COMPOSIO_API_KEY,});
+
+const openai = new OpenAI({
+  baseURL: 'http://localhost:11434/v1',
+  apiKey: 'ollama', // required but unused
+})
+const tools = await toolset.getActions({ actions: ["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"] }, entity.id);
+const instruction = `Star the repo composiohq/composio`
+
+const completion = await openai.chat.completions.create({
+  model: 'llama3.1',
+  messages: [{ role: 'user', content: instruction }],
+  tools: tools,
+})
+
+console.log(completion.choices[0].message.content)
+
+```
+</CodeGroup>
+</Accordion>
+
+<Accordion title="Gemini (Google)">
+<CodeGroup>
+```python Python
+import dotenv
+from composio_google import App, ComposioToolset
+from vertexai.generative_models import GenerativeModel
+
+# Load environment variables from .env
+dotenv.load_dotenv()
+
+# Initialize the Composio Toolset
+composio_toolset = ComposioToolset()
+
+# Get GitHub tools that are pre-configured
+tool = composio_toolset.get_tool(apps=[App.GITHUB])
+
+# Initialize the Google AI Gemini model
+model = GenerativeModel("gemini-1.5-pro", tools=[tool])
+
+# Start a chat session
+chat = model.start_chat()
+
+# Define task
+task = "Star a repo composiohq/composio on GitHub"
+
+# Send a message to the model
+response = chat.send_message(task)
+
+print("Model response:")
+print(response)
+
+result = composio_toolset.handle_response(response)
+print("Function call result:")
+print(result)
+
+```
+</CodeGroup>
+
+</Accordion>
+
+<Accordion title="Anthropic (Claude)">
+```python Python
+import dotenv
+from composio_claude import App, ComposioToolset
+import anthropic
+
+# Load environment variables from .env
+dotenv.load_dotenv()
+
+# Initialize the Composio Toolset
+composio_toolset = ComposioToolset()
+
+# Get GitHub tools that are pre-configured
+tool = composio_toolset.get_tool(apps=[App.GITHUB])
+
+# Initialize the Google AI Gemini model
+client = anthropic.Anthropic()
+
+my_task = "Star a repo composiohq/composio on GitHub"
+
+# Create a chat completion request to decide on the action
+response = client.beta.tools.messages.create(
+    model="claude-3-opus-20240229",
+    max_tokens=1024,
+    tools= actions,
+    messages=[{"role": "user", "content": "Star me composiohq/composio repo in github."}],
+)
+print(response)
+
+result = toolset.handle_tool_calls(response)
+print(result)
+```
+</Accordion>
+
+<Accordion title="Groq">
+```python Python
+import os
+
+from composio_openai import App, ComposioToolSet
+import groq
+
+tool_set = ComposioToolSet()
+tools = tool_set.get_tools(apps=[App.TAVILY])
+
+groq_client = groq.Groq(api_key=os.environ.get("GROQ_API_KEY")) 
+system_prompt = """You are a helpful assistant. 
+whenever appropriate, use the Tavily search tool for the latest 
+information from the internet to provide users with up-to-date information. 
+Return the URL of the information.
+"""
+
+user_prompt = "Who was the gold medalist in Men's 100m sprint in paris olymics, 2024?"
+
+messages=[
+    {
+        "role": "system",
+        "content": system_prompt
+    },
+    {
+        "role": "user",
+        "content": user_prompt,
+    }
+]
+
+response = groq_client.chat.completions.create(
+    model="llama-3.1-70b-versatile",
+    messages=messages,
+    tools=tools,
+    tool_choice="auto",
+    max_tokens=4096
+)
+response_message = response.choices[0].message
+tool_call_id = response_message.tool_calls[0].id
+tool_name = response_message.tool_calls[0].function.name
+# Execute function calls
+response_after_tool_calls = tool_set.handle_tool_calls(response=response)
+
+content = response_after_tool_calls[0]['data']['response_data']['results'][0]['content']
+url = response_after_tool_calls[0]['data']['response_data']['results'][0]['url']
+
+messages.append({
+                   "tool_call_id": tool_call_id,
+                   "role": "tool",
+                   "name": tool_name,
+                   "content": f"{content}+url:+{url}",
+               })
+second_response = groq_client.chat.completions.create(
+  model="llama-3.1-70b-versatile",
+  messages=messages
+)
+print(second_response.choices[0].message.content)
+
+```
+</Accordion>
+
+<Accordion title="Cerebras">
+```python Python
+import os
+import dotenv
+from composio_llamaindex import Action, App, ComposioToolSet
+from composio_llamaindex import App, ComposioToolSet, Action
+from llama_index.core.agent import FunctionCallingAgentWorker
+from llama_index.core.llms import ChatMessage
+from llama_index.core.llms import Cerebras
+from datetime import datetime
+from llama_index.core import Settings
+
+# Load environment variables from .env file
+dotenv.load_dotenv()
+Settings.llm = Cerebras(model="llama3.1-70b", api_key=os.environ["GROQ_API_KEY"])
+llm = Cerebras(model="llama3.1-70b", api_key=os.environ["GROQ_API_KEY"])
+
+
+# Initialize the ComposioToolSet
+toolset = ComposioToolSet()
+
+# Get the RAG tool from the Composio ToolSet
+tools = toolset.get_tools(apps=[App.GOOGLECALENDAR])
+
+# Retrieve the current date and time
+date = datetime.today().strftime("%Y-%m-%d")
+timezone = datetime.now().astimezone().tzinfo
+
+# Setup Todo
+todo = """
+    1PM - 3PM -> Code,
+    5PM - 7PM -> Meeting,
+    9AM - 12AM -> Learn something,
+    8PM - 10PM -> Game
+"""
+
+# Define the RAG Agent
+prefix_messages = [
+    ChatMessage(
+        role="system",
+        content=(
+        """
+        You are an AI agent responsible for taking actions on Google Calendar on users' behalf. 
+        You need to take action on Calendar using Google Calendar APIs. Use correct tools to run APIs from the given tool-set.
+        """
+        ),
+    )
+]
+
+# Initialize a FunctionCallingAgentWorker with the tools, LLM, and system messages
+agent = FunctionCallingAgentWorker(
+    tools=tools,  # Tools available for the agent to use
+    llm=llm,  # Language model for processing requests
+    prefix_messages=prefix_messages,  # Initial system messages for context
+    max_function_calls=10,  # Maximum number of function calls allowed
+    allow_parallel_tool_calls=False,  # Disallow parallel tool calls
+    verbose=True,  # Enable verbose output
+).as_agent()
+
+response = agent.chat(
+    """
+Book slots according to {todo}. 
+Properly Label them with the work provided to be done in that time period. 
+Schedule it for today. Today's date is {date} (it's in YYYY-MM-DD format) 
+and make the timezone be {timezone}.
+    """
+)
+print(response)
+```
+</Accordion>
+</AccordionGroup>

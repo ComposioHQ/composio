@@ -14,6 +14,8 @@ from langchain.agents import (  # For creating agents
 
 # Import ChatOpenAI from langchain_openai
 from langchain_openai import ChatOpenAI
+#from langchain_groq import ChatGroq
+#from langchain_cerebras import ChatCerebras
 
 
 # Load environment variables from a .env file (if applicable)
@@ -22,6 +24,8 @@ dotenv.load_dotenv()  # Uncomment if you are using a .env file
 
 # Initialize a ChatOpenAI instance with GPT-4o model
 llm = ChatOpenAI(model="gpt-4o")
+#llm = ChatGroq(model="mixtral-8x7b-32768")
+#llm = ChatCerebras(model="llama3.1-70b")
 
 # Pull a prompt from LangChain hub to create an OpenAI functions agent
 prompt = hub.pull("hwchase17/openai-functions-agent")
@@ -29,7 +33,7 @@ prompt = hub.pull("hwchase17/openai-functions-agent")
 # Initialize a ComposioToolSet with the API key from environment variables
 composio_toolset = ComposioToolSet()
 # Retrieve tools from Composio, specifically the EMBEDTOOL apppip
-tools = composio_toolset.get_tools(apps=[App.EMBEDTOOL])
+tools = composio_toolset.get_tools(apps=[App.EMBED_TOOL])
 
 
 # Define the images path and query string

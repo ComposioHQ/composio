@@ -12,11 +12,11 @@ const LOCAL_CACHE_DIRECTORY_NAME = '.composio';
 const USER_DATA_FILE_NAME = 'user_data.json';
 const DEFAULT_BASE_URL = "https://backend.composio.dev";
 
-export const userDataPath = path.join(os.homedir(), LOCAL_CACHE_DIRECTORY_NAME, USER_DATA_FILE_NAME);
+export const userDataPath = () => path.join(os.homedir(), LOCAL_CACHE_DIRECTORY_NAME, USER_DATA_FILE_NAME);
 
 export const getUserDataJson = () => {
     try {
-        const data = fs.readFileSync(userDataPath, 'utf8');
+        const data = fs.readFileSync(userDataPath(), 'utf8');
         return JSON.parse(data);
     } catch (error: any) {
         return (error.code === 'ENOENT') ? {} : {};
@@ -49,11 +49,41 @@ export function getAPISDK(baseUrl?: string, apiKey?: string) {
     return apiClient;
 }
 
-export function setCliConfig(apiKey:string,baseUrl:string){
+/**
+ * Writes data to a file, creating the directory if it doesn't exist.
+ * @param filePath - The path to the file where data will be written.
+ * @param data - The data to be written to the file.
+ */
+export const writeToFile = (filePath: string, data: any) => {
+    try{
+        // Get the directory path from the file path
+        const dirPath = path.dirname(filePath);
+        // Create the directory if it doesn't exist
+        if (!fs.existsSync(dirPath)) {
+            fs.mkdirSync(dirPath, { recursive: true });
+        }
+        // Write the data to the file as a formatted JSON string
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    }catch(error){  
+        console.error("Oops! We couldn't save your settings. Here's why:", (error as Error).message);
+        console.log("Need help? Check file permissions for file:", filePath);
+    }
+}
+
+/**
+ * Sets the CLI configuration by updating the user data file.
+ * @param apiKey - The API key to be set in the configuration.
+ * @param baseUrl - The base URL to be set in the configuration (optional).
+ */
+export function setCliConfig(apiKey: string, baseUrl: string) {
+    // Get the current user data
     const userData = getUserDataJson();
+    // Update the API key
     userData.api_key = apiKey;
-    if(!!baseUrl){
+    // Update the base URL if provided
+    if (!!baseUrl) {
         userData.base_url = baseUrl;
     }
-    fs.writeFileSync(userDataPath, JSON.stringify(userData, null, 2));
+    // Write the updated user data to the file
+    writeToFile(userDataPath(), userData);
 }

@@ -1,0 +1,278 @@
+---
+title: "Newsletter Summarizer"
+sidebarTitle: "Newsletter Summarizer"
+icon: "book"
+description: "This project serves as an example of how to use Composio to seamlessly fetch and summarize newsletter emails. It automatically retrieves recent newsletters, summarizes their content, and sends a well-formatted email to the specified recipient."
+---
+
+
+
+
+<Tabs>
+    <Tab title="Python">
+    <Card color="#7bee0c" title="Newsletter Summarizer GitHub Repository" icon="github" href="https://github.com/ComposioHQ/composio/tree/master/python/examples/advanced_agents/newsletter_summarizer/newsletter_summarizer_crewai">
+  Explore the complete source code for the Newsletter Summarizer project. This repository contains all the necessary files and scripts to set up and run the Newsletter Summarizer using Composio and Cloudflare.
+  <CardBody>
+  </CardBody>
+</Card>
+<Steps>
+    <Step title="Import Base Packages">
+    Next, we'll import the essential libraries for our project.
+    <CodeGroup>
+        ```python Import Statements
+        import os
+        import dotenv
+        from composio_langchain import Action, App, ComposioToolSet
+        from crewai import Agent, Crew, Process, Task
+        from langchain_groq import ChatGroq
+        from datetime import datetime
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Initialize Tools and Agents">
+    We'll initialize our tools and define the agents for fetching, summarizing, and sending emails.
+    <CodeGroup>
+        ```python Models and Tools
+        # Load environment variables from the .env file
+        dotenv.load_dotenv()
+
+        # Initialize the ComposioToolSet
+        toolset = ComposioToolSet()
+
+        # Get the Gmail tools from the ComposioToolSet
+        gmail_tools = toolset.get_tools(apps=[App.GMAIL])
+
+        # Initialize the ChatOpenAI model with GPT-4
+        llm = ChatGroq(model="llama3.1-70b-versatile", stop_sequences=["\n\n"])
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define Agents">
+    Define the agents responsible for fetching, summarizing, and sending emails.
+    <CodeGroup>
+        ```python Define Agents
+        # Define the Email Fetcher Agent
+        email_fetcher_agent = Agent(
+            role="Email Fetcher Agent",
+            goal="Fetch recent newsletter emails from the inbox. Please look for labels 'newsletter' only for the last 7 days.",
+            verbose=True,
+            memory=True,
+            backstory=f"You are an expert in retrieving and organizing email content. Today's date is {datetime.now().strftime('%B %d, %Y')}.",
+            llm=llm,
+            allow_delegation=False,
+            tools=gmail_tools,
+        )
+
+        # Define the Summarizer Agent
+        summarizer_agent = Agent(
+            role="Summarizer Agent",
+            goal="Summarize the content of newsletter emails, highlighting key information and trends.",
+            verbose=True,
+            memory=True,
+            backstory=f"You are an expert in analyzing and summarizing complex information. Today's date is {datetime.now().strftime('%B %d, %Y')}.",
+            llm=llm,
+            allow_delegation=False,
+            tools=[],
+        )
+
+        # Define the Email Sender Agent
+        email_sender_agent = Agent(
+            role="Email Sender Agent",
+            goal="Send the summarized newsletter content via email to investtradegame@gmail.com.",
+            verbose=True,
+            memory=True,
+            backstory=f"You are an expert in composing and sending emails. Today's date is {datetime.now().strftime('%B %d, %Y')}.",
+            llm=llm,
+            allow_delegation=False,
+            tools=gmail_tools,
+        )
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Define Tasks">
+    Define the tasks for fetching, summarizing, and sending emails.
+    <CodeGroup>
+        ```python Define Tasks
+        # Define the task for fetching emails
+        fetch_emails_task = Task(
+            description="Fetch the most recent newsletter emails from the inbox.",
+            expected_output="A detailed list of recent newsletter emails with their content.",
+            tools=gmail_tools,
+            agent=email_fetcher_agent,
+        )
+
+        # Define the task for summarizing emails
+        summarize_emails_task = Task(
+            description="Summarize the content of the fetched newsletter emails.",
+            expected_output="A comprehensive summary of the newsletter emails.",
+            agent=summarizer_agent,
+            context=[fetch_emails_task],
+        )
+
+        # Define the task for sending the summary email
+        send_summary_task = Task(
+            description="Compose and send an email containing the summarized newsletter content.",
+            expected_output="Confirmation that the summary email has been sent.",
+            tools=gmail_tools,
+            agent=email_sender_agent,
+            context=[summarize_emails_task],
+        )
+        ```
+
+    </CodeGroup>
+    </Step>
+
+    <Step title="Kickoff the Process">
+    Finally, we'll define the crew and kick off the process.
+    <CodeGroup>
+        ```python Kickoff Process
+        # Define the crew with the agents and tasks
+        crew = Crew(
+            agents=[email_fetcher_agent, summarizer_agent, email_sender_agent],
+            tasks=[fetch_emails_task, summarize_emails_task, send_summary_task],
+            process=Process.sequential,
+        )
+
+        # Kickoff the process and print the result
+        result = crew.kickoff()
+        print("Newsletter Summary Process Completed:")
+        print(result)
+        ```
+    </CodeGroup>
+    </Step>
+
+
+</Steps>
+    
+</Tab>
+    
+</Tabs>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Putting It All Together
+
+<CodeGroup>
+    ```python Python Final Code
+# Import base packages
+import os
+import dotenv
+from composio_langchain import Action, App, ComposioToolSet
+from crewai import Agent, Crew, Process, Task
+from langchain_groq import ChatGroq
+from datetime import datetime
+
+# Load environment variables from the .env file
+dotenv.load_dotenv()
+
+# Initialize the ComposioToolSet
+toolset = ComposioToolSet()
+
+# Get the Gmail tools from the ComposioToolSet
+gmail_tools = toolset.get_tools(apps=[App.GMAIL])
+
+# Initialize the ChatOpenAI model with GPT-4
+llm = ChatGroq(model="llama3.1-70b-versatile", stop_sequences=["\n\n"])
+
+# Define the Email Fetcher Agent
+email_fetcher_agent = Agent(
+    role="Email Fetcher Agent",
+    goal="Fetch recent newsletter emails from the inbox.",
+    verbose=True,
+    memory=True,
+    backstory=f"You are an expert in retrieving and organizing email content. Today's date is {datetime.now().strftime('%B %d, %Y')}.",
+    llm=llm,
+    allow_delegation=False,
+    tools=gmail_tools,
+)
+
+# Define the Summarizer Agent
+summarizer_agent = Agent(
+    role="Summarizer Agent",
+    goal="Summarize the content of newsletter emails.",
+    verbose=True,
+    memory=True,
+    backstory=f"You are an expert in analyzing and summarizing complex information. Today's date is {datetime.now().strftime('%B %d, %Y')}.",
+    llm=llm,
+    allow_delegation=False,
+    tools=[],
+)
+
+# Define the Email Sender Agent
+email_sender_agent = Agent(
+    role="Email Sender Agent",
+    goal="Send the summarized newsletter content via email.",
+    verbose=True,
+    memory=True,
+    backstory=f"You are an expert in composing and sending emails. Today's date is {datetime.now().strftime('%B %d, %Y')}.",
+    llm=llm,
+    allow_delegation=False,
+    tools=gmail_tools,
+)
+
+# Define the task for fetching emails
+fetch_emails_task = Task(
+    description="Fetch the most recent newsletter emails from the inbox.",
+    expected_output="A detailed list of recent newsletter emails with their content.",
+    tools=gmail_tools,
+    agent=email_fetcher_agent,
+)
+
+# Define the task for summarizing emails
+summarize_emails_task = Task(
+    description="Summarize the content of the fetched newsletter emails.",
+    expected_output="A comprehensive summary of the newsletter emails.",
+    agent=summarizer_agent,
+    context=[fetch_emails_task],
+)
+
+# Define the task for sending the summary email
+send_summary_task = Task(
+    description="Compose and send an email containing the summarized newsletter content.",
+    expected_output="Confirmation that the summary email has been sent.",
+    tools=gmail_tools,
+    agent=email_sender_agent,
+    context=[summarize_emails_task],
+)
+
+# Define the crew with the agents and tasks
+crew = Crew(
+    agents=[email_fetcher_agent, summarizer_agent, email_sender_agent],
+    tasks=[fetch_emails_task, summarize_emails_task, send_summary_task],
+    process=Process.sequential,
+)
+
+# Kickoff the process and print the result
+result = crew.kickoff()
+print("Newsletter Summary Process Completed:")
+print(result)
+    ```
+
+</CodeGroup>
+
+

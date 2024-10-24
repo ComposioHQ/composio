@@ -1,0 +1,19 @@
+{
+  "name": "code_execution_agent",
+  "version": "1.0.0",
+  "description": "",
+  "main": "agent.mjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@langchain/openai": "^0.2.11",
+    "composio-core": "^0.1.18",
+    "dotenv": "^16.4.5",
+    "e2b": "^0.16.2",
+    "langchain": "^0.2.20"
+  }
+}

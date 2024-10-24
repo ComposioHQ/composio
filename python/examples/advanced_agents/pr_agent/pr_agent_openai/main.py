@@ -30,11 +30,11 @@ code_review_assistant_prompt = (
 )
 
 composio_toolset = ComposioToolSet()
-pr_agent_tools = composio_toolset.get_actions(
+pr_agent_tools = composio_toolset.get_tools(
     actions=[
         Action.GITHUB_GET_CODE_CHANGES_IN_PR,  # For a given PR it get's all the changes
         Action.GITHUB_PULLS_CREATE_REVIEW_COMMENT,  # For a given PR it creates a comment
-        Action.GITHUB_ISSUES_CREATE,  # If required, allows you to create issues on github
+        Action.GITHUB_CREATE_AN_ISSUE,  # If required, allows you to create issues on github
         Action.SLACKBOT_CHAT_POST_MESSAGE,  # Send a message to slack using app
     ]
 )
