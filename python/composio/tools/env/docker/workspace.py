@@ -25,7 +25,7 @@ try:
     from docker.models.containers import Container
 
     DOCKER_INSTALLED = True
-except ModuleNotFoundError:
+except ImportError:
     DockerClient = t.Any
     Container = t.Any
 

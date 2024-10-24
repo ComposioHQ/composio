@@ -105,7 +105,7 @@ export default class AddCommand {
   private async setupConnections(integrationId: string): Promise<void> {
     const composioClient = new Composio();
     const data = await composioClient.integrations.get({ integrationId });
-    const { expectedInputFields } = data;
+    const { expectedInputFields } = data!;
 
 
     const config = await this.collectInputFields(expectedInputFields, true);
