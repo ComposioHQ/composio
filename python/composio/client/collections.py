@@ -19,7 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from pysher.channel import Channel
 
 from composio.client.base import BaseClient, Collection
-from composio.client.endpoints import v1
+from composio.client.endpoints import v1, v2
 from composio.client.enums import (
     Action,
     ActionType,
@@ -251,13 +251,15 @@ class AuthSchemeField(BaseModel):
     """Auth scheme field."""
 
     name: str
-    description: str
-    type: str
-
     display_name: t.Optional[str] = None
+    description: str
 
+    type: str
+    default: t.Optional[str] = None
     required: bool = False
     expected_from_customer: bool = True
+
+    get_current_user_endpoint: t.Optional[str] = None
 
 
 class AppAuthScheme(BaseModel):
@@ -880,6 +882,21 @@ class ActionModel(BaseModel):
     description: t.Optional[str] = None
 
 
+ParamPlacement = t.Literal["header", "path", "query", "subdomain"]
+
+
+class CustomAuthParameter(te.TypedDict):
+    in_: ParamPlacement
+    name: str
+    value: str
+
+
+class CustomAuthObject(BaseModel):
+    body: t.Dict = Field(default_factory=lambda: {})
+    base_url: t.Optional[str] = None
+    parameters: t.List[CustomAuthParameter] = Field(default_factory=lambda: [])
+
+
 class Actions(Collection[ActionModel]):
     """Collection of composio actions.."""
 
@@ -1033,6 +1050,7 @@ class Actions(Collection[ActionModel]):
         connected_account: t.Optional[str] = None,
         session_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
+        auth: t.Optional[CustomAuthObject] = None,
     ) -> t.Dict:
         """
         Execute an action on the specified entity with optional connected account.
@@ -1044,6 +1062,7 @@ class Actions(Collection[ActionModel]):
         :param session_id: ID of the current workspace session
         :return: A dictionary containing the response from the executed action.
         """
+        # TOFIX: Remvoe this
         if action.is_local:
             return self.client.local.execute_action(action=action, request_data=params)
 
@@ -1099,7 +1118,7 @@ class Actions(Collection[ActionModel]):
                 )
             ).json()
 
-        if connected_account is None:
+        if connected_account is None and auth is None:
             raise ComposioClientError(
                 "`connected_account` cannot be `None` when executing "
                 "an app which requires authentication"
@@ -1107,24 +1126,38 @@ class Actions(Collection[ActionModel]):
 
         return self._raise_if_required(
             self.client.http.post(
-                url=str(self.endpoint / action.slug / "execute"),
+                url=str(v2.actions / action.slug / "execute"),
                 json={
                     "connectedAccountId": connected_account,
-                    "input": modified_params,
                     "entityId": entity_id,
+                    "appName": action.app,
+                    "input": modified_params,
                     "text": text,
+                    "authConfig": self._serialize_auth(auth=auth),
                 },
             )
         ).json()
+
+    @staticmethod
+    def _serialize_auth(auth: t.Optional[CustomAuthObject]) -> t.Optional[t.Dict]:
+        if auth is None:
+            return None
+
+        data = auth.model_dump(exclude_none=True)
+        data["parameters"] = [
+            {"in": d["in_"], "name": d["name"], "value": d["value"]}
+            for d in data["parameters"]
+        ]
+        return data
 
 
 class ExpectedFieldInput(BaseModel):
     name: str
     type: str
 
-    is_secret: bool
     description: str
     displayName: str
+    is_secret: bool = False
 
     required: bool = True
     expected_from_customer: bool = True
@@ -1205,6 +1238,9 @@ class Integrations(Collection[IntegrationModel]):
             )
         )
         return IntegrationModel(**response.json())
+
+    def remove(self, id: str) -> None:
+        self.client.http.delete(url=str(self.endpoint / id))
 
     @t.overload  # type: ignore
     def get(self) -> t.List[IntegrationModel]: ...

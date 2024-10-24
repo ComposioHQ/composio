@@ -12,11 +12,11 @@ const LOCAL_CACHE_DIRECTORY_NAME = '.composio';
 const USER_DATA_FILE_NAME = 'user_data.json';
 const DEFAULT_BASE_URL = "https://backend.composio.dev";
 
-export const userDataPath = path.join(os.homedir(), LOCAL_CACHE_DIRECTORY_NAME, USER_DATA_FILE_NAME);
+export const userDataPath = () => path.join(os.homedir(), LOCAL_CACHE_DIRECTORY_NAME, USER_DATA_FILE_NAME);
 
 export const getUserDataJson = () => {
     try {
-        const data = fs.readFileSync(userDataPath, 'utf8');
+        const data = fs.readFileSync(userDataPath(), 'utf8');
         return JSON.parse(data);
     } catch (error: any) {
         return (error.code === 'ENOENT') ? {} : {};
@@ -85,5 +85,5 @@ export function setCliConfig(apiKey: string, baseUrl: string) {
         userData.base_url = baseUrl;
     }
     // Write the updated user data to the file
-    writeToFile(userDataPath, userData);
+    writeToFile(userDataPath(), userData);
 }

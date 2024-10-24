@@ -462,7 +462,14 @@ export type GetConnectorInfoResDTO = {
     /**
      * List of required fields expected from the customer
      */
-    expectedInputFields: Array<(string)>;
+    expectedInputFields: Array<{
+        name: string;
+        displayName: string;
+        display_name: string;
+        expected_from_customer: boolean;
+        required: boolean;
+        type: string;
+    }>;
     /**
      * Logo URL of the application associated with the connector
      */
@@ -1753,6 +1760,16 @@ export type ConnectionsControllerDeleteConnectionData = {
         connectedAccountId: string;
     };
 };
+
+export type GetAuthParamsData = {
+    path: {
+        connectedAccountId: string;
+    };
+};
+
+export type GetAuthParamsResponse = unknown;
+
+export type GetAuthParamsError = unknown;
 
 export type ConnectionsControllerDeleteConnectionResponse = unknown;
 
