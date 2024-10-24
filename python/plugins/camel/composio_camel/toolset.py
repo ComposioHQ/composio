@@ -154,6 +154,7 @@ class ComposioToolSet(
         entity_id: t.Optional[str] = None,
         *,
         processors: t.Optional[ProcessorsType] = None,
+        check_connected_accounts: bool = True,
     ) -> t.List[OpenAIFunction]:
         """
         Get composio tools wrapped as Camel `OpenAIFunction` objects.
@@ -180,5 +181,10 @@ class ComposioToolSet(
                 ).model_dump(),
                 entity_id=entity_id,
             )
-            for schema in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
+            for schema in self.get_action_schemas(
+                actions=actions,
+                apps=apps,
+                tags=tags,
+                check_connected_accounts=check_connected_accounts,
+            )
         ]
