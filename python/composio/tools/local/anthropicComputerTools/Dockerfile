@@ -88,12 +88,22 @@ RUN python -m pip install --upgrade pip==23.1.2 setuptools==58.0.4 wheel==0.40.0
     python -m pip config set global.disable-pip-version-check true
 
 # only reinstall if requirements.txt changes
-COPY --chown=$USERNAME:$USERNAME computer_use_demo/requirements.txt $HOME/computer_use_demo/requirements.txt
-RUN python -m pip install -r $HOME/computer_use_demo/requirements.txt
+COPY --chown=$USERNAME:$USERNAME requirements.txt $HOME/anthropicComputerTools/requirements.txt
+RUN python -m pip install -r $HOME/anthropicComputerTools/requirements.txt
+# Install streamlit first, explicitly
+RUN python -m pip install streamlit==1.38.0
 
 # setup desktop env & app
 COPY --chown=$USERNAME:$USERNAME image/ $HOME
-COPY --chown=$USERNAME:$USERNAME computer_use_demo/ $HOME/computer_use_demo/
+COPY --chown=$USERNAME:$USERNAME . $HOME/anthropicComputerTools/
+
+# RUN cd $HOME && \
+#     python -m pip install -e /home/computeruse/anthropicComputerTools
+# Set PYTHONPATH before using it
+ENV PYTHONPATH=/home/computeruse/anthropicComputerTools
+# Now when we modify it later, it exists
+ENV PYTHONPATH="${PYTHONPATH}:/home/computeruse/anthropicComputerTools"
+ENV COMPOSIO_PATH="/home/computeruse/anthropicComputerTools"
 
 ARG DISPLAY_NUM=1
 ARG HEIGHT=768

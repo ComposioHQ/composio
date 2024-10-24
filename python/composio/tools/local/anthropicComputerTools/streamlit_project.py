@@ -1,7 +1,6 @@
 """
 Entrypoint for streamlit, see https://docs.streamlit.io/
 """
-
 import asyncio
 import base64
 import os
@@ -21,12 +20,12 @@ from anthropic.types.beta import BetaMessage, BetaTextBlock, BetaToolUseBlock
 from anthropic.types.tool_use_block import ToolUseBlock
 from streamlit.delta_generator import DeltaGenerator
 
-from computer_use_demo.loop import (
+from loop import (
     PROVIDER_TO_DEFAULT_MODEL_NAME,
     APIProvider,
     sampling_loop,
 )
-from computer_use_demo.tools import ToolResult
+from toolset.base import ToolResult
 
 CONFIG_DIR = PosixPath("~/.anthropic").expanduser()
 API_KEY_FILE = CONFIG_DIR / "api_key"
