@@ -2,7 +2,7 @@ import { z, ZodType, ZodObject, ZodString, AnyZodObject, ZodOptional } from "zod
 import { zodToJsonSchema, JsonSchema7Type } from "zod-to-json-schema";
 import { Composio } from ".";
 
-interface CreateActionOptions {
+export interface CreateActionOptions {
     actionName?: string;
     toolName?: string;
     description?: string;
@@ -26,7 +26,7 @@ interface ExecuteMetadata {
 
 export class ActionRegistry {
     client: Composio;
-    customActions: Map<string, { schema: any; metadata: CreateActionOptions, comosoioSchema: any }>;
+    customActions: Map<string, { schema: any; metadata: CreateActionOptions, composioSchema: any }>;
 
     constructor(client: Composio) {
         this.client = client;
@@ -50,7 +50,7 @@ export class ActionRegistry {
         ) as ParamsSchema;
         const _params = paramsSchema.definitions.input.properties;
         this.customActions.set(options.actionName?.toLocaleLowerCase() || '', { schema: paramsSchema, metadata: options,
-            comosoioSchema: {
+            composioSchema: {
                 title: actionName,
                 type: "object",
                 description: options.description,
@@ -73,10 +73,14 @@ export class ActionRegistry {
             const lowerCaseName = name.toLowerCase();
             if (this.customActions.has(lowerCaseName)) {
                 const action = this.customActions.get(lowerCaseName);
-                actionsArr.push(action!.comosoioSchema);
+                actionsArr.push(action!.composioSchema);
             }
         }
         return actionsArr;
+    }
+
+    async getAllActions(): Promise<Array<any>> {
+        return Array.from(this.customActions.values()).map((action: any) => action.composioSchema);
     }
 
     async executeAction(name: string, params: Record<string, any>, metadata: ExecuteMetadata): Promise<any> {

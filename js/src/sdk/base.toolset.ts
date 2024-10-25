@@ -10,7 +10,7 @@ import logger from "../utils/logger";
 import { AppConnectorControllerGetConnectorInfoResponse, ExecuteActionResDTO } from "./client/types.gen";
 import {  saveFile } from "./utils/fileUtils";
 import { convertReqParams, converReqParamForActionExecution } from "./utils";
-import { ActionRegistry } from "./actionRegistry";
+import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 import z from 'zod';
 import { getUserDataJson } from "./utils/config";
 
@@ -194,13 +194,11 @@ export class ComposioToolSet {
             }
         });
         const uniqueLocalActions = Array.from(localActionsMap.values());
-        const toolsWithCustomActions = Array.from(this.customActionRegistry.values()).filter((action: any) => {
+        const toolsWithCustomActions = (await this.customActionRegistry.getActions({ actions: filters.actions!})).filter((action: any) => {
             if (filters.actions && !filters.actions.includes(action.metadata.actionName!)) {
                 return false;
             }
             return true;
-        }).map((action: { schema: z.ZodFunction<any, any>, metadata: { actionName?: string; description?: string; toolName?: string } }) => {
-            return action.schema;
         });
 
         const toolsActions = [...actions!, ...uniqueLocalActions, ...toolsWithCustomActions];
@@ -246,14 +244,14 @@ export class ComposioToolSet {
         }
         const uniqueLocalActions = Array.from(localActions.values());
 
-        const toolsWithCustomActions = Array.from(this.customActions.values()).filter((action: any) => {
-            if (filters.actions && !filters.actions.includes(action.metadata.actionName!)) {
+        const toolsWithCustomActions = (await this.customActionRegistry.getAllActions()).filter((action: any) => {
+            if (filters.actions && !filters.actions.some(actionName => actionName.toLowerCase() === action.metadata.actionName!.toLowerCase())) {
                 return false;
             }
-            if (filters.apps && !filters.apps.includes(action.metadata.toolName!)) {
+            if (filters.apps && !filters.apps.some(appName => appName.toLowerCase() === action.metadata.toolName!.toLowerCase())) {
                 return false;
             }
-            if (filters.tags && !filters.tags.some(tag => tag.toLocaleLowerCase() === "custom")) {
+            if (filters.tags && !filters.tags.some(tag => tag.toLocaleLowerCase() === "custom".toLocaleLowerCase())) {
                 return false;
             }
             return true;
@@ -308,16 +306,12 @@ export class ComposioToolSet {
         throw new Error("Not implemented");
     }
 
-    async newTool(callback: (params: Map<string, any>, authParams: Record<string, any>) => Promise<z.AnyZodObject>, params: z.ZodMap<z.ZodString, z.AnyZodObject>, response?: z.AnyZodObject, options: {actionName?: string; description?: string; toolName?: string} = {}) {
-        if(typeof callback !== "function") {
-            throw new Error("Callback must be a function");
-        }
+    async createAction(options: CreateActionOptions) {
+        return this.customActionRegistry.createAction(options);
+    }
 
-        this.#validateParams(params);
-
-        const toolSchema = z.function(z.tuple([params]), response ?? z.any());
-        this.customActions.set(options.actionName!, { schema: toolSchema, metadata: options });
-        return toolSchema;
+    private isCustomAction(action: string) {
+        return this.customActionRegistry.getActions({ actions: [action] }).then((actions: any) => actions.length > 0);
     }
 
     async executeAction(
@@ -325,6 +319,12 @@ export class ComposioToolSet {
         params: Record<string, any>,
         entityId: string = "default"
     ): Promise<Record<string, any>> {
+        // Custom actions are always executed in the host/local environment for JS SDK
+        if(await this.isCustomAction(action)) {
+            return this.customActionRegistry.executeAction(action, params, {
+                entityId: entityId
+            });
+        }
         if(this.workspaceEnv && this.workspaceEnv !== ExecEnv.HOST) {
             const workspace = await this.workspace.get();
             return workspace.executeAction(action, params, {
