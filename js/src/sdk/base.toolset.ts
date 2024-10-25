@@ -194,11 +194,14 @@ export class ComposioToolSet {
             }
         });
         const uniqueLocalActions = Array.from(localActionsMap.values());
-        const toolsWithCustomActions = (await this.customActionRegistry.getActions({ actions: filters.actions!})).filter((action: any) => {
-            if (filters.actions && !filters.actions.includes(action.metadata.actionName!)) {
+        const _newActions = filters.actions?.map((action: string) => action.toLowerCase());
+        const toolsWithCustomActions = (await this.customActionRegistry.getActions({ actions: _newActions!})).filter((action: any) => {
+            if (_newActions && !_newActions.includes(action.parameters.title.toLowerCase()!)) {
                 return false;
             }
             return true;
+        }).map((action: any) => {
+            return action;
         });
 
         const toolsActions = [...actions!, ...uniqueLocalActions, ...toolsWithCustomActions];
@@ -255,6 +258,9 @@ export class ComposioToolSet {
                 return false;
             }
             return true;
+        }).map((action: any) => {
+            console.log("Action is", action);
+            return action.schema;
         });
 
         const toolsActions = [...apps.items!, ...uniqueLocalActions, ...toolsWithCustomActions];

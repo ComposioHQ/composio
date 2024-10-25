@@ -26,7 +26,7 @@ interface ExecuteMetadata {
 
 export class ActionRegistry {
     client: Composio;
-    customActions: Map<string, { schema: any; metadata: CreateActionOptions, composioSchema: any }>;
+    customActions: Map<string, { metadata: CreateActionOptions, schema: any }>;
 
     constructor(client: Composio) {
         this.client = client;
@@ -49,22 +49,25 @@ export class ActionRegistry {
             }
         ) as ParamsSchema;
         const _params = paramsSchema.definitions.input.properties;
-        this.customActions.set(options.actionName?.toLocaleLowerCase() || '', { schema: paramsSchema, metadata: options,
-            composioSchema: {
+        const composioSchema = {
+            parameters: {   
                 title: actionName,
                 type: "object",
                 description: options.description,
                 required: paramsSchema.definitions.input.required || [],
                 properties: _params,
+            },
+            response: {
+                type: "object",
+                title: "Response for " + actionName,
+                properties: [],
             }
-         });
-        return {
-            title: actionName,
-            type: "object",
-            description: options.description,
-            required: paramsSchema.definitions.input.required || [],
-            properties: _params,
         };
+        this.customActions.set(options.actionName?.toLocaleLowerCase() || '', {
+            metadata: options,
+            schema: composioSchema
+         });
+        return composioSchema;
     }
 
     async getActions({actions}: {actions: Array<string>}): Promise<Array<any>> {
@@ -73,14 +76,14 @@ export class ActionRegistry {
             const lowerCaseName = name.toLowerCase();
             if (this.customActions.has(lowerCaseName)) {
                 const action = this.customActions.get(lowerCaseName);
-                actionsArr.push(action!.composioSchema);
+                actionsArr.push(action!.schema);
             }
         }
         return actionsArr;
     }
 
     async getAllActions(): Promise<Array<any>> {
-        return Array.from(this.customActions.values()).map((action: any) => action.composioSchema);
+        return Array.from(this.customActions.values()).map((action: any) => action);
     }
 
     async executeAction(name: string, params: Record<string, any>, metadata: ExecuteMetadata): Promise<any> {
