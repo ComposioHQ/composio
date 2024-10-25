@@ -11,36 +11,9 @@ import axios from "axios";
 import { AppConnectorControllerGetConnectorInfoResponse, ExecuteActionResDTO } from "./client/types.gen";
 import {  saveFile } from "./utils/fileUtils";
 import { convertReqParams, converReqParamForActionExecution } from "./utils";
+import { getUserDataJson } from "./utils/config";
 
 type GetListActionsResponse = any;
-class UserData {
-    apiKey: string | undefined;
-    constructor(public _path: string) {
-    }
-
-    init() {
-       try {
-            const module = require(this._path);
-            this.apiKey = module.apiKey;
-       } catch {
-            return false;
-       }
-    }
-
-    static load(_path: string) { 
-        return new UserData(_path);
-    }
-}
-
-const getUserPath = () => {
-    try{
-        const path = require("path");
-        return path.join(getEnvVariable("HOME", ""), ".composio", "userData.json");
-    } catch {
-       return null;
-    }
-    
-}
 
 export class ComposioToolSet {
     client: Composio;
@@ -59,7 +32,7 @@ export class ComposioToolSet {
         entityId: string = "default",
         workspaceConfig: WorkspaceConfig = Workspace.Host()
     ) {  
-        const clientApiKey: string | undefined = apiKey || getEnvVariable("COMPOSIO_API_KEY") || UserData.load(getUserPath()).apiKey;
+        const clientApiKey: string | undefined = apiKey || getEnvVariable("COMPOSIO_API_KEY") || getUserDataJson().api_key;
         if (!clientApiKey) {
             throw new Error("API key is required, please pass it either by using `COMPOSIO_API_KEY` environment variable or during initialization");
         }
