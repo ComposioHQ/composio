@@ -7,10 +7,11 @@ import { getEnvVariable } from "../utils/shared";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
-import axios from "axios";
 import { AppConnectorControllerGetConnectorInfoResponse, ExecuteActionResDTO } from "./client/types.gen";
 import {  saveFile } from "./utils/fileUtils";
 import { convertReqParams, converReqParamForActionExecution } from "./utils";
+import { ActionRegistry } from "./actionRegistry";
+import z from 'zod';
 
 type GetListActionsResponse = any;
 class UserData {
@@ -51,6 +52,7 @@ export class ComposioToolSet {
     workspaceEnv: ExecEnv;
 
     localActions: IPythonActionDetails["data"] | undefined;
+    customActionRegistry: ActionRegistry;
 
     constructor(
         apiKey: string | null,
@@ -65,6 +67,7 @@ export class ComposioToolSet {
         }
         this.apiKey = clientApiKey;
         this.client = new Composio(this.apiKey, baseUrl || undefined, runtime as string );
+        this.customActionRegistry = new ActionRegistry(this.client);
         this.runtime = runtime;
         this.entityId = entityId;
 
@@ -217,9 +220,17 @@ export class ComposioToolSet {
             }
         });
         const uniqueLocalActions = Array.from(localActionsMap.values());
+        const toolsWithCustomActions = Array.from(this.customActionRegistry.values()).filter((action: any) => {
+            if (filters.actions && !filters.actions.includes(action.metadata.actionName!)) {
+                return false;
+            }
+            return true;
+        }).map((action: { schema: z.ZodFunction<any, any>, metadata: { actionName?: string; description?: string; toolName?: string } }) => {
+            return action.schema;
+        });
 
-        const toolsActions = [...actions!, ...uniqueLocalActions];
-
+        const toolsActions = [...actions!, ...uniqueLocalActions, ...toolsWithCustomActions];
+        
         return toolsActions.map((action: any) => {
             return this.modifyActionForLocalExecution(action);
         });
@@ -260,7 +271,21 @@ export class ComposioToolSet {
             }
         }
         const uniqueLocalActions = Array.from(localActions.values());
-        const toolsActions = [...apps.items!, ...uniqueLocalActions];
+
+        const toolsWithCustomActions = Array.from(this.customActions.values()).filter((action: any) => {
+            if (filters.actions && !filters.actions.includes(action.metadata.actionName!)) {
+                return false;
+            }
+            if (filters.apps && !filters.apps.includes(action.metadata.toolName!)) {
+                return false;
+            }
+            if (filters.tags && !filters.tags.some(tag => tag.toLocaleLowerCase() === "custom")) {
+                return false;
+            }
+            return true;
+        });
+
+        const toolsActions = [...apps.items!, ...uniqueLocalActions, ...toolsWithCustomActions];
         
         return toolsActions.map((action: any) => {
             return this.modifyActionForLocalExecution(action);
@@ -307,6 +332,18 @@ export class ComposioToolSet {
         entityId?: Optional<string>
     ): Promise<any> {
         throw new Error("Not implemented");
+    }
+
+    async newTool(callback: (params: Map<string, any>, authParams: Record<string, any>) => Promise<z.AnyZodObject>, params: z.ZodMap<z.ZodString, z.AnyZodObject>, response?: z.AnyZodObject, options: {actionName?: string; description?: string; toolName?: string} = {}) {
+        if(typeof callback !== "function") {
+            throw new Error("Callback must be a function");
+        }
+
+        this.#validateParams(params);
+
+        const toolSchema = z.function(z.tuple([params]), response ?? z.any());
+        this.customActions.set(options.actionName!, { schema: toolSchema, metadata: options });
+        return toolSchema;
     }
 
     async executeAction(

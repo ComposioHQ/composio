@@ -112,9 +112,6 @@ export class ConnectionRequest {
      */
     async getAuthInfo(data: GetConnectionInfoData["path"]): Promise<GetConnectionInfoResponse> {
         const res = await client.connections.getConnectionInfo({ path: data });
-        if (res.error) {
-            throw res.error;
-        }
         return res.data!;
     }
 
