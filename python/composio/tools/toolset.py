@@ -1175,7 +1175,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 raise ComposioSDKError(
                     message=(
                         "Auth scheme does not match provided integration ID, "
-                        f"auth scheme assosiated with integration ID {response['auth_scheme']} "
+                        f"auth scheme associated with integration ID {response['auth_scheme']} "
                         f"auth scheme provided {auth_scheme}"
                     )
                 )
