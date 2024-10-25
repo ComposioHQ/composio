@@ -1,0 +1,154 @@
+---
+title: "Custom Actions"
+sidebarTitle: "Building Custom Actions"
+icon: "hammer"
+description: "Guide to creating connections for multiple users"
+---
+
+## What are Custom Actions?
+
+- Extend the functionality of existing tools by creating a custom action which utilises the existing authentication. (Fetch emails from Gmail)
+- Write a custom action code snippet to execute the custom action (Check if number is even or odd)
+
+
+<Tip>
+Custom Actions can be created for any existing tool in Composio, allowing you to tailor the functionality to your specific needs while leveraging the existing authentication.
+</Tip>
+
+## Creating a Custom Action
+
+<Steps>
+<Step title="Import necessary modules">
+
+```python
+from composio import ComposioToolSet, App, action
+
+toolset = ComposioToolSet()
+```
+
+</Step>
+<Step title="Creating a custom action">
+<Tabs>
+<Tab title="For Existing Tool (Uses existing authentication)">
+<Info>
+Implementation of a custom action for an existing tool (Gmail) that uses existing authentication.
+</Info>
+<CodeGroup>
+```python Custom Action - Gmail (Uses existing authentication)
+@action(toolname="gmail", requires=["python-dotenv"])
+def my_custom_action(auth: dict, query:str) -> str:
+    """
+    Create custom action to fetch emails from Gmail using existing Gmail authentication info
+
+    :param query: Passing input query parameter 
+    :param auth: Authentication dictionary provided by Composio for Gmail
+    :return info: Gmail emails information
+    """
+    
+    # fetch authentication headers
+    headers = auth['headers'] 
+    query_params = auth['query_params']
+    base_url = auth['base_url']
+    
+    current_dateTime = datetime.datetime.now().isoformat() + 'Z'  
+    tomorrow_dateTime = (datetime.datetime.now() + datetime.timedelta(days=1)).isoformat() + 'Z' 
+    
+    custom_endpoint_url = f"/gmail/v1/users/me/messages?q=in:sent after:{current_dateTime} before:{tomorrow_dateTime}"
+    
+    url = f"{base_url}{custom_endpoint_url}"
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        print("Successfully fetched emails:", response.json())
+    else:
+        print("Error fetching emails:", response.status_code, response.json())
+    return str(response)
+```
+</CodeGroup>
+<Note>
+As `gmail` toolname is already registered in Composio, `auth` dictionary will be automatically provided!
+</Note>
+</Tab>
+<Tab title="For New Tool">
+
+<CodeGroup>
+```python Custom Action for new tool
+@action(toolname="cow", requires=["cowsay"])
+def my_custom_action(number: int) -> str:
+    """
+    Cow will say whatever you want it to say.
+
+    :param message: Message string
+    :return greeting: Formatted message.
+    """
+    import cowsay
+    
+    say = "even" if number % 2 == 0 else "odd"
+    return cowsay.get_output_string("cow", say)
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+
+</Step>
+<Step title="Executing the Custom Action">
+We can execute the custom action without Agents as well
+<Tabs>
+<Tab title="Without Agents">
+<CodeGroup>
+```python Python - Executing the Custom Action without Agents
+print(
+    toolset.execute_action(
+        action=get_info_arg,
+        params={
+            'query':'test_query' 
+        },
+    )
+)
+```
+
+```javascript JavaScript - Executing the Custom Action without Agents
+print(
+    toolset.execute_action(
+        action=get_info_arg,
+        params={
+            'query':'test_query' 
+        },
+    )
+)
+```
+</CodeGroup>
+</Tab>
+<Tab title="With Agents">
+<CodeGroup>
+```python
+# TODO: Prathit to add example
+```
+
+```javascript
+# TODO: Prathit to add example
+```
+</CodeGroup>
+</Tab>
+</Tabs>
+
+
+Output from executing Custom Action without Agents
+<CodeGroup>
+```shell Output from executing Custom Action without Agents
+[INFO] Logging is set to INFO, use `logging_level` argument or `COMPOSIO_LOGGING_LEVEL` change this
+[INFO] Executing `GITHUB_GET_INFO_ARG` with params={'query': 'test_query'} and metadata=None connected_account_id=None
+[INFO] Got response={'data': {'info': {'headers': {'Authorization': 'Bearer KEY', 'x-request-id': '2c65e8b'}, 'base_url': 'https://api.github.com', 'query_params': {}}}, 'error': None, 'successful'...
+{'data': {'info': {'headers': {'Authorization': 'Bearer KEY', 'x-request-id': '2c65e8b'}, 'base_url': 'https://api.github.com', 'query_params': {}}}, 'error': None, 'successful': True}
+```
+</CodeGroup>
+</Step>
+</Steps>
+
+### Why Use Custom Actions?
+
+Custom Actions provide several advantages:
+
+- **Data privacy:** Execution happens on the user’s machine, ensuring sensitive data doesn’t leave the local environment.
+- **Flexibility:** Users can create and customize as many tools and actions as needed.
+- **Compatibility:** Custom actions can be integrated seamlessly across various Composio-supported platforms.

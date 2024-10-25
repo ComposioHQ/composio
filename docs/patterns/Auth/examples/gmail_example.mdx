@@ -1,368 +1,146 @@
 ---
 title: "Connecting your User's Gmail Account"
-sidebarTitle: "Example Connection - Gmail"
-icon: "gear"
+sidebarTitle: "Example Flow - Gmail"
+icon: "mailbox"
 description: "Here's how to connect your user to Gmail"
 ---
 
-<Tabs>
-    <Tab title="Python">
-    <Steps>
 
-        <Step title="Creating a Gmail Integration">
-        To use your Developer App, toggle the "Use your own Developer App" button while creating the Integration
-        ![Gmail Integration](patterns/Auth/examples/gif/gmail_auth_main.gif)
-            - Open the gmail tool in [dashboard](https://app.composio.dev/app/gmail)
-            - Select the OAuth2 method of Authentication
-            - Toggle the "Use your own Developer App" button while creating the Integration.
-            - You can use Composio's credentials or Use your Developer App's API Key for the Integration.
-            - Depending on the application, you can choose between OAuth2 based or API key based Authentication.
-            - In this case we use OAuth2 based method.
-            - Next lets connect your users.
-        </Step>
-            <Step title="Fetching Authentication Parameters">
-                ```python Fetch auth params 
-                from composio import ComposioToolSet, App
-                toolset = ComposioToolSet()
+<Steps>
+<Step title="Fetching Authentication Parameters">
+<CodeGroup>
+```python Python Fetch auth params 
+from composio import ComposioToolSet, App
+toolset = ComposioToolSet()
 
-                response = toolset.get_expected_params_for_user(app=App.GMAIL) # can use integration_id instead of app
+response = toolset.get_expected_params_for_user(app=App.GMAIL) # can use integration_id instead of app
 
-                print(response["expected_params"])
-                ```
-                
-                Here's what the output would look like:
-                <CodeGroup>
-                ```python Output
-                [ExpectedFieldInput(name='token', 
-                    type='string', 
-                    description='Token for bearer token auth', 
-                    displayName='Token', 
-                    is_secret=False, 
-                    required=True, 
-                    expected_from_customer=True, 
-                    default=None, 
-                get_current_user_endpoint=None)]
-                ```
-                </CodeGroup>
-            </Step>
+print(response["expected_params"])
 
-            <Step title="Creating a Connection with Collected Parameters">
-                ```python Fetch auth params 
+```
 
-                # This is the URL that the user will be redirected to after completing the authentication process
-                redirect_url = "https://yourwebsite.com/connection/callback"
+```javascript Javascript Fetch auth params
+import { Composio, OpenAIToolSet } from "composio-core";
 
-                entity_id = "Jessica" # This is the unique identifier for the user
+const toolset = new OpenAIToolSet();
 
-                # To connect your user to Gmail, we need the credentials you've used while creating the integration in the dashboard
-                collected_params = {
-                    "token": "1234567890", # Add your actual Bearer Token here
-                }
+const response = await toolset.getExpectedParamsForUser({
+  app: "gmail",
+  authScheme: "OAUTH2",
+});
 
-                # Initiate the connection
-                connection_request = toolset.initiate_connection(connected_account_params=collected_params,entity_id=entity_id,app=App.GMAIL,redirect_url=redirect_url)
+console.log(response);
+```
+</CodeGroup>
 
-                # Check the status of the connection
-                print(connection_request.status)
-                ```
+### Parameters to fetch from the user
+<CodeGroup>
+```shell Output of Python Code
+[]
+```
 
-                This is what the output looks like:
-                <CodeGroup>
-                ```shell Output
-                ACTIVE #This means the connection was successful
+```shell Output of Javascript Code
+[]
+```
+</CodeGroup>
+<Info>
+As stated in the output, you don't need to fetch any parameters from the user. So we can directly initiate the connection.
+</Info>
+</Step>
+<Step title="Initiating a Connection">
+<CodeGroup>
+```python Python Initiate connection 
+# This is the URL that the user will be redirected to after completing the authentication process
+redirect_url = "https://yourwebsite.com/connection/callback"
+# this is only useful for oauth based flows involving redirect based authentication. 
 
-                #If the status is INITIATED or FAILED, You should try initiating the connection again.
-                ```
+entity_id = "Jessica"  # This is the unique identifier for the user
 
-                </CodeGroup>        
-            You can also see the [dashboard](https://app.composio.dev/connections?page=1&status=ALL) for the connection status like this:
-            ![Connection status](/patterns/Auth/examples/gif/connection_status.gif)
-            </Step>
+# Initiate the connection
+connection_request = toolset.initiate_connection(
+    entity_id=entity_id,
+    app=App.GMAIL,
+    redirect_url=redirect_url,
+)
 
-            <Step title="Get specific Connected Account">
-                ```python Get connected account
-                entity = toolset.client.get_entity(id="Jessica")
-                #if you want a list of connections, do not mention id in the get_entity function
-                print(entity.get_connections())
-                ```
-                Here's what the output would look like :
-                <CodeGroup>
-                ```shell Output
-                ConnectedAccountModel(id='cda345', 
-                status='ACTIVE', 
-                createdAt='2024-10-23T12:32:50.301Z', 
-                updatedAt='2024-10-23T12:32:50.301Z', 
-                appUniqueId='gmail', appName='gmail', 
-                integrationId='e745dad7-c9ba-49ae', 
-                connectionParams=AuthConnectionParamsModel
-                    (scope=None, 
-                    base_url='https://www.googleapis.com', 
-                    client_id=None, 
-                    token_type=None, 
-                    access_token=None, 
-                    client_secret=None, 
-                    consumer_id=None, 
-                    consumer_secret=None, 
-                    headers=None, 
-                    queryParams=None), 
-                    clientUniqueUserId='Jessica', entityId=None)
-                ```
-                </CodeGroup>
-                You can verify the Connected Account ID in the dashboard [here](https://app.composio.dev/connections?page=1&status=ACTIVE)
-                ![Connected Account ID from dashboard](patterns/Auth/gifs/connected_account_id.png)
-                
-            </Step>
 
-            <Step title="Execute Action on your User's behalf">
-                ```python Execute action for your user
-                toolset.execute_action(
-                    Action.GMAIL_SEND_EMAIL,
-                    params={
-                        "recipient_email":"test@gmail.com",# Enter your gmail id
-                        "subject":"Test email",
-                        "body":"Hi! this is a test email.",
-                    },
-                    entity_id="Jessica" #Specify your user's entity_id here to execute action on their behalf
-                )
-                ```
-                Here's what the output would look like:
-                <CodeGroup>
-                ```shell Output
-                Executing `GMAIL_SEND_EMAIL` with params={'recipient_email': 'test@gmail.com', 'subject': 'Test email', 'body': 'Hi! this is a test email.'} and metadata={} connected_account_id=None
-                Got response={'successfull': True, 'data': {'response_data': {'id': '192b9e2d0bd72a93', 'threadId': '192b9e2d0bd72a93', 'labelIds': ['UNREAD', 'SENT', 'INBOX']}}, 'error': None} from action=GMAIL_SEND_EMAIL with params={'recipient_email': 'test@gmail....
-                {'successfull': True, 'data': {'response_data': {'id': '192b9e2d0bd72a93', 'threadId': '192b9e2d0bd72a93', 'labelIds': ['UNREAD', 'SENT', 'INBOX']}}, 'error': None}
-                ```
-                </CodeGroup>
-                You can verify if the Action was executed [here](https://app.composio.dev/logs?status=all&time=1w)
-            </Step>
-        </Steps>
-    </Tab>
+if connection_request.connectionStatus == "INITIATED":
+    print(connection_request.redirectUrl)
+    # complete the connection by redirecting the user to the redirectUrl
+    print("Connection Status should be active after user completes the authentication process, you can now test by fetching the connection.")
+    
+elif connection_request.connectionStatus == "ACTIVE":
+    print("Connection Status is active, you can now test by calling the tool.")
+    # active connection means the user has completed the authentication process. 
+    # the API Key entered might still be invalid, you can test by calling the tool.
+else:
+    print("Connection process failed, please try again.")
+```
 
-    <Tab title="JavaScript">
-        <Steps>
-            <Step title="Creating a Gmail Integration">
-                ![Gmail Integration](patterns/Auth/examples/gif/gmail_auth_main.gif)
-                - Open the gmail tool in [dashboard](https://app.composio.dev/app/gmail)
-                - Select the OAuth2 method of Authentication
-                - Toggle the "Use your own Developer App" button while creating the Integration.
-                - You can use Composio's credentials or Use your Developer App's API Key for the Integration.
-                - Depending on the application, you can choose between OAuth2 based or API key based Authentication.
-                - In this case we use API Key based method.
-                - Next lets connect your users.
-            </Step>
+```javascript Javascript Initiate connection 
 
-                <Step title="Fetching Authentication Parameters">
-                    ```javascript Fetch auth params 
-                    import { Composio, OpenAIToolSet } from "composio-core";
+const redirectUrl = "https://yourwebsite.com/connection/callback"
 
-                    const toolset = new OpenAIToolSet();
+const entityId = "Jessica" // This is the unique identifier for the user
 
-                    const expectedInputFields = await toolset.getExpectedParamsForUser({
-                        app: "gmail",
-                    });
+const connectionRequest = await toolset.client.connectedAccounts.initiate({
+    data: {
+        ...collectedParams // send collected params
+    },
+    userUuid: entityId,
+    integrationId: expectedInputFields.integrationId, 
+    redirectUri: redirectUrl
+});
+// TODO Fix this 
 
-                    console.log(expectedInputFields)
-                    ```
+if (connectionRequest.connectionStatus === "INITIATED") {
+    console.log(connectionRequest.redirectUrl);
+    // complete the connection by redirecting the user to the redirectUrl
+} else if (connectionRequest.connectionStatus === "ACTIVE") {
+    console.log("Connection Status is active, you can now test by calling the tool.");
+    // active connection means the user has completed the authentication process. 
+    // the API Key entered might still be invalid, you can test by calling the tool.
+} else {
+    console.log("Connection process failed, please try again.");
+}
 
-                    Here's what the output would look like:
-                    <CodeGroup>
-                    ```shell Output
-                    {
-                        expectedInputFields: [
-                        {
-                            name: 'token',
-                            type: 'string',
-                            description: 'Token for bearer token auth',
-                            display_name: 'token',
-                            default: null,
-                            required: true,
-                            get_current_user_endpoint: null,
-                            expected_from_customer: true,
-                            is_secret: false,
-                            displayName: 'token'
-                        }
-                        ],
-                        integrationId: 'asfasfa',
-                        authScheme: 'OAUTH2'
-                    }
-                    ```
-                    </CodeGroup>
-                </Step>
+```
+</CodeGroup>
+        This is what the output looks like:
+<CodeGroup>
+```shell Output
 
-                <Step title="Creating a Connection with Collected Parameters">
-                    ```javascript Fetch auth params 
+```
+</CodeGroup>
 
-                    const redirectUrl = "https://yourwebsite.com/connection/callback"
+You can also see the [dashboard](https://app.composio.dev/connections?page=1&status=ALL) for the connection status like this:
+![Connection status](/patterns/Auth/examples/gif/connection_status.gif)
 
-                    const entityId = "Jessica" //This is the unique identifier for the user
+</Step>
+<Step title="Get specific Connected Account">
+<CodeGroup>
+```python Python Fetch connection using ID 
+connected_account = toolset.get_connected_account(connection_request.connectedAccountId)
+```
 
-                // To connect your user to Gmail, we need the credentials you've used while creating the integration in the dashboard
+```javascript Javascript Fetch connection using ID 
+const connectedAccount = await toolset.client.get()
+// TODO Fix this 
+```
+</CodeGroup>
+</Step>
+</Steps>
 
-                    const collectedParams = {
-                        "token": "1234567890", // Add your actual bearer token
-                    }
+You have successfully **Connected Your User's Gmail Account**.
 
-                    const connectionRequest = await toolset.client.connectedAccounts.initiate({
-                        data: {
-                            ...collectedParams
-                        },
-                        userUuid: entityId,
-                        integrationId: expectedInputFields.integrationId, 
-                        redirectUri: redirectUrl
-                    });
+<br/>
 
-                    console.log("Click on this link to connect your account", connectionRequest.redirectUrl)
-
-                    const connectedAccount = await connectionRequest.waitUntilActive(30); // Wait for the connection to be active
-
-                    console.log("Connected account is active", connectedAccount)
-                    ```
-
-                    Here's what the Output would look like:
-                    <CodeGroup>
-                    ```shell Output
-                    Click on this link to connect your account https://accounts.google.com/o/oauth2/v2/auth?client_id=1234567890&redirect_uri=https%3A%2F%2Fbackend.composio.dev%2Fapi%2Fv1%2Fauth-apps%2Fadd&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fgmail.modify&response_type=code&access_type=offline&prompt=consent&state=production_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
-                    
-                    # Once the connection is complete it says 
-                    Connected account is active
-
-                    # Otherwise it says 
-                    Connection failed
-                    ```
-                    </CodeGroup>
-                You can also see the [dashboard](https://app.composio.dev/connections?page=1&status=ALL) for the connection status like this:
-                ![Connection status](/patterns/Auth/examples/gif/connection_status.gif)
-                </Step>
-
-                <Step title="Get specific Connected Account">
-                    ```javascript Get connected account
-                    const openai_client = new OpenAIToolSet({
-                        apiKey: process.env.OPENAIKEY
-                    });
-                    const entity = openai_client.client.getEntity({id:"Jessica"});
-                    console.log(await entity.connectedAccounts.list())
-                    ```
-                Here's what the output would look like:
-                <CodeGroup>
-                ```shell Output 
-                    {
-                    integrationId: '2ec9fcb5',
-                    connectionParams: {
-                        scope: '********',
-                        scopes: '********',
-                        id_token: '********',
-                        client_id: '********',
-                        expires_in: '********',
-                        token_type: '********',
-                        redirectUrl: 'https://accounts.google.com/o/oauth2/v2/auth?client_id=96778602',
-                        callback_url: '********',
-                        client_secret: '********',
-                        code_verifier: '********',
-                        refresh_token: '********',
-                        headers: {
-                        Authorization: 'Bearer 7',
-                        'x-request-id': 'aca5bb16-9fd6-4e2e-92b5-00c6ce1f712d'
-                        },
-                        queryParams: {},
-                        base_url: 'https://www.googleapis.com'
-                    },
-                    appUniqueId: 'gmail',
-                    meta: { app: { get_current_user_endpoint: '/gmail/v1/users/me/profile' } },
-                    memberInfo: {
-                        id: 'ade5fea7',
-                        clientId: 'edc97b',
-                        email: 'your_email_id@gmail.com',
-                        name: 'your_email_id@gmail.com',
-                        role: 'admin',
-                        metadata: {
-                        survery_data: [Object],
-                        has_survey_filled: true,
-                        has_completed_onboarding: true
-                        },
-                        createdAt: '2024-05-23T07:28:41.091Z',
-                        updatedAt: '2024-05-23T07:28:50.796Z',
-                        deletedAt: null
-                    },
-                    isDisabled: false,
-                    id: 'f2ae',
-                    memberId: 'ade5fea7',
-                    clientUniqueUserId: 'Jessica',
-                    status: 'ACTIVE',
-                    enabled: true,
-                    createdAt: '2024-10-23T19:19:11.456Z',
-                    updatedAt: '2024-10-24T03:26:13.965Z',
-                    member: {
-                        id: 'ade5f',
-                        clientId: 'edc9',
-                        email: 'your_email_id@gmail.com',
-                        name: 'your_email_id@gmail.com',
-                        role: 'admin',
-                        metadata: {
-                        survery_data: [Object],
-                        has_survey_filled: true,
-                        has_completed_onboarding: true
-                        },
-                        createdAt: '2024-05-23T07:28:41.091Z',
-                        updatedAt: '2024-05-23T07:28:50.796Z',
-                        deletedAt: null
-                    },
-                    appName: 'gmail',
-                    entityId: 'Jessica'
-                    }
-                
-                ```
-                </CodeGroup>
-
-                You can verify the Connected Account ID in the dashboard [here](https://app.composio.dev/connections?page=1&status=ACTIVE)
-                ![Connected Account ID from dashboard](patterns/Auth/gifs/connected_account_id.png)
-                </Step>
-
-                <Step title="Execute Action on your User's behalf">
-                    ```javascript Execute action for your user
-
-                    import { OpenAIToolSet } from "composio-core";
-
-                    const toolset = new OpenAIToolSet({
-                        apiKey: process.env.COMPOSIO_API_KEY,
-                        entityId: "Jessica",
-                    });
-                    const params = {
-                        recipient_email: "username@gmail.com",
-                        subject: "Test email",
-                        body: "Hi! this is a test email.",
-                    };
-                    const res = await toolset.executeAction("gmail_send_email", params, "Jessica");
-                    ```
-
-                    Here's what the output would look like:
-
-                    <CodeGroup>
-                    ```shell Output
-                    {
-                        data: {
-                            response_data: {
-                            id: '192ba26e',
-                            threadId: '192ba2',
-                            labelIds: [Array]
-                            }
-                        },
-                        error: null,
-                        successfull: true
-                    }
-                    ```
-                    </CodeGroup>
-                You can verify if the Action was executed [here](https://app.composio.dev/logs?status=all&time=1w)
-
-                </Step>
-        </Steps>
-    </Tab>
-</Tabs>
-
-**Congratulations!** You have successfully completed the following key milestones:
-
-- **Created an Integration with Gmail**: You have effectively established an integration with Gmail using the API Key method, utilizing your own Developer App.
-
-- **Connected Your User's Gmail Account**: You have successfully guided your user through the authentication process, enabling them to connect their Gmail account to your application. 
-
-- **Executed an Action**: You have successfully executed an action on Gmail. You can execute already existing actions under Gmail or create your own [Custom Actions](/patterns/Auth/examples/custom_action_gmail). 
-
+<Card
+  title="Next: Guide to Connecting Shopify Account (API Key)"
+  color="#7bee0c"
+  href="/patterns/Auth/examples/shopify_example"
+  icon="graduation-cap"
+  iconType="duotone"
+>
+  Connect your users Shopify Account in similar fashion 
+</Card>

@@ -182,14 +182,13 @@
         "group":"Authentication",
         "pages":[
           "patterns/Auth/connected_account",
-          "patterns/Auth/integrations",
           "patterns/Auth/multiple-users",
-          "patterns/functions/custom_actions",
-          "patterns/Auth/examples/linear_example",
           "patterns/Auth/examples/gmail_example",
-          "patterns/Auth/examples/custom_action_gmail"
+          "patterns/Auth/examples/shopify_example",
+          "patterns/Auth/integrations"
         ]
       },
+      "patterns/custom_actions/custom_actions",
       {
         "group": "How Tos",
         "pages": [

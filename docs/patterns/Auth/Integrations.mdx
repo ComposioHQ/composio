@@ -1,7 +1,7 @@
 ---
 title: "Integrations"
 sidebarTitle: "Integrations"
-icon: "puzzle-piece"
+icon: "sliders"
 description: "What are Integrations, how to create them and use them to connect user accounts"
 ---
 
@@ -35,11 +35,13 @@ For example
 
 <CodeGroup>
 ```python Code for fetching integrations
+# TODO Prathit - change above gif to only create integration. 
 from composio import ComposioToolSet, App
 toolset = ComposioToolSet()
 
 print(toolset.get_integrations()) # get all integrations
-print(toolset._get_integration_for_app(app=App.GMAIL)) #filter based on app
+print(toolset._get_integration_for_app(app=App.GMAIL)) #filter based on app 
+#TODO Improve this method
 print(toolset.get_integration(id="ADD THE ID HERE")) #filter based on integration id
 ```
 
@@ -70,4 +72,4 @@ Create an Integration and toggle on "Use your own Developer App"
 
 Enter your ClientID and ClientSecret and save the integration.
 
-Now you can use this integration and the user in auth flow should see the custom developer app.
+Now you can use this integration and the user in auth flow should see the custom developer app. 

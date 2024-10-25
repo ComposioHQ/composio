@@ -1,34 +1,24 @@
 ---
-title: "Creating a Local Tool"
-sidebarTitle: "Local Tools"
+title: "Creating a Custom Action"
+sidebarTitle: "Custom Actions"
 icon: "gear"
-description: "How to create a Local Tool and add it to your Agent"
+description: "How to create a Custom Action"
 ---
 
 ## Overview
 
-**Local Tools** in Composio empower users to execute actions directly on their machines, providing privacy and customization benefits. Composio offers two main types of tools:
+**Custom Actions** in Composio empower users to execute actions directly on their machines, providing privacy and customization benefits. Composio offers two main types of tools:
 
 1. **Composio-Managed Tools:** Executed on Composio’s end.
 2. **Local Tools:** Executed locally on the user’s machine.
 
-This guide focuses on **Local Tools** and outlines how you can create and add your own tools to integrate with Composio’s supported platforms.
-
-### Why Use Local Tools?
-
-Local tools provide several advantages:
-
-- Data privacy: Execution happens on the user’s machine, ensuring sensitive data doesn’t leave the local environment.
-- Flexibility: Users can create and customize as many tools and actions as needed.
-- Compatibility: Custom tools and actions can be integrated seamlessly across various Composio-supported platforms.
-
-Additionally, you can extend the functionality of existing tools like GitHub, Gmail, or Jira by creating **Custom Actions**. These actions can leverage existing authentication details from user-connected accounts to perform personalized tasks.
+This guide focuses on **Custom Actions** and outlines how you can create and add your own actions to integrate with Composio’s supported platforms.
 
 ---
 
-## Available Local Tools
+## Available Custom Actions
 
-Composio has already added many useful local tools, and we are continuously expanding the list. 
+Composio has already added many useful Custom Actions, and we are continuously expanding the list. 
 
 - Explore the current list of available [local tools](./list_local_tools).
 - To access the entire repository of tools, visit the [Composio GitHub](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local).
@@ -64,10 +54,12 @@ def say(message: str) -> str:
 
 In this example, we create a custom tool called "cow" that uses the `cowsay` library to output a message.
 
-### Step 2: Import and Use Your Custom Action
+### Step 2: Import and Use Your Custom Action with or without Agents
 
 Once your action is ready, import it into your main file and integrate it with your Composio agent framework.
-
+<Tabs>
+<Tab title="Without Agents">
+<CodeGroup>
 ```python
 from composio import action, ComposioToolSet
 from local_tool import say
@@ -82,6 +74,16 @@ tools = composio_toolset.execute_action(
         }),
 print(tools)
 ```
+</CodeGroup>
+</Tab>
+<Tab title="With Agents">
+<CodeGroup>
+```python
+# TODO: Prathit to add example
+```
+</CodeGroup>
+</Tab>
+</Tabs>
 
 ---
 
