@@ -6,12 +6,12 @@ import logging
 import re
 from unittest import mock
 
-from composio.tools.base.runtime import action
 import pytest
 
 from composio import Action, App
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.tools.base.abs import action_registry, tool_registry
+from composio.tools.base.runtime import action as custom_action
 from composio.tools.toolset import ComposioToolSet
 
 from composio_langchain.toolset import ComposioToolSet as LangchainToolSet
@@ -270,7 +270,7 @@ def test_check_connected_accounts_flag() -> None:
 
 def test_get_action_schemas_description_for_runtime_tool() -> None:
 
-    @action(toolname="runtime")
+    @custom_action(toolname="runtime")
     def some_action(name: str) -> str:
         """
         Some action
@@ -280,14 +280,13 @@ def test_get_action_schemas_description_for_runtime_tool() -> None:
         """
         return f"Hello, {name}"
 
-    toolset = ComposioToolSet()
-    (schema_0,) = toolset.get_action_schemas(actions=[some_action])
+    (schema_0,) = ComposioToolSet().get_action_schemas(actions=[some_action])
     assert (
         schema_0.parameters.properties["name"]["description"]
         == "Name of the user. Please provide a value of type string. This parameter is required."
     )
 
-    (schema_1,) = toolset.get_action_schemas(actions=[some_action])
+    (schema_1,) = ComposioToolSet().get_action_schemas(actions=[some_action])
     assert (
         schema_1.parameters.properties["name"]["description"]
         == "Name of the user. Please provide a value of type string. This parameter is required."
