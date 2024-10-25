@@ -6,6 +6,7 @@ import logging
 import re
 from unittest import mock
 
+from composio.tools.base.runtime import action
 import pytest
 
 from composio import Action, App
@@ -265,3 +266,29 @@ def test_check_connected_accounts_flag() -> None:
                 check_connected_accounts=False,
             )
         mocked.assert_not_called()
+
+
+def test_get_action_schemas_description_for_runtime_tool() -> None:
+
+    @action(toolname="runtime")
+    def some_action(name: str) -> str:
+        """
+        Some action
+
+        :param name: Name of the user
+        :return message: Message for user
+        """
+        return f"Hello, {name}"
+
+    toolset = ComposioToolSet()
+    (schema_0,) = toolset.get_action_schemas(actions=[some_action])
+    assert (
+        schema_0.parameters.properties["name"]["description"]
+        == "Name of the user. Please provide a value of type string. This parameter is required."
+    )
+
+    (schema_1,) = toolset.get_action_schemas(actions=[some_action])
+    assert (
+        schema_1.parameters.properties["name"]["description"]
+        == "Name of the user. Please provide a value of type string. This parameter is required."
+    )
