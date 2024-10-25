@@ -833,7 +833,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         for act in runtime_actions:
             schema = act.schema()
             schema["name"] = act.enum
-            items.append(ActionModel(**schema))
+            items.append(ActionModel(**schema).model_copy(deep=True))
 
         for item in items:
             item = self._process_schema(item)
@@ -873,16 +873,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 "number",
                 "boolean",
             ]:
-                param_type = param_details["type"]
+                ext = f'Please provide a value of type {param_details["type"]}.'
                 description = param_details.get("description", "").rstrip(".")
-                if description:
-                    param_details["description"] = (
-                        f"{description}. Please provide a value of type {param_type}."
-                    )
-                else:
-                    param_details["description"] = (
-                        f"Please provide a value of type {param_type}."
-                    )
+                param_details["description"] = (
+                    f"{description}. {ext}" if description else ext
+                )
 
             if param_name in required_params:
                 description = param_details.get("description", "")
