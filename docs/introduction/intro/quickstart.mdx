@@ -65,7 +65,7 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
         Set up your development environment
                 <CodeGroup>
                     ```python Initialize Clients
-                    from composio_openai import ComposioToolSet, Action
+                    from composio_openai import ComposioToolSet, App
                     from openai import OpenAI
 
                     openai_client = OpenAI()
@@ -84,7 +84,7 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
 
                 <CodeGroup>
                     ```python Star a repo using LLM
-                    tools = composio_toolset.get_tools(actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER])
+                    tools = composio_toolset.get_tools(apps=[App.GITHUB])
 
                     task = "Star the repo composiohq/composio on GitHub"
 
