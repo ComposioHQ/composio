@@ -6,8 +6,8 @@ export interface CreateActionOptions {
     actionName?: string;
     toolName?: string;
     description?: string;
-    params: ZodObject<{ [key: string]: ZodString | ZodOptional<ZodString> }>;
-    callback: (params: Record<string, any>) => Promise<Record<string, any>>;
+    inputParams: ZodObject<{ [key: string]: ZodString | ZodOptional<ZodString> }>;
+    callback: (inputParams: Record<string, any>, authCredentials: Record<string, any> | undefined) => Promise<Record<string, any>>;
 }
 
 interface ParamsSchema {
@@ -34,13 +34,17 @@ export class ActionRegistry {
     }
 
     async createAction(options: CreateActionOptions): Promise<Record<string, any>> {
-        const { callback, params } = options;
+        const { callback } = options;
         if (typeof callback !== "function") {
             throw new Error("Callback must be a function");
         }
         if (!options.actionName) {
             throw new Error("You must provide actionName for this action");
         }
+        if (!options.inputParams) {
+            options.inputParams = z.object({});
+        }
+        const params = options.inputParams;
         const actionName = options.actionName  || callback.name || '';
         const paramsSchema: ParamsSchema = await zodToJsonSchema(
             params,
@@ -86,7 +90,7 @@ export class ActionRegistry {
         return Array.from(this.customActions.values()).map((action: any) => action);
     }
 
-    async executeAction(name: string, params: Record<string, any>, metadata: ExecuteMetadata): Promise<any> {
+    async executeAction(name: string, inputParams: Record<string, any>, metadata: ExecuteMetadata): Promise<any> {
         const lowerCaseName = name.toLocaleLowerCase();
         if (!this.customActions.has(lowerCaseName)) {
             throw new Error(`Action with name ${name} does not exist`);
@@ -103,18 +107,18 @@ export class ActionRegistry {
             const entity = await this.client.getEntity(metadata.entityId);
             const connection = await entity.getConnection(toolName, metadata.connectionId);
             if(!connection) {
-                throw new Error(`Connection with name ${toolName} and entityId ${metadata.entityId} not found`);
+                throw new Error(`Connection with app name ${toolName} and entityId ${metadata.entityId} not found`);
             }
             authCredentials = {
                 headers: connection.connectionParams?.headers,
                 queryParams: connection.connectionParams?.queryParams,
-                baseUrl: connection.connectionParams?.baseUrl,
+                baseUrl: connection.connectionParams?.baseUrl || connection.connectionParams?.base_url, 
             }
         }
         if (typeof callback !== "function") {
             throw new Error("Callback must be a function");
         }
 
-        return await callback(params);
+        return await callback(inputParams, authCredentials);
     }
 }

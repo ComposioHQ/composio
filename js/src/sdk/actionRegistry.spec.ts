@@ -29,7 +29,7 @@ describe("ActionRegistry", () => {
             actionName: "testAction",
             toolName: "testTool",
             description: "This is a test action",
-            params,
+            inputParams: params,
             callback,
         };
 
@@ -67,7 +67,7 @@ describe("ActionRegistry", () => {
         const options = {
             toolName: "testTool",
             description: "This is a test action",
-            params,
+            inputParams: params,
             callback: async function () { return { success: true }; },
         };
 
@@ -86,7 +86,7 @@ describe("ActionRegistry", () => {
         const options = {
             actionName: "testAction2",
             description: "This is a test action",
-            params,
+            inputParams: params,
             callback,
         };
 
@@ -114,7 +114,7 @@ describe("ActionRegistry", () => {
             actionName: "testAction",
             toolName: "testTool",
             description: "This is a test action",
-            params,
+            inputParams: params,
             callback,
         };
 

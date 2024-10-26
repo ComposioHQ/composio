@@ -47,8 +47,15 @@ export class ConnectedAccounts {
     }
 
     async initiate(
-        data: ConnectionsControllerInitiateConnectionData["body"]
+        data: ConnectionsControllerInitiateConnectionData["body"] & {
+            // Deprecated: use entityId
+            userUuid?: string;
+            entityId?: string
+        }
     ): Promise<ConnectionRequest> {
+        if (data.userUuid) {
+            data.entityId = data.userUuid;
+        }
         const res =  await client.connections.initiateConnection({ body: data }).then(res => res.data)
 
         //@ts-ignore
