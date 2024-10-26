@@ -1,5 +1,6 @@
 import { version } from "os";
 import { getClientBaseConfig } from "./sdk/utils/config";
+// @ts-ignore
 import { COMPOSIO_VERSION } from "./constants";
 
 async function logError(message: string, error: Error) {
@@ -12,8 +13,7 @@ async function logError(message: string, error: Error) {
         exception: error,
         version: COMPOSIO_VERSION,
         platform: process.platform,
-        nodeVersion: process.version,
-        env: process.env
+        nodeVersion: process.version
     };
     
     fetch("https://backend.composio.dev/api/v1/client/sentry/error", {  
