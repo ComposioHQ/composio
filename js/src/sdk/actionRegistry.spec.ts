@@ -2,13 +2,15 @@ import { describe, it, expect, beforeAll, beforeEach } from "@jest/globals";
 import { z } from "zod";
 import { ActionRegistry } from "./actionRegistry";
 import { Composio } from ".";
+import { getTestConfig } from "../../config/getTestConfig";
 
 describe("ActionRegistry", () => {
     let actionRegistry: ActionRegistry;
     let client: Composio;
+    const testConfig = getTestConfig();
 
     beforeAll(() => {
-        client = new Composio();
+        client = new Composio(testConfig.COMPOSIO_API_KEY!,testConfig.BACKEND_HERMES_URL!);
     });
 
     beforeEach(() => {
