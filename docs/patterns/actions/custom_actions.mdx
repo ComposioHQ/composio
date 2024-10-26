@@ -20,12 +20,18 @@ Custom Actions can be created for any existing tool in Composio, allowing you to
 <Steps>
 <Step title="Import necessary modules">
 
-```python
+<CodeGroup>
+```python Python
 from composio import ComposioToolSet, App, action
 
 toolset = ComposioToolSet()
 ```
+```javascript Javascript
+import { OpenAIToolSet } from "composio-core"
 
+toolset = new OpenAIToolSet({})
+```
+</CodeGroup>
 </Step>
 <Step title="Creating a custom action">
 <Tabs>
@@ -34,7 +40,7 @@ toolset = ComposioToolSet()
 As `gmail` toolname is already registered in Composio, `auth` dictionary will be automatically provided!
 </Note>
 <CodeGroup>
-```python Custom Action - Gmail (Uses existing authentication)
+```python Custom Action - Gmail (python)
 @action(toolname="gmail", requires=["python-dotenv"])
 def my_custom_action(auth: dict, query:str) -> str:
     """
@@ -64,12 +70,45 @@ def my_custom_action(auth: dict, query:str) -> str:
         print("Error fetching emails:", response.status_code, response.json())
     return str(response)
 ```
+```javascript Custom Action - Gmail (javascript)
+await toolset.createAction({
+    actionName: "fetchEmails",
+    toolName: "gmail",
+    description: "This is a custom action to fetch emails from Gmail using existing Gmail authentication info",
+    inputParams: z.object({
+        userId: z.string().optional()
+    }),
+    callback: async (inputParams, authCredentials) => {
+        const headers = authCredentials.headers;
+        const query_params = authCredentials.query_params;
+        const base_url = authCredentials.base_url;
+
+        const currentDateTime = new Date().toISOString();
+        const tomorrowDateTime = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+        const customEndpointUrl = `/gmail/v1/users/${inputParams.userId}/messages?q=in:sent after:${currentDateTime} before:${tomorrowDateTime}`;
+        const url = `${base_url}${customEndpointUrl}`;
+
+        const response = await fetch(url, { headers });
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log("Successfully fetched emails:", data);
+            return data;
+        } else {
+            const errorData = await response.json();
+            console.error("Error fetching emails:", response.status, errorData);
+            throw new Error(`Error fetching emails: ${response.status}`);
+        }
+    }
+});
+```
 </CodeGroup>
 </Tab>
 <Tab title="For a New Tool">
 
 <CodeGroup>
-```python Custom Action for new tool
+```python Python
 @action(toolname="cow", requires=["cowsay"])
 def my_custom_action(number: int) -> str:
     """
@@ -83,6 +122,20 @@ def my_custom_action(number: int) -> str:
     say = "even" if number % 2 == 0 else "odd"
     return cowsay.get_output_string("cow", say)
 ```
+```javascript JavaScript
+await toolset.createAction({
+    actionName: "cow",
+    description: "Cow will say whatever you want it to say. This can be used to print text in cow style",
+    inputParams: z.object({
+        message: z.string()
+    }),
+    callback: async (inputParams) => {
+        const say = inputParams.message;
+        const cowMessage = `Cow says: ${say}`;
+        return cowMessage;
+    }
+});
+```
 </CodeGroup>
 </Tab>
 </Tabs>
@@ -93,7 +146,7 @@ We can execute the custom action without Agents as well
 <Tabs>
 <Tab title="Without Agents">
 <CodeGroup>
-```python Python - Executing the Custom Action without Agents
+```python Python
 print(
     toolset.execute_action(
         action=get_info_arg,
@@ -104,13 +157,11 @@ print(
 )
 ```
 
-```javascript JavaScript - Executing the Custom Action without Agents
-print(
-    toolset.execute_action(
-        action=get_info_arg,
-        params={
-            'query':'test_query' 
-        },
+```javascript JavaScript
+console.log(
+    await toolset.executeAction(
+        "fetchEmails",
+        { userId: "me" }
     )
 )
 ```
@@ -118,12 +169,26 @@ print(
 </Tab>
 <Tab title="With Agents">
 <CodeGroup>
-```python
+```python Python
 # TODO: Prathit to add example
 ```
 
-```javascript
-# TODO: Prathit to add example
+```javascript Javascript
+const tools = await toolset.getTools({ actions: ["fetchEmails"] });
+const instruction = "Get all the latest emails of the current user"
+
+const client = new OpenAI({ apiKey: process.env.OPEN_AI_API_KEY })
+const response = await client.chat.completions.create({
+    model: "gpt-4-turbo",
+    messages: [{
+        role: "user",
+        content: instruction,
+    }],
+    tools: tools,
+    tool_choice: "auto",
+})
+
+console.log("Result", await toolset.handle_tool_call(response));
 ```
 </CodeGroup>
 </Tab>
