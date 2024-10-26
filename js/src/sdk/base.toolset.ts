@@ -285,7 +285,8 @@ export class ComposioToolSet {
     async executeAction(
         action: string,
         params: Record<string, any>,
-        entityId: string = "default"
+        entityId: string = "default",
+        nlaText: string = ""
     ): Promise<Record<string, any>> {
         if(this.workspaceEnv && this.workspaceEnv !== ExecEnv.HOST) {
             const workspace = await this.workspace.get();
@@ -294,7 +295,7 @@ export class ComposioToolSet {
             });
         }
         params = await converReqParamForActionExecution(params);
-        const data =  await this.client.getEntity(entityId).execute(action, params);
+        const data =  await this.client.getEntity(entityId).execute(action, params, nlaText);
 
         return this.processResponse(data,{
             action: action,
