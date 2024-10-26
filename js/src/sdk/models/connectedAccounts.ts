@@ -38,6 +38,14 @@ export class ConnectedAccounts {
         }).then(res => res.data)
     }
 
+    async getAuthParams(data: {connectedAccountId: string}) {
+        return apiClient.connections.getAuthParams({
+            path: {
+                connectedAccountId: data.connectedAccountId
+            }
+        }).then(res => res.data)
+    }
+
     async initiate(
         data: ConnectionsControllerInitiateConnectionData["body"]
     ): Promise<ConnectionRequest> {

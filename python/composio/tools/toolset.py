@@ -29,6 +29,9 @@ from composio.client.collections import (
     ConnectedAccountModel,
     ConnectionParams,
     ConnectionRequestModel,
+    CustomAuthObject,
+    CustomAuthParameter,
+    ExpectedFieldInput,
     FileType,
     IntegrationModel,
     SuccessExecuteActionResponseModel,
@@ -77,6 +80,13 @@ warnings.simplefilter("always", DeprecationWarning)
 ProcessorType = te.Literal["pre", "post", "schema"]
 
 
+class IntegrationParams(te.TypedDict):
+
+    integration_id: str
+    auth_scheme: str
+    expected_params: t.List[ExpectedFieldInput]
+
+
 class ProcessorsType(te.TypedDict):
     """Request and response processors."""
 
@@ -114,6 +124,8 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
 
 class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     """Composio toolset."""
+
+    _custom_auth: t.Dict[App, CustomAuthObject]
 
     _connected_accounts: t.Optional[t.List[ConnectedAccountModel]] = None
     _remote_client: t.Optional[Composio] = None
@@ -270,6 +282,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self._workspace_id = workspace_id
         self._workspace_config = workspace_config
         self._local_client = LocalClient()
+        self._custom_auth = {}
 
         if len(kwargs) > 0:
             self.logger.info(f"Extra kwargs while initializing toolset: {kwargs}")
@@ -385,10 +398,26 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if self._workspace is not None:
             self._workspace = WorkspaceFactory.get(id=workspace_id)
 
+    def add_auth(
+        self,
+        app: AppType,
+        parameters: t.List[CustomAuthParameter],
+        base_url: t.Optional[str] = None,
+        body: t.Optional[t.Dict] = None,
+    ) -> None:
+        self._custom_auth[App(app)] = CustomAuthObject(
+            body=body or {},
+            base_url=base_url,
+            parameters=parameters,
+        )
+
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
         action = Action(action)
         if action.no_auth or action.is_runtime:
+            return
+
+        if App(action.app) in self._custom_auth:
             return
 
         if self._connected_accounts is None:
@@ -447,14 +476,19 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         text: t.Optional[str] = None,
     ) -> t.Dict:
         """Execute a remote action."""
-        self.check_connected_account(action=action)
+        auth = self._custom_auth.get(App(action.app))
+        if auth is None:
+            self.check_connected_account(action=action)
+
         output = self.client.get_entity(id=entity_id).execute(
             action=action,
             params=params,
-            text=text,
-            session_id=session_id,
             connected_account_id=connected_account_id,
+            session_id=session_id,
+            text=text,
+            auth=auth,
         )
+
         if self.output_in_file:
             return self._write_to_file(
                 action=action,
@@ -747,6 +781,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         apps: t.Optional[t.Sequence[AppType]] = None,
         actions: t.Optional[t.Sequence[ActionType]] = None,
         tags: t.Optional[t.Sequence[TagType]] = None,
+        *,
+        check_connected_accounts: bool = True,
     ) -> t.List[ActionModel]:
         runtime_actions = t.cast(
             t.List[t.Type[LocalAction]],
@@ -783,14 +819,21 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 actions=remote_actions,
                 tags=tags,
             )
-            for item in remote_items:
-                self.check_connected_account(action=item.name)
+            if check_connected_accounts:
+                for item in remote_items:
+                    self.check_connected_account(action=item.name)
+            else:
+                warnings.warn(
+                    "Not verifying connected accounts for apps."
+                    " Actions may fail when the Agent tries to use them.",
+                    UserWarning,
+                )
             items = items + remote_items
 
         for act in runtime_actions:
             schema = act.schema()
             schema["name"] = act.enum
-            items.append(ActionModel(**schema))
+            items.append(ActionModel(**schema).model_copy(deep=True))
 
         for item in items:
             item = self._process_schema(item)
@@ -830,16 +873,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 "number",
                 "boolean",
             ]:
-                param_type = param_details["type"]
+                ext = f'Please provide a value of type {param_details["type"]}.'
                 description = param_details.get("description", "").rstrip(".")
-                if description:
-                    param_details["description"] = (
-                        f"{description}. Please provide a value of type {param_type}."
-                    )
-                else:
-                    param_details["description"] = (
-                        f"Please provide a value of type {param_type}."
-                    )
+                param_details["description"] = (
+                    f"{description}. {ext}" if description else ext
+                )
 
             if param_name in required_params:
                 description = param_details.get("description", "")
@@ -1060,7 +1098,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             )
         )
 
-    def _get_expected_params_from_integration_id(self, id: str) -> t.Dict:
+    def _get_expected_params_from_integration_id(self, id: str) -> IntegrationParams:
         integration = self.get_integration(id=id)
         return {
             "integration_id": integration.id,
@@ -1068,16 +1106,32 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             "expected_params": integration.expectedInputFields,
         }
 
-    def _get_expected_params_from_app(self, app: AppType) -> t.Dict:
+    def _get_integration_for_app(
+        self,
+        app: AppType,
+        auth_scheme: t.Optional[str] = None,
+    ) -> IntegrationModel:
         for integration in sorted(self.get_integrations(), key=lambda x: x.createdAt):
             if integration.appName.lower() == str(app).lower():
-                integration = self.get_integration(id=integration.id)
-                return {
-                    "integration_id": integration.id,
-                    "auth_scheme": integration.authScheme,
-                    "expected_params": integration.expectedInputFields,
-                }
+                if (
+                    auth_scheme is not None
+                    and integration.authScheme.lower() != auth_scheme.lower()
+                ):
+                    continue
+                return self.get_integration(id=integration.id)
         raise ValueError(f"No integration found for `{app}`")
+
+    def _get_expected_params_from_app(
+        self,
+        app: AppType,
+        auth_scheme: t.Optional[str] = None,
+    ) -> IntegrationParams:
+        integration = self._get_integration_for_app(app=app, auth_scheme=auth_scheme)
+        return {
+            "integration_id": integration.id,
+            "auth_scheme": integration.authScheme,
+            "expected_params": integration.expectedInputFields,
+        }
 
     def _can_use_auth_scheme(self, scheme: AppAuthScheme, app: AppModel) -> bool:
         if (
@@ -1104,14 +1158,23 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             ]
         ] = None,
         integration_id: t.Optional[str] = None,
-    ) -> t.Dict[str, t.Any]:
+    ) -> IntegrationParams:
         """
         This method returns a list of parameters that are suppossed to be
         provided by the user.
         """
         # If `integration_id` is provided, use it to fetch the params
         if integration_id is not None:
-            return self._get_expected_params_from_integration_id(id=integration_id)
+            response = self._get_expected_params_from_integration_id(id=integration_id)
+            if auth_scheme is not None and response["auth_scheme"] != auth_scheme:
+                raise ComposioSDKError(
+                    message=(
+                        "Auth scheme does not match provided integration ID, "
+                        f"auth scheme associated with integration ID {response['auth_scheme']} "
+                        f"auth scheme provided {auth_scheme}"
+                    )
+                )
+            return response
 
         if app is None:
             raise ComposioSDKError(
@@ -1121,7 +1184,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         try:
             # Check if integration is available for an app, and if available
             # return params from that integration
-            return self._get_expected_params_from_app(app=app)
+            return self._get_expected_params_from_app(app=app, auth_scheme=auth_scheme)
         except ValueError:
             pass
 
@@ -1147,9 +1210,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
         raise ComposioSDKError(
             message=(
-                f"No existing integration found for `{str(app)}`, "
-                "Please create an integration and use the ID to "
-                "fetch the expected params."
+                f"No existing integration found for `{str(app)}`, with auth "
+                f"scheme {auth_scheme} Please create an integration and use the"
+                " ID to fetch the expected params."
             )
         )
 
@@ -1187,11 +1250,12 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
         if integration_id is None:
             try:
-                integration_id = (
-                    self.get_entity(id=entity_id or self.entity_id)
-                    .get_connection(app=app)
-                    .integrationId
-                )
+                integration_id = self._get_integration_for_app(
+                    app=t.cast(
+                        AppType,
+                        app,
+                    )
+                ).id
             except NoItemsFound as e:
                 raise ComposioSDKError(
                     message=(

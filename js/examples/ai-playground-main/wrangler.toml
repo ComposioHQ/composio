@@ -6,5 +6,6 @@ compatibility_flags=["nodejs_compat"]
 binding = "AI"
 
 [vars]
-COMPOSIO_API_KEY = "cc0fu8lookgq1ov8z4xx9n"
+COMPOSIO_API_KEY = "your_composio_api_key"
+
 
