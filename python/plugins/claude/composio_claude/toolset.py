@@ -15,6 +15,7 @@ from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import ClaudeSchema, SchemaType
+from composio.tools.toolset import ProcessorsType
 
 
 class ComposioToolSet(
@@ -94,6 +95,9 @@ class ComposioToolSet(
         actions: t.Optional[t.Sequence[ActionType]] = None,
         apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
+        *,
+        processors: t.Optional[ProcessorsType] = None,
+        check_connected_accounts: bool = True,
     ) -> t.List[ToolParam]:
         """
         Get composio tools wrapped as OpenAI `ChatCompletionToolParam` objects.
@@ -105,6 +109,8 @@ class ComposioToolSet(
         :return: Composio tools wrapped as `ChatCompletionToolParam` objects
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
+        if processors is not None:
+            self._merge_processors(processors)
         return [
             ToolParam(
                 **t.cast(
@@ -116,7 +122,12 @@ class ComposioToolSet(
                     ),
                 ).model_dump()
             )
-            for schema in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
+            for schema in self.get_action_schemas(
+                actions=actions,
+                apps=apps,
+                tags=tags,
+                check_connected_accounts=check_connected_accounts,
+            )
         ]
 
     def execute_tool_call(
