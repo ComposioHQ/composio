@@ -97,6 +97,7 @@ class ComposioToolSet(
         tags: t.Optional[t.List[TagType]] = None,
         *,
         processors: t.Optional[ProcessorsType] = None,
+        check_connected_accounts: bool = True,
     ) -> t.List[ToolParam]:
         """
         Get composio tools wrapped as OpenAI `ChatCompletionToolParam` objects.
@@ -121,7 +122,12 @@ class ComposioToolSet(
                     ),
                 ).model_dump()
             )
-            for schema in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
+            for schema in self.get_action_schemas(
+                actions=actions,
+                apps=apps,
+                tags=tags,
+                check_connected_accounts=check_connected_accounts,
+            )
         ]
 
     def execute_tool_call(

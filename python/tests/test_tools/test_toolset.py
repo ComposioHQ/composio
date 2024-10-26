@@ -237,6 +237,31 @@ def test_processors_on_get_tools(monkeypatch: pytest.MonkeyPatch) -> None:
     toolset = LangchainToolSet()
     monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
 
-    toolset.get_tools(processors={"post": {Action.COMPOSIO_LIST_APPS: postprocess}})
-    toolset.execute_action(Action.COMPOSIO_LIST_APPS, {})
+    toolset.get_tools(
+        actions=[Action.COMPOSIO_ENABLE_TRIGGER],
+        processors={"post": {Action.COMPOSIO_ENABLE_TRIGGER: postprocess}},
+    )
+    toolset.execute_action(Action.COMPOSIO_ENABLE_TRIGGER, {})
     assert postprocessor_called
+
+
+def test_check_connected_accounts_flag() -> None:
+    """Test the `check_connected_accounts` flag on `get_tools()`."""
+
+    toolset = LangchainToolSet()
+    # Ensure `check_connected_account()` gets called by default
+    with mock.patch.object(toolset, "check_connected_account") as mocked:
+        toolset.get_tools(actions=[Action.GMAIL_FETCH_EMAILS])
+        mocked.assert_called_once()
+
+    # Ensure `check_connected_account()` DOES NOT get called when the flag is set
+    with mock.patch.object(toolset, "check_connected_account") as mocked:
+        with pytest.warns(
+            UserWarning,
+            match="Not verifying connected accounts for apps.",
+        ):
+            toolset.get_tools(
+                actions=[Action.GMAIL_FETCH_EMAILS],
+                check_connected_accounts=False,
+            )
+        mocked.assert_not_called()
