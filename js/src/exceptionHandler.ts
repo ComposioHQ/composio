@@ -1,4 +1,3 @@
-import { version } from "os";
 import { getClientBaseConfig } from "./sdk/utils/config";
 // @ts-ignore
 import { COMPOSIO_VERSION } from "./constants";
