@@ -18,6 +18,8 @@ PYDANTIC_TYPE_TO_PYTHON_TYPE = {
     "integer": int,
     "number": float,
     "boolean": bool,
+    "array": t.List,
+    "object": t.Dict,
     "null": t.Optional[t.Any],
 }
 

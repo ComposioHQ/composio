@@ -24,6 +24,7 @@ from composio.tools.base.runtime import action  # noqa: E402
 from composio.tools.env.factory import (  # noqa: E402
     WorkspaceConfigType,
     WorkspaceFactory,
+    WorkspaceTemplate,
     WorkspaceType,
 )
 from composio.tools.env.host.shell import Shell  # noqa: E402
@@ -45,6 +46,7 @@ __all__ = (
     "CustomAuthObject",
     "WorkspaceType",
     "WorkspaceConfigType",
+    "WorkspaceTemplate",
     "WorkspaceFactory",
     "Shell",
     "action",

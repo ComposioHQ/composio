@@ -72,9 +72,19 @@ class BashCommand(LocalAction[BashRequest, BashResponse]):
 
     def execute(self, request: BashRequest, metadata: t.Dict) -> BashResponse:
         """Execute a bash command."""
-        shell = self.shells.get(id=request.session_id)
         try:
-            output = shell.exec(cmd=request.command)
+            if "firefox" not in request.command:
+                output = self.shells.get(id=request.session_id).exec(
+                    cmd=request.command
+                )
+                return BashResponse(
+                    stdout=output[STDOUT],
+                    stderr=output[STDERR],
+                    exit_code=output[EXIT_CODE],
+                    session_id=request.session_id,
+                )
+
+            output = self.shells.new().exec(cmd=request.command, wait=False)
             return BashResponse(
                 stdout=output[STDOUT],
                 stderr=output[STDERR],

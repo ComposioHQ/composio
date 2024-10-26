@@ -44,7 +44,7 @@ class Shell(Sessionable):
         return (cmd.rstrip() + "\n").encode()
 
     @abstractmethod
-    def exec(self, cmd: str) -> t.Dict:
+    def exec(self, cmd: str, wait: bool = True) -> t.Dict:
         """Execute command on container."""
 
 
@@ -70,6 +70,7 @@ class HostShell(Shell):
             stderr=subprocess.PIPE,
             text=True,
             bufsize=1,
+            env=self.environment,
         )
         self.logger.debug(
             "Initial data from session: %s - %s",
@@ -162,7 +163,7 @@ class HostShell(Shell):
         except BrokenPipeError as e:
             raise RuntimeError(str(e)) from e
 
-    def exec(self, cmd: str) -> t.Dict:
+    def exec(self, cmd: str, no_wait: bool = True) -> t.Dict:
         """Execute command on container."""
         self._write(cmd=cmd)
         return {
@@ -185,8 +186,8 @@ class SSHShell(Shell):
         super().__init__()
         self._id = generate_id()
         self.client = client
-        self.channel = self.client.invoke_shell()
         self.environment = environment or {}
+        self.channel = self.client.invoke_shell(environment=self.environment)
 
     def setup(self) -> None:
         """Invoke shell."""
@@ -261,12 +262,18 @@ class SSHShell(Shell):
             clean = clean[1:]
         return clean.replace("(.dev)\n", "")
 
-    def exec(self, cmd: str, stdin: t.Optional[str] = None) -> t.Dict:
+    def exec(
+        self,
+        cmd: str,
+        stdin: t.Optional[str] = None,
+        wait: bool = True,
+    ) -> t.Dict:
         """Execute a command and return output and exit code."""
         output = ""
         for _cmd in cmd.split(" && "):
             self._send(buffer=_cmd, stdin=stdin)
-            self._wait(cmd=_cmd)
+            if wait:
+                self._wait(cmd=_cmd)
             output += self._sanitize_output(output=self._read())
 
         return {

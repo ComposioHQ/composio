@@ -1,3 +1,4 @@
+import enum
 import typing as t
 
 from pydantic import Field
@@ -15,7 +16,13 @@ from composio.tools.local.filetool.actions.base_action import (
 
 SNIPPET_LINES: int = 4
 
-Command = t.Literal["view", "create", "str_replace", "insert", "undo_edit"]
+
+class Command(enum.Enum):
+    VIEW = "view"
+    CREATE = "create"
+    STR_REPLACE = "str_replace"
+    INSERT = "insert"
+    UNDO_EDIT = "undo_edit"
 
 
 class TextEditorRequest(BaseFileRequest):
@@ -62,13 +69,13 @@ class TextEditor(LocalAction[TextEditorRequest, TextEditorResponse]):
     def _execute(
         self, request: TextEditorRequest, metadata: t.Dict
     ) -> TextEditorResponse:
+        cmd = request.command.value
         file_manager = self.filemanagers.get(request.file_manager_id)
-
-        if request.command == "view":
+        if cmd == "view":
             return self.view(file_manager, request.file_path, request.view_range)
-        elif request.command == "create":
+        elif cmd == "create":
             return self.create(file_manager, request.file_path, request.file_text)
-        elif request.command == "str_replace":
+        elif cmd == "str_replace":
             if request.old_str is None or request.new_str is None:
                 raise ExecutionFailed(
                     "old_str and new_str are required for str_replace command"
@@ -76,7 +83,7 @@ class TextEditor(LocalAction[TextEditorRequest, TextEditorResponse]):
             return self.str_replace(
                 file_manager, request.file_path, request.old_str, request.new_str
             )
-        elif request.command == "insert":
+        elif cmd == "insert":
             if request.insert_line is None or request.new_str is None:
                 raise ExecutionFailed(
                     "insert_line and new_str are required for insert command"
@@ -84,10 +91,10 @@ class TextEditor(LocalAction[TextEditorRequest, TextEditorResponse]):
             return self.insert(
                 file_manager, request.file_path, request.insert_line, request.new_str
             )
-        elif request.command == "undo_edit":
+        elif cmd == "undo_edit":
             return self.undo_edit(file_manager, request.file_path)
         else:
-            raise ExecutionFailed(f"Unknown command: {request.command}")
+            raise ExecutionFailed(f"Unknown command: {cmd}")
 
     def view(
         self,

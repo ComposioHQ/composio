@@ -6,27 +6,26 @@ import subprocess
 import time
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Literal, TypedDict
+from typing import Dict, TypedDict
 from uuid import uuid4
 
-import pyautogui
 from pydantic import BaseModel, Field
 
+from composio.tools.base.exceptions import ExecutionFailed
 from composio.tools.base.local import LocalAction
 
 
-ActionType = Literal[
-    "key",
-    "type",
-    "mouse_move",
-    "left_click",
-    "left_click_drag",
-    "right_click",
-    "middle_click",
-    "double_click",
-    "screenshot",
-    "cursor_position",
-]
+class ActionType(Enum):
+    KEY = "key"
+    TYPE = "type"
+    MOUSE_MOVE = "mouse_move"
+    LEFT_CLICK = "left_click"
+    LEFT_CLICK_DRAG = "left_click_drag"
+    RIGHT_CLICK = "right_click"
+    MIDDLE_CLICK = "middle_click"
+    DOUBLE_CLICK = "double_click"
+    SCREENSHOT = "screenshot"
+    CURSOR_POSITION = "cursor_position"
 
 
 class Resolution(TypedDict):
@@ -106,15 +105,15 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
         raise NotImplementedError(f"Unsupported OS: {self.os}")
 
     def execute(self, request: ComputerRequest, metadata: Dict) -> ComputerResponse:
-        if request.action in ("mouse_move", "left_click_drag"):
+        act = request.action.value
+        if act in ("mouse_move", "left_click_drag"):
             if request.coordinate is None:
-                raise ValueError(f"coordinate is required for {request.action}")
-            if request.text is not None:
-                raise ValueError(f"text is not accepted for {request.action}")
+                raise ValueError(f"coordinate is required for {act}")
 
             x, y = self.scale_coordinates(ScalingSource.API, *request.coordinate)
-            if request.action == "mouse_move":
+            if act == "mouse_move":
                 cmd = self._get_mouse_move_cmd(x, y)
+
             else:
                 current_x, current_y = self.get_mouse_position()
                 cmd = self._get_mouse_drag_cmd(int(current_x), int(current_y), x, y)
@@ -125,29 +124,36 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
                 base64_image=result.base64_image,
             )
 
-        elif request.action in ("key", "type"):
+        elif act in ("key", "type"):
             if request.text is None:
-                raise ValueError(f"text is required for {request.action}")
-            if request.coordinate is not None:
-                raise ValueError(f"coordinate is not accepted for {request.action}")
+                raise ExecutionFailed(message=f"Text is required for {act}")
 
-            if request.action == "key":
+            if request.coordinate is not None:
+                raise ExecutionFailed(
+                    message=(
+                        f"coordinate is not accepted for {act}, "
+                        f"if you want to perform this action at {request.coordinate} "
+                        "use mouse_move and right_click to move the cursor."
+                    )
+                )
+
+            if act == "key":
                 key_sequence = self.map_keys(request.text)
                 cmd = self._get_key_press_cmd(key_sequence)
-                result = self.shell(cmd)
+                return self.shell(cmd)
+
             else:
                 results = []
                 for chunk in self.chunks(request.text, self._typing_group_size):
                     cmd = f"{self.mouse_tool} -w {self._typing_delay_ms} t:{shlex.quote(chunk)}"
                     results.append(self.shell(cmd, take_screenshot=False))
 
-                screenshot = self.screenshot()
                 return ComputerResponse(
                     response_data="".join(r.response_data or "" for r in results),
-                    base64_image=screenshot.base64_image,
+                    base64_image=self.screenshot().base64_image,
                 )
 
-        elif request.action in (
+        elif act in (
             "left_click",
             "right_click",
             "double_click",
@@ -155,31 +161,39 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
             "screenshot",
             "cursor_position",
         ):
-            if request.text is not None or request.coordinate is not None:
-                raise ValueError(f"No parameters accepted for {request.action}")
+            if request.coordinate is not None:
+                raise ExecutionFailed(
+                    message=(
+                        f"coordinate is not accepted for {act}, "
+                        f"if you want to perform this action at {request.coordinate} "
+                        "use mouse_move and right_click to move the cursor."
+                    )
+                )
 
-            if request.action == "screenshot":
+            if act == "screenshot":
                 result = self.screenshot()
                 return ComputerResponse(
                     response_data="Screenshot taken",
                     base64_image=result.base64_image,
                 )
-            elif request.action == "cursor_position":
+
+            elif act == "cursor_position":
                 x, y = self.get_mouse_position()
                 x, y = self.scale_coordinates(ScalingSource.COMPUTER, int(x), int(y))
                 return ComputerResponse(
                     response_data=f"X={x},Y={y}",
                     base64_image=None,
                 )
+
             else:
-                cmd = self._get_click_cmd(request.action)
+                cmd = self._get_click_cmd(act)
                 result = self.shell(cmd)
                 return ComputerResponse(
                     response_data=result.response_data or "",
                     base64_image=result.base64_image,
                 )
 
-        raise ValueError(f"Invalid action: {request.action}")
+        raise ValueError(f"Invalid action: {act}")
 
     def get_screen_size(self):
         """Get the screen size using OS-specific commands."""
@@ -214,6 +228,8 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
 
     def get_mouse_position(self):
         """Get current mouse position using pyautogui."""
+        import pyautogui
+
         x, y = pyautogui.position()
         return x, y
 
