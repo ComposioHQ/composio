@@ -1,6 +1,6 @@
 {
   "name": "composio-core",
-  "version": "0.2.4-2",
+  "version": "0.2.5-1",
   "description": "",
   "main": "lib/src/index.js",
   "scripts": {
