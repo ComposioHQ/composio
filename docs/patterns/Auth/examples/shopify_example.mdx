@@ -97,8 +97,8 @@ print(collected_params)
 ```javascript Javascript Fetch parameters
 const collectedParams = {};
 
-if (expectedInputFields["expectedInputFields"].length > 0) {
-    for (const param of expectedInputFields["expectedInputFields"]) {
+if (response["expectedInputFields"].length > 0) {
+    for (const param of response["expectedInputFields"]) {
         const userInput = await new Promise(resolve => {
             process.stdout.write(`Enter the value for '${param.displayName}', Description: ${param.description}:\n`);
             process.stdin.once('data', data => {
