@@ -116,6 +116,8 @@ class ComposioToolSet(
         :return: Composio tools wrapped as `ChatCompletionToolParam` objects
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
+        if processors is not None:
+            self._merge_processors(processors)
         return [
             ChatCompletionToolParam(  # type: ignore
                 **t.cast(
