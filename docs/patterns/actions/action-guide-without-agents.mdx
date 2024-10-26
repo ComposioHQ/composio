@@ -1,7 +1,7 @@
 ---
 title: "🛠️ How can I execute Actions Without Agents"
 sidebarTitle: "Actions without Agents/LLMs"
-icon: "wand-magic-sparkles"
+icon: "fax"
 description: "Perform Actions with your account or on behalf of your users without Agents"
 ---
 
@@ -9,24 +9,24 @@ description: "Perform Actions with your account or on behalf of your users witho
 
 Composio lets you perform actions with your account or on behalf of your users. Feel free to check all the [tools](https://app.composio.dev/apps) we support. 
 
-## Why Actions?
+### Execute Actions without Agents
 
-To optimize LLM performance, it's crucial to select a **focused set of actions** (typically **15 or fewer**) that are **most relevant** to your specific task.
+To execute actions without using Agents, you can manually supply the parameters to execute the action or use natural language.
 
 
 <Tabs>
   <Tab title="Python">
     <Steps>
-      <Step title="Install package">
-        ```python Installing required dependencies 
-        pip install composio-core
+<Step title="Install package">
+```python Installing required dependencies 
+pip install composio-core
 
-        #login to composio
-        composio login
-        #connect your account to the app 
-        composio add github -e "Jessica"
-        ```
-      </Step>
+#login to composio
+composio login
+#connect your account to the app 
+composio add github -e "Jessica"
+```
+</Step>
       <Step title="Execute Action">
         
       ```python Star a repo

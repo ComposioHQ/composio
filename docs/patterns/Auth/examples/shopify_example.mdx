@@ -195,8 +195,7 @@ connected_account = toolset.get_connected_account(connection_request.connectedAc
 ```
 
 ```javascript Javascript Fetch connection using ID 
-const connectedAccount = await toolset.client.get()
-// TODO Fix this 
+const connectedAccount = await toolset.client.connectedAccounts.get({connectedAccountId:connectionRequest.connectedAccountId})
 ```
 </CodeGroup>
 </Step>

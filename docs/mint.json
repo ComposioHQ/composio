@@ -92,19 +92,10 @@
           "pages":[
             "introduction/foundations/basic",
             "introduction/foundations/components/entity/entity-guide",
-            {
-              "group":"Actions",
-              "icon":"hammer" ,
-              "pages":[
-                "introduction/foundations/components/actions/action-guide-with-agents",
-                "introduction/foundations/components/actions/action-guide-without-agents",
-                "introduction/foundations/components/actions/action-guide-3"
-              ]
-            },
+            "introduction/foundations/components/actions/action-guide",
+            "introduction/foundations/components/custom_actions",
             "introduction/foundations/components/triggers/trigger-guide",
-            "introduction/foundations/components/local_tools",
-            "introduction/foundations/components/integrations/custom-integration",
-            "introduction/foundations/components/no_auth_apps/no_auth_guide"
+            "introduction/foundations/components/integrations/custom-integration"
           ]
         },
         {
@@ -161,6 +152,7 @@
     },
     {
       "group":"Commonly Asked Questions",
+      "icon":"question",
         "pages":[
           "faq/api_key/api_key",
           "faq/api_key/cli",
@@ -170,8 +162,6 @@
           "faq/integrations_and_connections/list_of_tools",
           "faq/without_LLM/execute_without_agents",
           "faq/supported_llms/supported_llm"
-
-
         ]
     },
     
@@ -180,6 +170,7 @@
       "pages": [
       {
         "group":"Authentication",
+        "icon":"unlock",
         "pages":[
           "patterns/Auth/connected_account",
           "patterns/Auth/multiple-users",
@@ -188,7 +179,16 @@
           "patterns/Auth/integrations"
         ]
       },
-      "patterns/custom_actions/custom_actions",
+      {
+        "group":"Actions",
+        "icon":"shuttle-space" ,
+        "pages":[
+          "patterns/actions/action-guide-with-agents",
+          "patterns/actions/action-guide-without-agents",
+          "patterns/actions/custom_actions",
+          "patterns/actions/action-guide-faqs"
+        ]
+      },
       {
         "group": "How Tos",
         "pages": [
@@ -381,7 +381,11 @@
     },
     {
       "source": "/python/local_tools",
-      "destination": "/introduction/foundations/components/local_tools"
+      "destination": "/introduction/foundations/components/custom_actions"
+    },
+    {
+      "source": "/introduction/foundations/components/local_tools",
+      "destination": "/introduction/foundations/components/custom_actions"
     }
   ]
 }

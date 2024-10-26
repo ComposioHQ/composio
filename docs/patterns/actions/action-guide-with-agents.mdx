@@ -1,44 +1,46 @@
 ---
 title: "🛠️ How can I execute Actions with my AI Agent?"
 sidebarTitle: "Execute Actions with Agents"
-icon: "wand-magic-sparkles"
+icon: "robot"
 description: "Perform Actions with your account or on behalf of your users with Agents"
 ---
 ## Using Actions
 
 Composio lets you perform actions with your account or on behalf of your users. Feel free to check all the [tools](https://app.composio.dev/apps) we support. 
 
-## Why Actions?
+### Execute Actions with Agents
 
-To optimize LLM performance, it's crucial to select a **focused set of actions** (typically **15 or fewer**) that are **most relevant** to your specific task.
+To execute actions with your account or on behalf of your users, you can use the following code.
 
 <Tabs>
 <Tab title="Python">
-    ```python Execute the Agent in Python
-      from langchain.agents import create_openai_functions_agent, AgentExecutor
-      from langchain import hub
-      from langchain_openai import ChatOpenAI
-      from composio_langchain import ComposioToolSet, Action, App
-      import os
+<CodeGroup>
+```python Execute the Agent in Python
+from langchain.agents import create_openai_functions_agent, AgentExecutor
+from langchain import hub
+from langchain_openai import ChatOpenAI
+from composio_langchain import ComposioToolSet, Action, App
+import os
 
 
-      llm = ChatOpenAI(model="gpt-4o")
+llm = ChatOpenAI(model="gpt-4o")
 
-      prompt = hub.pull("hwchase17/openai-functions-agent")
+prompt = hub.pull("hwchase17/openai-functions-agent")
 
-      # Get All the tools
-      tool_set = ComposioToolSet()
-      tools = tool_set.get_tools(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER], tags=[])
+# Get All the tools
+tool_set = ComposioToolSet()
+tools = tool_set.get_tools(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER], tags=[])
 
-      # Define task
-      task = "Star a repo composiohq/composio on GitHub"
+# Define task
+task = "Star a repo composiohq/composio on GitHub"
 
-      agent = create_openai_functions_agent(llm, tools, prompt)
-      agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+agent = create_openai_functions_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-      # Execute using agent_executor
-      agent_executor.invoke({"input": task})
-      ```
+# Execute using agent_executor
+agent_executor.invoke({"input": task})
+```
+</CodeGroup>
 </Tab>
 
 <Tab title="JavaScript">

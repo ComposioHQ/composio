@@ -30,9 +30,9 @@ toolset = ComposioToolSet()
 <Step title="Creating a custom action">
 <Tabs>
 <Tab title="For Existing Tool (Uses existing authentication)">
-<Info>
-Implementation of a custom action for an existing tool (Gmail) that uses existing authentication.
-</Info>
+<Note>
+As `gmail` toolname is already registered in Composio, `auth` dictionary will be automatically provided!
+</Note>
 <CodeGroup>
 ```python Custom Action - Gmail (Uses existing authentication)
 @action(toolname="gmail", requires=["python-dotenv"])
@@ -65,11 +65,8 @@ def my_custom_action(auth: dict, query:str) -> str:
     return str(response)
 ```
 </CodeGroup>
-<Note>
-As `gmail` toolname is already registered in Composio, `auth` dictionary will be automatically provided!
-</Note>
 </Tab>
-<Tab title="For New Tool">
+<Tab title="For a New Tool">
 
 <CodeGroup>
 ```python Custom Action for new tool

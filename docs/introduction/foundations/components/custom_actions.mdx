@@ -1,0 +1,116 @@
+---
+title: "Creating a Custom Action"
+sidebarTitle: "Custom Actions"
+icon: "gear"
+description: "Complete customisation by creating your own actions"
+---
+
+## Overview
+
+**Custom Actions** in Composio allow users to execute actions locally, enhancing privacy and customization.
+
+Composio supports two action types:
+
+1. **Composio-Managed Actions:** Available on the [dashboard](https://app.composio.dev/).
+2. **Custom Actions:** Defined and executed locally or in the tool [workspace](/introduction/foundations/components/workspace).
+
+**Custom actions** can be defined for **existing tools (gmail, google_calendar, etc.) or for your own tools.**
+```python
+from composio import action
+
+@action(toolname="cow", requires=["cowsay"])
+def say(message: str) -> str:
+    """
+    Cow will say whatever you want it to say.
+
+    :param message: Message string
+    :return greeting: Formatted message.
+    """
+    import cowsay
+
+    return cowsay.get_output_string("cow", message)
+```
+
+In this example, we **create a custom tool called "cow"** that uses the **`cowsay` library** to **output a message**.
+
+### Detailed Guide
+
+<Card
+  title="Creating a Custom Action (Complete Guide)"
+  color="#7bee0c"
+  href="/patterns/custom_actions/custom_actions"
+  icon="gear-complex-code"
+  iconType="duotone"
+>
+  Learn more about creating a custom action for existing tools (gmail, google_calendar, etc.) & using it in your agent
+</Card>
+
+### Using Custom Actions with Agents
+
+<CodeGroup>
+```python Python Executing Custom Action with Agent
+from openai import OpenAI
+from composio_openai import ComposioToolSet, App
+from local_tool import say
+
+from composio import action
+
+@action(toolname="cow", requires=["cowsay"])
+def say(message: str) -> str:
+    """
+    Cow will say whatever you want it to say.
+
+    :param message: Message string
+    :return greeting: Formatted message.
+    """
+    import cowsay
+
+    return cowsay.get_output_string("cow", message)
+
+openai_client = OpenAI()
+# Initialise the Composio Tool Set
+composio_toolset = ComposioToolSet()
+
+# Get GitHub tools that are pre-configured
+# Retrieve actions
+actions = composio_toolset.get_tools(actions=[say])
+
+my_task = "Star a repo composiohq/composio on GitHub"
+
+# Setup openai assistant
+
+assistant_instruction = "You are a super intelligent personal assistant"
+
+# Prepare assistant
+
+assistant = openai_client.beta.assistants.create(
+  name="Personal Assistant",
+  instructions=assistant_instruction,
+  model="gpt-4-turbo-preview",
+  tools=actions, # type: ignore
+)
+
+# create a thread
+
+thread = openai_client.beta.threads.create()
+message = openai_client.beta.threads.messages.create(thread_id=thread.id,role="user",content=my_task)
+
+# Execute Agent with integrations
+
+run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=assistant.id)
+
+
+# Execute function calls
+response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
+    client=openai_client,
+    run=run,
+    thread=thread,
+)
+
+print(response_after_tool_calls)
+```
+
+```javascript Javascript Executing Custom Action with Agent
+// TODO Himanshu add example
+```
+</CodeGroup>
