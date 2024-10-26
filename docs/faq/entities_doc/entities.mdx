@@ -124,6 +124,7 @@ const openai_client = new OpenAI({
 
 const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
+    entityId: "melissa"
 });
 
 const tools = await toolset.getActions({actions: ['github_star_repo']})
