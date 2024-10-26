@@ -200,7 +200,7 @@ export class Actions {
      * @throws {ApiError} If the request fails.
      */
     async execute(data: ExecuteActionData): Promise<ExecuteActionResDTO> {
-        const {data:res,error} = await apiClient.actionsV2.v2ExecuteAction({
+        const {data:res} = await apiClient.actionsV2.v2ExecuteAction({
             body: data.requestBody,
             path: {
                 actionId: data.actionName
