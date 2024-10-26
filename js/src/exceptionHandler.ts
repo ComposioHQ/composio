@@ -2,9 +2,10 @@ import { version } from "os";
 import { getClientBaseConfig } from "./sdk/utils/config";
 // @ts-ignore
 import { COMPOSIO_VERSION } from "./constants";
+import axios from "axios";
 
 async function logError(message: string, error: Error) {
-    const { apiKey, baseURL = "https://backend.composio.dev" } = getClientBaseConfig();
+    const { apiKey,baseURL } = getClientBaseConfig();
 
     const payload = {
         apiKey,
@@ -16,10 +17,7 @@ async function logError(message: string, error: Error) {
         nodeVersion: process.version
     };
     
-    fetch("https://backend.composio.dev/api/v1/client/sentry/error", {  
-        method: "POST",
-        body: JSON.stringify(payload)
-    });
+    axios.post(`${baseURL}/api/v1/sdk/error`, payload);
 }
 
 export const captureException = logError;
@@ -45,6 +43,7 @@ function setupErrorHandlers(handler: (error: Error) => void) {
 
 setupErrorHandlers(async (error) => {
     if (error.stack?.includes("composio") || error.message?.includes("composio")) {
+        console.log("Unhandled error", error);
         await logError("Unhandled error", error);
     }
 });
