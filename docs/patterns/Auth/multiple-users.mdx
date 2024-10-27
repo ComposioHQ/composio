@@ -56,23 +56,24 @@ except Exception as e:
 ```
 
 ```javascript JS Code Snippet to get a connected account
-//filters based on connected account id for an entity
+try {
+    // filters based on connected account id for an entity
+    let connectedAccounts = await entity.connectedAccounts.get({connectedAccountId: '9'})
 
-let connectedAccounts = await entity.connectedAccounts.get({connectedAccountId:'9'})
+    // filters connections based on appName for an entity
+    let connectedAccounts = tool_set.client.integrations.get({appName: 'github'})
 
-//filters connections based on appName for an entity
-let connectedAccounts = tool_set.client.integrations.get({
-    appName:'linear'
-})
+    // list all connections based on entityId
+    let connectedAccounts = await entity.connectedAccounts.list()
 
-//list all connections based on entityId
-let connectedAccounts = await entity.connectedAccounts.list()
-
-console.log(connectedAccounts)
+    console.log(connectedAccounts)
+} catch (error) {
+    console.error('Error fetching connected accounts:', error.message)
+}
 ```
 </CodeGroup>
 
-This code attempts to retrieve the connected account for Slack. If no connected account is found, it catches the exception and prints a message.
+This code attempts to retrieve the connected account for Github. If no connected account is found, it catches the exception and prints a message.
 
 ## Performing Actions on Behalf of Users
 
@@ -120,9 +121,9 @@ from openai import OpenAI
 
 openai_client = OpenAI(api_key="******OPENAIKEY******")
 tool_set = ComposioToolSet(entity_id="Jessica")
-actions = tool_set.get_tools(apps=[App.GITHUB])
+actions = tool_set.get_tools(actions=["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"])
 
-my_task = "Star a repo composiohq/composio on GitHub"
+my_task = "Star the repo composiohq/composio on GitHub"
 
 response = openai_client.chat.completions.create(
     model="gpt-4-turbo-preview",
@@ -147,9 +148,9 @@ const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const tools = await toolset.getActions({actions: ['linear_list_linear_projects']})
+const tools = await toolset.getTools({actions: ['GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER']})
 
-const task = "List all the Linear projects "
+const task = "Star the repo composiohq/composio on GitHub"
 
 const response = await openai_client.chat.completions.create({
     model: "gpt-4-turbo-preview",
@@ -164,4 +165,4 @@ await toolset.handleToolCall(response, "Jessica");
 ```
 </CodeGroup>
 
-In this example, an agent is configured to star a repository on GitHub/ listing all projects on Linear on behalf of the user. The OpenAI API is used to process the request and perform the action.
+In this example, an agent is configured to star a repository on GitHub on behalf of the user. The OpenAI API is used to process the request and perform the action.
