@@ -89,6 +89,7 @@
       "pages": [
         {
           "group":"Basics",
+          "icon": "star",
           "pages":[
             "introduction/foundations/basic",
             "introduction/foundations/components/entity/entity-guide",
@@ -100,18 +101,31 @@
         },
         {
           "group": "Advanced",
+          "icon": "user-helmet-safety",
           "pages": [
             "introduction/foundations/components/integrations/integration-guide",
             "introduction/foundations/components/actions/processing",
             "introduction/foundations/components/workspace",
             "introduction/foundations/components/list_local_tools"
           ]
+        },
+        {
+          "group":"Common Questions",
+          "icon":"question",
+          "pages":[
+            "faq/api_key/api_key",
+            "faq/api_key/cli",
+            "faq/integrations_and_connections/integrations",
+            "faq/integrations_and_connections/connections",
+            "faq/integrations_and_connections/list_of_tools",
+            "faq/supported_llms/supported_llm"
+          ]
+
         }
       ]
     },
     {
       "group":"Supported Frameworks",
-
       "pages":[
         "framework/llamaindex",
         "framework/crewai",
@@ -138,10 +152,7 @@
           ]
         }
       ]
-      
-
     },
-    
     {
       "group": "SweKit",
       "pages": [
@@ -149,23 +160,8 @@
         "swekit/introduction",
         "swekit/benchmarks"
       ]
-    },
+    },    
     {
-      "group":"Commonly Asked Questions",
-      "icon":"question",
-        "pages":[
-          "faq/api_key/api_key",
-          "faq/api_key/cli",
-          "faq/entities_doc/entities",
-          "faq/integrations_and_connections/integrations",
-          "faq/integrations_and_connections/connections",
-          "faq/integrations_and_connections/list_of_tools",
-          "faq/without_LLM/execute_without_agents",
-          "faq/supported_llms/supported_llm"
-        ]
-    },
-    
-     {
       "group": "Guides",
       "pages": [
       {
@@ -186,30 +182,15 @@
           "patterns/actions/action-guide-with-agents",
           "patterns/actions/action-guide-without-agents",
           "patterns/actions/custom_actions",
+          "patterns/actions/usecase",
           "patterns/actions/action-guide-faqs"
         ]
       },
       {
-        "group": "How Tos",
-        "pages": [
-          "patterns/howtos/get_api_key",
-          "patterns/howtos/usecase",
-          "patterns/howtos/tool-finding",
-          "patterns/howtos/listing-connections",
-          "patterns/howtos/listing-integrations"
-        ] 
-      },
-      {
-        "group": "Patterns",
+        "group": "Triggers",
+        "icon":"bolt",
         "pages": [
           "patterns/functions/triggers"
-        ]
-      },
-      {
-        "group": "Using CLI",
-        "pages": [
-          "patterns/cli/install",
-          "patterns/cli/trigger"
         ]
       }
     ]
