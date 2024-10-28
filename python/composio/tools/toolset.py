@@ -26,6 +26,7 @@ from composio.client.collections import (
     ActionModel,
     AppAuthScheme,
     AppModel,
+    AuthSchemeField,
     ConnectedAccountModel,
     ConnectionParams,
     ConnectionRequestModel,
@@ -72,12 +73,11 @@ _CallableType = t.Callable[[t.Dict], t.Dict]
 
 MetadataType = t.Dict[_KeyType, t.Dict]
 ParamType = t.TypeVar("ParamType")
+ProcessorType = te.Literal["pre", "post", "schema"]
+AuthSchemeType = t.Literal["OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN"]
 
 # Enable deprecation warnings
 warnings.simplefilter("always", DeprecationWarning)
-
-
-ProcessorType = te.Literal["pre", "post", "schema"]
 
 
 class IntegrationParams(te.TypedDict):
@@ -1038,6 +1038,12 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     def get_app(self, app: AppType) -> AppModel:
         return self.client.apps.get(name=str(App(app)))
 
+    def get_apps(self, no_auth: t.Optional[bool] = None) -> t.List[AppModel]:
+        apps = self.client.apps.get()
+        if no_auth is not None:
+            apps = [a for a in apps if a.no_auth is no_auth]
+        return apps
+
     def get_action(self, action: ActionType) -> ActionModel:
         return self.client.actions.get(actions=[action]).pop()
 
@@ -1047,8 +1053,20 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     def get_integration(self, id: str) -> IntegrationModel:
         return self.client.integrations.get(id=id)
 
-    def get_integrations(self) -> t.List[IntegrationModel]:
-        return self.client.integrations.get()
+    def get_integrations(
+        self,
+        app: t.Optional[AppType] = None,
+        auth_scheme: t.Optional[AuthSchemeType] = None,
+    ) -> t.List[IntegrationModel]:
+        integrations = self.client.integrations.get()
+        if app is not None:
+            app = str(app).lower()
+            integrations = [i for i in integrations if i.appName.lower() == app]
+
+        if auth_scheme is not None:
+            integrations = [i for i in integrations if i.authScheme == auth_scheme]
+
+        return integrations
 
     def get_connected_account(self, id: str) -> ConnectedAccountModel:
         return self.client.connected_accounts.get(connection_id=id)
@@ -1060,14 +1078,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     def get_auth_scheme_for_app(
         self,
         app: t.Optional[AppType] = None,
-        auth_scheme: t.Optional[
-            t.Literal[
-                "OAUTH2",
-                "OAUTH1",
-                "API_KEY",
-                "BASIC",
-            ]
-        ] = None,
+        auth_scheme: t.Optional[AuthSchemeType] = None,
     ) -> AppAuthScheme:
         auth_schemes = {
             scheme.auth_mode: scheme
@@ -1149,14 +1160,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     def get_expected_params_for_user(
         self,
         app: t.Optional[AppType] = None,
-        auth_scheme: t.Optional[
-            t.Literal[
-                "OAUTH2",
-                "OAUTH1",
-                "API_KEY",
-                "BASIC",
-            ]
-        ] = None,
+        auth_scheme: t.Optional[AuthSchemeType] = None,
         integration_id: t.Optional[str] = None,
     ) -> IntegrationParams:
         """
@@ -1214,6 +1218,21 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 f"scheme {auth_scheme} Please create an integration and use the"
                 " ID to fetch the expected params."
             )
+        )
+
+    def fetch_expected_integration_params(
+        self,
+        app: AppType,
+        auth_scheme: AuthSchemeType,
+    ) -> t.List[AuthSchemeField]:
+        """Fetch expected integration params for creating an integration."""
+        app_data = self.client.apps.get(name=str(app))
+        for scheme in app_data.auth_schemes or []:
+            if auth_scheme != scheme.auth_mode.upper():
+                continue
+            return [f for f in scheme.fields if not f.expected_from_customer]
+        raise ComposioSDKError(
+            message=f"{app} does not support {auth_scheme} auth scheme"
         )
 
     def create_integration(
