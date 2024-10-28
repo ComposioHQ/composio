@@ -154,11 +154,10 @@ const connectionRequest = await toolset.client.connectedAccounts.initiate({
     data: {
         ...collectedParams // send collected params
     },
-    userUuid: entityId,
+    entityId: entityId,
     integrationId: expectedInputFields.integrationId, 
     redirectUri: redirectUrl
 });
-// TODO Fix this 
 
 if (connectionRequest.connectionStatus === "INITIATED") {
     console.log(connectionRequest.redirectUrl);
