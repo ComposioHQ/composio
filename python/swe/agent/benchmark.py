@@ -21,7 +21,8 @@ from agent import get_agent_graph
 
 
 max_retries = 5
-base_delay = 1
+base_delay = 1  # in seconds
+
 
 MODEL = "openai"
 
@@ -54,7 +55,7 @@ def get_llm_response(system_prompt: str, human_prompt: str) -> str:
                 model="o1-mini",
                 temperature=1,
                 max_completion_tokens=4096,
-                api_key="<API-KEY>",
+                api_key="<OPENAI_API_KEY>",
             )
             response = retry_with_exponential_backoff(
                 client.invoke, [("human", human_prompt)]
@@ -93,18 +94,20 @@ IGNORE THE CHANGES IN THE TESTS, DOCS OR OTHER FILES.
 RESPONE WITH THE PATCH NUMBER AND REASONING ONLY IF YOU ARE ABSOLUTELY CONFIDENT THAT THE PATCH FIXED THE ISSUE. RESPOND WITH "RUN AGAIN" OTHERWISE WITH PROPER REASONING.
 YOU DON'T NEED TO WORRY ABOUT THE TESTS. ONLY JUDGE THE PATCHES BASED ON THE CHANGES IN SOURCE CODE.
 
-If you decide to submit the patch from Provide your response in the following format:
+If you are absolutely confident that one of the patches fixes the issue and decide to submit the patch from Provide your response in the following format:
 {{
     "patch": "The number of the patch that best fixes the issue (1, 2, 3, ...)",
     "reasoning": "Your explanation for why the chosen patch fixes the issue",
+    "confidence": "How confident are you that the patch fixes the issue? (0-100)"
 }}
 
-If you decide to reject the patches and run again, provide your response in the format:
+If you feel that none of the patches fixes the issue, decide to reject the patches and run again, provide your response in the format:
 {{
     "patch": "RUN AGAIN",
-    "reasoning": "The detailed reason why none of the patch can fix the issue. 
-Summarise the patches as well, so that next software engineer has the whole context about the patches and reason of their failures."
+    "reasoning": "The detailed reason why none of the patch can fix the issue. Summarise the patches as well, so that next software engineer has the whole context about the
+patches and reason of their failures." 
 }}
+Please adhere to the json format strictly.
 """.format(
         repo_name=repo_name, issue_desc=issue_desc, patch_str=patch_str
     )
@@ -113,6 +116,7 @@ Summarise the patches as well, so that next software engineer has the whole cont
 def build_comparison_prompt_hard(
     repo_name: str, issue_desc: str, patch_str: str
 ) -> str:
+
     return """
 I am facing the following issue in the repo {repo_name}. You have an older version of the codebase, so your belief about the 
 codebase might be outdated. Some agents tried to solve the issue and generated patches. Your task is to choose the best patch that fixes the issue.
@@ -194,14 +198,14 @@ def choose_patch(
                 if 1 <= patch_number <= len(patches):
                     return patches[patch_number - 1], True
 
-            print("\n" * 10)
+            open("error.txt", "w").write(response)
             return random.choice(patches), True
         except Exception as e:
-            print("\n" * 10)
+            open("error.txt", "w").write(response)
             print(f"Error in response: {e}")
             return random.choice(patches), True
     else:
-        print("\n" * 10)
+        open("error.txt", "w").write(response)
         print("No response content found")
         return random.choice(patches), True
 
@@ -241,19 +245,27 @@ def get_patch_from_response(composio_toolset, repo_name):
         action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
         params={"path": f"/home/user/{repo_name}"},
     )
-    if "astropy" in repo_name:
-        composio_toolset.execute_action(
-            action=Action.SHELLTOOL_EXEC_COMMAND,
-            params={"cmd": 'git config --global user.email "you@example.com"'},
-        )
-        composio_toolset.execute_action(
-            action=Action.SHELLTOOL_EXEC_COMMAND,
-            params={"cmd": 'git config --global user.name "Your Name"'},
-        )
-        composio_toolset.execute_action(
-            action=Action.SHELLTOOL_EXEC_COMMAND,
-            params={"cmd": 'git add astropy_helpers && git commit -m "add submodule"'},
-        )
+    # if "astropy" in repo_name:
+    #     composio_toolset.execute_action(
+    #         action=Action.SHELLTOOL_EXEC_COMMAND,
+    #         params={"cmd": "git config --global user.email \"you@example.com\""},
+    #     )
+    #     composio_toolset.execute_action(
+    #         action=Action.SHELLTOOL_EXEC_COMMAND,
+    #         params={"cmd": "git config --global user.name \"Your Name\""},
+    #     )
+    #     composio_toolset.execute_action(
+    #         action=Action.SHELLTOOL_EXEC_COMMAND,
+    #         params={"cmd": "git restore --staged :/"},
+    #     )
+    #     composio_toolset.execute_action(
+    #         action=Action.SHELLTOOL_EXEC_COMMAND,
+    #         params={"cmd": "chown -R root:root .git"},
+    #     )
+    #     composio_toolset.execute_action(
+    #         action=Action.SHELLTOOL_EXEC_COMMAND,
+    #         params={"cmd": "git add astropy_helpers && git commit -m \"add submodule\""},
+    #     )
 
     get_patch_resp = composio_toolset.execute_action(
         action=Action.FILETOOL_GIT_PATCH,
@@ -327,6 +339,10 @@ def run_agent_function(
     )
     run_content = open(run_file, "r").read()
     os.remove(run_file)
+    composio_toolset.execute_action(
+        action=Action.SHELLTOOL_EXEC_COMMAND,
+        params={"cmd": f"git reset --hard {issue_config.base_commit_id}"},
+    )
 
     return patch, run_content
 
@@ -363,7 +379,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num-instances",
         type=int,
-        default=1,
+        default=3,
         help="Number of instances",
     )
     args = parser.parse_args()
