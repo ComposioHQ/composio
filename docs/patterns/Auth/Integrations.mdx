@@ -61,7 +61,22 @@ console.log(await openai_client.client.integrations.get({integrationId:"ADD THE 
 
 ### Creating a new connection using an Integration
 
-You can follow the same steps as mentioned in [Creating a new connection](/patterns/Auth/connected_account) and instead of passing app you can pass integration_id.
+You can follow the same steps as mentioned in [Creating a new connection](/patterns/Auth/connected_account) and use integration object.
+<CodeGroup>
+```python Python
+from composio import ComposioToolSet
+
+toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"), entity_id="Jessica")
+
+entity = toolset.get_entity()
+
+integration = entity.client.integrations.get_by_id("integration_id...")
+connection_request = entity.initiate_connection(app_name="TWITTER", redirect_url="redirect_url...", integration=integration)
+
+# If the connection method is OAuth, redirect the user to the URL below
+print(connection_request.redirectUrl)
+```
+</CodeGroup>
 
 ### Whitelabeling the OAuth Developer App Using Integrations 
 
