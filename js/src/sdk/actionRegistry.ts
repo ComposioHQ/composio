@@ -54,6 +54,8 @@ export class ActionRegistry {
         ) as ParamsSchema;
         const _params = paramsSchema.definitions.input.properties;
         const composioSchema = {
+            name: actionName,
+            description: options.description,
             parameters: {   
                 title: actionName,
                 type: "object",
