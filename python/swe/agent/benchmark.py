@@ -379,7 +379,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num-instances",
         type=int,
-        default=1,
+        default=3,
         help="Number of instances",
     )
     args = parser.parse_args()
