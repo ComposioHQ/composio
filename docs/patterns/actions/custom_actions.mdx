@@ -167,8 +167,53 @@ console.log(
 </Tab>
 <Tab title="With Agents">
 <CodeGroup>
-```python Python
-# TODO: Prathit to add example
+```python Python Executing Custom Action with Agent
+from openai import OpenAI
+from composio_openai import ComposioToolSet, App
+from local_tool import say
+
+openai_client = OpenAI()
+# Initialise the Composio Tool Set
+composio_toolset = ComposioToolSet()
+
+# Get GitHub tools that are pre-configured
+# Retrieve actions
+actions = composio_toolset.get_tools(actions=[say])
+
+my_task = "Star a repo composiohq/composio on GitHub"
+
+# Setup openai assistant
+
+assistant_instruction = "You are a super intelligent personal assistant"
+
+# Prepare assistant
+
+assistant = openai_client.beta.assistants.create(
+  name="Personal Assistant",
+  instructions=assistant_instruction,
+  model="gpt-4-turbo-preview",
+  tools=actions, # type: ignore
+)
+
+# create a thread
+
+thread = openai_client.beta.threads.create()
+message = openai_client.beta.threads.messages.create(thread_id=thread.id,role="user",content=my_task)
+
+# Execute Agent with integrations
+
+run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=assistant.id)
+
+
+# Execute function calls
+response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
+    client=openai_client,
+    run=run,
+    thread=thread,
+)
+
+print(response_after_tool_calls)
+
 ```
 
 ```javascript Javascript
