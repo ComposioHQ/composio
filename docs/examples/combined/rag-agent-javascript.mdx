@@ -47,7 +47,7 @@ description: "This project involves setting up and running a system of agents to
         });
 
         // Get the RAG tool actions from the Composio ToolSet
-        const tools = await composioToolset.getActions({
+        const tools = await composioToolset.getTools({
             actions: ["ragtool_add_content", "ragtool_query"]
         });
         ```
@@ -167,7 +167,7 @@ description: "This project involves setting up and running a system of agents to
             workspaceEnv: ExecEnv.DOCKER
         });
 
-        const tools = await composioToolset.getActions({
+        const tools = await composioToolset.getTools({
             actions: ["ragtool_add_content", "ragtool_query"]
         });
 

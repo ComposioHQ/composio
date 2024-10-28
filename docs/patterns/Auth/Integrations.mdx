@@ -1,7 +1,7 @@
 ---
 title: "Integrations"
 sidebarTitle: "Integrations"
-icon: "puzzle-piece"
+icon: "sliders"
 description: "What are Integrations, how to create them and use them to connect user accounts"
 ---
 
@@ -21,7 +21,7 @@ For example
 
 <Info> One integration can be used by multiple users to connect their accounts. </Info>
 
-![Creating an Integration with Dashboard](/patterns/Auth/gifs/integration.gif)
+![Creating an Integration with Dashboard](/patterns/Auth/gifs/only_integration.gif)
 
 1. Login at [Composio's Website](https://app.composio.dev)
 2. Go to the Tools section
@@ -31,9 +31,54 @@ For example
 6. Then Click on "Connect to [App Name]" and Authenticate with your Account
 7. Congratulations! Integration was successful!
 
+### Fetching all Integrations
+
+<CodeGroup>
+```python Python
+from composio import ComposioToolSet, App
+toolset = ComposioToolSet()
+
+print(toolset.get_integrations()) # get all integrations
+print(toolset.get_integrations(app=App.GMAIL)) #filter based on app 
+print(toolset.get_integration(id="ADD THE ID HERE")) #filter based on integration id
+
+# By auth scheme
+print(toolset.get_integrations(auth_scheme="BEARER_TOKEN"))
+```
+
+```javascript JavaScript
+import { OpenAIToolSet } from "composio-core";
+
+const openai_client = new OpenAIToolSet({
+    apiKey: process.env.OPENAIKEY
+});
+
+console.log(openai_client.client.integrations.list()) //lists all integrations
+console.log(openai_client.client.integrations.get({
+    appName:'gmail'
+})) //filter based on app name
+console.log(await openai_client.client.integrations.get({integrationId:"ADD THE ID HERE"})) //filter based on integration id
+```
+</CodeGroup>
+
 ### Creating a new connection using an Integration
 
-You can follow the same steps as mentioned in [Creating a new connection](/patterns/Auth/connected_account) and instead of passing app you can pass integration_id.
+You can follow the same steps as mentioned in [Creating a new connection](/patterns/Auth/connected_account) and use integration object.
+<CodeGroup>
+```python Python
+from composio import ComposioToolSet
+
+toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"), entity_id="Jessica")
+
+entity = toolset.get_entity()
+
+integration = entity.client.integrations.get_by_id("integration_id...")
+connection_request = entity.initiate_connection(app_name="TWITTER", redirect_url="redirect_url...", integration=integration)
+
+# If the connection method is OAuth, redirect the user to the URL below
+print(connection_request.redirectUrl)
+```
+</CodeGroup>
 
 ### Whitelabeling the OAuth Developer App Using Integrations 
 
@@ -43,4 +88,4 @@ Create an Integration and toggle on "Use your own Developer App"
 
 Enter your ClientID and ClientSecret and save the integration.
 
-Now you can use this integration and the user in auth flow should see the custom developer app.
+Now you can use this integration and the user in auth flow should see the custom developer app. 

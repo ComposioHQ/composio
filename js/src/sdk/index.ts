@@ -39,7 +39,6 @@ export class Composio {
         const { baseURL: baseURLParsed, apiKey: apiKeyParsed } =  getClientBaseConfig(baseUrl, apiKey);
 
         if(!apiKeyParsed){
-
             console.log(chalk.yellow("Oops! We couldn't find your API key. You can set it by:\n"));
             console.log(chalk.white("1. Running 'composio login' after installing `npm install -g composio-core`"));
             console.log(chalk.white("2. Setting the COMPOSIO_API_KEY environment variable"));

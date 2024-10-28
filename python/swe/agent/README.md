@@ -1,12 +1,12 @@
-# Composio SWEBench-Agent-v1: SOTA Open-Source Software Engineering Assistant
+# Composio SWEBench-Agent-v2: OSS SOTA Software Engineering Assistant
 
 ## Overview
 
-The Composio SWEBench-Agent-v1 is a cutting-edge open-source software engineering assistant that achieves OSS state-of-the-art accuracy on the SWE Bench. This agent is built using [Composio's SWEKit framework](https://docs.composio.dev/swekit/introduction), which allows for the creation of various specialized software engineering agents. SWEKit, integrated with the Langgraph agentic platform, provides a powerful and flexible foundation for developing task-specific software engineering assistants.
+The Composio SWEBench-Agent-v2 is a cutting-edge open-source software engineering assistant that achieves OSS state-of-the-art accuracy on the SWE Bench. This agent is built using [Composio's SWEKit framework](https://docs.composio.dev/swekit/introduction), which allows for the creation of various specialized software engineering agents. SWEKit, integrated with the Langgraph agentic platform, provides a powerful and flexible foundation for developing task-specific software engineering assistants.
 
 ## Key Components
 
-Our SWEBench-Agent-v1 utilizes Composio's tools to tackle SWE Bench challenges:
+Our SWEBench-Agent-v2 utilizes Composio's tools to tackle SWE Bench challenges:
 
 1. **File Editing and Reading Tools**: Enables seamless manipulation and analysis of code files.
 2. **Git Tools**: Facilitates version control operations and code management.
@@ -21,11 +21,9 @@ Our system employs a multi-agent architecture to efficiently handle complex soft
 - **CODE ANALYSIS**: Specialized agent for in-depth code analysis.
 - **EDITOR**: Dedicated agent for code modification and execution.
 
-![Composio SWEBench-Agent-v1 Architecture](./architecture.png)
-
 ## Getting Started
 
-To get started with the Composio SWEBench-Agent-v1, follow these steps:
+To get started with the Composio SWEBench-Agent-v2, follow these steps:
 
 1. Install the required packages:
    ```
@@ -48,19 +46,21 @@ For more detailed usage examples and advanced configurations, please refer to ou
 
 ## Performance
 
-Our Composio SWEBench-Agent-v1 has demonstrated state-of-the-art OSS performance on the SWE Bench, showcasing its capabilities in handling diverse software engineering tasks.
+Our Composio SWEBench-Agent-v2 has demonstrated state-of-the-art OSS performance on the SWE Bench, showcasing its capabilities in handling diverse software engineering tasks.
 
-The agent achieved an impressive 43.4% accuracy on the SWE Bench Verified dataset, successfully solving 217 out of 500 issues. This performance underscores the agent's proficiency in tackling a wide range of software engineering challenges and positions it as a leading solution in the field of automated software engineering assistance.
+The agent achieved an impressive 48.6% accuracy on the SWE Bench Verified dataset, successfully solving 243 out of 500 issues. This performance underscores the agent's proficiency in tackling a wide range of software engineering challenges and positions it as a leading solution in the field of automated software engineering assistance.
 
 These results highlight the effectiveness of our multi-agent architecture and the power of Composio's SWEKit toolset in creating highly capable software engineering agents.
 
-> **Note:**
-> 1. The agent doesn't have any access to the information about failing and passing test cases from the SWE Bench dataset, that is used to evaluate the agent's performance.
-> 2. The agent doesn't have access to the internet. It only has access to the code in the repository and the commit history.
+**Note:**
+- [x] Is a pass@1 submission (does not attempt the same task instance more than once)
+- [x] Does not use SWE-bench test knowledge (`PASS_TO_PASS`, `FAIL_TO_PASS`)
+- [x] Does not use the `hints` field in SWE-bench
+- [x] Does not have web-browsing OR has taken steps to prevent lookup of SWE-bench solutions via web-browsing
 
 ## Other SWEKit Agents
 
-While this README focuses on the SWEBench-Agent-v1, it's important to note that the SWEKit framework enables the creation of various specialized agents. Some potential applications include:
+While this README focuses on the SWEBench-Agent-v2, it's important to note that the SWEKit framework enables the creation of various specialized agents. Some potential applications include:
 
 - Refactoring-focused agents
 - Language-specific agents (e.g., Golang, Python)

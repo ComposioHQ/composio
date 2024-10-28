@@ -8,7 +8,18 @@ export type GetAppData = {
 
 export type GetAppResponse = SingleAppInfoResDTO;
 
-export type ListAllAppsResponse = AppListResDTO
+export type ListAllAppsResponse = AppListResDTO;
+
+export type RequiredParamsResponse = {
+    required_fields: string[];
+    expected_from_user: string[];
+    optional_fields: string[];
+};
+
+export type RequiredParamsFullResponse = {
+    availableAuthSchemes: string[];
+    authSchemes: Record<string, RequiredParamsResponse>;
+};
 
 export class Apps {
     backendClient: BackendClient;
@@ -40,8 +51,57 @@ export class Apps {
         return apiClient.apps.getApp({
             path:{
                 appName: data.appKey
-            }
-        }).then(res=>res.data!)
+            },
+            throwOnError: true
+        }).then(res => res.data!)
+    }
+
+    async getRequiredParams(appId: string): Promise<RequiredParamsFullResponse> {
+        const appData = await this.get({ appKey: appId });
+        const authSchemes = appData.auth_schemes;
+        const availableAuthSchemes = (authSchemes as Array<{ mode: string }>)?.map(scheme => scheme?.mode);
+        
+        const authSchemesObject: Record<string, RequiredParamsResponse> = {};
+
+        for (const scheme of authSchemes as Array<{
+            mode: string;
+            fields: Array<{
+                name: string;
+                required: boolean;
+                expected_from_customer: boolean;
+            }>;
+        }>) {
+            const name = scheme.mode;
+            authSchemesObject[name] = {
+                required_fields: [],
+                optional_fields: [],
+                expected_from_user: []
+            };
+
+            scheme.fields.forEach((field) => {
+                const isExpectedForIntegrationSetup = field.expected_from_customer === false;
+                const isRequired = field.required;
+                
+                if (isExpectedForIntegrationSetup) {
+                    if (isRequired) {
+                        authSchemesObject[name].expected_from_user.push(field.name);
+                    } else {
+                        authSchemesObject[name].optional_fields.push(field.name);
+                    }
+                } else {
+                    authSchemesObject[name].required_fields.push(field.name);
+                }
+            });
+        }
+
+        return {
+            availableAuthSchemes,
+            authSchemes: authSchemesObject
+        };
+    }
+
+    async getRequiredParamsForAuthScheme(appId: string, authScheme: string): Promise<RequiredParamsResponse> {
+        return this.getRequiredParams(appId).then(res => res.authSchemes[authScheme]);
     }
 }
 
