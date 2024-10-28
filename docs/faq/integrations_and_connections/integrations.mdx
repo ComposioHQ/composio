@@ -1,6 +1,6 @@
 ---
 title: "Listing Integrations in Composio"
-sidebarTitle: "How do I get all my Integrations?"
+sidebarTitle: "Listing Integrations"
 icon: "user"
 description: "This page will help you manage integrations in Composio"
 ---
@@ -8,84 +8,47 @@ description: "This page will help you manage integrations in Composio"
 ### Listing All Integrations
 To retrieve a complete list of your integrations, you can use the following code snippets.
 
-<Tabs>
-<Tab title="Python">
 <CodeGroup>
-```python List all integrations via Python
-from composio import Composio
+```python Python List all integrations
+from composio_openai import ComposioToolSet, App
 
-composio_client = Composio()
+tool_set = ComposioToolSet()
 
-print(composio_client.integrations.get())
+integrations = tool_set.get_integrations()
+```
+
+```javascript Javascript List all integrations
+import {Composio} from "composio-core";
+
+// get composio client
+const composio = new Composio();
+
+const integrations = await composio.integrations.list({})
 ```
 </CodeGroup>
-</Tab>
-<Tab title="CLI">
-<CodeGroup>
-```bash List all integrations via CLI
-composio integrations
-```
-</CodeGroup>
-</Tab>
-<Tab title="JS">
-```javascript javascript
-import { Composio } from "composio-core";
 
-const client = new Composio(
-  process.env.COMPOSIO_API_KEY
-);
-
-const integrations = await client.integrations.list();
-
-console.log(integrations)
-```
-</Tab>
-<Tab title="API">
-Coming Soon! 
-</Tab>
-</Tabs>
-
-This command will display a comprehensive list of all connections, providing an overview of the various users linked to your account.
+This command will display a comprehensive list of all integrations
 
 ### Getting Integration Details
 To get detailed information about a specific integration, use the get command followed by the integration ID. For example, to get details of a connection with the ID 123, you would use:
 
-<Tabs>
-<Tab title="Python">
 <CodeGroup>
-```python Get integration details via Python
-from composio import ComposioToolSet
+```python Python Get integration details
+from composio import Composio
 
-client_toolset = ComposioToolSet(api_key=COMPOSIO_API_KEY)
+client = Composio()
 
-print(client_toolset.client.integrations.get(id=123))
+integration = tool_set.get_integration(id="integration_id")
 ```
-</CodeGroup>
-</Tab>
-<Tab title="CLI">
 
-<CodeGroup>
-```bash bash
-composio integrations get 123
-```
-</CodeGroup>
-</Tab>
-<Tab title="JS">
-```javascript javascript    
+```javascript Javascript Get integration details
 import { Composio } from "composio-core";
 
-const client = new Composio(
-  process.env.COMPOSIO_API_KEY
-);
+// get composio client
+const composio = new Composio();
 
-const integration = await integrations.get({
-  integrationId: "123",
+const integration = await composio.integrations.get({
+  integrationId: "integration_id",
 });
-
-console.log(integration)
 ```
-</Tab>
-<Tab title="API">
-Coming Soon! 
-</Tab>
-</Tabs>
+</CodeGroup>
