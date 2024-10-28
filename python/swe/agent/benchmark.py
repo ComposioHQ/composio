@@ -1,30 +1,33 @@
 import argparse
+import ast
 import os
+from pdb import run
 import random
 import re
+import json
 import time
-import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import traceback
 from typing import List
 
+from botocore.exceptions import ClientError
 from langchain_aws import BedrockChat
-from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage
 from langgraph.errors import GraphRecursionError
 
 from composio_langgraph import Action
 
 from swekit.benchmark.run_evaluation import evaluate
 from swekit.config.store import IssueConfig
-
 from agent import get_agent_graph
 
 
 max_retries = 5
-base_delay = 1
+base_delay = 1  # in seconds
+
 
 MODEL = "openai"
-
 
 def retry_with_exponential_backoff(func, *args, **kwargs):
     for attempt in range(max_retries):
@@ -33,7 +36,7 @@ def retry_with_exponential_backoff(func, *args, **kwargs):
         except Exception as e:
             if attempt == max_retries - 1:
                 raise e
-            delay = (2**attempt) * base_delay
+            delay = (2 ** attempt) * base_delay
             time.sleep(delay)
 
 
@@ -47,24 +50,35 @@ def get_llm_response(system_prompt: str, human_prompt: str) -> str:
                 model_kwargs={"temperature": 0},
             )
             response = retry_with_exponential_backoff(
-                client.invoke, [("system", system_prompt), ("human", human_prompt)]
+                client.invoke,
+                [
+                    ("system", system_prompt),
+                    ("human", human_prompt)
+                ]
             )
         else:
             client = ChatOpenAI(
                 model="o1-mini",
                 temperature=1,
                 max_completion_tokens=4096,
-                api_key="<API-KEY>",
+                api_key=openai_api_key,
             )
             response = retry_with_exponential_backoff(
-                client.invoke, [("human", human_prompt)]
+                client.invoke,
+                [
+                    ("human", human_prompt)
+                ]
             )
         return response.content
-    except Exception:
+    except Exception as e:
         return f"Error while calling llm {MODEL}: \n{traceback.format_exc()}\n"
 
+        
+    
+    
 
-def build_comparison_prompt(repo_name: str, issue_desc: str, patch_str: str) -> str:
+
+def build_comparison_prompt(repo_name: str, issue_desc: str, patch_str: str) -> str:    
     return """
 I am facing the following issue in the repo {repo_name}. You have an older version of the codebase, so your belief about the 
 codebase might be outdated. Some agents tried to solve the issue and generated patches. Your task is to choose the best patch that fixes the issue,
@@ -93,26 +107,23 @@ IGNORE THE CHANGES IN THE TESTS, DOCS OR OTHER FILES.
 RESPONE WITH THE PATCH NUMBER AND REASONING ONLY IF YOU ARE ABSOLUTELY CONFIDENT THAT THE PATCH FIXED THE ISSUE. RESPOND WITH "RUN AGAIN" OTHERWISE WITH PROPER REASONING.
 YOU DON'T NEED TO WORRY ABOUT THE TESTS. ONLY JUDGE THE PATCHES BASED ON THE CHANGES IN SOURCE CODE.
 
-If you decide to submit the patch from Provide your response in the following format:
+If you are absolutely confident that one of the patches fixes the issue and decide to submit the patch from Provide your response in the following format:
 {{
     "patch": "The number of the patch that best fixes the issue (1, 2, 3, ...)",
     "reasoning": "Your explanation for why the chosen patch fixes the issue",
+    "confidence": "How confident are you that the patch fixes the issue? (0-100)"
 }}
 
-If you decide to reject the patches and run again, provide your response in the format:
+If you feel that none of the patches fixes the issue, decide to reject the patches and run again, provide your response in the format:
 {{
     "patch": "RUN AGAIN",
-    "reasoning": "The detailed reason why none of the patch can fix the issue. 
-Summarise the patches as well, so that next software engineer has the whole context about the patches and reason of their failures."
+    "reasoning": "The detailed reason why none of the patch can fix the issue. Summarise the patches as well, so that next software engineer has the whole context about the patches and reason of their failures."
 }}
-""".format(
-        repo_name=repo_name, issue_desc=issue_desc, patch_str=patch_str
-    )
+Please adhere to the json format strictly.
+""".format(repo_name=repo_name, issue_desc=issue_desc, patch_str=patch_str)
 
+def build_comparison_prompt_hard(repo_name: str, issue_desc: str, patch_str: str) -> str:
 
-def build_comparison_prompt_hard(
-    repo_name: str, issue_desc: str, patch_str: str
-) -> str:
     return """
 I am facing the following issue in the repo {repo_name}. You have an older version of the codebase, so your belief about the 
 codebase might be outdated. Some agents tried to solve the issue and generated patches. Your task is to choose the best patch that fixes the issue.
@@ -136,51 +147,46 @@ Provide your response in the following format:
     "patch": "The number of the patch that best fixes the issue (1, 2, 3, ...)",
     "reasoning": "Your explanation for why the chosen patch fixes the issue",
 }}
-""".format(
-        repo_name=repo_name, issue_desc=issue_desc, patch_str=patch_str
-    )
+""".format(repo_name=repo_name, issue_desc=issue_desc, patch_str=patch_str)
 
 
-def choose_patch(
-    patches, issue_config: IssueConfig, run_contents: List[str], hard=False
-):
+def choose_patch(patches, issue_config: IssueConfig, run_contents: List[str], hard=False):
     if not patches:
         return "", False
-
+    
     run_summaries = []
     for run_content in run_contents:
         summary_response = get_llm_response(
-            system_prompt="You are an expert summarizer of agent's output.",
-            human_prompt=f"The following is the run of the agent after it tried to fix the issue. Analyse the contents and messages of the run and give a short summary of what the agent did. \n{run_content}. Provide the output in the form of 5-7 chronological points.",  # noqa: E501
+            system_prompt="You are an expert summarizer of agent's output.", 
+            human_prompt=f"The following is the run of the agent after it tried to fix the issue. Analyse the contents and messages of the run and give a short summary of what the agent did. \n{run_content}. Provide the output in the form of 5-7 chronological points."
         )
         run_summaries.append(summary_response)
 
     patch_str = ""
     for i, patch in enumerate(patches):
         run_summary = run_summaries[i]
-        patch_str += "=" * 50
+        patch_str += "="*50
         patch_str += f"\nPatch {i+1}:\n{patch}"
-        if not hard:
-            patch_str += f"\nSummary of the agent:\n{run_summary}\n"
-    patch_str += "=" * 50
+        if not hard: patch_str += f"\nSummary of the agent:\n{run_summary}\n"
+    patch_str += "="*50
 
     if not hard:
         response = get_llm_response(
-            system_prompt="You are a software engineer expert at solving bugs.",
+            system_prompt="You are a software engineer expert at solving bugs.", 
             human_prompt=build_comparison_prompt(
-                repo_name=issue_config.repo_name.split("/")[-1],
-                issue_desc=issue_config.issue_desc,
-                patch_str=patch_str,
-            ),
+                repo_name=issue_config.repo_name.split("/")[-1], 
+                issue_desc=issue_config.issue_desc, 
+                patch_str=patch_str
+            )
         )
     else:
         response = get_llm_response(
-            system_prompt="You are a software engineer expert at solving bugs.",
+            system_prompt="You are a software engineer expert at solving bugs.", 
             human_prompt=build_comparison_prompt_hard(
-                repo_name=issue_config.repo_name.split("/")[-1],
-                issue_desc=issue_config.issue_desc,
-                patch_str=patch_str,
-            ),
+                repo_name=issue_config.repo_name.split("/")[-1], 
+                issue_desc=issue_config.issue_desc, 
+                patch_str=patch_str
+            )
         )
     if "RUN AGAIN" in response:
         return response, False
@@ -188,22 +194,24 @@ def choose_patch(
     print("Response", response)
     if response:
         try:
-            match = re.search(r"patch.*?(\d+)", response, re.IGNORECASE)
+            match = re.search(r'patch.*?(\d+)', response, re.IGNORECASE)
             if match:
                 patch_number = int(match.group(1))
                 if 1 <= patch_number <= len(patches):
                     return patches[patch_number - 1], True
-
-            print("\n" * 10)
+            
+            open("error.txt", 'w').write(response)
             return random.choice(patches), True
         except Exception as e:
-            print("\n" * 10)
+            open("error.txt", 'w').write(response)
             print(f"Error in response: {e}")
             return random.choice(patches), True
     else:
-        print("\n" * 10)
+        open("error.txt", 'w').write(response)
         print("No response content found")
         return random.choice(patches), True
+
+
 
 
 def bench(workspace_ids: str, issue_config: IssueConfig) -> str:
@@ -211,10 +219,7 @@ def bench(workspace_ids: str, issue_config: IssueConfig) -> str:
     patch_list = []
     for _ in range(3):
         with ThreadPoolExecutor(max_workers=3) as executor:
-            futures = [
-                executor.submit(run_agent_function, workspace_id, issue_config, patch)
-                for workspace_id in workspace_ids
-            ]
+            futures = [executor.submit(run_agent_function, workspace_id, issue_config, patch) for workspace_id in workspace_ids]
             patches = []
             run_contents = []
             for future in as_completed(futures):
@@ -231,29 +236,39 @@ def bench(workspace_ids: str, issue_config: IssueConfig) -> str:
 
         if success:
             return patch
-
+    
     patch, success = choose_patch(patches, issue_config, run_contents, hard=True)
     return patch
-
+    
+    
 
 def get_patch_from_response(composio_toolset, repo_name):
     composio_toolset.execute_action(
         action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
         params={"path": f"/home/user/{repo_name}"},
     )
-    if "astropy" in repo_name:
-        composio_toolset.execute_action(
-            action=Action.SHELLTOOL_EXEC_COMMAND,
-            params={"cmd": 'git config --global user.email "you@example.com"'},
-        )
-        composio_toolset.execute_action(
-            action=Action.SHELLTOOL_EXEC_COMMAND,
-            params={"cmd": 'git config --global user.name "Your Name"'},
-        )
-        composio_toolset.execute_action(
-            action=Action.SHELLTOOL_EXEC_COMMAND,
-            params={"cmd": 'git add astropy_helpers && git commit -m "add submodule"'},
-        )
+    # if "astropy" in repo_name:
+    #     composio_toolset.execute_action(
+    #         action=Action.SHELLTOOL_EXEC_COMMAND,
+    #         params={"cmd": "git config --global user.email \"you@example.com\""},
+    #     )
+    #     composio_toolset.execute_action(
+    #         action=Action.SHELLTOOL_EXEC_COMMAND,
+    #         params={"cmd": "git config --global user.name \"Your Name\""},
+    #     )
+    #     composio_toolset.execute_action(
+    #         action=Action.SHELLTOOL_EXEC_COMMAND,
+    #         params={"cmd": "git restore --staged :/"},
+    #     )
+    #     composio_toolset.execute_action(
+    #         action=Action.SHELLTOOL_EXEC_COMMAND,
+    #         params={"cmd": "chown -R root:root .git"},
+    #     )
+    #     composio_toolset.execute_action(
+    #         action=Action.SHELLTOOL_EXEC_COMMAND,
+    #         params={"cmd": "git add astropy_helpers && git commit -m \"add submodule\""},
+    #     )
+
 
     get_patch_resp = composio_toolset.execute_action(
         action=Action.FILETOOL_GIT_PATCH,
@@ -287,15 +302,12 @@ def get_patch_from_response(composio_toolset, repo_name):
     return patch
 
 
-def run_agent_function(
-    workspace_id: str, issue_config: IssueConfig, previous_patch_str: str = ""
-):
+
+def run_agent_function(workspace_id: str, issue_config: IssueConfig, previous_patch_str: str = ""):
     """Run benchmark on the agent."""
 
-    graph, composio_toolset, run_file = get_agent_graph(
-        repo_name=issue_config.repo_name.split("/")[-1], workspace_id=workspace_id
-    )
-
+    graph, composio_toolset, run_file = get_agent_graph(repo_name=issue_config.repo_name.split("/")[-1] , workspace_id=workspace_id)
+    
     # get the git tree
     git_tree_response = composio_toolset.execute_action(
         action=Action.FILETOOL_GIT_REPO_TREE,
@@ -308,28 +320,37 @@ def run_agent_function(
     )
 
     if previous_patch_str != "":
-        issue_desc = f"{issue_config.issue_desc}\n. I have already tried to solve this problem before, but failed for the following reason: \n {previous_patch_str}.\n The previous patches did not fix the issue. Now try again to fix the issue. {issue_config.issue_desc}. \n Output to git tree command {git_tree_response}. Pay attention to the reason why patch failed to solve the issue and try something different to fix the issue."  # noqa: E501
+        issue_desc = f"{issue_config.issue_desc}\n. I have already tried to solve this problem before, but failed for the following reason: \n {previous_patch_str}.\n The previous patches did not fix the issue. Now try again to fix the issue. {issue_config.issue_desc}. \n Output to git tree command {git_tree_response}. Pay attention to the reason why patch failed to solve the issue and try something different to fix the issue."
     else:
         issue_desc = f"{issue_config.issue_desc}.\n Output to git tree command {git_tree_response}"
 
+
     try:
-        graph.invoke(
-            {"messages": [HumanMessage(content=issue_desc)]},
-            {"recursion_limit": 50},
+        run_result = graph.invoke(
+            {
+                "messages": [
+                    HumanMessage(
+                        content=issue_desc
+                    )
+                ]
+            },
+            {"recursion_limit": 50},  
         )
     except GraphRecursionError as e:
         print(f"GraphRecursionError: {e}")
     except Exception as e:
         print(f"Error in graph.invoke: {e}")
+    
 
-    patch = get_patch_from_response(
-        composio_toolset, issue_config.repo_name.split("/")[-1]
-    )
-    run_content = open(run_file, "r").read()
+    patch = get_patch_from_response(composio_toolset, issue_config.repo_name.split("/")[-1])
+    run_content = open(run_file, 'r').read()
     os.remove(run_file)
+    composio_toolset.execute_action(
+        action=Action.SHELLTOOL_EXEC_COMMAND,
+        params={"cmd": f"git reset --hard {issue_config.base_commit_id}"},
+    )
 
     return patch, run_content
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -376,7 +397,7 @@ if __name__ == "__main__":
     else:
         test_instance_ids_list = []
         test_range = args.test_split
-
+    
     evaluate(
         bench,
         dataset_name=args.dataset,
