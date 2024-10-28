@@ -1,15 +1,15 @@
 import re
 import typing as t
 from pathlib import Path
-import os
 
-from composio import App, Action, ComposioToolSet
+from composio import Action, ComposioToolSet
 
 
 InputType = t.TypeVar("InputType")
 workspace_dir = Path.home() / "swe-agent"
 if not workspace_dir.exists():
     workspace_dir.mkdir(parents=True)
+
 composio_toolset = ComposioToolSet()
 
 def read_user_input(

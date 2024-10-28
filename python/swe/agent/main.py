@@ -1,11 +1,12 @@
 from inputs import set_workspace
 from langchain_core.messages import HumanMessage
 import traceback
-import json
 from composio_langgraph import Action
 import uuid 
+import os
 
 from agent import get_agent_graph
+from tools import create_pr
 
 
 def main() -> None:
@@ -17,6 +18,7 @@ def main() -> None:
         repo_path=repo_path,
         workspace_id=""
     )
+    os.remove(run_file)
     composio_toolset.execute_action(
         action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
         params={"path": repo_path},
@@ -72,7 +74,7 @@ def main() -> None:
     )
 
     composio_toolset.execute_action(
-        action=Action.GITHUB_CREATE_A_PULL_REQUEST,
+        action=create_pr,
         params={
             "owner": owner,
             "repo": repo_name,
@@ -81,8 +83,6 @@ def main() -> None:
             "title": "Test-Title",
         },
     )  
-
-
 
 if __name__ == "__main__":
     main()
