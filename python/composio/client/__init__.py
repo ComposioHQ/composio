@@ -258,7 +258,7 @@ class Entity:
                 entity_id=self.id,
                 session_id=session_id,
                 text=text,
-                auth=auth
+                auth=auth,
             )
 
         connected_account = self.get_connection(
@@ -273,7 +273,7 @@ class Entity:
             connected_account=connected_account.id,
             session_id=session_id,
             text=text,
-            auth=auth
+            auth=auth,
         )
 
     def get_connection(
