@@ -55,7 +55,7 @@ def get_llm_response(system_prompt: str, human_prompt: str) -> str:
                 model="o1-mini",
                 temperature=1,
                 max_completion_tokens=4096,
-                api_key=openai_api_key,
+                api_key="<OPENAI_API_KEY>",
             )
             response = retry_with_exponential_backoff(
                 client.invoke, [("human", human_prompt)]
