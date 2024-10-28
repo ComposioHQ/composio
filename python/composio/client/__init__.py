@@ -334,8 +334,7 @@ class Entity:
             else:
                 exception = NoItemsFound(
                     f"Could not find a connection with {app=},"
-                    f" {connected_account_id=} and {entity=}.\n"
-                    + note + "\n" + doc_note
+                    f" {connected_account_id=} and {entity=}.\n{note}\n{doc_note}"
                 )
             raise exception
 
