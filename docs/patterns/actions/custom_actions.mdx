@@ -42,27 +42,36 @@ As `gmail` toolname is already registered in Composio, `auth` dictionary will be
 </Note>
 <CodeGroup>
 ```python Custom Action - Gmail (python)
-@action(toolname="gmail", requires=["python-dotenv"])
-def my_custom_action(auth: dict, query:str) -> str:
+@action(toolname="gmail", requires=["example-pypi-package"])  # supports any package
+def my_custom_action(auth: dict, account_id: str) -> str: # Uses existing gmail auth
     """
-    Create custom action to fetch emails from Gmail using existing Gmail authentication info
+    Fetch emails from Gmail account for last 24 hours
 
-    :param query: Passing input query parameter 
+    :param account_id: Account ID, pass 'me' for default account
     :param auth: Authentication dictionary provided by Composio for Gmail
     :return info: Gmail emails information
     """
-    
+
     # fetch authentication headers
-    headers = auth['headers'] 
-    query_params = auth['query_params']
-    base_url = auth['base_url']
-    
-    current_dateTime = datetime.datetime.now().isoformat() + 'Z'  
-    tomorrow_dateTime = (datetime.datetime.now() + datetime.timedelta(days=1)).isoformat() + 'Z' 
-    
-    custom_endpoint_url = f"/gmail/v1/users/me/messages?q=in:sent after:{current_dateTime} before:{tomorrow_dateTime}"
+    headers = auth["headers"]
+    query_params = auth["query_params"]
+    base_url = auth["base_url"]
+
+    yesterday_dateTime = int(
+        (datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()
+    )
+
+    if account_id and account_id != "":
+        custom_endpoint_url = f"/gmail/v1/users/{account_id}/messages?q=after:{yesterday_dateTime}"
+    else:
+        custom_endpoint_url = f"/gmail/v1/users/me/messages?q=after:{yesterday_dateTime}"
+
+    # add query params to the url
+    for key, value in query_params.items():
+        custom_endpoint_url += f"&{key}={value}"
     
     url = f"{base_url}{custom_endpoint_url}"
+
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
@@ -71,13 +80,14 @@ def my_custom_action(auth: dict, query:str) -> str:
         print("Error fetching emails:", response.status_code, response.json())
     return str(response)
 ```
+
 ```javascript Custom Action - Gmail (javascript)
 await toolset.createAction({
-    actionName: "fetchEmails",
+    actionName: "myCustomAction",
     toolName: "gmail",
-    description: "This is a custom action to fetch emails from Gmail using existing Gmail authentication info",
+    description: "Fetch emails from Gmail account for last 24 hours",
     inputParams: z.object({
-        userId: z.string().optional()
+        accountId: z.string().describe("Gmail account ID. Defaults to the primary account, which is 'me'."),
     }),
     callback: async (inputParams, authCredentials) => {
         const headers = authCredentials.headers;
@@ -85,7 +95,7 @@ await toolset.createAction({
         const base_url = authCredentials.baseUrl;
         
         const oneDayAgo = Math.floor(Date.now() / 1000) - 86400;
-        const customEndpointUrl = `/gmail/v1/users/${inputParams.userId}/messages?q=after:${oneDayAgo}`;
+        const customEndpointUrl = `/gmail/v1/users/${inputParams.accountId}/messages?q=after:${oneDayAgo}`;
         const url = `${base_url}${customEndpointUrl}`;
         const response = await fetch(url, { headers });
 
@@ -108,28 +118,27 @@ await toolset.createAction({
 <CodeGroup>
 ```python Python
 @action(toolname="cow", requires=["cowsay"])
-def my_custom_action(number: int) -> str:
+def my_custom_action(account_id: str) -> str:
     """
     Cow will say whatever you want it to say.
 
-    :param message: Message string
+    :param account_id: Account ID, pass 'me' for default account
     :return greeting: Formatted message.
     """
     import cowsay
     
-    say = "even" if number % 2 == 0 else "odd"
-    return cowsay.get_output_string("cow", say)
+    return cowsay.get_output_string("cow", account_id)
 ```
 ```javascript JavaScript
 await toolset.createAction({
-    actionName: "cow",
+    actionName: "myCustomAction",
     description: "Cow will say whatever you want it to say. This can be used to print text in cow style",
     inputParams: z.object({
-        message: z.string()
+        accountId: z.string()
     }),
     callback: async (inputParams) => {
-        const say = inputParams.message;
-        const cowMessage = `Cow says: ${say}`;
+        const accountId = inputParams.accountId;
+        const cowMessage = `Cow says: ${accountId}`;
         return cowMessage;
     }
 });
@@ -145,21 +154,22 @@ We can execute the custom action without Agents as well
 <Tab title="Without Agents">
 <CodeGroup>
 ```python Python
-console.log(
-    toolset.execute_action(
-        action=get_info_arg,
-        params={
-            'query':'test_query' 
-        },
-    )
+from composio import ComposioToolSet
+
+toolset = ComposioToolSet()
+toolset.execute_action(
+    action=my_custom_action,
+    params={
+        'account_id':'me' 
+    },
 )
 ```
 
 ```javascript JavaScript
 console.log(
     await toolset.executeAction(
-        "fetchEmails",
-        { userId: "me" }
+        "myCustomAction",
+        { accountId: "me" }
     )
 )
 ```
@@ -169,8 +179,7 @@ console.log(
 <CodeGroup>
 ```python Python Executing Custom Action with Agent
 from openai import OpenAI
-from composio_openai import ComposioToolSet, App
-from local_tool import say
+from composio_openai import ComposioToolSet
 
 openai_client = OpenAI()
 # Initialise the Composio Tool Set
@@ -178,32 +187,32 @@ composio_toolset = ComposioToolSet()
 
 # Get GitHub tools that are pre-configured
 # Retrieve actions
-actions = composio_toolset.get_tools(actions=[say])
+actions = composio_toolset.get_tools(actions=[my_custom_action])
 
-my_task = "Star a repo composiohq/composio on GitHub"
+my_task = "Fetch emails from Gmail account for last 24 hours"
 
 # Setup openai assistant
-
 assistant_instruction = "You are a super intelligent personal assistant"
 
 # Prepare assistant
-
 assistant = openai_client.beta.assistants.create(
-  name="Personal Assistant",
-  instructions=assistant_instruction,
-  model="gpt-4-turbo-preview",
-  tools=actions, # type: ignore
+    name="Personal Assistant",
+    instructions=assistant_instruction,
+    model="gpt-4-turbo-preview",
+    tools=actions,  # type: ignore
 )
 
 # create a thread
-
 thread = openai_client.beta.threads.create()
-message = openai_client.beta.threads.messages.create(thread_id=thread.id,role="user",content=my_task)
+message = openai_client.beta.threads.messages.create(
+    thread_id=thread.id, role="user", content=my_task
+)
 
 # Execute Agent with integrations
 
-run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=assistant.id)
-
+run = openai_client.beta.threads.runs.create(
+    thread_id=thread.id, assistant_id=assistant.id
+)
 
 # Execute function calls
 response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
@@ -212,13 +221,14 @@ response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_call
     thread=thread,
 )
 
-print(response_after_tool_calls)
+url = f"https://platform.openai.com/playground/assistants?assistant={assistant.id}&thread={thread.id}"
 
+print("Visit this URL to view the thread: ", url)
 ```
 
-```javascript Javascript
-const tools = await toolset.getTools({ actions: ["fetchEmails"] });
-const instruction = "Get all the latest emails of the current user"
+```javascript Javascript Custom Action with Agent
+const tools = await toolset.getTools({ actions: ["myCustomAction"] });
+const instruction = "Fetch emails from Gmail account for last 24 hours"
 
 const client = new OpenAI({ apiKey: process.env.OPEN_AI_API_KEY })
 const response = await client.chat.completions.create({
@@ -231,7 +241,7 @@ const response = await client.chat.completions.create({
     tool_choice: "auto",
 })
 
-console.log("Result", await toolset.handle_tool_call(response));
+console.log("Result", await toolset.handleToolCall(response));
 ```
 </CodeGroup>
 </Tab>
@@ -242,7 +252,7 @@ Output from executing Custom Action without Agents
 <CodeGroup>
 ```shell Output from executing Custom Action without Agents
 [INFO] Logging is set to INFO, use `logging_level` argument or `COMPOSIO_LOGGING_LEVEL` change this
-[INFO] Executing `GITHUB_GET_INFO_ARG` with params={'query': 'test_query'} and metadata=None connected_account_id=None
+[INFO] Executing `GMAIL_MY_CUSTOM_ACTION` with params={'query': 'test_query'} and metadata=None connected_account_id=None
 [INFO] Got response={'data': {'info': {'headers': {'Authorization': 'Bearer KEY', 'x-request-id': '2c65e8b'}, 'base_url': 'https://api.github.com', 'query_params': {}}}, 'error': None, 'successful'...
 {'data': {'info': {'headers': {'Authorization': 'Bearer KEY', 'x-request-id': '2c65e8b'}, 'base_url': 'https://api.github.com', 'query_params': {}}}, 'error': None, 'successful': True}
 ```
