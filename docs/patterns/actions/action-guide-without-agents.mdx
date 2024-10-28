@@ -66,10 +66,9 @@ You can also execute Actions by passing in natural language prompts without spec
 ```
 
 ```javascript JavaScript
-  await toolset.executeAction(
+  await toolset.getEntity("Jessica").execute(
     'github_star_a_repository_for_the_authenticated_user',
     {},
-    "Jessica",
     "Star the repo composiohq/composio"
   );
 ```

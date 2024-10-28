@@ -79,7 +79,7 @@ print(composio_client.get_action_schemas(apps=[App.GITHUB]))   #prints a list of
 <Tab title="JS">
 <CodeGroup>
 ```javascript javascript
-const actions = entity.getActions(app_name=App.GITHUB);
+const actions = entity.getTools(app_name=App.GITHUB);
 ```
 </CodeGroup>
 </Tab>
@@ -127,7 +127,7 @@ const toolset = new OpenAIToolSet({
     entityId: "melissa"
 });
 
-const tools = await toolset.getActions({actions: ['github_star_repo']})
+const tools = await toolset.getTools({actions: ['github_star_repo']})
 
 const task = "Star a repo composiohq/composio on GitHub"
 

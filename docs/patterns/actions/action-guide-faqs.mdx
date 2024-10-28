@@ -75,7 +75,7 @@ const actionsList = await toolset.client.actions.list({
     useCase: "create github issues"
 });
 
-const actions = await toolset.getActions({
+const actions = await toolset.getTools({
     actions: actionsList.items.map((action) => {
         return action.name;
     })
@@ -131,7 +131,7 @@ const actionsList = await toolset.client.actions.list({
      apps: "github"
 });
 
-const actions = await toolset.getActions({
+const actions = await toolset.getTools({
     actions: actionsList.items.map((action) => {
         return action.name;
     })

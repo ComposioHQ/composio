@@ -42,6 +42,11 @@ describe("Integrations class tests", () => {
         expect(integration?.expectedInputFields).toBeDefined();
     });
 
+    it("should get the required params for the created integration", async () => {
+        const requiredParams = await integrations.getRequiredParams(createdIntegrationId);
+        expect(requiredParams).toBeDefined();
+    });
+
     it("should delete the created integration", async () => {
         if (!createdIntegrationId) return;
         await integrations.delete({
