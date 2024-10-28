@@ -12,6 +12,7 @@ if not workspace_dir.exists():
 
 composio_toolset = ComposioToolSet()
 
+
 def read_user_input(
     prompt: str,
     metavar: str,
@@ -93,7 +94,7 @@ def set_workspace() -> t.Tuple[str, str, str]:
             "commit_id": base_commit,
         },
     )
-    
+
     return (
         f"{owner}/{name}",
         str(workspace_dir / name),

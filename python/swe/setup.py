@@ -70,7 +70,7 @@ setup(
         "unidiff==0.7.5",
         "tqdm==4.66.4",
         "rich",
-        "tokenizers>=0.20,<0.21"
+        "tokenizers>=0.20,<0.21",
     ],
     extras_require={
         "langgraph": [

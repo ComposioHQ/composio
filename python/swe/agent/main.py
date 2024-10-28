@@ -1,12 +1,14 @@
+import os
+import traceback
+import uuid
+
 from inputs import set_workspace
 from langchain_core.messages import HumanMessage
-import traceback
+from tools import create_pr
+
 from composio_langgraph import Action
-import uuid 
-import os
 
 from agent import get_agent_graph
-from tools import create_pr
 
 
 def main() -> None:
@@ -15,8 +17,7 @@ def main() -> None:
     owner, repo_name = repo.split("/")
 
     graph, composio_toolset, run_file = get_agent_graph(
-        repo_path=repo_path,
-        workspace_id=""
+        repo_path=repo_path, workspace_id=""
     )
     os.remove(run_file)
     composio_toolset.execute_action(
@@ -33,15 +34,15 @@ def main() -> None:
             {"recursion_limit": 70},
         )
         print(final_state["messages"][-1].content)
-    except Exception as e:
+    except Exception:
         print("Error raised while agent execution: \n", traceback.format_exc())
-    
+
     get_patch_resp = composio_toolset.execute_action(
         action=Action.FILETOOL_GIT_PATCH,
         params={},
     )
 
-    if not get_patch_resp.get("successful", False): 
+    if not get_patch_resp.get("successful", False):
         print("Error:", get_patch_resp.get("error"))
     patch_data = get_patch_resp.get("data", {})
     if patch_data:
@@ -65,7 +66,7 @@ def main() -> None:
 
     composio_toolset.execute_action(
         action=Action.SHELLTOOL_EXEC_COMMAND,
-        params={"cmd": f"git add -u && git commit -m 'test-commit'"},
+        params={"cmd": "git add -u && git commit -m 'test-commit'"},
     )
 
     composio_toolset.execute_action(
@@ -82,7 +83,8 @@ def main() -> None:
             "base": "master",
             "title": "Test-Title",
         },
-    )  
+    )
+
 
 if __name__ == "__main__":
     main()
