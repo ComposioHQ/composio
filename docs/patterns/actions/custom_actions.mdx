@@ -28,8 +28,9 @@ toolset = ComposioToolSet()
 ```
 ```javascript Javascript
 import { OpenAIToolSet } from "composio-core"
+import { z } from "zod"
 
-toolset = new OpenAIToolSet({})
+const toolset = new OpenAIToolSet({})
 ```
 </CodeGroup>
 </Step>
@@ -81,14 +82,11 @@ await toolset.createAction({
     callback: async (inputParams, authCredentials) => {
         const headers = authCredentials.headers;
         const query_params = authCredentials.query_params;
-        const base_url = authCredentials.base_url;
-
-        const currentDateTime = new Date().toISOString();
-        const tomorrowDateTime = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-
-        const customEndpointUrl = `/gmail/v1/users/${inputParams.userId}/messages?q=in:sent after:${currentDateTime} before:${tomorrowDateTime}`;
+        const base_url = authCredentials.baseUrl;
+        
+        const oneDayAgo = Math.floor(Date.now() / 1000) - 86400;
+        const customEndpointUrl = `/gmail/v1/users/${inputParams.userId}/messages?q=after:${oneDayAgo}`;
         const url = `${base_url}${customEndpointUrl}`;
-
         const response = await fetch(url, { headers });
 
         if (response.ok) {
