@@ -12,8 +12,7 @@ Composio lets you perform actions with your account or on behalf of your users. 
 
 To execute actions with your account or on behalf of your users, you can use the following code.
 
-<Tabs>
-<Tab title="Python">
+
 <CodeGroup>
 ```python Execute the Agent in Python
 from langchain.agents import create_openai_functions_agent, AgentExecutor
@@ -40,37 +39,35 @@ agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 # Execute using agent_executor
 agent_executor.invoke({"input": task})
 ```
-</CodeGroup>
-</Tab>
-
-<Tab title="JavaScript">
-  ```javascript Execute the Agent in JS
-  import { LangchainToolSet } from "composio-core";
-  import { ChatOpenAI } from "@langchain/openai";
-  import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
-  import { pull } from "langchain/hub";
+```javascript Execute the Agent in JS
+import { LangchainToolSet } from "composio-core";
+import { ChatOpenAI } from "@langchain/openai";
+import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
+import { pull } from "langchain/hub";
 
 
-  (async () => {
-    const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
-    const composioToolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY });
-    const tools = await composioToolset.getActions({ actions: ["github_issues_create"] });
-    const prompt = await pull("hwchase17/openai-functions-agent");
+(async () => {
+  const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
+  const composioToolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY });
+  const tools = await composioToolset.getTools({ actions: ["github_issues_create"] });
+  const prompt = await pull("hwchase17/openai-functions-agent");
 
-    const agent = await createOpenAIFunctionsAgent({ llm, tools, prompt });
-    const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
-    const issueDetails = {
-        TITLE: "Sample issue",
-        DESCRIPTION: "Sample issue for the repo - himanshu-dixit/custom-repo-breaking"
-    };
+  const agent = await createOpenAIFunctionsAgent({ llm, tools, prompt });
+  const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+  const issueDetails = {
+      TITLE: "Sample issue",
+      DESCRIPTION: "Sample issue for the repo - himanshu-dixit/custom-repo-breaking"
+  };
 
-    const result = await agentExecutor.invoke({
-      input: `Create a GitHub issue with the following details: ${JSON.stringify(issueDetails)}`
-    });
-    return result.output;
-  })();
+  const result = await agentExecutor.invoke({
+    input: `Create a GitHub issue with the following details: ${JSON.stringify(issueDetails)}`
+  });
+  return result.output;
+})();
   ```
-</Tab>
-</Tabs>
+</CodeGroup>
+
+
+
 This code demonstrates how to use LLMs to execute an action. 
 Composio supports multiple frameworks for creating Agents including LlamaIndex, CrewAI, Letta, Langchain, you can see it in the **Supported Frameworks** section.

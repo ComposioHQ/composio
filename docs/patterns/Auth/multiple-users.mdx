@@ -147,7 +147,7 @@ const toolset = new OpenAIToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const tools = await toolset.getActions({actions: ['linear_list_linear_projects']})
+const tools = await toolset.getTools({actions: ['linear_list_linear_projects']})
 
 const task = "List all the Linear projects "
 
