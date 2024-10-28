@@ -183,7 +183,8 @@
           "patterns/actions/action-guide-without-agents",
           "patterns/actions/custom_actions",
           "patterns/actions/usecase",
-          "patterns/actions/action-guide-faqs"
+          "patterns/actions/action-guide-faqs",
+          "patterns/actions/example-flow-github"
         ]
       },
       {
