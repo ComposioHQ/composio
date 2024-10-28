@@ -52,7 +52,7 @@ composio add github -e "Jessica"
     <Steps>
       <Step title="Install package">
         ```javascript Install the required dependencies
-        npm install composio-core
+        npm install composio-core && npm install -g composio-core
 
         //login to composio
         composio login
@@ -65,23 +65,12 @@ composio add github -e "Jessica"
         import { OpenAIToolSet } from "composio-core";
 
         const toolset = new OpenAIToolSet();
-
-        const customAuthAction = await toolset.client.actions.execute({
-            actionName: "GITHUB_GITHUB_API_ROOT",
-            requestBody: {
-                appName: "github",
-                authConfig: {
-                    parameters: [{
-                        name: "Authorization",
-                        in: "header",
-                        value: `Bearer YOUR_API_KEY`
-                    }]
-                },
-                input: {}
-            }
-        });
-
-        console.log("Custom auth action response", customAuthAction)
+        #You can change the repo you want to star by modifying the parameters
+        toolset.executeAction(
+            'github_star_a_repository_for_the_authenticated_user',
+            {"owner": "composiohq", "repo": "composio"},
+            "Jessica",
+        )
         ```
       </Step>
     </Steps>
@@ -101,10 +90,9 @@ You can also execute Actions by passing in natural language prompts without spec
 ```
 
 ```javascript JavaScript
-  await toolset.executeAction(
+  await toolset.getEntity("Jessica").execute(
     'github_star_a_repository_for_the_authenticated_user',
     {},
-    "Jessica",
     "Star the repo composiohq/composio"
   );
 ```

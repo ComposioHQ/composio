@@ -117,10 +117,9 @@ export function jsonSchemaToModel(jsonSchema: Record<string, any>): z.ZodObject<
         } else if (value.allOf) {
             const allOfTypes = value.allOf.map((schema: any) => jsonSchemaPropertiesToTSTypes(schema));
             zodType = z.intersection(allOfTypes[0], allOfTypes.slice(1).reduce((acc: z.ZodTypeAny, schema: z.ZodTypeAny) => acc.and(schema), allOfTypes[0])).describe((value.description || "") + (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""));
-        } else if (value.type) {
+        }  else {
+            value.type = "string"
             zodType = jsonSchemaPropertiesToTSTypes(value);
-        } else {
-            throw new Error(`Missing 'type' property in JSON schema for key: ${key}`);
         }
 
         if (value.description) {
