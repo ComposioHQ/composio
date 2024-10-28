@@ -174,9 +174,9 @@
         "pages":[
           "patterns/Auth/connected_account",
           "patterns/Auth/multiple-users",
+          "patterns/Auth/Integrations",
           "patterns/Auth/examples/gmail_example",
-          "patterns/Auth/examples/shopify_example",
-          "patterns/Auth/integrations"
+          "patterns/Auth/examples/shopify_example"
         ]
       },
       {

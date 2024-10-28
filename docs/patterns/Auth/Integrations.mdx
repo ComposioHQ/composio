@@ -34,8 +34,7 @@ For example
 ### Fetching all Integrations
 
 <CodeGroup>
-```python Code for fetching integrations
-# TODO Prathit - change above gif to only create integration. 
+```python Python
 from composio import ComposioToolSet, App
 toolset = ComposioToolSet()
 
@@ -45,7 +44,7 @@ print(toolset._get_integration_for_app(app=App.GMAIL)) #filter based on app
 print(toolset.get_integration(id="ADD THE ID HERE")) #filter based on integration id
 ```
 
-```javascript Code for fetching integrations
+```javascript JavaScript
 import { OpenAIToolSet } from "composio-core";
 
 const openai_client = new OpenAIToolSet({
