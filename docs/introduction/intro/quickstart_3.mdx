@@ -201,11 +201,18 @@ import { LangchainToolSet } from "composio-core";
 
 const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY });
 const composio_client = toolset.client;
-
-// Subscribe to triggers and perform actions
-composio_client.triggers.subscribe((data) => {
-    console.log("trigger received", data);
+const entityId = "Jessica";
+const connectedAccounts = await composio_client.connectedAccounts.list({
+    user_uuid: entityId,
+    appNames: 'gmail',
+    status: 'ACTIVE'
 });
+
+const triggerSetupData = await composio_client.triggers.setup(
+    connectedAccounts.items[0].id,
+    "gmail_new_gmail_message",
+    {}
+);
 ```
 </CodeGroup>
 </Tab>
