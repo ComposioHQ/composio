@@ -12,12 +12,22 @@ export default class ConnectionsCommand {
     this.program = program;
 
     const command = this.program.command("triggers");
-
     command
       .description("Manage and list triggers")
       .option("--id <text>", "Filter by trigger id")
       .option("--app <text>", "Filter by app name")
-      .action(this.handleAction.bind(this));
+      .option("--active", "Show only active triggers")
+      .action(async (options) => {
+        if (options.active) {
+          // Run active triggers command if --active flag is present
+          const activeTriggers = new ActiveTriggers(command, false);
+          // @ts-ignore
+          await activeTriggers.handleAction();
+        } else {
+          // Otherwise run normal list action
+          await this.handleAction(options);
+        }
+      });
 
     new TriggerAdd(command);
     new TriggerDisable(command);
@@ -158,13 +168,15 @@ export class TriggerDisable {
 
 export class ActiveTriggers {
   private program: Command;
-  constructor(program: Command) {
+  constructor(program: Command,register: boolean = true) {
     this.program = program;
 
-    this.program
-      .command("active")
-      .description("Show list of currently active triggers")
-      .action(this.handleAction.bind(this));
+    if (register) {
+      this.program
+        .command("active")
+        .description("Show list of currently active triggers")
+        .action(this.handleAction.bind(this));
+    }
   }
 
   async handleAction(): Promise<void> {
