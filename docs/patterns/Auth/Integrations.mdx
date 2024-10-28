@@ -39,9 +39,11 @@ from composio import ComposioToolSet, App
 toolset = ComposioToolSet()
 
 print(toolset.get_integrations()) # get all integrations
-print(toolset._get_integration_for_app(app=App.GMAIL)) #filter based on app 
-#TODO Improve this method
+print(toolset.get_integrations(app=App.GMAIL)) #filter based on app 
 print(toolset.get_integration(id="ADD THE ID HERE")) #filter based on integration id
+
+# By auth scheme
+print(toolset.get_integrations(auth_scheme="BEARER_TOKEN"))
 ```
 
 ```javascript JavaScript

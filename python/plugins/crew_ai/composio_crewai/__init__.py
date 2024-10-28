@@ -1,4 +1,4 @@
-from composio import WorkspaceType
+from composio import WorkspaceType, action
 
 from composio_langchain import Action, App
 from composio_langchain import ComposioToolSet as Base
@@ -19,5 +19,6 @@ __all__ = (
     "Tag",
     "Trigger",
     "WorkspaceType",
+    "action",
     "ComposioToolSet",
 )
