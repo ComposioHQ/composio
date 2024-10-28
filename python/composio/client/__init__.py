@@ -5,6 +5,7 @@ Composio SDK client.
 """
 
 import os
+import sys
 import typing as t
 from datetime import datetime
 from pathlib import Path
@@ -315,11 +316,29 @@ class Entity:
                     latest_account = connected_account
 
         if latest_account is None:
-            raise NoItemsFound(
-                f"Could not find a connection with app='{app}',"
-                f"connected_account_id=`{connected_account_id}` and "
-                f"entity=`{self.id}`"
+            suggestion = (
+                f"composio add {app}"
+                if self.id == DEFAULT_ENTITY_ID
+                else f"composio add {app} -e {self.id}"
             )
+            note = f"Run this command to create a new connection: {suggestion}"
+            doc_note = "Read more here: https://dub.composio.dev/auth-help"
+            if sys.version_info >= (3, 11):
+                exception = NoItemsFound(
+                    f"Could not find a connection with app='{app}',"
+                    f"connected_account_id=`{connected_account_id}` and "
+                    f"entity=`{self.id}`."
+                )
+                exception.add_note(note)
+                exception.add_note(doc_note)
+            else:
+                exception = NoItemsFound(
+                    f"Could not find a connection with app='{app}',"
+                    f"connected_account_id=`{connected_account_id}` and "
+                    f"entity=`{self.id}`.\n" + note + "\n" + doc_note
+                )
+            raise exception
+
         return latest_account
 
     def get_connections(self) -> t.List[ConnectedAccountModel]:
