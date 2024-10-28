@@ -87,7 +87,7 @@ await toolset.createAction({
     toolName: "gmail",
     description: "Fetch emails from Gmail account for last 24 hours",
     inputParams: z.object({
-        accountId: z.string().optional()
+        accountId: z.string().describe("Gmail account ID. Defaults to the primary account, which is 'me'."),
     }),
     callback: async (inputParams, authCredentials) => {
         const headers = authCredentials.headers;
@@ -241,7 +241,7 @@ const response = await client.chat.completions.create({
     tool_choice: "auto",
 })
 
-console.log("Result", await toolset.handle_tool_call(response));
+console.log("Result", await toolset.handleToolCall(response));
 ```
 </CodeGroup>
 </Tab>
