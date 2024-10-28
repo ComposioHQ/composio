@@ -1,6 +1,6 @@
 from composio_llamaindex.toolset import ComposioToolSet  # pylint: disable=import-error
 
-from composio import Action, App, Tag, Trigger, WorkspaceType
+from composio import Action, App, Tag, Trigger, WorkspaceType, action
 
 
 __all__ = (
@@ -10,4 +10,5 @@ __all__ = (
     "Trigger",
     "ComposioToolSet",
     "WorkspaceType",
+    "action",
 )
