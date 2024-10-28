@@ -121,6 +121,16 @@ export class Integrations {
         })
     }
 
+
+    getRequiredParams(integrationId: string) {
+        return apiClient.appConnector.getConnectorInfo({
+            path: {
+                integrationId
+            },
+            throwOnError: true
+        }).then(res => res.data?.expectedInputFields)
+    }
+
     /**
      * Creates a new integration in the Composio platform.
      * 
