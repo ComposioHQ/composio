@@ -109,7 +109,12 @@ if (connectionRequest.connectionStatus === "INITIATED") {
         This is what the output looks like:
 <CodeGroup>
 ```shell Output
+# If connectionStatus is "INITIATED":
+https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=...&scope=...
+Connection Status should be active after user completes the authentication process, you can now test by fetching the connection.
 
+# If connectionStatus is "ACTIVE":
+Connection Status is active, you can now test by calling the tool.
 ```
 </CodeGroup>
 

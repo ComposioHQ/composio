@@ -12,10 +12,8 @@ Composio lets you perform actions with your account or on behalf of your users. 
 
 To execute actions with your account or on behalf of your users, you can use the following code.
 
-<Tabs>
-<Tab title="Python">
 <CodeGroup>
-```python Execute the Agent in Python
+```python Python
 from langchain.agents import create_openai_functions_agent, AgentExecutor
 from langchain import hub
 from langchain_openai import ChatOpenAI
@@ -40,11 +38,8 @@ agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 # Execute using agent_executor
 agent_executor.invoke({"input": task})
 ```
-</CodeGroup>
-</Tab>
 
-<Tab title="JavaScript">
-  ```javascript Execute the Agent in JS
+```javascript JavaScript
   import { LangchainToolSet } from "composio-core";
   import { ChatOpenAI } from "@langchain/openai";
   import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
@@ -70,7 +65,7 @@ agent_executor.invoke({"input": task})
     return result.output;
   })();
   ```
-</Tab>
-</Tabs>
+</CodeGroup>
+
 This code demonstrates how to use LLMs to execute an action. 
 Composio supports multiple frameworks for creating Agents including LlamaIndex, CrewAI, Letta, Langchain, you can see it in the **Supported Frameworks** section.

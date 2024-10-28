@@ -85,6 +85,11 @@ You can execute actions on behalf of a user without using an agent.
 <CodeGroup>
 
 ```python Python Execute Action without an agent
+from composio import ComposioToolSet
+
+toolset = ComposioToolSet()
+entity = toolset.get_entity(id='Jessica')
+
 res = entity.execute(
     action=Action.GITHUB_GITHUB_API_ROOT,
     params={},
@@ -93,6 +98,8 @@ print(res)
 ```
 
 ```javascript JS Execute Action without an agent
+import { OpenAIToolSet } from "composio-core";
+
 const toolset = new OpenAIToolSet({
     apiKey: process.env.OPENAIKEY,
     entityId: "Jessica"
