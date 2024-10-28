@@ -138,18 +138,19 @@ Create an agent, set up an executor, and invoke tasks to perform GitHub API call
   ```
 </Step>
 </Steps>
-### Use Specific Actions
+
+### Use Specific Apps
 <CodeGroup>
-  ```bash Filter Specific Action
+  ```bash Filter Specific App
   # To restrict agents from using all the actions, filter specific actions
   tools = composio_toolset.get_tools(apps=[App.GITHUB])
   ```
 </CodeGroup>
 
-### Use Specific Apps
+### Use Specific Actions
 
 <CodeGroup>
-  ```bash Filter Specific App 
+  ```bash Filter Specific Actions
   # To restrict agents from using all tools, filter specific tools 
   tools = composio_toolset.get_tools(actions=[Action.GITHUB_CREATE_ISSUE]) 
   ```

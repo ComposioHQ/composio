@@ -15,194 +15,228 @@ description: "Manage all the connected accounts of your Users"
 - This object securely stores **authentication data** such as **access tokens and refresh tokens**.
 
 
-### Connect an account for an entity
-<Tabs>
-<Tab title="Python OAuth2 Apps">
+<Note>
+For a complete guide on Authentication with Composio, click [here](/patterns/Auth/)
+</Note>
+
+### Connecting an Account for your User
+<Steps>
+<Step title="Collect Parameters Required to create a Connection">
+To create a connected account for your user:
+
+1. Fetch required auth parameters for the application
+2. Collect these parameters from the user
+3. Initiate a new connection request
+
+<Note> Linear: Requires `api_key`</Note>
+
 <CodeGroup>
-```python get the entity and auth scheme for an app
+```python Python - Fetch Auth Parameters
 from composio import ComposioToolSet, App
+toolset = ComposioToolSet()
 
-user_id = "Jessica"  # this is the user id of the user you want to connect with
-app_to_connect = App.GMAIL  # can also be gmail, github, etc.
+response = toolset.get_expected_params_for_user(app=App.LINEAR) # can use integration_id instead of app
 
-toolset = ComposioToolSet(entity_id=user_id)
-
-entity = toolset.get_entity()
-
-from composio.client.exceptions import NoItemsFound
-
-try:
-    entity.get_connection(app=app_to_connect)
-
-    print(f"User {user_id} is already authenticated with {app_to_connect}")
-
-except NoItemsFound as e:
-
-    # Create a request to initiate connection
-    request = entity.initiate_connection(
-        app_to_connect, redirect_url="https://google.com"
-    )
-
-    print(
-        f"Please authenticate {app_to_connect} in the browser and come back here. URL: {request.redirectUrl}"
-    )
-
-    # Poll until the connection is active
-    connected_account = request.wait_until_active(client=toolset.client, timeout=100)
+print(response["expected_params"])
 ```
-</CodeGroup>
-</Tab>
-<Tab title="Python Non OAuth2 Apps">
-<CodeGroup>
-```python get the entity and auth scheme for an app
-from composio import ComposioToolSet, App
 
-toolset = ComposioToolSet(entity_id="default")
+```javascript Javascript - Fetch Auth Parameters
+import { Composio, OpenAIToolSet } from "composio-core";
 
-app = App.SERPAPI
+const toolset = new OpenAIToolSet();
 
-entity = toolset.get_entity()
-
-try:
-    entity.get_connection(app=App.SERPAPI)
-
-    print(f"Entity {entity_id} is already authenticated with SERPAPI")
-
-except NoItemsFound as e:
-    # parse scheme dict to get the auth config parameters needed to initiate connection
-    # pass those parameters to end user to fill in
-
-    # after collecting the auth config from the user
-    auth_config = {
-        "api_key": "your_api_key"
-    }
-
-    # Create a request to initiate connection
-    connection_request = entity.initiate_connection(
-        app_name=App.SERPAPI,
-        auth_mode=schemes[0].auth_mode, # this is fetched from the scheme dict ex. "api_key" or "basic_auth" or some other value
-        auth_config=auth_config,
-    )
-
-    connected_account = connection_request.wait_until_active(client=toolset.client)
-
-    # use this connected_account to perform tasks on behalf of the entity
-```
-</CodeGroup>
-
-</Tab>
-<Tab title="JS All apps">
-<CodeGroup>
-```javascript Get the entity and auth scheme for an app
-import { Composio } from "composio-core";
-
-const client = new Composio(
-  process.env.COMPOSIO_API_KEY
-);
-
-const entity = await client.getEntity("Jessica");
-
-// Get the integration id from the dashboard
-const integration = await client.integrations.get({
-    integrationId: "{{integration_id}}"
+const expectedInputFields = await toolset.getExpectedParamsForUser({
+    app: "gmail",
 });
 
-console.log(
-    "Expected input fields for the integration:",
-    integration.expectedInputFields
-)
+console.log(expectedInputFields)
 ```
 </CodeGroup>
 
-Complete Authentication process by passing the auth config to the initiate connection method.
+Collect the required parameters from your user through your preferred interface (UI, chat, or API).
+
+<Note>
+All parameters should be provided as strings.
+</Note>
+
+</Step>
+
+<Step title="Try creating a connection with the parameters collected">
+
+In the code snippets below replace `redirect_url`
 
 <CodeGroup>
-```javascript javascript
-const entity = await client.getEntity("Jessica");
+```python Python - New Connection
 
-const params = {
-    "api_key": "YOUR_API_KEY"
+# This is the URL that the user will be redirected to after completing the authentication process
+redirect_url = "https://yourwebsite.com/connection/callback"
+
+entity_id = "Jessica" # This is the unique identifier for the user
+
+# Collect the parameters from the user
+# Here we are assuming that the user has provided the parameters
+# In a real-world scenario, you would collect these parameters from the user via your app's UI.
+collected_params = {
+    # "api_key": "1234567890" # This is an example, actual values will be different
 }
-const connection = await entity.initiateConnection(
-    'serpapi',
-    null,
-    params
-);
+
+# Initiate the connection
+connection_request = toolset.initiate_connection(connected_account_params=collected_params,entity_id=entity_id,app=App.LINEAR,redirect_url=redirect_url)
+
+# If the connection method is OAuth, redirect the user to the URL below
+print(connection_request.redirectUrl)
+
+# Check the status of the connection
+print(connection_request.status)
+```
+
+```javascript Javascript - New Connection
+const redirectUrl = "https://yourwebsite.com/connection/callback"
+
+const entityId = "Jessica" //This is the unique identifier for the user
+
+// Collect the parameters from the user
+// Here we are assuming that the user has provided the parameters
+// In a real-world scenario, you would collect these parameters from the user via your app's UI.
+const collectedParams = {
+    // "api_key": "1234567890" // This is an example, actual values will be different
+}
+
+const connectionRequest = await toolset.client.connectedAccounts.initiate({
+    data: {
+        ...collectedParams
+    },
+    userUuid: entityId,
+    integrationId: expectedInputFields.integrationId, 
+    redirectUri: redirectUrl
+});
+
+console.log("Click on this link to connect your account", connectionRequest.redirectUrl)
+
+const connectedAccount = await connectionRequest.waitUntilActive(30); // Wait for the connection to be active
+
+console.log("Connected account is active", connectedAccount)
 ```
 </CodeGroup>
 
-</Tab>
-<Tab title="CLI">
+<Note>
+Some applications require user redirection to complete the authentication process.
+Gmail for example requires redirecting the user to Google's login page.
+</Note>
+
+</Step>
+
+<Step title="Fetch the Connection Params (Status, Access Token, Refresh Token...)">
+If you want to use connection params locally and build custom actions - 
+
+<Info>
+Connection status can be `failed`, `initiated` or `active`.
+</Info>
 <CodeGroup>
-```bash Adding a connection for an entity
-composio add github -e default # replace `default` with the entity id
+```python Python - Fetch the connection status & details (Optional)
+connected_account = toolset.get_connected_account(connection_request.connectedAccountId)
 
-# you can also use -s to specify scopes ex. -s "repo,user"
-# you can also use -i to specify the integration id ex. -i 123456
+# Get the parameters for your local usage
+print(toolset.get_auth_params(connection_id=connected_account.id))
+
+#print(connected_account.connectionParams) # use this for raw/advanced cases
+```
+
+```javascript Javascript - Fetch the connection params (Optional)
+const connectedAccount = await toolset.client.connectedAccounts.get({
+    connectedAccountId: connectionRequest.connectedAccountId
+})
+
+const connectedAccountAuthParams = await toolset.getAuthParams({
+    connectedAccountId: connectedAccount.connectedAccountId
+})
+
+console.log("Connected account auth params", connectedAccountAuthParams)
+
+//console.log("Connected account raw auth params", connectedAccount.connectionParams)
+
 ```
 </CodeGroup>
-</Tab>
-<Tab title="Via Dashboard">
-The Composio dashboard primarily serves as a tool for quickly verifying your integration and trying new connections for initial testing. 
-For deploying in a production environment, utilize the SDK or API methods.
-<div
-  style={{
-    width: '100%',
-    position: 'relative',
-    paddingTop: '56.25%',
-  }}>
-  <iframe
-    src="https://app.supademo.com/embed/cly1z8i4g0lwy149zfx6h4ee2"
-    frameBorder="0"
-    title="Direct Action Execution"
-    allow="clipboard-write"
-    webkitallowfullscreen="true"
-    mozallowfullscreen="true"
-    allowfullscreen
-    style={{
-      position: 'absolute',
-      top: 0,left: 0, width: '100%', height: '100%',
-      border: '3px solid #5E43CE',
-      borderRadius: '10px',
-    }}/>
-</div>
 
-</Tab>
+Example of how connection params would look like 
 
-<Tab title="Via API">
-## Initiate Connections API
 <CodeGroup>
-```curl cURL 
-curl --request POST \
-  --url https://backend.composio.dev/api/v1/connectedAccounts \
-  --header 'Content-Type: application/json' \
-  --header 'X-API-Key: ADD YOUR API KEY HERE' \
-  --data '{
-  "integrationId": "ENTER THE INTEGRATION ID HERE",
-  "userUuid": "ENTER ENTITY ID HERE"
-}'
+``` JSON Auth Params Output
+{
+	"base_url": "", // This is the base URL for the API Ex. https://api.linear.app
+	"params": [{ // This is the list of all the params
+		"name": "x-api-key", 
+		"in": "header", // `in` value could be of type `header`, `query` 
+		"value": "<api-key>"
+	}],
+	"body": {}
+}
 ```
+``` Javascript Raw Auth Params Output
+Connected account raw auth params {
+  scope: '********',
+  scopes: '********',
+  id_token: '********',
+  client_id: '********',
+  expires_in: '********',
+  token_type: '********',
+  redirectUrl: 'https://accounts.google.com/o/oauth2/v2/auth?client_id=96-8p515bt7ijf94c2bf4a5lev5jr6r7oc1.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fbackend.composio.dev%2Fapi%2Fv1%2Fauth-apps%2Fadd&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fgmail.modify&response_type=code&access_type=offline&prompt=consent&state=staging_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.30.W9PV-ncrbbPhnjfcgBCN8ZNn9A8V2lzCbXQR2fOXht4&code_challenge=YpyY74p3BJU_-a_mIq4GZyka2FlpnH4APVIfQ&code_challenge_method=S256',
+  callback_url: '********',
+  client_secret: '********',
+  code_verifier: '********',
+  refresh_token: '********',
+  headers: {
+    Authorization: 'Bearer ya29.-BhZtwh0ZLk-',
+  },
+  queryParams: {},
+  base_url: 'https://www.googleapis.com'
+}
+```
+
 </CodeGroup>
-</Tab>
-</Tabs>
+
+
+
+<Note>
+You can fetch connection details after user is redirected back to your app. (If redirect was needed)
+
+`connection_status` & `connectedAccountId` will be available in the query params.
+</Note>
+</Step>
+</Steps>
 
 ### Get All Connected accounts 
-
 <Tabs>
 <Tab title="Python">
 <CodeGroup>
 ```python Get All Connected Account
+entity = toolset.get_entity(id="Jessica") #filter based on entity id
 try:
-    connected_accounts  = entity.get_connections()
+    connected_accounts  = entity.get_connections() #lists all connections of the entity
+    entity.get_connection(app=App.GITHUB) #filters based on app name
+    entity.get_connection(connected_account_id="9") #filters based on connected account id for an entity
+    print(connected_accounts)
 except NoItemsFound as e:
     print("No connected account found")
 ```
 </CodeGroup>
 </Tab>
+
 <Tab title="Javascript">
 <CodeGroup>
 ```javascript Get All Connected Account
-coming soon
+const tool_set = new OpenAIToolSet({
+    apiKey: process.env.OPENAIKEY,
+    entityId: "Jessica"
+});
+//filters based on connected account id for an entity
+console.log(await tool_set.connectedAccounts.get({connectedAccountId:'9'})) 
+//filters connections based on appName for an entity
+console.log(tool_set.client.integrations.get({
+    appName:'linear'
+})) 
+//list all connections based on entityId
+console.log(await tool_set.connectedAccounts.list()) 
 ```
 </CodeGroup>
 
@@ -228,177 +262,187 @@ curl --request GET \
 </Tabs>
 
 
-### Execute Agent and perform tasks on behalf of an entity
+Here’s your modified documentation with three tabs (Python, JavaScript, and API), each containing relevant steps and code snippets:
 
-Now, let's get all the actions that can be performed on the entity on GitHub.
+## Execute Agent and Perform Tasks on Behalf of an Entity
+
 <Tabs>
-<Tab title="Python">
-<CodeGroup>
-```python Fetch tools
-from composio_openai import ComposioToolSet, Action, App
-from openai import OpenAI
+    <Tab title="Python">
+    <CodeGroup>
+        ```python Python
+        # Step 1: Fetch Available Actions from GitHub
 
-openai_client = OpenAI()
+        from composio_openai import ComposioToolSet, App
+        from openai import OpenAI
 
-# can be configured to use the entity id of the user
-tool_set = ComposioToolSet(entity_id="Jessica") 
+        openai_client = OpenAI()
 
-actions = tool_set.get_tools(apps=[App.GITHUB])
-```
-</CodeGroup>
-</Tab>
-<Tab title="Javascript">
-<CodeGroup>
-```javascript Fetch tools
-import { OpenAIToolSet } from "composio-core";
+        # Entity ID can be configured based on the user, here it is "Jessica"
+        tool_set = ComposioToolSet(entity_id="Jessica")
 
-const toolset = new OpenAIToolSet({
-    apiKey: process.env.COMPOSIO_API_KEY,
-});
+        # Fetch actions for GitHub
+        actions = tool_set.get_tools(apps=[App.GITHUB])
 
-const entity = toolset.client.getEntity('Jessica');
-const tools = await toolset.getTools({ apps: ["github"] }, entity.id);
-```
-</CodeGroup>
 
-</Tab>
+        # Step 2: Execute Agent Task on GitHub
 
-<Tab title="Via API">
-Retrieve a list of all Actions based on Query Parameters.
-<CodeGroup>
-```curl curl
-curl --request GET \
-  --url https://backend.composio.dev/api/v2/actions \
-  --header 'X-API-Key: <x-api-key>'
-```
-</CodeGroup>
+        my_task = "Star a repo composiohq/composio on GitHub"
 
-Get Action Details for a Specific Action
-<CodeGroup>
-```curl curl
-curl --request GET \
-  --url https://backend.composio.dev/api/v1/actions/GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER \
-  --header 'X-API-Key: <x-api-key>'
-```
-</CodeGroup>
-</Tab>
+        # Setup OpenAI assistant
+        assistant_instruction = "You are a super intelligent personal assistant"
+
+        assistant = openai_client.beta.assistants.create(
+            name="Personal Assistant",
+            instructions=assistant_instruction,
+            model="gpt-4-turbo-preview",
+            tools=actions  # fetched tools
+        )
+
+        # Create a conversation thread
+        thread = openai_client.beta.threads.create()
+        message = openai_client.beta.threads.messages.create(
+            thread_id=thread.id,
+            role="user",
+            content=my_task
+        )
+
+        # Execute the Agent with the integrations
+        run = openai_client.beta.threads.runs.create(
+            thread_id=thread.id,
+            assistant_id=assistant.id
+        )
+
+        # Wait for and handle tool calls from the assistant
+        response_after_tool_calls = tool_set.wait_and_handle_assistant_tool_calls(
+            client=openai_client,
+            run=run,
+            thread=thread,
+        )
+
+        print(response_after_tool_calls)
+        ```
+    </CodeGroup>
+
+    </Tab>
+
+    <Tab title="JavaScript">
+    <CodeGroup>
+    ```javascript JavaScript
+    // Step 1: Fetch Available Actions from GitHub
+
+    import { OpenAIToolSet } from "composio-core";
+    import { OpenAI } from "openai";
+
+    const llm = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+    });
+    const toolset = new OpenAIToolSet({
+        apiKey: process.env.COMPOSIO_API_KEY,
+        entityId: "Jessica",
+    });
+
+    // Fetch actions for GitHub
+    const tools = await toolset.getTools({ apps: ["github"] });
+
+    // Step 2: Execute Agent Task on GitHub
+
+    const task = "Star a repo composiohq/composio on GitHub";
+    const repo = "composio";
+    const owner = "composiohq";
+
+    // Create a thread and instruct assistant
+    const assistantThread = await llm.beta.threads.create({
+        messages: [
+            {
+                role: "assistant",
+                content: "You are an assistant tasked with starring a repository on GitHub.",
+            },
+        ],
+    });
+
+    // Setup the assistant with tools
+    const assistant = await llm.beta.assistants.create({
+        name: "SWE agent",
+        instructions: `Your goal is to star the repository: ${owner}/${repo}`,
+        model: "gpt-4-turbo",
+        tools: tools,
+    });
+
+    // Send user task to the thread
+    await llm.beta.threads.messages.create(assistantThread.id, {
+        role: "user",
+        content: task,
+    });
+
+    // Execute and poll for tool calls
+    const stream = await llm.beta.threads.runs.createAndPoll(assistantThread.id, {
+        assistant_id: assistant.id,
+        instructions: `Repo is: ${repo} and your goal is to ${task}`,
+        tool_choice: "required",
+    });
+
+    // Handle tool calls
+    await toolset.waitAndHandleAssistantToolCalls(llm, stream, assistantThread, "default");
+    ```
+
+
+    </CodeGroup>
+    </Tab>
+
+    <Tab title="API">
+    <Steps>
+        <Step title="Step 1: Fetch Available Actions from GitHub">
+        <CodeGroup>
+        ```curl API
+
+        curl --request GET \
+        --url https://backend.composio.dev/api/v2/actions \
+        --header 'X-API-Key: <x-api-key>'
+        ```
+        </CodeGroup>
+        </Step>
+
+        <Step title="Step 2: Execute Task on GitHub">
+        <CodeGroup>
+       ```curl API
+
+        curl --request POST \
+        --url https://backend.composio.dev/api/v2/actions/GITHUB_STAR_A_REPO/execute \
+        --header 'Content-Type: application/json' \
+        --header 'X-API-Key: <ADD YOUR API KEY>' \
+        --data '{
+        "entityId": "Jessica",
+        "input": {
+            "repo": "composio",
+            "owner": "composiohq"
+        }
+        }'
+
+        
+        # Optionally, you can retrieve the action details before execution
+        curl --request GET \
+        --url https://backend.composio.dev/api/v1/actions/GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER \
+        --header 'X-API-Key: <x-api-key>'
+        ```
+        </CodeGroup>
+        </Step>
+
+
+    </Steps>
+
+
+
+    </Tab>
 </Tabs>
 
-Now, let's call our agent for this entity to perform the task on Github on behalf of the user.
-<Tabs>
-<Tab title="Python">
-<CodeGroup>
-```python execute agent
+### Next Suggested Reading
 
-my_task = "Star a repo composiohq/composio on GitHub"
-
-# Setup openai assistant
-assistant_instruction = "You are a super intelligent personal assistant"
-
-assistant = openai_client.beta.assistants.create(
-    name="Personal Assistant",
-    instructions=assistant_instruction,
-    model="gpt-4-turbo-preview",
-    tools=actions,  # type: ignore
-)
-
-
-# create a thread
-thread = openai_client.beta.threads.create()
-message = openai_client.beta.threads.messages.create(thread_id=thread.id,role="user",content=my_task)
-
-# Execute Agent with integrations
-run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=assistant.id)
-response_after_tool_calls = tool_set.wait_and_handle_assistant_tool_calls(
-    client=openai_client,
-    run=run,
-    thread=thread,
-)
-
-print(response_after_tool_calls)
-
-
-
-```
-</CodeGroup>
-
-</Tab>
-<Tab title="Javascript">
-<CodeGroup>
-```javascript Execute Agent
-import { OpenAIToolSet } from "composio-core";
-import { OpenAI } from "openai";
-import { config } from "process";
-
-const task = "Star a repo composiohq/composio on GitHub";
-const repo = "composio";
-const owner = "composiohq";
-
-const llm = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-const composioToolset = new OpenAIToolSet({
-    apiKey: process.env.COMPOSIO_API_KEY,
-    entityId: "Jessica",
-});
-
-const tools = await composioToolset.getTools({
-    apps: ["github"],
-});
-const assistantThread = await llm.beta.threads.create({
-    messages: [
-        {
-            role: "assistant",
-            content:
-                "You are an assistant tasked with starring a repository on GitHub.",
-        },
-    ],
-});
-
-const assistant = await llm.beta.assistants.create({
-    name: "SWE agent",
-    instructions: `Your goal is to star the repository: ComposioHq/composio`,
-    model: "gpt-4o",
-    tools: tools,
-});
-
-await llm.beta.threads.messages.create(assistantThread.id, {
-    role: "user",
-    content: task,
-});
-const stream = await llm.beta.threads.runs.createAndPoll(assistantThread.id, {
-    assistant_id: assistant.id,
-    instructions: `Repo is: ${repo} and your goal is to ${task}`,
-    tool_choice: "required",
-});
-
-await composioToolset.waitAndHandleAssistantToolCalls(
-    llm,
-    stream,
-    assistantThread,
-    "default",
-);
-```
-</CodeGroup>
-</Tab>
-
-<Tab title="Via API">
-<CodeGroup>
-```curl curl
-curl --request POST \
-  --url https://backend.composio.dev/api/v2/actions/GITHUB_STAR_A_REPO/execute \
-  --header 'Content-Type: application/json' \
-  --header 'X-API-Key: ADD YOUR API KEY HERE' \
-  --data '{
-  "entityId": "Jessica",
-  "input": {
-    "repo": "composio",
-    "owner": "composiohq"
-  }
-}'
-```
-</CodeGroup>
-</Tab>
-</Tabs>
-
-You can use the above pattern to make agents at a user level to perform tasks on their behalf.
+<Card
+  title="Complete Authentication Guide"
+  color="#7bee0c"
+  href="/patterns/Auth/"
+  icon="unlock"
+  iconType="duotone"
+>
+  Learn more about how Composio handles authentication for your users
+</Card>

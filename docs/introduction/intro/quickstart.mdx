@@ -18,15 +18,13 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
 
     <Step title="Install Composio">
                 <CodeGroup>
-                    ```bash Install Packages
+                    ```bash Python Install Packages
                     pip install composio_core composio_openai
 
                     composio login
                     ```
                 </CodeGroup>
-                <Note>
-                    CLI binary package coming soon. Skip `pip install` if not using CLI.
-                </Note>
+                
     </Step>
 
     <Step title="Authenticate GitHub Account">
@@ -42,11 +40,11 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
             </Tab>
             <Tab title="Python">
                 <CodeGroup>
-                    ```python Authenticate Jessica's GitHub Account
+                    ```python Authenticate GitHub Account
                     from composio import ComposioToolSet, App
 
-                    toolset = ComposioToolSet(entity_id="Jessica")
-                    entity = toolset.get_entity()
+                    toolset = ComposioToolSet()
+                    entity = toolset.get_entity() # Get your user
                     request = entity.initiate_connection(App.GITHUB)
 
                     print(f"Open this URL to authenticate: {request.redirectUrl}")
@@ -124,13 +122,10 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
 
                 <CodeGroup>
                     ```bash Install Packages
-                    npm install composio-core openai
-                    pip install composio_core  # for CLI (optional)
+                    npm install -g composio-core
+                    npm install openai
                     ```
                 </CodeGroup>
-                <Note>
-                    CLI binary package coming soon. Skip `pip install` if not using CLI.
-                </Note>
     </Step>
 
     <Step title="Authenticate GitHub Account">
@@ -148,14 +143,12 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
             </Tab>
             <Tab title="JavaScript">
                 <CodeGroup>
-                    ```javascript Authenticate Jessica's GitHub Account
+                    ```javascript Authenticate GitHub Account
                     import { Composio } from "composio-core";
 
-                    const client = new Composio(
-                    process.env.COMPOSIO_API_KEY
-                    );
+                    const client = new Composio();
 
-                    const entity = await client.getEntity("Jessica");
+                    const entity = await client.getEntity();
                     const connection = await entity.initiateConnection('github');
 
                     console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
@@ -178,13 +171,8 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                     import { OpenAI } from "openai";
                     import { OpenAIToolSet } from "composio-core";
 
-                    const openai_client = new OpenAI({
-                    apiKey: process.env.OPENAI_API_KEY
-                });
-
-                    const composio_toolset = new OpenAIToolSet({
-                    apiKey: process.env.COMPOSIO_API_KEY,
-                });
+                    const openai_client = new OpenAI();
+                    const composio_toolset = new OpenAIToolSet();
                     ```
                 </CodeGroup>
 
@@ -199,7 +187,7 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
 
                 <CodeGroup>
                     ```javascript Star a repo using LLM
-                    const tools = await composio_toolset.getActions({
+                    const tools = await composio_toolset.getTools({
                     actions: ["github_star_a_repository_for_the_authenticated_user"]
                 });
 

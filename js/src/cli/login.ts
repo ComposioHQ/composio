@@ -38,18 +38,18 @@ export default class LoginCommand {
       );
       return;
     }
-
-    const { data, error } = await client.cli.handleCliCodeExchange({});
-    if (!!error) {
+    try {
+      const { data } = await client.cli.handleCliCodeExchange({});
+      const cliKey = data?.key as string;
+      const loginUrl = `${FRONTEND_BASE_URL}?cliKey=${cliKey}`;
+  
+      this.displayLoginInstructions(loginUrl, options.browser);
+      const authCode = await this.promptForAuthCode();
+      await this.verifyAndSetupCli(cliKey, authCode, baseURL);
+    } catch (error) {
       console.log(chalk.red((error as any).message));
       return;
     }
-    const cliKey = data?.key as string;
-    const loginUrl = `${FRONTEND_BASE_URL}?cliKey=${cliKey}`;
-
-    this.displayLoginInstructions(loginUrl, options.browser);
-    const authCode = await this.promptForAuthCode();
-    await this.verifyAndSetupCli(cliKey, authCode, baseURL);
   }
 
   private displayLoginInstructions(url: string, openBrowser: boolean): void {
