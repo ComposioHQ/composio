@@ -7,7 +7,9 @@ from composio import App, Action, ComposioToolSet
 
 
 InputType = t.TypeVar("InputType")
-workspace_dir = "/Users/shrey/trial_repos/"
+workspace_dir = Path.home() / "swe-agent"
+if not workspace_dir.exists():
+    workspace_dir.mkdir(parents=True)
 composio_toolset = ComposioToolSet()
 
 def read_user_input(
@@ -58,26 +60,30 @@ def _create_github_issue_validator(owner: str, name: str) -> t.Callable[[str], s
 
 def set_workspace() -> t.Tuple[str, str, str]:
     """Take input from github."""
-    # owner, name = read_user_input(
-    #     prompt="Enter github repository name",
-    #     metavar="github repository name",
-    #     validator=_github_repository_name_validator,
-    # )
-    # owner, name = "pallets", "flask"
-    owner, name = "shreysingla11", "Aip-projecct"
+    owner, name = read_user_input(
+        prompt="Enter github repository name",
+        metavar="github repository name",
+        validator=_github_repository_name_validator,
+    )
 
-    # base_commit = read_user_input(
-    #     prompt="Enter base commit id, leave empty for default branch",
-    #     metavar="base commit id",
-    #     validator=lambda x: x,
-    # )
+    base_commit = read_user_input(
+        prompt="Enter base commit id, leave empty for default branch",
+        metavar="base commit id",
+        validator=lambda x: x,
+    )
 
-    # base_commit = "7ee9ceb71e868944a46e1ff00b506772a53a4f1d"
-    base_commit = ""
+    issue_description = read_user_input(
+        prompt="Enter github issue ID or description or path to the file containing description",
+        metavar="github issue",
+        validator=_create_github_issue_validator(
+            owner=owner,
+            name=name,
+        ),
+    )
 
     composio_toolset.execute_action(
         action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
-        params={"path": workspace_dir},
+        params={"path": str(workspace_dir)},
     )
 
     composio_toolset.execute_action(
@@ -90,15 +96,6 @@ def set_workspace() -> t.Tuple[str, str, str]:
     
     return (
         f"{owner}/{name}",
-        str(Path(workspace_dir) / name),
-        # read_user_input(
-        #     prompt="Enter github issue ID or description or path to the file containing description",
-        #     metavar="github issue",
-        #     validator=_create_github_issue_validator(
-        #         owner=owner,
-        #         name=name,
-        #     ),
-        # ),
-        # "Require a non-empty name for Blueprints Things do not work correctly if a Blueprint is given an empty name (e.g. #4944). It would be helpful if a `ValueError` was raised when trying to do that."
-        "In the file `code_base/classify_base_on_features.py`, improve the implementation of the 'classify_n_features' function."
+        str(workspace_dir / name),
+        issue_description,
     )

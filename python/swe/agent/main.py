@@ -3,6 +3,7 @@ from langchain_core.messages import HumanMessage
 import traceback
 import json
 from composio_langgraph import Action
+import uuid 
 
 from agent import get_agent_graph
 
@@ -27,7 +28,7 @@ def main() -> None:
     try:
         final_state = graph.invoke(
             {"messages": [HumanMessage(content=f"{issue} in the repo: {repo}")]},
-            {"recursion_limit": 50},
+            {"recursion_limit": 70},
         )
         print(final_state["messages"][-1].content)
     except Exception as e:
@@ -48,14 +49,16 @@ def main() -> None:
     else:
         print("No output available")
 
-    
-    #########
-    # Create a PR with the generated patch
-    #########
+    branch_name = "test-branch-" + str(uuid.uuid4())[:4]
 
     composio_toolset.execute_action(
         action=Action.SHELLTOOL_EXEC_COMMAND,
-        params={"cmd": "git checkout -b test-branch"},
+        params={"cmd": f"cd {repo_path}"},
+    )
+
+    composio_toolset.execute_action(
+        action=Action.SHELLTOOL_EXEC_COMMAND,
+        params={"cmd": f"git checkout -b {branch_name}"},
     )
 
     composio_toolset.execute_action(
@@ -65,7 +68,7 @@ def main() -> None:
 
     composio_toolset.execute_action(
         action=Action.SHELLTOOL_EXEC_COMMAND,
-        params={"cmd": "git push --set-upstream origin test-branch"},
+        params={"cmd": f"git push --set-upstream origin {branch_name}"},
     )
 
     composio_toolset.execute_action(
@@ -73,8 +76,9 @@ def main() -> None:
         params={
             "owner": owner,
             "repo": repo_name,
-            "head": "test-branch",
+            "head": branch_name,
             "base": "master",
+            "title": "Test-Title",
         },
     )  
 
