@@ -42,4 +42,27 @@ describe("Apps class tests", () => {
             expect(error).toBeDefined();
         }
     });
+
+    it("should get required params for a specific app", async () => {
+        const inputFields = await apps.getRequiredParams("shopify");
+
+        expect(inputFields).toHaveProperty('availableAuthSchemes');
+        expect(inputFields).toHaveProperty('authSchemes');
+
+        const OAUTH2_SCHEME = "OAUTH2";
+        expect(inputFields.availableAuthSchemes).toContain(OAUTH2_SCHEME);
+        expect(inputFields.authSchemes[OAUTH2_SCHEME].expected_from_user).toEqual(["client_id", "client_secret"]);
+        expect(inputFields.authSchemes[OAUTH2_SCHEME].optional_fields).toEqual(["scopes"]);
+        expect(inputFields.authSchemes[OAUTH2_SCHEME].required_fields).toEqual(["shop"]);
+    });
+
+    it("should get required params for a specific auth scheme", async () => {
+        const OAUTH2_SCHEME = "OAUTH2";
+        const requiredParams = await apps.getRequiredParamsForAuthScheme("shopify", OAUTH2_SCHEME);
+        expect(requiredParams).toEqual({
+            required_fields: ["shop"],
+            optional_fields: ["scopes"],
+            expected_from_user: ["client_id", "client_secret"]
+        });
+    });
 });

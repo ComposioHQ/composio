@@ -23,7 +23,7 @@ description: "Use Composio JS SDK with OpenAI to create a github issue creation 
     }}/>
 <Steps>
 <Step title="Get Composio API Key">
-Follow this [Get API Key](/patterns/howtos/get_api_key) to get your Composio API Key
+Follow this [Get API Key](/faq/api_key/api_key/) to get your Composio API Key
 </Step>
 <Step title="Install Dependencies">
 <CodeGroup>
@@ -75,7 +75,7 @@ async function executeAgent(repo,entityName="default") {
         const entity = toolset.client.getEntity(entityName)
         await setupUserConnectionIfNotExists(entity.id);
 
-        const tools = await toolset.getActions({ actions: ["github_issues_create"] }, entity.id);
+        const tools = await toolset.getTools({ actions: ["github_issues_create"] }, entity.id);
         const instruction = `Make an issue with sample title in the repo - ${repo}`
 
         const client = new OpenAI({ apiKey: OPEN_AI_API_KEY })
