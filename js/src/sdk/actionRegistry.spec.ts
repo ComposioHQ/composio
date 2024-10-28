@@ -37,12 +37,12 @@ describe("ActionRegistry", () => {
 
         const action = await actionRegistry.createAction(options);
 
-        expect(action.title).toBe("testAction");
-        expect(action.type).toBe("object");
-        expect(action.description).toBe("This is a test action");
-        expect(action.required).toEqual(["param1"]);
-        expect(action.properties).toHaveProperty("param1");
-        expect(action.properties).toHaveProperty("param2");
+        expect(action.parameters.title).toBe("testAction");
+        expect(action.parameters.type).toBe("object");
+        expect(action.parameters.description).toBe("This is a test action");
+        expect(action.parameters.required).toEqual(["param1"]);
+        expect(action.parameters.properties).toHaveProperty("param1");
+        expect(action.parameters.properties).toHaveProperty("param2");
     });
 
     it("should throw an error if callback is not a function", async () => {
@@ -124,7 +124,7 @@ describe("ActionRegistry", () => {
 
         const actions = await actionRegistry.getActions({actions: ["testAction"]});
         expect(actions.length).toBe(1);
-        expect(actions[0].properties).toHaveProperty("param1");
+        expect(actions[0].parameters.properties).toHaveProperty("param1");
     });
 
     it("should return an empty array if no actions match the names", async () => {
