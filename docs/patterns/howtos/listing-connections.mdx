@@ -5,89 +5,49 @@ icon: "user"
 description: "Managing and monitoring your connections is essential to show your users what integrations they have connected."
 ---
 
-### Listing All Connections
+### Listing All Connections for an Entity
 To view all the connections associated with your Composio account, use the following command:
-<Tabs>
-<Tab title="Python">
 <CodeGroup>
-```python List all connections via Python
-from composio import Composio
+```python Python Connections for a User
+from composio_openai import ComposioToolSet
 
-client = Composio()
+tool_set = ComposioToolSet()
 
-entity = composio_client.get_entity(id=USER_ID)
+entity = tool_set.get_entity(id="entity_id")
 
-print(composio_client.)
+print(entity.get_connections())
+```
 
-print(composio_client.connected_accounts.get())
+```javascript Javascript Connections for a User
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet({});
+
+const entity = await toolset.client.getEntity("default");
+
+console.log(await entity.getConnections());
 ```
 </CodeGroup>
-</Tab>
-<Tab title="CLI">
-<CodeGroup>
-```bash List all connections via CLI
-composio connections
-```
-</CodeGroup>
-</Tab>
-<Tab title="JS">
-```javascript javascript
-import { Composio } from "composio-core";
-
-const client = new Composio(
-  process.env.COMPOSIO_API_KEY
-);
-
-const connectedAccounts = await client.connectedAccounts.list();
-
-console.log(connectedAccounts)
-```
-</Tab>
-<Tab title="API">
-```curl API    
-COMING SOON
-```
-</Tab>
-</Tabs>
-
 
 ### Getting Connection Details
 To get detailed information about a specific connection, use the get command followed by the connection ID. For example, to get details of a connection with the ID 123, you would use:
 
-<Tabs>
-<Tab title="Python">
 <CodeGroup>
-```python Get connection details via Python
-from composio import Composio
+```python Python Get connection details
+from composio_openai import ComposioToolSet, App
 
-client = Composio()
+tool_set = ComposioToolSet()
 
-print(composio_client.connected_accounts.get(id=123))
+connected_account = tool_set.get_connected_account(id="connected_account_id")
 ```
-</CodeGroup>
-</Tab>
-<Tab title="CLI">
 
-<CodeGroup>
-```bash Get connection details via CLI
-composio connections get 123
-```
-</CodeGroup>
-</Tab>
-<Tab title="JS">
-```javascript javascript
+```javascript Javascript Get connection details
 import { Composio } from "composio-core";
+// get composio client
+const composio = new Composio();
 
-const client = new Composio(
-  process.env.COMPOSIO_API_KEY
-);
-
-const connectedAccount = await connectedAccounts.get({ connectedAccountId: `123` });
-
-console.log(connectedAccount)
+const connected_account = await composio.connectedAccounts.get({
+  connectedAccountId: "connected_account_id",
+});
 ```
-</Tab>
-<Tab title="API">
-Coming Soon! 
-</Tab>
-</Tabs>
+</CodeGroup>

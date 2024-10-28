@@ -49,7 +49,7 @@
   ],
   "topbarCtaButton": {
     "name": "Get your API Key",
-    "url": "https://app.composio.dev"
+    "url": "https://app.composio.dev/settings"
   },
   "topAnchor": {
     "name": "Documentation",
