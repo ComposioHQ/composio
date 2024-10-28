@@ -32,7 +32,7 @@ const tools = await toolset.getActions({actions: ['github_issues_create','github
 ```Python Python Selecting Actions
 use_case="Star a repo on github"
 
-action_enums=tool_set.find_actions_by_use_case(App.GITHUB,App.SLACK,use_case=use_case)
+action_enums=tool_set.find_actions_by_use_case(App.GITHUB,use_case=use_case)
 
 tools = tool_set.get_tools(actions=action_enums)
 
