@@ -37,7 +37,7 @@ def pop_thought_from_request(request: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     return request
 
 
-def get_agent_graph(repo_name: str, workspace_id: str):
+def get_agent_graph(repo_path: str, workspace_id: str):
 
     import random
     import string
@@ -67,10 +67,10 @@ def get_agent_graph(repo_name: str, workspace_id: str):
         )
 
     composio_toolset = ComposioToolSet(
-        workspace_config=WorkspaceType.Docker(),
+        workspace_config=WorkspaceType.Docker() if workspace_id else None,
         metadata={
             App.CODE_ANALYSIS_TOOL: {
-                "dir_to_index_path": f"/home/user/{repo_name}",
+                "dir_to_index_path": repo_path,
             }
         },
         processors={
@@ -86,7 +86,8 @@ def get_agent_graph(repo_name: str, workspace_id: str):
             },
         },
     )
-    composio_toolset.set_workspace_id(workspace_id)
+    if workspace_id:
+        composio_toolset.set_workspace_id(workspace_id)
 
     swe_tools = [
         *composio_toolset.get_actions(

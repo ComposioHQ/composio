@@ -305,7 +305,8 @@ def run_agent_function(
     """Run benchmark on the agent."""
 
     graph, composio_toolset, run_file = get_agent_graph(
-        repo_name=issue_config.repo_name.split("/")[-1], workspace_id=workspace_id
+        repo_path=os.path.join("/home/user/", issue_config.repo_name.split("/")[-1]),
+        workspace_id=workspace_id,
     )
 
     # get the git tree
