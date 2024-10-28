@@ -1,33 +1,31 @@
 ---
-title: "🔧 Custom Tools Using OpenAPI Spec"
-sidebarTitle: "OpenAPI Tools"
+title: "🔧 Adding Custom Tools"
+sidebarTitle: "Custom Tools"
 icon: "puzzle-piece"
 description: "Explore the process of creating custom tools with external Apps using OpenAPI Spec"
 ---
 
-Creating custom tools on Composio is straightforward and can be done via an [OpenAPI Spec](https://swagger.io/specification/). Here's a quick video on how you can add a custom integration to Composio using OpenAPI Spec.
+Creating custom tools on Composio is straightforward and can be done via an [OpenAPI Spec](https://swagger.io/specification/). 
 
 <Frame>
     <iframe
       width="560"
       height="315"
       src="https://www.youtube.com/embed/hTtyKpl6G2g?si=nl4g11C3J7GeGD1a"
-      title="YouTube video player"
+      title="Openapi spec import"
       frameborder="0"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       allowfullscreen
     ></iframe>
 </Frame>
 
-<br />
-
-Also, feel free to go through the below step by step guide on how to create a custom integration using OpenAPI Spec.
-
-
+### Step by Step Guide
 <Steps>
 
 <Step title="Create or get the OpenAPI Spec for the App">
-    The first step is to get the OpenAPI Spec for the app you want to integrate with Composio. If the app does not have an OpenAPI Spec, you can create one using the [Swagger Editor](https://editor.swagger.io/).
+    The first step is to get the OpenAPI Spec for the app you want to integrate with Composio. If the app does not have an OpenAPI Spec, you can create one using the [Swagger Editor](https://editor.swagger.io/). 
+    
+    Or you can keep it empty in case you are not interested in the actions and only need authentication.
 </Step>
 
 <Step title="Create the integrations.yaml File">
