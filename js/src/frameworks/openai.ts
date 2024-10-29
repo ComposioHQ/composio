@@ -36,38 +36,6 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         );
     }
 
-    /**
-     * @deprecated Use getTools instead.
-     */
-    async getActions(
-        filters: { actions?: Optional<Sequence<string>> } = {},
-        entityId?: Optional<string>
-    ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
-        const mainActions = await this.getActionsSchema(filters, entityId);
-        return mainActions.map((action: NonNullable<ActionsListResponseDTO["items"]>[0]) => {
-            const formattedSchema: OpenAI.FunctionDefinition = {
-                name: action.name!,
-                description: action.description!,
-                parameters: action.parameters!
-            };
-            const tool: OpenAI.ChatCompletionTool = {
-                type: "function",
-                function: formattedSchema
-            }
-            return tool;
-        }) || [];
-    }
-
-    /**
-     * @deprecated Use getTools instead.
-     */
-    async get_actions(filters: {
-        actions?: Optional<Sequence<string>>
-    } = {}, entityId?: Optional<string>): Promise<Sequence<OpenAI.ChatCompletionTool>> {
-        logger.warn("get_actions is deprecated, use getActions instead");
-        return this.getActions(filters, entityId);
-    }
-
     async getTools(
         filters: {
             actions?: Sequence<string>;
@@ -92,17 +60,6 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         }) || [];
     }
 
-    /**
-     * @deprecated Use getTools instead.
-     */
-    async get_tools(filters: {
-        apps: Sequence<string>;
-        tags?: Optional<Array<string>>;
-        useCase?: Optional<string>;
-    }, entityId?: Optional<string>): Promise<Sequence<OpenAI.ChatCompletionTool>> {
-        logger.warn("get_tools is deprecated, use getTools instead");
-        return this.getTools(filters, entityId);
-    }
 
     async executeToolCall(
         tool: OpenAI.ChatCompletionMessageToolCall,
@@ -115,16 +72,6 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         ));
     }
 
-    /**
-     * @deprecated Use executeToolCall instead.
-     */
-    async execute_tool_call(
-        tool: OpenAI.ChatCompletionMessageToolCall,
-        entityId: Optional<string> = null
-    ): Promise<string> {
-        logger.warn("execute_tool_call is deprecated, use executeToolCall instead");
-        return this.executeToolCall(tool, entityId);
-    }
 
     async handleToolCall(
         chatCompletion: OpenAI.ChatCompletion,
@@ -139,16 +86,6 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         return outputs;
     }
 
-    /**
-     * @deprecated Use handleToolCall instead.
-     */
-    async handle_tool_call(
-        chatCompletion: OpenAI.ChatCompletion,
-        entityId: Optional<string> = null
-    ): Promise<Sequence<string>> {
-        logger.warn("handle_tool_call is deprecated, use handleToolCall instead");
-        return this.handleToolCall(chatCompletion, entityId);
-    }
 
     async handleAssistantMessage(
         run: OpenAI.Beta.Threads.Run,
@@ -172,16 +109,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         return tool_outputs;
     }
 
-    /**
-     * @deprecated Use handleAssistantMessage instead.
-     */
-    async handle_assistant_message(
-        run: OpenAI.Beta.Threads.Run,
-        entityId: Optional<string> = null
-    ): Promise<Array<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput>> {
-        logger.warn("handle_assistant_message is deprecated, use handleAssistantMessage instead");
-        return this.handleAssistantMessage(run, entityId);
-    }
+
 
     async waitAndHandleAssistantToolCalls(
         client: OpenAI,
@@ -207,18 +135,5 @@ export class OpenAIToolSet extends BaseComposioToolSet {
             }
         }
         return run;
-    }
-
-    /**
-     * @deprecated Use waitAndHandleAssistantToolCalls instead.
-     */
-    async wait_and_handle_assistant_tool_calls(
-        client: OpenAI,
-        run: OpenAI.Beta.Threads.Run,
-        thread: OpenAI.Beta.Threads.Thread,
-        entityId: Optional<string> = null
-    ): Promise<OpenAI.Beta.Threads.Run> {
-        logger.warn("wait_and_handle_assistant_tool_calls is deprecated, use waitAndHandleAssistantToolCalls instead");
-        return this.waitAndHandleAssistantToolCalls(client, run, thread, entityId);
     }
 }
