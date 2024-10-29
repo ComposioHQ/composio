@@ -41,7 +41,7 @@ setup(
     description="Tools for running a SWE agent using Composio platform",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
-    url="https://github.com/SamparkAI/composio_sdk",
+    url="https://github.com/composiohq/composio",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",

@@ -18,7 +18,6 @@ from pathlib import Path
 
 import typing_extensions as te
 from pydantic import BaseModel
-from pydantic.v1.main import BaseModel as V1BaseModel
 
 from composio import Action, ActionType, App, AppType, TagType
 from composio.client import Composio, Entity
@@ -578,9 +577,6 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
         if isinstance(param, BaseModel):
             return param.model_dump_json(exclude_none=True)  # type: ignore
-
-        if isinstance(param, V1BaseModel):
-            return param.dict(exclude_none=True)  # type: ignore
 
         if isinstance(param, list):
             return [self._serialize_execute_params(p) for p in param]  # type: ignore

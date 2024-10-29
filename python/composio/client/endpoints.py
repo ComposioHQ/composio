@@ -56,13 +56,9 @@ class Endpoint:
         if len(queries) == 0:
             return self
 
-        endpoint = self.endpoint
-        endpoint += "?"
-        for key, value in queries.items():
-            endpoint += (
-                f"{urllib.parse.quote_plus(key)}={urllib.parse.quote_plus(value)}&"
-            )
-        return Endpoint(endpoint=endpoint[:-1])
+        return Endpoint(
+            urllib.parse.urljoin(self.endpoint, "?" + urllib.parse.urlencode(queries))
+        )
 
 
 class _V1(Endpoint):

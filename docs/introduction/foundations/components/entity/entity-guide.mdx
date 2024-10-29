@@ -1,6 +1,6 @@
 ---
-title: "🧑‍🤝‍🧑 Accounts/Users"
-sidebarTitle: "Accounts/Users"
+title: "🧑‍🤝‍🧑 Authentication"
+sidebarTitle: "Authentication"
 icon: "users"
 description: "Manage all the connected accounts of your Users"
 ---
@@ -14,12 +14,30 @@ description: "Manage all the connected accounts of your Users"
 - When a user connects their account, a `connected_account` object is created. 
 - This object securely stores **authentication data** such as **access tokens and refresh tokens**.
 
+### 🔐 Master Authentication in Minutes!
 
-<Note>
-For a complete guide on Authentication with Composio, click [here](/patterns/Auth/)
-</Note>
+<Card
+  title="Authentication Made Simple"
+  color="#7bee0c"
+  href="/patterns/Auth/"
+  icon="shield-check"
+  iconType="duotone"
+>
+  Unlock the full potential of Composio's secure authentication system - Perfect for both beginners and advanced users.
+</Card>
 
 ### Connecting an Account for your User
+
+Connecting a user account requires a few API calls to authenticate and authorize access. The process involves:
+
+1. **Fetch Required Parameters** - Get the authentication requirements for the chosen application
+2. **Collect User Input** - Gather the required parameters from your user interface
+3. **Create Connection** - Initialize a new connection with the collected parameters
+4. **Handle OAuth Flow** - For OAuth applications, redirect the user to complete authorization
+5. **Verify Status** - Check that the connection was successful
+
+The code snippets below demonstrate how to implement this flow in your application.
+
 <Steps>
 <Step title="Collect Parameters Required to create a Connection">
 To create a connected account for your user:
@@ -426,23 +444,28 @@ Here’s your modified documentation with three tabs (Python, JavaScript, and AP
         ```
         </CodeGroup>
         </Step>
-
-
     </Steps>
-
-
-
     </Tab>
 </Tabs>
 
-### Next Suggested Reading
+### Examples of Authentication Flows 
 
 <Card
-  title="Complete Authentication Guide"
+  title="OAuth Authentication"
   color="#7bee0c"
-  href="/patterns/Auth/"
-  icon="unlock"
+  href="/patterns/Auth/examples/gmail_example/"
+  icon="plug"
   iconType="duotone"
 >
-  Learn more about how Composio handles authentication for your users
+  Learn how to implement OAuth authentication in your application
+</Card>
+
+<Card
+  title="API Key Authentication"
+  color="#7bee0c"
+  href="/patterns/Auth/examples/shopify_example/"
+  icon="plug"
+  iconType="duotone"
+>
+  Learn how to implement API Key authentication in your application
 </Card>

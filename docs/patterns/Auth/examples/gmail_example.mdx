@@ -5,6 +5,11 @@ icon: "mailbox"
 description: "Here's how to connect your user to Gmail"
 ---
 
+1. **Fetching authentication parameters** - Gmail uses OAuth 2.0 for authentication and so no parameters are required upfront.
+2. **Collecting those parameters from the user** - No collection is required as no parameters are required upfront.
+3. **Initiating a connection** - Initiate a connection with the redirect URL. (No parameters are required to be sent in the body)
+4. **Handling the OAuth flow** - Redirect the user to the URL received in step 3.
+5. **Verifying the connection status** - Check that the connection was successful
 
 <Steps>
 <Step title="Fetching Authentication Parameters">
@@ -32,6 +37,14 @@ const response = await toolset.getExpectedParamsForUser({
 console.log(response);
 ```
 </CodeGroup>
+
+<Warning>
+Gmail uses OAuth 2.0 for authentication, which requires a redirect URL to handle the OAuth callback.
+</Warning>
+
+<Tip>
+While Gmail doesn't require any upfront parameters from the user, we'll demonstrate the parameter fetching step to show the complete flow.
+</Tip>
 
 ### Parameters to fetch from the user
 <CodeGroup>
@@ -134,7 +147,13 @@ const connectedAccount = await toolset.client.connectedAccounts.get({connectedAc
 </Step>
 </Steps>
 
-You have successfully **Connected Your User's Gmail Account**.
+<Tip>
+You can also see the [dashboard](https://app.composio.dev/connections?page=1&status=ALL) for the connection status. 
+</Tip>
+
+<Info>
+You have successfully **Connected Your User's Gmail Account**!! 🎉
+</Info>
 
 <br/>
 
