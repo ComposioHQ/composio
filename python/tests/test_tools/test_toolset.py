@@ -11,6 +11,7 @@ import pytest
 from composio import Action, App
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.tools.base.abs import action_registry, tool_registry
+from composio.tools.base.runtime import action as custom_action
 from composio.tools.toolset import ComposioToolSet
 
 from composio_langchain.toolset import ComposioToolSet as LangchainToolSet
@@ -265,3 +266,28 @@ def test_check_connected_accounts_flag() -> None:
                 check_connected_accounts=False,
             )
         mocked.assert_not_called()
+
+
+def test_get_action_schemas_description_for_runtime_tool() -> None:
+
+    @custom_action(toolname="runtime")
+    def some_action(name: str) -> str:
+        """
+        Some action
+
+        :param name: Name of the user
+        :return message: Message for user
+        """
+        return f"Hello, {name}"
+
+    (schema_0,) = ComposioToolSet().get_action_schemas(actions=[some_action])
+    assert (
+        schema_0.parameters.properties["name"]["description"]
+        == "Name of the user. Please provide a value of type string. This parameter is required."
+    )
+
+    (schema_1,) = ComposioToolSet().get_action_schemas(actions=[some_action])
+    assert (
+        schema_1.parameters.properties["name"]["description"]
+        == "Name of the user. Please provide a value of type string. This parameter is required."
+    )

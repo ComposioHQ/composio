@@ -1,4 +1,4 @@
-from composio import Action, App, Tag, Trigger, WorkspaceType
+from composio import Action, App, Tag, Trigger, WorkspaceType, action
 
 from composio_praisonai.toolset import ComposioToolSet
 
@@ -10,4 +10,5 @@ __all__ = (
     "Trigger",
     "ComposioToolSet",
     "WorkspaceType",
+    "action",
 )

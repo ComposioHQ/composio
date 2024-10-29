@@ -1,13 +1,15 @@
-"""CrewAI SWE Agent"""
+"""LangGraph SWE Agent"""
 
 import operator
+import traceback
 import typing as t
 from typing import Annotated, Literal, Sequence, TypedDict
 
 import dotenv
-from langchain_aws import BedrockChat
+from langchain_aws import ChatBedrock
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 from prompts import CODE_ANALYZER_PROMPT, EDITING_AGENT_PROMPT, SOFTWARE_ENGINEER_PROMPT
@@ -17,6 +19,8 @@ from composio_langgraph import Action, App, ComposioToolSet, WorkspaceType
 
 # Load environment variables from .env
 dotenv.load_dotenv()
+
+MODEL = "claude"
 
 
 def add_thought_to_request(request: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
@@ -34,18 +38,33 @@ def pop_thought_from_request(request: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
 
 
 def get_agent_graph(repo_name: str, workspace_id: str):
+
     import random
     import string
 
     random_string = "".join(random.choices(string.digits, k=6))
     run_file = f"messages_{random_string}.txt"
 
-    bedrock_client = BedrockChat(
-        credentials_profile_name="default",
-        model_id="anthropic.claude-3-5-sonnet-20240620-v1:0",
-        region_name="us-west-2",
-        model_kwargs={"temperature": 0, "max_tokens": 8192},
-    )
+    if MODEL == "claude":
+        client = ChatBedrock(
+            credentials_profile_name="default",
+            model_id="anthropic.claude-3-5-sonnet-20241022-v2:0",
+            region_name="us-west-2",
+            model_kwargs={"temperature": 0, "max_tokens": 8192},
+        )
+    elif MODEL == "gpt-4o":
+        client = ChatOpenAI(
+            model="gpt-4o",
+            temperature=0.1,
+            max_completion_tokens=8192,
+        )
+    else:
+        client = ChatBedrock(
+            credentials_profile_name="default",
+            model_id="arn:aws:bedrock:us-west-2:008971668139:inference-profile/us.meta.llama3-2-3b-instruct-v1:0",
+            model_kwargs={"temperature": 0},
+            provider="meta",
+        )
 
     composio_toolset = ComposioToolSet(
         workspace_config=WorkspaceType.Docker(),
@@ -72,7 +91,7 @@ def get_agent_graph(repo_name: str, workspace_id: str):
     swe_tools = [
         *composio_toolset.get_actions(
             actions=[
-                Action.FILETOOL_OPEN_FILE,
+                # Action.FILETOOL_OPEN_FILE,
                 Action.FILETOOL_GIT_REPO_TREE,
                 Action.FILETOOL_GIT_PATCH,
             ]
@@ -135,13 +154,15 @@ def get_agent_graph(repo_name: str, workspace_id: str):
                 return agent.invoke(state)
 
             # If last message is AI message, add a placeholder human message
-            if isinstance(state["messages"][-1], AIMessage):
+            if MODEL == "claude" and isinstance(state["messages"][-1], AIMessage):
                 state["messages"].append(HumanMessage(content="Placeholder message"))
 
             try:
                 result = invoke_with_retry(agent, state)
-            except Exception as e:
-                print(f"Failed to invoke agent after 3 attempts: {str(e)}")
+            except Exception:
+                print(
+                    f"Failed to invoke agent after 3 attempts: {traceback.format_exc()}"
+                )
                 result = AIMessage(
                     content="I apologize, but I encountered an error and couldn't complete the task. Please try again or rephrase your request.",
                     name=name,
@@ -178,7 +199,7 @@ def get_agent_graph(repo_name: str, workspace_id: str):
                 MessagesPlaceholder(variable_name="messages"),
             ]
         )
-        llm = bedrock_client
+        llm = client
         if tools:
             # return prompt | llm.bind_tools(tools)
             return prompt | llm.bind_tools(tools)
@@ -310,6 +331,7 @@ def get_agent_graph(repo_name: str, workspace_id: str):
             last_ai_message = messages[-1]
 
         if last_ai_message.tool_calls:
+            tool_name = last_ai_message.tool_calls[0]["name"]  # noqa: F841
             return "code_edit_tool"
         if "EDITING COMPLETED" in last_ai_message.content:
             return "done"

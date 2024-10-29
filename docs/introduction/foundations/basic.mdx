@@ -6,32 +6,23 @@ description: "Core Platform Modules"
 ---
 
 <CardGroup cols={2}>
-
-<Card color="#7bee0c" title="Entity" icon="users" href="./components/entity/entity-guide">
-Entity is the user who is using your app Jessica or Melissa
+<Card color="#7bee0c" title="User & Auth Guide" icon="users" href="/patterns/Auth/">
+Learn how to manage users and authentication, integrations! 
 </Card>
 
-<Card color="#7bee0c" title="Accounts" icon="plug" href="./components/">
-GitHub Connection Authorised for Jessica's account
+<Card color="#7bee0c" title="Actions Guide" icon="arrow-right" href="/patterns/actions/">
+Learn how to use, execute, process and even create actions! 
 </Card>
 
-
-<Card color="#7bee0c" title="Actions" icon="wand-magic-sparkles" href="./components/actions/action-guide-3">
-Send email via Gmail, Outlook, Sendgrid, etc
-</Card>
-
-<Card color="#7bee0c" title="Triggers" icon="webhook" href="./components/triggers/trigger-guide">
-Webhooks on New Github Issue, Pull Request
-</Card>
 
 </CardGroup>
 
 
 | Component         | Description                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 
-| Entity            | Entity represents the user and all accounts that belong to a specific user will have same entity id. &nbsp; [Learn More...](./components/entity/entity-guide) 
-| Accounts | Connections represent **link between your app and third-party platforms accounts of your user**. &nbsp; [Learn More...](./components/entity/entity-guide)
-| Tools             | Tools refer to the various applications or tools that can be integrated and used by your agents via Composio. &nbsp;
-| Actions           | Actions are tasks that can be performed by your agents. &nbsp; [Learn More...](./components/actions/action-guide-3)
-| Triggers          | Triggers are predefined conditions that, when met, initiate webhooks to your agents. &nbsp; [Learn More...](./components/triggers/trigger-guide)
-| Integrations      | Integrations are customisable configurations (settings) that are used while creating a new connected account. &nbsp; [Learn More...](./components/integrations/integration-guide) 
+| Entity            | **Entity represents your user (Jessica or John)** and all accounts that belong to a specific user will have same entity id. 
+| Accounts | Connections represent **link formed when your user connects their accounts (Github, Shopify, etc) to your app**. 
+| Tools             | **Tools refer to the applications** that can be **connected by your user**. 
+| Actions           | **Actions are tasks** on top of tools that you can perform using connections. (Send a mail using gmail tool) 
+| Triggers          | **Triggers are predefined conditions** that, when met, initiate webhooks to your agents. (When a mail is received in a gmail account send a webhook)
+| Integrations      | **Configuration objects that define how your application connects to external services**, including OAuth credentials, permission scopes, and API specifications. They serve as reusable templates for standardizing authentication flows.

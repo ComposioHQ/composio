@@ -9,7 +9,7 @@ export class ClientAuthService {
     /**
      * Identify client
      */
-    public static identifyClient<ThrowOnError extends boolean = false>(options?: Options<ClientAuthControllerIdentifyClientData, ThrowOnError>) {
+    public static identifyClient<ThrowOnError extends boolean = true>(options?: Options<ClientAuthControllerIdentifyClientData, ThrowOnError>) {
         return (options?.client ?? client).post<ClientAuthControllerIdentifyClientResponse, ClientAuthControllerIdentifyClientError, ThrowOnError>({
             ...options,
             url: '/api/v1/client/auth/identify'
@@ -19,7 +19,7 @@ export class ClientAuthService {
     /**
      * Track client
      */
-    public static trackClient<ThrowOnError extends boolean = false>(options?: Options<ClientAuthControllerTrackClientData, ThrowOnError>) {
+    public static trackClient<ThrowOnError extends boolean = true>(options?: Options<ClientAuthControllerTrackClientData, ThrowOnError>) {
         return (options?.client ?? client).post<ClientAuthControllerTrackClientResponse, ClientAuthControllerTrackClientError, ThrowOnError>({
             ...options,
             url: '/api/v1/client/auth/track'
@@ -29,7 +29,7 @@ export class ClientAuthService {
     /**
      * Send magic link
      */
-    public static sendMagicLink<ThrowOnError extends boolean = false>(options?: Options<ClientAuthControllerSendMagicLinkData, ThrowOnError>) {
+    public static sendMagicLink<ThrowOnError extends boolean = true>(options?: Options<ClientAuthControllerSendMagicLinkData, ThrowOnError>) {
         return (options?.client ?? client).post<ClientAuthControllerSendMagicLinkResponse, ClientAuthControllerSendMagicLinkError, ThrowOnError>({
             ...options,
             url: '/api/v1/client/auth/send_magic_link'
@@ -40,7 +40,7 @@ export class ClientAuthService {
      * Logout API
      * Logout the user and clear the server side session
      */
-    public static logout<ThrowOnError extends boolean = false>(options?: Options<unknown, ThrowOnError>) {
+    public static logout<ThrowOnError extends boolean = true>(options?: Options<unknown, ThrowOnError>) {
         return (options?.client ?? client).post<ClientAuthControllerLogoutResponse, ClientAuthControllerLogoutError, ThrowOnError>({
             ...options,
             url: '/api/v1/client/auth/logout'
@@ -50,7 +50,7 @@ export class ClientAuthService {
     /**
      * Verify magic link
      */
-    public static verifyMagicLink<ThrowOnError extends boolean = false>(options?: Options<ClientAuthControllerVerifyMagicLinkData, ThrowOnError>) {
+    public static verifyMagicLink<ThrowOnError extends boolean = true>(options?: Options<ClientAuthControllerVerifyMagicLinkData, ThrowOnError>) {
         return (options?.client ?? client).post<ClientAuthControllerVerifyMagicLinkResponse, ClientAuthControllerVerifyMagicLinkError, ThrowOnError>({
             ...options,
             url: '/api/v1/client/auth/verify_magic_link'
@@ -60,7 +60,7 @@ export class ClientAuthService {
     /**
      * Get user info
      */
-    public static getUserInfo<ThrowOnError extends boolean = false>(options?: Options<unknown, ThrowOnError>) {
+    public static getUserInfo<ThrowOnError extends boolean = true>(options?: Options<unknown, ThrowOnError>) {
         return (options?.client ?? client).get<ClientAuthControllerGetUserInfoResponse, ClientAuthControllerGetUserInfoError, ThrowOnError>({
             ...options,
             url: '/api/v1/client/auth/client_info'
@@ -70,7 +70,7 @@ export class ClientAuthService {
     /**
      * Pusher user auth
      */
-    public static pusherUserAuth<ThrowOnError extends boolean = false>(options?: Options<ClientAuthControllerPusherUserAuthData, ThrowOnError>) {
+    public static pusherUserAuth<ThrowOnError extends boolean = true>(options?: Options<ClientAuthControllerPusherUserAuthData, ThrowOnError>) {
         return (options?.client ?? client).post<ClientAuthControllerPusherUserAuthResponse, ClientAuthControllerPusherUserAuthError, ThrowOnError>({
             ...options,
             url: '/api/v1/client/auth/pusher_auth'
@@ -80,7 +80,7 @@ export class ClientAuthService {
     /**
      * Delete client
      */
-    public static deleteClient<ThrowOnError extends boolean = false>(options: Options<ClientAuthControllerDeleteClientData, ThrowOnError>) {
+    public static deleteClient<ThrowOnError extends boolean = true>(options: Options<ClientAuthControllerDeleteClientData, ThrowOnError>) {
         return (options?.client ?? client).delete<ClientAuthControllerDeleteClientResponse, ClientAuthControllerDeleteClientError, ThrowOnError>({
             ...options,
             url: '/api/v1/client/auth/delete/{clientId}'
@@ -93,7 +93,7 @@ export class TeamService {
     /**
      * Invite member
      */
-    public static inviteMember<ThrowOnError extends boolean = false>(options?: Options<TeamControllerInviteMemberData, ThrowOnError>) {
+    public static inviteMember<ThrowOnError extends boolean = true>(options?: Options<TeamControllerInviteMemberData, ThrowOnError>) {
         return (options?.client ?? client).post<TeamControllerInviteMemberResponse, TeamControllerInviteMemberError, ThrowOnError>({
             ...options,
             url: '/api/v1/team/invite'
@@ -103,7 +103,7 @@ export class TeamService {
     /**
      * List members
      */
-    public static listMembers<ThrowOnError extends boolean = false>(options?: Options<unknown, ThrowOnError>) {
+    public static listMembers<ThrowOnError extends boolean = true>(options?: Options<unknown, ThrowOnError>) {
         return (options?.client ?? client).get<TeamControllerListMembersResponse, TeamControllerListMembersError, ThrowOnError>({
             ...options,
             url: '/api/v1/team/members'
@@ -113,7 +113,7 @@ export class TeamService {
     /**
      * Remove member
      */
-    public static removeMember<ThrowOnError extends boolean = false>(options: Options<TeamControllerRemoveMemberData, ThrowOnError>) {
+    public static removeMember<ThrowOnError extends boolean = true>(options: Options<TeamControllerRemoveMemberData, ThrowOnError>) {
         return (options?.client ?? client).delete<TeamControllerRemoveMemberResponse, TeamControllerRemoveMemberError, ThrowOnError>({
             ...options,
             url: '/api/v1/team/members/{id}'
@@ -126,7 +126,7 @@ export class ApiKeysService {
     /**
      * Generate api key
      */
-    public static generateApiKey<ThrowOnError extends boolean = false>(options: Options<ApiKeysControllerGenerateApiKeyData, ThrowOnError>) {
+    public static generateApiKey<ThrowOnError extends boolean = true>(options: Options<ApiKeysControllerGenerateApiKeyData, ThrowOnError>) {
         return (options?.client ?? client).post<ApiKeysControllerGenerateApiKeyResponse, ApiKeysControllerGenerateApiKeyError, ThrowOnError>({
             ...options,
             url: '/api/v1/api_keys'
@@ -136,7 +136,7 @@ export class ApiKeysService {
     /**
      * List api keys
      */
-    public static listApiKeys<ThrowOnError extends boolean = false>(options?: Options<unknown, ThrowOnError>) {
+    public static listApiKeys<ThrowOnError extends boolean = true>(options?: Options<unknown, ThrowOnError>) {
         return (options?.client ?? client).get<ApiKeysControllerListApiKeysResponse, ApiKeysControllerListApiKeysError, ThrowOnError>({
             ...options,
             url: '/api/v1/api_keys'
@@ -146,7 +146,7 @@ export class ApiKeysService {
     /**
      * Delete api key
      */
-    public static deleteApiKey<ThrowOnError extends boolean = false>(options: Options<ApiKeysControllerDeleteApiKeyData, ThrowOnError>) {
+    public static deleteApiKey<ThrowOnError extends boolean = true>(options: Options<ApiKeysControllerDeleteApiKeyData, ThrowOnError>) {
         return (options?.client ?? client).delete<ApiKeysControllerDeleteApiKeyResponse, ApiKeysControllerDeleteApiKeyError, ThrowOnError>({
             ...options,
             url: '/api/v1/api_keys/{id}'
@@ -160,7 +160,7 @@ export class AppService {
      * Get apps
      * Retrieve a list of all applications based on query parameters.
      */
-    public static getApps<ThrowOnError extends boolean = false>(options?: Options<AppControllerGetAppsData, ThrowOnError>) {
+    public static getApps<ThrowOnError extends boolean = true>(options?: Options<AppControllerGetAppsData, ThrowOnError>) {
         return (options?.client ?? client).get<AppControllerGetAppsResponse, AppControllerGetAppsError, ThrowOnError>({
             ...options,
             url: '/api/v1/apps'
@@ -171,7 +171,7 @@ export class AppService {
      * Add open api spec
      * Add openapi spec tool
      */
-    public static addOpenApiSpec<ThrowOnError extends boolean = false>(options?: Options<AppControllerAddOpenApiSpecData, ThrowOnError>) {
+    public static addOpenApiSpec<ThrowOnError extends boolean = true>(options?: Options<AppControllerAddOpenApiSpecData, ThrowOnError>) {
         return (options?.client ?? client).post<AppControllerAddOpenApiSpecResponse, AppControllerAddOpenApiSpecError, ThrowOnError>({
             ...options,
             url: '/api/v1/apps/openapi/spec/add'
@@ -181,7 +181,7 @@ export class AppService {
     /**
      * Get opena api specs
      */
-    public static getOpenaApiSpecs<ThrowOnError extends boolean = false>(options?: Options<unknown, ThrowOnError>) {
+    public static getOpenaApiSpecs<ThrowOnError extends boolean = true>(options?: Options<unknown, ThrowOnError>) {
         return (options?.client ?? client).get<AppControllerGetOpenaApiSpecsResponse, AppControllerGetOpenaApiSpecsError, ThrowOnError>({
             ...options,
             url: '/api/v1/apps/openapi/spec/list'
@@ -191,7 +191,7 @@ export class AppService {
     /**
      * Delete open api spec tool
      */
-    public static deleteOpenApiSpecTool<ThrowOnError extends boolean = false>(options?: Options<AppControllerDeleteOpenApiSpecToolData, ThrowOnError>) {
+    public static deleteOpenApiSpecTool<ThrowOnError extends boolean = true>(options?: Options<AppControllerDeleteOpenApiSpecToolData, ThrowOnError>) {
         return (options?.client ?? client).delete<AppControllerDeleteOpenApiSpecToolResponse, AppControllerDeleteOpenApiSpecToolError, ThrowOnError>({
             ...options,
             url: '/api/v1/apps/openapi/spec/delete'
@@ -201,7 +201,7 @@ export class AppService {
     /**
      * Get open api spec logs
      */
-    public static getOpenApiSpecLogs<ThrowOnError extends boolean = false>(options: Options<AppControllerGetOpenApiSpecLogsData, ThrowOnError>) {
+    public static getOpenApiSpecLogs<ThrowOnError extends boolean = true>(options: Options<AppControllerGetOpenApiSpecLogsData, ThrowOnError>) {
         return (options?.client ?? client).get<AppControllerGetOpenApiSpecLogsResponse, AppControllerGetOpenApiSpecLogsError, ThrowOnError>({
             ...options,
             url: '/api/v1/apps/openapi/spec/logs/{name}'
@@ -211,7 +211,7 @@ export class AppService {
     /**
      * Add custom repo
      */
-    public static addCustomRepo<ThrowOnError extends boolean = false>(options?: Options<AppControllerAddCustomRepoData, ThrowOnError>) {
+    public static addCustomRepo<ThrowOnError extends boolean = true>(options?: Options<AppControllerAddCustomRepoData, ThrowOnError>) {
         return (options?.client ?? client).post<AppControllerAddCustomRepoResponse, AppControllerAddCustomRepoError, ThrowOnError>({
             ...options,
             url: '/api/v1/apps/custom-repo/add-repo'
@@ -222,7 +222,7 @@ export class AppService {
      * Get app
      * Get app details
      */
-    public static getApp<ThrowOnError extends boolean = false>(options: Options<AppControllerGetAppData, ThrowOnError>) {
+    public static getApp<ThrowOnError extends boolean = true>(options: Options<AppControllerGetAppData, ThrowOnError>) {
         return (options?.client ?? client).get<AppControllerGetAppResponse, AppControllerGetAppError, ThrowOnError>({
             ...options,
             url: '/api/v1/apps/{appName}'
@@ -233,7 +233,7 @@ export class AppService {
      * Sync apps
      * Sync custom repo
      */
-    public static syncApps<ThrowOnError extends boolean = false>(options?: Options<unknown, ThrowOnError>) {
+    public static syncApps<ThrowOnError extends boolean = true>(options?: Options<unknown, ThrowOnError>) {
         return (options?.client ?? client).post<AppControllerSyncAppsResponse, AppControllerSyncAppsError, ThrowOnError>({
             ...options,
             url: '/api/v1/apps/sync'
@@ -244,7 +244,7 @@ export class AppService {
      * Get custom repo
      * Get custom repo
      */
-    public static getCustomRepo<ThrowOnError extends boolean = false>(options?: Options<unknown, ThrowOnError>) {
+    public static getCustomRepo<ThrowOnError extends boolean = true>(options?: Options<unknown, ThrowOnError>) {
         return (options?.client ?? client).get<AppControllerGetCustomRepoResponse, AppControllerGetCustomRepoError, ThrowOnError>({
             ...options,
             url: '/api/v1/apps/custom-repo/get-repo'
@@ -257,7 +257,7 @@ export class AppConnectorService {
     /**
      * Create connector
      */
-    public static createConnector<ThrowOnError extends boolean = false>(options?: Options<AppConnectorControllerCreateConnectorData, ThrowOnError>) {
+    public static createConnector<ThrowOnError extends boolean = true>(options?: Options<AppConnectorControllerCreateConnectorData, ThrowOnError>) {
         return (options?.client ?? client).post<AppConnectorControllerCreateConnectorResponse, AppConnectorControllerCreateConnectorError, ThrowOnError>({
             ...options,
             url: '/api/v1/integrations'
@@ -267,7 +267,7 @@ export class AppConnectorService {
     /**
      * List global connectors
      */
-    public static listGlobalConnectors<ThrowOnError extends boolean = false>(options?: Options<unknown, ThrowOnError>) {
+    public static listGlobalConnectors<ThrowOnError extends boolean = true>(options?: Options<unknown, ThrowOnError>) {
         return (options?.client ?? client).get<AppConnectorControllerListGlobalConnectorsResponse, AppConnectorControllerListGlobalConnectorsError, ThrowOnError>({
             ...options,
             url: '/api/v1/integrations'
@@ -277,7 +277,7 @@ export class AppConnectorService {
     /**
      * Get connector info
      */
-    public static getConnectorInfo<ThrowOnError extends boolean = false>(options: Options<AppConnectorControllerGetConnectorInfoData, ThrowOnError>) {
+    public static getConnectorInfo<ThrowOnError extends boolean = true>(options: Options<AppConnectorControllerGetConnectorInfoData, ThrowOnError>) {
         return (options?.client ?? client).get<AppConnectorControllerGetConnectorInfoResponse, AppConnectorControllerGetConnectorInfoError, ThrowOnError>({
             ...options,
             url: '/api/v1/integrations/{integrationId}'
@@ -287,7 +287,7 @@ export class AppConnectorService {
     /**
      * Patch connector
      */
-    public static patchConnector<ThrowOnError extends boolean = false>(options: Options<AppConnectorControllerPatchConnectorData, ThrowOnError>) {
+    public static patchConnector<ThrowOnError extends boolean = true>(options: Options<AppConnectorControllerPatchConnectorData, ThrowOnError>) {
         return (options?.client ?? client).patch<AppConnectorControllerPatchConnectorResponse, AppConnectorControllerPatchConnectorError, ThrowOnError>({
             ...options,
             url: '/api/v1/integrations/{integrationId}'
@@ -297,7 +297,7 @@ export class AppConnectorService {
     /**
      * Delete connector
      */
-    public static deleteConnector<ThrowOnError extends boolean = false>(options: Options<AppConnectorControllerDeleteConnectorData, ThrowOnError>) {
+    public static deleteConnector<ThrowOnError extends boolean = true>(options: Options<AppConnectorControllerDeleteConnectorData, ThrowOnError>) {
         return (options?.client ?? client).delete<AppConnectorControllerDeleteConnectorResponse, AppConnectorControllerDeleteConnectorError, ThrowOnError>({
             ...options,
             url: '/api/v1/integrations/{integrationId}'
@@ -307,7 +307,7 @@ export class AppConnectorService {
     /**
      * Patch post connector
      */
-    public static patchPostConnector<ThrowOnError extends boolean = false>(options: Options<AppConnectorControllerPatchPostConnectorData, ThrowOnError>) {
+    public static patchPostConnector<ThrowOnError extends boolean = true>(options: Options<AppConnectorControllerPatchPostConnectorData, ThrowOnError>) {
         return (options?.client ?? client).post<AppConnectorControllerPatchPostConnectorResponse, AppConnectorControllerPatchPostConnectorError, ThrowOnError>({
             ...options,
             url: '/api/v1/integrations/{integrationId}/status'
@@ -320,7 +320,7 @@ export class ActionsControllerV1Service {
     /**
      * List actions
      */
-    public static v1ListActions<ThrowOnError extends boolean = false>(options?: Options<ActionsControllerV1ListActionsData, ThrowOnError>) {
+    public static v1ListActions<ThrowOnError extends boolean = true>(options?: Options<ActionsControllerV1ListActionsData, ThrowOnError>) {
         return (options?.client ?? client).get<ActionsControllerV1ListActionsResponse, ActionsControllerV1ListActionsError, ThrowOnError>({
             ...options,
             url: '/api/v1/actions'
@@ -330,7 +330,7 @@ export class ActionsControllerV1Service {
     /**
      * Execute action
      */
-    public static v1ExecuteAction<ThrowOnError extends boolean = false>(options: Options<ActionsControllerV1ExecuteActionData, ThrowOnError>) {
+    public static v1ExecuteAction<ThrowOnError extends boolean = true>(options: Options<ActionsControllerV1ExecuteActionData, ThrowOnError>) {
         return (options?.client ?? client).post<ActionsControllerV1ExecuteActionResponse, ActionsControllerV1ExecuteActionError, ThrowOnError>({
             ...options,
             url: '/api/v1/actions/{actionId}/execute'
@@ -340,7 +340,7 @@ export class ActionsControllerV1Service {
     /**
      * Execute action proxy
      */
-    public static v1ExecuteActionProxy<ThrowOnError extends boolean = false>(options?: Options<ActionsControllerV1ExecuteActionProxyData, ThrowOnError>) {
+    public static v1ExecuteActionProxy<ThrowOnError extends boolean = true>(options?: Options<ActionsControllerV1ExecuteActionProxyData, ThrowOnError>) {
         return (options?.client ?? client).post<ActionsControllerV1ExecuteActionProxyResponse, ActionsControllerV1ExecuteActionProxyError, ThrowOnError>({
             ...options,
             url: '/api/v1/actions/proxy'
@@ -350,7 +350,7 @@ export class ActionsControllerV1Service {
     /**
      * Get action
      */
-    public static v1GetAction<ThrowOnError extends boolean = false>(options: Options<ActionsControllerV1GetActionData, ThrowOnError>) {
+    public static v1GetAction<ThrowOnError extends boolean = true>(options: Options<ActionsControllerV1GetActionData, ThrowOnError>) {
         return (options?.client ?? client).get<ActionsControllerV1GetActionResponse, ActionsControllerV1GetActionError, ThrowOnError>({
             ...options,
             url: '/api/v1/actions/{actionId}'
@@ -363,7 +363,7 @@ export class ConnectionsService {
     /**
      * Get connections
      */
-    public static getConnections<ThrowOnError extends boolean = false>(options?: Options<ConnectionsControllerGetConnectionsData, ThrowOnError>) {
+    public static getConnections<ThrowOnError extends boolean = true>(options?: Options<ConnectionsControllerGetConnectionsData, ThrowOnError>) {
         return (options?.client ?? client).get<ConnectionsControllerGetConnectionsResponse, ConnectionsControllerGetConnectionsError, ThrowOnError>({
             ...options,
             url: '/api/v1/connectedAccounts'
@@ -373,7 +373,7 @@ export class ConnectionsService {
     /**
      * Initiate connection
      */
-    public static initiateConnection<ThrowOnError extends boolean = false>(options?: Options<ConnectionsControllerInitiateConnectionData, ThrowOnError>) {
+    public static initiateConnection<ThrowOnError extends boolean = true>(options?: Options<ConnectionsControllerInitiateConnectionData, ThrowOnError>) {
         return (options?.client ?? client).post<ConnectionsControllerInitiateConnectionResponse, ConnectionsControllerInitiateConnectionError, ThrowOnError>({
             ...options,
             url: '/api/v1/connectedAccounts'
@@ -383,7 +383,7 @@ export class ConnectionsService {
     /**
      * Get connection
      */
-    public static getConnection<ThrowOnError extends boolean = false>(options: Options<ConnectionsControllerGetConnectionData, ThrowOnError>) {
+    public static getConnection<ThrowOnError extends boolean = true>(options: Options<ConnectionsControllerGetConnectionData, ThrowOnError>) {
         return (options?.client ?? client).get<ConnectionsControllerGetConnectionResponse, ConnectionsControllerGetConnectionError, ThrowOnError>({
             ...options,
             url: '/api/v1/connectedAccounts/{connectedAccountId}'
@@ -393,7 +393,7 @@ export class ConnectionsService {
     /**
      * Get connection info
      */
-    public static getConnectionInfo<ThrowOnError extends boolean = false>(options: Options<GetConnectionInfoData, ThrowOnError>) {
+    public static getConnectionInfo<ThrowOnError extends boolean = true>(options: Options<GetConnectionInfoData, ThrowOnError>) {
         return (options?.client ?? client).get<GetConnectionInfoResponse, GetConnectionInfoError, ThrowOnError>({
             ...options,
             url: '/api/v1/connectedAccounts/{connectedAccountId}/info'
@@ -403,20 +403,20 @@ export class ConnectionsService {
     /**
      * Delete connection
      */
-    public static deleteConnection<ThrowOnError extends boolean = false>(options: Options<ConnectionsControllerDeleteConnectionData, ThrowOnError>) {
+    public static deleteConnection<ThrowOnError extends boolean = true>(options: Options<ConnectionsControllerDeleteConnectionData, ThrowOnError>) {
         return (options?.client ?? client).delete<ConnectionsControllerDeleteConnectionResponse, ConnectionsControllerDeleteConnectionError, ThrowOnError>({
             ...options,
             url: '/api/v1/connectedAccounts/{connectedAccountId}'
         });
     }
     
-    public static getAuthParams<ThrowOnError extends boolean = false>(options: Options<GetAuthParamsData, ThrowOnError>) {
+    public static getAuthParams<ThrowOnError extends boolean = true>(options: Options<GetAuthParamsData, ThrowOnError>) {
         return (options?.client ?? client).get<GetAuthParamsResponse, GetAuthParamsError, ThrowOnError>({
             ...options,
             url: '/api/v1/connectedAccounts/{connectedAccountId}/info'
         });
     }
-    public static disableConnection<ThrowOnError extends boolean = false>(options: Options<ConnectionsControllerDisableConnectionData, ThrowOnError>) {
+    public static disableConnection<ThrowOnError extends boolean = true>(options: Options<ConnectionsControllerDisableConnectionData, ThrowOnError>) {
         return (options?.client ?? client).post<ConnectionsControllerDisableConnectionResponse, ConnectionsControllerDisableConnectionError, ThrowOnError>({
             ...options,
             url: '/api/v1/connectedAccounts/{connectedAccountId}/disable'
@@ -426,7 +426,7 @@ export class ConnectionsService {
     /**
      * Enable connection
      */
-    public static enableConnection<ThrowOnError extends boolean = false>(options: Options<ConnectionsControllerEnableConnectionData, ThrowOnError>) {
+    public static enableConnection<ThrowOnError extends boolean = true>(options: Options<ConnectionsControllerEnableConnectionData, ThrowOnError>) {
         return (options?.client ?? client).post<ConnectionsControllerEnableConnectionResponse, ConnectionsControllerEnableConnectionError, ThrowOnError>({
             ...options,
             url: '/api/v1/connectedAccounts/{connectedAccountId}/enable'
@@ -439,7 +439,7 @@ export class AppLoginService {
     /**
      * Handle o auth 2 callback
      */
-    public static handleOauth2Callback<ThrowOnError extends boolean = false>(options: Options<AppLoginControllerHandleOauth2CallbackData, ThrowOnError>) {
+    public static handleOauth2Callback<ThrowOnError extends boolean = true>(options: Options<AppLoginControllerHandleOauth2CallbackData, ThrowOnError>) {
         return (options?.client ?? client).get<AppLoginControllerHandleOauth2CallbackResponse, AppLoginControllerHandleOauth2CallbackError, ThrowOnError>({
             ...options,
             url: '/api/v1/login/{appName}/auth'
@@ -449,7 +449,7 @@ export class AppLoginService {
     /**
      * Verify o auth 2 login
      */
-    public static verifyOauth2Login<ThrowOnError extends boolean = false>(options: Options<AppLoginControllerVerifyOauth2LoginData, ThrowOnError>) {
+    public static verifyOauth2Login<ThrowOnError extends boolean = true>(options: Options<AppLoginControllerVerifyOauth2LoginData, ThrowOnError>) {
         return (options?.client ?? client).get<AppLoginControllerVerifyOauth2LoginResponse, AppLoginControllerVerifyOauth2LoginError, ThrowOnError>({
             ...options,
             url: '/api/v1/login/{appName}/callback'
@@ -463,7 +463,7 @@ export class TriggersService {
      * List triggers
      * List triggers
      */
-    public static listTriggers<ThrowOnError extends boolean = false>(options?: Options<TriggersControllerListTriggersData, ThrowOnError>) {
+    public static listTriggers<ThrowOnError extends boolean = true>(options?: Options<TriggersControllerListTriggersData, ThrowOnError>) {
         return (options?.client ?? client).get<TriggersControllerListTriggersResponse, TriggersControllerListTriggersError, ThrowOnError>({
             ...options,
             url: '/api/v1/triggers'
@@ -473,7 +473,7 @@ export class TriggersService {
     /**
      * Handle trigger
      */
-    public static handleTrigger<ThrowOnError extends boolean = false>(options: Options<TriggersControllerHandleTriggerData, ThrowOnError>) {
+    public static handleTrigger<ThrowOnError extends boolean = true>(options: Options<TriggersControllerHandleTriggerData, ThrowOnError>) {
         return (options?.client ?? client).post<TriggersControllerHandleTriggerResponse, TriggersControllerHandleTriggerError, ThrowOnError>({
             ...options,
             url: '/api/v1/triggers/handle/{appName}/{clientId}'
@@ -484,7 +484,7 @@ export class TriggersService {
      * Enable trigger
      * Enables a trigger for a connected account and specific trigger name.
      */
-    public static enableTrigger<ThrowOnError extends boolean = false>(options: Options<TriggersControllerEnableTriggerData, ThrowOnError>) {
+    public static enableTrigger<ThrowOnError extends boolean = true>(options: Options<TriggersControllerEnableTriggerData, ThrowOnError>) {
         return (options?.client ?? client).post<TriggersControllerEnableTriggerResponse, TriggersControllerEnableTriggerError, ThrowOnError>({
             ...options,
             url: '/api/v1/triggers/enable/{connectedAccountId}/{triggerName}'
@@ -495,7 +495,7 @@ export class TriggersService {
      * Get trigger
      * Retrieves a specific trigger by its ID.
      */
-    public static getTrigger<ThrowOnError extends boolean = false>(options: Options<TriggersControllerGetTriggerData, ThrowOnError>) {
+    public static getTrigger<ThrowOnError extends boolean = true>(options: Options<TriggersControllerGetTriggerData, ThrowOnError>) {
         return (options?.client ?? client).get<TriggersControllerGetTriggerResponse, TriggersControllerGetTriggerError, ThrowOnError>({
             ...options,
             url: '/api/v1/triggers/get/{triggerId}'
@@ -506,7 +506,7 @@ export class TriggersService {
      * Get active triggers
      * Lists active triggers based on query parameters.
      */
-    public static getActiveTriggers<ThrowOnError extends boolean = false>(options?: Options<TriggersControllerGetActiveTriggersData, ThrowOnError>) {
+    public static getActiveTriggers<ThrowOnError extends boolean = true>(options?: Options<TriggersControllerGetActiveTriggersData, ThrowOnError>) {
         return (options?.client ?? client).get<TriggersControllerGetActiveTriggersResponse, TriggersControllerGetActiveTriggersError, ThrowOnError>({
             ...options,
             url: '/api/v1/triggers/active_triggers'
@@ -517,7 +517,7 @@ export class TriggersService {
      * Switch trigger instance status
      * Switches the status of a trigger instance.
      */
-    public static switchTriggerInstanceStatus<ThrowOnError extends boolean = false>(options: Options<TriggersControllerSwitchTriggerInstanceStatusData, ThrowOnError>) {
+    public static switchTriggerInstanceStatus<ThrowOnError extends boolean = true>(options: Options<TriggersControllerSwitchTriggerInstanceStatusData, ThrowOnError>) {
         return (options?.client ?? client).patch<TriggersControllerSwitchTriggerInstanceStatusResponse, TriggersControllerSwitchTriggerInstanceStatusError, ThrowOnError>({
             ...options,
             url: '/api/v1/triggers/instance/{triggerId}/status'
@@ -528,7 +528,7 @@ export class TriggersService {
      * Switch post trigger instance status
      * Switches the status of a trigger instance.
      */
-    public static switchPostTriggerInstanceStatus<ThrowOnError extends boolean = false>(options: Options<TriggersControllerSwitchPostTriggerInstanceStatusData, ThrowOnError>) {
+    public static switchPostTriggerInstanceStatus<ThrowOnError extends boolean = true>(options: Options<TriggersControllerSwitchPostTriggerInstanceStatusData, ThrowOnError>) {
         return (options?.client ?? client).post<TriggersControllerSwitchPostTriggerInstanceStatusResponse, TriggersControllerSwitchPostTriggerInstanceStatusError, ThrowOnError>({
             ...options,
             url: '/api/v1/triggers/instance/{triggerId}/status'
@@ -539,7 +539,7 @@ export class TriggersService {
      * Disable trigger
      * Disables a specified trigger instance.
      */
-    public static disableTrigger<ThrowOnError extends boolean = false>(options: Options<TriggersControllerDisableTriggerData, ThrowOnError>) {
+    public static disableTrigger<ThrowOnError extends boolean = true>(options: Options<TriggersControllerDisableTriggerData, ThrowOnError>) {
         return (options?.client ?? client).post<TriggersControllerDisableTriggerResponse, TriggersControllerDisableTriggerError, ThrowOnError>({
             ...options,
             url: '/api/v1/triggers/disable/{triggerId}'
@@ -550,7 +550,7 @@ export class TriggersService {
      * Delete trigger
      * Deletes a specified trigger instance.
      */
-    public static deleteTrigger<ThrowOnError extends boolean = false>(options: Options<TriggersControllerDeleteTriggerData, ThrowOnError>) {
+    public static deleteTrigger<ThrowOnError extends boolean = true>(options: Options<TriggersControllerDeleteTriggerData, ThrowOnError>) {
         return (options?.client ?? client).delete<TriggersControllerDeleteTriggerResponse, TriggersControllerDeleteTriggerError, ThrowOnError>({
             ...options,
             url: '/api/v1/triggers/instance/{triggerInstanceId}'
@@ -561,7 +561,7 @@ export class TriggersService {
      * Set callback url
      * Sets a universal callback URL for the client.
      */
-    public static setCallbackUrl<ThrowOnError extends boolean = false>(options?: Options<TriggersControllerSetCallbackUrlData, ThrowOnError>) {
+    public static setCallbackUrl<ThrowOnError extends boolean = true>(options?: Options<TriggersControllerSetCallbackUrlData, ThrowOnError>) {
         return (options?.client ?? client).post<TriggersControllerSetCallbackUrlResponse, TriggersControllerSetCallbackUrlError, ThrowOnError>({
             ...options,
             url: '/api/v1/triggers/setCallbackURL'
@@ -572,7 +572,7 @@ export class TriggersService {
      * Set callback url
      * Sets a universal callback URL for the client, ensuring it is updated in the system.
      */
-    public static setCallbackUrl1<ThrowOnError extends boolean = false>(options?: Options<TriggersControllerSetCallbackUrl1Data, ThrowOnError>) {
+    public static setCallbackUrl1<ThrowOnError extends boolean = true>(options?: Options<TriggersControllerSetCallbackUrl1Data, ThrowOnError>) {
         return (options?.client ?? client).post<TriggersControllerSetCallbackUrl1Response, TriggersControllerSetCallbackUrl1Error, ThrowOnError>({
             ...options,
             url: '/api/v1/triggers/set_callback_url'
@@ -583,7 +583,7 @@ export class TriggersService {
      * Get webhook url
      * Retrieves the universal callback URL set for the client.
      */
-    public static getWebhookUrl<ThrowOnError extends boolean = false>(options?: Options<unknown, ThrowOnError>) {
+    public static getWebhookUrl<ThrowOnError extends boolean = true>(options?: Options<unknown, ThrowOnError>) {
         return (options?.client ?? client).get<TriggersControllerGetWebhookUrlResponse, TriggersControllerGetWebhookUrlError, ThrowOnError>({
             ...options,
             url: '/api/v1/triggers/callback_url'
@@ -594,7 +594,7 @@ export class TriggersService {
      * Get logs
      * Fetches logs based on connection and integration details.
      */
-    public static getLogs<ThrowOnError extends boolean = false>(options?: Options<TriggersControllerGetLogsData, ThrowOnError>) {
+    public static getLogs<ThrowOnError extends boolean = true>(options?: Options<TriggersControllerGetLogsData, ThrowOnError>) {
         return (options?.client ?? client).get<TriggersControllerGetLogsResponse, TriggersControllerGetLogsError, ThrowOnError>({
             ...options,
             url: '/api/v1/triggers/logs'
@@ -604,7 +604,7 @@ export class TriggersService {
     /**
      * Handle pusher events
      */
-    public static handlePusherEvents<ThrowOnError extends boolean = false>(options?: Options<TriggersControllerHandlePusherEventsData, ThrowOnError>) {
+    public static handlePusherEvents<ThrowOnError extends boolean = true>(options?: Options<TriggersControllerHandlePusherEventsData, ThrowOnError>) {
         return (options?.client ?? client).post<TriggersControllerHandlePusherEventsResponse, TriggersControllerHandlePusherEventsError, ThrowOnError>({
             ...options,
             url: '/api/v1/triggers/pusher'
@@ -617,7 +617,7 @@ export class AdminService {
     /**
      * Sentry dns
      */
-    public static sentryDns<ThrowOnError extends boolean = false>(options?: Options<unknown, ThrowOnError>) {
+    public static sentryDns<ThrowOnError extends boolean = true>(options?: Options<unknown, ThrowOnError>) {
         return (options?.client ?? client).get<AdminControllerSentryDnsResponse, AdminControllerSentryDnsError, ThrowOnError>({
             ...options,
             url: '/api/v1/cli/sentry-dns'
@@ -630,7 +630,7 @@ export class CliService {
     /**
      * Handle cli code exchange
      */
-    public static handleCliCodeExchange<ThrowOnError extends boolean = false>(options?: Options<unknown, ThrowOnError>) {
+    public static handleCliCodeExchange<ThrowOnError extends boolean = true>(options?: Options<unknown, ThrowOnError>) {
         return (options?.client ?? client).get<CliControllerHandleCliCodeExchangeResponse, CliControllerHandleCliCodeExchangeError, ThrowOnError>({
             ...options,
             url: '/api/v1/cli/generate-cli-session'
@@ -640,7 +640,7 @@ export class CliService {
     /**
      * Get cli code
      */
-    public static getCliCode<ThrowOnError extends boolean = false>(options: Options<CliControllerGetCliCodeData, ThrowOnError>) {
+    public static getCliCode<ThrowOnError extends boolean = true>(options: Options<CliControllerGetCliCodeData, ThrowOnError>) {
         return (options?.client ?? client).get<CliControllerGetCliCodeResponse, CliControllerGetCliCodeError, ThrowOnError>({
             ...options,
             url: '/api/v1/cli/get-cli-code'
@@ -650,7 +650,7 @@ export class CliService {
     /**
      * Handle cli code verification
      */
-    public static handleCliCodeVerification<ThrowOnError extends boolean = false>(options: Options<CliControllerHandleCliCodeVerificationData, ThrowOnError>) {
+    public static handleCliCodeVerification<ThrowOnError extends boolean = true>(options: Options<CliControllerHandleCliCodeVerificationData, ThrowOnError>) {
         return (options?.client ?? client).get<CliControllerHandleCliCodeVerificationResponse, CliControllerHandleCliCodeVerificationError, ThrowOnError>({
             ...options,
             url: '/api/v1/cli/verify-cli-code'
@@ -663,7 +663,7 @@ export class MetadataService {
     /**
      * Get metadata
      */
-    public static getMetadata<ThrowOnError extends boolean = false>(options: Options<MetadataControllerGetMetadataData, ThrowOnError>) {
+    public static getMetadata<ThrowOnError extends boolean = true>(options: Options<MetadataControllerGetMetadataData, ThrowOnError>) {
         return (options?.client ?? client).get<MetadataControllerGetMetadataResponse, MetadataControllerGetMetadataError, ThrowOnError>({
             ...options,
             url: '/api/v1/metadata'
@@ -673,7 +673,7 @@ export class MetadataService {
     /**
      * Update metadata
      */
-    public static updateMetadata<ThrowOnError extends boolean = false>(options: Options<MetadataControllerUpdateMetadataData, ThrowOnError>) {
+    public static updateMetadata<ThrowOnError extends boolean = true>(options: Options<MetadataControllerUpdateMetadataData, ThrowOnError>) {
         return (options?.client ?? client).post<MetadataControllerUpdateMetadataResponse, MetadataControllerUpdateMetadataError, ThrowOnError>({
             ...options,
             url: '/api/v1/metadata'
@@ -683,7 +683,7 @@ export class MetadataService {
     /**
      * Toggle trigger state
      */
-    public static toggleTriggerState<ThrowOnError extends boolean = false>(options?: Options<MetadataControllerToggleTriggerStateData, ThrowOnError>) {
+    public static toggleTriggerState<ThrowOnError extends boolean = true>(options?: Options<MetadataControllerToggleTriggerStateData, ThrowOnError>) {
         return (options?.client ?? client).post<MetadataControllerToggleTriggerStateResponse, MetadataControllerToggleTriggerStateError, ThrowOnError>({
             ...options,
             url: '/api/v1/metadata/toggle/trigger'
@@ -693,7 +693,7 @@ export class MetadataService {
     /**
      * Get toggle info
      */
-    public static getToggleInfo<ThrowOnError extends boolean = false>(options?: Options<unknown, ThrowOnError>) {
+    public static getToggleInfo<ThrowOnError extends boolean = true>(options?: Options<unknown, ThrowOnError>) {
         return (options?.client ?? client).get<MetadataControllerGetToggleInfoResponse, MetadataControllerGetToggleInfoError, ThrowOnError>({
             ...options,
             url: '/api/v1/metadata/toggle.info'
@@ -707,7 +707,7 @@ export class LogsService {
      * Get logs
      * List logs
      */
-    public static getLogs<ThrowOnError extends boolean = false>(options?: Options<LogsControllerGetLogsData, ThrowOnError>) {
+    public static getLogs<ThrowOnError extends boolean = true>(options?: Options<LogsControllerGetLogsData, ThrowOnError>) {
         return (options?.client ?? client).get<LogsControllerGetLogsResponse, LogsControllerGetLogsError, ThrowOnError>({
             ...options,
             url: '/api/v1/logs/'
@@ -721,7 +721,7 @@ export class ActionsControllerV2Service {
      * List actions
      * Retrieve a list of all actions based on query parameters.
      */
-    public static v2ListActions<ThrowOnError extends boolean = false>(options?: Options<ActionsControllerV2ListActionsData, ThrowOnError>) {
+    public static v2ListActions<ThrowOnError extends boolean = true>(options?: Options<ActionsControllerV2ListActionsData, ThrowOnError>) {
         return (options?.client ?? client).get<ActionsControllerV2ListActionsResponse, ActionsControllerV2ListActionsError, ThrowOnError>({
             ...options,
             url: '/api/v2/actions'
@@ -732,7 +732,7 @@ export class ActionsControllerV2Service {
      * Execute action
      * Execute an action. Support both connected account and no auth auth.
      */
-    public static v2ExecuteAction<ThrowOnError extends boolean = false>(options: Options<ActionsControllerV2ExecuteActionData, ThrowOnError>) {
+    public static v2ExecuteAction<ThrowOnError extends boolean = true>(options: Options<ActionsControllerV2ExecuteActionData, ThrowOnError>) {
         return (options?.client ?? client).post<ActionsControllerV2ExecuteActionResponse, ActionsControllerV2ExecuteActionError, ThrowOnError>({
             ...options,
             url: '/api/v2/actions/{actionId}/execute'
@@ -743,7 +743,7 @@ export class ActionsControllerV2Service {
      * Execute action proxy
      * Execute an action with direct auth.
      */
-    public static v2ExecuteActionProxy<ThrowOnError extends boolean = false>(options?: Options<ActionsControllerV2ExecuteActionProxyData, ThrowOnError>) {
+    public static v2ExecuteActionProxy<ThrowOnError extends boolean = true>(options?: Options<ActionsControllerV2ExecuteActionProxyData, ThrowOnError>) {
         return (options?.client ?? client).post<ActionsControllerV2ExecuteActionProxyResponse, ActionsControllerV2ExecuteActionProxyError, ThrowOnError>({
             ...options,
             url: '/api/v2/actions/proxy'

@@ -7,40 +7,15 @@ import { getEnvVariable } from "../utils/shared";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
-import axios from "axios";
 import { AppConnectorControllerGetConnectorInfoResponse, ExecuteActionResDTO } from "./client/types.gen";
 import {  saveFile } from "./utils/fileUtils";
 import { convertReqParams, converReqParamForActionExecution } from "./utils";
+import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
+import z from 'zod';
+import { getUserDataJson } from "./utils/config";
+
 
 type GetListActionsResponse = any;
-class UserData {
-    apiKey: string | undefined;
-    constructor(public _path: string) {
-    }
-
-    init() {
-       try {
-            const module = require(this._path);
-            this.apiKey = module.apiKey;
-       } catch {
-            return false;
-       }
-    }
-
-    static load(_path: string) { 
-        return new UserData(_path);
-    }
-}
-
-const getUserPath = () => {
-    try{
-        const path = require("path");
-        return path.join(getEnvVariable("HOME", ""), ".composio", "userData.json");
-    } catch {
-       return null;
-    }
-    
-}
 
 export class ComposioToolSet {
     client: Composio;
@@ -51,6 +26,7 @@ export class ComposioToolSet {
     workspaceEnv: ExecEnv;
 
     localActions: IPythonActionDetails["data"] | undefined;
+    customActionRegistry: ActionRegistry;
 
     constructor(
         apiKey: string | null,
@@ -59,12 +35,13 @@ export class ComposioToolSet {
         entityId: string = "default",
         workspaceConfig: WorkspaceConfig = Workspace.Host()
     ) {  
-        const clientApiKey: string | undefined = apiKey || getEnvVariable("COMPOSIO_API_KEY") || UserData.load(getUserPath()).apiKey;
+        const clientApiKey: string | undefined = apiKey || getEnvVariable("COMPOSIO_API_KEY") || getUserDataJson().api_key;
         if (!clientApiKey) {
             throw new Error("API key is required, please pass it either by using `COMPOSIO_API_KEY` environment variable or during initialization");
         }
         this.apiKey = clientApiKey;
         this.client = new Composio(this.apiKey, baseUrl || undefined, runtime as string );
+        this.customActionRegistry = new ActionRegistry(this.client);
         this.runtime = runtime;
         this.entityId = entityId;
 
@@ -217,9 +194,18 @@ export class ComposioToolSet {
             }
         });
         const uniqueLocalActions = Array.from(localActionsMap.values());
+        const _newActions = filters.actions?.map((action: string) => action.toLowerCase());
+        const toolsWithCustomActions = (await this.customActionRegistry.getActions({ actions: _newActions!})).filter((action: any) => {
+            if (_newActions && !_newActions.includes(action.parameters.title.toLowerCase()!)) {
+                return false;
+            }
+            return true;
+        }).map((action: any) => {
+            return action;
+        });
 
-        const toolsActions = [...actions!, ...uniqueLocalActions];
-
+        const toolsActions = [...actions!, ...uniqueLocalActions, ...toolsWithCustomActions];
+        
         return toolsActions.map((action: any) => {
             return this.modifyActionForLocalExecution(action);
         });
@@ -260,7 +246,24 @@ export class ComposioToolSet {
             }
         }
         const uniqueLocalActions = Array.from(localActions.values());
-        const toolsActions = [...apps.items!, ...uniqueLocalActions];
+
+        const toolsWithCustomActions = (await this.customActionRegistry.getAllActions()).filter((action: any) => {
+            if (filters.actions && !filters.actions.some(actionName => actionName.toLowerCase() === action.metadata.actionName!.toLowerCase())) {
+                return false;
+            }
+            if (filters.apps && !filters.apps.some(appName => appName.toLowerCase() === action.metadata.toolName!.toLowerCase())) {
+                return false;
+            }
+            if (filters.tags && !filters.tags.some(tag => tag.toLocaleLowerCase() === "custom".toLocaleLowerCase())) {
+                return false;
+            }
+            return true;
+        }).map((action: any) => {
+            console.log("Action is", action);
+            return action.schema;
+        });
+
+        const toolsActions = [...apps.items!, ...uniqueLocalActions, ...toolsWithCustomActions];
         
         return toolsActions.map((action: any) => {
             return this.modifyActionForLocalExecution(action);
@@ -288,11 +291,26 @@ export class ComposioToolSet {
         return toolSchema;
     }
 
+    async createAction(options: CreateActionOptions) {
+        return this.customActionRegistry.createAction(options);
+    }
+
+    private isCustomAction(action: string) {
+        return this.customActionRegistry.getActions({ actions: [action] }).then((actions: any) => actions.length > 0);
+    }
+
     async executeAction(
         action: string,
         params: Record<string, any>,
-        entityId: string = "default"
+        entityId: string = "default",
+        nlaText: string = ""
     ): Promise<Record<string, any>> {
+        // Custom actions are always executed in the host/local environment for JS SDK
+        if(await this.isCustomAction(action)) {
+            return this.customActionRegistry.executeAction(action, params, {
+                entityId: entityId
+            });
+        }
         if(this.workspaceEnv && this.workspaceEnv !== ExecEnv.HOST) {
             const workspace = await this.workspace.get();
             return workspace.executeAction(action, params, {
@@ -300,7 +318,7 @@ export class ComposioToolSet {
             });
         }
         params = await converReqParamForActionExecution(params);
-        const data =  await this.client.getEntity(entityId).execute(action, params);
+        const data =  await this.client.getEntity(entityId).execute(action, params, nlaText);
 
         return this.processResponse(data,{
             action: action,
