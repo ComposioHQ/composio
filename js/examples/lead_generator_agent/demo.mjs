@@ -34,7 +34,7 @@ async function executeAgent(entityName) {
   const tools = await toolset.get_tools({ apps: ["exa","browserbase_tool","googlesheets"] }, entity.id);
   
   const businessName = 'Dan';
-  const leadDescription = 'tech bloggers like Dan Shipper';
+  const leadDescription = 'tech bloggers like Packy Mccormick';
   const spreadsheetid='14T4e0j1XsWjriQYeFMgkM2ihyvLAplPqB9q8hytytcw'
   // Generate text using the model and tools
   const output = await generateText({
