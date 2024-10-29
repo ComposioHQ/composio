@@ -11,6 +11,9 @@ type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
 
 export class OpenAIToolSet extends BaseComposioToolSet {
+    static FRAMEWORK_NAME = "openai";
+    static DEFAULT_ENTITY_ID = "default";
+
     /**
      * Composio toolset for OpenAI framework.
      *
@@ -30,8 +33,8 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         super(
             config.apiKey || null,
             config.baseUrl || COMPOSIO_BASE_URL,
-            "openai",
-            config.entityId || "default",
+            OpenAIToolSet.FRAMEWORK_NAME,
+            config.entityId || OpenAIToolSet.DEFAULT_ENTITY_ID,
             config.workspaceConfig || Workspace.Host()
         );
     }
