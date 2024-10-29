@@ -155,8 +155,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
         """
         Get a list of connected accounts
 
-        :param connection_id: ID of the connection to filter by
-        :return: Connected account
+        :return: List of Connected accounts
         """
 
     @t.overload  # type: ignore
