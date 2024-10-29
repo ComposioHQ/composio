@@ -21,30 +21,24 @@ Here's a list of local tools that Composio supports:
 <AccordionGroup>
 
 <Accordion title="Web Scraper">
-    <CardGroup cols={1}>
-        <Card title="Scrape Website Content" horizontal='true' >
-              <Accordion title="Code Snippet">
+        - Scrape Website Content
               <CodeGroup>
-                  ```python Python
-                    from composio import ComposioToolSet, App, Action
-                    toolset = ComposioToolSet()
-                    website_link="https://app.composio.dev"
-                    toolset.execute_action(
-                        action=Action.WEBTOOL_SCRAPE_WEBSITE_CONTENT,
-                        params={
-                            "website_url":website_link,
-                            },
-                    )
-                  ```
-                  ```javascript JS
-                COMING SOON
-
-                  ```
+              ```python Python
+              from composio import ComposioToolSet, App, Action
+              toolset = ComposioToolSet()
+              website_link="https://app.composio.dev"
+              toolset.execute_action(
+                  action=Action.WEBTOOL_SCRAPE_WEBSITE_CONTENT,
+                  params={
+                      "website_url":website_link,
+                      },
+              )
+              ```
+              ```javascript JS
+            COMING SOON
+              ```
               </CodeGroup>
-            </Accordion>
-        </Card>
-        <Card title="Scrape Website Element" horizontal='true' >
-              <Accordion title="Code Snippet">
+        - Scrape Website Element
               <CodeGroup>
                   ```python Python
                   from composio import ComposioToolSet, App, Action
@@ -61,19 +55,13 @@ Here's a list of local tools that Composio supports:
                   ```
                   ```javascript JS
                 COMING SOON
-
                   ```
               </CodeGroup>
-            </Accordion>
-        </Card>
-    </CardGroup>
      [Here's the Github Link to the tool](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/webtool)
 </Accordion>
 
 <Accordion title="Spider Crawler">
-    <CardGroup cols={1}>
-        <Card title="Scrape Website with Spider" horizontal='true' >
-              <Accordion title="Code Snippet">
+        - Scrape Website with Spider
               <CodeGroup>
                   ```python Python
                   from composio import ComposioToolSet, App, Action
@@ -88,13 +76,9 @@ Here's a list of local tools that Composio supports:
                   ```
                   ```javascript JS
                 COMING SOON
-
                   ```
               </CodeGroup>
-            </Accordion>
-        </Card>
-        <Card title="Crawl Website with Spider" horizontal='true' >
-              <Accordion title="Code Snippet">
+        - Crawl Website with Spider
               <CodeGroup>
                   ```python Python
                   from composio import ComposioToolSet, App, Action
@@ -109,19 +93,13 @@ Here's a list of local tools that Composio supports:
                   ```
                   ```javascript JS
                 COMING SOON
-
                   ```
               </CodeGroup>
-            </Accordion>
-        </Card>
-    </CardGroup>
     [Here's the Github link to the Tool](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/spidertool)
 </Accordion>
 
 <Accordion title="Browser Search - In Beta">
-    <CardGroup cols={1}>
-        <Card title="Click Element" horizontal='true'>
-              <Accordion title="Code Snippet">
+        - Click Element
                     <CodeGroup>
                         ```python Python
                         toolset = ComposioToolSet()
@@ -136,10 +114,7 @@ Here's a list of local tools that Composio supports:
                         COMING SOON
                         ```
                     </CodeGroup>
-            </Accordion>
-        </Card>
-        <Card title="Execute Script" horizontal='true' cols={1}>
-              <Accordion title="Code Snippet">
+        - Execute Script
               <CodeGroup>
                   ```python Python
                   toolset = ComposioToolSet()
@@ -154,10 +129,7 @@ Here's a list of local tools that Composio supports:
                 COMING SOON
                   ```
               </CodeGroup>
-            </Accordion>
-        </Card>
-        <Card title="Get Element Details" horizontal='true' >
-              <Accordion title="Code Snippet">
+        - Get Element Details
               <CodeGroup>
                   ```python Python
                   toolset = ComposioToolSet()
@@ -172,10 +144,7 @@ Here's a list of local tools that Composio supports:
                 COMING SOON
                   ```
               </CodeGroup>
-            </Accordion>
-        </Card>
-        <Card title="Get Screenshots" horizontal='true' >
-              <Accordion title="Code Snippet">
+        - Get Screenshots
               <CodeGroup>
                   ```python Python
                   toolset = ComposioToolSet()
@@ -190,10 +159,7 @@ Here's a list of local tools that Composio supports:
                 COMING SOON
                   ```
               </CodeGroup>
-            </Accordion>
-        </Card>
-        <Card title="Go to Page" horizontal='true' >
-              <Accordion title="Code Snippet">
+        - Go to Page
               <CodeGroup>
                   ```python Python
                   toolset = ComposioToolSet()
@@ -208,10 +174,7 @@ Here's a list of local tools that Composio supports:
                 COMING SOON
                   ```
               </CodeGroup>
-            </Accordion>
-        </Card>
-        <Card title="Navigate History" horizontal='true' >
-              <Accordion title="Code Snippet">
+        - Navigate History
               <CodeGroup>
                   ```python Python
                   toolset = ComposioToolSet()
@@ -226,10 +189,7 @@ Here's a list of local tools that Composio supports:
                 COMING SOON
                   ```
               </CodeGroup>
-            </Accordion>
-        </Card>
-        <Card title="Refresh Page" horizontal='true' >
-              <Accordion title="Code Snippet">
+        - Refresh Page
               <CodeGroup>
                   ```python Python
                   toolset = ComposioToolSet()
@@ -242,13 +202,9 @@ Here's a list of local tools that Composio supports:
                   ```
                   ```javascript JS
                 COMING SOON
-
                   ```
               </CodeGroup>
-            </Accordion>
-        </Card>
-        <Card title="Scroll Page" horizontal='true' >
-              <Accordion title="Code Snippet">
+        - Scroll Page
               <CodeGroup>
                   ```python Python
                   toolset = ComposioToolSet()
@@ -261,13 +217,8 @@ Here's a list of local tools that Composio supports:
                   ```
                   ```javascript JS
                 COMING SOON
-
                   ```
               </CodeGroup>
-            </Accordion>
-        </Card>
-
-    </CardGroup>
       [Here's the Github Link](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/browsertool)
 </Accordion>
 </AccordionGroup>
@@ -275,9 +226,7 @@ Here's a list of local tools that Composio supports:
 ## File Management
 <AccordionGroup>
 <Accordion title="File Manager Tool">
-    <CardGroup cols={1}>
-      <Card title="Create File" horizontal='true' >
-     <Accordion title="Code Snippet" >
+      - Create File
           <CodeGroup>
               ```python Python
             from composio import ComposioToolSet, App, Action
@@ -298,10 +247,7 @@ Here's a list of local tools that Composio supports:
           </CodeGroup>
           [Github Link to the Tool here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/filetool)
 
-      </Accordion>
-        </Card>
-        <Card title="Find Files" horizontal='true' >
-     <Accordion title="Code Snippet">
+      - Find Files
       <CodeGroup>
           ```python Python
           from composio import ComposioToolSet, App, Action
@@ -325,10 +271,7 @@ Here's a list of local tools that Composio supports:
       </CodeGroup>
       [Github Link to the Tool here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/filetool)
 
-      </Accordion>
-        </Card>
-        <Card title="Perform Git Operations" horizontal='true' >
-     <Accordion title="Code Snippet">
+      - Perform Git Operations
       <CodeGroup>
           ```python Python
           from composio import ComposioToolSet, App, Action
@@ -350,18 +293,10 @@ Here's a list of local tools that Composio supports:
 
           ```
       </CodeGroup>
-      </Accordion>
-        </Card>
-    </CardGroup>
-
       [Github Link to more Actions here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/filetool)
 </Accordion>
-
 <Accordion title="Shell Commands">
-  <CardGroup cols={1}>
-  <Card title="Execute Shell Commands" >
-
-      <Accordion title="Code Snippet">
+- Execute Shell Commands
       <CodeGroup>
           ```python Python
           toolset = ComposioToolSet()
@@ -379,9 +314,6 @@ Here's a list of local tools that Composio supports:
       </CodeGroup>
       [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/shelltool)
 
-      </Accordion>
-    </Card>
-  </CardGroup>
 
 </Accordion>
 </AccordionGroup>
@@ -389,10 +321,7 @@ Here's a list of local tools that Composio supports:
 ## Project Management
 <AccordionGroup>
 <Accordion title="ClickUp">
-  <CardGroup cols={1}>
-  <Card title="Create Tasks and Checklists" >
-
-      <Accordion title="Code Snippet">
+- Create Tasks and Checklists
       <CodeGroup>
           ```python Python
           toolset = ComposioToolSet()
@@ -410,11 +339,7 @@ Here's a list of local tools that Composio supports:
       </CodeGroup>
       
 
-      </Accordion>
-    </Card>
-      <Card title="Manage your Entire Workspace" >
-
-      <Accordion title="Code Snippet">
+- Manage your Entire Workspace
       <CodeGroup>
           ```python Python
           toolset = ComposioToolSet()
@@ -432,9 +357,6 @@ Here's a list of local tools that Composio supports:
       </CodeGroup>
       
 
-      </Accordion>
-    </Card>
-  </CardGroup>
     [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/clickup)
 
 </Accordion>
@@ -442,10 +364,7 @@ Here's a list of local tools that Composio supports:
 ## Code Assistance Tools
 <Accordion title="Greptile">
 
-  <CardGroup cols={1}>
-  <Card title="Understands your entire CodeBase" >
-
-      <Accordion title="Code Snippet">
+- Understands your entire CodeBase
       <CodeGroup>
           ```python Python
           from composio import ComposioToolSet, App, Action
@@ -467,19 +386,14 @@ Here's a list of local tools that Composio supports:
       </CodeGroup>
       
 
-      </Accordion>
-    </Card>
-  </CardGroup>
     [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/greptile)
 
 </Accordion>
 
 <Accordion title="SQL Tool">
 
-  <CardGroup cols={1}>
-  <Card title="Tool to Perform SQL operations on Database" >
+- Tool to Perform SQL operations on Database
 
-      <Accordion title="Code Snippet">
       <CodeGroup>
           ```python Python
             from composio import ComposioToolSet, App, Action
@@ -500,9 +414,6 @@ Here's a list of local tools that Composio supports:
       </CodeGroup>
       
 
-      </Accordion>
-    </Card>      
-  </CardGroup>
     [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/sqltool)
 
 </Accordion>
@@ -511,10 +422,8 @@ Here's a list of local tools that Composio supports:
 ## On Demand RAG Tools
 <AccordionGroup>
 <Accordion title="Create a RAG">
-  <CardGroup cols={1}>
-  <Card title="Add your text in a Vector Store" >
+- Add your text in a Vector Store
 
-      <Accordion title="Code Snippet">
       <CodeGroup>
           ```python Python
             from composio import ComposioToolSet, App, Action
@@ -537,12 +446,8 @@ Here's a list of local tools that Composio supports:
       </CodeGroup>
       
 
-      </Accordion>
-    </Card>      
 
-      <Card title="Query the Vector Store" >
-
-      <Accordion title="Code Snippet">
+- Query the Vector Store
       <CodeGroup>
           ```python Python
             from composio import ComposioToolSet, App, Action
@@ -559,18 +464,12 @@ Here's a list of local tools that Composio supports:
       </CodeGroup>
       
 
-      </Accordion>
-    </Card> 
-  </CardGroup>
     [Github Link to the Code here](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/ragtool)
 
 </Accordion>
 
 <Accordion title="Image Search with RAG">
-  <CardGroup cols={1}>
-  <Card title="Create image embeddings" >
-
-      <Accordion title="Code Snippet">
+- Create image embeddings
       <CodeGroup>
           ```python Python
           from composio import ComposioToolSet, App, Action
@@ -586,13 +485,7 @@ Here's a list of local tools that Composio supports:
           ```
       </CodeGroup>
       
-
-      </Accordion>
-    </Card>      
-
-      <Card title="Search for any Image by describing it" >
-
-      <Accordion title="Code Snippet">
+- Search for any Image by describing it
       <CodeGroup>
           ```python Python
           from composio import ComposioToolSet, App, Action
@@ -615,9 +508,6 @@ Here's a list of local tools that Composio supports:
       </CodeGroup>
       
 
-      </Accordion>
-    </Card> 
-  </CardGroup>
 
   [Github Link for the Tool](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local/embedtool)
 </Accordion>
