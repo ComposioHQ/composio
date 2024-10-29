@@ -153,7 +153,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
     @t.overload  # type: ignore
     def get(self) -> t.List[ConnectedAccountModel]:
         """
-        Get a list of connected accounts
+        Get all connected accounts
 
         :return: List of Connected accounts
         """
