@@ -15,6 +15,16 @@ description: "Guide to creating connections for multiple users"
 - If you have **two users, Jessica and Melissa**, they will each have **unique entity ids**.
 
 ### Connecting an Account for your User
+
+Connecting a user account requires a few API calls to authenticate and authorize access. The process involves:
+
+1. **Fetching Parameters to create a Connection** - Get the authentication requirements for the chosen application (API Key, Subdomain URL, Username etc.)
+2. **Collecting those parameters from the user** - Gather the required parameters from your user interface
+3. **Creating a Connection** - Initialize a new connection with the collected parameters
+4. **Handling OAuth Flow** - For OAuth applications, redirect the user to complete authorization
+5. **Verifying Connection Status** - Check that the connection was successful
+
+### Code Snippets for Connecting an Account
 <Steps>
 <Step title="Collect Parameters Required to create a Connection">
 To create a connected account for your user:

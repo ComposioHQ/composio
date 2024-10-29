@@ -58,11 +58,12 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
         </Warning>
 
     </Step>
-
     <Step title="Initialize Composio and OpenAI">
-        Set up your development environment
+    <Tip>
+        If you prefer using a different framework or LLM, you can explore our comprehensive list of 15+ supported frameworks and LLMs in our [frameworks documentation](/framework).
+    </Tip>
                 <CodeGroup>
-                    ```python Initialize Clients
+                    ```python Initialize Clients & Toolset
                     from composio_openai import ComposioToolSet, App
                     from openai import OpenAI
 
@@ -71,9 +72,9 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                     ```
                 </CodeGroup>
 
-        <Tip>
-            Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
-        </Tip>
+        <Note>
+            Don't forget to set your `OPENAI_API_KEY` in your environment variables.
+        </Note>
 
     </Step>
 
@@ -97,6 +98,9 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                     )
                     ```
                 </CodeGroup>
+                <Tip>
+                    Composio also supports action executions without LLMs or agents. [Learn more](/patterns/actions/).
+                </Tip>
     </Step>
 
     <Step title="Execute Tool Calls">
@@ -164,8 +168,9 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
     </Step>
 
     <Step title="Initialize Composio and OpenAI">
-        Set up your development environment:
-
+    <Tip>
+        If you prefer using a different framework or LLM, you can explore our comprehensive list of 15+ supported frameworks and LLMs in our [frameworks documentation](/framework).
+    </Tip>
                 <CodeGroup>
                     ```javascript Initialize Clients
                     import { OpenAI } from "openai";
@@ -175,11 +180,9 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                     const composio_toolset = new OpenAIToolSet();
                     ```
                 </CodeGroup>
-
-        <Tip>
-            Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
-        </Tip>
-
+        <Note>
+            Don't forget to set your `OPENAI_API_KEY` in your environment variables.
+        </Note>
     </Step>
 
     <Step title="Fetch GitHub Actions & Interact with LLM">
@@ -201,6 +204,9 @@ Turn natural language into GitHub actions in minutes. Follow these 5 steps to st
                 });
                     ```
                 </CodeGroup>
+                <Tip>
+                    Composio also supports action executions without LLMs or agents. [Learn more](/patterns/actions/).
+                </Tip>
     </Step>
 
     <Step title="Execute Tool Calls">
