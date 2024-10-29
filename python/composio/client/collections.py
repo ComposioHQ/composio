@@ -780,6 +780,9 @@ class Triggers(Collection[TriggerModel]):
         if client_id is None:
             raise ComposioClientError("Error fetching client ID")
 
+        print(
+            f"{client_id=} base_url={self.client.http.base_url} api_key={self.client.api_key}"
+        )
         pusher = _PusherClient(
             client_id=client_id,
             base_url=self.client.http.base_url,
