@@ -288,27 +288,6 @@ export class ComposioToolSet {
         return toolSchema;
     }
 
-
-    async getActions(
-        filters: {
-            actions?: Optional<Sequence<string>>
-        } = {},
-        entityId?: Optional<string>
-    ): Promise<any> {
-        throw new Error("Not implemented");
-    }
-
-    async getTools(
-        filters: {
-            apps: Sequence<string>;
-            tags?: Optional<Array<string>>;
-            useCase?: Optional<string>;
-        },
-        entityId?: Optional<string>
-    ): Promise<any> {
-        throw new Error("Not implemented");
-    }
-
     async executeAction(
         action: string,
         params: Record<string, any>,
