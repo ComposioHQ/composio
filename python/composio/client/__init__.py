@@ -1,5 +1,3 @@
-# fmt: off
-
 """
 Composio SDK client.
 """
@@ -63,7 +61,7 @@ class Composio(BaseClient):
         self,
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
-        runtime: t.Optional[str] = None
+        runtime: t.Optional[str] = None,
     ) -> None:
         """
         Initialize Composio SDK client
@@ -98,12 +96,10 @@ class Composio(BaseClient):
             cache_dir = Path.home() / LOCAL_CACHE_DIRECTORY_NAME
             user_data_path = cache_dir / USER_DATA_FILE_NAME
             user_data = (
-                UserData.load(path=user_data_path)
-                if user_data_path.exists() else None
+                UserData.load(path=user_data_path) if user_data_path.exists() else None
             )
             env_api_key = (
-                (user_data.api_key if user_data else None)
-                or os.environ.get(ENV_COMPOSIO_API_KEY)
+                user_data.api_key if user_data else os.environ.get(ENV_COMPOSIO_API_KEY)
             )
             if env_api_key:
                 self._api_key = env_api_key
@@ -262,7 +258,7 @@ class Entity:
                 entity_id=self.id,
                 session_id=session_id,
                 text=text,
-                auth=auth
+                auth=auth,
             )
 
         connected_account = self.get_connection(
@@ -277,7 +273,7 @@ class Entity:
             connected_account=connected_account.id,
             session_id=session_id,
             text=text,
-            auth=auth
+            auth=auth,
         )
 
     def get_connection(
