@@ -1,0 +1,309 @@
+---
+title: "🛠️ Listing all Branches in a Github Repository"
+sidebarTitle: "Example flow - Listing Github branches"
+icon: "id-badge"
+description: "Here's how to list all branches in a github repository"
+---
+- **Action IDs**: Every Action in our Tools is assigned a unique ID.
+- **Example Use Case**: We will illustrate how to use Action IDs to list all branches in a GitHub repository.
+
+<Steps>
+
+<Step title="Finding the Actions">
+<Tabs>
+<Tab title="Using the Dashboard">
+- Access the Tools Section
+Open the [dashboard](https://app.composio.dev) and select "Tools"
+
+- Select Your Tool
+Choose your desired tool (e.g., Github) from the tools list
+
+Filter actions using:
+- Search bar for keyword matching
+- Tags dropdown for category filtering
+- "Show only important ones" for commonly used actions
+
+Select "List branches" and click the "Enum" button to copy its Action ID.
+
+You can use the Action ID in the following manner:
+<CodeGroup>
+```python Python
+tools = toolset.get_tools(actions=[Action.GITHUB_LIST_BRANCHES])
+# can pass multiple actions
+```
+```javascript JavaScript
+const tools = await toolset.getActions({actions: ['github_issues_create','github_commit_event']});
+```
+</CodeGroup>
+</Tab>
+
+<Tab title="CLI">
+```shell shell
+composio actions --use-case 'list all branches' --app 'github'
+```
+
+**Output**
+```shell Output
+Showing all actions
+• GITHUB_LIST_BRANCHES (Action.GITHUB_LIST_BRANCHES)
+• GITHUB_LIST_BRANCHES_FOR_HEAD_COMMIT (Action.GITHUB_LIST_BRANCHES_FOR_HEAD_COMMIT)
+• GITHUB_LIST_DEPLOYMENT_BRANCH_POLICIES (Action.GITHUB_LIST_DEPLOYMENT_BRANCH_POLICIES)
+• GITHUB_GET_A_BRANCH (Action.GITHUB_GET_A_BRANCH)
+• GITHUB_GET_RULES_FOR_A_BRANCH (Action.GITHUB_GET_RULES_FOR_A_BRANCH)
+• GITHUB_GET_A_TREE (Action.GITHUB_GET_A_TREE)
+• GITHUB_LIST_FORKS (Action.GITHUB_LIST_FORKS)
+• GITHUB_GET_TEAMS_WITH_ACCESS_TO_THE_PROTECTED_BRANCH 
+(Action.GITHUB_GET_TEAMS_WITH_ACCESS_TO_THE_PROTECTED_BRANCH)
+• GITHUB_MERGE_A_BRANCH (Action.GITHUB_MERGE_A_BRANCH)
+• GITHUB_LIST_GIST_FORKS (Action.GITHUB_LIST_GIST_FORKS)
+Do you copy these actions as enums? (y, n): Do you copy these actions as enums? (y, n): y
+```
+</Tab>
+
+<Tab title="Python">
+```python Python
+from openai import OpenAI
+from composio_openai import ComposioToolSet, App
+openai_client = OpenAI()
+
+# Initialise the Composio Tool Set
+toolset = ComposioToolSet()
+use_case = "List all branches in Github"
+action_enums=toolset.find_actions_by_use_case(App.GITHUB,use_case=use_case)
+
+actions = toolset.get_tools(actions=action_enums)
+
+filtered_actionids = {func['function']['name']:func['function']['description'] for func in actions}
+
+for action_id in filtered_actionids.keys():
+    print("action id:", action_id)
+    print("description:", filtered_actionids[action_id])
+```
+</Tab>
+
+<Tab title="JavaScript">
+```javascript JavaScript
+import { LangchainToolSet } from "composio-core";
+
+const toolset = new LangchainToolSet({
+apiKey: process.env.COMPOSIO_API_KEY,
+entityId: "default"
+});
+const actionsList = await toolset.client.actions.list({
+    useCase: "List all branches in a github repo",
+    apps: "github"
+});
+
+const actions = await toolset.getTools({
+actions: actionsList.items.map((action) => {
+    return action.name;
+})
+})
+const actionids = actions.map(func => func.function.name);
+
+console.log(actionids);
+```
+</Tab>
+</Tabs>
+    <Info>
+    You can also filter actions through tags, they can be found in each tool page.
+    </Info>
+</Step>
+
+
+<Step title="Executing the Action with Agents">
+        <CodeGroup>
+        ```python Python
+        my_task = "List all the branches in the repo composiohq/composio"
+
+        assistant_instruction = "You are a super intelligent personal assistant"
+        assistant = openai_client.beta.assistants.create(
+        name="AI Assistant",
+        instructions=assistant_instruction,
+        model="gpt-4-turbo-preview",
+        tools=actions, # type: ignore
+        )
+
+        thread = openai_client.beta.threads.create()
+        message = openai_client.beta.threads.messages.create(thread_id=thread.id,role="user",content=my_task)
+        run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=assistant.id)
+        response_after_tool_calls = toolset.wait_and_handle_assistant_tool_calls(
+            client=openai_client,
+            run=run,
+            thread=thread,
+        )
+
+        print(response_after_tool_calls)
+        ```
+
+        ```javascript JavaScript
+        const my_task = "List all branches in the repo composiohq/composio";
+        const assistant_instruction = "You are a super intelligent personal assistant";
+
+
+        // Creating a chat completion request to the OpenAI model
+        const response = await openai_client.chat.completions.create({
+            model: "gpt-4-turbo",
+            messages: [{role:"assistant", content:assistant_instruction},{ role: "user", content: my_task }],
+            tools: actions,
+            tool_choice: "auto",
+        });
+
+        // Extracting tool calls from the response and logging them
+        var resp = response.choices[0].message.tool_calls 
+        console.log(resp);
+
+        // Handling the tool call using Composio ToolSet
+        const r = await toolset.handleToolCall(response);
+        console.log(r)
+        ```
+    </CodeGroup>
+</Step>
+
+<Step title="Full Code">
+<CodeGroup>
+```python Python
+from openai import OpenAI
+from composio_openai import ComposioToolSet, App
+openai_client = OpenAI()
+
+# Initialise the Composio Tool Set
+toolset = ComposioToolSet()
+use_case = "List all branches in Github"
+action_enums=toolset.find_actions_by_use_case(App.GITHUB,use_case=use_case)
+
+actions = toolset.get_tools(actions=action_enums)
+
+filtered_actionids = {func['function']['name']:func['function']['description'] for func in actions}
+
+for action_id in filtered_actionids.keys():
+    print("action id:", action_id)
+    print("description:", filtered_actionids[action_id])
+my_task = "List all the branches in the repo composiohq/composio"
+
+assistant_instruction = "You are a super intelligent personal assistant"
+assistant = openai_client.beta.assistants.create(
+name="AI Assistant",
+instructions=assistant_instruction,
+model="gpt-4-turbo-preview",
+tools=actions, # type: ignore
+)
+
+thread = openai_client.beta.threads.create()
+message = openai_client.beta.threads.messages.create(thread_id=thread.id,role="user",content=my_task)
+run = openai_client.beta.threads.runs.create(thread_id=thread.id,assistant_id=assistant.id)
+response_after_tool_calls = toolset.wait_and_handle_assistant_tool_calls(
+    client=openai_client,
+    run=run,
+    thread=thread,
+)
+
+print(response_after_tool_calls)
+```
+
+```javascript JavaScript
+import { LangchainToolSet } from "composio-core";
+
+const toolset = new LangchainToolSet({
+apiKey: process.env.COMPOSIO_API_KEY,
+entityId: "default"
+});
+
+const actionsList = await toolset.client.actions.list({
+    useCase: "List all branches in a github repo",
+    apps: "github"
+});
+
+const actions = await toolset.getTools({
+actions: actionsList.items.map((action) => {
+    return action.name;
+})
+})
+const actionids = actions.map(func => func.function.name);
+
+console.log(actionids);
+const my_task = "List all branches in the repo composiohq/composio";
+const assistant_instruction = "You are a super intelligent personal assistant";
+
+
+// Creating a chat completion request to the OpenAI model
+const response = await openai_client.chat.completions.create({
+    model: "gpt-4-turbo",
+    messages: [{role:"assistant", content:assistant_instruction},{ role: "user", content: my_task }],
+    tools: actions,
+    tool_choice: "auto",
+});
+
+// Extracting tool calls from the response and logging them
+var resp = response.choices[0].message.tool_calls 
+console.log(resp);
+
+// Handling the tool call using Composio ToolSet
+const r = await toolset.handleToolCall(response);
+console.log(r)
+```
+</CodeGroup>
+</Step>
+</Steps>
+
+   This is what the final output will look like: 
+    <CodeGroup>
+        ```shell Python Output
+    action id: GITHUB_LIST_BRANCHES
+    description: This API endpoint returns a repository's branch list, allows filtering by
+    protection status, supports pagination (30 results/page), and is detailed
+    in GitHub's documentation.
+    Executing `GITHUB_LIST_BRANCHES` with params={'owner': 'composiohq', 'repo': 'composio'} and metadata={} connected_account_id=None
+    Got response={'successful': True, 'data': {'details': [{'name': 'bump-js-to-0.1.13', 'commit': {'sha': 'f26dacb180dbfebdbd48bb9721c63cabd', 'url': 'https://api.github.com/repos/ComposioHQ/composio/com'},...
+    ```
+
+    ```javascript JavaScript Output
+    [
+    {
+        id: 'call_1vzNjGcacazfddUUb', //example id
+        type: 'function',
+        function: {
+        name: 'GITHUB_LIST_BRANCHES',
+        arguments: '{"owner":"composiohq","repo":"composio"}'
+        }
+    }
+    ]
+    ```
+    </CodeGroup>
+
+### Executing Action without Agents
+<CodeGroup>
+```python Python
+try:
+    response = toolset.execute_action(
+        action=Action.GITHUB_LIST_BRANCHES,
+        params={
+            "owner": "composiohq",  # Repository owner
+            "repo": "composio"      # Repository name
+        },
+        entity_id="Jessica"         
+    )
+except ActionExecutionError as e:
+    logger.error(f"Failed to list branches: {e}")
+    raise
+```
+
+```javascript Javascript
+try {
+    const response = await toolset.executeAction(
+        'GITHUB_LIST_BRANCHES', 
+        {
+            owner: "composiohq", 
+            repo: "composio"
+        },
+        "Jessica"
+    );
+    console.log('Branches retrieved:', response);
+} catch (error) {
+    console.error('Failed to list branches:', error.message);
+    throw error;
+}
+```
+</CodeGroup>
+
+ 
