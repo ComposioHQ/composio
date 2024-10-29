@@ -153,7 +153,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
     @t.overload  # type: ignore
     def get(self) -> t.List[ConnectedAccountModel]:
         """
-        Get an account by connection ID
+        Get a list of connected accounts
 
         :param connection_id: ID of the connection to filter by
         :return: Connected account
