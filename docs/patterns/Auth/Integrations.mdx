@@ -7,13 +7,16 @@ description: "What are Integrations, how to create them and use them to connect 
 
 ### What is an Integration? (Controlling the OAuth Experience)
 
-In Composio, Integration Object refer to configurations used when creating a new connection for a user.
+Integrations in Composio are configuration objects that define how your application connects to external services and APIs. Each integration encapsulates the authentication details, permissions, and API specifications needed to establish secure connections with services like GitHub, Slack, or HubSpot.
 
-<Note> (eg. Permissions to ask for when connecting an account, ClientID/Secret of custom developer app for OAuth) </Note>
+<Note>
+  Integrations include critical configuration like OAuth credentials (Client ID/Secret), required permissions scopes, and API endpoint specifications that determine how your users can interact with the external service.
+</Note>
 
-For example 
-- Create an integration for GitHub with OAuth authentication and "Repo Read" permission.
-- Use this integration when users connect their GitHub accounts to ensure consistent, limited access.
+For example:
+- When you create a GitHub integration, you specify OAuth authentication parameters and permission scopes like "repo:read"
+- This integration then serves as a reusable template - any user connecting their GitHub account through this integration will have the same standardized access level and authentication flow
+- This ensures consistent and secure access patterns across your entire user base
 
 ### Creating an Integration
 

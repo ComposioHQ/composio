@@ -5,6 +5,10 @@ icon: "bars"
 description: "Guide to getting your user's Shopify account connected using API Key"
 ---
 
+1. **Fetching authentication parameters** - Shopify requires an admin API access token and store subdomain for authentication.
+2. **Collecting those parameters from the user** - Collect the admin API access token and store subdomain from your user.
+3. **Initiating a connection** - Create a connection with the collected parameters.
+4. **Verifying the connection status** - Check that the connection was successful by verifying the status.
 
 <Steps>
 <Step title="Fetching Authentication Parameters">
@@ -202,7 +206,13 @@ const connectedAccount = await toolset.client.connectedAccounts.get({connectedAc
 
 You have successfully **Connected Your User's Shopify Account**.
 
-<br/>
+<Tip>
+You can also see the [dashboard](https://app.composio.dev/connections?page=1&status=ALL) for the connection status. 
+</Tip>
+
+<Info>
+You have successfully **Connected Your User's Shopify Account**!! 🎉
+</Info>
 
 <Card
   title="Next: Guide to Connecting Gmail Account (OAUTH)"
