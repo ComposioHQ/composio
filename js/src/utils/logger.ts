@@ -4,7 +4,7 @@ const levels = {
   error: 'ERROR',
   warn: 'WARN',
   info: 'INFO',
-  debug: 'DEBUG'
+  debug: 'DEBUG',
 };
 
 const colors = {
@@ -12,23 +12,13 @@ const colors = {
   yellow: (str: string) => `\x1b[33m${str}\x1b[0m`,
   blue: (str: string) => `\x1b[34m${str}\x1b[0m`,
   green: (str: string) => `\x1b[32m${str}\x1b[0m`,
-  gray: (str: string) => `\x1b[90m${str}\x1b[0m`
+  gray: (str: string) => `\x1b[90m${str}\x1b[0m`,
 };
 
-const colorize = (level: string, timestamp: string) => {
-  switch (level) {
-    case 'error':
-      return { level: colors.red(levels[level]), timestamp: colors.gray(timestamp) };
-    case 'warn':
-      return { level: colors.yellow(levels[level]), timestamp: colors.gray(timestamp) };
-    case 'info':
-      return { level: colors.blue(levels[level]), timestamp: colors.gray(timestamp) };
-    case 'debug':
-      return { level: colors.green(levels[level]), timestamp: colors.gray(timestamp) };
-    default:
-      return { level, timestamp };
-  }
-};
+const colorize = (level: string, timestamp: string) => ({
+  level: colors[level] ? colors[level](levels[level]) : level,
+  timestamp: colors.gray(timestamp),
+});
 
 const logger = {
   level: getEnvVariable("COMPOSIO_DEBUG", "0") === "1" ? 'debug' : 'info',
@@ -41,7 +31,7 @@ const logger = {
   error: (message: string, meta?: any) => logger.log('error', message, meta),
   warn: (message: string, meta?: any) => logger.log('warn', message, meta),
   info: (message: string, meta?: any) => logger.log('info', message, meta),
-  debug: (message: string, meta?: any) => logger.log('debug', message, meta)
+  debug: (message: string, meta?: any) => logger.log('debug', message, meta),
 };
 
 export default logger;
