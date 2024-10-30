@@ -4,7 +4,6 @@ from inspect import Signature
 
 import pydantic
 import pydantic.error_wrappers
-import pydantic.v1.error_wrappers
 import typing_extensions as te
 from langchain_core.tools import StructuredTool as BaseStructuredTool
 
@@ -22,10 +21,7 @@ class StructuredTool(BaseStructuredTool):
     def run(self, *args, **kwargs):
         try:
             return super().run(*args, **kwargs)
-        except (
-            pydantic.ValidationError,
-            pydantic.v1.error_wrappers.ValidationError,
-        ) as e:
+        except pydantic.ValidationError as e:
             return {"successful": False, "error": parse_pydantic_error(e), "data": None}
 
 
@@ -64,7 +60,7 @@ class ComposioToolSet(
         tools = composio_toolset.get_tools(apps=[App.GITHUB])
 
         # Define task
-        task = "Star a repo SamparkAI/docs on GitHub"
+        task = "Star a repo composiohq/docs on GitHub"
 
         # Define agent
         agent = create_openai_functions_agent(openai_client, tools, prompt)
@@ -157,6 +153,7 @@ class ComposioToolSet(
         entity_id: t.Optional[str] = None,
         *,
         processors: t.Optional[ProcessorsType] = None,
+        check_connected_accounts: bool = True,
     ) -> t.Sequence[StructuredTool]:
         """
         Get composio tools wrapped as Langchain StructuredTool objects.
@@ -178,5 +175,10 @@ class ComposioToolSet(
                 ),
                 entity_id=entity_id or self.entity_id,
             )
-            for tool in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
+            for tool in self.get_action_schemas(
+                actions=actions,
+                apps=apps,
+                tags=tags,
+                check_connected_accounts=check_connected_accounts,
+            )
         ]
