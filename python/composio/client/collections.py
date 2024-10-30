@@ -151,7 +151,15 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
     endpoint = v1 / "connectedAccounts"
 
     @t.overload  # type: ignore
-    def get(self, connection_id: t.Optional[str] = None) -> ConnectedAccountModel:
+    def get(self) -> t.List[ConnectedAccountModel]:
+        """
+        Get all connected accounts
+
+        :return: List of Connected accounts
+        """
+
+    @t.overload  # type: ignore
+    def get(self, connection_id: str) -> ConnectedAccountModel:
         """
         Get an account by connection ID
 
