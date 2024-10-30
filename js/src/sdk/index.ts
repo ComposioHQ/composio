@@ -159,8 +159,8 @@ export class Composio {
         }
 
         const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
-
-        if(appInfo.testConnectors?.length! > 0) {
+        const hasRelevantTestConnectors = params.authScheme ? appInfo.testConnectors?.filter((connector: any) => connector.authScheme === params.authScheme)?.length! > 0 : appInfo.testConnectors?.length! > 0;
+        if(hasRelevantTestConnectors) {
             integration = await this.integrations.create({
                 appId: appInfo.appId,
                 name: `integration_${timestamp}`,
