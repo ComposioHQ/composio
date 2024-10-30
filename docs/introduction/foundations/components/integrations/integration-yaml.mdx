@@ -49,7 +49,12 @@ The `integration.yaml` file typically includes the following key sections:
        - `default_scopes`: Default OAuth scopes
        - `scope_separator`: Character used to separate scopes
      - For API Key:
-       
+       ```yaml
+       proxy:
+         base_url: "{{base_url}}"
+         headers:
+           Authorization: "{{api_key}}"
+       ```
      - For Basic Auth:
        `username` and `password` fields are required. You can use them in the proxy/header section directly like:
        ```yaml
