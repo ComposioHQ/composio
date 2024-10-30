@@ -1,44 +1,27 @@
 import { describe, it, expect, beforeAll } from "@jest/globals";
-import { CloudflareToolSet } from "./cloudflare";
-import { get } from "http";
-import { getTestConfig } from "../../config/getTestConfig";
-import { LangchainToolSet } from "./langchain";
 import { OpenAIToolSet } from "./openai";
-
+import { getTestConfig } from "../../config/getTestConfig";
 
 describe("Apps class tests", () => {
-
     let openAIToolset: OpenAIToolSet;
+
     beforeAll(() => {
-        openAIToolset = new OpenAIToolSet({
-            apiKey: getTestConfig().COMPOSIO_API_KEY,
-            baseUrl: getTestConfig().BACKEND_HERMES_URL
-        });
+        const { COMPOSIO_API_KEY, BACKEND_HERMES_URL } = getTestConfig();
+        openAIToolset = new OpenAIToolSet({ apiKey: COMPOSIO_API_KEY, baseUrl: BACKEND_HERMES_URL });
     });
 
-    it("get tools", async () => {
-        const tools = await openAIToolset.getTools({
-            apps: ['github']
-        });
-
+    it("should return an array of tools for 'github' app", async () => {
+        const tools = await openAIToolset.getTools({ apps: ['github'] });
         expect(tools).toBeInstanceOf(Array);
-
     });
 
-    it("check if tools are coming", async () => {
-        const tools = await openAIToolset.getTools({
-            actions: ['GITHUB_GITHUB_API_ROOT']
-        });
-
-        expect(Object.keys(tools).length).toBe(1);
+    it("should return tools for 'GITHUB_GITHUB_API_ROOT' action", async () => {
+        const tools = await openAIToolset.getTools({ actions: ['GITHUB_GITHUB_API_ROOT'] });
+        expect(Object.keys(tools)).toHaveLength(1);
     });
 
-    it("check if getTools -> actions are coming", async () => {
-        const tools = await openAIToolset.getTools({
-            actions: ['GITHUB_GITHUB_API_ROOT']
-        });
-
-        expect(Object.keys(tools).length).toBe(1);
+    it("should check if actions are coming from getTools", async () => {
+        const tools = await openAIToolset.getTools({ actions: ['GITHUB_GITHUB_API_ROOT'] });
+        expect(Object.keys(tools)).toHaveLength(1);
     });
-
 });
