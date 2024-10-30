@@ -110,7 +110,7 @@ auth_schemes:
         default: {{add the api endpoint URL of the app}}
 
   # BASIC
-  - scheme_name: app_name_basic
+  - name: app_name_basic
     auth_mode: BASIC
     proxy:
       base_url: {{add the api_endpoint_url}}
@@ -153,7 +153,7 @@ You can refer to below snippets of the each auth method to see how these fields 
       <Accordion title="OAuth1">
 
       ```yaml
-        - scheme_name: tool_name_oauth1
+        - name: tool_name_oauth1
           auth_mode: OAUTH1
           request_url:
           authorization_url: 
@@ -178,7 +178,7 @@ You can refer to below snippets of the each auth method to see how these fields 
         </ Accordion>
       <Accordion title="OAuth2">
       ```yaml
-        - scheme_name: tool_name_oauth2
+        - name: tool_name_oauth2
           auth_mode: OAUTH2
           authorization_url: 
           token_url:
@@ -201,7 +201,7 @@ You can refer to below snippets of the each auth method to see how these fields 
         </ Accordion>
       <Accordion title="API-KEY">
       ```yaml
-        - scheme_name: app_name_api_key
+        - name: app_name_api_key
           auth_mode: API_KEY
           proxy:
             base_url: "{{base_url}}"
@@ -225,7 +225,7 @@ You can refer to below snippets of the each auth method to see how these fields 
         </ Accordion>
       <Accordion title="BASIC">
       ```yaml
-        - scheme_name: app_name_basic
+        - name: app_name_basic
           auth_mode: BASIC
           proxy:
             base_url: {{add the api_endpoint_url}}
@@ -263,7 +263,7 @@ logo: https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png
 categories: ["developer tools", "version control"]
 
 auth_schemes:
-  - scheme_name: github_oauth2
+  - name: github_oauth2
     auth_mode: OAUTH2
     authorization_url: "https://github.com/login/oauth/authorize"
     token_url: "https://github.com/login/oauth/access_token"
