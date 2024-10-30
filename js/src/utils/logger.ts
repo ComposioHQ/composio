@@ -16,7 +16,7 @@ const colors = {
 };
 
 const colorize = (level: string, timestamp: string) => ({
-  level: colors[level] ? colors[level](levels[level]) : level,
+  level: { error: colors.red, warn: colors.yellow, info: colors.blue, debug: colors.green }[level](levels[level]),
   timestamp: colors.gray(timestamp),
 });
 
