@@ -20,7 +20,6 @@ describe("Apps class tests", () => {
         expect(Object.keys(tools)).toHaveLength(1);
     });
 
-    it("should check if actions are coming from getTools", async () => {
         const tools = await openAIToolset.getTools({ actions: ['GITHUB_GITHUB_API_ROOT'] });
         expect(Object.keys(tools)).toHaveLength(1);
     });
