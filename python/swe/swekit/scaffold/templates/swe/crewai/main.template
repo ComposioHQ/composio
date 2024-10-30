@@ -2,7 +2,7 @@ from inputs import from_github
 import uuid
 from agent import composio_toolset, crew
 from composio import Action
-
+from tools import create_pr
 
 def main() -> None:
     """Run the agent."""
@@ -37,7 +37,7 @@ def main() -> None:
             params={"cmd": command},
         )
     composio_toolset.execute_action(
-        action=Action.GITHUB_CREATE_A_PULL_REQUEST,
+        action=create_pr,
         params={
             "owner": owner,
             "repo": repo_name,
