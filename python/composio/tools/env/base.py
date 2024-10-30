@@ -308,7 +308,6 @@ class RemoteWorkspace(Workspace):
 
         response = request.json()
         if response["error"] is not None:
-            breakpoint()
             raise ComposioSDKError(
                 f"Error installing dependencies: {response['error']}"
             )

@@ -62,20 +62,20 @@ class TextEditor(LocalAction[TextEditorRequest, TextEditorResponse]):
         metadata: t.Dict,
     ) -> TextEditorResponse:
         try:
-            return self._execute(request, metadata)
+            return self._execute(request)
         except Exception as e:
             return TextEditorResponse(output="", error=str(e))
 
-    def _execute(
-        self, request: TextEditorRequest, metadata: t.Dict
-    ) -> TextEditorResponse:
+    def _execute(self, request: TextEditorRequest) -> TextEditorResponse:
         cmd = request.command.value
         file_manager = self.filemanagers.get(request.file_manager_id)
         if cmd == "view":
             return self.view(file_manager, request.file_path, request.view_range)
-        elif cmd == "create":
+
+        if cmd == "create":
             return self.create(file_manager, request.file_path, request.file_text)
-        elif cmd == "str_replace":
+
+        if cmd == "str_replace":
             if request.old_str is None or request.new_str is None:
                 raise ExecutionFailed(
                     "old_str and new_str are required for str_replace command"
@@ -83,7 +83,8 @@ class TextEditor(LocalAction[TextEditorRequest, TextEditorResponse]):
             return self.str_replace(
                 file_manager, request.file_path, request.old_str, request.new_str
             )
-        elif cmd == "insert":
+
+        if cmd == "insert":
             if request.insert_line is None or request.new_str is None:
                 raise ExecutionFailed(
                     "insert_line and new_str are required for insert command"
@@ -91,10 +92,11 @@ class TextEditor(LocalAction[TextEditorRequest, TextEditorResponse]):
             return self.insert(
                 file_manager, request.file_path, request.insert_line, request.new_str
             )
-        elif cmd == "undo_edit":
+
+        if cmd == "undo_edit":
             return self.undo_edit(file_manager, request.file_path)
-        else:
-            raise ExecutionFailed(f"Unknown command: {cmd}")
+
+        raise ExecutionFailed(f"Unknown command: {cmd}")
 
     def view(
         self,
@@ -152,8 +154,8 @@ class TextEditor(LocalAction[TextEditorRequest, TextEditorResponse]):
     def _get_file(self, file_manager: FileManager, file_path: str) -> File:
         try:
             return file_manager.open(file_path)
-        except FileNotFoundError:
-            raise ExecutionFailed(f"File not found: {file_path}")
+        except FileNotFoundError as e:
+            raise ExecutionFailed(f"File not found: {file_path}") from e
 
     def _get_content(
         self, file: File, view_range: t.Optional[t.List[int]]

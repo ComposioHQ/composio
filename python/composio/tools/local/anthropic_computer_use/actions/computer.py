@@ -1,9 +1,11 @@
 import base64
 import platform
+import re
 import shlex
 import shutil
 import subprocess
 import time
+import typing as t
 from enum import Enum
 from pathlib import Path
 from typing import Dict, TypedDict
@@ -50,11 +52,11 @@ class ComputerRequest(BaseModel):
         ...,
         description="The action to perform on the computer",
     )
-    text: str | None = Field(
+    text: t.Optional[str] = Field(
         default=None,
         description="Text to type or key sequence to press",
     )
-    coordinate: tuple[int, int] | None = Field(
+    coordinate: t.Optional[tuple[int, int]] = Field(
         default=None,
         description="X,Y coordinates for mouse actions",
     )
@@ -65,7 +67,7 @@ class ComputerResponse(BaseModel):
         ...,
         description="Result after executing the action",
     )
-    base64_image: str | None = Field(
+    base64_image: t.Optional[str] = Field(
         None,
         description="Base64 encoded screenshot if applicable",
     )
@@ -113,7 +115,6 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
             x, y = self.scale_coordinates(ScalingSource.API, *request.coordinate)
             if act == "mouse_move":
                 cmd = self._get_mouse_move_cmd(x, y)
-
             else:
                 current_x, current_y = self.get_mouse_position()
                 cmd = self._get_mouse_drag_cmd(int(current_x), int(current_y), x, y)
@@ -124,7 +125,7 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
                 base64_image=result.base64_image,
             )
 
-        elif act in ("key", "type"):
+        if act in ("key", "type"):
             if request.text is None:
                 raise ExecutionFailed(message=f"Text is required for {act}")
 
@@ -142,18 +143,17 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
                 cmd = self._get_key_press_cmd(key_sequence)
                 return self.shell(cmd)
 
-            else:
-                results = []
-                for chunk in self.chunks(request.text, self._typing_group_size):
-                    cmd = f"{self.mouse_tool} -w {self._typing_delay_ms} t:{shlex.quote(chunk)}"
-                    results.append(self.shell(cmd, take_screenshot=False))
+            results = []
+            for chunk in self.chunks(request.text, self._typing_group_size):
+                cmd = f"{self.mouse_tool} -w {self._typing_delay_ms} t:{shlex.quote(chunk)}"
+                results.append(self.shell(cmd, take_screenshot=False))
 
-                return ComputerResponse(
-                    response_data="".join(r.response_data or "" for r in results),
-                    base64_image=self.screenshot().base64_image,
-                )
+            return ComputerResponse(
+                response_data="".join(r.response_data or "" for r in results),
+                base64_image=self.screenshot().base64_image,
+            )
 
-        elif act in (
+        if act in (
             "left_click",
             "right_click",
             "double_click",
@@ -177,7 +177,7 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
                     base64_image=result.base64_image,
                 )
 
-            elif act == "cursor_position":
+            if act == "cursor_position":
                 x, y = self.get_mouse_position()
                 x, y = self.scale_coordinates(ScalingSource.COMPUTER, int(x), int(y))
                 return ComputerResponse(
@@ -185,13 +185,12 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
                     base64_image=None,
                 )
 
-            else:
-                cmd = self._get_click_cmd(act)
-                result = self.shell(cmd)
-                return ComputerResponse(
-                    response_data=result.response_data or "",
-                    base64_image=result.base64_image,
-                )
+            cmd = self._get_click_cmd(act)
+            result = self.shell(cmd)
+            return ComputerResponse(
+                response_data=result.response_data or "",
+                base64_image=result.base64_image,
+            )
 
         raise ValueError(f"Invalid action: {act}")
 
@@ -199,19 +198,15 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
         """Get the screen size using OS-specific commands."""
         try:
             if self.os == "Darwin":
-                import re
-                import subprocess
-
                 cmd = "system_profiler SPDisplaysDataType | grep Resolution"
                 output = subprocess.check_output(cmd, shell=True).decode()
-                resolution_line = output.strip().split("\n")[0]
+                (resolution_line, *_) = output.strip().split("\n", maxsplit=1)
                 _, resolution = resolution_line.split(": ", 1)
                 match = re.search(r"(\d+)\s*x\s*(\d+)", resolution)
                 if match:
                     width_str, height_str = match.groups()
                     return int(width_str), int(height_str)
             elif self.os == "Linux":
-                import subprocess
 
                 output = subprocess.check_output(["xrandr"]).decode()
                 for line in output.split("\n"):
@@ -228,7 +223,7 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
 
     def get_mouse_position(self):
         """Get current mouse position using pyautogui."""
-        import pyautogui
+        import pyautogui  # pylint: disable=import-outside-toplevel
 
         x, y = pyautogui.position()
         return x, y
@@ -236,28 +231,29 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
     def _get_mouse_move_cmd(self, x: int, y: int) -> str:
         if self.os == "Darwin":
             return f"{self.mouse_tool} m:{x},{y}"
-        elif self.os == "Linux":
+        if self.os == "Linux":
             return f"xdotool mousemove {x} {y}"
-        else:
-            raise NotImplementedError(f"Unsupported OS: {self.os}")
+        raise NotImplementedError(f"Unsupported OS: {self.os}")
 
     def _get_mouse_drag_cmd(
-        self, start_x: int, start_y: int, end_x: int, end_y: int
+        self,
+        start_x: int,
+        start_y: int,
+        end_x: int,
+        end_y: int,
     ) -> str:
         if self.os == "Darwin":
             return f"{self.mouse_tool} dd:{start_x},{start_y} du:{end_x},{end_y}"
-        elif self.os == "Linux":
+        if self.os == "Linux":
             return f"xdotool mousemove {start_x} {start_y} mousedown 1 mousemove {end_x} {end_y} mouseup 1"
-        else:
-            raise NotImplementedError(f"Unsupported OS: {self.os}")
+        raise NotImplementedError(f"Unsupported OS: {self.os}")
 
     def _get_key_press_cmd(self, key_sequence: str) -> str:
         if self.os == "Darwin":
             return f"{self.mouse_tool} kp:{key_sequence}"
-        elif self.os == "Linux":
+        if self.os == "Linux":
             return f"xdotool key {key_sequence}"
-        else:
-            raise NotImplementedError(f"Unsupported OS: {self.os}")
+        raise NotImplementedError(f"Unsupported OS: {self.os}")
 
     def _get_click_cmd(self, action: str) -> str:
         if self.os == "Darwin":
@@ -268,7 +264,8 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
                 "double_click": "dc:.",
             }[action]
             return f"{self.mouse_tool} {click_arg}"
-        elif self.os == "Linux":
+
+        if self.os == "Linux":
             click_arg = {
                 "left_click": "click 1",
                 "right_click": "click 3",
@@ -276,8 +273,8 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
                 "double_click": "click --repeat 2 1",
             }[action]
             return f"xdotool {click_arg}"
-        else:
-            raise NotImplementedError(f"Unsupported OS: {self.os}")
+
+        raise NotImplementedError(f"Unsupported OS: {self.os}")
 
     def scale_coordinates(self, source: ScalingSource, x: int, y: int):
         """Scale coordinates to a target maximum resolution."""
@@ -340,6 +337,7 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
             shlex.split(command),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            check=True,
         )
         base64_image = None
         if take_screenshot:

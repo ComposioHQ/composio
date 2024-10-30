@@ -6,11 +6,13 @@ import typing_extensions as te
 try:
     from anthropic.types.beta.tools import ToolUseBlock, ToolsBetaMessage
     from anthropic.types.beta.tools.tool_param import ToolParam
+
+    BetaToolUseBlock = object  # type: ignore
 except ModuleNotFoundError:
     from anthropic.types.tool_use_block import ToolUseBlock
     from anthropic.types.tool_param import ToolParam
     from anthropic.types.message import Message as ToolsBetaMessage
-    from anthropic.types.beta.beta_tool_use_block import BetaToolUseBlock
+    from anthropic.types.beta.beta_tool_use_block import BetaToolUseBlock  # type: ignore
 
 from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
