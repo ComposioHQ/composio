@@ -4,6 +4,7 @@ from .create import CreateFile
 from .edit import EditFile
 from .find import FindFile
 from .git_clone import GitClone
+from .git_custom import GitCustom
 from .git_patch import GitPatch
 from .git_repo_tree import GitRepoTree
 from .grep import SearchWord
