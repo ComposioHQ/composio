@@ -10,7 +10,7 @@ function readUserInput(
   prompt: string,
   metavar: string,
   validator: (value: string) => InputType
-): InputType {
+): Promise<InputType> {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
@@ -18,13 +18,12 @@ function readUserInput(
 
   return new Promise<InputType>((resolve, reject) => {
     rl.question(`${prompt} > `, (value) => {
+      rl.close();
       try {
         const validatedValue = validator(value);
-        rl.close();
         resolve(validatedValue);
       } catch (e) {
-        console.error(`Invalid value for \`${metavar}\` error parsing \`${value}\`; ${e}`);
-        rl.close();
+        console.error(`Invalid value for \`${metavar}\`: error parsing \`${value}\`; ${e}`);
         reject(e);
       }
     });
@@ -32,15 +31,12 @@ function readUserInput(
 }
 
 function githubRepositoryNameValidator(name: string): [string, string] {
-  if (name.includes(' ')) {
-    throw new Error();
-  }
-  const [owner, repoName] = name.split('/');
-  return [owner, repoName];
+  if (name.includes(' ')) throw new Error();
+  return name.split('/') as [string, string]; // Ensures correct tuple type
 }
 
 function createGithubIssueValidator(owner: string, name: string, toolset: ComposioToolSet) {
-  return async function githubIssueValidator(value: string): Promise<string> {
+  return async (value: string): Promise<string> => {
     const resolvedPath = path.resolve(value);
     if (fs.existsSync(resolvedPath)) {
       return fs.readFileSync(resolvedPath, 'utf-8');
@@ -80,6 +76,5 @@ export async function fromGithub(toolset: ComposioToolSet): Promise<{ repo: stri
 }
 
 export function getBranchNameFromIssue(issue: string): string {
-  return "swe/" + issue.toLowerCase().replace(/\s+/g, '-') + "-" + nanoid();
+  return `swe/${issue.toLowerCase().replace(/\s+/g, '-')}-${nanoid()}`;
 }
-
