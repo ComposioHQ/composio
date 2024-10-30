@@ -36,27 +36,27 @@ Creating custom tools on Composio is straightforward and can be done via an [Ope
     <Accordion title="Base Template">
     ```yaml
 name:
-docs:
+unique_key:
 description:
 logo:
 categories: [""]
+docs:
 get_current_user_endpoint: ""
 
 auth_schemes:
-
-// OAuth1 
-	- scheme_name: 
-		auth_mode: OAuth1
-		request_url:
-		authorization_url: 
+  # OAuth1
+  - name: 
+    auth_mode: OAuth1
+    request_url:
+    authorization_url: 
     token_url:
     signature_method:
     default_scopes: [""]
     scope_separator: ','
     authorization_params:
-        expiration:
+      expiration:
     token_params:
-        grant_type:
+      grant_type:
     proxy:
       base_url: "{{base_url}}"
     fields:
@@ -66,18 +66,18 @@ auth_schemes:
         type: string
         default: {{add the api endpoint URL of the app}}
 
-// OAuth2 
-	- scheme_name: 
-		auth_mode: OAUTH2
-		authorization_url: 
+  # OAuth2
+  - name: 
+    auth_mode: OAUTH2
+    authorization_url: 
     token_url:
     default_scopes: [""]
     scope_separator: ','
     token_access_request_method: 
     authorization_params:
-        response_type:
+      response_type:
     token_params:
-        grant_type:
+      grant_type:
     proxy:
       base_url: "{{base_url}}"
     fields:
@@ -86,12 +86,11 @@ auth_schemes:
         description: "desc_here"
         type: string
         default: {{api endpoint URL of the app}}
-        
-        
-// API-KEY
-  - scheme_name: app_name_api-key
-	  auth_mode: API_KEY
-	  proxy:
+
+  # API-KEY
+  - name: app_name_api-key
+    auth_mode: API_KEY
+    proxy:
       base_url: "{{base_url}}"
       headers:
         Authorization: "{{api_key}}"
@@ -109,10 +108,9 @@ auth_schemes:
         type: string
         required: false
         default: {{add the api endpoint URL of the app}}
-   
-        
- // BASIC
-   - scheme_name: app_name_basic
+
+  # BASIC
+  - scheme_name: app_name_basic
     auth_mode: BASIC
     proxy:
       base_url: {{add the api_endpoint_url}}
