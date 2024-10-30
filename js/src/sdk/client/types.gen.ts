@@ -1751,7 +1751,39 @@ export type ConnectionsControllerGetConnectionData = {
     };
 };
 
-export type ConnectionsControllerGetConnectionResponse = unknown;
+export type MemberInfoResDTO = {
+    id: string;
+    clientId: string;
+    email: string;
+    name: string;
+    role: string;
+    metadata?: unknown;
+    createdAt: string;
+    updatedAt: string;
+    deletedAt?: string;
+};
+
+export type Meta = {
+    app: {
+        [key: string]: unknown;
+    };
+};
+
+export type ConnectionsControllerGetConnectionResponse = {
+    integrationId: string;
+    appUniqueId: string;
+    memberInfo?: MemberInfoResDTO;
+    meta?: Meta;
+    isDisabled?: boolean;
+    id: string;
+    clientUniqueUserId: string;
+    appName: string;
+    entityId: string;
+    status: string;
+    enabled?: boolean;
+    createdAt: string;
+    updatedAt: string;
+};
 
 export type ConnectionsControllerGetConnectionError = unknown;
 
