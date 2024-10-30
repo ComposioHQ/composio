@@ -6,6 +6,7 @@ import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
 import { ActionsListResponseDTO } from "../sdk/client";
+import { Stream } from "openai/streaming";
 
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
@@ -112,8 +113,67 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         return tool_outputs;
     }
 
+    async *waitAndHandleAssistantStreamToolCalls(
+        client: OpenAI,
+        runStream: Stream<OpenAI.Beta.Assistants.AssistantStreamEvent>,
+        thread: OpenAI.Beta.Threads.Thread,
+        entityId: string | null = null
+    ): AsyncGenerator<any, void, unknown> {
+        let runId = null;
 
+        // Start processing the runStream events
+        for await (const event of runStream) {
+            yield event; // Yield each event from the stream as it arrives
 
+            if (event.event === 'thread.run.created') {
+                const { id } = event.data;
+                runId = id;
+            }
+
+            if(!runId) {
+                continue;
+            }
+
+            // Handle the 'requires_action' event
+            if (event.event === 'thread.run.requires_action') {
+                const toolOutputs = await this.handleAssistantMessage(event.data, entityId);
+
+                // Submit the tool outputs
+                await client.beta.threads.runs.submitToolOutputs(thread.id, runId, {
+                    tool_outputs: toolOutputs
+                });
+            }
+
+            // Break if the run status becomes inactive
+            if (['thread.run.completed', 'thread.run.failed', 'thread.run.cancelled', 'thread.run.expired'].includes(event.event)) {
+                break;
+            }
+        }
+
+        if(!runId) {
+            throw new Error("No run ID found");
+        }
+
+        // Handle any final actions after the stream ends
+        let finalRun = await client.beta.threads.runs.retrieve(thread.id, runId);
+
+        while (["queued", "in_progress", "requires_action"].includes(finalRun.status)) {
+            if (finalRun.status === "requires_action") {
+                const toolOutputs = await this.handleAssistantMessage(finalRun, entityId);
+
+                // Submit tool outputs
+                finalRun = await client.beta.threads.runs.submitToolOutputs(thread.id, runId, {
+                    tool_outputs: toolOutputs
+                });
+            } else {
+                // Update the run status
+                finalRun = await client.beta.threads.runs.retrieve(thread.id, runId);
+                await new Promise(resolve => setTimeout(resolve, 500)); // Wait before rechecking
+            }
+        }
+    }
+    
+    
     async waitAndHandleAssistantToolCalls(
         client: OpenAI,
         run: OpenAI.Beta.Threads.Run,
