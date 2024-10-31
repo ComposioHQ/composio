@@ -40,7 +40,7 @@ const openai = new OpenAI({
   baseURL: 'http://localhost:11434/v1',
   apiKey: 'ollama', // required but unused
 })
-const tools = await toolset.getActions({ actions: ["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"] }, entity.id);
+const tools = await toolset.getTools({ actions: ["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"] }, entity.id);
 const instruction = `Star the repo composiohq/composio`
 
 const completion = await openai.chat.completions.create({

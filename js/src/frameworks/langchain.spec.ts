@@ -25,7 +25,7 @@ describe("Apps class tests", () => {
     });
 
     it("check if tools are coming", async () => {
-        const tools = await langchainToolSet.getActions({
+        const tools = await langchainToolSet.getTools({
             actions: ['GITHUB_GITHUB_API_ROOT']
         });
 

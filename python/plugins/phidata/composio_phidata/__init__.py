@@ -1,6 +1,6 @@
 from composio_phidata.toolset import ComposioToolSet
 
-from composio import Action, App, Tag, Trigger, WorkspaceType
+from composio import Action, App, Tag, Trigger, WorkspaceType, action
 
 
 __all__ = (
@@ -9,5 +9,6 @@ __all__ = (
     "Tag",
     "ComposioToolSet",
     "WorkspaceType",
+    "action",
     "Trigger",
 )
