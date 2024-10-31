@@ -51,7 +51,7 @@ description: "This project is an example which uses Composio to seamlessly conve
         const composioToolset = new LangchainToolSet({
             apiKey: process.env.COMPOSIO_API_KEY
         });
-        const tools = await composioToolset.getActions({
+        const tools = await composioToolset.getTools({
             actions: ["googlecalendar_create_event", "googlecalendar_list_events"]
         });
 
@@ -152,7 +152,7 @@ description: "This project is an example which uses Composio to seamlessly conve
     `;
 
     async function runAgent() {
-        const tools = await composioToolset.getActions({
+        const tools = await composioToolset.getTools({
         actions: ["googlecalendar_create_event", "googlecalendar_list_events"]
     });
         const prompt = await pull("hwchase17/openai-functions-agent");

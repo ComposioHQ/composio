@@ -1,0 +1,77 @@
+---
+title: "🛠️ How can I execute Actions without my AI Agent?"
+sidebarTitle: "Execute Actions without Agents"
+icon: "fax"
+description: "Perform Actions with your account or on behalf of your users without Agents"
+---
+
+## Using Actions
+
+Composio lets you perform actions with your account or on behalf of your users. Feel free to check all the [tools](https://app.composio.dev/apps) we support. 
+
+### Execute Actions without Agents
+
+To execute actions without using Agents, you can manually supply the parameters to execute the action or use natural language.
+
+<CodeGroup>
+ ```python Python Star a repo
+from composio import ComposioToolSet, Action
+
+tool_set = ComposioToolSet(entity_id="Jessica")
+#If you did not run 'composio login' in the CLI, you can use API Key like this:
+#tool_set = ComposioToolSet(api_key, entity_id="Jessica")
+
+#You can change the repo you want to star by modifying the parameters
+tool_set.execute_action(
+    action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
+    params={"owner": "composiohq", "repo": "composio"},
+    entity_id="Jessica",
+)
+```
+
+```javascript JavaScript Get Hypermedia links in GitHub
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet();
+
+const customAuthAction = await toolset.client.actions.execute({
+    actionName: "GITHUB_GITHUB_API_ROOT",
+    requestBody: {
+        appName: "github",
+        authConfig: {
+            parameters: [{
+                name: "Authorization",
+                in: "header",
+                value: `Bearer YOUR_API_KEY`
+            }]
+        },
+        input: {}
+    }
+});
+
+console.log("Custom auth action response", customAuthAction)
+  ```
+</CodeGroup>
+
+## Execute Actions with Natural Language
+You can also execute Actions by passing in natural language prompts without specific parameters
+<CodeGroup>
+```python Python
+  tool_set.execute_action(
+      action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
+      params={},
+      text="Star the repo composiohq/composio",
+      entity_id="Jessica",
+  )
+```
+
+```javascript JavaScript
+  await toolset.getEntity("Jessica").execute(
+    'github_star_a_repository_for_the_authenticated_user',
+    {},
+    "Star the repo composiohq/composio"
+  );
+```
+</CodeGroup>
+
+<br/>
