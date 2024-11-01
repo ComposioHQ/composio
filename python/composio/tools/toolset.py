@@ -123,7 +123,7 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
     return wrapper  # type: ignore
 
 
-def load_action(client: Composio, value, warn = True) -> Action:
+def load_action(client: Composio, value, warn=True) -> Action:
     global Action
     try:
         return Action(value=value, warn=warn)
@@ -139,8 +139,9 @@ def load_action(client: Composio, value, warn = True) -> Action:
         reloaded_action_module = importlib.reload(action_enum_module)
 
         Action = reloaded_action_module.Action
-    
+
     return Action(value=value, warn=warn)
+
 
 class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     """Composio toolset."""

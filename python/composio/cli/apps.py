@@ -110,7 +110,9 @@ def update_apps(client: Composio, beta: bool = False) -> t.List[AppModel]:
     return apps
 
 
-def update_actions(client: Composio, apps: t.List[AppModel], beta: bool = False) -> None:
+def update_actions(
+    client: Composio, apps: t.List[AppModel], beta: bool = False
+) -> None:
     """Update actions and tags."""
     actions = sorted(
         client.actions.get(allow_all=True),
@@ -123,7 +125,9 @@ def update_actions(client: Composio, apps: t.List[AppModel], beta: bool = False)
     _update_actions(apps=apps, actions=actions)
 
 
-def update_triggers(client: Composio, apps: t.List[AppModel], beta: bool = False) -> None:
+def update_triggers(
+    client: Composio, apps: t.List[AppModel], beta: bool = False
+) -> None:
     """Update triggers."""
     triggers = sorted(
         client.triggers.get(),
