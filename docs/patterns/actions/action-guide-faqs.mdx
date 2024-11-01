@@ -18,7 +18,7 @@ tools = tool_set.get_tools(actions=[Action.GITHUB_CREATE_AN_ISSUE,Action.GITHUB_
 ```javascript Javascript Selecting Actions via Name
 const toolset = new OpenAIToolSet();
 
-const tools = await toolset.getActions({actions: ['github_issues_create','github_commit_event']});
+const tools = await toolset.getTools({actions: ['github_issues_create','github_commit_event']});
 // can pass multiple actions
 ```
 </CodeGroup>

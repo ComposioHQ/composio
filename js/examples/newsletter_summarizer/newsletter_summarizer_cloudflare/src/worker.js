@@ -35,7 +35,7 @@ app.post('/help', async (c) => {
     const entity = await toolset.client.getEntity('default');
     await setupUserConnectionIfNotExists(toolset, entity.id, c);
     // Get the required tools for the AI task
-    const tools = await toolset.getActions({ actions: ['gmail_fetch_emails','gmail_send_email'] }, entity.id);
+    const tools = await toolset.getTools({ actions: ['gmail_fetch_emails','gmail_send_email'] }, entity.id);
     const instruction = `
             "Fetch the most recent newsletter emails from the inbox using action gmail_fetch_emails"
         "Look for emails with subjects containing words like 'newsletter', 'update', or 'digest'. "
