@@ -122,13 +122,13 @@ describe("ActionRegistry", () => {
 
         await actionRegistry.createAction(options);
 
-        const actions = await actionRegistry.getTools({actions: ["testAction"]});
+        const actions = await actionRegistry.getActions({actions: ["testAction"]});
         expect(actions.length).toBe(1);
         expect(actions[0].parameters.properties).toHaveProperty("param1");
     });
 
     it("should return an empty array if no actions match the names", async () => {
-        const actions = await actionRegistry.getTools({actions: ["nonExistentAction"]});
+        const actions = await actionRegistry.getActions({actions: ["nonExistentAction"]});
 
         expect(actions.length).toBe(0);
     });

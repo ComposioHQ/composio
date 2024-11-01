@@ -94,7 +94,7 @@ export class ComposioToolSet {
         });
         const uniqueLocalActions = Array.from(localActionsMap.values());
         const _newActions = filters.actions?.map((action: string) => action.toLowerCase());
-        const toolsWithCustomActions = (await this.customActionRegistry.getTools({ actions: _newActions!})).filter((action: any) => {
+        const toolsWithCustomActions = (await this.customActionRegistry.getActions({ actions: _newActions!})).filter((action: any) => {
             if (_newActions && !_newActions.includes(action.parameters.title.toLowerCase()!)) {
                 return false;
             }
@@ -206,7 +206,7 @@ export class ComposioToolSet {
     }
 
     private isCustomAction(action: string) {
-        return this.customActionRegistry.getTools({ actions: [action] }).then((actions: any) => actions.length > 0);
+        return this.customActionRegistry.getActions({ actions: [action] }).then((actions: any) => actions.length > 0);
     }
 
     async executeAction(
