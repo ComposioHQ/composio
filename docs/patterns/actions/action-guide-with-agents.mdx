@@ -49,7 +49,7 @@ agent_executor.invoke({"input": task})
   (async () => {
     const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
     const composioToolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY });
-    const tools = await composioToolset.getActions({ actions: ["github_issues_create"] });
+    const tools = await composioToolset.getTools({ actions: ["github_issues_create"] });
     const prompt = await pull("hwchase17/openai-functions-agent");
 
     const agent = await createOpenAIFunctionsAgent({ llm, tools, prompt });
