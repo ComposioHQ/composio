@@ -5,6 +5,8 @@ Composio SDK tools.
 import base64
 import binascii
 import hashlib
+import importlib
+import inspect
 import itertools
 import json
 import os
@@ -120,6 +122,25 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
 
     return wrapper  # type: ignore
 
+
+def load_action(client: Composio, value, warn = True) -> Action:
+    global Action
+    try:
+        return Action(value=value, warn=warn)
+    except EnumStringNotFound:
+        # run update apps, and reload actions
+        from composio.cli.apps import update_actions, update_apps
+
+        apps = update_apps(client)
+        update_actions(client, apps)
+
+        action_enum_module = inspect.getmodule(Action)
+        assert action_enum_module is not None
+        reloaded_action_module = importlib.reload(action_enum_module)
+
+        Action = reloaded_action_module.Action
+    
+    return Action(value=value, warn=warn)
 
 class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     """Composio toolset."""
@@ -412,7 +433,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
-        action = Action(action)
+        action = load_action(self.client, action)
         if action.no_auth or action.is_runtime:
             return
 
