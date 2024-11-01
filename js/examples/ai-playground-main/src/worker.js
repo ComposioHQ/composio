@@ -35,7 +35,7 @@ app.post('/', async (c) => {
       return c.json(connectionResult);
     }
 
-    const tools = await toolset.getActions({ actions: ['github_issues_create'] }, entity.id);
+    const tools = await toolset.getTools({ actions: ['github_issues_create'] }, entity.id);
     const instruction = 'Create an issue with the title "Sample Issue" in the repo anonthedev/break. Use only the provided tools.';
 
     const messages = [
