@@ -23,7 +23,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@master
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Build
@@ -84,9 +84,9 @@ jobs:
           ]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Build ${{ matrix.package }}
@@ -121,9 +121,9 @@ jobs:
         python-version: ["3.10"]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Build
@@ -154,8 +154,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
-      - uses: actions/setup-python@v3
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
       - name: Build for ${{ matrix.os }}
@@ -239,7 +239,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Docker login
         env:
           DOCKER_USER: ${{secrets.DOCKER_USER}}
@@ -251,7 +251,7 @@ jobs:
           docker run --privileged --rm tonistiigi/binfmt --install all
           docker buildx create --use --name multibuild
           docker buildx inspect --bootstrap
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
       - name: Publishing tool server images
@@ -267,7 +267,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - uses: actions/setup-node@v4
       - name: Install E2B
         run: |
