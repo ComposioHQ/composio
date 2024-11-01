@@ -123,13 +123,18 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
     return wrapper  # type: ignore
 
 
-def load_action(client: Composio, value, warn=True) -> Action:
+def load_action(
+    client: Composio, value, warn=True
+) -> Action:  # pylint: disable=used-prior-global-declaration
     global Action
     try:
         return Action(value=value, warn=warn)
     except EnumStringNotFound:
         # run update apps, and reload actions
-        from composio.cli.apps import update_actions, update_apps
+        from composio.cli.apps import (  # pylint: disable=import-outside-toplevel
+            update_actions,
+            update_apps,
+        )
 
         apps = update_apps(client)
         update_actions(client, apps)
@@ -138,7 +143,7 @@ def load_action(client: Composio, value, warn=True) -> Action:
         assert action_enum_module is not None
         reloaded_action_module = importlib.reload(action_enum_module)
 
-        Action = reloaded_action_module.Action
+        Action = reloaded_action_module.Action  # type: ignore
 
     return Action(value=value, warn=warn)
 
