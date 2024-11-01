@@ -90,7 +90,7 @@ all_requirements = (
 
 setup(
     name="composio_core",
-    version="0.5.37",
+    version="0.5.37-rc.1",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",
