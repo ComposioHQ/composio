@@ -71,7 +71,9 @@ export class Triggers {
                     enabled: true
                 }
             });
-            return response.data;
+            return {
+                status: "success"
+            }
         } catch (error) {
             throw CEG.handleError(error);
         }
@@ -85,7 +87,9 @@ export class Triggers {
                     enabled: false
                 }
             });
-            return response.data;
+            return {
+                status: "success"
+            }
         } catch (error) {
             throw CEG.handleError(error);
         }
@@ -96,7 +100,9 @@ export class Triggers {
             const response = await apiClient.triggers.deleteTrigger({
                 path: data
             });
-            return response.data;
+            return {
+                status: "success"
+            }
         } catch (error) {
             throw CEG.handleError(error);
         }

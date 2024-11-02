@@ -1,9 +1,30 @@
 import { TriggersControllerListTriggersData } from "../client";
-import { TriggersControllerGetActiveTriggersData, TriggersControllerGetTriggerData } from "../client/types.gen";
+import { TriggersControllerGetActiveTriggersData, TriggersControllerGetActiveTriggersResponse, TriggersControllerGetTriggerData } from "../client/types.gen";
 import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
 import { CEG } from "../utils/error";
 
+type TActiveTrigger = {
+        id: string;
+        connectionId: string;
+        triggerName: string;
+        triggerData: string;
+        triggerConfig: Record<string, any>;
+        state: Record<string, any>;
+        createdAt: string;
+        updatedAt: string;
+        disabledAt: string | null;
+    disabledReason: string | null;
+}
+type TActiveTriggersListResponse = {
+    triggers: Array<TActiveTrigger>;
+    pageInfo: {
+        currentPage: number;
+        perPage: number;
+        totalPages: number;
+    };
+    status: "success";
+}
 export class ActiveTriggers {
 
     backendClient: BackendClient;
@@ -22,8 +43,8 @@ export class ActiveTriggers {
      */
     async get(data: TriggersControllerGetTriggerData) {
         try {
-            const response = await apiClient.triggers.getTrigger(data);
-            return response.data;
+            const response = await apiClient.triggers.getTrigger(data) 
+            return response.data as TActiveTrigger;
         } catch (error) {
             throw CEG.handleError(error);
         }
@@ -40,8 +61,10 @@ export class ActiveTriggers {
      */
     async list(data: TriggersControllerGetActiveTriggersData = {}) {
         try {
-            const response = await apiClient.triggers.getActiveTriggers({ query: data });
-            return (response.data as Record<string, string>).triggers;
+            const {data: response} = await apiClient.triggers.getActiveTriggers({ query: data }) 
+        
+            const newResponse = response as TActiveTriggersListResponse;
+            return newResponse.triggers;
         } catch (error) {
             throw CEG.handleError(error);
         }

@@ -62,9 +62,12 @@ describe("Apps class tests subscribe", () => {
 
 
     it("should create a new trigger for gmail", async () => {
-        const connectedAccount = await connectedAccounts.list({ query: { user_uuid: 'default' } });
+        const connectedAccount = await connectedAccounts.list({  user_uuid: 'default'  });
 
         const connectedAccountId = connectedAccount.items.find(item => item.appName === 'gmail')?.id;
+        if(!connectedAccountId) {
+            throw new Error("No connected account found");
+        }
         const trigger = await triggers.setup(connectedAccountId, 'gmail_new_gmail_message', {
             "userId": connectedAccount.items[0].id,
             "interval": 60,

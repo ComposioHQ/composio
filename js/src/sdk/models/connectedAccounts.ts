@@ -5,6 +5,7 @@ import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
 import { CEG } from "../utils/error";
 
+type ConnectedAccountsListData = ConnectionsControllerGetConnectionsData['query'] & {appNames?: string};
 export class ConnectedAccounts {
     backendClient: BackendClient;
 
@@ -12,9 +13,8 @@ export class ConnectedAccounts {
         this.backendClient = backendClient; 
     }
     
-    async list(data: Pick<ConnectionsControllerGetConnectionsData,'query'>): Promise<GetConnectionsResponseDto> {
+    async list(data: ConnectedAccountsListData): Promise<GetConnectionsResponseDto> {
         try {
-     
             const res = await apiClient.connections.getConnections({ query: data });
             return res.data!;
         } catch (error) {
@@ -22,10 +22,11 @@ export class ConnectedAccounts {
         }
     }
 
-    async create(data: InitiateConnectionPayloadDto = { integrationId: "" }) {
+    async create(data: InitiateConnectionPayloadDto) {
         try {
-            const res = await apiClient.connections.initiateConnection({ body: data });
-            return res.data;
+            const {data:    res} = await apiClient.connections.initiateConnection({ body: data });
+            //@ts-ignore
+            return new ConnectionRequest(res.connectionStatus, res.connectedAccountId, res.redirectUrl);
         } catch (error) {
             throw CEG.handleError(error);
         }
