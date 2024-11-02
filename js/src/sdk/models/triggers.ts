@@ -26,14 +26,17 @@ export class Triggers {
      * @returns {CancelablePromise<ListTriggersResponse>} A promise that resolves to the list of all triggers.
      * @throws {ApiError} If the request fails.
      */
-    //@ts-ignore
-    list(data: RequiredQuery={} ): Promise<TriggersControllerListTriggersResponse> {
-        //@ts-ignore
-        return apiClient.triggers.listTriggers({
-            query: {
-                appNames: data?.appNames,
-            }
-        }).then(res => res.data)
+    async list(data: RequiredQuery={} ): Promise<TriggersControllerListTriggersResponse> {
+        try {
+            const response = await apiClient.triggers.listTriggers({
+                query: {
+                    appNames: data?.appNames,
+                }
+            });
+            return response.data;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
     /**
@@ -43,60 +46,59 @@ export class Triggers {
      * @returns {CancelablePromise<SetupTriggerResponse>} A promise that resolves to the setup trigger response.
      * @throws {ApiError} If the request fails.
      */
-    //@ts-ignore
-    async setup(connectedAccountId, triggerName, config: Record<string, any>):{status:"string",triggerId:string}{
-        //@ts-ignore
-        const {data,error} = await apiClient.triggers.enableTrigger({
-            path:{
-                connectedAccountId,
-                triggerName
-            },
-            body: {
-                triggerConfig: config
-            }
-        })
-
-        if(error) {
-            console.log(error)
-            throw Error("Failed to setup trigger")
+    async setup(connectedAccountId: string, triggerName: string, config: Record<string, any>): Promise<{status: string, triggerId: string}> {
+        try {
+            const response = await apiClient.triggers.enableTrigger({
+                path: {
+                    connectedAccountId,
+                    triggerName
+                },
+                body: {
+                    triggerConfig: config
+                }
+            });
+            return response.data as {status: string, triggerId: string};
+        } catch (error) {
+            throw CEG.handleError(error);
         }
-
-        return data as unknown as {status:"string",triggerId:string};
     }
 
-   async enable(data: { triggerId: string }) {
-        try{
-            await apiClient.triggers.switchTriggerInstanceStatus({
+    async enable(data: { triggerId: string }) {
+        try {
+            const response = await apiClient.triggers.switchTriggerInstanceStatus({
                 path: data,
-            body: {
-                enabled: true
-            }
-            }).then(res => res.data)
-        } catch(e){
-            throw CEG.handleError(e)
+                body: {
+                    enabled: true
+                }
+            });
+            return response.data;
+        } catch (error) {
+            throw CEG.handleError(error);
         }
     }
 
     async disable(data: { triggerId: string }) {
-        try{
-            await apiClient.triggers.switchTriggerInstanceStatus({
+        try {
+            const response = await apiClient.triggers.switchTriggerInstanceStatus({
                 path: data,
-            body: {
-                enabled: false
-            }
-        }).then(res => res.data)
-        } catch(e){
-            throw CEG.handleError(e)
+                body: {
+                    enabled: false
+                }
+            });
+            return response.data;
+        } catch (error) {
+            throw CEG.handleError(error);
         }
     }
 
     async delete(data: { triggerInstanceId: string }) {
-        try{
-            await apiClient.triggers.deleteTrigger({
+        try {
+            const response = await apiClient.triggers.deleteTrigger({
                 path: data
-            }).then(res => res.data)
-        } catch(e){
-            throw CEG.handleError(e)
+            });
+            return response.data;
+        } catch (error) {
+            throw CEG.handleError(error);
         }
     }
 

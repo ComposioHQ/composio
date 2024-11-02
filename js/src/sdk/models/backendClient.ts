@@ -51,11 +51,15 @@ export class BackendClient {
      * @throws Will throw an error if the HTTP request fails.
      */
     public async getClientId(): Promise<string> {
-        const response = await apiClient.clientAuthService.getUserInfo();
-        if (response.status !== 200) {
+        try {
+            const response = await apiClient.clientAuthService.getUserInfo();
+            if (response.status !== 200) {
             throw new Error(`HTTP Error: ${response.status}`);
         }
-        return (response.data as unknown as Record<string, Record<string, string>>).client.id;
+            return (response.data as unknown as Record<string, Record<string, string>>).client.id;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
     /**

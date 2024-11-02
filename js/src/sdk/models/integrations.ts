@@ -1,6 +1,7 @@
 import { AppConnectorControllerDeleteConnectorData, AppConnectorControllerGetConnectorInfoData, AppConnectorControllerGetConnectorInfoResponse } from "../client";
 import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
+import { CEG } from "../utils/error";
 
 export type ListAllIntegrationsData = {
     /**
@@ -98,10 +99,15 @@ export class Integrations {
      * @returns {Promise<ListAllIntegrationsResponse>} A promise that resolves to the list of all integrations.
      * @throws {ApiError} If the request fails.
      */
-    list(data: ListAllIntegrationsData = {}) {
-        return apiClient.appConnector.listGlobalConnectors({
-            query: data
-        }).then(res=>res.data)
+    async list(data: ListAllIntegrationsData = {}) {
+        try {
+            const response = await apiClient.appConnector.listGlobalConnectors({
+                query: data
+            });
+            return response.data;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
     /**
@@ -110,25 +116,32 @@ export class Integrations {
      * The response includes the integration's name, display name, description, input parameters, expected response, associated app information, and enabled status.
      * 
      * @param {GetIntegrationData} data The data for the request.
-     * @returns {CancelablePromise<GetIntegrationResponse>} A promise that resolves to the details of the integration.
+     * @returns {Promise<AppConnectorControllerGetConnectorInfoResponse | undefined>} A promise that resolves to the details of the integration.
      * @throws {ApiError} If the request fails.
      */
-    get(data: GetIntegrationData): Promise<AppConnectorControllerGetConnectorInfoResponse | undefined> {
-        return apiClient.appConnector.getConnectorInfo({
-            path: data
-        }).then(res => {
-            return res.data
-        })
+    async get(data: GetIntegrationData) {
+        try {
+            const response = await apiClient.appConnector.getConnectorInfo({
+                path: data
+            });
+            return response.data;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
-
-    getRequiredParams(integrationId: string) {
-        return apiClient.appConnector.getConnectorInfo({
-            path: {
-                integrationId
-            },
-            throwOnError: true
-        }).then(res => res.data?.expectedInputFields)
+    async getRequiredParams(integrationId: string) {
+        try {
+            const response = await apiClient.appConnector.getConnectorInfo({
+                path: {
+                    integrationId
+                },
+                throwOnError: true
+            });
+            return response.data?.expectedInputFields;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
     /**
@@ -137,32 +150,38 @@ export class Integrations {
      * This method allows clients to create a new integration by providing the necessary details such as app ID, name, authentication mode, and configuration.
      * 
      * @param {CreateIntegrationData["requestBody"]} data The data for the request.
-     * @returns {CancelablePromise<CreateIntegrationResponse>} A promise that resolves to the created integration model.
+     * @returns {Promise<CreateIntegrationResponse>} A promise that resolves to the created integration model.
      * @throws {ApiError} If the request fails.
      */
-    async create(
-        data: CreateIntegrationData["requestBody"]
-    ) {
+    async create(data: CreateIntegrationData["requestBody"]) {
+        try {
+            if (!data?.authConfig) {
+                data!.authConfig = {};
+            }
 
-        if (!data?.authConfig) {
-            data!.authConfig = {};
+            const response = await apiClient.appConnector.createConnector({
+                body: {
+                    name: data?.name!,
+                    appId: data?.appId!,
+                    authConfig: data?.authConfig! as any,
+                    authScheme: data?.authScheme,
+                    useComposioAuth: data?.useComposioAuth!,
+                    forceNewIntegration: true
+                },
+                throwOnError: true
+            });
+            return response.data;
+        } catch (error) {
+            throw CEG.handleError(error);
         }
-
-        const {data: res} = await apiClient.appConnector.createConnector({
-            body: {
-                name: data?.name!,
-                appId: data?.appId!,
-                authConfig: data?.authConfig! as any,
-                authScheme: data?.authScheme,
-                useComposioAuth: data?.useComposioAuth!,
-                forceNewIntegration: true
-            },
-            throwOnError: true
-        })
-        return res;
     }
 
-    delete(data: AppConnectorControllerDeleteConnectorData) {
-        return apiClient.appConnector.deleteConnector(data).then(res=>res.data)
+    async delete(data: AppConnectorControllerDeleteConnectorData) {
+        try {
+            const response = await apiClient.appConnector.deleteConnector(data);
+            return response.data;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }   
 }

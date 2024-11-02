@@ -5,7 +5,8 @@ export const ERROR = {
         RATE_LIMIT: "BACKEND::RATE_LIMIT",
         BAD_REQUEST: "BACKEND::BAD_REQUEST",
         UNAUTHORIZED: "BACKEND::UNAUTHORIZED",
-        SERVER_ERROR: "BACKEND::SERVER_ERROR"
+        SERVER_ERROR: "BACKEND::SERVER_ERROR",
+        UNKNOWN: "BACKEND::UNKNOWN"
     },
     COMMON: {
         API_KEY_UNAVAILABLE: "COMMON::API_KEY_UNAVAILABLE",
@@ -48,6 +49,11 @@ export const PREDEFINED_ERROR_REGISTRY = {
         message: "❓ An unknown error occurred.",
         description: "The error is not recognized by our system.",
         possibleFix: "Contact our support team with the error details for further assistance."
+    },
+    [ERROR.BACKEND.UNKNOWN]: {
+        message: "❓ An unknown error occurred.",
+        description: "The error is not recognized by our system.",
+        possibleFix: "Contact our support team with the error details for further assistance."
     }
 }
 class ComposioError extends Error {
@@ -77,7 +83,8 @@ export class CEG {
     static handleError(axiosError: any,) {
          let errorDetails = PREDEFINED_ERROR_REGISTRY.UNKNOWN;
 
-             let errorKey = ERROR.COMMON.UNKNOWN;
+        let errorKey = ERROR.COMMON.UNKNOWN;
+        
         if (axiosError.response) {
             const { status } = axiosError.response;
         
@@ -97,6 +104,9 @@ export class CEG {
                 case 500:
                     errorKey = ERROR.BACKEND.SERVER_ERROR;
                     break;
+                default:
+                    errorKey = ERROR.BACKEND.UNKNOWN;
+                    break;
             }
             if (errorKey) {
                 errorDetails = PREDEFINED_ERROR_REGISTRY[errorKey];
@@ -109,7 +119,7 @@ export class CEG {
             errorKey as string,
             errorDetails.message,
             errorDetails.description || axiosError.message || "No additional information available.",
-            errorDetails.possibleFix || "Check the network connection and the request parameters.",
+            errorDetails.possibleFix || "Please check the network connection and the request parameters.",
             axiosError
         );
     }

@@ -2,6 +2,7 @@ import { TriggersControllerListTriggersData } from "../client";
 import { TriggersControllerGetActiveTriggersData, TriggersControllerGetTriggerData } from "../client/types.gen";
 import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
+import { CEG } from "../utils/error";
 
 export class ActiveTriggers {
 
@@ -19,9 +20,13 @@ export class ActiveTriggers {
      * @returns {CancelablePromise<GetActiveTriggerResponse>} A promise that resolves to the details of the active trigger.
      * @throws {ApiError} If the request fails.
      */
-     get(data: TriggersControllerGetTriggerData) {
-        //@ts-ignore
-        return apiClient.triggers.getTrigger(data).then(res => res.data)
+    async get(data: TriggersControllerGetTriggerData) {
+        try {
+            const response = await apiClient.triggers.getTrigger(data);
+            return response.data;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
     /**
@@ -33,10 +38,13 @@ export class ActiveTriggers {
      * @returns {CancelablePromise<ListActiveTriggersResponse>} A promise that resolves to the list of all active triggers.
      * @throws {ApiError} If the request fails.
      */
-     list(data: TriggersControllerGetActiveTriggersData = {}) {
-        return apiClient.triggers.getActiveTriggers({
-            query: data
-        }).then(res => (res.data as Record<string,string>).triggers)
+    async list(data: TriggersControllerGetActiveTriggersData = {}) {
+        try {
+            const response = await apiClient.triggers.getActiveTriggers({ query: data });
+            return (response.data as Record<string, string>).triggers;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
     /**
@@ -47,23 +55,31 @@ export class ActiveTriggers {
      * @returns {CancelablePromise<Record<string, any>>} A promise that resolves to the response of the enable request.
      * @throws {ApiError} If the request fails.
      */
-   async enable(data: {triggerId: string}): Promise<boolean> {
-        await apiClient.triggers.switchTriggerInstanceStatus({
-            path: data,
-            body:{
-                enabled: true
-            }
-            })
-            return true
+    async enable(data: { triggerId: string }): Promise<boolean> {
+        try {
+            await apiClient.triggers.switchTriggerInstanceStatus({
+                path: data,
+                body: {
+                    enabled: true
+                }
+            });
+            return true;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
-    async disable(data: {triggerId: string}) {
-        await apiClient.triggers.switchTriggerInstanceStatus({
-            path: data,
-            body: {
-                enabled: false
-            }
-        })
-        return true
+    async disable(data: { triggerId: string }) {
+        try {
+            await apiClient.triggers.switchTriggerInstanceStatus({
+                path: data,
+                body: {
+                    enabled: false
+                }
+            });
+            return true;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 }

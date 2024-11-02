@@ -56,6 +56,8 @@ export class Entity {
             });
         } else {
             const connectedAccounts = await this.connectedAccounts.list({
+                
+                //@ts-ignore
                 user_uuid: this.id,
                 appNames: action.appKey,
                 status: 'ACTIVE'
