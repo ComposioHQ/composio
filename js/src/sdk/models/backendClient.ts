@@ -1,5 +1,6 @@
 import apiClient from "../client/client"
-import { client as axiosClient } from "../client/services.gen"
+import { client as axiosClient, client } from "../client/services.gen"
+import { CEG } from "../utils/error";
 
 /**
  * Class representing the details required to initialize and configure the API client.
@@ -70,5 +71,6 @@ export class BackendClient {
                 'X-RUNTIME': this.runtime
             }
         });
+
     }
 }

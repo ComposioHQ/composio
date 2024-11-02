@@ -5,6 +5,7 @@ import {BackendClient} from "./backendClient"
 
 import apiClient from "../client/client"
 import { TriggersControllerListTriggersData, TriggersControllerListTriggersResponse } from "../client";
+import { CEG } from "../utils/error";
 
 type RequiredQuery = TriggersControllerListTriggersData["query"];
 
@@ -63,28 +64,40 @@ export class Triggers {
         return data as unknown as {status:"string",triggerId:string};
     }
 
-    enable(data: { triggerId: any }): any {
-        return apiClient.triggers.switchTriggerInstanceStatus({
-            path: data,
+   async enable(data: { triggerId: string }) {
+        try{
+            await apiClient.triggers.switchTriggerInstanceStatus({
+                path: data,
             body: {
                 enabled: true
             }
-        }).then(res => res.data)
+            }).then(res => res.data)
+        } catch(e){
+            throw CEG.handleError(e)
+        }
     }
 
-    disable(data: { triggerId: any }): any {
-        return apiClient.triggers.switchTriggerInstanceStatus({
-            path: data,
+    async disable(data: { triggerId: string }) {
+        try{
+            await apiClient.triggers.switchTriggerInstanceStatus({
+                path: data,
             body: {
                 enabled: false
             }
         }).then(res => res.data)
+        } catch(e){
+            throw CEG.handleError(e)
+        }
     }
 
-    delete(data: { triggerInstanceId: string }): any {
-        return apiClient.triggers.deleteTrigger({
-            path: data
-        }).then(res => res.data)
+    async delete(data: { triggerInstanceId: string }) {
+        try{
+            await apiClient.triggers.deleteTrigger({
+                path: data
+            }).then(res => res.data)
+        } catch(e){
+            throw CEG.handleError(e)
+        }
     }
 
     async subscribe(fn: (data: TriggerData) => void, filters:{

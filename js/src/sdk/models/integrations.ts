@@ -142,7 +142,7 @@ export class Integrations {
      */
     async create(
         data: CreateIntegrationData["requestBody"]
-    ): Promise<any> {
+    ) {
 
         if (!data?.authConfig) {
             data!.authConfig = {};
@@ -162,7 +162,7 @@ export class Integrations {
         return res;
     }
 
-    delete(data: AppConnectorControllerDeleteConnectorData): any {
+    delete(data: AppConnectorControllerDeleteConnectorData) {
         return apiClient.appConnector.deleteConnector(data).then(res=>res.data)
     }   
 }

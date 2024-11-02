@@ -1,5 +1,5 @@
 
-import { ConnectionsControllerGetConnectionsData, ConnectionsControllerGetConnectionData, ConnectionsControllerGetConnectionsResponse, GetConnectionsResponseDto, GetConnectionInfoData, GetConnectionInfoResponse, ConnectionsControllerInitiateConnectionData } from "../client";
+import { ConnectionsControllerGetConnectionsData,InitiateConnectionPayloadDto, GetConnectionsResponseDto, GetConnectionInfoData, GetConnectionInfoResponse, ConnectionsControllerInitiateConnectionData } from "../client";
 import client from "../client/client";
 import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
@@ -11,7 +11,7 @@ export class ConnectedAccounts {
         this.backendClient = backendClient; 
     }
     
-    list(data: Record<string, any> = {}): Promise<GetConnectionsResponseDto>{
+    list(data: ConnectionsControllerGetConnectionsData = {}): Promise<GetConnectionsResponseDto>{
         return apiClient.connections.getConnections({
             query: data
         }).then(res=>{
@@ -20,7 +20,9 @@ export class ConnectedAccounts {
 
     }
 
-     create(data: any = {}): any {
+     create(data: InitiateConnectionPayloadDto = {
+        integrationId: ""
+     }) {
         return apiClient.connections.initiateConnection({
             body: data
         }).then(res=>res.data)

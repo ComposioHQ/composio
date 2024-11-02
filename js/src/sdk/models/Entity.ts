@@ -90,6 +90,7 @@ export class Entity {
         let latestAccount = null;
         let latestCreationDate: Date | null = null;
         const connectedAccounts = await this.connectedAccounts.list({
+            // @ts-ignore
             user_uuid: this.id,
         });
 
@@ -126,7 +127,7 @@ export class Entity {
     }
 
     async disableTrigger(triggerId: string): Promise<any> {
-        return ActiveTriggers.disable({ triggerId: triggerId });
+        return this.activeTriggers.disable({ triggerId: triggerId });
     }
 
     async getConnections(){
@@ -134,6 +135,7 @@ export class Entity {
          * Get all connections for an entity.
          */
         const connectedAccounts = await this.connectedAccounts.list({
+            // @ts-ignore
             user_uuid: this.id
         });
         return connectedAccounts.items!;
@@ -145,6 +147,7 @@ export class Entity {
          */
         const connectedAccounts = await this.getConnections();
         const activeTriggers = await this.activeTriggers.list({
+            // @ts-ignore
            connectedAccountIds: connectedAccounts!.map((account:any) => account.id!).join(",")
         });
         return activeTriggers;
