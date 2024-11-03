@@ -13,7 +13,7 @@ const toolset = new LangchainToolSet();
         }
     });
 
-    console.log("Tools are registered", toolset.getActions());
+    console.log("Tools are registered", toolset.getTools());
 })
 
 
