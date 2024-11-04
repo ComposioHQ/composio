@@ -2,7 +2,6 @@
 import math
 import os
 import shutil
-import warnings
 from collections import Counter, defaultdict, namedtuple
 from importlib import resources
 from pathlib import Path
@@ -15,10 +14,6 @@ from composio.tools.local.base.utils.utils import (
     print_if_verbose,
     token_count,
 )
-
-
-# Suppress FutureWarning from tree_sitter
-warnings.simplefilter("ignore", category=FutureWarning)
 
 
 # Define a named tuple for storing tag information

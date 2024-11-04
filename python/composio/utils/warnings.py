@@ -1,22 +1,29 @@
 """Composio version helpers."""
 
+import os
+
 import requests
 import rich
 from semver import VersionInfo
 
 
+COMPOSIO_PYPI_METADATA = "https://pypi.org/pypi/composio-core/json"
+
+
 def create_latest_version_warning_hook(version: str):
     def latest_version_warning() -> None:
         try:
-            request = requests.get(
-                "https://pypi.org/pypi/composio-core/json",
-                timeout=10.0,
-            )
+            if (
+                os.environ.get("COMPOSIO_DISABLE_VERSION_CHECK", "false").lower()
+                == "true"
+            ):
+                return
+
+            request = requests.get(COMPOSIO_PYPI_METADATA, timeout=10.0)
             if request.status_code != 200:
                 return
 
             data = request.json()
-
             current_version = VersionInfo.parse(version)
             latest_version = VersionInfo.parse(data["info"]["version"])
 
