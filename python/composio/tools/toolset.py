@@ -77,9 +77,6 @@ ParamType = t.TypeVar("ParamType")
 ProcessorType = te.Literal["pre", "post", "schema"]
 AuthSchemeType = t.Literal["OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN"]
 
-# Enable deprecation warnings
-warnings.simplefilter("always", DeprecationWarning)
-
 
 class IntegrationParams(te.TypedDict):
 
@@ -1071,7 +1068,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         return self.client.actions.get(actions=[action]).pop()
 
     def get_trigger(self, trigger: TriggerType) -> TriggerModel:
-        return self.client.triggers.get(triggers=[trigger]).pop()
+        return self.client.triggers.get(trigger_names=[trigger]).pop()
 
     def get_integration(self, id: str) -> IntegrationModel:
         return self.client.integrations.get(id=id)
