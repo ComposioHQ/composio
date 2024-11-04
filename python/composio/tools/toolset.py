@@ -77,9 +77,6 @@ ParamType = t.TypeVar("ParamType")
 ProcessorType = te.Literal["pre", "post", "schema"]
 AuthSchemeType = t.Literal["OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN"]
 
-# Enable deprecation warnings
-warnings.simplefilter("always", DeprecationWarning)
-
 
 class IntegrationParams(te.TypedDict):
 
