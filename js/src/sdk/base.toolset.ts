@@ -7,11 +7,13 @@ import { getEnvVariable } from "../utils/shared";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
-import axios from "axios";
 import { AppConnectorControllerGetConnectorInfoResponse, ExecuteActionResDTO } from "./client/types.gen";
 import {  saveFile } from "./utils/fileUtils";
 import { convertReqParams, converReqParamForActionExecution } from "./utils";
+import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
+import z from 'zod';
 import { getUserDataJson } from "./utils/config";
+
 
 type GetListActionsResponse = any;
 
@@ -24,6 +26,7 @@ export class ComposioToolSet {
     workspaceEnv: ExecEnv;
 
     localActions: IPythonActionDetails["data"] | undefined;
+    customActionRegistry: ActionRegistry;
 
     constructor(
         apiKey: string | null,
@@ -38,6 +41,7 @@ export class ComposioToolSet {
         }
         this.apiKey = clientApiKey;
         this.client = new Composio(this.apiKey, baseUrl || undefined, runtime as string );
+        this.customActionRegistry = new ActionRegistry(this.client);
         this.runtime = runtime;
         this.entityId = entityId;
 
@@ -60,109 +64,8 @@ export class ComposioToolSet {
 
     async getExpectedParamsForUser(
         params: { app?: string; integrationId?: string; entityId?: string; authScheme?: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" } = {},
-    ): Promise<{ expectedInputFields: AppConnectorControllerGetConnectorInfoResponse["expectedInputFields"], integrationId: string, authScheme: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" }> {
-        const { app, entityId } = params;
-        let { integrationId } = params;
-        if (integrationId === null && app === null) {
-            throw new Error(
-                "Both `integration_id` and `app` cannot be None"
-            );
-        }
-
-        if (!integrationId) {
-            try {
-                const integrations = await this.client.integrations.list({
-                    appName: app!,
-                    showDisabled: false
-                })
-                if (params.authScheme && integrations) {
-                    integrations.items = integrations.items.filter((integration: any) => integration.authScheme === params.authScheme);
-                }
-                integrationId = (integrations?.items[0] as any)?.id;
-            } catch (_) {
-                // do nothing
-            }
-        }
-
-        let integration =  integrationId ? (await this.client.integrations.get({
-            integrationId: integrationId!
-        })) : undefined;
-
-        if(integration) {
-            return {
-                expectedInputFields: integration.expectedInputFields,
-                integrationId: integration.id!,
-                authScheme: integration.authScheme as "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT"
-            }
-        }
-
-        const appInfo = await this.client.apps.get({
-            appKey: app!.toLocaleLowerCase()
-        });
-
-        const preferredAuthScheme = ["OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN", "BASIC_WITH_JWT"];
-
-        let schema: typeof preferredAuthScheme[number] | undefined = params.authScheme;
-        
-        if(!schema) {
-            for(const scheme of preferredAuthScheme) {
-                if(appInfo.auth_schemes?.map((_authScheme: any) => _authScheme.mode).includes(scheme)) {
-                    schema = scheme;
-                    break;
-                }
-            }
-        }
-
-        const areNoFieldsRequiredForIntegration = (appInfo.testConnectors?.length ?? 0) > 0 || ((appInfo.auth_schemes?.find((_authScheme: any) => _authScheme.mode === schema) as any)?.fields?.filter((field: any) => !field.expected_from_customer)?.length ?? 0) == 0;
-
-        if (!areNoFieldsRequiredForIntegration) {
-            throw new Error(
-                `No default credentials available for this app, please create new integration by going to app.composio.dev or through CLI - composio add ${appInfo.key}`
-            );
-        }
-
-        const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
-
-        if(appInfo.testConnectors?.length! > 0) {
-            integration = await this.client.integrations.create({
-                appId: appInfo.appId,
-                name: `integration_${timestamp}`,
-                authScheme: schema,
-                authConfig: {},
-                useComposioAuth: true,
-            });
-
-            return { 
-                expectedInputFields: integration?.expectedInputFields!,
-                integrationId: integration?.id!,
-                authScheme: integration?.authScheme as "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT"
-            }
-        }
-
-        if(!schema) {
-            throw new Error(
-                `No supported auth scheme found for \`${String(app)}\`, ` +
-                "Please create an integration and use the ID to " +
-                "get the expected parameters."
-            );
-        }
-
-        integration = await this.client.integrations.create({
-            appId: appInfo.appId,
-            name: `integration_${timestamp}`,
-            authScheme: schema,
-            authConfig: {},
-            useComposioAuth: false,
-        });
-
-        if(!integration) {
-            throw new Error("An unexpected error occurred while creating the integration, please create an integration manually and use its ID to get the expected parameters");
-        }
-        return { 
-            expectedInputFields: integration.expectedInputFields,
-            integrationId: integration.id!,
-            authScheme: integration.authScheme as "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT"
-        }
+    ) {
+       return this.client.getExpectedParamsForUser(params);
     }
 
     async setup() {
@@ -190,9 +93,18 @@ export class ComposioToolSet {
             }
         });
         const uniqueLocalActions = Array.from(localActionsMap.values());
+        const _newActions = filters.actions?.map((action: string) => action.toLowerCase());
+        const toolsWithCustomActions = (await this.customActionRegistry.getActions({ actions: _newActions!})).filter((action: any) => {
+            if (_newActions && !_newActions.includes(action.parameters.title.toLowerCase()!)) {
+                return false;
+            }
+            return true;
+        }).map((action: any) => {
+            return action;
+        });
 
-        const toolsActions = [...actions!, ...uniqueLocalActions];
-
+        const toolsActions = [...actions!, ...uniqueLocalActions, ...toolsWithCustomActions];
+        
         return toolsActions.map((action: any) => {
             return this.modifyActionForLocalExecution(action);
         });
@@ -202,6 +114,17 @@ export class ComposioToolSet {
         return this.client.connectedAccounts.getAuthParams({
             connectedAccountId: data.connectedAccountId
         })
+    }
+
+    async getTools(
+        filters: {
+            apps: Sequence<string>;
+            tags?: Optional<Array<string>>;
+            useCase?: Optional<string>;
+        },
+        entityId?: Optional<string>
+    ): Promise<any> {
+        throw new Error("Not implemented");
     }
 
     async getToolsSchema(
@@ -233,7 +156,24 @@ export class ComposioToolSet {
             }
         }
         const uniqueLocalActions = Array.from(localActions.values());
-        const toolsActions = [...apps.items!, ...uniqueLocalActions];
+
+        const toolsWithCustomActions = (await this.customActionRegistry.getAllActions()).filter((action: any) => {
+            if (filters.actions && !filters.actions.some(actionName => actionName.toLowerCase() === action.metadata.actionName!.toLowerCase())) {
+                return false;
+            }
+            if (filters.apps && !filters.apps.some(appName => appName.toLowerCase() === action.metadata.toolName!.toLowerCase())) {
+                return false;
+            }
+            if (filters.tags && !filters.tags.some(tag => tag.toLocaleLowerCase() === "custom".toLocaleLowerCase())) {
+                return false;
+            }
+            return true;
+        }).map((action: any) => {
+            console.log("Action is", action);
+            return action.schema;
+        });
+
+        const toolsActions = [...apps.items!, ...uniqueLocalActions, ...toolsWithCustomActions];
         
         return toolsActions.map((action: any) => {
             return this.modifyActionForLocalExecution(action);
@@ -261,32 +201,26 @@ export class ComposioToolSet {
         return toolSchema;
     }
 
-
-    async getActions(
-        filters: {
-            actions?: Optional<Sequence<string>>
-        } = {},
-        entityId?: Optional<string>
-    ): Promise<any> {
-        throw new Error("Not implemented");
+    async createAction(options: CreateActionOptions) {
+        return this.customActionRegistry.createAction(options);
     }
 
-    async getTools(
-        filters: {
-            apps: Sequence<string>;
-            tags?: Optional<Array<string>>;
-            useCase?: Optional<string>;
-        },
-        entityId?: Optional<string>
-    ): Promise<any> {
-        throw new Error("Not implemented");
+    private isCustomAction(action: string) {
+        return this.customActionRegistry.getActions({ actions: [action] }).then((actions: any) => actions.length > 0);
     }
 
     async executeAction(
         action: string,
         params: Record<string, any>,
-        entityId: string = "default"
+        entityId: string = "default",
+        nlaText: string = ""
     ): Promise<Record<string, any>> {
+        // Custom actions are always executed in the host/local environment for JS SDK
+        if(await this.isCustomAction(action)) {
+            return this.customActionRegistry.executeAction(action, params, {
+                entityId: entityId
+            });
+        }
         if(this.workspaceEnv && this.workspaceEnv !== ExecEnv.HOST) {
             const workspace = await this.workspace.get();
             return workspace.executeAction(action, params, {
@@ -294,7 +228,7 @@ export class ComposioToolSet {
             });
         }
         params = await converReqParamForActionExecution(params);
-        const data =  await this.client.getEntity(entityId).execute(action, params);
+        const data =  await this.client.getEntity(entityId).execute(action, params, nlaText);
 
         return this.processResponse(data,{
             action: action,

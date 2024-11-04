@@ -90,13 +90,13 @@ all_requirements = (
 
 setup(
     name="composio_core",
-    version="0.5.35",
+    version="0.5.38",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
-    url="https://github.com/SamparkAI/composio_sdk",
+    url="https://github.com/composiohq/composio",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",

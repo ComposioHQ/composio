@@ -1,10 +1,9 @@
-# fmt: off
-
 """
 Composio SDK client.
 """
 
 import os
+import sys
 import typing as t
 from datetime import datetime
 from pathlib import Path
@@ -63,7 +62,7 @@ class Composio(BaseClient):
         self,
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
-        runtime: t.Optional[str] = None
+        runtime: t.Optional[str] = None,
     ) -> None:
         """
         Initialize Composio SDK client
@@ -98,12 +97,10 @@ class Composio(BaseClient):
             cache_dir = Path.home() / LOCAL_CACHE_DIRECTORY_NAME
             user_data_path = cache_dir / USER_DATA_FILE_NAME
             user_data = (
-                UserData.load(path=user_data_path)
-                if user_data_path.exists() else None
+                UserData.load(path=user_data_path) if user_data_path.exists() else None
             )
             env_api_key = (
-                (user_data.api_key if user_data else None)
-                or os.environ.get(ENV_COMPOSIO_API_KEY)
+                user_data.api_key if user_data else os.environ.get(ENV_COMPOSIO_API_KEY)
             )
             if env_api_key:
                 self._api_key = env_api_key
@@ -262,7 +259,7 @@ class Entity:
                 entity_id=self.id,
                 session_id=session_id,
                 text=text,
-                auth=auth
+                auth=auth,
             )
 
         connected_account = self.get_connection(
@@ -277,7 +274,7 @@ class Entity:
             connected_account=connected_account.id,
             session_id=session_id,
             text=text,
-            auth=auth
+            auth=auth,
         )
 
     def get_connection(
@@ -315,11 +312,28 @@ class Entity:
                     latest_account = connected_account
 
         if latest_account is None:
-            raise NoItemsFound(
-                f"Could not find a connection with app='{app}',"
-                f"connected_account_id=`{connected_account_id}` and "
-                f"entity=`{self.id}`"
+            entity = self.id
+            suggestion = (
+                f"composio add {app}"
+                if entity == DEFAULT_ENTITY_ID
+                else f"composio add {app} -e {entity}"
             )
+            note = f"Run this command to create a new connection: {suggestion}"
+            doc_note = "Read more here: https://dub.composio.dev/auth-help"
+            if sys.version_info >= (3, 11):
+                exception = NoItemsFound(
+                    f"Could not find a connection with {app=},"
+                    f" {connected_account_id=} and {entity=}."
+                )
+                exception.add_note(note)
+                exception.add_note(doc_note)
+            else:
+                exception = NoItemsFound(
+                    f"Could not find a connection with {app=},"
+                    f" {connected_account_id=} and {entity=}.\n{note}\n{doc_note}"
+                )
+            raise exception
+
         return latest_account
 
     def get_connections(self) -> t.List[ConnectedAccountModel]:

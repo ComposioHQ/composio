@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       composio-core:
-        specifier: 0.2.1-1
-        version: 0.2.1-1(@types/node@22.7.8)(bufferutil@4.0.8)(react@18.3.1)(sswr@2.1.0(svelte@4.2.19))(svelte@4.2.19)(typescript@5.5.3)(utf-8-validate@6.0.4)(vue@3.5.12(typescript@5.5.3))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))
+        specifier: 0.2.8
+        version: 0.2.8(@types/node@22.7.8)(bufferutil@4.0.8)(react@18.3.1)(sswr@2.1.0(svelte@4.2.19))(svelte@4.2.19)(typescript@5.5.3)(utf-8-validate@6.0.4)(vue@3.5.12(typescript@5.5.3))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))
       hono:
         specifier: ^4.2.5
         version: 4.4.12
@@ -727,8 +727,8 @@ packages:
     resolution: {integrity: sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA==}
     engines: {node: '>=18'}
 
-  composio-core@0.2.1-1:
-    resolution: {integrity: sha512-oE/8YGaaDHKYIngmxpyAobSeTh3lcjfnlu7+YegyILGnie3n1jjbEA1T0CKa4Nf4xVov36FnGT2U7YevAdTwgg==}
+  composio-core@0.2.8:
+    resolution: {integrity: sha512-QFg9NH60A73FBAcdjsYlKq4AoKvG2YllZi7AU1IY8Szp7rh7MQcKGJMbTsJT9Fc8XQBs78p/UlLN+wRC9095xQ==}
     hasBin: true
 
   consola@3.2.3:
@@ -2440,7 +2440,7 @@ snapshots:
 
   commander@12.1.0: {}
 
-  composio-core@0.2.1-1(@types/node@22.7.8)(bufferutil@4.0.8)(react@18.3.1)(sswr@2.1.0(svelte@4.2.19))(svelte@4.2.19)(typescript@5.5.3)(utf-8-validate@6.0.4)(vue@3.5.12(typescript@5.5.3))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)):
+  composio-core@0.2.8(@types/node@22.7.8)(bufferutil@4.0.8)(react@18.3.1)(sswr@2.1.0(svelte@4.2.19))(svelte@4.2.19)(typescript@5.5.3)(utf-8-validate@6.0.4)(vue@3.5.12(typescript@5.5.3))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)):
     dependencies:
       '@ai-sdk/openai': 0.0.36(zod@3.23.8)
       '@e2b/code-interpreter': 0.0.8(bufferutil@4.0.8)(utf-8-validate@6.0.4)
