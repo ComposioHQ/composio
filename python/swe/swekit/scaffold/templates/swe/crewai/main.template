@@ -1,6 +1,6 @@
 from inputs import from_github
 import uuid
-from agent import composio_toolset, crew
+from agent import get_crew
 from composio import Action
 from tools import create_pr
 
@@ -8,6 +8,7 @@ def main() -> None:
     """Run the agent."""
     repo, issue = from_github()
     owner, repo_name = repo.split("/")
+    crew, composio_toolset = get_crew(repo_path=f"/home/user/{repo_name}", workspace_id=None)
     crew.kickoff(
         inputs={
             "repo": repo,
@@ -43,7 +44,7 @@ def main() -> None:
             "repo": repo_name,
             "head": branch_name,
             "base": "master",
-            "title": "Test-Title",
+            "title": "Composio generated PR",
         },
     )  
 
