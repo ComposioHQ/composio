@@ -1,4 +1,4 @@
-import { ActionsListResponseDTO, ExecuteActionResDTO } from "../client";
+import { ActionsControllerV2ListActionsData, ActionsListResponseDTO, ExecuteActionResDTO } from "../client";
 import apiClient from "../client/client";
 import { BackendClient } from "./backendClient";
 
@@ -173,7 +173,7 @@ export class Actions {
      * @returns {CancelablePromise<GetListActionsResponse>} A promise that resolves to the list of all actions.
      * @throws {ApiError} If the request fails.
      */
-    list(data: GetListActionsData = {}): Promise<ActionsListResponseDTO> {
+    list(data: ActionsControllerV2ListActionsData["query"] = {}): Promise<ActionsListResponseDTO> {
         return apiClient.actionsV2.v2ListActions({
             query: {
                 actions: data.actions,
@@ -182,8 +182,9 @@ export class Actions {
                 tags: data.tags,
                 useCase: data.useCase as string,
                 filterImportantActions: data.filterImportantActions,
-                showEnabledOnly: data.showEnabledOnly
-
+                showEnabledOnly: data.showEnabledOnly,
+                limit: data.limit,
+                page: data.page
             }
         }).then(res => {
             return res.data!

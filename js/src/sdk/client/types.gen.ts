@@ -2094,6 +2094,7 @@ export type ActionsControllerV2ListActionsData = {
         tags?: string;
         useCase?: string;
         usecaseLimit?: number;
+        page?: number;
     };
 };
 
