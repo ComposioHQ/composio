@@ -5,6 +5,8 @@ Composio SDK tools.
 import base64
 import binascii
 import hashlib
+import importlib
+import inspect
 import itertools
 import json
 import os
@@ -75,9 +77,6 @@ ParamType = t.TypeVar("ParamType")
 ProcessorType = te.Literal["pre", "post", "schema"]
 AuthSchemeType = t.Literal["OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN"]
 
-# Enable deprecation warnings
-warnings.simplefilter("always", DeprecationWarning)
-
 
 class IntegrationParams(te.TypedDict):
 
@@ -119,6 +118,31 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
         return func(self, *args, **kwargs)  # type: ignore
 
     return wrapper  # type: ignore
+
+
+def load_action(
+    client: Composio, value, warn=True
+) -> Action:  # pylint: disable=used-prior-global-declaration
+    global Action
+    try:
+        return Action(value=value, warn=warn)
+    except EnumStringNotFound:
+        # run update apps, and reload actions
+        from composio.cli.apps import (  # pylint: disable=import-outside-toplevel
+            update_actions,
+            update_apps,
+        )
+
+        apps = update_apps(client)
+        update_actions(client, apps)
+
+        action_enum_module = inspect.getmodule(Action)
+        assert action_enum_module is not None
+        reloaded_action_module = importlib.reload(action_enum_module)
+
+        Action = reloaded_action_module.Action  # type: ignore
+
+    return Action(value=value, warn=warn)
 
 
 class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
@@ -412,7 +436,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
-        action = Action(action)
+        action = load_action(self.client, action)
         if action.no_auth or action.is_runtime:
             return
 
@@ -1044,7 +1068,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         return self.client.actions.get(actions=[action]).pop()
 
     def get_trigger(self, trigger: TriggerType) -> TriggerModel:
-        return self.client.triggers.get(triggers=[trigger]).pop()
+        return self.client.triggers.get(trigger_names=[trigger]).pop()
 
     def get_integration(self, id: str) -> IntegrationModel:
         return self.client.integrations.get(id=id)
@@ -1066,6 +1090,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def get_connected_account(self, id: str) -> ConnectedAccountModel:
         return self.client.connected_accounts.get(connection_id=id)
+
+    def get_connected_accounts(self) -> t.List[ConnectedAccountModel]:
+        return self.client.connected_accounts.get()
 
     def get_entity(self, id: t.Optional[str] = None) -> Entity:
         """Get entity object for given ID."""
@@ -1140,15 +1167,17 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             "expected_params": integration.expectedInputFields,
         }
 
-    def _can_use_auth_scheme(self, scheme: AppAuthScheme, app: AppModel) -> bool:
+    def _can_use_auth_scheme_without_user_input(
+        self, scheme: AppAuthScheme, app: AppModel
+    ) -> bool:
         if (
             scheme.auth_mode in ("OAUTH2", "OAUTH1")
-            and len(app.testConnectors or []) == 0
+            and len(app.testConnectors or []) > 0
         ):
-            return False
+            return True
 
         for field in scheme.fields:
-            if not field.expected_from_customer:
+            if not field.expected_from_customer and field.required:
                 return False
 
         return True
@@ -1195,7 +1224,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         for scheme in app_data.auth_schemes or []:
             if auth_scheme is not None and auth_scheme != scheme.auth_mode.upper():
                 continue
-            if self._can_use_auth_scheme(scheme=scheme, app=app_data):
+            if self._can_use_auth_scheme_without_user_input(
+                scheme=scheme, app=app_data
+            ):
                 integration = self.create_integration(
                     app=app,
                     auth_mode=scheme.auth_mode,

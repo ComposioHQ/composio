@@ -151,7 +151,15 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
     endpoint = v1 / "connectedAccounts"
 
     @t.overload  # type: ignore
-    def get(self, connection_id: t.Optional[str] = None) -> ConnectedAccountModel:
+    def get(self) -> t.List[ConnectedAccountModel]:
+        """
+        Get all connected accounts
+
+        :return: List of Connected accounts
+        """
+
+    @t.overload  # type: ignore
+    def get(self, connection_id: str) -> ConnectedAccountModel:
         """
         Get an account by connection ID
 
@@ -717,7 +725,7 @@ class Triggers(Collection[TriggerModel]):
 
     def get(  # type: ignore
         self,
-        triggers: t.Optional[t.List[TriggerType]] = None,
+        trigger_names: t.Optional[t.List[TriggerType]] = None,
         apps: t.Optional[t.List[str]] = None,
     ) -> t.List[TriggerModel]:
         """
@@ -728,8 +736,8 @@ class Triggers(Collection[TriggerModel]):
         :return: List of triggers filtered by provided parameters
         """
         queries = {}
-        if triggers is not None and len(triggers) > 0:
-            queries["triggerIds"] = to_trigger_names(triggers)
+        if trigger_names is not None and len(trigger_names) > 0:
+            queries["triggerIds"] = to_trigger_names(trigger_names)
         if apps is not None and len(apps) > 0:
             queries["appNames"] = ",".join(apps)
         return super().get(queries=queries)
