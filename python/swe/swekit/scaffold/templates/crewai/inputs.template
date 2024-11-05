@@ -36,20 +36,23 @@ def _create_github_issue_validator(owner: str, name: str) -> t.Callable[[str], s
 
     def _github_issue_validator(value: str) -> str:
         """Validate github issue."""
+        # Check if it's a file path
         if Path(value).resolve().exists():
             return Path(value).read_text(encoding="utf-8")
 
-        if re.match(r"^\d+$", value):
+        # Check if it's a numeric issue ID
+        if value.isdigit():
             response_data = composio_toolset.execute_action(
-                action=Action.GITHUB_ISSUES_GET,
+                action=Action.GITHUB_GET_AN_ISSUE,
                 params={
                     "owner": owner,
                     "repo": name,
                     "issue_number": int(value),
                 },
-            ).get("response_data")
-            return response_data["body"]
+            )
+            return response_data['data']["body"]
 
+        # If neither a file nor issue ID, treat as direct description text
         return value
 
     return _github_issue_validator
