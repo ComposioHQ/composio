@@ -7,7 +7,9 @@ try:
     from anthropic.types.beta.tools import ToolUseBlock, ToolsBetaMessage
     from anthropic.types.beta.tools.tool_param import ToolParam
 
-    BetaToolUseBlock = object  # type: ignore
+    class BetaToolUseBlock:  # type: ignore
+        pass
+
 except ModuleNotFoundError:
     from anthropic.types.tool_use_block import ToolUseBlock
     from anthropic.types.tool_param import ToolParam

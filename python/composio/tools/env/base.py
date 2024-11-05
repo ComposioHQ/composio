@@ -177,10 +177,7 @@ class Workspace(WithLogger, ABC):
             ENV_GITHUB_ACCESS_TOKEN: self.github_access_token,
             f"_COMPOSIO_{ENV_GITHUB_ACCESS_TOKEN}": self.github_access_token,
             ENV_ACCESS_TOKEN: self.access_token,
-            # TOFIX: Debug why is this not passed down
-            "DISPLAY": ":1",
         }
-
         self.persistent = config.persistent
 
     def __str__(self) -> str:

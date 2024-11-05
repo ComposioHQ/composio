@@ -163,11 +163,11 @@ class HostShell(Shell):
         except BrokenPipeError as e:
             raise RuntimeError(str(e)) from e
 
-    def exec(self, cmd: str) -> t.Dict:  # type: ignore
+    def exec(self, cmd: str, wait: bool = True) -> t.Dict:  # type: ignore
         """Execute command on container."""
         self._write(cmd=cmd)
         return {
-            **self._read(cmd=cmd, wait=True),
+            **self._read(cmd=cmd, wait=wait),
             EXIT_CODE: self._get_exit_code(),
         }
 
@@ -262,16 +262,11 @@ class SSHShell(Shell):
             clean = clean[1:]
         return clean.replace("(.dev)\n", "")
 
-    def exec(  # type: ignore
-        self,
-        cmd: str,
-        stdin: t.Optional[str] = None,
-        wait: bool = True,
-    ) -> t.Dict:
+    def exec(self, cmd: str, wait: bool = True) -> t.Dict:
         """Execute a command and return output and exit code."""
         output = ""
         for _cmd in cmd.split(" && "):
-            self._send(buffer=_cmd, stdin=stdin)
+            self._send(buffer=_cmd)
             if wait:
                 self._wait(cmd=_cmd)
             output += self._sanitize_output(output=self._read())
