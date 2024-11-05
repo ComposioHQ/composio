@@ -18,8 +18,12 @@ PYDANTIC_TYPE_TO_PYTHON_TYPE = {
     "integer": int,
     "number": float,
     "boolean": bool,
+    "array": t.List,
+    "object": t.Dict,
     "null": t.Optional[t.Any],
 }
+
+CONTAINER_TYPE = ("array", "object")
 
 # Should be deprecated,
 # required values will always be provided by users
@@ -221,7 +225,10 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
         prop_type = prop_info["type"]
         prop_title = prop_info["title"].replace(" ", "")
         prop_default = prop_info.get("default", FALLBACK_VALUES[prop_type])
-        if prop_type in PYDANTIC_TYPE_TO_PYTHON_TYPE:
+        if (
+            prop_type in PYDANTIC_TYPE_TO_PYTHON_TYPE
+            and prop_type not in CONTAINER_TYPE
+        ):
             signature_prop_type = PYDANTIC_TYPE_TO_PYTHON_TYPE[prop_type]
         else:
             signature_prop_type = pydantic_model_from_param_schema(prop_info)
