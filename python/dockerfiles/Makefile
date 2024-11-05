@@ -40,6 +40,15 @@ flyio: _copy-composio
 	@docker buildx build --platform linux/amd64,linux/arm64 -t composio/composio:dev -f Dockerfile.ci . --push
 	@rm -rf ./composio
 
+.PHONY: computer-dev
+computer-dev:  _copy-composio
+	@docker build . -t composio/anthropic-computer:dev -f Dockerfile.computer.dev
+	@rm -rf ./composio
+
+.PHONY: computer
+computer:
+	@docker build . -t composio/anthropic-computer -f Dockerfile.computer
+
 .PHONY: publish
 publish:
 	@docker buildx build --platform linux/amd64,linux/arm64 -t composio/composio:$$VERSION . --push
