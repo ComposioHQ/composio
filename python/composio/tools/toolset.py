@@ -1167,15 +1167,17 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             "expected_params": integration.expectedInputFields,
         }
 
-    def _can_use_auth_scheme(self, scheme: AppAuthScheme, app: AppModel) -> bool:
+    def _can_use_auth_scheme_without_user_input(
+        self, scheme: AppAuthScheme, app: AppModel
+    ) -> bool:
         if (
             scheme.auth_mode in ("OAUTH2", "OAUTH1")
-            and len(app.testConnectors or []) == 0
+            and len(app.testConnectors or []) > 0
         ):
-            return False
+            return True
 
         for field in scheme.fields:
-            if not field.expected_from_customer:
+            if not field.expected_from_customer and field.required:
                 return False
 
         return True
@@ -1222,7 +1224,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         for scheme in app_data.auth_schemes or []:
             if auth_scheme is not None and auth_scheme != scheme.auth_mode.upper():
                 continue
-            if self._can_use_auth_scheme(scheme=scheme, app=app_data):
+            if self._can_use_auth_scheme_without_user_input(
+                scheme=scheme, app=app_data
+            ):
                 integration = self.create_integration(
                     app=app,
                     auth_mode=scheme.auth_mode,
