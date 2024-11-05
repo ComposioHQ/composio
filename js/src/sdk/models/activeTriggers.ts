@@ -14,7 +14,7 @@ type TActiveTrigger = {
         createdAt: string;
         updatedAt: string;
         disabledAt: string | null;
-    disabledReason: string | null;
+        disabledReason: string | null;
 }
 type TActiveTriggersListResponse = {
     triggers: Array<TActiveTrigger>;
