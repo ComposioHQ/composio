@@ -93,12 +93,12 @@ Before getting started, ensure you have the following set up:
 
 ## Getting Started
 
-### Creating a new agent
+### Creating a new SWE agent
 
 1. Scaffold your agent using:
 
    ```
-   swekit scaffold crewai -o <path>
+   swekit scaffold swe -f <framework> -o <path>
    ```
 
    This creates a new agent in `<path>/agent` with four key files:
