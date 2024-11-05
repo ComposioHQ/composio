@@ -24,7 +24,6 @@ from composio.tools.base.runtime import action  # noqa: E402
 from composio.tools.env.factory import (  # noqa: E402
     WorkspaceConfigType,
     WorkspaceFactory,
-    WorkspaceTemplate,
     WorkspaceType,
 )
 from composio.tools.env.host.shell import Shell  # noqa: E402
@@ -46,13 +45,12 @@ __all__ = (
     "CustomAuthObject",
     "WorkspaceType",
     "WorkspaceConfigType",
-    "WorkspaceTemplate",
     "WorkspaceFactory",
     "Shell",
     "action",
     "LogLevel",
 )
 
-__version__ = "0.5.38-rc.2"
+__version__ = "0.5.38"
 
 atexit.register(create_latest_version_warning_hook(version=__version__))
