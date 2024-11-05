@@ -858,6 +858,16 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         for item in items:
             item = self._process_schema(item)
 
+            # This is to support anthropic-claude
+            if item.name == Action.ANTHROPIC_BASH_COMMAND.slug:
+                item.name = "bash"
+
+            if item.name == Action.ANTHROPIC_COMPUTER.slug:
+                item.name = "computer"
+
+            if item.name == Action.ANTHROPIC_TEXT_EDITOR.slug:
+                item.name = "str_replace_editor"
+
         return items
 
     def _process_schema(self, action_item: ActionModel) -> ActionModel:
