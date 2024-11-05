@@ -1,6 +1,6 @@
 import os
 
-from agent_lang import get_graph
+from agent import get_graph
 from inputs import from_github
 from langchain_core.messages import HumanMessage
 from tools import get_pr_metadata
