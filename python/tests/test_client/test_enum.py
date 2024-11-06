@@ -124,7 +124,7 @@ def test_action_enum() -> None:
     """Test `Action` enum."""
     act = Action("github_issues_list")
     assert act.app == "github"
-    assert act.name == "GITHUB_LIST_ISSUES_ASSIGNED_TO_THE_AUTHENTICATED_USER"
+    assert act.slug == "GITHUB_LIST_ISSUES_ASSIGNED_TO_THE_AUTHENTICATED_USER"
     assert not act.no_auth
 
 
