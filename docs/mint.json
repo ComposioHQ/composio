@@ -154,6 +154,7 @@
     {
       "group": "SweKit",
       "pages": [
+        "swekit-tools/introduction",
         "swekit-js/introduction",
         "swekit/introduction",
         "swekit/benchmarks"
