@@ -24,7 +24,7 @@ export class ConnectedAccounts {
 
     async create(data: InitiateConnectionPayloadDto) {
         try {
-            const {data:    res} = await apiClient.connections.initiateConnection({ body: data });
+            const {data:res} = await apiClient.connections.initiateConnection({ body: data });
             //@ts-ignore
             return new ConnectionRequest(res.connectionStatus, res.connectedAccountId, res.redirectUrl);
         } catch (error) {

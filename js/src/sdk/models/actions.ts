@@ -163,7 +163,7 @@ export class Actions {
             }
         });
 
-            return (actions.data! as unknown as any[])[0];
+            return (actions.data!);
         } catch(e){
             throw CEG.handleError(e)
         }
