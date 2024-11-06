@@ -3,7 +3,7 @@ import { Command } from "commander";
 import { Composio } from "../sdk";
 import inquirer from "inquirer";
 import open from "open";
-import { GetConnectionInfoData, GetConnectionInfoResponse, GetConnectorInfoResDTO, GetConnectorListResDTO } from "../sdk/client";
+import { GetConnectorInfoResDTO, GetConnectorListResDTO } from "../sdk/client";
 
 export default class AddCommand {
   private program: Command;
@@ -108,7 +108,8 @@ export default class AddCommand {
     const { expectedInputFields } = data!;
 
 
-    const config = await this.collectInputFields(expectedInputFields, true);
+
+    const config = await this.collectInputFields(expectedInputFields as any , true);
 
     const connectionData = await composioClient.connectedAccounts.create({
       integrationId,

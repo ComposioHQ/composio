@@ -114,14 +114,12 @@ class AppUpdateCommand {
             .map((app) => `'${app.key.toUpperCase()}': '${app.key}'`)
             .join(",\n") || [],
       );
-    // @ts-ignore
-    const actionsList = await client.actionsV2
-      .v2ListActions({})
+    const actionsList = await client.actionsV2.listActionsMinimalV2({})
       .then(
         (res) =>
           res.data?.items
             // @ts-ignore
-            .map((action) => `'${action.enum}': '${action.enum}'`)
+            .map((action) => `'${action.name}': '${action.enum}'`)
             .join(",\n") || [],
       );
 

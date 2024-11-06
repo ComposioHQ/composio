@@ -1,4 +1,4 @@
-import { ActionExecutionResDto, ActionsListResponseDTO, ExecuteActionResDTO, ExecuteActionV2Data } from "../client";
+import { ActionExecutionReqDTO, ActionExecutionResDto, ActionsListResponseDTO, ExecuteActionResDTO, ExecuteActionV2Data } from "../client";
 import apiClient from "../client/client";
 import { CEG } from "../utils/error";
 import { BackendClient } from "./backendClient";
@@ -209,7 +209,7 @@ export class Actions {
     async execute(data: ExecuteActionData){
         try {
             const { data: res } = await apiClient.actionsV2.executeActionV2({
-                body: data.requestBody as unknown as ExecuteActionV2Data,
+                body: data.requestBody as unknown as ActionExecutionReqDTO,
                 path: {
                     actionId: data.actionName
                 }

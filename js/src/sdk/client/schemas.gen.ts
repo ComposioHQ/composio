@@ -783,6 +783,45 @@ export const $AppListResDTO = {
     required: ['items', 'totalPages']
 } as const;
 
+export const $ExpectedInputFieldsDTO = {
+    properties: {
+        name: {
+            type: 'string',
+            description: 'Name of the field'
+        },
+        type: {
+            type: 'string',
+            description: 'Type of the field'
+        },
+        description: {
+            type: 'string',
+            description: 'Description of the field'
+        },
+        displayName: {
+            type: 'string',
+            description: 'Display name of the field'
+        },
+        default: {
+            type: 'object',
+            description: 'Default value of the field'
+        },
+        required: {
+            type: 'boolean',
+            description: 'Whether the field is required'
+        },
+        expectedFromCustomer: {
+            type: 'boolean',
+            description: 'Whether the field is expected from customer'
+        },
+        isSecret: {
+            type: 'boolean',
+            description: 'Whether the field is a secret'
+        }
+    },
+    type: 'object',
+    required: ['name', 'type', 'description', 'displayName', 'default', 'required', 'expectedFromCustomer', 'isSecret']
+} as const;
+
 export const $GetConnectorInfoResDTO = {
     properties: {
         id: {
@@ -829,7 +868,7 @@ export const $GetConnectorInfoResDTO = {
         },
         expectedInputFields: {
             items: {
-                type: 'string'
+                '$ref': '#/components/schemas/ExpectedInputFieldsDTO'
             },
             type: 'array',
             description: 'List of required fields expected from the customer'
@@ -1525,8 +1564,7 @@ export const $GetConnectionsQueryDto = {
 export const $InitiateConnectionPayloadDto = {
     properties: {
         data: {
-            type: 'string',
-            minLength: 1
+            type: 'object'
         },
         integrationId: {
             minLength: 1,
@@ -1543,7 +1581,7 @@ export const $InitiateConnectionPayloadDto = {
         }
     },
     type: 'object',
-    required: ['integrationId']
+    required: ['data', 'integrationId']
 } as const;
 
 export const $InitiateConnectionResponse = {

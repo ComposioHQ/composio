@@ -555,6 +555,43 @@ export type AppListResDTO = {
     totalPages: number;
 };
 
+export type ExpectedInputFieldsDTO = {
+    /**
+     * Name of the field
+     */
+    name: string;
+    /**
+     * Type of the field
+     */
+    type: string;
+    /**
+     * Description of the field
+     */
+    description: string;
+    /**
+     * Display name of the field
+     */
+    displayName: string;
+    /**
+     * Default value of the field
+     */
+    default: {
+        [key: string]: unknown;
+    };
+    /**
+     * Whether the field is required
+     */
+    required: boolean;
+    /**
+     * Whether the field is expected from customer
+     */
+    expectedFromCustomer: boolean;
+    /**
+     * Whether the field is a secret
+     */
+    isSecret: boolean;
+};
+
 export type GetConnectorInfoResDTO = {
     /**
      * Unique identifier of the connector
@@ -601,7 +638,7 @@ export type GetConnectorInfoResDTO = {
     /**
      * List of required fields expected from the customer
      */
-    expectedInputFields: Array<(string)>;
+    expectedInputFields: Array<ExpectedInputFieldsDTO>;
     /**
      * Logo URL of the application associated with the connector
      */
@@ -935,7 +972,9 @@ export type GetConnectionsQueryDto = {
 };
 
 export type InitiateConnectionPayloadDto = {
-    data?: string;
+    data: {
+        [key: string]: unknown;
+    };
     integrationId: string;
     redirectUri?: string;
     userUuid?: string;
@@ -2457,6 +2496,10 @@ export type ClearCacheData = {
 export type ClearCacheResponse = unknown;
 
 export type ClearCacheError = unknown;
+
+export type GenerateCliSessionResponse = GenerateCLISessionResDTO;
+
+export type GenerateCliSessionError = unknown;
 
 export type GetCliCodeData = {
     query: {

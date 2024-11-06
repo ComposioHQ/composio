@@ -4,7 +4,6 @@ import { Apps } from "./apps";
 import { Integrations } from "./integrations";
 import { ActiveTriggers } from "./activeTriggers";
 import { ConnectedAccounts } from "./connectedAccounts";
-import { ExecuteActionResDTO } from "../client";
 import { BackendClient } from "./backendClient";
 import { Triggers } from "./triggers";
 import { CEG } from "../utils/error";
