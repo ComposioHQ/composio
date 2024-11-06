@@ -18,7 +18,7 @@ echo "Login to your Composio acount"
 composio login
 
 # Add calendar tool
-echo "Add Gmail tools. Finish the flow"
+echo "Add Slackbot tools. Finish the flow"
 composio add gmail
 composio add googlesheets 
 
