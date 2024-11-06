@@ -113,12 +113,14 @@ export class CEG {
             }
         }
 
+
+        const axiosDataMessage = axiosError.response?.data?.message || axiosError.message;
        
  
         throw new ComposioError(
             errorKey as string,
             errorDetails.message,
-            errorDetails.description || axiosError.message || "No additional information available.",
+            axiosDataMessage || errorDetails.description  || "No additional information available.",
             errorDetails.possibleFix || "Please check the network connection and the request parameters.",
             axiosError
         );
