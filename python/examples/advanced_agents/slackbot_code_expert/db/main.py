@@ -33,7 +33,4 @@ class ChatDB:
         return self.db.all()
     
 
-# chat_db = ChatDB()
-# new_chat_id = chat_db.create_chat("<your-codebase-name>")
-# print(f"Created new chat with ID: {new_chat_id}")
 
