@@ -111,7 +111,7 @@ class HostWorkspace(Workspace):
         """Create host shell."""
         if self._ssh is not None:
             return SSHShell(client=self._ssh, environment=self.environment)
-        return HostShell()
+        return HostShell(environment=self.environment)
 
     @property
     def shells(self) -> Shells:
