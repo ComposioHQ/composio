@@ -9,6 +9,7 @@ from aiohttp import ClientSession as AsyncSession
 from requests import ReadTimeout
 from requests import Session as SyncSession
 
+from composio import __version__
 from composio.utils import logging
 
 
@@ -94,6 +95,7 @@ class HttpClient(SyncSession, logging.WithLogger):
                 "x-api-key": api_key,
                 "x-source": SOURCE_HEADER,
                 "x-runtime": runtime or DEFAULT_RUNTIME,
+                "x-composio-version": __version__,
             }
         )
         self.timeout = timeout or DEFAULT_REQUEST_TIMEOUT
