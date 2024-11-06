@@ -2,15 +2,12 @@ import re
 import typing as t
 from pathlib import Path
 
-from composio import Action, ComposioToolSet
+from agent import composio_toolset
+from composio import Action
 
 
 InputType = t.TypeVar("InputType")
-workspace_dir = Path.home() / "swe-agent"
-if not workspace_dir.exists():
-    workspace_dir.mkdir(parents=True)
 
-composio_toolset = ComposioToolSet()
 
 def read_user_input(
     prompt: str,
@@ -39,10 +36,12 @@ def _create_github_issue_validator(owner: str, name: str) -> t.Callable[[str], s
 
     def _github_issue_validator(value: str) -> str:
         """Validate github issue."""
+        # Check if it's a file path
         if Path(value).resolve().exists():
             return Path(value).read_text(encoding="utf-8")
 
-        if re.match(r"^\d+$", value):
+        # Check if it's a numeric issue ID
+        if value.isdigit():
             response_data = composio_toolset.execute_action(
                 action=Action.GITHUB_GET_AN_ISSUE,
                 params={
@@ -50,52 +49,30 @@ def _create_github_issue_validator(owner: str, name: str) -> t.Callable[[str], s
                     "repo": name,
                     "issue_number": int(value),
                 },
-            ).get("response_data")
-            return response_data["body"]
+            )
+            return response_data['data']["body"]
 
+        # If neither a file nor issue ID, treat as direct description text
         return value
 
     return _github_issue_validator
 
 
-def set_workspace() -> t.Tuple[str, str, str]:
+def from_github() -> t.Tuple[str, str]:
     """Take input from github."""
     owner, name = read_user_input(
         prompt="Enter github repository name",
         metavar="github repository name",
         validator=_github_repository_name_validator,
     )
-
-    base_commit = read_user_input(
-        prompt="Enter base commit id, leave empty for default branch",
-        metavar="base commit id",
-        validator=lambda x: x,
-    )
-
-    issue_description = read_user_input(
-        prompt="Enter github issue ID or description or path to the file containing description",
-        metavar="github issue",
-        validator=_create_github_issue_validator(
-            owner=owner,
-            name=name,
-        ),
-    )
-
-    composio_toolset.execute_action(
-        action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
-        params={"path": str(workspace_dir)},
-    )
-
-    composio_toolset.execute_action(
-        action=Action.FILETOOL_GIT_CLONE,
-        params={
-            "repo_name": f"{owner}/{name}",
-            "commit_id": base_commit,
-        },
-    )
-    
     return (
         f"{owner}/{name}",
-        str(workspace_dir / name),
-        issue_description,
+        read_user_input(
+            prompt="Enter github issue ID or description or path to the file containing description",
+            metavar="github issue",
+            validator=_create_github_issue_validator(
+                owner=owner,
+                name=name,
+            ),
+        ),
     )

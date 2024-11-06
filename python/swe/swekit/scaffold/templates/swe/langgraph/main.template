@@ -1,0 +1,92 @@
+from inputs import from_github
+from langchain_core.messages import HumanMessage
+import traceback
+from composio import Action
+import uuid 
+from pathlib import Path
+
+from agent import get_agent_graph
+from tools import create_pr
+
+
+def main() -> None:
+    """Run the agent."""
+    repo, issue = from_github()
+    owner, repo_name = repo.split("/")
+
+    graph, composio_toolset, run_file = get_agent_graph(
+        repo_path=f"/home/user/{repo_name}",
+        workspace_id=""
+    )
+    composio_toolset.execute_action(
+        action=Action.FILETOOL_GIT_CLONE,
+        params={
+            "repo_name": f"{owner}/{repo_name}"
+        },
+    )
+    composio_toolset.execute_action(
+        action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
+        params={"path": str(f"/home/user/{repo_name}")},
+    )
+    composio_toolset.execute_action(
+        action=Action.CODE_ANALYSIS_TOOL_CREATE_CODE_MAP,
+        params={},
+    )
+    try:
+        final_state = graph.invoke(
+            {"messages": [HumanMessage(content=f"{issue} in the repo: {repo}")]},
+            {"recursion_limit": 70},
+        )
+        print(final_state["messages"][-1].content)
+    except Exception as e:
+        print("Error raised while agent execution: \n", traceback.format_exc())
+    
+    if Path(run_file).exists():
+        Path(run_file).unlink()
+    
+    composio_toolset.execute_action(
+        action=Action.FILETOOL_CHANGE_WORKING_DIRECTORY,
+        params={"path": f"/home/user/{repo_name}"},
+    )
+    response = composio_toolset.execute_action(
+        action=Action.FILETOOL_GIT_PATCH,
+        params={},
+    )
+
+    data = response.get("data", {})
+    if data.get("error") and len(data["error"]) > 0:
+        print("Error:", data["error"])
+    elif data.get("patch"):
+        print("=== Generated Patch ===\n" + data["patch"])
+    else:
+        raise ValueError("No patch generated")
+
+    branch_name = "test-branch-" + str(uuid.uuid4())[:4]
+    git_commands = [
+        f"checkout -b {branch_name}",
+        "add -u",
+        "config --global user.email 'random@gmail.com'",
+        "config --global user.name 'random'",
+        f"commit -m '{issue}'",
+        f"push --set-upstream origin {branch_name}",
+    ]
+    for command in git_commands:
+        composio_toolset.execute_action(
+            action=Action.FILETOOL_GIT_CUSTOM,
+            params={"cmd": command},
+        )
+    composio_toolset.execute_action(
+        action=create_pr,
+        params={
+            "owner": owner,
+            "repo": repo_name,
+            "head": branch_name,
+            "base": "master",
+            "title": "Composio generated PR",
+        },
+    )  
+
+    
+
+if __name__ == "__main__":
+    main()
