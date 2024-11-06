@@ -145,7 +145,9 @@ class FunctionCallingAgent(Workflow):
 
 
 composio_toolset = ComposioToolSet(
-    workspace_config=WorkspaceType.Docker(image="composio/composio:dev")
+    workspace_config=WorkspaceType.Docker(
+        image="composio/composio:latest",
+    )
 )
 tools = composio_toolset.get_tools(apps=[App.FILETOOL, App.SHELLTOOL])
 
