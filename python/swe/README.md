@@ -98,8 +98,11 @@ Before getting started, ensure you have the following set up:
 1. Scaffold your agent using:
 
    ```
-   swekit scaffold crewai -o <path>
+   swekit scaffold <type> -f <framework> -o <path>
    ```
+
+   - `<type>` can be `swe` or `pr_review` depending on the use-case
+   - `<framework>` can be `crewai` or `langgraph`. Support for more frameworks coming soon!
 
    This creates a new agent in `<path>/agent` with four key files:
 
