@@ -1,4 +1,4 @@
-import { AppConnectorControllerDeleteConnectorData, AppConnectorControllerGetConnectorInfoData, AppConnectorControllerGetConnectorInfoResponse } from "../client";
+import { DeleteConnectorData, GetConnectorInfoData, GetConnectorInfoResDTO, GetConnectorListResDTO } from "../client";
 import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
 import { CEG } from "../utils/error";
@@ -101,10 +101,12 @@ export class Integrations {
      */
     async list(data: ListAllIntegrationsData = {}) {
         try {
-            const response = await apiClient.appConnector.listGlobalConnectors({
+            const response = await apiClient.appConnector.listAllConnectors({
                 query: data
             });
-            return response.data;
+            
+            
+            return response.data
         } catch (error) {
             throw CEG.handleError(error);
         }
@@ -176,7 +178,7 @@ export class Integrations {
         }
     }
 
-    async delete(data: AppConnectorControllerDeleteConnectorData) {
+    async delete(data: DeleteConnectorData) {
         try {
             const response = await apiClient.appConnector.deleteConnector(data);
             return response.data;

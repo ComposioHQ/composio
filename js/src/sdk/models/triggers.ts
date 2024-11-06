@@ -4,10 +4,11 @@ import logger from "../../utils/logger";
 import {BackendClient} from "./backendClient"
 
 import apiClient from "../client/client"
-import { TriggersControllerListTriggersData, TriggersControllerListTriggersResponse } from "../client";
-import { CEG } from "../utils/error";
 
-type RequiredQuery = TriggersControllerListTriggersData["query"];
+import { CEG } from "../utils/error";
+import { ListTriggersData } from "../client";
+
+type RequiredQuery = ListTriggersData["query"];
 
 export class Triggers {
     trigger_to_client_event = "trigger_to_client";
@@ -26,14 +27,14 @@ export class Triggers {
      * @returns {CancelablePromise<ListTriggersResponse>} A promise that resolves to the list of all triggers.
      * @throws {ApiError} If the request fails.
      */
-    async list(data: RequiredQuery={} ): Promise<TriggersControllerListTriggersResponse> {
+    async list(data: RequiredQuery={} ) {
         try {
-            const response = await apiClient.triggers.listTriggers({
+            const {data:response} = await apiClient.triggers.listTriggers({
                 query: {
                     appNames: data?.appNames,
                 }
             });
-            return response.data;
+            return response || [];
         } catch (error) {
             throw CEG.handleError(error);
         }
