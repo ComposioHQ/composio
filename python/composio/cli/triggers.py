@@ -83,7 +83,7 @@ def _triggers(
 @handle_exceptions()
 @pass_context
 def _show(context: Context, name: str) -> None:
-    (trigger,) = context.client.triggers.get(triggers=[name])
+    (trigger,) = context.client.triggers.get(trigger_names=[name])
 
     context.console.print(f"• Showing: [green][bold]{name}[/bold][/green]")
     context.console.print(
@@ -149,7 +149,7 @@ class EnableTriggerExamples(HelpfulCmdBase, click.Command):
 def _enable_trigger(context: Context, name: str) -> None:
     """Enable a trigger for an app"""
     context.console.print(f"Enabling trigger [green]{name}[/green]")
-    triggers = context.client.triggers.get(triggers=[name])
+    triggers = context.client.triggers.get(trigger_names=[name])
     if len(triggers) == 0:
         raise click.ClickException(f"Trigger with name {name} not found")
     trigger = triggers[0]

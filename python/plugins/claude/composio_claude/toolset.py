@@ -6,10 +6,15 @@ import typing_extensions as te
 try:
     from anthropic.types.beta.tools import ToolUseBlock, ToolsBetaMessage
     from anthropic.types.beta.tools.tool_param import ToolParam
+
+    class BetaToolUseBlock:  # type: ignore
+        pass
+
 except ModuleNotFoundError:
     from anthropic.types.tool_use_block import ToolUseBlock
     from anthropic.types.tool_param import ToolParam
     from anthropic.types.message import Message as ToolsBetaMessage
+    from anthropic.types.beta.beta_tool_use_block import BetaToolUseBlock  # type: ignore
 
 from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
@@ -161,10 +166,10 @@ class ComposioToolSet(
         :param entity_id: Entity ID to use for executing function calls.
         :return: A list of output objects from the function calls.
         """
-        entity_id = self.validate_entity_id(entity_id or self.entity_id)
         outputs = []
+        entity_id = self.validate_entity_id(entity_id or self.entity_id)
         for content in llm_response.content:
-            if isinstance(content, ToolUseBlock):
+            if isinstance(content, (ToolUseBlock, BetaToolUseBlock)):
                 outputs.append(
                     self.execute_tool_call(
                         tool_call=content,

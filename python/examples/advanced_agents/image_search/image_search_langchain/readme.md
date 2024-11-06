@@ -3,7 +3,7 @@
 This guide provides detailed steps to create an Image Search Agent that leverages Composio, agentic frameworks such as Langchain, LlamaIndex, CrewAI, Autogen and ChatGPT to search for images in you local directory with just a prompt. Ensure you have Python 3.8 or higher installed.
 
 # Image Search Schematic
-![alt text](https://github.com/composiohq/composio/blob/master/python/examples/image_search/schematic.png?raw=true)
+![alt text](https://github.com/composiohq/composio/blob/master/python/examples/advanced_agents/image_search/schematic.png?raw=true)
 
 ## Steps to Run
 
