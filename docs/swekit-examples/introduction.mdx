@@ -1,27 +1,13 @@
 ---
-title: "SWE Development Kit"
-sidebarTitle: "Introduction (Python)"
-icon: "code"
-description: "Build Software Engineering agents locally with frameworks and tools of your choice"
+title: "SWE Kit: PR Review Agent"
+sidebarTitle: "PR Review Agent"
+icon: "github"
+description: "Build a PR Review agent with SWE Kit"
 ---
 
 ## Overview
+SWE Development Kit (swekit) is a powerful framework for building Software Engineering agents using Composio's tooling ecosystem. This example demonstrates how to build a Pull Request (PR) Review Agent using SWE Development Kit (swekit). The PR Review Agent uses Composio's tooling ecosystem to help automate and enhance the PR review process.
 
-SWE Development Kit (swekit) is a powerful framework for building Software Engineering agents using Composio's tooling ecosystem. 
-It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell Manager, and more.
-
-## Key Features
-
-- **Agent Scaffolding**: Quickly create Devin like agents that work out-of-the-box with popular agentic frameworks like CrewAI, LlamaIndex, and more.
-- **Flexible Workspace Environments**: Operate your agents within a variety of secure and isolated environments including Docker, E2B, and FlyIO for security and isolation.
-- **Customizable Tools**: Add or optimize your agent's abilities with a variety of tools.
-- **Benchmarking**: Evaluate your agents against the SWE-bench, a comprehensive benchmark for software engineering tasks.
-
-## Introduction to Key Concepts
-
-- **Workspace Environments**: These are isolated and secure execution contexts where agents can be run. They ensure that agents operate in a controlled setting, which can be tailored for specific security or resource needs. Examples include containerized environments like Docker, virtualized environments like E2B, and cloud-based platforms like FlyIO.
-- **Custom Tools**: These are specialized utilities or enhancements that can be integrated into your agent to extend its functionality or improve its performance. They can range from simple scripts to complex software packages.
-- **Benchmarks**: Benchmarks are standardized tests that measure the performance and effectiveness of your agents. They provide a way to compare different agents and track improvements over time.
 
 ## Getting Started
 
@@ -76,8 +62,8 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
 <Step title="Create a New Agent">
   Generate your agent's scaffolding:
   <CodeGroup>
-  ```bash Create a new Folder with basic SWE agent code
-  swekit scaffold swe -f crewai -o swe_agent
+  ```bash Create a new Folder with basic PR Review agent code
+  swekit scaffold pr_review -f crewai -o pr_review_agent
   ```
   </CodeGroup>
 
@@ -85,7 +71,7 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
   Scaffold support for other frameworks coming soon!
   </Note>
   
-  This process will establish a new agent at `swe_agent` with essential files:
+  This process will establish a new agent at `pr_review_agent` with essential files:
   - `main.py`: The main script to execute the agent
   - `agent.py`: The agent's core definition
   - `prompts.py`: Prompts to guide the agent's actions
@@ -108,7 +94,7 @@ It provides tools like Github, Repo Indexing, Repo Search, File Manager, Shell M
   To activate the agent, proceed to its directory and execute:
   <CodeGroup>
   ```bash Run the agent
-  cd swe_agent/agent
+  cd pr_review_agent/agent
   python main.py
   ```
   </CodeGroup>
