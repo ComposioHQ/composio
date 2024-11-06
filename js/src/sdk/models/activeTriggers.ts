@@ -1,5 +1,5 @@
-import { TriggersControllerListTriggersData } from "../client";
-import { TriggersControllerGetActiveTriggersData, TriggersControllerGetActiveTriggersResponse, TriggersControllerGetTriggerData } from "../client/types.gen";
+
+import { GetActiveTriggersData } from "../client/types.gen";
 import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
 import { CEG } from "../utils/error";
@@ -41,10 +41,14 @@ export class ActiveTriggers {
      * @returns {CancelablePromise<GetActiveTriggerResponse>} A promise that resolves to the details of the active trigger.
      * @throws {ApiError} If the request fails.
      */
-    async get(data: TriggersControllerGetTriggerData) {
+    async get({triggerId}: {triggerId: string}) {
         try {
-            const response = await apiClient.triggers.getTrigger(data) 
-            return response.data as TActiveTrigger;
+            const {data} = await apiClient.triggers.getActiveTriggers({
+                query:{
+                    triggerIds : `${triggerId}`
+                }
+            }) 
+            return data?.triggers[0];
         } catch (error) {
             throw CEG.handleError(error);
         }
@@ -59,12 +63,11 @@ export class ActiveTriggers {
      * @returns {CancelablePromise<ListActiveTriggersResponse>} A promise that resolves to the list of all active triggers.
      * @throws {ApiError} If the request fails.
      */
-    async list(data: TriggersControllerGetActiveTriggersData = {}) {
+    async list(data: GetActiveTriggersData = {}) {
         try {
             const {data: response} = await apiClient.triggers.getActiveTriggers({ query: data }) 
-        
-            const newResponse = response as TActiveTriggersListResponse;
-            return newResponse.triggers;
+            
+            return response?.triggers || [];
         } catch (error) {
             throw CEG.handleError(error);
         }

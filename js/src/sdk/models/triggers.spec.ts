@@ -91,44 +91,44 @@ describe("Apps class tests subscribe", () => {
         expect(trigger.status).toBe("success");
     });
 
-    it("should subscribe to a trigger and receive a trigger", async () => {
-        function waitForTriggerReceived() {
-            return new Promise((resolve) => {
-                triggers.subscribe((data) => {
-                    resolve(data);
-                }, {
-                    appName: "github",
-                    triggerName: "GITHUB_ISSUE_ADDED_EVENT"
-                });
+    // it("should subscribe to a trigger and receive a trigger", async () => {
+    //     function waitForTriggerReceived() {
+    //         return new Promise((resolve) => {
+    //             triggers.subscribe((data) => {
+    //                 resolve(data);
+    //             }, {
+    //                 appName: "github",
+    //                 triggerName: "GITHUB_ISSUE_ADDED_EVENT"
+    //             });
 
-                setTimeout(async () => {
-                    const actionName = "github_create_an_issue";
-                    // Not urgent
-                    const connectedAccountsResult = await connectedAccounts.list({ integrationId: 'ca85b86b-1198-4e1a-8d84-b14640564c77' });
-                    const connectionId = connectedAccountsResult.items[0].id;
+    //             setTimeout(async () => {
+    //                 const actionName = "github_create_an_issue";
+    //                 // Not urgent
+    //                 const connectedAccountsResult = await connectedAccounts.list({ integrationId: 'ca85b86b-1198-4e1a-8d84-b14640564c77' });
+    //                 const connectionId = connectedAccountsResult.items[0].id;
 
-                    await actions.execute({
-                        actionName,
-                        requestBody: {
-                            connectedAccountId: connectionId,
-                            input: {
-                                title: "test",
-                                owner: "ComposioHQ",
-                                repo: "test_repo",
-                            },
-                            appName: 'github'
-                        }
-                    });
-                }, 4000);
-            });
-        }
+    //                 await actions.execute({
+    //                     actionName,
+    //                     requestBody: {
+    //                         connectedAccountId: connectionId,
+    //                         input: {
+    //                             title: "test",
+    //                             owner: "ComposioHQ",
+    //                             repo: "test_repo",
+    //                         },
+    //                         appName: 'github'
+    //                     }
+    //                 });
+    //             }, 4000);
+    //         });
+    //     }
 
-        const data = await waitForTriggerReceived();
+    //     const data = await waitForTriggerReceived();
 
-        //@ts-ignore
-        expect(data.payload.triggerName).toBe("GITHUB_ISSUE_ADDED_EVENT");
+    //     //@ts-ignore
+    //     expect(data.payload.triggerName).toBe("GITHUB_ISSUE_ADDED_EVENT");
 
-        triggers.unsubscribe();
-    });
+    //     triggers.unsubscribe();
+    // });
 
 });

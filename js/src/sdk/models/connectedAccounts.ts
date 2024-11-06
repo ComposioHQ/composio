@@ -1,11 +1,11 @@
 
-import { ConnectionsControllerGetConnectionsData, InitiateConnectionPayloadDto, GetConnectionsResponseDto, GetConnectionInfoData, GetConnectionInfoResponse, ConnectionsControllerInitiateConnectionData } from "../client";
+import {  InitiateConnectionPayloadDto, GetConnectionsResponseDto, GetConnectionInfoData, GetConnectionInfoResponse, GetConnectionsData, InitiateConnectionData } from "../client";
 import client from "../client/client";
 import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
 import { CEG } from "../utils/error";
 
-type ConnectedAccountsListData = ConnectionsControllerGetConnectionsData['query'] & {appNames?: string};
+type ConnectedAccountsListData = GetConnectionsData['query'] & {appNames?: string};
 export class ConnectedAccounts {
     backendClient: BackendClient;
 
@@ -24,7 +24,7 @@ export class ConnectedAccounts {
 
     async create(data: InitiateConnectionPayloadDto) {
         try {
-            const {data:    res} = await apiClient.connections.initiateConnection({ body: data });
+            const {data:res} = await apiClient.connections.initiateConnection({ body: data });
             //@ts-ignore
             return new ConnectionRequest(res.connectionStatus, res.connectedAccountId, res.redirectUrl);
         } catch (error) {
@@ -52,14 +52,14 @@ export class ConnectedAccounts {
 
     async getAuthParams(data: { connectedAccountId: string }) {
         try {
-            const res = await apiClient.connections.getAuthParams({ path: { connectedAccountId: data.connectedAccountId } });
+            const res = await apiClient.connections.getConnection({ path: { connectedAccountId: data.connectedAccountId } });
             return res.data;
         } catch (error) {
             throw CEG.handleError(error);
         }
     }
 
-    async initiate(data: ConnectionsControllerInitiateConnectionData["body"] & { userUuid?: string; entityId?: string }): Promise<ConnectionRequest> {
+    async initiate(data: InitiateConnectionData["body"] & { userUuid?: string; entityId?: string }): Promise<ConnectionRequest> {
         try {
             if (data.userUuid) {
                 data.entityId = data.userUuid;
@@ -90,13 +90,16 @@ export class ConnectionRequest {
         entityId?: string;
     }) {
         try {
-            const connectedAccount = await apiClient.connections.getConnection({ path: { connectedAccountId: this.connectedAccountId } });
+            const {data: connectedAccount} = await apiClient.connections.getConnection({ path: { connectedAccountId: this.connectedAccountId } });
+            if(!connectedAccount) throw new Error("Connected account not found");
             return await apiClient.connections.initiateConnection({
                 body: {
-                    integrationId: connectedAccount.data.integrationId,
+                    integrationId: connectedAccount.integrationId,
+                    //@ts-ignore
                     data: data.fieldInputs,
                     redirectUri: data.redirectUrl,
                     userUuid: data.entityId,
+                    entityId: data.entityId,
                 }
             });
         } catch (error) {
@@ -118,6 +121,7 @@ export class ConnectionRequest {
             const startTime = Date.now();
             while (Date.now() - startTime < timeout * 1000) {
                 const connection = await apiClient.connections.getConnection({ path: { connectedAccountId: this.connectedAccountId } }).then(res => res.data);
+                if(!connection) throw new Error("Connected account not found");
                 if (connection.status === 'ACTIVE') {
                     return connection;
                 }

@@ -7,11 +7,10 @@ import { getEnvVariable } from "../utils/shared";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
-import { AppConnectorControllerGetConnectorInfoResponse, ExecuteActionResDTO } from "./client/types.gen";
+import {  ExecuteActionResDTO } from "./client/types.gen";
 import {  saveFile } from "./utils/fileUtils";
 import { convertReqParams, converReqParamForActionExecution } from "./utils";
 import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
-import z from 'zod';
 import { getUserDataJson } from "./utils/config";
 
 
@@ -228,9 +227,10 @@ export class ComposioToolSet {
             });
         }
         params = await converReqParamForActionExecution(params);
-        const data =  await this.client.getEntity(entityId).execute(action, params, nlaText);
+        const data =  await this.client.getEntity(entityId).execute(action, params, nlaText) as unknown as ExecuteActionResDTO  
 
-        return this.processResponse(data,{
+
+        return this.processResponse(data ,{
             action: action,
             entityId: entityId
         });
@@ -244,18 +244,22 @@ export class ComposioToolSet {
         }
     ): Promise<ExecuteActionResDTO> {
 
+        // @ts-ignore
         const isFile = !!data?.response_data?.file;
         if(isFile) {
+            // @ts-ignore
             const fileData = data.response_data.file;
             const {name, content} = fileData as {name: string, content: string};
             const file_name_prefix = `${meta.action}_${meta.entityId}_${Date.now()}`;
             const filePath = saveFile(file_name_prefix, content);   
 
+            // @ts-ignore
             delete data.response_data.file
  
             return {
                 ...data,
                 response_data: {
+                    // @ts-ignore
                     ...data.response_data,
                     file_uri_path: filePath
                 }
