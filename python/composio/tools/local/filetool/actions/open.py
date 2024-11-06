@@ -34,7 +34,7 @@ class OpenFileResponse(BaseFileResponse):
 class OpenFile(LocalAction[OpenFileRequest, OpenFileResponse]):
     """
     Opens a file in the editor based on the provided file path,
-    If line_number is provided, the window will be move to include that line
+    If line_number is provided, the window will be moved after that line. (i.e. 100 lines after the line number will be displayed)
 
     Can result in:
     - ValueError: If file_path is not a string or if the file does not exist.
