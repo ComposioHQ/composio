@@ -2553,6 +2553,25 @@ export type PostLogsResponse = IngestDataResponseDTO;
 
 export type PostLogsError = unknown;
 
+export type ListActionsV2Data = {
+    query?: {
+        actions?: string;
+        appNames?: string;
+        apps?: string;
+        filterImportantActions?: boolean;
+        limit?: number;
+        showAll?: boolean;
+        showEnabledOnly?: boolean;
+        tags?: string;
+        useCase?: string;
+        usecaseLimit?: number;
+    };
+};
+
+export type ListActionsV2Response = ActionsListResponseDTO;
+
+export type ListActionsV2Error = unknown;
+
 export type ListActionsMinimalV2Data = {
     query?: {
         actions?: string;

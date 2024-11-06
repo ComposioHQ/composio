@@ -180,7 +180,7 @@ export class Actions {
      */
     async list(data: GetListActionsData = {}): Promise<ActionsListResponseDTO> {
         try {
-            const response = await apiClient.actionsV2.listActionsMinimalV2({
+            const response = await apiClient.actionsV2.listActionsV2({
                 query: {
                     actions: data.actions,
                     apps: data.apps,
