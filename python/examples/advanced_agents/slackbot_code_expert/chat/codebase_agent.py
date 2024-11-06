@@ -96,6 +96,3 @@ def find_code_snippet(dir_path: str, query: str) -> str:
     result = search_processing_crew.kickoff()
     return result
 
-
-# print(index_code("./tweetify-backend", "local", True))
-# print(find_code_snippet("./tweetify-backend", "What does the /tweet endpoint do?"))
