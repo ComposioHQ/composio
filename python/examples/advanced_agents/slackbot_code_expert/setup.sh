@@ -17,10 +17,9 @@ pip install -r requirements.txt
 echo "Login to your Composio acount"
 composio login
 
-# Add calendar tool
-echo "Add Slackbot tools. Finish the flow"
-composio add gmail
-composio add googlesheets 
+# Add slackbot tool
+echo "Add Slackbot tool"
+composio add slackbot
 
 # Copy env backup to .env file
 if [ -f ".env.example" ]; then
@@ -30,6 +29,10 @@ else
     echo "No .env.example file found. Creating a new .env file..."
     touch .env
 fi
+
+# Create a new chat
+echo "Creating a new chat..."
+cd db && python create_new_chat.py
 
 # Prompt user to fill the .env file
 echo "Please fill in the .env file with the necessary environment variables."
