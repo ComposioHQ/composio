@@ -4,6 +4,7 @@ import operator
 import traceback
 import typing as t
 from typing import Annotated, Literal, Sequence, TypedDict
+from enum import Enum
 
 import dotenv
 from langchain_aws import ChatBedrock
@@ -20,8 +21,12 @@ from composio_langgraph import Action, App, ComposioToolSet, WorkspaceType
 # Load environment variables from .env
 dotenv.load_dotenv()
 
-MODEL = "claude"
+class Model(str, Enum):
+    CLAUDE = "claude"
+    OPENAI = "openai"
+    META = "meta"
 
+model = Model.OPENAI
 
 def add_thought_to_request(request: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
     request["thought"] = {
@@ -45,29 +50,31 @@ def get_agent_graph(repo_path: str, workspace_id: str):
     random_string = "".join(random.choices(string.digits, k=6))
     run_file = f"messages_{random_string}.txt"
 
-    if MODEL == "claude":
+    if model == Model.CLAUDE:
         client = ChatBedrock(
             credentials_profile_name="default",
             model_id="anthropic.claude-3-5-sonnet-20241022-v2:0",
             region_name="us-west-2",
             model_kwargs={"temperature": 0, "max_tokens": 8192},
         )
-    elif MODEL == "gpt-4o":
+    elif model == Model.OPENAI:
         client = ChatOpenAI(
-            model="gpt-4o",
+            model="gpt-4-1106-preview",
             temperature=0.1,
-            max_completion_tokens=8192,
+            max_completion_tokens=4096,
         )
-    else:
+    elif model == Model.META:
         client = ChatBedrock(
             credentials_profile_name="default",
             model_id="arn:aws:bedrock:us-west-2:008971668139:inference-profile/us.meta.llama3-2-3b-instruct-v1:0",
             model_kwargs={"temperature": 0},
             provider="meta",
         )
+    else:
+        raise ValueError(f"Invalid model: {model}")
 
     composio_toolset = ComposioToolSet(
-        workspace_config=WorkspaceType.Docker() if workspace_id else None,
+        workspace_config=WorkspaceType.Docker(),
         metadata={
             App.CODE_ANALYSIS_TOOL: {
                 "dir_to_index_path": repo_path,
@@ -90,9 +97,9 @@ def get_agent_graph(repo_path: str, workspace_id: str):
         composio_toolset.set_workspace_id(workspace_id)
 
     swe_tools = [
-        *composio_toolset.get_actions(
+        *composio_toolset.get_tools(
             actions=[
-                # Action.FILETOOL_OPEN_FILE,
+                Action.FILETOOL_OPEN_FILE,
                 Action.FILETOOL_GIT_REPO_TREE,
                 Action.FILETOOL_GIT_PATCH,
             ]
@@ -100,7 +107,7 @@ def get_agent_graph(repo_path: str, workspace_id: str):
     ]
     # Separate tools into two groups
     code_analysis_tools = [
-        *composio_toolset.get_actions(
+        *composio_toolset.get_tools(
             actions=[
                 Action.CODE_ANALYSIS_TOOL_GET_CLASS_INFO,
                 Action.CODE_ANALYSIS_TOOL_GET_METHOD_BODY,
@@ -110,7 +117,7 @@ def get_agent_graph(repo_path: str, workspace_id: str):
         ),
     ]
     file_tools = [
-        *composio_toolset.get_actions(
+        *composio_toolset.get_tools(
             actions=[
                 Action.FILETOOL_GIT_REPO_TREE,
                 Action.FILETOOL_LIST_FILES,
@@ -155,7 +162,7 @@ def get_agent_graph(repo_path: str, workspace_id: str):
                 return agent.invoke(state)
 
             # If last message is AI message, add a placeholder human message
-            if MODEL == "claude" and isinstance(state["messages"][-1], AIMessage):
+            if model == Model.CLAUDE and isinstance(state["messages"][-1], AIMessage):
                 state["messages"].append(HumanMessage(content="Placeholder message"))
 
             try:
