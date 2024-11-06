@@ -291,3 +291,9 @@ def test_get_action_schemas_description_for_runtime_tool() -> None:
         schema_1.parameters.properties["name"]["description"]
         == "Name of the user. Please provide a value of type string. This parameter is required."
     )
+
+
+def test_execute_action() -> None:
+    toolset = ComposioToolSet()
+    response = toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})
+    assert response["successfull"]

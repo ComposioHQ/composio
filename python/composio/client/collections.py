@@ -1113,9 +1113,8 @@ class Actions(Collection[ActionModel]):
         if action.no_auth:
             return self._raise_if_required(
                 self.client.http.post(
-                    url=str(self.endpoint / action.name / "execute"),
+                    url=str(v2.actions / action.slug / "execute"),
                     json={
-                        "entityId": entity_id,
                         "appName": action.app,
                         "input": modified_params,
                         "text": text,
