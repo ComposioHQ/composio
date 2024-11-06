@@ -1,9 +1,7 @@
 import re
 import typing as t
 from pathlib import Path
-
-from agent import composio_toolset
-from composio import Action
+from composio import Action, ComposioToolSet
 
 
 InputType = t.TypeVar("InputType")
@@ -40,17 +38,19 @@ def _create_github_issue_validator(owner: str, name: str) -> t.Callable[[str], s
         if Path(value).resolve().exists():
             return Path(value).read_text(encoding="utf-8")
 
-        # Check if it's a numeric issue ID
-        if value.isdigit():
-            response_data = composio_toolset.execute_action(
+        if re.match(r"^\d+$", value):
+            response_data = ComposioToolSet().execute_action(
                 action=Action.GITHUB_GET_AN_ISSUE,
                 params={
                     "owner": owner,
                     "repo": name,
                     "issue_number": int(value),
                 },
-            )
-            return response_data['data']["body"]
+            ).get("response_data")
+            if response_data:
+                return response_data["body"]
+            else:
+                raise ValueError("No issue found with the given issue number")
 
         # If neither a file nor issue ID, treat as direct description text
         return value
