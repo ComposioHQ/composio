@@ -3,7 +3,7 @@
 
 # Create a virtual environment
 echo "Creating virtual environment..."
-python3 -m venv ~/.venvs/gmail_agent
+python3 -m venv ~/.venvs/slackbot_code_expert
 
 # Activate the virtual environment
 echo "Activating virtual environment..."
