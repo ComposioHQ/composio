@@ -91,7 +91,7 @@ export class AIHelper {
       entity = await toolset.client.getEntity('default');
   
       // Step 1: Fetch Emails
-      fetchTools = await toolset.getActions(
+      fetchTools = await toolset.getTools(
         { actions: ['gmail_fetch_emails'] },
         entity.id
       );
@@ -130,7 +130,7 @@ export class AIHelper {
       const summary = summaryResponse.choices[0].message.content;
   
       // Step 3: Send Summarized Email
-      sendTools = await toolset.getActions(
+      sendTools = await toolset.getTools(
         { actions: ['GMAIL_SEND_EMAIL'] },
         entity.id
       );

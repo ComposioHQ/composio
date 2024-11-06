@@ -7,17 +7,22 @@ description: "Explore the process of creating custom tools with external Apps us
 
 Creating custom tools on Composio is straightforward and can be done via an [OpenAPI Spec](https://swagger.io/specification/). 
 
-<Frame>
-    <iframe
-      width="560"
-      height="315"
-      src="https://www.youtube.com/embed/hTtyKpl6G2g?si=nl4g11C3J7GeGD1a"
-      title="Openapi spec import"
-      frameborder="0"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      allowfullscreen
-    ></iframe>
-</Frame>
+Here's a tutorial showing how to create a Custom Tool for Notion
+<iframe 
+  width="560" 
+  height="315" 
+  src="https://www.youtube.com/embed/xU9jY7NsfOA?si=fIrJo6Ya38Mms819" 
+  title="Openapi spec import" 
+  frameborder="0" 
+  allow="accelerometer; 
+  autoplay; 
+  clipboard-write; 
+  encrypted-media; 
+  gyroscope; 
+  picture-in-picture" 
+  allowfullscreen >
+</iframe>
+
 
 ### Step by Step Guide
 <Steps>
@@ -36,27 +41,27 @@ Creating custom tools on Composio is straightforward and can be done via an [Ope
     <Accordion title="Base Template">
     ```yaml
 name:
-docs:
+unique_key:
 description:
 logo:
 categories: [""]
+docs:
 get_current_user_endpoint: ""
 
 auth_schemes:
-
-// OAuth1 
-	- scheme_name: 
-		auth_mode: OAuth1
-		request_url:
-		authorization_url: 
+  # OAuth1
+  - name: 
+    auth_mode: OAuth1
+    request_url:
+    authorization_url: 
     token_url:
     signature_method:
     default_scopes: [""]
     scope_separator: ','
     authorization_params:
-        expiration:
+      expiration:
     token_params:
-        grant_type:
+      grant_type:
     proxy:
       base_url: "{{base_url}}"
     fields:
@@ -66,18 +71,18 @@ auth_schemes:
         type: string
         default: {{add the api endpoint URL of the app}}
 
-// OAuth2 
-	- scheme_name: 
-		auth_mode: OAUTH2
-		authorization_url: 
+  # OAuth2
+  - name: 
+    auth_mode: OAUTH2
+    authorization_url: 
     token_url:
     default_scopes: [""]
     scope_separator: ','
     token_access_request_method: 
     authorization_params:
-        response_type:
+      response_type:
     token_params:
-        grant_type:
+      grant_type:
     proxy:
       base_url: "{{base_url}}"
     fields:
@@ -86,12 +91,11 @@ auth_schemes:
         description: "desc_here"
         type: string
         default: {{api endpoint URL of the app}}
-        
-        
-// API-KEY
-  - scheme_name: app_name_api-key
-	  auth_mode: API_KEY
-	  proxy:
+
+  # API-KEY
+  - name: app_name_api-key
+    auth_mode: API_KEY
+    proxy:
       base_url: "{{base_url}}"
       headers:
         Authorization: "{{api_key}}"
@@ -109,10 +113,9 @@ auth_schemes:
         type: string
         required: false
         default: {{add the api endpoint URL of the app}}
-   
-        
- // BASIC
-   - scheme_name: app_name_basic
+
+  # BASIC
+  - name: app_name_basic
     auth_mode: BASIC
     proxy:
       base_url: {{add the api_endpoint_url}}
@@ -155,7 +158,7 @@ You can refer to below snippets of the each auth method to see how these fields 
       <Accordion title="OAuth1">
 
       ```yaml
-        - scheme_name: tool_name_oauth1
+        - name: tool_name_oauth1
           auth_mode: OAUTH1
           request_url:
           authorization_url: 
@@ -180,7 +183,7 @@ You can refer to below snippets of the each auth method to see how these fields 
         </ Accordion>
       <Accordion title="OAuth2">
       ```yaml
-        - scheme_name: tool_name_oauth2
+        - name: tool_name_oauth2
           auth_mode: OAUTH2
           authorization_url: 
           token_url:
@@ -203,7 +206,7 @@ You can refer to below snippets of the each auth method to see how these fields 
         </ Accordion>
       <Accordion title="API-KEY">
       ```yaml
-        - scheme_name: app_name_api_key
+        - name: app_name_api_key
           auth_mode: API_KEY
           proxy:
             base_url: "{{base_url}}"
@@ -227,7 +230,7 @@ You can refer to below snippets of the each auth method to see how these fields 
         </ Accordion>
       <Accordion title="BASIC">
       ```yaml
-        - scheme_name: app_name_basic
+        - name: app_name_basic
           auth_mode: BASIC
           proxy:
             base_url: {{add the api_endpoint_url}}
@@ -265,7 +268,7 @@ logo: https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png
 categories: ["developer tools", "version control"]
 
 auth_schemes:
-  - scheme_name: github_oauth2
+  - name: github_oauth2
     auth_mode: OAUTH2
     authorization_url: "https://github.com/login/oauth/authorize"
     token_url: "https://github.com/login/oauth/access_token"
@@ -291,13 +294,17 @@ You need to add the relevant scopes as needed. Now that you have the `integratio
 
 <Step title="Add your Custom Tool on Composio">
 
-Go to the <a href="https://app.composio.dev/settings">settings</a> page on Composio, Go to `Add Open API spec` section and upload the Open API Spec file and the `integrations.yaml` file. Click on the "Start import" button to test.
+- Go to the <a href="https://app.composio.dev/apps">tools page</a> on Composio 
+- Click on the **Setup a New Tool** section
+- Upload the Open API Spec file and the `integrations.yaml` file. 
+- Click on the "Start import" button to test.
+- Once the tests are successfully, you will be able to access this tool.
 </Step>
 
 
 <Step title="Testing Your Custom tool on Composio">
 
-Navigate back to the tools catalogue page on Composio. Search for the tool you just created, click on it, and proceed to connect your account.
+Navigate back to the <a href="https://app.composio.dev/apps">tools page</a> on Composio. Search for the tool you just created, click on it, and proceed to connect your account.
 
 </Step>
 

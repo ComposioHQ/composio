@@ -68,7 +68,7 @@ Fetch the trigger using its name and verify if it exists.
 
 <CodeGroup>
 ```python python
-triggers = composio_client.triggers.get(trigger_ids=[trigger_name])  # Get the triggers
+triggers = composio_client.triggers.get(trigger_names=[trigger_name])  # Get the triggers
 
 if len(triggers) == 0:
     raise Exception("Trigger not found")  # Handle incorrect trigger name

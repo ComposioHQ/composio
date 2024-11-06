@@ -132,8 +132,18 @@ class _AnnotatedEnum(t.Generic[EntityType]):
 
         if isinstance(value, _AnnotatedEnum):
             value = value._slug
-
         self._slug = t.cast(str, value).upper()
+
+        # Anthropic 😭
+        if self._slug == "BASH":
+            self._slug = "ANTHROPIC_BASH_COMMAND"
+
+        if self._slug == "COMPUTER":
+            self._slug = "ANTHROPIC_COMPUTER"
+
+        if self._slug == "STR_REPLACE_EDITOR":
+            self._slug = "ANTHROPIC_TEXT_EDITOR"
+
         if self._slug in self._deprecated and warn:
             warnings.warn(
                 f"`{self._slug}` is deprecated and will be removed. "
