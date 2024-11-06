@@ -27,6 +27,14 @@ def say(message: str) -> str:
     :param message: Message string
     :return greeting: Formatted message.
     """
+    # A Description needs to be added to each Custom Action function
+    # The format is:
+    # """
+    # description line 
+    # :param input_param_1: input_param_description
+    # :param input_param_2: input_param_2_description
+    # :return output_variable: output_variable_description
+    # """
     import cowsay
 
     return cowsay.get_output_string("cow", message)

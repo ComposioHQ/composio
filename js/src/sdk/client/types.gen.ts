@@ -1717,7 +1717,7 @@ export type ActionsControllerV1GetActionResponse = ActionDetails;
 export type ActionsControllerV1GetActionError = unknown;
 
 export type ConnectionsControllerGetConnectionsData = {
-    query?: {
+    query: {
         appNames?: unknown;
         connectionId?: string;
         integrationId?: string;
