@@ -1,5 +1,6 @@
 import apiClient from "../client/client"
-import { client as axiosClient } from "../client/services.gen"
+import { client as axiosClient, client } from "../client/services.gen"
+import { CEG } from "../utils/error";
 
 /**
  * Class representing the details required to initialize and configure the API client.
@@ -50,11 +51,15 @@ export class BackendClient {
      * @throws Will throw an error if the HTTP request fails.
      */
     public async getClientId(): Promise<string> {
-        const response = await apiClient.clientAuthService.getUserInfo();
-        if (response.status !== 200) {
+        try {
+            const response = await apiClient.clientAuthService.getUserInfo();
+            if (response.status !== 200) {
             throw new Error(`HTTP Error: ${response.status}`);
         }
-        return (response.data as unknown as Record<string, Record<string, string>>).client.id;
+            return (response.data as unknown as Record<string, Record<string, string>>).client.id;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
     /**
@@ -70,5 +75,6 @@ export class BackendClient {
                 'X-RUNTIME': this.runtime
             }
         });
+
     }
 }
