@@ -52,11 +52,8 @@ export class BackendClient {
      */
     public async getClientId(): Promise<string> {
         try {
-            const response = await apiClient.clientAuthService.getUserInfo();
-            if (response.status !== 200) {
-            throw new Error(`HTTP Error: ${response.status}`);
-        }
-            return (response.data as unknown as Record<string, Record<string, string>>).client.id;
+            const {data} = await apiClient.clientAuth.getUserInfo()
+            return data?.client?.id || '';
         } catch (error) {
             throw CEG.handleError(error);
         }

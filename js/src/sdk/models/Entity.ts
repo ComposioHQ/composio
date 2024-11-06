@@ -4,7 +4,6 @@ import { Apps } from "./apps";
 import { Integrations } from "./integrations";
 import { ActiveTriggers } from "./activeTriggers";
 import { ConnectedAccounts } from "./connectedAccounts";
-import { ExecuteActionResDTO } from "../client";
 import { BackendClient } from "./backendClient";
 import { Triggers } from "./triggers";
 import { CEG } from "../utils/error";
@@ -31,7 +30,7 @@ export class Entity {
         this.activeTriggers = new ActiveTriggers(this.backendClient);
     }
 
-    async execute(actionName: string, params?: Record<string, any> | undefined, text?: string | undefined, connectedAccountId?: string): Promise<ExecuteActionResDTO> {
+    async execute(actionName: string, params?: Record<string, any> | undefined, text?: string | undefined, connectedAccountId?: string) {
         try{
         const action = await this.actionsModel.get({
             actionName: actionName
@@ -237,6 +236,7 @@ export class Entity {
             integrationId: integration!.id!,
             userUuid: this.id,
             redirectUri: redirectUrl,
+            //@ts-ignore
             data: connectionData
         });
     }catch(error){
