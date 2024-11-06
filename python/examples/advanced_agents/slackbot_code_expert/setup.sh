@@ -7,7 +7,7 @@ python3 -m venv ~/.venvs/slackbot_code_expert
 
 # Activate the virtual environment
 echo "Activating virtual environment..."
-source ~/.venvs/gmail_agent/bin/activate
+source ~/.venvs/slackbot_code_expert/bin/activate
 
 # Install libraries from requirements.txt 
 echo "Installing libraries from requirements.txt..."
