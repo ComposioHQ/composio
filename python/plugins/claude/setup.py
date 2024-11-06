@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_claude",
-    version="0.5.38",
+    version="0.5.39",
     author="Sawradip",
     author_email="sawradip@composio.dev",
     description="Use Composio to get an array of tools with your Claude LLMs.",
@@ -22,6 +22,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    install_requires=["composio_openai>=0.5.30,<=0.5.38", "anthropic>=0.25.7"],
+    install_requires=["composio_openai>=0.5.30,<=0.5.39", "anthropic>=0.25.7"],
     include_package_data=True,
 )
