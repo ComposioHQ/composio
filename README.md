@@ -289,6 +289,16 @@ Composio is open-source and we welcome contributions. Please fork the repository
 
 Also go through our [Contribution Guidelines](https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md) and [Code of Conduct](https://github.com/composiodev/composio/blob/master/CODE_OF_CONDUCT.md) before you start.
 
+## 💪 Contributors
+
+Special thanks to all who have contributed to this project:
+
+- [SWEKit](https://github.com/SWEKit) - Tool Development and Integration
+
+<a href="https://github.com/composiohq/composio/graphs/contributors">
+  <img src="https://contributors-img.web.app/image?repo=composiodev/composio" alt="List of Contributors"/>
+</a>
+
 ## 🔗 Links
 
 - [Home page](https://composio.dev?utm_campaign=github-readme)
@@ -298,9 +308,3 @@ Also go through our [Contribution Guidelines](https://github.com/composiodev/com
 ## 🛡️ License
 
 Composio is licensed under the Elastic License - see the [LICENSE](https://github.com/composiodev/composio/blob/master/LICENSE) file for details.
-
-## 💪 Thanks To All Contributors
-
-<a href="https://github.com/composiohq/composio/graphs/contributors">
-  <img src="https://contributors-img.web.app/image?repo=composiodev/composio" alt="List of Contributors"/>
-</a>
