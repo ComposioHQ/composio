@@ -121,7 +121,7 @@ class File(WithLogger):
         :return: None
         """
         total_lines = self.total_lines()
-        if line > total_lines:
+        if line >= total_lines:
             raise Exception(
                 f"Line number {line} is out of bounds for file with {total_lines} lines"
             )
