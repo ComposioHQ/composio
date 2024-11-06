@@ -301,6 +301,10 @@ Composio is licensed under the Elastic License - see the [LICENSE](https://githu
 
 ## 💪 Thanks To All Contributors
 
+### Special Thanks
+- [SWEKit](https://github.com/SWEKit) - For their valuable contributions to the project
+
+### Contributors
 <a href="https://github.com/composiohq/composio/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=composiodev/composio" alt="List of Contributors"/>
 </a>
