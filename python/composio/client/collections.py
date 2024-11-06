@@ -909,7 +909,7 @@ class Actions(Collection[ActionModel]):
     """Collection of composio actions.."""
 
     model = ActionModel
-    endpoint = v1.actions
+    endpoint = v2.actions
 
     # TODO: Overload
     def get(  # type: ignore
@@ -1113,7 +1113,7 @@ class Actions(Collection[ActionModel]):
         if action.no_auth:
             return self._raise_if_required(
                 self.client.http.post(
-                    url=str(v2.actions / action.slug / "execute"),
+                    url=str(self.endpoint / action.slug / "execute"),
                     json={
                         "appName": action.app,
                         "input": modified_params,
@@ -1133,7 +1133,7 @@ class Actions(Collection[ActionModel]):
 
         return self._raise_if_required(
             self.client.http.post(
-                url=str(v2.actions / action.slug / "execute"),
+                url=str(self.endpoint / action.slug / "execute"),
                 json={
                     "connectedAccountId": connected_account,
                     "entityId": entity_id,
