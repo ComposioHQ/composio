@@ -101,10 +101,10 @@ export class Integrations {
      */
     async list(data: ListAllIntegrationsData = {}) {
         try {
-            const response = await apiClient.appConnector.listGlobalConnectors({
+            const response = await apiClient.appConnector.listAllConnectors({
                 query: data
             });
-            return response.data;
+            return response.data || [];
         } catch (error) {
             throw CEG.handleError(error);
         }

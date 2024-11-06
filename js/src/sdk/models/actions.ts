@@ -1,4 +1,4 @@
-import { ActionsListResponseDTO, ExecuteActionResDTO } from "../client";
+import { ActionExecutionResDto, ActionsListResponseDTO, ExecuteActionResDTO, ExecuteActionV2Data } from "../client";
 import apiClient from "../client/client";
 import { CEG } from "../utils/error";
 import { BackendClient } from "./backendClient";
@@ -157,7 +157,7 @@ export class Actions {
      */
     async get(data: { actionName: string; }) {
         try{
-        const actions = await apiClient.actionsV1.v1GetAction({
+        const actions = await apiClient.actionsV2.getActionV2({
             path: {
                 actionId: data.actionName
             }
@@ -180,7 +180,7 @@ export class Actions {
      */
     async list(data: GetListActionsData = {}): Promise<ActionsListResponseDTO> {
         try {
-            const response = await apiClient.actionsV2.v2ListActions({
+            const response = await apiClient.actionsV2.listActionsMinimalV2({
                 query: {
                     actions: data.actions,
                     apps: data.apps,
@@ -203,13 +203,13 @@ export class Actions {
      * This method allows you to trigger the execution of an action by providing its name and the necessary input parameters. The request includes the connected account ID to identify the app connection to use for the action, and the input parameters required by the action. The response provides details about the execution status and the response data returned by the action.
      * 
      * @param {ExecuteActionData} data The data for the request.
-     * @returns {Promise<ExecuteActionResDTO>} A promise that resolves to the execution status and response data.
+     * @returns {Promise<ActionExecutionResDto>} A promise that resolves to the execution status and response data.
      * @throws {ApiError} If the request fails.
      */
-    async execute(data: ExecuteActionData): Promise<ExecuteActionResDTO> {
+    async execute(data: ExecuteActionData){
         try {
-            const { data: res } = await apiClient.actionsV2.v2ExecuteAction({
-                body: data.requestBody,
+            const { data: res } = await apiClient.actionsV2.executeActionV2({
+                body: data.requestBody as unknown as ExecuteActionV2Data,
                 path: {
                     actionId: data.actionName
                 }

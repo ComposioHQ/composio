@@ -31,7 +31,7 @@ export class Entity {
         this.activeTriggers = new ActiveTriggers(this.backendClient);
     }
 
-    async execute(actionName: string, params?: Record<string, any> | undefined, text?: string | undefined, connectedAccountId?: string): Promise<ExecuteActionResDTO> {
+    async execute(actionName: string, params?: Record<string, any> | undefined, text?: string | undefined, connectedAccountId?: string) {
         try{
         const action = await this.actionsModel.get({
             actionName: actionName
@@ -237,6 +237,7 @@ export class Entity {
             integrationId: integration!.id!,
             userUuid: this.id,
             redirectUri: redirectUrl,
+            //@ts-ignore
             data: connectionData
         });
     }catch(error){
