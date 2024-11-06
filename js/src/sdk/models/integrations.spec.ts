@@ -29,6 +29,7 @@ describe("Integrations class tests", () => {
         expect(integrationCreation.id).toBeTruthy();
         expect(integrationCreation.appName).toBe("github");
 
+        // @ts-ignore
         createdIntegrationId = integrationCreation.id;
     }); 
 
