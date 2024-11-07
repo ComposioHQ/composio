@@ -75,6 +75,7 @@ class ComposioError extends Error {
         Object.defineProperty(this, 'description', { enumerable: false });
         Object.defineProperty(this, 'possibleFix', { enumerable: false });
 
+
         this.stack = `${this.name}: ${detailedMessage}Stack Trace:\n${(new Error()).stack}`;
     }
 }
