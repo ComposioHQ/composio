@@ -105,7 +105,7 @@ def _parse_log_level_from_env(default: int) -> int:
         return default
 
     try:
-        return _LEVELS[LogLevel(level)]
+        return _LEVELS[LogLevel(level.lower())]
     except (ValueError, KeyError):
         return default
 
