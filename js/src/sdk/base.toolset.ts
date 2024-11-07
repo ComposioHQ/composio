@@ -34,10 +34,7 @@ export class ComposioToolSet {
         entityId: string = "default",
         workspaceConfig: WorkspaceConfig = Workspace.Host()
     ) {  
-        const clientApiKey: string | undefined = apiKey || getEnvVariable("COMPOSIO_API_KEY") || getUserDataJson().api_key;
-        if (!clientApiKey) {
-            throw new Error("API key is required, please pass it either by using `COMPOSIO_API_KEY` environment variable or during initialization");
-        }
+        const clientApiKey: string | undefined = apiKey || getEnvVariable("COMPOSIO_API_KEY") || getUserDataJson().api_key as string;
         this.apiKey = clientApiKey;
         this.client = new Composio(this.apiKey, baseUrl || undefined, runtime as string );
         this.customActionRegistry = new ActionRegistry(this.client);
@@ -172,7 +169,7 @@ export class ComposioToolSet {
             return action.schema;
         });
 
-        const toolsActions = [...apps.items!, ...uniqueLocalActions, ...toolsWithCustomActions];
+        const toolsActions = [...apps?.items!, ...uniqueLocalActions, ...toolsWithCustomActions];
         
         return toolsActions.map((action: any) => {
             return this.modifyActionForLocalExecution(action);

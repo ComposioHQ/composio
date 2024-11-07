@@ -9,7 +9,7 @@ export const ERROR = {
         UNKNOWN: "BACKEND::UNKNOWN"
     },
     COMMON: {
-        API_KEY_UNAVAILABLE: "COMMON::API_KEY_UNAVAILABLE",
+        API_KEY_UNAVAILABLE: "COMMON::API_KEY_INVALID",
         UNKNOWN: "SDK::UNKNOWN"
     }
 }
@@ -65,6 +65,8 @@ class ComposioError extends Error {
         this.possibleFix = possibleFix;
 
         let detailedMessage = `Error Code: ${errCode}\nMessage: ${message}\n`;
+        let detailedDescription = description;
+     
         if (description) detailedMessage += `Description: ${description}\n`;
         if (possibleFix) detailedMessage += `Suggested Fix: ${possibleFix}\n`;
 
@@ -114,9 +116,10 @@ export class CEG {
         }
 
 
-        const axiosDataMessage = axiosError.response?.data?.message || axiosError.message;
-       
- 
+        let axiosDataMessage = axiosError.response?.data?.message || axiosError.message;
+        const status = axiosError.response?.status || axiosError.status || axiosError.code || 'unknown';
+        const urlAndStatus = axiosError.config?.url ? `in (URL: ${axiosError.config.url}, Status: ${status})` : '';
+        axiosDataMessage = `${axiosDataMessage || errorDetails.description || "No additional information available."} ${urlAndStatus}`;
         throw new ComposioError(
             errorKey as string,
             errorDetails.message,
