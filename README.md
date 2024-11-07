@@ -295,6 +295,16 @@ Also go through our [Contribution Guidelines](https://github.com/composiodev/com
 - [Contribution Guidelines](https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md)
 - [Docs](https://docs.composio.dev/?utm_campaign=github-readme)
 
+## 👥 Contributors
+
+We would like to thank all our contributors who have helped make this project possible:
+
+### Major Contributors
+
+- [SWEKit](https://github.com/SWEKit) - Major contributor to the project's development and features
+
+Want to contribute? Check out our [contribution guidelines](CONTRIBUTING.md)!
+
 ## 🛡️ License
 
 Composio is licensed under the Elastic License - see the [LICENSE](https://github.com/composiodev/composio/blob/master/LICENSE) file for details.
