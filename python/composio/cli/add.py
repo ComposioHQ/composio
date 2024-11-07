@@ -91,7 +91,7 @@ def _add(
     scopes: t.Tuple[str, ...],
     entity_id: str,
     integration_id: t.Optional[str],
-    lables: t.List[str],
+    labels: t.List[str],
     no_browser: bool = False,
     auth_mode: t.Optional[str] = None,
     force: bool = False,
@@ -106,7 +106,7 @@ def _add(
         auth_mode=auth_mode,
         scopes=scopes,
         force=force,
-        labels=list(lables or []),
+        labels=list(labels or []),
     )
 
 
