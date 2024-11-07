@@ -187,6 +187,7 @@ export class Entity {
         redirectUrl?: string,
         integrationId?: string,
         connectionData?: Record<string, any>,
+        labels: string[] = []
     ): Promise<ConnectionRequest> {
         try{
         // Get the app details from the client
@@ -237,7 +238,8 @@ export class Entity {
             userUuid: this.id,
             redirectUri: redirectUrl,
             //@ts-ignore
-            data: connectionData
+            data: connectionData,
+            labels: labels
         });
     }catch(error){
         throw CEG.handleError(error);
