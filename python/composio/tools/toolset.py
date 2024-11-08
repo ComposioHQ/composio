@@ -52,6 +52,7 @@ from composio.constants import (
 )
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.storage.user import UserData
+from composio.tools.base.abs import tool_registry
 from composio.tools.base.local import LocalAction
 from composio.tools.env.base import (
     ENV_GITHUB_ACCESS_TOKEN,
@@ -126,7 +127,7 @@ def load_action(
     global Action
     try:
         return Action(value=value, warn=warn)
-    except EnumStringNotFound:
+    except EnumStringNotFound as e:
         # run update apps, and reload actions
         from composio.cli.apps import (  # pylint: disable=import-outside-toplevel
             update_actions,
@@ -135,11 +136,10 @@ def load_action(
 
         apps = update_apps(client)
         update_actions(client, apps)
-
         action_enum_module = inspect.getmodule(Action)
-        assert action_enum_module is not None
+        if action_enum_module is None:
+            raise RuntimeError("Error reloading `Action` enum class") from e
         reloaded_action_module = importlib.reload(action_enum_module)
-
         Action = reloaded_action_module.Action  # type: ignore
 
     return Action(value=value, warn=warn)
@@ -1068,10 +1068,28 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     def get_app(self, app: AppType) -> AppModel:
         return self.client.apps.get(name=str(App(app)))
 
-    def get_apps(self, no_auth: t.Optional[bool] = None) -> t.List[AppModel]:
+    def get_apps(
+        self,
+        no_auth: t.Optional[bool] = None,
+        include_local: bool = True,
+    ) -> t.List[AppModel]:
         apps = self.client.apps.get()
         if no_auth is not None:
             apps = [a for a in apps if a.no_auth is no_auth]
+
+        if include_local:
+            for app in tool_registry["local"].values():
+                apps.append(
+                    AppModel(
+                        name=app.name,
+                        key=app.name,
+                        appId=app.name,
+                        description=app.description,
+                        categories=["local"],
+                        meta={},
+                        no_auth=True,
+                    )
+                )
         return apps
 
     def get_action(self, action: ActionType) -> ActionModel:
