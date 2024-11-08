@@ -21,7 +21,7 @@ export default class ConnectionsCommand {
 
   private async handleAction(options: { active: boolean }): Promise<void> {
     getAPISDK();
-    const { data, error } = await client.appConnector.listGlobalConnectors({
+    const { data, error } = await client.appConnector.listAllConnectors({
       query: options.active ? { status: "ACTIVE" } : {},
       throwOnError: false,
     });

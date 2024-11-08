@@ -1,4 +1,4 @@
-import { AppInfoResponseDto, AppListResDTO, SingleAppInfoResDTO } from "../client";
+import {  AppListResDTO, SingleAppInfoResDTO } from "../client";
 import apiClient from "../client/client"
 import { CEG } from "../utils/error";
 import { BackendClient } from "./backendClient";
@@ -37,10 +37,10 @@ export class Apps {
      * @returns {Promise<AppListResDTO>} A promise that resolves to the list of all apps.
      * @throws {ApiError} If the request fails.
      */
-    async list(): Promise<AppInfoResponseDto[]> {
+    async list(){
         try {
-            const response = await apiClient.apps.getApps();
-            return response.data.items;
+            const {data} = await apiClient.apps.getApps();
+            return data?.items || [];
         } catch (error) {
             throw CEG.handleError(error);
         }
@@ -55,13 +55,14 @@ export class Apps {
      * @returns {CancelablePromise<GetAppResponse>} A promise that resolves to the details of the app.
      * @throws {ApiError} If the request fails.
      */
-    async get(data: GetAppData): Promise<GetAppResponse> {  
+    async get(data: GetAppData){  
         try {
             const {data:response} = await apiClient.apps.getApp({
                 path: {
                     appName: data.appKey
                 }
             });
+            if(!response) throw new Error("App not found");
             return response;
         } catch (error) {
             throw CEG.handleError(error);
@@ -71,6 +72,7 @@ export class Apps {
     async getRequiredParams(appId: string): Promise<RequiredParamsFullResponse> {
         try {
             const appData = await this.get({ appKey: appId });
+            if(!appData) throw new Error("App not found");
             const authSchemes = appData.auth_schemes;
             const availableAuthSchemes = (authSchemes as Array<{ mode: string }>)?.map(scheme => scheme?.mode);
             

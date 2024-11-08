@@ -230,6 +230,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
         integration_id: str,
         entity_id: t.Optional[str] = None,
         params: t.Optional[t.Dict] = None,
+        labels: t.Optional[t.List] = None,
         redirect_url: t.Optional[str] = None,
     ) -> ConnectionRequestModel:
         """Initiate a new connected account."""
@@ -240,6 +241,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
                     "integrationId": integration_id,
                     "userUuid": entity_id,
                     "data": params or {},
+                    "labels": labels or [],
                     "redirectUri": redirect_url,
                 },
             )

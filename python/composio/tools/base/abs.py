@@ -252,7 +252,8 @@ class ActionBuilder:
             "description",
             (obj.__doc__ or obj.display_name).lstrip().rstrip(),
         )
-        if len(obj.description) > 1024:
+        description, *_ = obj.description.split("<<DEPRECATED", maxsplit=1)
+        if len(description) > 1024:
             raise InvalidClassDefinition(
                 f"Description for action `{obj.__name__}` contains more than 1024 characters"
             )

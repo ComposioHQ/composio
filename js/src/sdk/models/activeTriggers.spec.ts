@@ -21,7 +21,12 @@ describe("Active Triggers class tests", () => {
         const activeTriggersList = await activeTriggers.list();
         const firstTrigger = activeTriggersList[0];
 
-        const activeTrigger = await activeTriggers.get({ path: { triggerId: firstTrigger.id } });
+        if (!firstTrigger.id) {
+            throw new Error("Trigger ID is required");
+        }
+        const activeTrigger = await activeTriggers.get({
+            triggerId: firstTrigger.id as string
+        });
         expect(activeTrigger).toBeDefined();
     });
 

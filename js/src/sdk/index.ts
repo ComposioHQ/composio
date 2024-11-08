@@ -13,8 +13,8 @@ import { getPackageJsonDir } from './utils/projectUtils';
 import { isNewerVersion } from './utils/other';
 import { getClientBaseConfig } from './utils/config';
 import chalk from 'chalk';
-import { AppConnectorControllerGetConnectorInfoResponse } from './client';
 import { CEG, ERROR } from './utils/error';
+import { GetConnectorInfoResDTO } from './client';
 export class Composio {
     /**
      * The Composio class serves as the main entry point for interacting with the Composio SDK.
@@ -41,7 +41,9 @@ export class Composio {
         // // Parse the base URL and API key, falling back to environment variables or defaults if not provided.
         const { baseURL: baseURLParsed, apiKey: apiKeyParsed } =  getClientBaseConfig(baseUrl, apiKey);
 
+        console.log("Using API Key: ", apiKeyParsed , "and baseURL: ", baseURLParsed);
         if(!apiKeyParsed){
+            
             CEG.throwCustomError(ERROR.COMMON.API_KEY_UNAVAILABLE,{});
         }
 
@@ -95,7 +97,7 @@ export class Composio {
 
     async getExpectedParamsForUser(
         params: { app?: string; integrationId?: string; entityId?: string; authScheme?: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" } = {},
-    ): Promise<{ expectedInputFields: AppConnectorControllerGetConnectorInfoResponse["expectedInputFields"], integrationId: string, authScheme: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" }> {
+    ): Promise<{ expectedInputFields: GetConnectorInfoResDTO["expectedInputFields"], integrationId: string, authScheme: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" }> {
         const { app, entityId } = params;
         let { integrationId } = params;
         if (integrationId === null && app === null) {
