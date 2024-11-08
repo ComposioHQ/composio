@@ -1,5 +1,6 @@
-import { AppInfoResponseDto, AppListResDTO, SingleAppInfoResDTO } from "../client";
+import {  AppListResDTO, SingleAppInfoResDTO } from "../client";
 import apiClient from "../client/client"
+import { CEG } from "../utils/error";
 import { BackendClient } from "./backendClient";
 
 export type GetAppData = {
@@ -26,6 +27,8 @@ export class Apps {
     constructor(backendClient: BackendClient) {
         this.backendClient = backendClient;
     }
+
+
     /**
      * Retrieves a list of all available apps in the Composio platform.
      * 
@@ -34,8 +37,13 @@ export class Apps {
      * @returns {Promise<AppListResDTO>} A promise that resolves to the list of all apps.
      * @throws {ApiError} If the request fails.
      */
-    list(): Promise<AppInfoResponseDto[]> {
-        return apiClient.apps.getApps().then(res => res.data!.items)
+    async list(){
+        try {
+            const {data} = await apiClient.apps.getApps();
+            return data?.items || [];
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
     /**
@@ -47,61 +55,76 @@ export class Apps {
      * @returns {CancelablePromise<GetAppResponse>} A promise that resolves to the details of the app.
      * @throws {ApiError} If the request fails.
      */
-    get(data: GetAppData) {
-        return apiClient.apps.getApp({
-            path:{
-                appName: data.appKey
-            },
-            throwOnError: true
-        }).then(res => res.data!)
+    async get(data: GetAppData){  
+        try {
+            const {data:response} = await apiClient.apps.getApp({
+                path: {
+                    appName: data.appKey
+                }
+            });
+            if(!response) throw new Error("App not found");
+            return response;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
     async getRequiredParams(appId: string): Promise<RequiredParamsFullResponse> {
-        const appData = await this.get({ appKey: appId });
-        const authSchemes = appData.auth_schemes;
-        const availableAuthSchemes = (authSchemes as Array<{ mode: string }>)?.map(scheme => scheme?.mode);
-        
-        const authSchemesObject: Record<string, RequiredParamsResponse> = {};
+        try {
+            const appData = await this.get({ appKey: appId });
+            if(!appData) throw new Error("App not found");
+            const authSchemes = appData.auth_schemes;
+            const availableAuthSchemes = (authSchemes as Array<{ mode: string }>)?.map(scheme => scheme?.mode);
+            
+            const authSchemesObject: Record<string, RequiredParamsResponse> = {};
 
-        for (const scheme of authSchemes as Array<{
-            mode: string;
-            fields: Array<{
-                name: string;
-                required: boolean;
-                expected_from_customer: boolean;
-            }>;
-        }>) {
-            const name = scheme.mode;
-            authSchemesObject[name] = {
-                required_fields: [],
-                optional_fields: [],
-                expected_from_user: []
-            };
+            for (const scheme of authSchemes as Array<{
+                mode: string;
+                fields: Array<{
+                    name: string;
+                    required: boolean;
+                    expected_from_customer: boolean;
+                }>;
+            }>) {
+                const name = scheme.mode;
+                authSchemesObject[name] = {
+                    required_fields: [],
+                    optional_fields: [],
+                    expected_from_user: []
+                };
 
-            scheme.fields.forEach((field) => {
-                const isExpectedForIntegrationSetup = field.expected_from_customer === false;
-                const isRequired = field.required;
-                
-                if (isExpectedForIntegrationSetup) {
-                    if (isRequired) {
-                        authSchemesObject[name].expected_from_user.push(field.name);
+                scheme.fields.forEach((field) => {
+                    const isExpectedForIntegrationSetup = field.expected_from_customer === false;
+                    const isRequired = field.required;
+                    
+                    if (isExpectedForIntegrationSetup) {
+                        if (isRequired) {
+                            authSchemesObject[name].expected_from_user.push(field.name);
+                        } else {
+                            authSchemesObject[name].optional_fields.push(field.name);
+                        }
                     } else {
-                        authSchemesObject[name].optional_fields.push(field.name);
+                        authSchemesObject[name].required_fields.push(field.name);
                     }
-                } else {
-                    authSchemesObject[name].required_fields.push(field.name);
-                }
-            });
-        }
+                });
+            }
 
-        return {
-            availableAuthSchemes,
-            authSchemes: authSchemesObject
-        };
+            return {
+                availableAuthSchemes,
+                authSchemes: authSchemesObject
+            };
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
     async getRequiredParamsForAuthScheme(appId: string, authScheme: string): Promise<RequiredParamsResponse> {
-        return this.getRequiredParams(appId).then(res => res.authSchemes[authScheme]);
+        try {
+            const params = await this.getRequiredParams(appId);
+            return params.authSchemes[authScheme];
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 }
 

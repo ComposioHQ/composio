@@ -4,9 +4,9 @@ import { Apps } from "./apps";
 import { Integrations } from "./integrations";
 import { ActiveTriggers } from "./activeTriggers";
 import { ConnectedAccounts } from "./connectedAccounts";
-import { ExecuteActionResDTO } from "../client";
 import { BackendClient } from "./backendClient";
 import { Triggers } from "./triggers";
+import { CEG } from "../utils/error";
 
 
 export class Entity {
@@ -30,7 +30,8 @@ export class Entity {
         this.activeTriggers = new ActiveTriggers(this.backendClient);
     }
 
-    async execute(actionName: string, params?: Record<string, any> | undefined, text?: string | undefined, connectedAccountId?: string): Promise<ExecuteActionResDTO> {
+    async execute(actionName: string, params?: Record<string, any> | undefined, text?: string | undefined, connectedAccountId?: string) {
+        try{
         const action = await this.actionsModel.get({
             actionName: actionName
         });
@@ -56,6 +57,8 @@ export class Entity {
             });
         } else {
             const connectedAccounts = await this.connectedAccounts.list({
+                
+                //@ts-ignore
                 user_uuid: this.id,
                 appNames: action.appKey,
                 status: 'ACTIVE'
@@ -78,9 +81,13 @@ export class Entity {
                 text: text
             }
         });
+    }catch(error){
+        throw CEG.handleError(error);
+    }
     }
 
     async getConnection(app?: string, connectedAccountId?: string): Promise<any | null> {
+        try{
         if (connectedAccountId) {
             return await this.connectedAccounts.get({
                 connectedAccountId
@@ -90,6 +97,7 @@ export class Entity {
         let latestAccount = null;
         let latestCreationDate: Date | null = null;
         const connectedAccounts = await this.connectedAccounts.list({
+            // @ts-ignore
             user_uuid: this.id,
         });
 
@@ -114,40 +122,62 @@ export class Entity {
         return this.connectedAccounts.get({
             connectedAccountId: latestAccount.id!
         });
+    }catch(error){
+        throw CEG.handleError(error);
+    }
     }
 
-    async setupTrigger(app: string, triggerName: string, config: { [key: string]: any; }): Promise<any> {
+    async setupTrigger(app: string, triggerName: string, config: { [key: string]: any; }) {
+        try{
         const connectedAccount = await this.getConnection(app);
         if (!connectedAccount) {
             throw new Error(`Could not find a connection with app='${app}' and entity='${this.id}'`);
         }
         const trigger = await this.triggerModel.setup(connectedAccount.id!, triggerName, config);
         return trigger;
+    }catch(error){
+        throw CEG.handleError(error);
+    }
     }
 
     async disableTrigger(triggerId: string): Promise<any> {
-        return ActiveTriggers.disable({ triggerId: triggerId });
+        try{
+        await this.activeTriggers.disable({ triggerId: triggerId });
+        return {status: "success"};
+    }catch(error){
+        throw CEG.handleError(error);
+    }
     }
 
     async getConnections(){
         /**
          * Get all connections for an entity.
          */
+        try{
         const connectedAccounts = await this.connectedAccounts.list({
+            // @ts-ignore
             user_uuid: this.id
         });
         return connectedAccounts.items!;
+    }catch(error){
+        throw CEG.handleError(error);
+    }
     }
 
     async getActiveTriggers() {
         /**
          * Get all active triggers for an entity.
          */
+        try{
         const connectedAccounts = await this.getConnections();
         const activeTriggers = await this.activeTriggers.list({
+            // @ts-ignore
            connectedAccountIds: connectedAccounts!.map((account:any) => account.id!).join(",")
         });
         return activeTriggers;
+    }catch(error){
+        throw CEG.handleError(error);
+    }
     }
 
     async initiateConnection(
@@ -158,7 +188,7 @@ export class Entity {
         integrationId?: string,
         connectionData?: Record<string, any>,
     ): Promise<ConnectionRequest> {
-
+        try{
         // Get the app details from the client
         const app = await this.apps.get({ appKey: appName });
 
@@ -206,8 +236,11 @@ export class Entity {
             integrationId: integration!.id!,
             userUuid: this.id,
             redirectUri: redirectUrl,
+            //@ts-ignore
             data: connectionData
         });
-
+    }catch(error){
+        throw CEG.handleError(error);
+    }
     }
 }

@@ -1,5 +1,6 @@
-import { ActionsListResponseDTO, ExecuteActionResDTO } from "../client";
+import { ActionExecutionReqDTO, ActionExecutionResDto, ActionsListResponseDTO, ExecuteActionResDTO, ExecuteActionV2Data } from "../client";
 import apiClient from "../client/client";
+import { CEG } from "../utils/error";
 import { BackendClient } from "./backendClient";
 
 /**
@@ -155,13 +156,17 @@ export class Actions {
      * @throws {ApiError} If the request fails.
      */
     async get(data: { actionName: string; }) {
-        const actions = await apiClient.actionsV1.v1GetAction({
+        try{
+        const actions = await apiClient.actionsV2.getActionV2({
             path: {
                 actionId: data.actionName
             }
         });
 
-        return (actions.data! as unknown as any[])[0];
+            return (actions.data!);
+        } catch(e){
+            throw CEG.handleError(e)
+        }
     }
 
     /**
@@ -170,24 +175,26 @@ export class Actions {
      * This method allows you to fetch a list of all the available actions. It supports pagination to handle large numbers of actions. The response includes an array of action objects, each containing information such as the action's name, display name, description, input parameters, expected response, associated app information, and enabled status.
      * 
      * @param {GetListActionsData} data The data for the request.
-     * @returns {CancelablePromise<GetListActionsResponse>} A promise that resolves to the list of all actions.
+     * @returns {Promise<ActionsListResponseDTO>} A promise that resolves to the list of all actions.
      * @throws {ApiError} If the request fails.
      */
-    list(data: GetListActionsData = {}): Promise<ActionsListResponseDTO> {
-        return apiClient.actionsV2.v2ListActions({
-            query: {
-                actions: data.actions,
-                apps: data.apps,
-                showAll: data.showAll,
-                tags: data.tags,
-                useCase: data.useCase as string,
-                filterImportantActions: data.filterImportantActions,
-                showEnabledOnly: data.showEnabledOnly
-
-            }
-        }).then(res => {
-            return res.data!
-        })
+    async list(data: GetListActionsData = {}): Promise<ActionsListResponseDTO> {
+        try {
+            const response = await apiClient.actionsV2.listActionsV2({
+                query: {
+                    actions: data.actions,
+                    apps: data.apps,
+                    showAll: data.showAll,
+                    tags: data.tags,
+                    useCase: data.useCase as string,
+                    filterImportantActions: data.filterImportantActions,
+                    showEnabledOnly: data.showEnabledOnly
+                }
+            });
+            return response.data!;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
     /**
@@ -196,17 +203,20 @@ export class Actions {
      * This method allows you to trigger the execution of an action by providing its name and the necessary input parameters. The request includes the connected account ID to identify the app connection to use for the action, and the input parameters required by the action. The response provides details about the execution status and the response data returned by the action.
      * 
      * @param {ExecuteActionData} data The data for the request.
-     * @returns {CancelablePromise<ExecuteActionResponse>} A promise that resolves to the execution status and response data.
+     * @returns {Promise<ActionExecutionResDto>} A promise that resolves to the execution status and response data.
      * @throws {ApiError} If the request fails.
      */
-    async execute(data: ExecuteActionData): Promise<ExecuteActionResDTO> {
-        const {data:res} = await apiClient.actionsV2.v2ExecuteAction({
-            body: data.requestBody,
-            path: {
-                actionId: data.actionName
-            }
-        })
-
-        return res!
+    async execute(data: ExecuteActionData){
+        try {
+            const { data: res } = await apiClient.actionsV2.executeActionV2({
+                body: data.requestBody as unknown as ActionExecutionReqDTO,
+                path: {
+                    actionId: data.actionName
+                }
+            });
+            return res!;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 }

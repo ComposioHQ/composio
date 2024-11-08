@@ -1,0 +1,104 @@
+---
+title: "SWE Kit: PR Review Agent"
+sidebarTitle: "PR Review Agent"
+icon: "github"
+description: "Build a PR Review agent with SWE Kit"
+---
+
+## Overview
+SWE Development Kit (swekit) is a powerful framework for building Software Engineering agents using Composio's tooling ecosystem. This example demonstrates how to build a Pull Request (PR) Review Agent using SWE Development Kit (swekit). The PR Review Agent uses Composio's tooling ecosystem to help automate and enhance the PR review process.
+
+
+## Getting Started
+
+<Steps>
+<Step title="Installation">
+  Begin by installing the core packages:
+  <CodeGroup>
+  ```bash Installing SweKit
+  pip install swekit composio-core
+  ```
+  </CodeGroup>
+  
+  For additional functionality, install packages for your preferred framework (e.g., CrewAI):
+  <CodeGroup>
+  ```bash Installing CrewAI and Composio CrewAI Plugin
+  pip install crewai composio-crewai
+  ```
+  </CodeGroup>
+</Step>
+
+<Step title="Connect your Github Account">
+  To utilize Github Issues as a task source, link your Github account as follows:
+  <Tabs>
+  <Tab title="Composio CLI">
+  <CodeGroup>
+  ```bash Use Composio CLI
+  composio add github
+  ```
+  </CodeGroup>
+  </Tab>
+  <Tab title="Locally using Github Auth Token">
+  <CodeGroup>
+  ```bash Use Github Auth Token
+  export GITHUB_ACCESS_TOKEN=<your_token>
+  ```
+  </CodeGroup>
+  </Tab>
+  </Tabs>
+
+  <Note>
+  There are two ways to provide the GitHub access token for git clone:
+
+  1. Set the environment variable `GITHUB_ACCESS_TOKEN='<git_access_token>'`.
+  2. Use the GitHub account connected to your toolset entity. However, this method has limitations:
+     - The agent won't be able to push or create PRs.
+     - You need to set `export ALLOW_CLONE_WITHOUT_REPO='true'`.
+
+  Option 1 is recommended for full functionality.
+  </Note>
+</Step>
+
+<Step title="Create a New Agent">
+  Generate your agent's scaffolding:
+  <CodeGroup>
+  ```bash Create a new Folder with basic PR Review agent code
+  swekit scaffold pr_review -f crewai -o pr_review_agent
+  ```
+  </CodeGroup>
+
+  <Note>
+  Scaffold support for other frameworks coming soon!
+  </Note>
+  
+  This process will establish a new agent at `pr_review_agent` with essential files:
+  - `main.py`: The main script to execute the agent
+  - `agent.py`: The agent's core definition
+  - `prompts.py`: Prompts to guide the agent's actions
+  - `benchmark.py`: A runner for the SWE-Bench benchmarks
+  - `input.py`: A helper file to take inputs from the user
+  - `tools.py`: A file to add custom tools to the agent
+
+</Step>
+
+
+<Step title="Start Docker Server">
+  <Warning>
+  To use Docker as the default workspace environment, ensure your Docker server is running
+  </Warning>
+    If you prefer to run the agent locally without Docker (**Unsafe**), modify the workspace configuration in `agent.py` by setting the `WorkspaceType.Docker()` to `WorkspaceType.Host()`.
+</Step>
+
+
+<Step title="Run the Agent">
+  To activate the agent, proceed to its directory and execute:
+  <CodeGroup>
+  ```bash Run the agent
+  cd pr_review_agent/agent
+  python main.py
+  ```
+  </CodeGroup>
+  
+  You will be prompted to specify the repository and issue for the agent to address.
+</Step>
+</Steps>

@@ -9,9 +9,10 @@ export default defineConfig({
         asClass: true,
         //@ts-ignore
         methodNameBuilder: (operation) => {
-            const name = operation.name.split("Controller")[1];
+            const name = operation?.name?.split("Controller")[1] || operation?.name;
             //@ts-ignore
-            return name.charAt(0).toLowerCase() + name.slice(1);
+            return name?.charAt(0)?.toLowerCase() + name?.slice(1);
         },
+        
     },
 });
