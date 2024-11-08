@@ -6,6 +6,15 @@ import { BackendClient } from "./backendClient";
 import { CEG } from "../utils/error";
 
 type ConnectedAccountsListData = GetConnectionsData['query'] & {appNames?: string};
+
+type InitiateConnectionDataReq = InitiateConnectionPayloadDto & {
+    data?: Record<string, unknown> | unknown;
+    userUuid?: string;
+    entityId?: string;
+    labels?: string[];
+    integrationId: string;
+}
+
 export class ConnectedAccounts {
     backendClient: BackendClient;
 
@@ -59,13 +68,17 @@ export class ConnectedAccounts {
         }
     }
 
-    async initiate(data: InitiateConnectionData["body"] & { userUuid?: string; entityId?: string }): Promise<ConnectionRequest> {
+    async initiate(payload: InitiateConnectionDataReq): Promise<ConnectionRequest> {
         try {
-            if (data.userUuid) {
-                data.entityId = data.userUuid;
-            }
-            const res = await client.connections.initiateConnection({ body: data }).then(res => res.data);
-            //@ts-ignore
+            const {integrationId, entityId = 'default', labels,data={}} = payload;
+      
+            const res = await client.connections.initiateConnection({ body: {
+                integrationId,
+                entityId,
+                labels,
+                data,
+            }  }).then(res => res.data);
+            
             return new ConnectionRequest(res?.connectionStatus!, res?.connectedAccountId!, res?.redirectUrl!)
         } catch (error) {
             throw CEG.handleError(error);

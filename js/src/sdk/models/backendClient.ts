@@ -70,7 +70,8 @@ export class BackendClient {
                 'X-API-KEY': `${this.apiKey}`,
                 'X-SOURCE': 'js_sdk',
                 'X-RUNTIME': this.runtime
-            }
+            },
+            throwOnError: true
         });
 
     }
