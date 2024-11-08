@@ -108,7 +108,7 @@ def _bump_dockerfiles(bump_type: BumpType) -> None:
 
 
 def _bump_init(bump_type: BumpType) -> None:
-    file = Path.cwd() / "composio" / "__init__.py"
+    file = Path.cwd() / "composio" / "__version__.py"
     print("=" * 64)
     print(f"Bumping {file}")
     content = file.read_text(encoding="utf-8")

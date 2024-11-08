@@ -25,11 +25,9 @@ listener = composio_toolset.create_trigger_listener()
 
 @listener.callback(filters={"trigger_name": "SLACKBOT_RECEIVE_MESSAGE"})
 def callback_new_message(event: TriggerEventData) -> None:
-    print("Received new message")
     payload = event.payload
-    print(f"\n\npayload :: {payload}")
     try:
-        # if its bot message, ignore
+        # if its bot message, ignore & don't reply in channel
         bot_id = payload['bot_id']
         if(bot_id):
             return None
@@ -43,7 +41,7 @@ def callback_new_message(event: TriggerEventData) -> None:
         messages = chat_db.get_chat(chat_id)['messages']
         response = chatbot(messages)
 
-
+        # send response to slack channel
         composio_toolset.execute_action(
             action=Action.SLACKBOT_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL,
             params={"channel": channel_id, "text": response},

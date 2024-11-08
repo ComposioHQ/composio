@@ -39,7 +39,10 @@ export default class LoginCommand {
       return;
     }
     try {
-      const { data } = await client.cli.handleCliCodeExchange({});
+      const { data } = await client.cli.generateCliSession({
+        query: {},
+      });
+
       const cliKey = data?.key as string;
       const loginUrl = `${FRONTEND_BASE_URL}?cliKey=${cliKey}`;
   
@@ -74,7 +77,7 @@ export default class LoginCommand {
     authCode: string,
     baseURL: string,
   ): Promise<void> {
-    const { data, error } = await client.cli.handleCliCodeVerification({
+    const { data, error } = await client.cli.verifyCliCode({
       query: { key: cliKey, code: authCode },
       throwOnError: false,
     });

@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 load_dotenv()
 import os
 import sys
+import json
 from openai import OpenAI
 from db import ChatDB
 
@@ -28,7 +29,7 @@ def chatbot(messages: list):
     if completion.choices[0].message.tool_calls:
         tool_call = completion.choices[0].message.tool_calls[0]
         function_name = tool_call.function.name
-        arguments = eval(tool_call.function.arguments)
+        arguments = json.loads(tool_call.function.arguments)
         if function_name == "find_code_snippet":
             # Using the tool to find the code snippet
             result = find_code_snippet(**arguments)
