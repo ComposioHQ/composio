@@ -676,9 +676,13 @@ export type CreateConnectorPayloadDTO = {
      */
     useComposioAuth?: boolean;
     /**
-     * Application ID
+     * Composio App UUID to be used for authentication. Either specify this or appName
      */
-    appId: string;
+    appId?: string;
+    /**
+     * Name of the app to be used for authentication. Either specify this or appId
+     */
+    appName?: string;
     /**
      * Flag to force new integration
      */
@@ -969,6 +973,7 @@ export type GetConnectionsQueryDto = {
     showActiveOnly?: boolean;
     status?: string;
     showDisabled?: boolean;
+    labels?: Array<(string)>;
 };
 
 export type InitiateConnectionPayloadDto = {
@@ -979,6 +984,11 @@ export type InitiateConnectionPayloadDto = {
     redirectUri?: string;
     userUuid?: string;
     entityId?: string;
+    labels?: Array<(string)>;
+};
+
+export type UpdateConnectionLabelsPayloadDto = {
+    labels: Array<(string)>;
 };
 
 export type InitiateConnectionResponse = {
@@ -1104,6 +1114,8 @@ export type ActionsQueryDTO = {
     usecaseLimit?: number;
     filterImportantActions?: boolean;
     showAll?: boolean;
+    page?: number;
+    offset?: number;
 };
 
 export type ActionsControllerV1 = {
@@ -1494,6 +1506,10 @@ export type TriggerResponseDTO = {
      * Optional trigger ID
      */
     triggerId?: string;
+    /**
+     * Is new trigger. If true, the trigger was created just now or else it was already existing
+     */
+    isNew?: boolean;
 };
 
 export type WebhookURLResponseDTO = {
@@ -2292,6 +2308,7 @@ export type GetConnectionsData = {
         appNames?: string;
         connectionId?: string;
         integrationId?: string;
+        labels?: Array<(string)>;
         page?: number;
         pageSize?: number;
         showActiveOnly?: boolean;
@@ -2315,6 +2332,20 @@ export type InitiateConnectionData = {
 export type InitiateConnectionResponse2 = InitiateConnectionResponse;
 
 export type InitiateConnectionError = unknown;
+
+export type UpdateConnectionDataData = {
+    /**
+     * UpdateConnectionLabelsPayloadDto
+     */
+    body?: UpdateConnectionLabelsPayloadDto;
+    path: {
+        connectedAccountId: string;
+    };
+};
+
+export type UpdateConnectionDataResponse = unknown;
+
+export type UpdateConnectionDataError = unknown;
 
 export type GetConnectionData = {
     path: {
@@ -2560,6 +2591,8 @@ export type ListActionsV2Data = {
         apps?: string;
         filterImportantActions?: boolean;
         limit?: number;
+        offset?: number;
+        page?: number;
         showAll?: boolean;
         showEnabledOnly?: boolean;
         tags?: string;
@@ -2579,6 +2612,8 @@ export type ListActionsMinimalV2Data = {
         apps?: string;
         filterImportantActions?: boolean;
         limit?: number;
+        offset?: number;
+        page?: number;
         showAll?: boolean;
         showEnabledOnly?: boolean;
         tags?: string;

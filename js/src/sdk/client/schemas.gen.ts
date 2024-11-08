@@ -933,7 +933,11 @@ export const $CreateConnectorPayloadDTO = {
         },
         appId: {
             type: 'string',
-            description: 'Application ID'
+            description: 'Composio App UUID to be used for authentication. Either specify this or appName'
+        },
+        appName: {
+            type: 'string',
+            description: 'Name of the app to be used for authentication. Either specify this or appId'
         },
         forceNewIntegration: {
             type: 'boolean',
@@ -941,7 +945,7 @@ export const $CreateConnectorPayloadDTO = {
         }
     },
     type: 'object',
-    required: ['name', 'appId']
+    required: ['name']
 } as const;
 
 export const $PatchConnectorReqDTO = {
@@ -1556,6 +1560,12 @@ export const $GetConnectionsQueryDto = {
         },
         showDisabled: {
             type: 'boolean'
+        },
+        labels: {
+            items: {
+                type: 'string'
+            },
+            type: 'array'
         }
     },
     type: 'object'
@@ -1578,10 +1588,29 @@ export const $InitiateConnectionPayloadDto = {
         },
         entityId: {
             type: 'string'
+        },
+        labels: {
+            items: {
+                type: 'string'
+            },
+            type: 'array'
         }
     },
     type: 'object',
     required: ['data', 'integrationId']
+} as const;
+
+export const $UpdateConnectionLabelsPayloadDto = {
+    properties: {
+        labels: {
+            items: {
+                type: 'string'
+            },
+            type: 'array'
+        }
+    },
+    type: 'object',
+    required: ['labels']
 } as const;
 
 export const $InitiateConnectionResponse = {
@@ -1861,6 +1890,12 @@ export const $ActionsQueryDTO = {
         },
         showAll: {
             type: 'boolean'
+        },
+        page: {
+            type: 'number'
+        },
+        offset: {
+            type: 'number'
         }
     },
     type: 'object'
@@ -2368,6 +2403,10 @@ export const $TriggerResponseDTO = {
         triggerId: {
             type: 'string',
             description: 'Optional trigger ID'
+        },
+        isNew: {
+            type: 'boolean',
+            description: 'Is new trigger. If true, the trigger was created just now or else it was already existing'
         }
     },
     type: 'object',
