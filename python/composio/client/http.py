@@ -9,7 +9,7 @@ from aiohttp import ClientSession as AsyncSession
 from requests import ReadTimeout
 from requests import Session as SyncSession
 
-from composio import __version__
+from composio.__version__ import __version__
 from composio.utils import logging
 
 

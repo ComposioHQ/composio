@@ -7,6 +7,7 @@ sentry.init()
 
 import atexit  # noqa: E402
 
+from composio.__version__ import __version__  # noqa: E402
 from composio.client import Composio  # noqa: E402
 from composio.client.collections import CustomAuthObject  # noqa: E402
 from composio.client.enums import (  # noqa: E402
@@ -50,7 +51,5 @@ __all__ = (
     "action",
     "LogLevel",
 )
-
-__version__ = "0.5.39"
 
 atexit.register(create_latest_version_warning_hook(version=__version__))
