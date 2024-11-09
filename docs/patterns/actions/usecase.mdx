@@ -14,7 +14,7 @@ Find relevant actions for your use case by describing what you want to accomplis
 ```Python Python Fetch Actions using use-case
 use_case="Star a repo on github"
 
-action_enums=toolset.find_actions_by_use_case(app=App.GITHUB, use_case=use_case)
+action_enums=toolset.find_actions_by_use_case(App.GITHUB, use_case=use_case)
 tools = toolset.get_tools(actions=action_enums)  # use tools as per your framework
 ```
 

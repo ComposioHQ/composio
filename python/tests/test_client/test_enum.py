@@ -108,9 +108,9 @@ class TestDisableRemoteCaching:
 
 def test_tag_enum() -> None:
     """Test `Tag` enum."""
-    tag = Tag("ASANA_ALLOCATIONS")
-    assert tag.app.upper() == "ASANA"
-    assert tag.value == "Allocations"
+    tag = Tag("GITHUB_ORGS")
+    assert tag.app.upper() == "GITHUB"
+    assert tag.value == "orgs"
 
 
 def test_app_enum() -> None:

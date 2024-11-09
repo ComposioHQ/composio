@@ -153,6 +153,7 @@ class HostWorkspace(Workspace):
             tool_registry,
         )
         from composio.utils.pypi import (  # pylint: disable=import-outside-toplevel
+            add_package_to_installed_list,
             check_if_package_is_intalled,
         )
 
@@ -226,6 +227,7 @@ class HostWorkspace(Workspace):
                     raise ComposioSDKError(message=f"Error installing {dependency}")
                 installed.add(dependency)
                 self.logger.info(f"Installed {dependency}")
+                add_package_to_installed_list(name=dependency)
 
     def execute_action(
         self,
