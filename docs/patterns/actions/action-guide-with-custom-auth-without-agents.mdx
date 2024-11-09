@@ -1,0 +1,40 @@
+---
+title: "Actions with Custom Authentication - Without Agents"
+sidebarTitle: "Actions with Custom Authentication - Without Agents"
+icon: "user-secret"
+description: "Guide to Executing Actions with Custom Authentication Without Agents"
+---
+
+Composio enables you to perform actions using Custom Authentication. For each specific tool, you can obtain the required parameters and pass your authentication headers to execute the action effectively.
+
+This guide will demonstrate how to execute actions without relying on Agents, utilizing custom authentication methods.
+
+<Tabs>
+    <Tab title="Python">
+    ```python Python
+    Coming Soon
+    ```
+    </Tab>
+    <Tab title="Javascript">
+    ```javascript JavaScript
+    import { OpenAIToolSet } from "composio-core";
+
+    const toolset = new OpenAIToolSet();
+
+    const customAuthAction = await toolset.client.actions.execute({
+    actionName: "GITHUB_GITHUB_API_ROOT", // Action Id for the Action you want to execute
+    requestBody: {
+        appName: "github", // App name for the Action you want to execute
+        authConfig: {
+            parameters: [{ // Authentication parameters for the Action you want to execute
+                name: "Authorization",
+                in: "header",
+                value: `Bearer YOUR_API_KEY` // Pass your token/API Key here
+            }]
+        },
+        input: {} // Input parameters for the Action you want to execute
+        }
+    });
+    ```
+    </Tab>
+</Tabs>
