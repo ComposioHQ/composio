@@ -1004,12 +1004,10 @@ class Actions(Collection[ActionModel]):
             queries["useCase"] = use_case
 
         if len(apps) > 0:
-            queries["appNames"] = ",".join(
-                list(map(lambda x: t.cast(App, x).slug, apps))
-            )
+            queries["apps"] = ",".join(list(map(lambda x: t.cast(App, x).slug, apps)))
 
         if len(actions) > 0:
-            queries["appNames"] = ",".join(
+            queries["apps"] = ",".join(
                 set(map(lambda x: t.cast(Action, x).app, actions))
             )
 
