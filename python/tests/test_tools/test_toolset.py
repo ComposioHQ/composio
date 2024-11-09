@@ -13,6 +13,7 @@ from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.base.runtime import action as custom_action
 from composio.tools.toolset import ComposioToolSet
+from composio.utils.pypi import reset_installed_list
 
 from composio_langchain.toolset import ComposioToolSet as LangchainToolSet
 
@@ -51,12 +52,12 @@ def test_uninitialize_app() -> None:
     with pytest.raises(
         ComposioSDKError,
         match=(
-            "No connected account found for app `asana`; "
-            "Run `composio add asana` to fix this"
+            "No connected account found for app `linear`; "
+            "Run `composio add linear` to fix this"
         ),
     ):
         ComposioToolSet().get_action_schemas(
-            actions=[Action.ASANA_ADD_A_PROJECT_TO_A_TASK]
+            actions=[Action.LINEAR_CREATE_LINEAR_ISSUE]
         )
 
 
@@ -71,6 +72,9 @@ class TestValidateTools:
         action_registry["local"][Action.BROWSER_TOOL_CLICK_ELEMENT.slug].requires = [
             cls.package
         ]
+
+    def setup_method(self) -> None:
+        reset_installed_list()
 
     def test_validate_tools_app(self, caplog) -> None:
         """Test `ComposioToolSet.validate_tools` method."""
