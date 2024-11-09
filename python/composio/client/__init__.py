@@ -388,6 +388,7 @@ class Entity:
         use_composio_auth: bool = True,
         force_new_integration: bool = False,
         connected_account_params: t.Optional[t.Dict] = None,
+        labels: t.Optional[t.List] = None,
     ) -> ConnectionRequestModel:
         """
         Initiate an integration connection process for a specified application.
@@ -427,6 +428,7 @@ class Entity:
             integration_id=t.cast(IntegrationModel, integration).id,
             entity_id=self.id,
             params=connected_account_params,
+            labels=labels,
             redirect_url=redirect_url,
         )
 

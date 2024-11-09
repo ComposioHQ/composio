@@ -858,6 +858,16 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         for item in items:
             item = self._process_schema(item)
 
+            # This is to support anthropic-claude
+            if item.name == Action.ANTHROPIC_BASH_COMMAND.slug:
+                item.name = "bash"
+
+            if item.name == Action.ANTHROPIC_COMPUTER.slug:
+                item.name = "computer"
+
+            if item.name == Action.ANTHROPIC_TEXT_EDITOR.slug:
+                item.name = "str_replace_editor"
+
         return items
 
     def _process_schema(self, action_item: ActionModel) -> ActionModel:
@@ -1285,6 +1295,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self,
         integration_id: t.Optional[str] = None,
         app: t.Optional[AppType] = None,
+        labels: t.Optional[t.List] = None,
         entity_id: t.Optional[str] = None,
         redirect_url: t.Optional[str] = None,
         connected_account_params: t.Optional[t.Dict] = None,
@@ -1315,6 +1326,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             integration_id=integration_id,
             entity_id=entity_id or self.entity_id,
             params=connected_account_params,
+            labels=labels,
             redirect_url=redirect_url,
         )
 

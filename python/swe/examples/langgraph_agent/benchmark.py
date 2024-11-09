@@ -76,5 +76,4 @@ if __name__ == "__main__":
         dry_run=False,
         test_range=test_range,
         test_instance_ids=test_instance_ids_list,
-        # image_name="composio/composio:dev", # if you are doing local dev
     )
