@@ -45,18 +45,18 @@ def initialize_listennotes(entity_id: str, toolset: ComposioToolSet, listennotes
         return listennotes_tool
 
     except Exception as e:
-        print("Exception in initializing serpapi tool", e)
+        print("Exception in initializing listennotes tool", e)
         try:
             error_data = json.loads(str(e))
 
             status = error_data.get("status")
             message = error_data.get("message")
 
-            print(f"Error initializing SerpApi tool\n\nStatus: {status}\n\nMessage: {message}")
-            return None
+            print(f"Error initializing ListenNotes tool\n\nStatus: {status}\n\nMessage: {message}")
+            raise ValueError(f"Error initializing ListenNotes tool\n\nStatus: {status}\n\nMessage: {message}")
         except json.JSONDecodeError:
-            print(f"Error initializing SerpApi tool\n\n{e}")
-            return None
+            print(f"Error initializing ListenNotes tool\n\n{e}")
+            raise ValueError(f"Error initializing ListenNotes tool\n\n{e}")
         
 if __name__ == "__main__":
     toolset = ComposioToolSet()
