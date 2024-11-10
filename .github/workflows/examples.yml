@@ -56,6 +56,7 @@ jobs:
         package:
           [
             autogen,
+            camel,
             claude,
             crew_ai,
             griptape,
