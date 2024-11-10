@@ -183,6 +183,7 @@
           "patterns/actions/action-guide-without-agents",
           "patterns/actions/custom_actions",
           "patterns/actions/action-guide-with-custom-auth-without-agents",
+          "patterns/actions/action-guide-with-custom-auth-with-agents",
           "patterns/actions/usecase",
           "patterns/actions/action-guide-faqs"
         ]
