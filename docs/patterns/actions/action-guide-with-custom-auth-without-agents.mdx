@@ -12,8 +12,21 @@ This guide will demonstrate how to execute actions without relying on Agents, ut
 <Tabs>
     <Tab title="Python">
     ```python Python
-    Coming Soon
+    from composio import ComposioToolSet, App, Action
+
+    toolset = ComposioToolSet()
+    toolset.add_auth(
+        app=App.ASANA, # App name for the Action you want to execute
+        parameters=[{"in_": "header", "name": "Authorization", "value": "Bearer <TOKEN>"}], # Authentication parameters for the Action you want to execute
+        base_url="<BASE URL IF ANY>", # Base URL if any
+        body={}, 
+    )
+    toolset.execute_action(
+        Action.ASANA_ADD_A_PORTFOLIO_ITEM,  # Action Id for the Action you want to execute
+        params={},
+    )
     ```
+    The above code demonstrates how you can execute an Action using your credentials for Authentication.
     </Tab>
     <Tab title="Javascript">
     ```javascript JavaScript
@@ -36,5 +49,6 @@ This guide will demonstrate how to execute actions without relying on Agents, ut
         }
     });
     ```
+    The above code demonstrates how you can execute an Action using your credentials for Authentication.
     </Tab>
 </Tabs>
