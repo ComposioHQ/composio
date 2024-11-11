@@ -9,7 +9,6 @@ type ConnectedAccountsListData = GetConnectionsData['query'] & {appNames?: strin
 
 type InitiateConnectionDataReq = InitiateConnectionPayloadDto & {
     data?: Record<string, unknown> | unknown;
-    userUuid?: string;
     entityId?: string;
     labels?: string[];
     integrationId: string;

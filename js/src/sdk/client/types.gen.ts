@@ -496,7 +496,7 @@ export type AppQueryDTO = {
      */
     additionalFields?: string;
     /**
-     * Whether to include local tools or not
+     * Enter 'true' or 'false'
      */
     includeLocal?: string;
 };
