@@ -41,7 +41,7 @@ export type GetListActionsData = {
     /**
      * Limit of use-cases based search
      */
-    usecaseLimit?: string;
+    usecaseLimit?: number;
     /**
      * Show all actions - i.e disable pagination
      */
@@ -188,7 +188,8 @@ export class Actions {
                     tags: data.tags,
                     useCase: data.useCase as string,
                     filterImportantActions: data.filterImportantActions,
-                    showEnabledOnly: data.showEnabledOnly
+                    showEnabledOnly: data.showEnabledOnly,
+                    usecaseLimit: data.usecaseLimit || undefined
                 }
             });
             return response.data!;
