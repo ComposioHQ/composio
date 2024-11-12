@@ -80,6 +80,7 @@ class ComposioToolSet(
     ):
         def function(**kwargs: t.Any) -> t.Dict:
             """Wrapper function for composio action."""
+            self.logger.debug(f"Executing action: {action} with params: {kwargs}")
             return self.execute_action(
                 action=Action(value=action),
                 params=kwargs,
