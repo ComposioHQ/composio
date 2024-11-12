@@ -2599,7 +2599,7 @@ export type ListActionsV2Data = {
         showEnabledOnly?: boolean;
         tags?: string;
         useCase?: string;
-        usecaseLimit?: number;
+        useCaseLimit?: number;
     };
 };
 

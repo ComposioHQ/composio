@@ -119,7 +119,9 @@ export class CEG {
 
         let axiosDataMessage = axiosError.response?.data?.message || axiosError.message;
         const status = axiosError.response?.status || axiosError.status || axiosError.code || 'unknown';
-        const urlAndStatus = axiosError.config?.url ? `🔗 in URL: ${axiosError.config.url}, 📊 Status: ${status}` : '';
+        const request_id = axiosError.response?.headers?.["x-request-id"];
+        const urlAndStatus = axiosError.config?.url ? ` got 📊 ${status} response from URL🔗: ${axiosError.config.url}, request_id: ${request_id}` : '';
+
         axiosDataMessage = `❌ ${ifObjectStringify(axiosDataMessage) || errorDetails.description || "No additional information available."} ${urlAndStatus}`;
         throw new ComposioError(
             errorKey as string,
