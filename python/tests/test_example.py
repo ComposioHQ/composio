@@ -128,16 +128,15 @@ EXAMPLES = {
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
-    # TOFIX(@kaavee)
-    # "upload_file": {
-    #     "plugin": "crew_ai",
-    #     "file": EXAMPLES_PATH / "miscellaneous" / "attachment" / "send_attachment.py",
-    #     "match": {
-    #         "type": "stdout",
-    #         "values": ["'labelIds': ['SENT']"],
-    #     },
-    #     "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
-    # },
+    "upload_file": {
+        "plugin": "crew_ai",
+        "file": EXAMPLES_PATH / "miscellaneous" / "attachment" / "send_attachment.py",
+        "match": {
+            "type": "stdout",
+            "values": ["'labelIds': ['SENT']"],
+        },
+        "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
+    },
     "download_file": {
         "plugin": "crew_ai",
         "file": "run_issue.py",
