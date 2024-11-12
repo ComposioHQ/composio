@@ -1,17 +1,14 @@
 from composio import WorkspaceType, action
+from composio_langchain import Action, App, Tag, Trigger
 
-from composio_langchain import Action, App
-from composio_langchain import ComposioToolSet as Base
-from composio_langchain import Tag, Trigger
-
+from .toolset import ComposioToolSet as BaseComposioToolSet
 
 class ComposioToolSet(
-    Base,
+    BaseComposioToolSet,
     runtime="crewai",
     description_char_limit=1024,
 ):
     pass
-
 
 __all__ = (
     "Action",
