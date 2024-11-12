@@ -24,7 +24,7 @@ setup(
     python_requires=">=3.9,<4",
     install_requires=[
         "composio_core>=0.5.40,<=0.5.41",
-        "camel-ai>=0.2.1",
+        "camel-ai>=0.1.5.7,<=0.2.2",
         "pillow",
     ],
     include_package_data=True,
