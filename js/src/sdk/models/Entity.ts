@@ -9,7 +9,7 @@ import { Triggers } from "./triggers";
 import { CEG } from "../utils/error";
 
 const LABELS = {
-    PRIMARY: "primary";
+    PRIMARY: "primary"
 }
 
 
@@ -82,10 +82,6 @@ export class Entity {
             if (!connectedAccount) {
                 connectedAccount = connectedAccounts.items![0];
             }
-
-
-            // @ts-ignore
-            connectedAccount = connectedAccounts.items![0];
         }
         return this.actionsModel.execute({
             actionName: actionName,
