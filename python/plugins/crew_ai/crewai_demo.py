@@ -15,7 +15,7 @@ from composio_crewai import App, ComposioToolSet, Action
 dotenv.load_dotenv()
 
 # Initialize tools.
-openai_client = ChatOpenAI(api_key=os.environ["OPENAI_API_KEY"]) # type: ignore
+openai_client = ChatOpenAI(api_key=os.environ["OPENAI_API_KEY"])
 composio_toolset = ComposioToolSet()
 
 # Get All the tools

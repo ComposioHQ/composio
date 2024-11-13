@@ -5,7 +5,6 @@ from inspect import Signature
 import pydantic
 import pydantic.error_wrappers
 import typing_extensions as te
-#from langchain_core.tools import BaseTool as BaseToolClass
 
 from composio import Action, ActionType, AppType, TagType
 from composio.tools.toolset import ComposioToolSet as BaseComposioToolSet
@@ -20,8 +19,8 @@ from crewai.tools import BaseTool as BaseToolClass
 
 
 class BaseTool(BaseToolClass):
-    name: str = "Name of my tool"
-    description: str = "Clear description for what this tool is useful for, your agent will need this information to use it."
+    name: str 
+    description: str
     
     def _run(self, *args, **kwargs):
         try:
