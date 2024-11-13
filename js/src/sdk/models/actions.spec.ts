@@ -29,7 +29,7 @@ describe("Apps class tests", () => {
         expect(actionsList.items).not.toHaveLength(0);
     });
 
-    it("should get a list of actions from integrated apps", async () => {
+    it("should get a list of actions from integrated apps in an account", async () => {
         const actionsList = await actions.list({
             shouldSearchInIntegratedApps: true
         });
