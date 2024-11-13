@@ -56,7 +56,6 @@ export type GetListActionsData = {
     filterImportantActions?: boolean;
     /**
      * Should search in integrated apps
-     * default: false
      */
     shouldSearchInIntegratedApps?: boolean;
 }
