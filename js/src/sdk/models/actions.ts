@@ -185,7 +185,7 @@ export class Actions {
     async list(data: GetListActionsData = {}): Promise<ActionsListResponseDTO> {
         try {
 
-            let apps = data.apps;
+            let apps = data.apps ? data.apps : undefined;
             if(data?.shouldSearchInIntegratedApps){
                 const integratedApps = await apiClient.appConnector.listAllConnectors();
                 apps = integratedApps.data?.items.map((app)=> app?.appName).join(",");
