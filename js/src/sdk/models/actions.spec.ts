@@ -22,9 +22,7 @@ describe("Apps class tests", () => {
     });
 
     it("should get a list of actions", async () => {
-        const actionsList = await actions.list({
-            apps: 'github'
-        });
+        const actionsList = await actions.list();
         expect(actionsList.items).toBeInstanceOf(Array);
         expect(actionsList.items).not.toHaveLength(0);
     });
