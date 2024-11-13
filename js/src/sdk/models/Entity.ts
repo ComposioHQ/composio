@@ -8,6 +8,10 @@ import { BackendClient } from "./backendClient";
 import { Triggers } from "./triggers";
 import { CEG } from "../utils/error";
 
+const LABELS = {
+    PRIMARY: "primary";
+}
+
 
 export class Entity {
     id: string;
@@ -69,7 +73,7 @@ export class Entity {
             }
 
             for (const account of connectedAccounts.items!) {
-                if (account?.labels && account?.labels.includes("primary")) {
+                if (account?.labels && account?.labels.includes(LABELS.PRIMARY)) {
                     connectedAccount = account;
                     break;
                 }
