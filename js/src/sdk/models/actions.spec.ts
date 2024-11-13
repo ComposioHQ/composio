@@ -23,7 +23,7 @@ describe("Apps class tests", () => {
 
     it("should get a list of actions", async () => {
         const actionsList = await actions.list({
-            shouldSearchInIntegratedApps: true
+            apps: 'github'
         });
         expect(actionsList.items).toBeInstanceOf(Array);
         expect(actionsList.items).not.toHaveLength(0);
@@ -31,7 +31,7 @@ describe("Apps class tests", () => {
 
     it("should get a list of actions from integrated apps in an account", async () => {
         const actionsList = await actions.list({
-            shouldSearchInIntegratedApps: true
+            onlySearchAvailableApps: true
         });
         expect(actionsList.items).toBeInstanceOf(Array);
         expect(actionsList.items).not.toHaveLength(0);

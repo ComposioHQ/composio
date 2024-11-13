@@ -51,6 +51,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     apps?: Array<string>;
     tags?: Optional<Array<string>>;
     useCase?: Optional<string>;
+    onlySearchAvailableApps?: Optional<boolean>;
   }): Promise<{ [key: string]: any }> {
 
     const actionsList = await this.client.actions.list({
@@ -59,6 +60,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       ...(filters?.useCase && { useCase: filters?.useCase }),
       ...(filters?.actions && { actions: filters?.actions?.join(",") }),
       ...(filters?.actions && { actions: filters?.actions?.join(",") }),
+      onlySearchAvailableApps: filters?.onlySearchAvailableApps ?? undefined
     });
 
 

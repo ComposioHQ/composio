@@ -55,9 +55,9 @@ export type GetListActionsData = {
      */
     filterImportantActions?: boolean;
     /**
-     * Should search in integrated apps
+     * Should search in available apps only
      */
-    shouldSearchInIntegratedApps?: boolean;
+    onlySearchAvailableApps?: boolean;
 }
 
 export type Parameter = {
@@ -186,7 +186,7 @@ export class Actions {
         try {
 
             let apps = data.apps;
-            if(data?.shouldSearchInIntegratedApps){
+            if(data?.onlySearchAvailableApps){
                 const integratedApps = await apiClient.appConnector.listAllConnectors();
                 apps = integratedApps.data?.items.map((app)=> app?.appName).join(",");
             }
