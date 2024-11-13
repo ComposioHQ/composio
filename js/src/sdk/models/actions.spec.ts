@@ -22,10 +22,21 @@ describe("Apps class tests", () => {
     });
 
     it("should get a list of actions", async () => {
-        const actionsList = await actions.list();
+        const actionsList = await actions.list({
+            shouldSearchInIntegratedApps: true
+        });
         expect(actionsList.items).toBeInstanceOf(Array);
         expect(actionsList.items).not.toHaveLength(0);
     });
+
+    it("should get a list of actions from integrated apps", async () => {
+        const actionsList = await actions.list({
+            shouldSearchInIntegratedApps: true
+        });
+        expect(actionsList.items).toBeInstanceOf(Array);
+        expect(actionsList.items).not.toHaveLength(0);
+    });
+
 
     it("should execute an action with a connected account for GitHub", async () => {
 

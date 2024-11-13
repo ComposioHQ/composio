@@ -54,6 +54,11 @@ export type GetListActionsData = {
      * Use smart tag filtering
      */
     filterImportantActions?: boolean;
+    /**
+     * Should search in integrated apps
+     * default: false
+     */
+    shouldSearchInIntegratedApps?: boolean;
 }
 
 export type Parameter = {
@@ -180,15 +185,22 @@ export class Actions {
      */
     async list(data: GetListActionsData = {}): Promise<ActionsListResponseDTO> {
         try {
+
+            let apps = data.apps;
+            if(data?.shouldSearchInIntegratedApps){
+                const integratedApps = await apiClient.appConnector.listAllConnectors();
+                apps = integratedApps.data?.items.map((app)=> app?.appName).join(",");
+            }
+            
             const response = await apiClient.actionsV2.listActionsV2({
                 query: {
                     actions: data.actions,
-                    apps: data.apps,
+                    apps: apps,
                     showAll: data.showAll,
                     tags: data.tags,
                     useCase: data.useCase as string,
                     filterImportantActions: data.filterImportantActions,
-                    showEnabledOnly: data.showEnabledOnly
+                    showEnabledOnly: data.showEnabledOnly,
                 }
             });
             return response.data!;
