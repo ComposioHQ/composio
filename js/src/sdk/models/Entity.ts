@@ -68,6 +68,18 @@ export class Entity {
                 throw new Error('No connected account found');
             }
 
+            for (const account of connectedAccounts.items!) {
+                if (account?.labels && account?.labels.includes("primary")) {
+                    connectedAccount = account;
+                    break;
+                }
+            }
+
+            if (!connectedAccount) {
+                connectedAccount = connectedAccounts.items![0];
+            }
+
+
             // @ts-ignore
             connectedAccount = connectedAccounts.items![0];
         }
