@@ -496,7 +496,7 @@ export type AppQueryDTO = {
      */
     additionalFields?: string;
     /**
-     * Whether to include local tools or not
+     * Enter 'true' or 'false'
      */
     includeLocal?: string;
 };
@@ -571,7 +571,7 @@ export type ExpectedInputFieldsDTO = {
     /**
      * Display name of the field
      */
-    displayName: string;
+    display_name: string;
     /**
      * Default value of the field
      */
@@ -585,11 +585,11 @@ export type ExpectedInputFieldsDTO = {
     /**
      * Whether the field is expected from customer
      */
-    expectedFromCustomer: boolean;
+    expected_from_customer: boolean;
     /**
      * Whether the field is a secret
      */
-    isSecret: boolean;
+    is_secret: boolean;
 };
 
 export type GetConnectorInfoResDTO = {
@@ -810,6 +810,7 @@ export type ConnectionWithAppData = {
     member: {
         [key: string]: unknown;
     };
+    labels?: Array<(string)>;
 };
 
 export type GetConnectionsResult = {
@@ -853,7 +854,6 @@ export type ActionExecutionResDto = {
 
 export type ConnectionParams = {
     integrationId: string;
-    labels?: Array<(string)>;
     connectionParams?: {
         [key: string]: unknown;
     };
@@ -878,6 +878,7 @@ export type ConnectionParams = {
     member: {
         [key: string]: unknown;
     };
+    labels?: Array<(string)>;
 };
 
 export type ToggleConnectedAccountResponseDTO = {
@@ -2598,7 +2599,7 @@ export type ListActionsV2Data = {
         showEnabledOnly?: boolean;
         tags?: string;
         useCase?: string;
-        usecaseLimit?: number;
+        useCaseLimit?: number;
     };
 };
 

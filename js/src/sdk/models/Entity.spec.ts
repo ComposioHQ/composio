@@ -1,19 +1,35 @@
 import { describe, it, expect } from "@jest/globals";
 import { getBackendClient } from "../testUtils/getBackendClient";
 import { Entity } from "./Entity";
+import { ConnectedAccounts } from "./connectedAccounts";
 
 describe("Entity class tests", () => {
     let backendClient = getBackendClient();
     let entity: Entity;
     let triggerId: string;
+    let connectedAccounts: ConnectedAccounts;
 
     beforeAll(() => {
         entity = new Entity(backendClient, "default");
+        connectedAccounts = new ConnectedAccounts(backendClient);
+  
     });
 
     it("should create an Entity instance with 'default' id", () => {
         expect(entity).toBeInstanceOf(Entity);
         expect(entity.id).toBe("default");
+    });
+    
+
+    it("should create for different entities", async () => {
+        const entityId = "test-entity";
+        const entity2 = new Entity(backendClient, entityId);
+        const connection = await entity2.initiateConnection("github");
+        expect(connection.connectionStatus).toBe("INITIATED");
+       
+        const connection2 = await connectedAccounts.get({connectedAccountId: connection.connectedAccountId});
+        if(!connection2) throw new Error("Connection not found");
+        expect(connection2.entityId).toBe(entityId);
     });
 
     it("get connection for github", async () => {
