@@ -186,7 +186,14 @@ export class Actions {
         try {
 
             let apps = data.apps;
+            
+            // Throw error if user has provided both filterByAvailableApps and apps
+            if(data?.filterByAvailableApps && data?.apps){
+                throw new Error("Both filterByAvailableApps and apps cannot be provided together");
+            }
+
             if(data?.filterByAvailableApps){
+                // Todo: To create a new API to get all integrated apps for a user instead of fetching all apps
                 const integratedApps = await apiClient.appConnector.listAllConnectors();
                 apps = integratedApps.data?.items.map((app)=> app?.appName).join(",");
             }
