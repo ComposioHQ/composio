@@ -29,7 +29,7 @@ describe("Apps class tests", () => {
 
     it("should get a list of actions from integrated apps in an account", async () => {
         const actionsList = await actions.list({
-            onlySearchAvailableApps: true
+            filterByAvailableApps: true
         });
         expect(actionsList.items).toBeInstanceOf(Array);
         expect(actionsList.items).not.toHaveLength(0);
