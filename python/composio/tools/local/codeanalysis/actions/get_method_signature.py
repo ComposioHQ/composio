@@ -5,7 +5,10 @@ from pydantic import BaseModel, Field
 
 from composio.tools.base.local import LocalAction
 from composio.tools.local.codeanalysis.actions.base_action import MethodAnalysisAction
-from composio.tools.local.codeanalysis.actions.create_codemap import CreateCodeMap, CreateCodeMapRequest
+from composio.tools.local.codeanalysis.actions.create_codemap import (
+    CreateCodeMap,
+    CreateCodeMapRequest,
+)
 
 
 class GetMethodSignatureRequest(BaseModel):
