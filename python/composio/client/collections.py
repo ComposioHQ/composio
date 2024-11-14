@@ -16,7 +16,8 @@ import pysher
 import requests
 import typing_extensions as te
 from pydantic import BaseModel, ConfigDict, Field
-from pysher.channel import Channel
+from pysher.channel import Channel as PusherChannel
+from pysher.connection import Connection as PusherConnection
 
 from composio.client.base import BaseClient, Collection
 from composio.client.endpoints import v1, v2
@@ -501,7 +502,9 @@ TriggerCallback = t.Callable[[TriggerEventData], None]
 class TriggerSubscription(logging.WithLogger):
     """Trigger subscription."""
 
-    _channel: Channel
+    _pusher: pysher.Pusher
+    _channel: PusherChannel
+    _connection: PusherConnection
     _alive: bool
 
     def __init__(self) -> None:
@@ -611,10 +614,25 @@ class TriggerSubscription(logging.WithLogger):
         """Set `_alive` to True."""
         self._alive = True
 
+    @te.deprecated("Use `wait_forever` instead")
     def listen(self) -> None:
         """Wait infinitely."""
-        while True:
+        self.wait_forever()
+
+    def wait_forever(self) -> None:
+        """Wait infinitely."""
+        while self._alive:
             time.sleep(1)
+
+    def stop(self) -> None:
+        """Stop the trigger listener."""
+        self._connection.disconnect()
+        self._alive = False
+
+    def restart(self) -> None:
+        """Restart the subscription connection"""
+        self._connection.disconnect()
+        self._connection._connect()  # pylint: disable=protected-access
 
 
 class _PusherClient(logging.WithLogger):
@@ -636,7 +654,7 @@ class _PusherClient(logging.WithLogger):
     ) -> t.Callable[[str], None]:
         def _connection_handler(_: str) -> None:
             channel = t.cast(
-                Channel,
+                PusherChannel,
                 pusher.subscribe(
                     channel_name=f"private-{client_id}_triggers",
                 ),
@@ -650,31 +668,30 @@ class _PusherClient(logging.WithLogger):
                 callback=subscription.handle_chunked_events,
             )
             subscription.set_alive()
+            subscription._channel = channel  # pylint: disable=protected-access
+            subscription._connection = (  # pylint: disable=protected-access
+                channel.connection
+            )
 
         return _connection_handler
 
     def connect(self, timeout: float = 15.0) -> TriggerSubscription:
         """Connect to Pusher channel for given client ID."""
         # Make a request to the Pusher webhook endpoint
-        headers = {
-            "Content-Type": "application/json",
-        }
-        data = {
-            "time": int(time.time() * 1000),  # Current time in milliseconds
-            "events": [
-                {
-                    "name": "channel_occupied",
-                    "channel": f"private-{self.client_id}_triggers",
-                }
-            ],
-        }
-
         try:
             response = requests.post(
-                f"{self.base_url}/v1/triggers/pusher",
-                headers=headers,
-                json=data,
+                url=f"{self.base_url}/v1/triggers/pusher",
+                json={
+                    "time": int(time.time() * 1000),  # Current time in milliseconds
+                    "events": [
+                        {
+                            "name": "channel_occupied",
+                            "channel": f"private-{self.client_id}_triggers",
+                        }
+                    ],
+                },
                 timeout=timeout,
+                headers={"Content-Type": "application/json"},
             )
             response.raise_for_status()
         except requests.RequestException as e:
@@ -688,6 +705,7 @@ class _PusherClient(logging.WithLogger):
                 "x-api-key": self.api_key,
             },
         )
+
         # Patch pusher logger
         pusher.connection.logger = mock.MagicMock()  # type: ignore
         pusher.connection.bind(
@@ -704,8 +722,10 @@ class _PusherClient(logging.WithLogger):
         deadline = time.time() + timeout
         while time.time() < deadline:
             if self.subscription.is_alive():
+                self.subscription._pusher = pusher  # pylint: disable=protected-access
                 return self.subscription
             time.sleep(0.5)
+
         raise TimeoutError(
             "Timed out while waiting for trigger listener to be established"
         )

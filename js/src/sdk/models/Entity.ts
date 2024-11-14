@@ -8,6 +8,10 @@ import { BackendClient } from "./backendClient";
 import { Triggers } from "./triggers";
 import { CEG } from "../utils/error";
 
+const LABELS = {
+    PRIMARY: "primary"
+}
+
 
 export class Entity {
     id: string;
@@ -68,8 +72,16 @@ export class Entity {
                 throw new Error('No connected account found');
             }
 
-            // @ts-ignore
-            connectedAccount = connectedAccounts.items![0];
+            for (const account of connectedAccounts.items!) {
+                if (account?.labels && account?.labels.includes(LABELS.PRIMARY)) {
+                    connectedAccount = account;
+                    break;
+                }
+            }
+
+            if (!connectedAccount) {
+                connectedAccount = connectedAccounts.items![0];
+            }
         }
         return this.actionsModel.execute({
             actionName: actionName,

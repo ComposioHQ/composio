@@ -143,6 +143,7 @@ def _update_apps(apps: t.List[AppModel]) -> None:
     """Create App enum class."""
     app_names = []
     enums.base.APPS_CACHE.mkdir(
+        parents=True,
         exist_ok=True,
     )
     for app in apps:
@@ -176,7 +177,7 @@ def _update_apps(apps: t.List[AppModel]) -> None:
 
 def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
     """Get Action enum."""
-    enums.base.ACTIONS_CACHE.mkdir(exist_ok=True)
+    enums.base.ACTIONS_CACHE.mkdir(parents=True, exist_ok=True)
     deprecated = {}
     action_names = []
     for app in sorted(apps, key=lambda x: x.key):
@@ -231,7 +232,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
 
 def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
     """Create Tag enum class."""
-    enums.base.TAGS_CACHE.mkdir(exist_ok=True)
+    enums.base.TAGS_CACHE.mkdir(parents=True, exist_ok=True)
     tag_map: t.Dict[str, t.Set[str]] = {}
     for app in apps:
         app_name = app.key

@@ -130,6 +130,7 @@ export class ComposioToolSet {
             tags?: Optional<Array<string>>;
             useCase?: Optional<string>;
             useCaseLimit?: Optional<number>;
+            filterByAvailableApps?: Optional<boolean>;
         },
         entityId?: Optional<string>
     ): Promise<Sequence<NonNullable<GetListActionsResponse["items"]>[0]>> {
@@ -141,6 +142,7 @@ export class ComposioToolSet {
             ...(filters?.useCase && { useCase: filters?.useCase }),
             ...(filters?.actions && { actions: filters?.actions?.join(",") }),
             ...(filters?.useCaseLimit && { usecaseLimit: filters?.useCaseLimit }),
+            filterByAvailableApps: filters?.filterByAvailableApps ?? undefined
          });
         const localActions = new Map<string, NonNullable<GetListActionsResponse["items"]>[0]>();
         if(filters.apps && Array.isArray(filters.apps)) {
