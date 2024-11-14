@@ -46,6 +46,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
             apps?: Sequence<string>;
             tags?: Optional<Array<string>>;
             useCase?: Optional<string>;
+            filterByAvailableApps?: Optional<boolean>;
         },
         entityId?: Optional<string>
     ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
