@@ -854,7 +854,6 @@ export type ActionExecutionResDto = {
 
 export type ConnectionParams = {
     integrationId: string;
-    labels?: Array<(string)>;
     connectionParams?: {
         [key: string]: unknown;
     };
