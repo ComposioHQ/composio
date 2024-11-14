@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 from composio.tools.base.local import LocalAction
 from composio.tools.local.codeanalysis.actions.base_action import BaseCodeAnalysisAction
+from composio.tools.local.codeanalysis.actions.create_codemap import CreateCodeMap, CreateCodeMapRequest
 
 
 class GetClassInfoRequest(BaseModel):
@@ -42,6 +43,7 @@ class GetClassInfo(
     def execute(
         self, request: GetClassInfoRequest, metadata: Dict
     ) -> GetClassInfoResponse:
+        CreateCodeMap().execute(CreateCodeMapRequest(), metadata)
         repo_name = os.path.basename(metadata["dir_to_index_path"])
 
         self.load_fqdn_cache(repo_name)

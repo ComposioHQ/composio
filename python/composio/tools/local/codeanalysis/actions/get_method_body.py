@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 from composio.tools.base.local import LocalAction
 from composio.tools.local.codeanalysis.actions.base_action import MethodAnalysisAction
+from composio.tools.local.codeanalysis.actions.create_codemap import CreateCodeMap, CreateCodeMapRequest
 
 
 class GetMethodBodyRequest(BaseModel):
@@ -49,6 +50,7 @@ class GetMethodBody(
     def execute(
         self, request: GetMethodBodyRequest, metadata: Dict
     ) -> GetMethodBodyResponse:
+        CreateCodeMap().execute(CreateCodeMapRequest(), metadata)
         repo_name = os.path.basename(metadata["dir_to_index_path"])
 
         self.load_fqdn_cache(repo_name)
