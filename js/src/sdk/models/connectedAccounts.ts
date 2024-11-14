@@ -9,10 +9,10 @@ type ConnectedAccountsListData = GetConnectionsData['query'] & {appNames?: strin
 
 type InitiateConnectionDataReq = InitiateConnectionPayloadDto & {
     data?: Record<string, unknown> | unknown;
-    userUuid?: string;
     entityId?: string;
     labels?: string[];
     integrationId: string;
+    redirectUri?: string;
 }
 
 export class ConnectedAccounts {
@@ -70,12 +70,13 @@ export class ConnectedAccounts {
 
     async initiate(payload: InitiateConnectionDataReq): Promise<ConnectionRequest> {
         try {
-            const {integrationId, entityId = 'default', labels,data={}} = payload;
+            const {integrationId, entityId = 'default', labels,data={}, redirectUri} = payload;
       
             const res = await client.connections.initiateConnection({ body: {
                 integrationId,
                 entityId,
                 labels,
+                redirectUri,
                 data,
             }  }).then(res => res.data);
             

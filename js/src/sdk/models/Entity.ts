@@ -247,7 +247,7 @@ export class Entity {
         // Initiate the connection process
         return this.connectedAccounts.initiate({
             integrationId: integration!.id!,
-            userUuid: this.id,
+            entityId: this.id,
             redirectUri: redirectUrl,
             //@ts-ignore
             data: connectionData,

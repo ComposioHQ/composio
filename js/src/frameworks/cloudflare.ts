@@ -53,6 +53,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     apps?: Sequence<string>;
     tags?: Optional<Array<string>>;
     useCase?: Optional<string>;
+    usecaseLimit?: Optional<number>;
     filterByAvailableApps?: Optional<boolean>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
     const actions = await this.getToolsSchema(filters);

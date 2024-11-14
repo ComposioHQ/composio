@@ -129,6 +129,7 @@ export class ComposioToolSet {
             apps?: Array<string>;
             tags?: Optional<Array<string>>;
             useCase?: Optional<string>;
+            useCaseLimit?: Optional<number>;
             filterByAvailableApps?: Optional<boolean>;
         },
         entityId?: Optional<string>
@@ -140,6 +141,7 @@ export class ComposioToolSet {
             ...(filters?.tags && { tags: filters?.tags?.join(",") }),
             ...(filters?.useCase && { useCase: filters?.useCase }),
             ...(filters?.actions && { actions: filters?.actions?.join(",") }),
+            ...(filters?.useCaseLimit && { usecaseLimit: filters?.useCaseLimit }),
             filterByAvailableApps: filters?.filterByAvailableApps ?? undefined
          });
         const localActions = new Map<string, NonNullable<GetListActionsResponse["items"]>[0]>();

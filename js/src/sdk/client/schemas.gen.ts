@@ -797,7 +797,7 @@ export const $ExpectedInputFieldsDTO = {
             type: 'string',
             description: 'Description of the field'
         },
-        displayName: {
+        display_name: {
             type: 'string',
             description: 'Display name of the field'
         },
@@ -809,17 +809,17 @@ export const $ExpectedInputFieldsDTO = {
             type: 'boolean',
             description: 'Whether the field is required'
         },
-        expectedFromCustomer: {
+        expected_from_customer: {
             type: 'boolean',
             description: 'Whether the field is expected from customer'
         },
-        isSecret: {
+        is_secret: {
             type: 'boolean',
             description: 'Whether the field is a secret'
         }
     },
     type: 'object',
-    required: ['name', 'type', 'description', 'displayName', 'default', 'required', 'expectedFromCustomer', 'isSecret']
+    required: ['name', 'type', 'description', 'display_name', 'default', 'required', 'expected_from_customer', 'is_secret']
 } as const;
 
 export const $GetConnectorInfoResDTO = {
@@ -1161,6 +1161,12 @@ export const $ConnectionWithAppData = {
                 '$ref': '#/components/schemas/MemberInfoResDTO'
             },
             type: 'object'
+        },
+        labels: {
+            items: {
+                type: 'string'
+            },
+            type: 'array'
         }
     },
     type: 'object',
@@ -1316,6 +1322,12 @@ export const $ConnectionParams = {
                 '$ref': '#/components/schemas/MemberInfoResDTO'
             },
             type: 'object'
+        },
+        labels: {
+            items: {
+                type: 'string'
+            },
+            type: 'array'
         }
     },
     type: 'object',
