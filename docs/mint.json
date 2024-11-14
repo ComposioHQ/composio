@@ -60,16 +60,16 @@
   },
   "tabs": [
     {
-      "name": "Guides",
-      "url": "patterns"
-    },
-    {
       "name": "Examples",
       "url": "examples"
     },
     {
       "name": "API",
       "url": "api-reference"
+    },
+    {
+      "name": "Chat with Repo",
+      "url": "https://dub.composio.dev/composio-chat-with-repo"
     }
   ],
   "navigation": [
@@ -83,7 +83,7 @@
       ]
     },
     {
-      "group": "Core Concepts",
+      "group": "Concepts",
       "pages": [
         {
           "group":"Basics",
@@ -94,17 +94,40 @@
             "introduction/foundations/components/actions/action-guide",
             "introduction/foundations/components/custom_actions",
             "introduction/foundations/components/triggers/trigger-guide",
-            "introduction/foundations/components/integrations/custom-integration"
-          ]
-        },
-        {
-          "group": "Advanced",
-          "icon": "user-helmet-safety",
-          "pages": [
+            "introduction/foundations/components/integrations/custom-integration",
             "introduction/foundations/components/integrations/integration-guide",
             "introduction/foundations/components/actions/processing",
             "introduction/foundations/components/workspace",
             "introduction/foundations/components/list_local_tools"
+          ]
+        },
+        {
+          "group":"Authentication",
+          "icon":"unlock",
+          "pages":[
+            "patterns/Auth/connected_account",
+            "patterns/Auth/multiple-users",
+            "patterns/Auth/Integrations",
+            "patterns/Auth/examples/gmail_example",
+            "patterns/Auth/examples/shopify_example"
+          ]
+        },
+        {
+          "group":"Actions",
+          "icon":"shuttle-space" ,
+          "pages":[
+            "patterns/actions/action-guide-with-agents",
+            "patterns/actions/action-guide-without-agents",
+            "patterns/actions/custom_actions",
+            "patterns/actions/usecase",
+            "patterns/actions/action-guide-faqs"
+          ]
+        },
+        {
+          "group": "Triggers",
+          "icon":"bolt",
+          "pages": [
+            "patterns/functions/triggers"
           ]
         },
         {
@@ -160,41 +183,7 @@
         "swekit/benchmarks",
         "swekit-examples/introduction"
       ]
-    },    
-    {
-      "group": "Guides",
-      "pages": [
-      {
-        "group":"Authentication",
-        "icon":"unlock",
-        "pages":[
-          "patterns/Auth/connected_account",
-          "patterns/Auth/multiple-users",
-          "patterns/Auth/Integrations",
-          "patterns/Auth/examples/gmail_example",
-          "patterns/Auth/examples/shopify_example"
-        ]
-      },
-      {
-        "group":"Actions",
-        "icon":"shuttle-space" ,
-        "pages":[
-          "patterns/actions/action-guide-with-agents",
-          "patterns/actions/action-guide-without-agents",
-          "patterns/actions/custom_actions",
-          "patterns/actions/usecase",
-          "patterns/actions/action-guide-faqs"
-        ]
-      },
-      {
-        "group": "Triggers",
-        "icon":"bolt",
-        "pages": [
-          "patterns/functions/triggers"
-        ]
-      }
-    ]
-    },
+    },   
     {
       "group": "Examples",
       "pages": [
