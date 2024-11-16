@@ -20,10 +20,10 @@ SWE Development Kit (swekit) is a powerful framework for building Software Engin
   ```
   </CodeGroup>
   
-  For additional functionality, install packages for your preferred framework (e.g., CrewAI):
+  For additional functionality, install packages for your preferred framework (e.g., LangChain):
   <CodeGroup>
-  ```bash Installing CrewAI and Composio CrewAI Plugin
-  pip install crewai composio-crewai
+  ```bash Installing LangChain and Composio LangChain Plugin
+  pip install langchain composio-langchain
   ```
   </CodeGroup>
 </Step>
@@ -63,9 +63,14 @@ SWE Development Kit (swekit) is a powerful framework for building Software Engin
   Generate your agent's scaffolding:
   <CodeGroup>
   ```bash Create a new Folder with basic PR Review agent code
-  swekit scaffold pr_review -f crewai -o pr_review_agent
+  swekit scaffold pr_review -f langgraph -o pr_review_agent
   ```
   </CodeGroup>
+
+  | Argument | Description                           | Accepted Values |
+| -------- | ------------------------------------- | --------------- |
+| `-f`     | Specifies the framework to use | `langgraph` |
+| `-o`     | Sets the output directory for generated files | Any valid directory path |
 
   <Note>
   Scaffold support for other frameworks coming soon!
@@ -75,7 +80,6 @@ SWE Development Kit (swekit) is a powerful framework for building Software Engin
   - `main.py`: The main script to execute the agent
   - `agent.py`: The agent's core definition
   - `prompts.py`: Prompts to guide the agent's actions
-  - `benchmark.py`: A runner for the SWE-Bench benchmarks
   - `input.py`: A helper file to take inputs from the user
   - `tools.py`: A file to add custom tools to the agent
 
