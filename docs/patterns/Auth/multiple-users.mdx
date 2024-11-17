@@ -1,0 +1,175 @@
+---
+title: "Guide to User Management"
+sidebarTitle: "Entities"
+icon: "user"
+description: "Guide to managing multiple users and their authentication using Composio."
+---
+
+## Introduction to Entities
+
+- **Each unique user** is represented by a **unique entity id**.
+- If you have **two users, Jessica and Melissa**, they will have **unique entity ids**.
+
+## Introduction to Connected Accounts
+- When a user connects their account, a `connected_account` object is created. 
+- This object securely stores **authentication data** such as **access tokens and refresh tokens**.
+
+
+### Managing Entities
+
+To retrieve an entity object using code, you can use the following code:
+
+<CodeGroup>
+```python Python Code Snippet to get an entity (user)
+from composio import ComposioToolSet
+
+toolset = ComposioToolSet()
+entity = toolset.get_entity(id='Jessica')
+```
+
+```javascript JS Code Snippet to get an entity (user)
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAI({
+    apiKey: process.env.OPENAIKEY,
+    entityId: 'Jessica'
+});
+const entity = toolset.client.getEntity(id='Jessica');
+```
+</CodeGroup>
+
+
+You can use the entity object to manage the connected accounts for the user. You can also use the entity object to perform actions on behalf of the user and connect accounts for the user.
+
+### Getting Connected Accounts
+
+To get the connected accounts for an entity, you can use the following code:
+<CodeGroup>
+```python Python Code Snippet to get a connected account
+try:
+    connected_accounts = entity.get_connections() #lists all connections of the entity
+    connected_accounts = entity.get_connection(app=App.GITHUB) #filters based on app name
+    connected_accounts = entity.get_connection(connected_account_id="9") #filters based on connected account id for an entity
+    print(connected_accounts)
+except Exception as e:
+    print("No connected account found")
+```
+
+```javascript JS Code Snippet to get a connected account
+try {
+    // filters based on connected account id for an entity
+    let connectedAccounts = await entity.connectedAccounts.get({connectedAccountId: '9'})
+
+    // filters connections based on appName for an entity
+    let connectedAccounts = tool_set.client.integrations.get({appName: 'github'})
+
+    // list all connections based on entityId
+    let connectedAccounts = await entity.connectedAccounts.list()
+
+    console.log(connectedAccounts)
+} catch (error) {
+    console.error('Error fetching connected accounts:', error.message)
+}
+```
+</CodeGroup>
+
+This code attempts to retrieve the connected account for Github. If no connected account is found, it catches the exception and prints a message.
+
+## Performing Actions on Behalf of Users
+
+<Info>Composio allows you to perform actions on behalf of users. </Info>
+
+### Executing Actions without an Agent on behalf of a user
+
+You can execute actions on behalf of a user without using an agent.
+<CodeGroup>
+
+```python Python Execute Action without an agent
+from composio import ComposioToolSet
+
+toolset = ComposioToolSet()
+entity = toolset.get_entity(id='Jessica')
+
+res = entity.execute(
+    action=Action.GITHUB_GITHUB_API_ROOT,
+    params={},
+)
+print(res)
+```
+
+```javascript JS Execute Action without an agent
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet({
+    apiKey: process.env.OPENAIKEY,
+    entityId: "Jessica"
+});
+
+const output = await toolset.client.actions.execute({
+    actionName:'LINEAR_LIST_LINEAR_PROJECTS',
+    requestBody:{
+        connectedAccountId: "",
+        input:{}
+    },
+});
+console.log(output);
+```
+</CodeGroup>
+
+### Performing Actions with an Agent on behalf of a user
+
+You can use an agent to perform actions on behalf of a user. 
+
+<CodeGroup>
+```python Python Execute Action with an agent
+
+from composio_openai import ComposioToolSet, App
+from openai import OpenAI
+
+openai_client = OpenAI(api_key="******OPENAIKEY******")
+tool_set = ComposioToolSet(entity_id="Jessica")
+actions = tool_set.get_tools(actions=["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"])
+
+my_task = "Star the repo composiohq/composio on GitHub"
+
+response = openai_client.chat.completions.create(
+    model="gpt-4-turbo-preview",
+    tools=actions,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": my_task},
+    ],
+)
+tool_set.handle_tool_calls(response=response, entity_id="Jessica")
+```
+
+```javascript JS Execute Action with an agent
+import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core";
+
+const openai_client = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
+
+const toolset = new OpenAIToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+const tools = await toolset.getTools({actions: ['GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER']})
+
+const task = "Star the repo composiohq/composio on GitHub"
+
+const response = await openai_client.chat.completions.create({
+    model: "gpt-4-turbo-preview",
+    tools: tools,
+    messages: [
+        {role: "system", content: "You are a helpful assistant."},
+        {role: "user", content: task},
+    ],
+});
+
+await toolset.handleToolCall(response, "Jessica");
+```
+</CodeGroup>
+
+In this example, an agent is configured to star a repository on GitHub on behalf of the user. The OpenAI API is used to process the request and perform the action.

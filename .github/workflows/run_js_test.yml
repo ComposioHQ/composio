@@ -32,7 +32,7 @@ jobs:
     - name: pnpm build
       run: cd js && pnpm build
     - name: run test
-      run: cd js && pnpm test:coverage
+      run: cd js && pnpm test:coverage --max-workers 16
 
 
     - name: Upload `coverage` folder to R2

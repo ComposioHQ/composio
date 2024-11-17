@@ -55,7 +55,7 @@ core_requirements = [
 ]
 
 e2b_workspace_requirements = [
-    "e2b>=0.17.2a37",  # E2B Workspace
+    "e2b>=0.17.2a37,<1",  # E2B Workspace
     "e2b-code-interpreter",  # E2B workspace
 ]
 
@@ -90,13 +90,13 @@ all_requirements = (
 
 setup(
     name="composio_core",
-    version="0.5.31",
+    version="0.5.42",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
-    url="https://github.com/SamparkAI/composio_sdk",
+    url="https://github.com/composiohq/composio",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",

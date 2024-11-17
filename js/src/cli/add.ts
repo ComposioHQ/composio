@@ -3,7 +3,7 @@ import { Command } from "commander";
 import { Composio } from "../sdk";
 import inquirer from "inquirer";
 import open from "open";
-import { GetConnectorListResDTO } from "../sdk/client";
+import { GetConnectorInfoResDTO, GetConnectorListResDTO } from "../sdk/client";
 
 export default class AddCommand {
   private program: Command;
@@ -15,13 +15,13 @@ export default class AddCommand {
       .description("Add a new app")
       .argument("<app-name>", "The name of the app")
       .option("-f, --force", "Force the connection setup")
-      .option("--skip-default-connector-auth", "Skip the default connector auth prompt")
+      .option("--skip-default-connector", "Skip the default connector auth prompt")
       .action(this.handleAction.bind(this));
   }
 
   private async handleAction(
     appName: string,
-    options: { force?: boolean, skipDefaultConnectorAuth?: boolean },
+    options: { force?: boolean, skipDefaultConnector?: boolean },
   ): Promise<void> {
     const composioClient = new Composio();
     let integration: GetConnectorListResDTO | undefined =
@@ -30,14 +30,14 @@ export default class AddCommand {
         appName: appName.toLowerCase(),
       });
 
-    let firstIntegration: GetConnectorListResDTO | undefined;
-    if (integration?.items?.length === 0 || options.force || options.skipDefaultConnectorAuth) {
+    let firstIntegration: GetConnectorInfoResDTO | undefined;
+    if (integration?.items?.length === 0 || options.force || options.skipDefaultConnector) {
       firstIntegration = (await this.createIntegration(
         appName,
-        options.skipDefaultConnectorAuth,
-      )) as GetConnectorListResDTO;
+        options.skipDefaultConnector,
+      )) as GetConnectorInfoResDTO;
     }else{
-      firstIntegration = (integration as GetConnectorListResDTO)?.items[0] as GetConnectorListResDTO;
+      firstIntegration = (integration as GetConnectorListResDTO)?.items[0] as GetConnectorInfoResDTO;
     }
     if (!firstIntegration) {
       console.log(chalk.red("No integration found or created"));
@@ -105,10 +105,11 @@ export default class AddCommand {
   private async setupConnections(integrationId: string): Promise<void> {
     const composioClient = new Composio();
     const data = await composioClient.integrations.get({ integrationId });
-    const { expectedInputFields } = data;
+    const { expectedInputFields } = data!;
 
 
-    const config = await this.collectInputFields(expectedInputFields, true);
+
+    const config = await this.collectInputFields(expectedInputFields as any , true);
 
     const connectionData = await composioClient.connectedAccounts.create({
       integrationId,

@@ -17,7 +17,7 @@ def swekit() -> None:
 
 
 @swekit.command(name="scaffold")
-@click.argument("framework", type=EnumParam(cls=AgenticFramework))
+@click.argument("type", type=EnumParam(cls=AgentType))
 @click.option(
     "-n",
     "--name",
@@ -31,11 +31,11 @@ def swekit() -> None:
     help="Output directory for the agent",
 )
 @click.option(
-    "-t",
-    "--type",
-    type=EnumParam(cls=AgentType),
+    "-f",
+    "--framework",
+    type=EnumParam(cls=AgenticFramework),
     help="Type of agent to scaffold, defaults to SWE",
-    default=AgentType.SWE,
+    default=AgenticFramework.LANGGRAPH,
 )
 @click.help_option("--help")
 def _scaffold(

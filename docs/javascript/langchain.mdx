@@ -50,7 +50,7 @@ async function executeAgent (entityName){
         // Create entity and get tools
         const entity = toolset.client.getEntity(entityName)
         await setupUserConnectionIfNotExists(entity.id);
-        const tools = await toolset.getActions({ actions: ["github_issues_create"] },entity.id);
+        const tools = await toolset.getTools({ actions: ["github_issues_create"] },entity.id);
 
         // Create an agent
         const prompt = await pull("hwchase17/openai-functions-agent");

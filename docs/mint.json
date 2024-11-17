@@ -49,7 +49,7 @@
   ],
   "topbarCtaButton": {
     "name": "Get your API Key",
-    "url": "https://app.composio.dev"
+    "url": "https://app.composio.dev/settings"
   },
   "topAnchor": {
     "name": "Documentation",
@@ -60,19 +60,17 @@
   },
   "tabs": [
     {
-      "name": "Guides",
-      "url": "patterns"
-    },
-    {
       "name": "Examples",
       "url": "examples"
     },
     {
       "name": "API",
       "url": "api-reference"
+    },
+    {
+      "name": "Chat with Repo",
+      "url": "https://dub.composio.dev/composio-chat-with-repo"
     }
-  ],
-  "anchors": [
   ],
   "navigation": [
     {
@@ -85,52 +83,80 @@
       ]
     },
     {
-      "group": "Core Concepts",
+      "group": "Concepts",
       "pages": [
         {
           "group":"Basics",
+          "icon": "star",
           "pages":[
             "introduction/foundations/basic",
             "introduction/foundations/components/entity/entity-guide",
-            {
-              "group":"Actions",
-              "icon":"hammer" ,
-              "pages":[
-                "introduction/foundations/components/actions/action-guide-with-agents",
-                "introduction/foundations/components/actions/action-guide-without-agents",
-                "introduction/foundations/components/actions/action-guide-3"
-              ]
-            },
+            "introduction/foundations/components/actions/action-guide",
+            "introduction/foundations/components/custom_actions",
             "introduction/foundations/components/triggers/trigger-guide",
-            "introduction/foundations/components/local_tools",
             "introduction/foundations/components/integrations/custom-integration",
-            "introduction/foundations/components/no_auth_apps/no_auth_guide"
-          ]
-        },
-        {
-          "group": "Advanced",
-          "pages": [
             "introduction/foundations/components/integrations/integration-guide",
             "introduction/foundations/components/actions/processing",
             "introduction/foundations/components/workspace",
             "introduction/foundations/components/list_local_tools"
           ]
+        },
+        {
+          "group":"Authentication",
+          "icon":"unlock",
+          "pages":[
+            "patterns/Auth/connected_account",
+            "patterns/Auth/multiple-users",
+            "patterns/Auth/Integrations",
+            "patterns/Auth/examples/gmail_example",
+            "patterns/Auth/examples/shopify_example"
+          ]
+        },
+        {
+          "group":"Actions",
+          "icon":"shuttle-space" ,
+          "pages":[
+            "patterns/actions/action-guide-with-agents",
+            "patterns/actions/action-guide-without-agents",
+            "patterns/actions/custom_actions",
+            "patterns/actions/usecase",
+            "patterns/actions/action-guide-faqs"
+          ]
+        },
+        {
+          "group": "Triggers",
+          "icon":"bolt",
+          "pages": [
+            "patterns/functions/triggers"
+          ]
+        },
+        {
+          "group":"Common Questions",
+          "icon":"question",
+          "pages":[
+            "faq/api_key/api_key",
+            "faq/api_key/cli",
+            "faq/integrations_and_connections/integrations",
+            "faq/integrations_and_connections/connections",
+            "faq/integrations_and_connections/list_of_tools",
+            "faq/supported_llms/supported_llm"
+          ]
+
         }
       ]
     },
     {
       "group":"Supported Frameworks",
-
       "pages":[
         "framework/llamaindex",
         "framework/crewai",
         "framework/letta",
         "framework/langchain",
-        "framework/groq",
-        "framework/openai",
         {
           "group": "Other Frameworks",
           "pages": [
+            "framework/groq",
+            "framework/openai",
             "framework/autogen",
             "framework/langgraph",
             "framework/phidata",
@@ -147,68 +173,17 @@
           ]
         }
       ]
-      
-
     },
-    
     {
       "group": "SweKit",
       "pages": [
+        "swekit-tools/introduction",
         "swekit-js/introduction",
         "swekit/introduction",
-        "swekit/benchmarks"
+        "swekit/benchmarks",
+        "swekit-examples/introduction"
       ]
-    },
-    {
-      "group":"Commonly Asked Questions",
-        "pages":[
-          "faq/api_key/api_key",
-          "faq/api_key/cli",
-          "faq/entities_doc/entities",
-          "faq/integrations_and_connections/integrations",
-          "faq/integrations_and_connections/connections",
-          "faq/integrations_and_connections/list_of_tools",
-          "faq/without_LLM/execute_without_agents",
-          "faq/supported_llms/supported_llm"
-
-
-        ]
-    },
-     {
-      "group": "Guides",
-      "pages": [
-      {
-        "group": "Patterns",
-        "pages": [
-          "patterns/functions/multiple-users",
-          "patterns/functions/triggers"
-        ]
-      },
-      {
-        "group": "Using CLI",
-        "pages": [
-          "patterns/cli/install",
-          "patterns/cli/trigger"
-        ]
-      },
-      {
-        "group": "How Tos",
-        "pages": [
-          "patterns/howtos/get_api_key",
-          "patterns/howtos/usecase",
-          "patterns/howtos/tool-finding",
-          "patterns/howtos/listing-connections",
-          "patterns/howtos/listing-integrations"
-        ] 
-      },
-      {
-        "group": "Going to Production",
-        "pages": [
-          "patterns/production-guide/prod"
-        ]
-      }
-    ]
-    },
+    },   
     {
       "group": "Examples",
       "pages": [
@@ -243,34 +218,10 @@
       "icon": "robot",
       "pages": [
   {
-    "group": "Client Auth",
+    "group": "Apps",
     "pages": [
-      "api-reference/client-auth/get-user-info"
-    ]
-  },
-  {
-    "group": "App",
-    "pages": [
-      "api-reference/app/get-apps"
-    ]
-  },
-  {
-    "group": "App Connector",
-    "pages": [
-      "api-reference/app-connector/list-global-connectors",
-      "api-reference/app-connector/create-connector",
-      "api-reference/app-connector/get-connector-info",
-      "api-reference/app-connector/delete-connector",
-      "api-reference/app-connector/patch-connector"
-    ]
-  },
-  {
-    "group": "Actions Controller",
-    "pages": [
-      "api-reference/actions-controller-v-2/list-actions",
-      "api-reference/actions-controller-v-2/execute-action",
-      "api-reference/actions-controller-v-2/execute-action-proxy",
-       "api-reference/actions-controller-v-1/get-action"
+      "api-reference/apps/get-apps",
+      "api-reference/apps/get-app"
     ]
   },
   {
@@ -278,29 +229,28 @@
     "pages": [
       "api-reference/connections/get-connections",
       "api-reference/connections/initiate-connection",
-      "api-reference/connections/get-connection",
-      "api-reference/connections/delete-connection",
-      "api-reference/connections/disable-connection",
-      "api-reference/connections/enable-connection"
+      "api-reference/connections/get-connection"
+    ]
+  },
+  {
+    "group": "Actions",
+    "pages": [
+      "api-reference/actions/list-actions-minimal",
+      "api-reference/actions/get-action",
+      "api-reference/actions-controller-v-2/execute-action",
+      "api-reference/actions/execute-action-proxy",
+      "api-reference/actions/get-action-inputs"
     ]
   },
   {
     "group": "Triggers",
     "pages": [
       "api-reference/triggers/list-triggers",
-      "api-reference/triggers/handle-trigger",
-      "api-reference/triggers/enable-trigger",
-      "api-reference/triggers/get-trigger",
-      "api-reference/triggers/get-active-triggers",
-      "api-reference/triggers/disable-trigger",
-      "api-reference/triggers/delete-trigger",
-      "api-reference/triggers/set-callback-url",
-      "api-reference/triggers/set-callback-url-1",
-      "api-reference/triggers/get-webhook-url",
-      "api-reference/triggers/get-logs"
+
+      "api-reference/triggers/enable-trigger"
     ]
   },
-  {
+    {
     "group": "Logs",
     "pages": [
       "api-reference/logs/get-logs"
@@ -376,7 +326,11 @@
     },
     {
       "source": "/python/local_tools",
-      "destination": "/introduction/foundations/components/local_tools"
+      "destination": "/introduction/foundations/components/custom_actions"
+    },
+    {
+      "source": "/introduction/foundations/components/local_tools",
+      "destination": "/introduction/foundations/components/custom_actions"
     }
   ]
 }

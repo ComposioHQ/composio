@@ -16,10 +16,11 @@ import pysher
 import requests
 import typing_extensions as te
 from pydantic import BaseModel, ConfigDict, Field
-from pysher.channel import Channel
+from pysher.channel import Channel as PusherChannel
+from pysher.connection import Connection as PusherConnection
 
 from composio.client.base import BaseClient, Collection
-from composio.client.endpoints import v1
+from composio.client.endpoints import v1, v2
 from composio.client.enums import (
     Action,
     ActionType,
@@ -36,7 +37,7 @@ from composio.utils import logging
 
 
 def to_trigger_names(
-    triggers: t.Union[t.List[str], t.List[Trigger], t.List[TriggerType]]
+    triggers: t.Union[t.List[str], t.List[Trigger], t.List[TriggerType]],
 ) -> str:
     """Get trigger names as a string."""
     return ",".join([Trigger(trigger).name for trigger in triggers])
@@ -151,7 +152,15 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
     endpoint = v1 / "connectedAccounts"
 
     @t.overload  # type: ignore
-    def get(self, connection_id: t.Optional[str] = None) -> ConnectedAccountModel:
+    def get(self) -> t.List[ConnectedAccountModel]:
+        """
+        Get all connected accounts
+
+        :return: List of Connected accounts
+        """
+
+    @t.overload  # type: ignore
+    def get(self, connection_id: str) -> ConnectedAccountModel:
         """
         Get an account by connection ID
 
@@ -222,6 +231,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
         integration_id: str,
         entity_id: t.Optional[str] = None,
         params: t.Optional[t.Dict] = None,
+        labels: t.Optional[t.List] = None,
         redirect_url: t.Optional[str] = None,
     ) -> ConnectionRequestModel:
         """Initiate a new connected account."""
@@ -232,6 +242,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
                     "integrationId": integration_id,
                     "userUuid": entity_id,
                     "data": params or {},
+                    "labels": labels or [],
                     "redirectUri": redirect_url,
                 },
             )
@@ -251,13 +262,15 @@ class AuthSchemeField(BaseModel):
     """Auth scheme field."""
 
     name: str
-    description: str
-    type: str
-
     display_name: t.Optional[str] = None
+    description: str
 
+    type: str
+    default: t.Optional[str] = None
     required: bool = False
     expected_from_customer: bool = True
+
+    get_current_user_endpoint: t.Optional[str] = None
 
 
 class AppAuthScheme(BaseModel):
@@ -489,7 +502,9 @@ TriggerCallback = t.Callable[[TriggerEventData], None]
 class TriggerSubscription(logging.WithLogger):
     """Trigger subscription."""
 
-    _channel: Channel
+    _pusher: pysher.Pusher
+    _channel: PusherChannel
+    _connection: PusherConnection
     _alive: bool
 
     def __init__(self) -> None:
@@ -599,10 +614,25 @@ class TriggerSubscription(logging.WithLogger):
         """Set `_alive` to True."""
         self._alive = True
 
+    @te.deprecated("Use `wait_forever` instead")
     def listen(self) -> None:
         """Wait infinitely."""
-        while True:
+        self.wait_forever()
+
+    def wait_forever(self) -> None:
+        """Wait infinitely."""
+        while self._alive:
             time.sleep(1)
+
+    def stop(self) -> None:
+        """Stop the trigger listener."""
+        self._connection.disconnect()
+        self._alive = False
+
+    def restart(self) -> None:
+        """Restart the subscription connection"""
+        self._connection.disconnect()
+        self._connection._connect()  # pylint: disable=protected-access
 
 
 class _PusherClient(logging.WithLogger):
@@ -624,7 +654,7 @@ class _PusherClient(logging.WithLogger):
     ) -> t.Callable[[str], None]:
         def _connection_handler(_: str) -> None:
             channel = t.cast(
-                Channel,
+                PusherChannel,
                 pusher.subscribe(
                     channel_name=f"private-{client_id}_triggers",
                 ),
@@ -638,31 +668,30 @@ class _PusherClient(logging.WithLogger):
                 callback=subscription.handle_chunked_events,
             )
             subscription.set_alive()
+            subscription._channel = channel  # pylint: disable=protected-access
+            subscription._connection = (  # pylint: disable=protected-access
+                channel.connection
+            )
 
         return _connection_handler
 
     def connect(self, timeout: float = 15.0) -> TriggerSubscription:
         """Connect to Pusher channel for given client ID."""
         # Make a request to the Pusher webhook endpoint
-        headers = {
-            "Content-Type": "application/json",
-        }
-        data = {
-            "time": int(time.time() * 1000),  # Current time in milliseconds
-            "events": [
-                {
-                    "name": "channel_occupied",
-                    "channel": f"private-{self.client_id}_triggers",
-                }
-            ],
-        }
-
         try:
             response = requests.post(
-                f"{self.base_url}/v1/triggers/pusher",
-                headers=headers,
-                json=data,
+                url=f"{self.base_url}/v1/triggers/pusher",
+                json={
+                    "time": int(time.time() * 1000),  # Current time in milliseconds
+                    "events": [
+                        {
+                            "name": "channel_occupied",
+                            "channel": f"private-{self.client_id}_triggers",
+                        }
+                    ],
+                },
                 timeout=timeout,
+                headers={"Content-Type": "application/json"},
             )
             response.raise_for_status()
         except requests.RequestException as e:
@@ -676,6 +705,7 @@ class _PusherClient(logging.WithLogger):
                 "x-api-key": self.api_key,
             },
         )
+
         # Patch pusher logger
         pusher.connection.logger = mock.MagicMock()  # type: ignore
         pusher.connection.bind(
@@ -692,8 +722,10 @@ class _PusherClient(logging.WithLogger):
         deadline = time.time() + timeout
         while time.time() < deadline:
             if self.subscription.is_alive():
+                self.subscription._pusher = pusher  # pylint: disable=protected-access
                 return self.subscription
             time.sleep(0.5)
+
         raise TimeoutError(
             "Timed out while waiting for trigger listener to be established"
         )
@@ -715,7 +747,7 @@ class Triggers(Collection[TriggerModel]):
 
     def get(  # type: ignore
         self,
-        triggers: t.Optional[t.List[TriggerType]] = None,
+        trigger_names: t.Optional[t.List[TriggerType]] = None,
         apps: t.Optional[t.List[str]] = None,
     ) -> t.List[TriggerModel]:
         """
@@ -726,8 +758,8 @@ class Triggers(Collection[TriggerModel]):
         :return: List of triggers filtered by provided parameters
         """
         queries = {}
-        if triggers is not None and len(triggers) > 0:
-            queries["triggerIds"] = to_trigger_names(triggers)
+        if trigger_names is not None and len(trigger_names) > 0:
+            queries["triggerIds"] = to_trigger_names(trigger_names)
         if apps is not None and len(apps) > 0:
             queries["appNames"] = ",".join(apps)
         return super().get(queries=queries)
@@ -880,11 +912,26 @@ class ActionModel(BaseModel):
     description: t.Optional[str] = None
 
 
+ParamPlacement = t.Literal["header", "path", "query", "subdomain"]
+
+
+class CustomAuthParameter(te.TypedDict):
+    in_: ParamPlacement
+    name: str
+    value: str
+
+
+class CustomAuthObject(BaseModel):
+    body: t.Dict = Field(default_factory=lambda: {})
+    base_url: t.Optional[str] = None
+    parameters: t.List[CustomAuthParameter] = Field(default_factory=lambda: [])
+
+
 class Actions(Collection[ActionModel]):
     """Collection of composio actions.."""
 
     model = ActionModel
-    endpoint = v1.actions
+    endpoint = v2.actions
 
     # TODO: Overload
     def get(  # type: ignore
@@ -969,20 +1016,13 @@ class Actions(Collection[ActionModel]):
 
         queries: t.Dict[str, str] = {}
         if use_case is not None and use_case != "":
-            if len(apps) != 1:
-                raise ComposioClientError(
-                    "Error retrieving Actions, Use case "
-                    "should be provided with exactly one app."
-                )
             queries["useCase"] = use_case
 
         if len(apps) > 0:
-            queries["appNames"] = ",".join(
-                list(map(lambda x: t.cast(App, x).slug, apps))
-            )
+            queries["apps"] = ",".join(list(map(lambda x: t.cast(App, x).slug, apps)))
 
         if len(actions) > 0:
-            queries["appNames"] = ",".join(
+            queries["apps"] = ",".join(
                 set(map(lambda x: t.cast(Action, x).app, actions))
             )
 
@@ -1033,6 +1073,7 @@ class Actions(Collection[ActionModel]):
         connected_account: t.Optional[str] = None,
         session_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
+        auth: t.Optional[CustomAuthObject] = None,
     ) -> t.Dict:
         """
         Execute an action on the specified entity with optional connected account.
@@ -1044,6 +1085,7 @@ class Actions(Collection[ActionModel]):
         :param session_id: ID of the current workspace session
         :return: A dictionary containing the response from the executed action.
         """
+        # TOFIX: Remvoe this
         if action.is_local:
             return self.client.local.execute_action(action=action, request_data=params)
 
@@ -1086,9 +1128,8 @@ class Actions(Collection[ActionModel]):
         if action.no_auth:
             return self._raise_if_required(
                 self.client.http.post(
-                    url=str(self.endpoint / action.name / "execute"),
+                    url=str(self.endpoint / action.slug / "execute"),
                     json={
-                        "entityId": entity_id,
                         "appName": action.app,
                         "input": modified_params,
                         "text": text,
@@ -1099,7 +1140,7 @@ class Actions(Collection[ActionModel]):
                 )
             ).json()
 
-        if connected_account is None:
+        if connected_account is None and auth is None:
             raise ComposioClientError(
                 "`connected_account` cannot be `None` when executing "
                 "an app which requires authentication"
@@ -1110,21 +1151,35 @@ class Actions(Collection[ActionModel]):
                 url=str(self.endpoint / action.slug / "execute"),
                 json={
                     "connectedAccountId": connected_account,
-                    "input": modified_params,
                     "entityId": entity_id,
+                    "appName": action.app,
+                    "input": modified_params,
                     "text": text,
+                    "authConfig": self._serialize_auth(auth=auth),
                 },
             )
         ).json()
+
+    @staticmethod
+    def _serialize_auth(auth: t.Optional[CustomAuthObject]) -> t.Optional[t.Dict]:
+        if auth is None:
+            return None
+
+        data = auth.model_dump(exclude_none=True)
+        data["parameters"] = [
+            {"in": d["in_"], "name": d["name"], "value": d["value"]}
+            for d in data["parameters"]
+        ]
+        return data
 
 
 class ExpectedFieldInput(BaseModel):
     name: str
     type: str
 
-    is_secret: bool
     description: str
     displayName: str
+    is_secret: bool = False
 
     required: bool = True
     expected_from_customer: bool = True
@@ -1206,13 +1261,14 @@ class Integrations(Collection[IntegrationModel]):
         )
         return IntegrationModel(**response.json())
 
+    def remove(self, id: str) -> None:
+        self.client.http.delete(url=str(self.endpoint / id))
+
     @t.overload  # type: ignore
-    def get(self) -> t.List[IntegrationModel]:
-        ...
+    def get(self) -> t.List[IntegrationModel]: ...
 
     @t.overload
-    def get(self, id: t.Optional[str] = None) -> IntegrationModel:
-        ...
+    def get(self, id: t.Optional[str] = None) -> IntegrationModel: ...
 
     def get(
         self, id: t.Optional[str] = None

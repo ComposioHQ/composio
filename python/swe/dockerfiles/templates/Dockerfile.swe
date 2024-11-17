@@ -18,8 +18,6 @@ RUN git fetch --depth 1 origin {{ basecommit}}
 # Checkout to base commit
 RUN git checkout {{ basecommit}}
 
-WORKDIR /home/user
-
 RUN mkdir -p /home/user/.composio/tmp
 COPY deeplake /home/user/.composio/tmp/{{ reponame }}
 COPY fqdn_cache.json /home/user/.composio/tmp/{{ reponame }}
@@ -39,6 +37,8 @@ COPY requirements.txt _requirements.txt
 RUN /home/user/.dev/bin/python -m pip install -r _requirements.txt || echo "$?"
 
 {% endif -%}
+
+USER root
 
 {% if preinstall -%}
 # Pre install

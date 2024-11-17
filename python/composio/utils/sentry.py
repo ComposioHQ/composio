@@ -73,6 +73,7 @@ def init():
         profiles_sample_rate=sentry_config.get("profiles_sample_rate", 1.0),
         debug=False,
         before_send=filter_sentry_errors,
+        default_integrations=False,
         integrations=[
             sentry_sdk.integrations.atexit.AtexitIntegration(
                 callback=lambda x, y: None

@@ -29,6 +29,7 @@ describe("Integrations class tests", () => {
         expect(integrationCreation.id).toBeTruthy();
         expect(integrationCreation.appName).toBe("github");
 
+        // @ts-ignore
         createdIntegrationId = integrationCreation.id;
     }); 
 
@@ -36,9 +37,15 @@ describe("Integrations class tests", () => {
         const integration = await integrations.get({
             integrationId: createdIntegrationId
         });
-        expect(integration.id).toBe(createdIntegrationId);
-        expect(integration.appId).toBe("01e22f33-dc3f-46ae-b58d-050e4d2d1909");
-        expect(integration.authScheme).toBe("OAUTH2");
+        expect(integration?.id).toBe(createdIntegrationId);
+        expect(integration?.appId).toBe("01e22f33-dc3f-46ae-b58d-050e4d2d1909");
+        expect(integration?.authScheme).toBe("OAUTH2");
+        expect(integration?.expectedInputFields).toBeDefined();
+    });
+
+    it("should get the required params for the created integration", async () => {
+        const requiredParams = await integrations.getRequiredParams(createdIntegrationId);
+        expect(requiredParams).toBeDefined();
     });
 
     it("should delete the created integration", async () => {

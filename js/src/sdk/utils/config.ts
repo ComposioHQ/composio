@@ -12,11 +12,11 @@ const LOCAL_CACHE_DIRECTORY_NAME = '.composio';
 const USER_DATA_FILE_NAME = 'user_data.json';
 const DEFAULT_BASE_URL = "https://backend.composio.dev";
 
-export const userDataPath = path.join(os.homedir(), LOCAL_CACHE_DIRECTORY_NAME, USER_DATA_FILE_NAME);
+export const userDataPath = () => path.join(os.homedir(), LOCAL_CACHE_DIRECTORY_NAME, USER_DATA_FILE_NAME);
 
 export const getUserDataJson = () => {
     try {
-        const data = fs.readFileSync(userDataPath, 'utf8');
+        const data = fs.readFileSync(userDataPath(), 'utf8');
         return JSON.parse(data);
     } catch (error: any) {
         return (error.code === 'ENOENT') ? {} : {};
@@ -55,14 +55,19 @@ export function getAPISDK(baseUrl?: string, apiKey?: string) {
  * @param data - The data to be written to the file.
  */
 export const writeToFile = (filePath: string, data: any) => {
-    // Get the directory path from the file path
-    const dirPath = path.dirname(filePath);
-    // Create the directory if it doesn't exist
-    if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath, { recursive: true });
+    try{
+        // Get the directory path from the file path
+        const dirPath = path.dirname(filePath);
+        // Create the directory if it doesn't exist
+        if (!fs.existsSync(dirPath)) {
+            fs.mkdirSync(dirPath, { recursive: true });
+        }
+        // Write the data to the file as a formatted JSON string
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    }catch(error){  
+        console.error("Oops! We couldn't save your settings. Here's why:", (error as Error).message);
+        console.log("Need help? Check file permissions for file:", filePath);
     }
-    // Write the data to the file as a formatted JSON string
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
 /**
@@ -80,5 +85,5 @@ export function setCliConfig(apiKey: string, baseUrl: string) {
         userData.base_url = baseUrl;
     }
     // Write the updated user data to the file
-    writeToFile(userDataPath, userData);
+    writeToFile(userDataPath(), userData);
 }

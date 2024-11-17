@@ -4,12 +4,12 @@ from inspect import Signature
 
 import pydantic
 import pydantic.error_wrappers
-import pydantic.v1.error_wrappers
 import typing_extensions as te
 from langchain_core.tools import StructuredTool as BaseStructuredTool
 
 from composio import Action, ActionType, AppType, TagType
 from composio.tools import ComposioToolSet as BaseComposioToolSet
+from composio.tools.toolset import ProcessorsType
 from composio.utils.pydantic import parse_pydantic_error
 from composio.utils.shared import (
     get_signature_format_from_schema_params,
@@ -21,10 +21,7 @@ class StructuredTool(BaseStructuredTool):
     def run(self, *args, **kwargs):
         try:
             return super().run(*args, **kwargs)
-        except (
-            pydantic.ValidationError,
-            pydantic.v1.error_wrappers.ValidationError,
-        ) as e:
+        except pydantic.ValidationError as e:
             return {"successful": False, "error": parse_pydantic_error(e), "data": None}
 
 
@@ -63,7 +60,7 @@ class ComposioToolSet(
         tools = composio_toolset.get_tools(apps=[App.GITHUB])
 
         # Define task
-        task = "Star a repo SamparkAI/docs on GitHub"
+        task = "Star a repo composiohq/docs on GitHub"
 
         # Define agent
         agent = create_openai_functions_agent(openai_client, tools, prompt)
@@ -83,6 +80,7 @@ class ComposioToolSet(
     ):
         def function(**kwargs: t.Any) -> t.Dict:
             """Wrapper function for composio action."""
+            self.logger.debug(f"Executing action: {action} with params: {kwargs}")
             return self.execute_action(
                 action=Action(value=action),
                 params=kwargs,
@@ -154,6 +152,9 @@ class ComposioToolSet(
         apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
+        *,
+        processors: t.Optional[ProcessorsType] = None,
+        check_connected_accounts: bool = True,
     ) -> t.Sequence[StructuredTool]:
         """
         Get composio tools wrapped as Langchain StructuredTool objects.
@@ -166,6 +167,8 @@ class ComposioToolSet(
         :return: Composio tools wrapped as `StructuredTool` objects
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
+        if processors is not None:
+            self._merge_processors(processors)
         return [
             self._wrap_tool(
                 schema=tool.model_dump(
@@ -173,5 +176,10 @@ class ComposioToolSet(
                 ),
                 entity_id=entity_id or self.entity_id,
             )
-            for tool in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
+            for tool in self.get_action_schemas(
+                actions=actions,
+                apps=apps,
+                tags=tags,
+                check_connected_accounts=check_connected_accounts,
+            )
         ]

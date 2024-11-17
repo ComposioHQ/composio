@@ -1,0 +1,104 @@
+FROM docker.io/ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_PRIORITY=high
+
+RUN apt-get update && \
+    apt-get -y upgrade && \
+    apt-get -y install \
+    build-essential \
+    # UI Requirements
+    xvfb \
+    xterm \
+    xdotool \
+    scrot \
+    imagemagick \
+    sudo \
+    mutter \
+    x11vnc \
+    # Python/pyenv reqs
+    build-essential \
+    libssl-dev  \
+    zlib1g-dev \
+    libbz2-dev \
+    libreadline-dev \
+    libsqlite3-dev \
+    curl \
+    git \
+    libncursesw5-dev \
+    xz-utils \
+    tk-dev \
+    libxml2-dev \
+    libxmlsec1-dev \
+    libffi-dev \
+    liblzma-dev \
+    python3-dev \
+    python3-pip \
+    python3-venv \
+    uuid-runtime \
+    openssh-server \
+    # Network tools
+    net-tools \
+    netcat \
+    # PPA req
+    software-properties-common && \
+    # Userland apps
+    sudo add-apt-repository ppa:mozillateam/ppa && \
+    sudo apt-get install -y --no-install-recommends \
+    libreoffice \
+    firefox-esr \
+    x11-apps \
+    xpdf \
+    gedit \
+    xpaint \
+    tint2 \
+    galculator \
+    pcmanfm \
+    unzip && \
+    apt-get clean
+
+
+# Install noVNC
+RUN git clone --branch v1.5.0 https://github.com/novnc/noVNC.git /opt/noVNC && \
+    git clone --branch v0.12.0 https://github.com/novnc/websockify /opt/noVNC/utils/websockify && \
+    ln -s /opt/noVNC/vnc.html /opt/noVNC/index.html
+
+# Create Venv
+RUN /bin/python3 -m venv .composio/venv
+
+# Setup path
+RUN export PATH=$PATH:$(pwd)/.composio/venv/bin
+
+# Install composio
+RUN python3 -m pip install composio-core[all]==0.5.42 fastapi playwright uvicorn pyautogui
+
+# Install playwright deps
+RUN playwright install-deps
+
+# Install playwright binaries
+RUN playwright install chromium
+
+# Copy source
+COPY ./composio /root/composio
+
+# Install from source
+RUN python3 -m pip install /root/composio[all] --no-deps --force-reinstall
+
+# Setup user
+RUN useradd -rm -d /home/user -s /bin/bash -g root -G sudo -u 1000 user
+
+# Define entry point
+COPY anthropic/* /root/
+COPY anthropic/.config /root/.config
+
+# Define display env
+ARG DISPLAY_NUM=1
+ARG HEIGHT=768
+ARG WIDTH=1024
+
+ENV DISPLAY_NUM=$DISPLAY_NUM
+ENV HEIGHT=$HEIGHT
+ENV WIDTH=$WIDTH
+
+# Run entrypoint.sh
+ENTRYPOINT [ "/root/entrypoint.sh" ]

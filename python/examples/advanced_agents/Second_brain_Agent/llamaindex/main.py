@@ -44,6 +44,14 @@ vector_store_path = "./"
 while True:
     x = input("If you want to add something to the vector store, type 'add' and if you want to query, type 'query':")
     if x == 'add':
+        agent = FunctionCallingAgentWorker(
+            tools=tools,  # Tools available for the agent to use
+            llm=llm,  # Language model for processing requests
+            prefix_messages=prefix_messages,  # Initial system messages for context
+            max_function_calls=10,  # Maximum number of function calls allowed
+            allow_parallel_tool_calls=False,  # Disallow parallel tool calls
+            verbose=True,  # Enable verbose output
+        ).as_agent()
         a = input('Enter the url or image path to add in the vector store:')
         task = f"""
         This is the item you've to add to the vector store: {a}.
@@ -56,6 +64,14 @@ while True:
         response = agent.chat(task)
         print(response)
     elif x == 'query':
+        agent = FunctionCallingAgentWorker(
+            tools=tools,  # Tools available for the agent to use
+            llm=llm,  # Language model for processing requests
+            prefix_messages=prefix_messages,  # Initial system messages for context
+            max_function_calls=10,  # Maximum number of function calls allowed
+            allow_parallel_tool_calls=False,  # Disallow parallel tool calls
+            verbose=True,  # Enable verbose output
+        ).as_agent()
         a = input("What is your query?")
         task = f"""
         Vector store exists in {vector_store_path}

@@ -69,4 +69,14 @@ describe("ComposioToolSet class tests", () => {
 
     });
 
+    it("should get tools with usecase limit", async () => {
+        const tools = await toolset.getToolsSchema({
+            useCase: "follow user",
+            apps: ["github"],
+            useCaseLimit: 1
+        });
+
+        expect(tools.length).toBe(1);
+    });
+
 });

@@ -5,8 +5,7 @@ import time
 import typing as t
 import uuid
 
-import gql
-import gql.transport
+import requests
 import typing_extensions as te
 
 from composio.tools.env.constants import DEFAULT_IMAGE
@@ -14,11 +13,12 @@ from composio.utils.logging import WithLogger
 
 
 try:
-    import requests
+    import gql
+    import gql.transport
     from gql.transport.requests import RequestsHTTPTransport
 
     FLYIO_DEPENDENCIES_INSTALLED = True
-except ModuleNotFoundError:
+except ImportError:
     RequestsHTTPTransport = t.Any
     FLYIO_DEPENDENCIES_INSTALLED = False
 
