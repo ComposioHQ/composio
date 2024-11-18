@@ -18,7 +18,6 @@ import typing_extensions as te
 from pydantic import BaseModel, ConfigDict, Field
 from pysher.channel import Channel as PusherChannel
 from pysher.connection import Connection as PusherConnection
-import websocket
 
 from composio.client.base import BaseClient, Collection
 from composio.client.endpoints import v1, v2
