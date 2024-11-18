@@ -612,10 +612,7 @@ class TriggerSubscription(logging.WithLogger):
 
     def has_errored(self) -> bool:
         """Check if the connection errored and disconnected."""
-        return (
-            self._connection.socket is not None
-            and not self._connection.socket.has_errored
-        )
+        return self._connection.socket is None or self._connection.socket.has_errored
 
     def set_alive(self) -> None:
         """Set `_alive` to True."""
