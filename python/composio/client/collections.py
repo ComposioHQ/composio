@@ -488,10 +488,10 @@ class _ChunkedTriggerEventData(BaseModel):
 class _TriggerEventFilters(te.TypedDict):
     """Trigger event filterset."""
 
-    app_name: te.NotRequired[str]
+    app_name: te.NotRequired[AppType]
     trigger_id: te.NotRequired[str]
     connection_id: te.NotRequired[str]
-    trigger_name: te.NotRequired[str]
+    trigger_name: te.NotRequired[TriggerType]
     entity_id: te.NotRequired[str]
     integration_id: te.NotRequired[str]
 
@@ -610,6 +610,10 @@ class TriggerSubscription(logging.WithLogger):
         """Check if subscription is live."""
         return self._alive
 
+    def has_errored(self) -> bool:
+        """Check if the connection errored and disconnected."""
+        return self._connection.socket is None or self._connection.socket.has_errored
+
     def set_alive(self) -> None:
         """Set `_alive` to True."""
         self._alive = True
@@ -621,7 +625,7 @@ class TriggerSubscription(logging.WithLogger):
 
     def wait_forever(self) -> None:
         """Wait infinitely."""
-        while self._alive:
+        while self.is_alive() and not self.has_errored():
             time.sleep(1)
 
     def stop(self) -> None:
