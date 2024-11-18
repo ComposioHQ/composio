@@ -1020,11 +1020,6 @@ class Actions(Collection[ActionModel]):
 
         queries: t.Dict[str, str] = {}
         if use_case is not None and use_case != "":
-            if len(apps) != 1:
-                raise ComposioClientError(
-                    "Error retrieving Actions, Use case "
-                    "should be provided with exactly one app."
-                )
             queries["useCase"] = use_case
 
         if len(apps) > 0:
