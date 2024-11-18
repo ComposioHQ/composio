@@ -8,14 +8,14 @@ description: "Understand more about Actions"
 <AccordionGroup>
 <Accordion title="How can I select Actions based on the Action ID?">
 <CodeGroup>
-```python Python Selecting Actions via Name
+```python Python
 tool_set = ComposioToolSet()
 
 tools = tool_set.get_tools(actions=[Action.GITHUB_CREATE_AN_ISSUE,Action.GITHUB_COMMIT_EVENT])
 # can pass multiple actions
 ```
 
-```javascript Javascript Selecting Actions via Name
+```javascript Javascript
 const toolset = new OpenAIToolSet();
 
 const tools = await toolset.getTools({actions: ['github_issues_create','github_commit_event']});
@@ -25,47 +25,12 @@ const tools = await toolset.getTools({actions: ['github_issues_create','github_c
 
 </Accordion>
 
-<Accordion title="How do I find an Action for my Use Case?">
-
-
-<CodeGroup>
-```Python Python Selecting Actions
-use_case="Star a repo on github"
-
-action_enums=tool_set.find_actions_by_use_case(App.GITHUB,use_case=use_case)
-
-tools = tool_set.get_tools(actions=action_enums)
-
-# use tools as per your framework
-```
-
-```Javascript Javascript Selecting Actions
-import { LangchainToolSet } from "composio-core";
-
-const toolset = new LangchainToolSet({
-  entityId: "default",
-});
-
-const actionsList = await toolset.client.actions.list({
-  useCase: "create github issues",
-  apps: "github",
-});
-```
-
-```bash CLI Selecting Actions
-composio actions --use-case 'get channel messages' --app 'slack'
-```
-</CodeGroup>
-
-</Accordion>
-
-
 <Accordion title="Can I filter and get Actions in an App based on tags?">
-
-<Tabs>
-<Tab title="Python">
+Yes, you can filter and get Actions in an App based on tags.
 <CodeGroup>
-```python Selecting Actions via Apps & Tags
+```python Python
+from composio_langchain import ComposioToolSet, Action, App
+
 tools = tool_set.get_tools(apps=[App.GITHUB]) 
 
 # Filter by tags
@@ -78,42 +43,26 @@ action_enums = toolset.find_actions_by_tags(
 
 tools = tool_set.get_tools(actions=action_enums)
 ```
-</CodeGroup>
-</Tab>
 
-<Tab title="Javascript">
-<CodeGroup>
-```javascript Selecting Actions via Apps
-import { LangchainToolSet } from "composio-core";
+```javascript Javascript
+import { OpenAIToolSet } from "composio-core";
 
-const toolset = new LangchainToolSet({
-    apiKey: process.env.COMPOSIO_API_KEY,
-    entityId: "default"
+const composio_toolset = new OpenAIToolSet();
+
+const tag = "meta";
+
+const actions = await composio_toolset.getTools({
+  apps: ["github"],
+  tags: [tag],
 });
 
-const actionsList = await toolset.client.actions.list({
-     apps: "github"
-});
-
-const actions = await toolset.getTools({
-    actions: actionsList.items.map((action) => {
-        return action.name;
-    })
-})
+console.log(actions);
 ```
-</CodeGroup>
-</Tab>
 
-<Tab title="CLI">
-<CodeGroup>
-```bash Selecting Actions via Apps
+```bash CLI
 composio actions --app 'github' --tag 'code' 
-# Don't use tag if you want all actions
 ```
 </CodeGroup>
-</Tab>
-
-</Tabs>
 
 </Accordion>
 

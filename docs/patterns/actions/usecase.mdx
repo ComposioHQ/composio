@@ -11,14 +11,14 @@ Find relevant actions for your use case by describing what you want to accomplis
 
 
 <CodeGroup>
-```Python Python Fetch Actions using use-case
+```Python Python
 use_case="Star a repo on github"
 
 action_enums=toolset.find_actions_by_use_case(App.GITHUB, use_case=use_case)
 tools = toolset.get_tools(actions=action_enums)  # use tools as per your framework
 ```
 
-```Javascript Javascript Fetch Actions using use-case
+```Javascript Javascript
 import { LangchainToolSet } from "composio-core";
 
 const toolset = new LangchainToolSet({
@@ -31,7 +31,7 @@ const actionsList = await toolset.client.actions.list({
 });
 ```
 
-```bash CLI Fetch Actions using use-case
+```bash CLI
 composio actions --use-case 'get channel messages' --app 'slack'
 ```
 </CodeGroup>

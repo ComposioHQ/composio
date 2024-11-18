@@ -9,6 +9,58 @@ description: "Perform Actions with your account or on behalf of your users witho
 
 Composio lets you perform actions with your account or on behalf of your users. Feel free to check all the [tools](https://app.composio.dev/apps) we support. 
 
+### Get Parameters for an Action
+Refer to the video below to learn how to get the parameters for an action via [API](/api-reference/actions/get-action)
+
+<iframe width="720" height="405" src="https://www.youtube.com/embed/_OoFcJK6W5A?si=xWq2tsZV8YHwZ2xc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+<br/>
+
+Get the parameters for executing an action programmatically
+
+<CodeGroup>
+ ```python Python 
+from composio import ComposioToolSet, Action
+import json
+
+composio_toolset = ComposioToolSet()
+
+# Get the action schema
+action_schema = composio_toolset.get_action_schemas(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
+
+# Print the parameters in a readable format
+print(json.dumps(action_schema[0].parameters.properties, indent=2))
+```
+
+```javascript Javascript
+import { OpenAIToolSet } from "composio-core";
+
+const composio_toolset = new OpenAIToolSet();
+
+const schema = await composio_toolset.getActionsSchema({
+  actions: ["github_star_a_repository_for_the_authenticated_user"],
+});
+
+console.log(JSON.stringify(schema[0].parameters.properties, null, 2));
+  ```
+</CodeGroup>
+
+```bash Output
+{
+  "owner": {
+    "description": "The account owner of the repository. The name is not case sensitive. Please provide a value of type string. This parameter is required.",
+    "title": "Owner",
+    "type": "string"
+  },
+  "repo": {
+    "description": "The name of the repository without the `.git` extension. The name is not case sensitive. . Please provide a value of type string. This parameter is required.",
+    "title": "Repo",
+    "type": "string"
+  }
+}
+```
+
+
 ### Execute Actions without Agents
 
 To execute actions without using Agents, you can manually supply the parameters to execute the action or use natural language.
@@ -53,7 +105,7 @@ console.log("Custom auth action response", customAuthAction)
   ```
 </CodeGroup>
 
-## Execute Actions with Natural Language
+### Execute Actions with Natural Language
 You can also execute Actions by passing in natural language prompts without specific parameters
 <CodeGroup>
 ```python Python
