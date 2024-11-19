@@ -55,12 +55,18 @@ def filter_sentry_errors(
     if "exc_info" not in hint:
         return None
 
-    _, _, trb = hint["exc_info"]
+    _, exc, trb = hint["exc_info"]
+    if isinstance(exc, KeyboardInterrupt):
+        return None
+
     trb = t.cast(types.TracebackType, trb)
-    for frm in traceback.format_tb(trb):
-        if "site-packages/composio" in frm:
-            return event
-    return None
+    # In editable installs, we won't have composio in site-packages.
+    # This ensures we don't send sentry issues during development.
+    traceback_text = "".join(traceback.format_tb(trb))
+    if "site-packages" + os.path.sep + "composio" not in traceback_text:
+        return None
+
+    return event
 
 
 def init():
