@@ -1,15 +1,9 @@
 ---
-title: "Custom Actions"
-sidebarTitle: "Build Tools"
-icon: "hammer"
-description: "Guide to creating Custom Actions for existing tool or new tool"
+title: "Create an Action for Existing Tool"
+sidebarTitle: "Create an Action for Existing Tool"
+icon: "toolbox"
+description: "Extend the functionality of existing tools by creating a custom action which utilises the existing authentication. (e.g., fetch emails from Gmail)"
 ---
-
-## What are Custom Actions?
-
-- Extend the functionality of existing tools by creating a custom action which utilises the existing authentication. (e.g., fetch emails from Gmail)
-- Create standalone custom actions for any functionality you need (e.g., data processing, calculations, or integrations with other services)
-
 
 <Tip>
 Custom Actions are flexible building blocks that let you create any functionality you need - from simple calculations to complex integrations. They work seamlessly with Composio's authentication system for existing tools, or can run independently for custom logic.
@@ -149,100 +143,6 @@ Output from executing Custom Action
 </CodeGroup>
 </Step>
 </Steps>
-
-## Creating a Custom Action for a New Tool
-
-<Steps>
-<Step title="Import necessary modules">
-
-<CodeGroup>
-```python Python
-from composio import ComposioToolSet, App, action
-
-toolset = ComposioToolSet()
-```
-```javascript Javascript
-import { OpenAIToolSet } from "composio-core"
-import { z } from "zod"
-
-const toolset = new OpenAIToolSet({})
-```
-</CodeGroup>
-</Step>
-<Step title="Creating a custom action">
-<CodeGroup>
-```python Python
-@action(toolname="cow", requires=["cowsay"])
-def my_custom_action(message: str) -> str:
-    """
-    Cow will say whatever you want it to say.
-
-    :param message: Message to be displayed
-    :return greeting: Formatted message.
-    """
-    import cowsay
-    
-    return cowsay.get_output_string("cow", message)
-```
-```javascript JavaScript
-await toolset.createAction({
-    actionName: "myCustomAction",
-    description: "Cow will say whatever you want it to say",
-    inputParams: z.object({
-        message: z.string()
-    }),
-    callback: async (inputParams) => {
-        const message = inputParams.message;
-        const cowMessage = `Cow says: ${message}`;
-        return cowMessage;
-    }
-});
-```
-</CodeGroup>
-</Step>
-<Step title="Executing the Custom Action">
-Executing the custom action without Agents (it can be used with agents too)
-<CodeGroup>
-```python Python
-toolset.execute_action(
-    action=my_custom_action,
-    params={"message": "AI is the future"}
-)
-
-print(result['data']['greeting'])
-```
-
-```javascript JavaScript
-console.log(
-    await toolset.executeAction(
-        "myCustomAction",
-        { message: "AI is the future" }
-    )
-)
-```
-</CodeGroup>
-
-Output from executing Custom Action
-<CodeGroup>
-```shell Output (Python)
-  ________________
-| AI is the future |
-  ================
-                \
-                 \
-                   ^__^
-                   (oo)\_______
-                   (__)\       )\/\
-                       ||----w |
-                       ||     ||
-```
-```shell Output (Javascript)
-Cow says: AI is the future
-```
-</CodeGroup>
-</Step>
-</Steps>
-
 
 ### Why Use Custom Actions?
 

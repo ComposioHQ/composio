@@ -1,0 +1,30 @@
+---
+title: "Use Specific Actions"
+sidebarTitle: "Use Specific Actions"
+icon: "pickaxe"
+description: "You can select specific Actions from a given App by specifying action IDs."
+---
+
+<Tip>Specifying specific Actions is crucial for optimizing AI agent performance by narrowing down the action set to the most relevant ones.</Tip>
+
+### Specifying Actions by ID
+`GITHUB_CREATE_AN_ISSUE` and `GITHUB_COMMIT_EVENT` are action IDs for the Github Tool/App.
+<CodeGroup>
+```python Python
+from composio import ComposioToolSet, App, action
+
+toolset = ComposioToolSet()
+
+# can pass multiple actions
+tools = toolset.get_tools(actions=[Action.GITHUB_CREATE_AN_ISSUE,Action.GITHUB_COMMIT_EVENT])
+```
+
+```javascript Javascript
+import { LangchainToolSet } from "composio-core";
+
+const toolset = new LangchainToolSet();
+
+// can pass multiple actions
+const tools = await toolset.getTools({actions: ['github_issues_create','github_commit_event']});
+```
+</CodeGroup>
