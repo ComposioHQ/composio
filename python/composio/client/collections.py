@@ -3,6 +3,7 @@ Composio server object collections
 """
 
 import base64
+import difflib
 import json
 import os
 import time
@@ -31,7 +32,7 @@ from composio.client.enums import (
     Trigger,
     TriggerType,
 )
-from composio.client.exceptions import ComposioClientError
+from composio.client.exceptions import ComposioClientError, ComposioSDKError
 from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
 from composio.utils import logging
 
@@ -514,11 +515,85 @@ class TriggerSubscription(logging.WithLogger):
         self._chunks: t.Dict[str, t.Dict[int, str]] = {}
         self._callbacks: t.List[t.Tuple[TriggerCallback, _TriggerEventFilters]] = []
 
+    @staticmethod
+    def validate_filters(filters: _TriggerEventFilters):
+        docs_link_msg = "\n\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
+        if not isinstance(filters, dict):
+            raise ComposioSDKError(
+                "Expected filters to be a dictionary" + docs_link_msg
+            )
+
+        expected_filters = list(_TriggerEventFilters.__annotations__)
+        for filter, value in filters.items():
+            if filter not in expected_filters:
+                error_msg = f"Unexpected filter {filter!r}"
+                possible_values = difflib.get_close_matches(
+                    filter, expected_filters, n=1
+                )
+                if possible_values:
+                    (possible_value,) = possible_values
+                    error_msg += f" Did you mean {possible_value!r}?"
+                raise ComposioSDKError(error_msg + docs_link_msg)
+
+            # Validate app name
+            if filter == "app_name":
+                if isinstance(value, App):
+                    value = value.slug
+
+                elif not isinstance(value, str):
+                    raise ComposioSDKError(
+                        f"Expected 'app_name' to be App or str, found {value!r}"
+                        + docs_link_msg
+                    )
+
+                # Our enums are in uppercase but we accept lowercase ones too.
+                value = value.upper()
+
+                app_names = list(App.iter())
+                if value in app_names:
+                    continue
+
+                error_msg = f"App {value!r} does not exist."
+                possible_values = difflib.get_close_matches(value, app_names, n=1)
+                if possible_values:
+                    (possible_value,) = possible_values
+                    error_msg += f" Did you mean {possible_value!r}?"
+
+                raise ComposioSDKError(error_msg + docs_link_msg)
+
+            # Validate trigger name
+            elif filter == "trigger_name":
+                if isinstance(value, Trigger):
+                    value = value.slug
+                elif not isinstance(value, str):
+                    raise ComposioSDKError(
+                        f"Expected 'trigger_name' to be Trigger or str, found {value!r}"
+                        + docs_link_msg
+                    )
+
+                # Our enums are in uppercase but we accept lowercase ones too.
+                value = value.upper()
+
+                trigger_names = list(Trigger.iter())
+                if value in trigger_names:
+                    continue
+
+                error_msg = f"Trigger {value!r} does not exist."
+                possible_values = difflib.get_close_matches(value, trigger_names, n=1)
+                if possible_values:
+                    (possible_value,) = possible_values
+                    error_msg += f" Did you mean {possible_value!r}?"
+
+                raise ComposioSDKError(error_msg + docs_link_msg)
+
     def callback(
         self,
         filters: t.Optional[_TriggerEventFilters] = None,
     ) -> t.Callable[[TriggerCallback], TriggerCallback]:
         """Register a trigger callaback."""
+        # Ensure filters is the right type before we stuff it in the callbacks
+        if filters is not None:
+            self.validate_filters(filters)
 
         def _wrap(f: TriggerCallback) -> TriggerCallback:
             self._callbacks.append((f, filters or {}))

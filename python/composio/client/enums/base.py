@@ -310,23 +310,27 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         return t.cast(EntityType, _model_cache[self._slug])
 
     @classmethod
-    def all(cls) -> t.Iterator[te.Self]:
-        """Iterate over available object."""
+    def iter(cls) -> t.Iterator[str]:
+        """Yield the enum names as strings."""
         for name in cls.__annotations__:
             if name == "_deprecated":
                 continue
-            yield cls._create(name=name)
+
+            yield name
 
     @classmethod
-    def _create(cls, name: str) -> te.Self:
-        """Create a `_AnnotatedEnum` class."""
-        return cls(name)
+    def all(cls) -> t.Iterator[te.Self]:
+        """Iterate over available object."""
+        for app_name in cls.iter():
+            yield cls(app_name)
 
     def __str__(self) -> str:
         """String representation."""
-        return t.cast(str, self._slug)
+        return self._slug
 
-    __repr__ = __str__
+    def __repr__(self) -> str:
+        """Developer friendly representation."""
+        return f"{self.__class__.__qualname__}.{self}"
 
     def __eq__(self, other: object) -> bool:
         """Check equivalence of two objects."""
