@@ -2,6 +2,7 @@
 Enum helper base.
 """
 
+import difflib
 import os
 import typing as t
 import warnings
@@ -34,10 +35,15 @@ NO_REMOTE_ENUM_FETCHING = (
 class EnumStringNotFound(ComposioSDKError):
     """Raise when user provides invalid enum string."""
 
-    def __init__(self, value: str, enum: str) -> None:
-        super().__init__(
-            message=f"Invalid value `{value}` for enum class `{enum}`",
-        )
+    def __init__(self, value: str, enum: str, possible_values: list[str]) -> None:
+        error_message = f"Invalid value `{value}` for enum class `{enum}`"
+
+        matches = difflib.get_close_matches(value, possible_values, n=1)
+        if matches:
+            (match,) = matches
+            error_message += f". Did you mean {match!r}?"
+
+        super().__init__(message=error_message)
 
 
 class SentinalObject:
@@ -159,7 +165,11 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         if self._cache_from_local() is not None:
             return
 
-        raise EnumStringNotFound(value=self._slug, enum=self.__class__.__name__)
+        raise EnumStringNotFound(
+            value=self._slug,
+            enum=self.__class__.__name__,
+            possible_values=list(self.iter()),
+        )
 
     @property
     def slug(self) -> str:
