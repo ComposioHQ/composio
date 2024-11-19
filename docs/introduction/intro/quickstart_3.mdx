@@ -115,10 +115,12 @@ Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environ
 
 <CodeGroup>
 ```python Creating a trigger listener for Gmail
+from composio import Trigger
+
 listener = composio_toolset.create_trigger_listener()
 
 # Triggers when a new event takes place
-@listener.callback(filters={"trigger_name": "gmail_new_gmail_message"})
+@listener.callback(filters={"trigger_name": Trigger.GMAIL_NEW_GMAIL_MESSAGE})
 def callback_function(event):
     # Parse event data and perform actions
     payload = event.payload
@@ -127,7 +129,7 @@ def callback_function(event):
     sender_mail = payload.get("sender")
     print(sender_mail + ":" + message)
 
-listener.listen()
+listener.wait_forever()
 ```
 </CodeGroup>
 
