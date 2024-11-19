@@ -5,12 +5,15 @@ Test collections module.
 from logging import DEBUG
 from unittest import mock
 
+import pytest
+
 from composio.client.collections import (
     Trigger,
     TriggerEventData,
     TriggerSubscription,
     to_trigger_names,
 )
+from composio.exceptions import ComposioSDKError
 from composio.utils import logging
 
 
@@ -137,3 +140,40 @@ def test_trigger_filters(capsys, caplog) -> None:
         subscription.handle_event(event="")
 
     assert "Trigger 1 called from callback 1" in capsys.readouterr().out
+
+
+def test_trigger_filter_errors() -> None:
+    """Test trigger callback filters."""
+    sub = TriggerSubscription()
+
+    with pytest.raises(ComposioSDKError) as exc:
+        sub.callback(filters={"app_name": "does_not_exist"})
+
+    assert (
+        exc.value.message
+        == "App 'DOES_NOT_EXIST' does not exist.\n\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
+    )
+
+    with pytest.raises(ComposioSDKError) as exc:
+        sub.callback(filters={"app_name": "hacker_news"})
+
+    assert (
+        exc.value.message
+        == "App 'HACKER_NEWS' does not exist. Did you mean 'HACKERNEWS'?\n\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
+    )
+
+    with pytest.raises(ComposioSDKError) as exc:
+        sub.callback(filters={"triggerName": "gmail_new_gmail_message"})  # type: ignore
+
+    assert (
+        exc.value.message
+        == "Unexpected filter 'triggerName' Did you mean 'trigger_name'?\n\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
+    )
+
+    with pytest.raises(ComposioSDKError) as exc:
+        sub.callback(filters={"trigger_name": "gmail_new_message"})
+
+    assert (
+        exc.value.message
+        == "Trigger 'GMAIL_NEW_MESSAGE' does not exist. Did you mean 'GMAIL_NEW_GMAIL_MESSAGE'?\n\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
+    )
