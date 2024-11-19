@@ -1,8 +1,11 @@
-from typing import Dict
 import ast
 import operator
+from typing import Dict
+
 from pydantic import BaseModel, Field
+
 from composio.tools.base.local import LocalAction
+
 
 class CalculatorRequest(BaseModel):
     operation: str = Field(
@@ -11,8 +14,10 @@ class CalculatorRequest(BaseModel):
         json_schema_extra={"file_readable": True},
     )
 
+
 class CalculatorResponse(BaseModel):
     result: str = Field(..., description="Result of the calculation")
+
 
 class Calculator(LocalAction[CalculatorRequest, CalculatorResponse]):
     """
@@ -35,7 +40,7 @@ class Calculator(LocalAction[CalculatorRequest, CalculatorResponse]):
     def execute(self, request: CalculatorRequest, metadata: Dict) -> CalculatorResponse:
         try:
             # Parse the expression into an AST
-            node = ast.parse(request.operation, mode='eval').body
+            node = ast.parse(request.operation, mode="eval").body
             result = self._safe_eval(node)
             return CalculatorResponse(result=str(result))
         except Exception as e:
@@ -47,7 +52,9 @@ class Calculator(LocalAction[CalculatorRequest, CalculatorResponse]):
             if isinstance(node.value, (int, float)):
                 return node.value
             else:
-                raise TypeError(f"Unsupported constant type: {type(node.value).__name__}")
+                raise TypeError(
+                    f"Unsupported constant type: {type(node.value).__name__}"
+                )
         elif isinstance(node, ast.BinOp):  # <left> <operator> <right>
             left = self._safe_eval(node.left)
             right = self._safe_eval(node.right)
