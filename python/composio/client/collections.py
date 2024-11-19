@@ -562,7 +562,7 @@ class TriggerSubscription(logging.WithLogger):
                 raise ComposioSDKError(error_msg + docs_link_msg)
 
             # Validate trigger name
-            elif filter == "trigger_name":
+            if filter == "trigger_name":
                 if isinstance(value, Trigger):
                     value = value.slug
                 elif not isinstance(value, str):
