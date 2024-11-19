@@ -7,17 +7,27 @@ description: "Perform Actions with your account or on behalf of your users witho
 
 ## Using Actions
 
-Composio lets you perform actions with your account or on behalf of your users. Feel free to check all the [tools](https://app.composio.dev/apps) we support. 
+Composio lets you perform actions with your account or on behalf of your users. When executing actions without agents, you'll need to provide the required parameters. There are two ways to obtain these parameters:
+
+1. Through the [API Section](/api-reference/actions/get-action) of our documentation
+2. Programmatically using our SDK
+
+Feel free to check all the [tools](https://app.composio.dev/apps) we support. 
 
 ### Get Parameters for an Action
-Refer to the video below to learn how to get the parameters for an action via [API](/api-reference/actions/get-action)
 
+Below are demonstrations of both methods to get the parameters for an action:
+
+#### Using the [API Section](/api-reference/actions/get-action) from the Documentation
 <iframe width="720" height="405" src="https://www.youtube.com/embed/_OoFcJK6W5A?si=xWq2tsZV8YHwZ2xc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-<br/>
+1. Navigate to the [API Section](/api-reference/actions/get-action) of our documentation
+2. Click on **Get Action** under the **Actions** category
+3. Enter your Composio API key and the Action ID
+4. The **parameters** attribute in the response contains the required parameters for executing the action
 
-Get the parameters for executing an action programmatically
 
+#### Using the SDK
 <CodeGroup>
  ```python Python 
 from composio import ComposioToolSet, Action
