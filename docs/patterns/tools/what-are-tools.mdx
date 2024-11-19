@@ -1,6 +1,6 @@
 ---
-title: "🛠️ What are tools?"
-sidebarTitle: "What are tools?"
+title: "🛠️ What are Tools/Actions?"
+sidebarTitle: "What are Tools/Actions?"
 icon: "question"
 description: "Learn about tools in Composio"
 ---
@@ -11,7 +11,7 @@ Large Language Models (LLMs) are like a highly intelligent person who can unders
 This is where tools come in. Tools give this intelligent being specific abilities to interact with the real world. Many AI models support tool calling (also called function calling).
 
 <Note>
-The term **tools** and **actions** are used interchangeably in the further documentation 
+The term **tools** and **actions** are used interchangeably in the documentation 
 </Note>
 
 ### How tool calling works
@@ -27,3 +27,52 @@ LLM's thinking process:
    - subject: "Meeting Tomorrow"
    - body: [drafts appropriate content]
 4. Calls the action with these parameters
+
+
+### Tool calling with Composio
+
+At Composio, we offer tools for multiple platforms, accessible via Python and JavaScript SDKs. These platforms, referred to as **Apps** or **Tools**, include popular services like GitHub, Twitter, Salesforce, Jira, and Notion. Within each of these Apps, we provide **Actions**, which are essentially functions that can be executed. For example, you can send an email on Gmail, star a repository on GitHub, or create an issue on Jira. These tools can also be used directly, similar to function calls, without needing agents.
+
+<CodeGroup>
+```python Python 
+from composio_langchain import ComposioToolSet, Action, App
+
+tool_set = ComposioToolSet()
+
+# Get all actions from a tool
+tools = tool_set.get_tools(apps=[App.GITHUB])
+
+# Get specific actions
+tools = tool_set.get_tools(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
+```
+
+```javascript JavaScript
+import { LangchainToolSet } from "composio-core";
+
+const composioToolset = new LangchainToolSet();
+
+// Get all actions from a tool
+const tools = await composioToolset.getTools({ apps: ["github"] });
+
+// Get specific actions
+const tools = await composioToolset.getTools({ actions: ["github_star_a_repository_for_the_authenticated_user"] });
+```
+</CodeGroup>
+
+### Action Types
+
+1. **External Tool Actions**: Pre-configured actions for specific tools, such as creating issues or changing issue status in Jira.
+2. **System Management Actions**: Actions that interact with the execution environment, like file system operations, shell commands, and browser automation.
+3. **Custom Actions**: User-defined actions in Python or JavaScript that extend Composio's capabilities to interact with new or existing tools.
+
+### Action Limits
+
+Empirical evidence indicates that agents perform optimally when limited to **fewer than 20 actions**. Providing LLMs with too many actions can lead to significant performance issues, such as **increased response time** and **decreased accuracy**.
+
+To optimize agent performance, it's essential to limit the number of actions available. This can be achieved through effective action filtering strategies. Here are some recommended approaches:
+
+1. Use specific actions from a tool
+2. Use tags to filter actions
+3. Implement custom filtering logic
+
+By carefully curating the action set, you can significantly improve agent efficiency and response quality.

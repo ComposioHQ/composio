@@ -113,14 +113,15 @@
           ]
         },
         {
-          "group":"Actions",
+          "group":"Tools",
           "icon":"shuttle-space" ,
           "pages":[
-            "patterns/actions/action-guide-with-agents",
-            "patterns/actions/action-guide-without-agents",
-            "patterns/actions/custom_actions",
-            "patterns/actions/usecase",
-            "patterns/actions/action-guide-faqs"
+            "patterns/tools/what-are-tools",
+            "patterns/tools/action-guide-with-agents",
+            "patterns/tools/action-guide-without-agents",
+            "patterns/tools/custom_actions",
+            "patterns/tools/usecase",
+            "patterns/tools/action-guide-faqs"
           ]
         },
         {
