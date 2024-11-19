@@ -142,7 +142,7 @@ def test_trigger_filters(capsys, caplog) -> None:
     assert "Trigger 1 called from callback 1" in capsys.readouterr().out
 
 
-def test_trigger_filter_errors(capsys, caplog) -> None:
+def test_trigger_filter_errors() -> None:
     """Test trigger callback filters."""
     sub = TriggerSubscription()
 
