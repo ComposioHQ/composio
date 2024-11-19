@@ -31,6 +31,10 @@ class SearchWordRequest(BaseFileRequest):
     case_insensitive: bool = Field(
         default=True, description="If True, perform case-insensitive search"
     )
+    exclude: t.List[str] = Field(
+        default=None,
+        description="List of directories to exclude from the search",
+    )
 
 
 class SearchWordResponse(BaseFileResponse):
@@ -80,6 +84,7 @@ class SearchWord(LocalAction[SearchWordRequest, SearchWordResponse]):
                 pattern=request.pattern,
                 recursive=request.recursive,
                 case_insensitive=request.case_insensitive,
+                exclude=request.exclude,  # type: ignore
             )
             num_files: int = len(results)
             if num_files > 100:
