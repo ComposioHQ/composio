@@ -91,7 +91,6 @@
           "pages":[
             "introduction/foundations/basic",
             "introduction/foundations/components/entity/entity-guide",
-            "introduction/foundations/components/actions/action-guide",
             "introduction/foundations/components/custom_actions",
             "introduction/foundations/components/triggers/trigger-guide",
             "introduction/foundations/components/integrations/custom-integration",
