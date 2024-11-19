@@ -1,0 +1,86 @@
+---
+title: "🛠️ What else can I do with Actions?"
+sidebarTitle: "Actions - FAQs"
+icon: "wand-magic-sparkles"
+description: "Understand more about Actions"
+---
+
+<AccordionGroup>
+<Accordion title="How can I select Actions based on the Action ID?">
+<CodeGroup>
+```python Python
+tool_set = ComposioToolSet()
+
+tools = tool_set.get_tools(actions=[Action.GITHUB_CREATE_AN_ISSUE,Action.GITHUB_COMMIT_EVENT])
+# can pass multiple actions
+```
+
+```javascript Javascript
+const toolset = new OpenAIToolSet();
+
+const tools = await toolset.getTools({actions: ['github_issues_create','github_commit_event']});
+# can pass multiple actions
+```
+</CodeGroup>
+
+</Accordion>
+
+<Accordion title="Can I filter and get Actions in an App based on tags?">
+Yes, you can filter and get Actions in an App based on tags.
+For example, you can:
+- Filter all user-related Actions using the "users" tag
+- Retrieve metadata-related Actions using the "meta" tag
+
+Here's how you can implement tag-based filtering:
+
+<CodeGroup>
+```python Python
+from composio_langchain import ComposioToolSet, Action, App
+
+tools = tool_set.get_tools(apps=[App.GITHUB]) 
+
+# Filter by tags
+tag = "users"
+
+action_enums = toolset.find_actions_by_tags(
+    App.GITHUB,
+    tags=[tag], 
+)
+
+tools = tool_set.get_tools(actions=action_enums)
+```
+
+```javascript Javascript
+import { OpenAIToolSet } from "composio-core";
+
+const composio_toolset = new OpenAIToolSet();
+
+// Filter by tags
+const tag = "meta";
+
+const actions = await composio_toolset.getTools({
+  apps: ["github"],
+  tags: [tag],
+});
+
+console.log(actions);
+```
+
+```bash CLI
+composio actions --app 'github' --tag 'code' 
+```
+</CodeGroup>
+
+</Accordion>
+
+<Accordion title="How can I List Actions Via API?">
+<CodeGroup>
+```curl curl
+curl --request GET \
+  --url https://backend.composio.dev/api/v2/actions \
+  --header 'X-API-Key: <x-api-key>'
+```
+</CodeGroup>
+</Accordion>
+
+</AccordionGroup>
