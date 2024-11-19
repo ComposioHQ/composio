@@ -60,8 +60,7 @@ def filter_sentry_errors(
     for frm in traceback.format_tb(trb):
         if "site-packages/composio" in frm:
             return event
-    # return None
-    return event
+    return None
 
 
 def init():
