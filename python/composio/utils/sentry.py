@@ -10,15 +10,15 @@ from pathlib import Path
 
 import requests
 import sentry_sdk
-import sentry_sdk.integrations.atexit
 import sentry_sdk.integrations.argv
+import sentry_sdk.integrations.atexit
 import sentry_sdk.integrations.dedupe
 import sentry_sdk.integrations.excepthook
+import sentry_sdk.integrations.fastapi
 import sentry_sdk.integrations.logging
 import sentry_sdk.integrations.modules
 import sentry_sdk.integrations.stdlib
 import sentry_sdk.integrations.threading
-import sentry_sdk.integrations.fastapi
 import sentry_sdk.types
 
 
