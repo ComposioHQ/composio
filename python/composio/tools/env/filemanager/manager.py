@@ -251,7 +251,16 @@ class FileManager(Sessionable):
                                     )
                                     if rel_path not in results:
                                         results[rel_path] = []
-                                    results[rel_path].append((i, line.strip()[:truncate_length] + "..." if len(line.strip()) > truncate_length else line.strip()))
+                                    results[rel_path].append(
+                                        (
+                                            i,
+                                            (
+                                                line.strip()[:truncate_length] + "..."
+                                                if len(line.strip()) > truncate_length
+                                                else line.strip()
+                                            ),
+                                        )
+                                    )
                             else:
                                 if word in line:
                                     rel_path = str(
@@ -259,7 +268,16 @@ class FileManager(Sessionable):
                                     )
                                     if rel_path not in results:
                                         results[rel_path] = []
-                                    results[rel_path].append((i, line.strip()[:truncate_length] + "..." if len(line.strip()) > truncate_length else line.strip()))
+                                    results[rel_path].append(
+                                        (
+                                            i,
+                                            (
+                                                line.strip()[:truncate_length] + "..."
+                                                if len(line.strip()) > truncate_length
+                                                else line.strip()
+                                            ),
+                                        )
+                                    )
                 except UnicodeDecodeError:
                     # Skip binary files
                     pass
