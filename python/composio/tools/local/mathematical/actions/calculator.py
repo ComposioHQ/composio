@@ -1,9 +1,11 @@
 import ast
 import operator
-from typing import Dict, Union, Any
+from typing import Any, Callable, Dict, Type, Union, cast
 
 from pydantic import BaseModel, Field
+
 from composio.tools.base.local import LocalAction
+
 
 class CalculatorRequest(BaseModel):
     operation: str = Field(
@@ -12,8 +14,10 @@ class CalculatorRequest(BaseModel):
         json_schema_extra={"file_readable": True},
     )
 
+
 class CalculatorResponse(BaseModel):
     result: str = Field(..., description="Result of the calculation")
+
 
 class Calculator(LocalAction[CalculatorRequest, CalculatorResponse]):
     """
@@ -22,15 +26,17 @@ class Calculator(LocalAction[CalculatorRequest, CalculatorResponse]):
 
     _tags = ["calculator"]
 
-    # Define supported operators
-    operators = {
-        ast.Add: operator.add,
-        ast.Sub: operator.sub,
-        ast.Mult: operator.mul,
-        ast.Div: operator.truediv,
-        ast.Pow: operator.pow,
-        ast.USub: operator.neg,
-        ast.UAdd: operator.pos,
+    # Define supported operators with more precise type hints
+    operators: Dict[
+        Type[Union[ast.operator, ast.unaryop]], Callable[..., Union[int, float]]
+    ] = {
+        ast.Add: cast(Callable[..., Union[int, float]], operator.add),
+        ast.Sub: cast(Callable[..., Union[int, float]], operator.sub),
+        ast.Mult: cast(Callable[..., Union[int, float]], operator.mul),
+        ast.Div: cast(Callable[..., Union[int, float]], operator.truediv),
+        ast.Pow: cast(Callable[..., Union[int, float]], operator.pow),
+        ast.USub: cast(Callable[..., Union[int, float]], operator.neg),
+        ast.UAdd: cast(Callable[..., Union[int, float]], operator.pos),
     }
 
     def execute(self, request: CalculatorRequest, metadata: Dict) -> CalculatorResponse:
@@ -45,17 +51,19 @@ class Calculator(LocalAction[CalculatorRequest, CalculatorResponse]):
             return CalculatorResponse(result="Error: Invalid mathematical expression")
         except (TypeError, ValueError) as e:
             return CalculatorResponse(result=f"Error: {str(e)}")
-        except Exception as e:
-            return CalculatorResponse(result="Error: An unexpected error occurred while calculating")
+        except Exception:
+            return CalculatorResponse(
+                result="Error: An unexpected error occurred while calculating"
+            )
 
     def _safe_eval(self, node: ast.AST) -> Union[int, float]:
         """
         Main evaluation method that dispatches to specific node handlers.
         """
-        handlers: Dict[type[ast.AST], Any] = {
+        handlers: Dict[Type[ast.AST], Callable[[Any], Union[int, float]]] = {
             ast.Constant: self._eval_constant,
             ast.BinOp: self._eval_binary_operation,
-            ast.UnaryOp: self._eval_unary_operation
+            ast.UnaryOp: self._eval_unary_operation,
         }
 
         handler = handlers.get(type(node))
