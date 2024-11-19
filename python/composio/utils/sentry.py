@@ -10,8 +10,15 @@ from pathlib import Path
 
 import requests
 import sentry_sdk
-import sentry_sdk.integrations
 import sentry_sdk.integrations.atexit
+import sentry_sdk.integrations.argv
+import sentry_sdk.integrations.dedupe
+import sentry_sdk.integrations.excepthook
+import sentry_sdk.integrations.logging
+import sentry_sdk.integrations.modules
+import sentry_sdk.integrations.stdlib
+import sentry_sdk.integrations.threading
+import sentry_sdk.integrations.fastapi
 import sentry_sdk.types
 
 
@@ -53,7 +60,8 @@ def filter_sentry_errors(
     for frm in traceback.format_tb(trb):
         if "site-packages/composio" in frm:
             return event
-    return None
+    # return None
+    return event
 
 
 def init():
@@ -75,15 +83,23 @@ def init():
         before_send=filter_sentry_errors,
         default_integrations=False,
         integrations=[
+            sentry_sdk.integrations.argv.ArgvIntegration(),
             sentry_sdk.integrations.atexit.AtexitIntegration(
-                callback=lambda x, y: None
-            )  # suppress atexit message
+                callback=lambda x, y: None,
+            ),  # suppress atexit message
+            sentry_sdk.integrations.dedupe.DedupeIntegration(),
+            sentry_sdk.integrations.excepthook.ExcepthookIntegration(),
+            sentry_sdk.integrations.fastapi.FastApiIntegration(),
+            sentry_sdk.integrations.logging.LoggingIntegration(),
+            sentry_sdk.integrations.modules.ModulesIntegration(),
+            sentry_sdk.integrations.stdlib.StdlibIntegration(),
+            sentry_sdk.integrations.threading.ThreadingIntegration(),
         ],
     )
 
 
 @atexit.register
-def update_dns() -> None:
+def update_dsn() -> None:
     user_file = Path.home() / ".composio" / "user_data.json"
     if not user_file.exists():
         return
