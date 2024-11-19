@@ -35,7 +35,7 @@ NO_REMOTE_ENUM_FETCHING = (
 class EnumStringNotFound(ComposioSDKError):
     """Raise when user provides invalid enum string."""
 
-    def __init__(self, value: str, enum: str, possible_values: list[str]) -> None:
+    def __init__(self, value: str, enum: str, possible_values: t.List[str]) -> None:
         error_message = f"Invalid value `{value}` for enum class `{enum}`"
 
         matches = difflib.get_close_matches(value, possible_values, n=1)
