@@ -120,8 +120,7 @@
             "patterns/tools/action-guide-with-agents",
             "patterns/tools/action-guide-without-agents",
             "patterns/tools/custom_actions",
-            "patterns/tools/usecase",
-            "patterns/tools/action-guide-faqs"
+            "patterns/tools/filter-actions"
           ]
         },
         {
