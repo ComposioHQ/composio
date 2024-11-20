@@ -10,6 +10,7 @@ from composio.client.endpoints import Endpoint
 from composio.client.exceptions import HTTPError, NoItemsFound
 from composio.utils import logging
 
+
 if t.TYPE_CHECKING:
     from composio.client import Composio
 

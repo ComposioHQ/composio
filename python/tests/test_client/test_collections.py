@@ -3,17 +3,15 @@ Test collections module.
 """
 
 from logging import DEBUG
-import random
 from unittest import mock
 
-from composio.client import Composio
 import pytest
 
+from composio.client import Composio
 from composio.client.collections import (
-    AppModel,
+    ActiveTriggerModel,
     Trigger,
     TriggerEventData,
-    ActiveTriggerModel,
     TriggerSubscription,
     to_trigger_names,
 )
@@ -207,7 +205,8 @@ def test_trigger_filter_errors_not_enabled(monkeypatch: pytest.MonkeyPatch) -> N
 
     assert (
         exc.value.message
-        == "Trigger 'GMAIL_NEW_GMAIL_MESSAGE' is not enabled on your account.\nEnable the trigger by doing `composio triggers enable GMAIL_NEW_GMAIL_MESSAGE`.\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
+        == "Trigger 'GMAIL_NEW_GMAIL_MESSAGE' is not enabled on your account.\n"
+        "Enable the trigger by doing `composio triggers enable GMAIL_NEW_GMAIL_MESSAGE`.\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
     )
 
     # Ensure the app being enabled has at least one enabled trigger on the account

@@ -36,6 +36,7 @@ from composio.client.exceptions import ComposioClientError, ComposioSDKError
 from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
 from composio.utils import logging
 
+
 if t.TYPE_CHECKING:
     from composio.client import Composio
 
