@@ -3,13 +3,17 @@ Test collections module.
 """
 
 from logging import DEBUG
+import random
 from unittest import mock
 
+from composio.client import Composio
 import pytest
 
 from composio.client.collections import (
+    AppModel,
     Trigger,
     TriggerEventData,
+    ActiveTriggerModel,
     TriggerSubscription,
     to_trigger_names,
 )
@@ -60,7 +64,7 @@ class TestTriggerNamesSerialization:
 def test_trigger_subscription(capsys, caplog) -> None:
     """Test trigger subscription multiplexing."""
     logging.setup(logging.LogLevel.DEBUG)
-    subscription = TriggerSubscription()
+    subscription = TriggerSubscription(Composio.get_latest())
     subscription.set_alive()
 
     @subscription.callback(filters={"trigger_id": "trigger_1"})
@@ -121,7 +125,7 @@ def test_trigger_subscription(capsys, caplog) -> None:
 def test_trigger_filters(capsys, caplog) -> None:
     """Test trigger callback filters."""
     logging.setup(logging.LogLevel.DEBUG)
-    subscription = TriggerSubscription()
+    subscription = TriggerSubscription(Composio.get_latest())
     subscription.set_alive()
 
     @subscription.callback(filters={"trigger_id": "trigger_1"})
@@ -144,14 +148,14 @@ def test_trigger_filters(capsys, caplog) -> None:
 
 def test_trigger_filter_errors() -> None:
     """Test trigger callback filters."""
-    sub = TriggerSubscription()
+    sub = TriggerSubscription(Composio.get_latest())
 
     with pytest.raises(ComposioSDKError) as exc:
         sub.callback(filters={"app_name": "does_not_exist"})
 
     assert (
         exc.value.message
-        == "App 'DOES_NOT_EXIST' does not exist.\n\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
+        == "App 'DOES_NOT_EXIST' does not exist.\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
     )
 
     with pytest.raises(ComposioSDKError) as exc:
@@ -159,7 +163,7 @@ def test_trigger_filter_errors() -> None:
 
     assert (
         exc.value.message
-        == "App 'HACKER_NEWS' does not exist. Did you mean 'HACKERNEWS'?\n\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
+        == "App 'HACKER_NEWS' does not exist. Did you mean 'HACKERNEWS'?\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
     )
 
     with pytest.raises(ComposioSDKError) as exc:
@@ -167,7 +171,7 @@ def test_trigger_filter_errors() -> None:
 
     assert (
         exc.value.message
-        == "Unexpected filter 'triggerName' Did you mean 'trigger_name'?\n\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
+        == "Unexpected filter 'triggerName' Did you mean 'trigger_name'?\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
     )
 
     with pytest.raises(ComposioSDKError) as exc:
@@ -175,5 +179,50 @@ def test_trigger_filter_errors() -> None:
 
     assert (
         exc.value.message
-        == "Trigger 'GMAIL_NEW_MESSAGE' does not exist. Did you mean 'GMAIL_NEW_GMAIL_MESSAGE'?\n\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
+        == "Trigger 'GMAIL_NEW_MESSAGE' does not exist. Did you mean 'GMAIL_NEW_GMAIL_MESSAGE'?\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
+    )
+
+
+def test_trigger_filter_errors_not_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ensure that trigger filters fail if the given app or trigger is not enabled."""
+    client = Composio.get_latest()
+    sub = TriggerSubscription(client)
+
+    def make_trigger(name: str):
+        return ActiveTriggerModel(
+            id=name, connectionId=name, triggerName=name, triggerConfig={}
+        )
+
+    # Ensure trigger is active on the account
+    monkeypatch.setattr(
+        client.active_triggers,
+        "get",
+        lambda: [
+            make_trigger("GITHUB_COMMIT_EVENT"),
+            make_trigger("SLACK_RECEIVE_MESSAGE"),
+        ],
+    )
+    with pytest.raises(ComposioSDKError) as exc:
+        sub.callback(filters={"trigger_name": "GMAIL_NEW_GMAIL_MESSAGE"})
+
+    assert (
+        exc.value.message
+        == "Trigger 'GMAIL_NEW_GMAIL_MESSAGE' is not active on your account.\nEnable the trigger by doing `composio triggers enable GMAIL_NEW_GMAIL_MESSAGE`.\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
+    )
+
+    # Ensure the app being enabled has at least one active trigger on the account
+    monkeypatch.setattr(
+        client.active_triggers,
+        "get",
+        lambda: [
+            make_trigger("GITHUB_COMMIT_EVENT"),
+            make_trigger("SLACK_RECEIVE_MESSAGE"),
+        ],
+    )
+    with pytest.raises(ComposioSDKError) as exc:
+        sub.callback(filters={"app_name": "ATTIO"})
+
+    assert (
+        exc.value.message
+        == "App 'ATTIO' has no triggers enabled on your account.\nFind the possible triggers by running `composio triggers`.\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
     )
