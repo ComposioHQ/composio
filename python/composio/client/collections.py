@@ -609,7 +609,7 @@ class TriggerSubscription(logging.WithLogger):
                 ]
                 if value not in active_triggers:
                     error_msg = (
-                        f"Trigger {value!r} is not active on your account.\nEnable"
+                        f"Trigger {value!r} is not enabled on your account.\nEnable"
                         f" the trigger by doing `composio triggers enable {value}`."
                     )
                     raise ComposioSDKError(error_msg + docs_link_msg)

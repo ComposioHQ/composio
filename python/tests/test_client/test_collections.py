@@ -193,7 +193,7 @@ def test_trigger_filter_errors_not_enabled(monkeypatch: pytest.MonkeyPatch) -> N
             id=name, connectionId=name, triggerName=name, triggerConfig={}
         )
 
-    # Ensure trigger is active on the account
+    # Ensure trigger is enabled on the account
     monkeypatch.setattr(
         client.active_triggers,
         "get",
@@ -207,10 +207,10 @@ def test_trigger_filter_errors_not_enabled(monkeypatch: pytest.MonkeyPatch) -> N
 
     assert (
         exc.value.message
-        == "Trigger 'GMAIL_NEW_GMAIL_MESSAGE' is not active on your account.\nEnable the trigger by doing `composio triggers enable GMAIL_NEW_GMAIL_MESSAGE`.\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
+        == "Trigger 'GMAIL_NEW_GMAIL_MESSAGE' is not enabled on your account.\nEnable the trigger by doing `composio triggers enable GMAIL_NEW_GMAIL_MESSAGE`.\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
     )
 
-    # Ensure the app being enabled has at least one active trigger on the account
+    # Ensure the app being enabled has at least one enabled trigger on the account
     monkeypatch.setattr(
         client.active_triggers,
         "get",
