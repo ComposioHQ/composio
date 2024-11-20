@@ -260,8 +260,8 @@ class ActionBuilder:
 
     @staticmethod
     def _get_description(obj) -> str:
-        return (
-            (obj.__doc__ if obj.__doc__ else inflection.titleize(obj.display_name))
+        return inflection.titleize(
+            (obj.__doc__ if obj.__doc__ else obj.display_name)
             .replace("\n    ", " ")
             .strip()
         )
