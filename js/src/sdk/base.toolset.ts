@@ -7,12 +7,14 @@ import { getEnvVariable } from "../utils/shared";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
+import { CEG } from '../sdk/utils/error';
 import {  ExecuteActionResDTO } from "./client/types.gen";
 import {  saveFile } from "./utils/fileUtils";
 import { convertReqParams, converReqParamForActionExecution } from "./utils";
 import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 import { getUserDataJson } from "./utils/config";
-
+import apiClient from '../sdk/client/client';
+import { ActionProxyRequestConfigDTO } from './client';
 
 type GetListActionsResponse = any;
 
@@ -278,5 +280,16 @@ export class ComposioToolSet {
     ): Promise<Record<string, any>> {
         logger.warn("execute_action is deprecated, use executeAction instead");
         return this.executeAction(action, params, entityId);
+    }
+
+    async executeRequest(data: ActionProxyRequestConfigDTO){
+        try {
+            const { data: res } = await apiClient.actionsV2.executeActionProxyV2({
+                body: data as unknown as ActionProxyRequestConfigDTO
+            });
+            return res!;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 }
