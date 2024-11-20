@@ -5,6 +5,11 @@ icon: "wand-magic-sparkles"
 description: "Master the art of preprocessing, postprocessing, and schema processing for optimal results."
 ---
 
+## Metadata
+
+The `metadata` in the `ComposioToolSet` configuration is used to add metadata for different Apps/Tools and Actions. e.g., session IDs, agent IDs or API keys. This allows for flexible and dynamic configuration of tools and actions within the Composio framework, ensuring that critical data are reliably passed.
+
+
 ## Refining Action Inputs, Outputs & Schemas
 
 In many scenarios, the raw inputs, outputs, or schemas of actions may benefit from additional processing. This refinement step can significantly improve the quality and usability of your data. Here are three key use cases:
@@ -13,7 +18,7 @@ In many scenarios, the raw inputs, outputs, or schemas of actions may benefit fr
 - **Postprocessing**: Streamline large action responses by filtering or formatting the data before it reaches the Language Model (LLM).
 - **Schema Processing**: Modify the request schema to include additional fields or alter existing ones.
 
-Composio empowers you with the ability to define **custom Python functions** as preprocessors, postprocessors, or schema processors. 
+Composio empowers you with the ability to define **custom functions** as preprocessors, postprocessors, or schema processors. 
 
 These can be applied at two levels:
 
@@ -24,7 +29,7 @@ Here's how you can implement these processors:
 <Steps>
 <Step title="Define the Preprocessor, Postprocessor, and Schema Processor Functions">
 <CodeGroup>
-```python Define the Preprocessor, Postprocessor, and Schema Processor Functions
+```python Python
 def tool_schema_processor(schema):
     # Modify schema as needed
     return modified_schema
@@ -49,13 +54,28 @@ def action_postprocessor(output_data):
     # Process output_data as needed
     return processed_output_data
 ```
+
+``` javascript JavaScript
+coming soon!
+```
 </CodeGroup>
 </Step>
 <Step title="Use them while creating the toolset">
 <CodeGroup>
-```python Set the schema, pre, and post processors while creating the toolset
-# While defining the toolset, you can define the schema, pre, and post processors
+```python Python
+# While defining the toolset, you can define the metadata, schema, pre, and post processors
 composio_toolset = ComposioToolSet(
+    metadata={
+        App.FILETOOL: {
+            "app": "filetool",
+        },
+        Action.GREPTILE_CODE_QUERY: {
+            "sessionId": "....",
+        },
+        Action.LINEAR_CREATE_LINEAR_ISSUE: {
+            "project_id": "...",
+        },
+    },
     processors={
         "schema": {
             App.GITHUB: tool_schema_processor,
@@ -73,6 +93,9 @@ composio_toolset = ComposioToolSet(
 )
 
 tools = composio_toolset.get_tools(apps=[App.GITHUB])
+```
+``` javascript JavaScript
+coming soon!
 ```
 </CodeGroup>
 </Step>

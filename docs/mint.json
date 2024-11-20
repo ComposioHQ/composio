@@ -91,11 +91,9 @@
           "pages":[
             "introduction/foundations/basic",
             "introduction/foundations/components/entity/entity-guide",
-            "introduction/foundations/components/custom_actions",
             "introduction/foundations/components/triggers/trigger-guide",
             "introduction/foundations/components/integrations/custom-integration",
             "introduction/foundations/components/integrations/integration-guide",
-            "introduction/foundations/components/actions/processing",
             "introduction/foundations/components/workspace",
             "introduction/foundations/components/list_local_tools"
           ]
@@ -145,6 +143,7 @@
                 "patterns/tools/use-tools/action-guide-without-agents",
                 "patterns/tools/use-tools/use-specific-actions",
                 "patterns/tools/use-tools/get-action-inputs",
+                "patterns/tools/use-tools/processing-actions",
                 "patterns/tools/use-tools/filter-actions"
               ]
             },
