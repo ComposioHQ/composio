@@ -15,7 +15,7 @@ import click
 from composio.cli.context import Context, get_context, pass_context
 from composio.cli.utils.decorators import handle_exceptions
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
-from composio.client import enums
+from composio.client import Composio, enums
 from composio.client.collections import ActionModel, AppModel, TriggerModel
 from composio.core.cls.did_you_mean import DYMGroup
 from composio.tools.local import load_local_tools
@@ -77,46 +77,65 @@ class UpdateExamples(HelpfulCmdBase, click.Command):
 @pass_context
 def _update(context: Context, beta: bool = False) -> None:
     """Updates local Apps database."""
-    update(context=context, beta=beta)
+    apps = update_apps(client=context.client, beta=beta)
+    update_actions(client=context.client, apps=apps, beta=beta)
+    update_triggers(client=context.client, apps=apps, beta=beta)
 
 
-def update(context: Context, beta: bool = False) -> None:
+def filter_non_beta_items(items):
+    filtered_items = []
+    for item in items:
+        if not item.name.lower().endswith("beta"):
+            filtered_items.append(item)
+
+    seen = set()
+    unique_items = []
+    for item in filtered_items:
+        if item.name not in seen:
+            unique_items.append(item)
+            seen.add(item.name)
+    return unique_items
+
+
+def update_apps(client: Composio, beta: bool = False) -> t.List[AppModel]:
     """Update apps."""
     apps = sorted(
-        context.client.apps.get(),
+        client.apps.get(),
         key=lambda x: x.key,
     )
+    if not beta:
+        apps = filter_non_beta_items(apps)
+
+    _update_apps(apps=apps)
+    return apps
+
+
+def update_actions(
+    client: Composio, apps: t.List[AppModel], beta: bool = False
+) -> None:
+    """Update actions and tags."""
     actions = sorted(
-        context.client.actions.get(allow_all=True),
+        client.actions.get(allow_all=True),
         key=lambda x: f"{x.appName}_{x.name}",
     )
+    if not beta:
+        actions = filter_non_beta_items(actions)
+
+    _update_tags(apps=apps, actions=actions)
+    _update_actions(apps=apps, actions=actions)
+
+
+def update_triggers(
+    client: Composio, apps: t.List[AppModel], beta: bool = False
+) -> None:
+    """Update triggers."""
     triggers = sorted(
-        context.client.triggers.get(),
+        client.triggers.get(),
         key=lambda x: f"{x.appKey}_{x.name}",
     )
     if not beta:
-
-        def filter_non_beta_items(items):
-            filtered_items = []
-            for item in items:
-                if not item.name.lower().endswith("beta"):
-                    filtered_items.append(item)
-
-            seen = set()
-            unique_items = []
-            for item in filtered_items:
-                if item.name not in seen:
-                    unique_items.append(item)
-                    seen.add(item.name)
-            return unique_items
-
-        apps = filter_non_beta_items(apps)
-        actions = filter_non_beta_items(actions)
         triggers = filter_non_beta_items(triggers)
 
-    _update_apps(apps=apps)
-    _update_tags(apps=apps, actions=actions)
-    _update_actions(apps=apps, actions=actions)
     _update_triggers(apps=apps, triggers=triggers)
 
 
@@ -124,6 +143,7 @@ def _update_apps(apps: t.List[AppModel]) -> None:
     """Create App enum class."""
     app_names = []
     enums.base.APPS_CACHE.mkdir(
+        parents=True,
         exist_ok=True,
     )
     for app in apps:
@@ -157,7 +177,7 @@ def _update_apps(apps: t.List[AppModel]) -> None:
 
 def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
     """Get Action enum."""
-    enums.base.ACTIONS_CACHE.mkdir(exist_ok=True)
+    enums.base.ACTIONS_CACHE.mkdir(parents=True, exist_ok=True)
     deprecated = {}
     action_names = []
     for app in sorted(apps, key=lambda x: x.key):
@@ -212,7 +232,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
 
 def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
     """Create Tag enum class."""
-    enums.base.TAGS_CACHE.mkdir(exist_ok=True)
+    enums.base.TAGS_CACHE.mkdir(parents=True, exist_ok=True)
     tag_map: t.Dict[str, t.Set[str]] = {}
     for app in apps:
         app_name = app.key

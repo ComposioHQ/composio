@@ -7,11 +7,10 @@ import { getEnvVariable } from "../utils/shared";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
-import { AppConnectorControllerGetConnectorInfoResponse, ExecuteActionResDTO } from "./client/types.gen";
+import {  ExecuteActionResDTO } from "./client/types.gen";
 import {  saveFile } from "./utils/fileUtils";
 import { convertReqParams, converReqParamForActionExecution } from "./utils";
 import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
-import z from 'zod';
 import { getUserDataJson } from "./utils/config";
 
 
@@ -35,10 +34,7 @@ export class ComposioToolSet {
         entityId: string = "default",
         workspaceConfig: WorkspaceConfig = Workspace.Host()
     ) {  
-        const clientApiKey: string | undefined = apiKey || getEnvVariable("COMPOSIO_API_KEY") || getUserDataJson().api_key;
-        if (!clientApiKey) {
-            throw new Error("API key is required, please pass it either by using `COMPOSIO_API_KEY` environment variable or during initialization");
-        }
+        const clientApiKey: string | undefined = apiKey || getEnvVariable("COMPOSIO_API_KEY") || getUserDataJson().api_key as string;
         this.apiKey = clientApiKey;
         this.client = new Composio(this.apiKey, baseUrl || undefined, runtime as string );
         this.customActionRegistry = new ActionRegistry(this.client);
@@ -133,6 +129,8 @@ export class ComposioToolSet {
             apps?: Array<string>;
             tags?: Optional<Array<string>>;
             useCase?: Optional<string>;
+            useCaseLimit?: Optional<number>;
+            filterByAvailableApps?: Optional<boolean>;
         },
         entityId?: Optional<string>
     ): Promise<Sequence<NonNullable<GetListActionsResponse["items"]>[0]>> {
@@ -143,6 +141,8 @@ export class ComposioToolSet {
             ...(filters?.tags && { tags: filters?.tags?.join(",") }),
             ...(filters?.useCase && { useCase: filters?.useCase }),
             ...(filters?.actions && { actions: filters?.actions?.join(",") }),
+            ...(filters?.useCaseLimit && { usecaseLimit: filters?.useCaseLimit }),
+            filterByAvailableApps: filters?.filterByAvailableApps ?? undefined
          });
         const localActions = new Map<string, NonNullable<GetListActionsResponse["items"]>[0]>();
         if(filters.apps && Array.isArray(filters.apps)) {
@@ -173,7 +173,7 @@ export class ComposioToolSet {
             return action.schema;
         });
 
-        const toolsActions = [...apps.items!, ...uniqueLocalActions, ...toolsWithCustomActions];
+        const toolsActions = [...apps?.items!, ...uniqueLocalActions, ...toolsWithCustomActions];
         
         return toolsActions.map((action: any) => {
             return this.modifyActionForLocalExecution(action);
@@ -228,9 +228,10 @@ export class ComposioToolSet {
             });
         }
         params = await converReqParamForActionExecution(params);
-        const data =  await this.client.getEntity(entityId).execute(action, params, nlaText);
+        const data =  await this.client.getEntity(entityId).execute(action, params, nlaText) as unknown as ExecuteActionResDTO  
 
-        return this.processResponse(data,{
+
+        return this.processResponse(data ,{
             action: action,
             entityId: entityId
         });
@@ -244,18 +245,22 @@ export class ComposioToolSet {
         }
     ): Promise<ExecuteActionResDTO> {
 
+        // @ts-ignore
         const isFile = !!data?.response_data?.file;
         if(isFile) {
+            // @ts-ignore
             const fileData = data.response_data.file;
             const {name, content} = fileData as {name: string, content: string};
             const file_name_prefix = `${meta.action}_${meta.entityId}_${Date.now()}`;
             const filePath = saveFile(file_name_prefix, content);   
 
+            // @ts-ignore
             delete data.response_data.file
  
             return {
                 ...data,
                 response_data: {
+                    // @ts-ignore
                     ...data.response_data,
                     file_uri_path: filePath
                 }

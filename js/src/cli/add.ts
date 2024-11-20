@@ -3,7 +3,7 @@ import { Command } from "commander";
 import { Composio } from "../sdk";
 import inquirer from "inquirer";
 import open from "open";
-import { GetConnectorListResDTO } from "../sdk/client";
+import { GetConnectorInfoResDTO, GetConnectorListResDTO } from "../sdk/client";
 
 export default class AddCommand {
   private program: Command;
@@ -30,14 +30,14 @@ export default class AddCommand {
         appName: appName.toLowerCase(),
       });
 
-    let firstIntegration: GetConnectorListResDTO | undefined;
+    let firstIntegration: GetConnectorInfoResDTO | undefined;
     if (integration?.items?.length === 0 || options.force || options.skipDefaultConnector) {
       firstIntegration = (await this.createIntegration(
         appName,
         options.skipDefaultConnector,
-      )) as GetConnectorListResDTO;
+      )) as GetConnectorInfoResDTO;
     }else{
-      firstIntegration = (integration as GetConnectorListResDTO)?.items[0] as GetConnectorListResDTO;
+      firstIntegration = (integration as GetConnectorListResDTO)?.items[0] as GetConnectorInfoResDTO;
     }
     if (!firstIntegration) {
       console.log(chalk.red("No integration found or created"));
@@ -108,7 +108,8 @@ export default class AddCommand {
     const { expectedInputFields } = data!;
 
 
-    const config = await this.collectInputFields(expectedInputFields, true);
+
+    const config = await this.collectInputFields(expectedInputFields as any , true);
 
     const connectionData = await composioClient.connectedAccounts.create({
       integrationId,

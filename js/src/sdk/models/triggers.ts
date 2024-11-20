@@ -4,9 +4,11 @@ import logger from "../../utils/logger";
 import {BackendClient} from "./backendClient"
 
 import apiClient from "../client/client"
-import { TriggersControllerListTriggersData, TriggersControllerListTriggersResponse } from "../client";
 
-type RequiredQuery = TriggersControllerListTriggersData["query"];
+import { CEG } from "../utils/error";
+import { ListTriggersData } from "../client";
+
+type RequiredQuery = ListTriggersData["query"];
 
 export class Triggers {
     trigger_to_client_event = "trigger_to_client";
@@ -25,14 +27,17 @@ export class Triggers {
      * @returns {CancelablePromise<ListTriggersResponse>} A promise that resolves to the list of all triggers.
      * @throws {ApiError} If the request fails.
      */
-    //@ts-ignore
-    list(data: RequiredQuery={} ): Promise<TriggersControllerListTriggersResponse> {
-        //@ts-ignore
-        return apiClient.triggers.listTriggers({
-            query: {
-                appNames: data?.appNames,
-            }
-        }).then(res => res.data)
+    async list(data: RequiredQuery={} ) {
+        try {
+            const {data:response} = await apiClient.triggers.listTriggers({
+                query: {
+                    appNames: data?.appNames,
+                }
+            });
+            return response || [];
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
     /**
@@ -42,49 +47,66 @@ export class Triggers {
      * @returns {CancelablePromise<SetupTriggerResponse>} A promise that resolves to the setup trigger response.
      * @throws {ApiError} If the request fails.
      */
-    //@ts-ignore
-    async setup(connectedAccountId, triggerName, config: Record<string, any>):{status:"string",triggerId:string}{
-        //@ts-ignore
-        const {data,error} = await apiClient.triggers.enableTrigger({
-            path:{
-                connectedAccountId,
-                triggerName
-            },
-            body: {
-                triggerConfig: config
-            }
-        })
-
-        if(error) {
-            console.log(error)
-            throw Error("Failed to setup trigger")
+    async setup(connectedAccountId: string, triggerName: string, config: Record<string, any>): Promise<{status: string, triggerId: string}> {
+        try {
+            const response = await apiClient.triggers.enableTrigger({
+                path: {
+                    connectedAccountId,
+                    triggerName
+                },
+                body: {
+                    triggerConfig: config
+                }
+            });
+            return response.data as {status: string, triggerId: string};
+        } catch (error) {
+            throw CEG.handleError(error);
         }
-
-        return data as unknown as {status:"string",triggerId:string};
     }
 
-    enable(data: { triggerId: any }): any {
-        return apiClient.triggers.switchTriggerInstanceStatus({
-            path: data,
-            body: {
-                enabled: true
+    async enable(data: { triggerId: string }) {
+        try {
+            const response = await apiClient.triggers.switchTriggerInstanceStatus({
+                path: data,
+                body: {
+                    enabled: true
+                }
+            });
+            return {
+                status: "success"
             }
-        }).then(res => res.data)
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
-    disable(data: { triggerId: any }): any {
-        return apiClient.triggers.switchTriggerInstanceStatus({
-            path: data,
-            body: {
-                enabled: false
+    async disable(data: { triggerId: string }) {
+        try {
+            const response = await apiClient.triggers.switchTriggerInstanceStatus({
+                path: data,
+                body: {
+                    enabled: false
+                }
+            });
+            return {
+                status: "success"
             }
-        }).then(res => res.data)
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
-    delete(data: { triggerInstanceId: string }): any {
-        return apiClient.triggers.deleteTrigger({
-            path: data
-        }).then(res => res.data)
+    async delete(data: { triggerInstanceId: string }) {
+        try {
+            const response = await apiClient.triggers.deleteTrigger({
+                path: data
+            });
+            return {
+                status: "success"
+            }
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
     async subscribe(fn: (data: TriggerData) => void, filters:{

@@ -5,6 +5,8 @@ Composio SDK tools.
 import base64
 import binascii
 import hashlib
+import importlib
+import inspect
 import itertools
 import json
 import os
@@ -50,6 +52,7 @@ from composio.constants import (
 )
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.storage.user import UserData
+from composio.tools.base.abs import tool_registry
 from composio.tools.base.local import LocalAction
 from composio.tools.env.base import (
     ENV_GITHUB_ACCESS_TOKEN,
@@ -74,9 +77,6 @@ MetadataType = t.Dict[_KeyType, t.Dict]
 ParamType = t.TypeVar("ParamType")
 ProcessorType = te.Literal["pre", "post", "schema"]
 AuthSchemeType = t.Literal["OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN"]
-
-# Enable deprecation warnings
-warnings.simplefilter("always", DeprecationWarning)
 
 
 class IntegrationParams(te.TypedDict):
@@ -119,6 +119,30 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
         return func(self, *args, **kwargs)  # type: ignore
 
     return wrapper  # type: ignore
+
+
+def load_action(
+    client: Composio, value, warn=True
+) -> Action:  # pylint: disable=used-prior-global-declaration
+    global Action
+    try:
+        return Action(value=value, warn=warn)
+    except EnumStringNotFound as e:
+        # run update apps, and reload actions
+        from composio.cli.apps import (  # pylint: disable=import-outside-toplevel
+            update_actions,
+            update_apps,
+        )
+
+        apps = update_apps(client)
+        update_actions(client, apps)
+        action_enum_module = inspect.getmodule(Action)
+        if action_enum_module is None:
+            raise RuntimeError("Error reloading `Action` enum class") from e
+        reloaded_action_module = importlib.reload(action_enum_module)
+        Action = reloaded_action_module.Action  # type: ignore
+
+    return Action(value=value, warn=warn)
 
 
 class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
@@ -412,7 +436,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
-        action = Action(action)
+        action = load_action(self.client, action)
         if action.no_auth or action.is_runtime:
             return
 
@@ -834,6 +858,16 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         for item in items:
             item = self._process_schema(item)
 
+            # This is to support anthropic-claude
+            if item.name == Action.ANTHROPIC_BASH_COMMAND.slug:
+                item.name = "bash"
+
+            if item.name == Action.ANTHROPIC_COMPUTER.slug:
+                item.name = "computer"
+
+            if item.name == Action.ANTHROPIC_TEXT_EDITOR.slug:
+                item.name = "str_replace_editor"
+
         return items
 
     def _process_schema(self, action_item: ActionModel) -> ActionModel:
@@ -1034,17 +1068,35 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     def get_app(self, app: AppType) -> AppModel:
         return self.client.apps.get(name=str(App(app)))
 
-    def get_apps(self, no_auth: t.Optional[bool] = None) -> t.List[AppModel]:
+    def get_apps(
+        self,
+        no_auth: t.Optional[bool] = None,
+        include_local: bool = True,
+    ) -> t.List[AppModel]:
         apps = self.client.apps.get()
         if no_auth is not None:
             apps = [a for a in apps if a.no_auth is no_auth]
+
+        if include_local:
+            for app in tool_registry["local"].values():
+                apps.append(
+                    AppModel(
+                        name=app.name,
+                        key=app.name,
+                        appId=app.name,
+                        description=app.description,
+                        categories=["local"],
+                        meta={},
+                        no_auth=True,
+                    )
+                )
         return apps
 
     def get_action(self, action: ActionType) -> ActionModel:
         return self.client.actions.get(actions=[action]).pop()
 
     def get_trigger(self, trigger: TriggerType) -> TriggerModel:
-        return self.client.triggers.get(triggers=[trigger]).pop()
+        return self.client.triggers.get(trigger_names=[trigger]).pop()
 
     def get_integration(self, id: str) -> IntegrationModel:
         return self.client.integrations.get(id=id)
@@ -1143,15 +1195,17 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             "expected_params": integration.expectedInputFields,
         }
 
-    def _can_use_auth_scheme(self, scheme: AppAuthScheme, app: AppModel) -> bool:
+    def _can_use_auth_scheme_without_user_input(
+        self, scheme: AppAuthScheme, app: AppModel
+    ) -> bool:
         if (
             scheme.auth_mode in ("OAUTH2", "OAUTH1")
-            and len(app.testConnectors or []) == 0
+            and len(app.testConnectors or []) > 0
         ):
-            return False
+            return True
 
         for field in scheme.fields:
-            if not field.expected_from_customer:
+            if not field.expected_from_customer and field.required:
                 return False
 
         return True
@@ -1198,7 +1252,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         for scheme in app_data.auth_schemes or []:
             if auth_scheme is not None and auth_scheme != scheme.auth_mode.upper():
                 continue
-            if self._can_use_auth_scheme(scheme=scheme, app=app_data):
+            if self._can_use_auth_scheme_without_user_input(
+                scheme=scheme, app=app_data
+            ):
                 integration = self.create_integration(
                     app=app,
                     auth_mode=scheme.auth_mode,
@@ -1257,6 +1313,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self,
         integration_id: t.Optional[str] = None,
         app: t.Optional[AppType] = None,
+        labels: t.Optional[t.List] = None,
         entity_id: t.Optional[str] = None,
         redirect_url: t.Optional[str] = None,
         connected_account_params: t.Optional[t.Dict] = None,
@@ -1287,6 +1344,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             integration_id=integration_id,
             entity_id=entity_id or self.entity_id,
             params=connected_account_params,
+            labels=labels,
             redirect_url=redirect_url,
         )
 

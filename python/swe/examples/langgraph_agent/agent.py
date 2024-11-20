@@ -25,7 +25,7 @@ openai_client = ChatOpenAI(
 )
 composio_toolset = ComposioToolSet(
     workspace_config=WorkspaceType.Docker(
-        image="composio/composio:dev", persistent=True
+        image="composio/composio:latest", persistent=True
     )
 )
 

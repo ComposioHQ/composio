@@ -13,7 +13,8 @@ import { getPackageJsonDir } from './utils/projectUtils';
 import { isNewerVersion } from './utils/other';
 import { getClientBaseConfig } from './utils/config';
 import chalk from 'chalk';
-import { AppConnectorControllerGetConnectorInfoResponse } from './client';
+import { CEG, ERROR } from './utils/error';
+import { GetConnectorInfoResDTO } from './client';
 export class Composio {
     /**
      * The Composio class serves as the main entry point for interacting with the Composio SDK.
@@ -36,15 +37,14 @@ export class Composio {
      * @param {string} [runtime] - The runtime environment for the SDK.
      */
     constructor(apiKey?: string, baseUrl?: string, runtime?: string) {
+       
         // // Parse the base URL and API key, falling back to environment variables or defaults if not provided.
         const { baseURL: baseURLParsed, apiKey: apiKeyParsed } =  getClientBaseConfig(baseUrl, apiKey);
 
+        console.log("Using API Key: ", apiKeyParsed , "and baseURL: ", baseURLParsed);
         if(!apiKeyParsed){
-            console.log(chalk.yellow("Oops! We couldn't find your API key. You can set it by:\n"));
-            console.log(chalk.white("1. Running 'composio login' after installing `npm install -g composio-core`"));
-            console.log(chalk.white("2. Setting the COMPOSIO_API_KEY environment variable"));
-            console.log(chalk.white("3. Passing api key as a parameter to the Composio constructor \n "));
-            throw new Error("Please provide an API key.");
+            
+            CEG.throwCustomError(ERROR.COMMON.API_KEY_UNAVAILABLE,{});
         }
 
         // Initialize the BackendClient with the parsed API key and base URL.
@@ -97,7 +97,7 @@ export class Composio {
 
     async getExpectedParamsForUser(
         params: { app?: string; integrationId?: string; entityId?: string; authScheme?: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" } = {},
-    ): Promise<{ expectedInputFields: AppConnectorControllerGetConnectorInfoResponse["expectedInputFields"], integrationId: string, authScheme: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" }> {
+    ): Promise<{ expectedInputFields: GetConnectorInfoResDTO["expectedInputFields"], integrationId: string, authScheme: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" }> {
         const { app, entityId } = params;
         let { integrationId } = params;
         if (integrationId === null && app === null) {
@@ -159,8 +159,8 @@ export class Composio {
         }
 
         const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
-
-        if(appInfo.testConnectors?.length! > 0) {
+        const hasRelevantTestConnectors = params.authScheme ? appInfo.testConnectors?.filter((connector: any) => connector.authScheme === params.authScheme)?.length! > 0 : appInfo.testConnectors?.length! > 0;
+        if(hasRelevantTestConnectors) {
             integration = await this.integrations.create({
                 appId: appInfo.appId,
                 name: `integration_${timestamp}`,

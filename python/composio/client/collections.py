@@ -3,6 +3,7 @@ Composio server object collections
 """
 
 import base64
+import difflib
 import json
 import os
 import time
@@ -16,7 +17,8 @@ import pysher
 import requests
 import typing_extensions as te
 from pydantic import BaseModel, ConfigDict, Field
-from pysher.channel import Channel
+from pysher.channel import Channel as PusherChannel
+from pysher.connection import Connection as PusherConnection
 
 from composio.client.base import BaseClient, Collection
 from composio.client.endpoints import v1, v2
@@ -30,7 +32,7 @@ from composio.client.enums import (
     Trigger,
     TriggerType,
 )
-from composio.client.exceptions import ComposioClientError
+from composio.client.exceptions import ComposioClientError, ComposioSDKError
 from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
 from composio.utils import logging
 
@@ -230,6 +232,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
         integration_id: str,
         entity_id: t.Optional[str] = None,
         params: t.Optional[t.Dict] = None,
+        labels: t.Optional[t.List] = None,
         redirect_url: t.Optional[str] = None,
     ) -> ConnectionRequestModel:
         """Initiate a new connected account."""
@@ -240,6 +243,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
                     "integrationId": integration_id,
                     "userUuid": entity_id,
                     "data": params or {},
+                    "labels": labels or [],
                     "redirectUri": redirect_url,
                 },
             )
@@ -485,10 +489,10 @@ class _ChunkedTriggerEventData(BaseModel):
 class _TriggerEventFilters(te.TypedDict):
     """Trigger event filterset."""
 
-    app_name: te.NotRequired[str]
+    app_name: te.NotRequired[AppType]
     trigger_id: te.NotRequired[str]
     connection_id: te.NotRequired[str]
-    trigger_name: te.NotRequired[str]
+    trigger_name: te.NotRequired[TriggerType]
     entity_id: te.NotRequired[str]
     integration_id: te.NotRequired[str]
 
@@ -499,7 +503,9 @@ TriggerCallback = t.Callable[[TriggerEventData], None]
 class TriggerSubscription(logging.WithLogger):
     """Trigger subscription."""
 
-    _channel: Channel
+    _pusher: pysher.Pusher
+    _channel: PusherChannel
+    _connection: PusherConnection
     _alive: bool
 
     def __init__(self) -> None:
@@ -509,11 +515,85 @@ class TriggerSubscription(logging.WithLogger):
         self._chunks: t.Dict[str, t.Dict[int, str]] = {}
         self._callbacks: t.List[t.Tuple[TriggerCallback, _TriggerEventFilters]] = []
 
+    @staticmethod
+    def validate_filters(filters: _TriggerEventFilters):
+        docs_link_msg = "\n\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
+        if not isinstance(filters, dict):
+            raise ComposioSDKError(
+                "Expected filters to be a dictionary" + docs_link_msg
+            )
+
+        expected_filters = list(_TriggerEventFilters.__annotations__)
+        for filter, value in filters.items():
+            if filter not in expected_filters:
+                error_msg = f"Unexpected filter {filter!r}"
+                possible_values = difflib.get_close_matches(
+                    filter, expected_filters, n=1
+                )
+                if possible_values:
+                    (possible_value,) = possible_values
+                    error_msg += f" Did you mean {possible_value!r}?"
+                raise ComposioSDKError(error_msg + docs_link_msg)
+
+            # Validate app name
+            if filter == "app_name":
+                if isinstance(value, App):
+                    value = value.slug
+
+                elif not isinstance(value, str):
+                    raise ComposioSDKError(
+                        f"Expected 'app_name' to be App or str, found {value!r}"
+                        + docs_link_msg
+                    )
+
+                # Our enums are in uppercase but we accept lowercase ones too.
+                value = value.upper()
+
+                app_names = list(App.iter())
+                if value in app_names:
+                    continue
+
+                error_msg = f"App {value!r} does not exist."
+                possible_values = difflib.get_close_matches(value, app_names, n=1)
+                if possible_values:
+                    (possible_value,) = possible_values
+                    error_msg += f" Did you mean {possible_value!r}?"
+
+                raise ComposioSDKError(error_msg + docs_link_msg)
+
+            # Validate trigger name
+            if filter == "trigger_name":
+                if isinstance(value, Trigger):
+                    value = value.slug
+                elif not isinstance(value, str):
+                    raise ComposioSDKError(
+                        f"Expected 'trigger_name' to be Trigger or str, found {value!r}"
+                        + docs_link_msg
+                    )
+
+                # Our enums are in uppercase but we accept lowercase ones too.
+                value = value.upper()
+
+                trigger_names = list(Trigger.iter())
+                if value in trigger_names:
+                    continue
+
+                error_msg = f"Trigger {value!r} does not exist."
+                possible_values = difflib.get_close_matches(value, trigger_names, n=1)
+                if possible_values:
+                    (possible_value,) = possible_values
+                    error_msg += f" Did you mean {possible_value!r}?"
+
+                raise ComposioSDKError(error_msg + docs_link_msg)
+
     def callback(
         self,
         filters: t.Optional[_TriggerEventFilters] = None,
     ) -> t.Callable[[TriggerCallback], TriggerCallback]:
         """Register a trigger callaback."""
+        # Ensure filters is the right type before we stuff it in the callbacks
+        if filters is not None:
+            self.validate_filters(filters)
 
         def _wrap(f: TriggerCallback) -> TriggerCallback:
             self._callbacks.append((f, filters or {}))
@@ -605,14 +685,33 @@ class TriggerSubscription(logging.WithLogger):
         """Check if subscription is live."""
         return self._alive
 
+    def has_errored(self) -> bool:
+        """Check if the connection errored and disconnected."""
+        return self._connection.socket is None or self._connection.socket.has_errored
+
     def set_alive(self) -> None:
         """Set `_alive` to True."""
         self._alive = True
 
+    @te.deprecated("Use `wait_forever` instead")
     def listen(self) -> None:
         """Wait infinitely."""
-        while True:
+        self.wait_forever()
+
+    def wait_forever(self) -> None:
+        """Wait infinitely."""
+        while self.is_alive() and not self.has_errored():
             time.sleep(1)
+
+    def stop(self) -> None:
+        """Stop the trigger listener."""
+        self._connection.disconnect()
+        self._alive = False
+
+    def restart(self) -> None:
+        """Restart the subscription connection"""
+        self._connection.disconnect()
+        self._connection._connect()  # pylint: disable=protected-access
 
 
 class _PusherClient(logging.WithLogger):
@@ -634,7 +733,7 @@ class _PusherClient(logging.WithLogger):
     ) -> t.Callable[[str], None]:
         def _connection_handler(_: str) -> None:
             channel = t.cast(
-                Channel,
+                PusherChannel,
                 pusher.subscribe(
                     channel_name=f"private-{client_id}_triggers",
                 ),
@@ -648,31 +747,30 @@ class _PusherClient(logging.WithLogger):
                 callback=subscription.handle_chunked_events,
             )
             subscription.set_alive()
+            subscription._channel = channel  # pylint: disable=protected-access
+            subscription._connection = (  # pylint: disable=protected-access
+                channel.connection
+            )
 
         return _connection_handler
 
     def connect(self, timeout: float = 15.0) -> TriggerSubscription:
         """Connect to Pusher channel for given client ID."""
         # Make a request to the Pusher webhook endpoint
-        headers = {
-            "Content-Type": "application/json",
-        }
-        data = {
-            "time": int(time.time() * 1000),  # Current time in milliseconds
-            "events": [
-                {
-                    "name": "channel_occupied",
-                    "channel": f"private-{self.client_id}_triggers",
-                }
-            ],
-        }
-
         try:
             response = requests.post(
-                f"{self.base_url}/v1/triggers/pusher",
-                headers=headers,
-                json=data,
+                url=f"{self.base_url}/v1/triggers/pusher",
+                json={
+                    "time": int(time.time() * 1000),  # Current time in milliseconds
+                    "events": [
+                        {
+                            "name": "channel_occupied",
+                            "channel": f"private-{self.client_id}_triggers",
+                        }
+                    ],
+                },
                 timeout=timeout,
+                headers={"Content-Type": "application/json"},
             )
             response.raise_for_status()
         except requests.RequestException as e:
@@ -686,6 +784,7 @@ class _PusherClient(logging.WithLogger):
                 "x-api-key": self.api_key,
             },
         )
+
         # Patch pusher logger
         pusher.connection.logger = mock.MagicMock()  # type: ignore
         pusher.connection.bind(
@@ -702,8 +801,10 @@ class _PusherClient(logging.WithLogger):
         deadline = time.time() + timeout
         while time.time() < deadline:
             if self.subscription.is_alive():
+                self.subscription._pusher = pusher  # pylint: disable=protected-access
                 return self.subscription
             time.sleep(0.5)
+
         raise TimeoutError(
             "Timed out while waiting for trigger listener to be established"
         )
@@ -725,7 +826,7 @@ class Triggers(Collection[TriggerModel]):
 
     def get(  # type: ignore
         self,
-        triggers: t.Optional[t.List[TriggerType]] = None,
+        trigger_names: t.Optional[t.List[TriggerType]] = None,
         apps: t.Optional[t.List[str]] = None,
     ) -> t.List[TriggerModel]:
         """
@@ -736,8 +837,8 @@ class Triggers(Collection[TriggerModel]):
         :return: List of triggers filtered by provided parameters
         """
         queries = {}
-        if triggers is not None and len(triggers) > 0:
-            queries["triggerIds"] = to_trigger_names(triggers)
+        if trigger_names is not None and len(trigger_names) > 0:
+            queries["triggerIds"] = to_trigger_names(trigger_names)
         if apps is not None and len(apps) > 0:
             queries["appNames"] = ",".join(apps)
         return super().get(queries=queries)
@@ -909,7 +1010,7 @@ class Actions(Collection[ActionModel]):
     """Collection of composio actions.."""
 
     model = ActionModel
-    endpoint = v1.actions
+    endpoint = v2.actions
 
     # TODO: Overload
     def get(  # type: ignore
@@ -994,20 +1095,13 @@ class Actions(Collection[ActionModel]):
 
         queries: t.Dict[str, str] = {}
         if use_case is not None and use_case != "":
-            if len(apps) != 1:
-                raise ComposioClientError(
-                    "Error retrieving Actions, Use case "
-                    "should be provided with exactly one app."
-                )
             queries["useCase"] = use_case
 
         if len(apps) > 0:
-            queries["appNames"] = ",".join(
-                list(map(lambda x: t.cast(App, x).slug, apps))
-            )
+            queries["apps"] = ",".join(list(map(lambda x: t.cast(App, x).slug, apps)))
 
         if len(actions) > 0:
-            queries["appNames"] = ",".join(
+            queries["apps"] = ",".join(
                 set(map(lambda x: t.cast(Action, x).app, actions))
             )
 
@@ -1113,9 +1207,8 @@ class Actions(Collection[ActionModel]):
         if action.no_auth:
             return self._raise_if_required(
                 self.client.http.post(
-                    url=str(self.endpoint / action.name / "execute"),
+                    url=str(self.endpoint / action.slug / "execute"),
                     json={
-                        "entityId": entity_id,
                         "appName": action.app,
                         "input": modified_params,
                         "text": text,
@@ -1134,7 +1227,7 @@ class Actions(Collection[ActionModel]):
 
         return self._raise_if_required(
             self.client.http.post(
-                url=str(v2.actions / action.slug / "execute"),
+                url=str(self.endpoint / action.slug / "execute"),
                 json={
                     "connectedAccountId": connected_account,
                     "entityId": entity_id,

@@ -7,7 +7,7 @@ import {
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
-import { ActionsControllerV1ListActionsResponse } from "../sdk/client";
+import { ActionsListResponseDTO } from "../sdk/client";
 
 // Type definitions
 type Optional<T> = T | null;
@@ -53,9 +53,11 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     apps?: Sequence<string>;
     tags?: Optional<Array<string>>;
     useCase?: Optional<string>;
+    usecaseLimit?: Optional<number>;
+    filterByAvailableApps?: Optional<boolean>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
     const actions = await this.getToolsSchema(filters);
-    return actions.map((action: NonNullable<ActionsControllerV1ListActionsResponse["items"]>[0]) => {
+    return actions.map((action) => {
         // Format the action schema for Cloudflare Workers AI
         const formattedSchema: AiTextGenerationToolInput["function"] = {
           name: action.name!,
