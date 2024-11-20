@@ -72,6 +72,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     LINEAR: "App"
     LINKEDIN: "App"
     LISTENNOTES: "App"
+    LMNT: "App"
     MAILCHIMP: "App"
     MATHEMATICAL: "App"
     MEM0: "App"
@@ -79,6 +80,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     MICROSOFT_TEAMS: "App"
     MULTIONAI: "App"
     NOTION: "App"
+    ONE_DRIVE: "App"
     OUTLOOK: "App"
     PERPLEXITYAI: "App"
     PIPEDRIVE: "App"
@@ -88,6 +90,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     SALESFORCE: "App"
     SENDGRID: "App"
     SERPAPI: "App"
+    SHARE_POINT: "App"
     SHELLTOOL: "App"
     SHOPIFY: "App"
     SLACK: "App"
@@ -99,6 +102,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     TAVILY: "App"
     TRELLO: "App"
     TWITTER: "App"
+    TWITTER_MEDIA: "App"
     WEATHERMAP: "App"
     WEBTOOL: "App"
     WORKSPACE_TOOL: "App"
@@ -106,6 +110,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     YOUTUBE: "App"
     ZENDESK: "App"
     ZEPTOOL: "App"
+    ZOOM: "App"
 
     @property
     def is_local(self) -> bool:
