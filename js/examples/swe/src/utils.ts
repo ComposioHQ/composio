@@ -31,8 +31,11 @@ function readUserInput(
 }
 
 function githubRepositoryNameValidator(name: string): [string, string] {
-  if (name.includes(' ')) throw new Error();
-  return name.split('/') as [string, string]; // Ensures correct tuple type
+  if (name.includes(' ')) {
+    throw new Error();
+  }
+  const [owner, repoName] = name.split('/');
+  return [owner, repoName];
 }
 
 function createGithubIssueValidator(owner: string, name: string, toolset: ComposioToolSet) {
