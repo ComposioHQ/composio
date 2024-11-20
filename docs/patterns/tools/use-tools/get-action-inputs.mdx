@@ -1,0 +1,64 @@
+---
+title: "🛠️ How can I get the input parameters for an Action?"
+sidebarTitle: "Get Action Inputs"   
+icon: "text-size"
+description: "Get the input parameters for an Action"
+---
+
+### When will I need to provide input parameters?
+When executing actions without agents, you'll need to provide the input parameters. There are two ways to obtain these parameters:
+
+1. Through the [API Section](/api-reference/actions/get-action) of our documentation
+2. Programmatically using our SDK
+
+### Using the [API Section](/api-reference/actions/get-action) from the Documentation
+<iframe width="720" height="405" src="https://www.youtube.com/embed/_OoFcJK6W5A?si=xWq2tsZV8YHwZ2xc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+1. Navigate to the [API Section](/api-reference/actions/get-action) of our documentation
+2. Click on **Get Action** under the **Actions** category
+3. Enter your Composio API key and the Action ID
+4. The **parameters** attribute in the response contains the required parameters for executing the action
+
+
+### Using the SDK
+<CodeGroup>
+ ```python Python 
+from composio import ComposioToolSet, Action
+import json
+
+composio_toolset = ComposioToolSet()
+
+# Get the action schema
+action_schema = composio_toolset.get_action_schemas(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
+
+# Print the parameters in a readable format
+print(json.dumps(action_schema[0].parameters.properties, indent=2))
+```
+
+```javascript Javascript
+import { OpenAIToolSet } from "composio-core";
+
+const composio_toolset = new OpenAIToolSet();
+
+const schema = await composio_toolset.getActionsSchema({
+  actions: ["github_star_a_repository_for_the_authenticated_user"],
+});
+
+console.log(JSON.stringify(schema[0].parameters.properties, null, 2));
+  ```
+</CodeGroup>
+
+```bash Output
+{
+  "owner": {
+    "description": "The account owner of the repository. The name is not case sensitive. Please provide a value of type string. This parameter is required.",
+    "title": "Owner",
+    "type": "string"
+  },
+  "repo": {
+    "description": "The name of the repository without the `.git` extension. The name is not case sensitive. . Please provide a value of type string. This parameter is required.",
+    "title": "Repo",
+    "type": "string"
+  }
+}
+```

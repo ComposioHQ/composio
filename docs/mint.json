@@ -144,11 +144,12 @@
                 "patterns/tools/use-tools/action-guide-with-agents",
                 "patterns/tools/use-tools/action-guide-without-agents",
                 "patterns/tools/use-tools/use-specific-actions",
+                "patterns/tools/use-tools/get-action-inputs",
                 "patterns/tools/use-tools/filter-actions"
               ]
             },
             {
-              "group": "Build Tools/Actions",
+              "group": "Build Tools",
               "icon": "hammer",
               "pages": [
                 "patterns/tools/build-tools/custom-action-for-new-tool",
