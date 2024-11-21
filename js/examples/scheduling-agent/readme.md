@@ -1,13 +1,13 @@
 # Scheduling Agent Demo
 
-This demo shows how to create a scheduling agent that can read emails and create calendar events automatically using the Composio and Vercel.
+This demo shows how to create a scheduling agent that can read emails and create calendar events automatically using Composio and Vercel.
 
 ## Setup
 
 1. Clone the repository and navigate to this folder:
 ```bash
-git clone https://github.com/composioHQ/composio-js.git
-cd composio-js/js/examples/scheduling-agent
+git clone https://github.com/composioHQ/composio.git
+cd composio/js/examples/scheduling-agent
 ```
 
 2. Install dependencies:
