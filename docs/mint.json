@@ -92,7 +92,6 @@
             "introduction/foundations/basic",
             "introduction/foundations/components/entity/entity-guide",
             "introduction/foundations/components/triggers/trigger-guide",
-            "introduction/foundations/components/integrations/custom-integration",
             "introduction/foundations/components/integrations/integration-guide",
             "introduction/foundations/components/workspace",
             "introduction/foundations/components/list_local_tools"
