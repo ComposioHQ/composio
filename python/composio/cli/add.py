@@ -13,11 +13,12 @@ import click
 from composio.cli.context import Context, ensure_login, pass_context
 from composio.cli.utils.decorators import handle_exceptions, pass_entity_id
 from composio.cli.utils.helpfulcmd import HelpfulCmd
-from composio.client import AuthSchemeType, Composio, Entity
+from composio.client import Composio, Entity
 from composio.client.collections import (
     AppAuthScheme,
     AppModel,
     AuthSchemeField,
+    AuthSchemeType,
     IntegrationModel,
 )
 from composio.client.exceptions import ComposioClientError

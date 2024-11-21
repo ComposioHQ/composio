@@ -22,12 +22,14 @@ import typing_extensions as te
 from pydantic import BaseModel
 
 from composio import Action, ActionType, App, AppType, TagType
-from composio.client import AUTH_SCHEMES, AuthSchemeType, Composio, Entity
+from composio.client import Composio, Entity
 from composio.client.collections import (
+    AUTH_SCHEMES,
     ActionModel,
     AppAuthScheme,
     AppModel,
     AuthSchemeField,
+    AuthSchemeType,
     ConnectedAccountModel,
     ConnectionParams,
     ConnectionRequestModel,

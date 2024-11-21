@@ -39,7 +39,9 @@ from composio.utils import logging
 
 if t.TYPE_CHECKING:
     from composio.client import Composio
-    from composio.tools.toolset import AuthSchemeType
+
+AUTH_SCHEMES = ("OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN")
+AuthSchemeType = t.Literal["OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN"]
 
 
 def to_trigger_names(
@@ -283,7 +285,7 @@ class AppAuthScheme(BaseModel):
     """App authenticatio scheme."""
 
     scheme_name: str
-    auth_mode: "AuthSchemeType"
+    auth_mode: AuthSchemeType
     fields: t.List[AuthSchemeField]
 
     proxy: t.Optional[t.Dict] = None

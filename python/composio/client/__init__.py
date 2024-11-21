@@ -11,10 +11,12 @@ from pathlib import Path
 import requests
 
 from composio.client.collections import (
+    AUTH_SCHEMES,
     Actions,
     ActiveTriggerModel,
     ActiveTriggers,
     Apps,
+    AuthSchemeType,
     ConnectedAccountModel,
     ConnectedAccounts,
     ConnectionRequestModel,
@@ -49,9 +51,6 @@ from composio.utils.url import get_api_url_base
 
 _valid_keys: t.Set[str] = set()
 _clients: t.List["Composio"] = []
-
-AUTH_SCHEMES = ("OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN")
-AuthSchemeType = t.Literal["OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN"]
 
 
 class Composio:
