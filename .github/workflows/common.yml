@@ -68,7 +68,7 @@ jobs:
     defaults:
       run:
         working-directory: ./python
-    continue-on-error: True
+    continue-on-error: False
     needs:
       - lock_check
     runs-on: ${{ matrix.os }}
@@ -110,7 +110,7 @@ jobs:
     defaults:
       run:
         working-directory: ./python
-    continue-on-error: True
+    continue-on-error: False
     needs:
       - lock_check
     runs-on: ${{ matrix.os }}
