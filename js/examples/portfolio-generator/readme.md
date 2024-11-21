@@ -1,6 +1,6 @@
 # Portfolio Generator Agent Demo
 
-This demo shows how to create a portfolio generator agent that can generate code for a portfolio website and guides you on how to setup a portfolio website automatically using Composio and Vercel.
+This demo shows how to create a portfolio generator agent that can generate code for a portfolio website and guides you on how to set up a portfolio website automatically using Composio and Vercel.
 
 ## Setup
 
@@ -29,4 +29,4 @@ node demo.mjs
 
 ## How it works
 
-This Agent powered by Composio generates a portfolio website code and guides you on how to setup the portfolio website.
+This Agent powered by Composio generates a portfolio website code and guides you on how to set up the portfolio website.

@@ -1,6 +1,6 @@
 # Report Template Generator Agent Demo
 
-This demo shows how to create a report template generator agent that can generate report templates on Google Docsautomatically using Composio and Vercel.
+This demo shows how to create a report template generator agent that can generate report templates on Google Docs automatically using Composio and Vercel.
 
 ## Setup
 
