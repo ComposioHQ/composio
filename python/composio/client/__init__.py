@@ -46,6 +46,7 @@ from composio.exceptions import ApiKeyNotProvidedError
 from composio.storage.user import UserData
 from composio.utils.url import get_api_url_base
 
+
 _valid_keys: t.Set[str] = set()
 _clients: t.List["Composio"] = []
 
