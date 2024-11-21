@@ -76,6 +76,8 @@ _CallableType = t.Callable[[t.Dict], t.Dict]
 MetadataType = t.Dict[_KeyType, t.Dict]
 ParamType = t.TypeVar("ParamType")
 ProcessorType = te.Literal["pre", "post", "schema"]
+
+AUTH_SCHEMES = ("OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN")
 AuthSchemeType = t.Literal["OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN"]
 
 
@@ -1144,12 +1146,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if auth_scheme is not None:
             return auth_schemes[auth_scheme]
 
-        for scheme in (
-            "OAUTH2",
-            "OAUTH1",
-            "API_KEY",
-            "BASIC",
-        ):
+        for scheme in AUTH_SCHEMES:
             if scheme in auth_schemes:
                 return auth_schemes[scheme]
 
@@ -1293,7 +1290,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     def create_integration(
         self,
         app: AppType,
-        auth_mode: t.Optional[str] = None,
+        auth_mode: t.Optional[AuthSchemeType] = None,
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
         use_composio_oauth_app: bool = True,
         force_new_integration: bool = False,
@@ -1318,12 +1315,16 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         redirect_url: t.Optional[str] = None,
         connected_account_params: t.Optional[t.Dict] = None,
         *,
-        auth_scheme: t.Optional[str] = None,
+        auth_scheme: t.Optional[AuthSchemeType] = None,
     ) -> ConnectionRequestModel:
         if integration_id is None and app is None:
             raise ComposioSDKError(
                 message="Both `integration_id` and `app` cannot be None"
             )
+
+        if auth_scheme is not None:
+            if auth_scheme not in AUTH_SCHEMES:
+                raise ComposioSDKError(f"'auth_scheme' must be one of {AUTH_SCHEMES}")
 
         if integration_id is None:
             try:

@@ -39,6 +39,7 @@ from composio.utils import logging
 
 if t.TYPE_CHECKING:
     from composio.client import Composio
+    from composio.tools.toolset import AuthSchemeType
 
 
 def to_trigger_names(
@@ -282,7 +283,7 @@ class AppAuthScheme(BaseModel):
     """App authenticatio scheme."""
 
     scheme_name: str
-    auth_mode: str
+    auth_mode: "AuthSchemeType"
     fields: t.List[AuthSchemeField]
 
     proxy: t.Optional[t.Dict] = None
@@ -1329,7 +1330,7 @@ class Integrations(Collection[IntegrationModel]):
         self,
         app_id: str,
         name: t.Optional[str] = None,
-        auth_mode: t.Optional[str] = None,
+        auth_mode: t.Optional["AuthSchemeType"] = None,
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
         use_composio_auth: bool = False,
         force_new_integration: bool = False,
