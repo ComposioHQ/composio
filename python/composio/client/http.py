@@ -3,9 +3,7 @@ Http client implementation for Composio SDK
 """
 
 import typing as t
-from asyncio import AbstractEventLoop
 
-from aiohttp import ClientSession as AsyncSession
 from requests import ReadTimeout
 from requests import Session as SyncSession
 
