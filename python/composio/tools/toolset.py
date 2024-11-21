@@ -786,9 +786,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self,
         endpoint: str,
         method: str,
+        *,
         body: t.Optional[t.Dict] = None,
         parameters: t.Optional[t.List[CustomAuthParameter]] = None,
-        *,
         connection_id: t.Optional[str] = None,
     ) -> t.Dict:
         pass
@@ -798,9 +798,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self,
         endpoint: str,
         method: str,
+        *,
         body: t.Optional[t.Dict] = None,
         parameters: t.Optional[t.List[CustomAuthParameter]] = None,
-        *,
         app: t.Optional[AppType] = None,
     ) -> t.Dict:
         pass
@@ -809,9 +809,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self,
         endpoint: str,
         method: str,
+        *,
         body: t.Optional[t.Dict] = None,
         parameters: t.Optional[t.List[CustomAuthParameter]] = None,
-        *,
         connection_id: t.Optional[str] = None,
         app: t.Optional[AppType] = None,
     ) -> t.Dict:
