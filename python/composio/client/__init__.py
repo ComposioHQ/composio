@@ -10,7 +10,6 @@ from pathlib import Path
 
 import requests
 
-from composio.client.base import BaseClient
 from composio.client.collections import (
     Actions,
     ActiveTriggerModel,
@@ -52,9 +51,10 @@ _valid_keys: t.Set[str] = set()
 _clients: t.List["Composio"] = []
 
 
-class Composio(BaseClient):
+class Composio:
     """Composio SDK Client."""
 
+    local: t.Any
     _api_key: t.Optional[str] = None
     _http: t.Optional[HttpClient] = None
 
