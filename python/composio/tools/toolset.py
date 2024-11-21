@@ -782,6 +782,76 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self.logger.info(f"Got {response=} from {action=} with {params=}")
         return response
 
+    @t.overload
+    def execute_request(
+        self,
+        endpoint: str,
+        method: str,
+        *,
+        body: t.Optional[t.Dict] = None,
+        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+        connection_id: t.Optional[str] = None,
+    ) -> t.Dict:
+        pass
+
+    @t.overload
+    def execute_request(
+        self,
+        endpoint: str,
+        method: str,
+        *,
+        body: t.Optional[t.Dict] = None,
+        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+        app: t.Optional[AppType] = None,
+    ) -> t.Dict:
+        pass
+
+    def execute_request(
+        self,
+        endpoint: str,
+        method: str,
+        *,
+        body: t.Optional[t.Dict] = None,
+        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+        connection_id: t.Optional[str] = None,
+        app: t.Optional[AppType] = None,
+    ) -> t.Dict:
+        """
+        Execute a proxy request to a connected account.
+
+        :param endpoint: API endpoint to call
+        :param method: HTTP method to use (GET, POST, etc.)
+        :param body: Request body data
+        :param parameters: Additional auth parameters
+        :param connection_id: ID of the connected account
+        :param app: App type to use for connection lookup
+
+        :returns: Response from the proxy request
+        :raises: ComposioSDKError: If neither connection_id nor app is provided
+        """
+        if app is not None and connection_id is None:
+            connection_id = (
+                self.get_entity(id=self.entity_id).get_connection(app=app).id
+            )
+
+        if connection_id is None:
+            raise ComposioSDKError(
+                "Please provide connection id or app name to execute a request"
+            )
+
+        self.logger.info(
+            f"Executing request to {endpoint} with method={method}, connection_id={connection_id}"
+        )
+        response = self.client.actions.request(
+            connection_id=connection_id,
+            body=body,
+            method=method,
+            endpoint=endpoint,
+            parameters=parameters,
+        )
+        self.logger.info(f"Got {response=}")
+        return response
+
     def validate_tools(
         self,
         apps: t.Optional[t.Sequence[AppType]] = None,
