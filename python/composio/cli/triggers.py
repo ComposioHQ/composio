@@ -23,7 +23,7 @@ class TriggersExamples(HelpfulCmdBase, DYMGroup):
         + click.style("              # List all triggers\n", fg="black"),
         click.style("composio triggers --active", fg="green")
         + click.style("     # List only active triggers\n", fg="black"),
-        click.style("composio triggers enable ATTIO_LIST_TASKS", fg="green")
+        click.style("composio triggers enable SLACK_RECEIVE_MESSAGE", fg="green")
         + click.style("   # Enable a trigger\n", fg="black"),
         click.style("composio triggers --id 12345", fg="green")
         + click.style("   # List trigger with specific ID\n", fg="black"),
