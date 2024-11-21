@@ -1,71 +1,75 @@
 ---
-title: "🛠️ How can I execute Actions with my AI Agent?"
-sidebarTitle: "Use Tools with Agents"
+title: "🛠️ How can I use Tools with LLMs?"
+sidebarTitle: "Use Tools with LLMs"
 icon: "robot"
-description: "Perform Actions with your account or on behalf of your users with Agents"
+description: "Guide to using Tools with LLMs"
 ---
-## Using Actions
 
-Composio lets you perform actions with your account or on behalf of your users. Feel free to check all the [tools](https://app.composio.dev/apps) we support. 
+### Using Tools with LLMs
 
-### Execute Actions with Agents
+Composio enables you to integrate various tools (like Gmail, GitHub, Salesforce) and perform actions (such as sending emails or creating GitHub issues). Browse our complete list of supported [Tools](https://app.composio.dev/apps).
 
-To execute actions with your account or on behalf of your users, you can use the following code.
-
+Here's how you can use Apps with LLMs:
 <CodeGroup>
 ```python Python
-from langchain.agents import create_openai_functions_agent, AgentExecutor
-from langchain import hub
-from langchain_openai import ChatOpenAI
-from composio_langchain import ComposioToolSet, Action, App
-import os
+# Import required libraries
+from composio_openai import ComposioToolSet, App
+from openai import OpenAI
 
+# Initialize OpenAI and Composio clients
+openai_client = OpenAI()
+composio_toolset = ComposioToolSet()
 
-llm = ChatOpenAI(model="gpt-4o")
+# Get GitHub tools from Composio
+tools = composio_toolset.get_tools(apps=[App.GITHUB])
 
-prompt = hub.pull("hwchase17/openai-functions-agent")
+task = "Star the repo composiohq/composio on GitHub"
 
-# Get All the tools
-tool_set = ComposioToolSet()
-tools = tool_set.get_tools(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER], tags=[])
+# Make API call to OpenAI with the tools
+response = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    tools=tools,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": task},
+    ],
+)
 
-# Define task
-task = "Star a repo composiohq/composio on GitHub"
-
-agent = create_openai_functions_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-
-# Execute using agent_executor
-agent_executor.invoke({"input": task})
+# Execute the tool calls
+result = composio_toolset.handle_tool_calls(response)
+print(result)
 ```
 
 ```javascript JavaScript
-  import { LangchainToolSet } from "composio-core";
-  import { ChatOpenAI } from "@langchain/openai";
-  import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
-  import { pull } from "langchain/hub";
+// Import required libraries
+import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core";
 
+// Initialize OpenAI and Composio clients
+const openai_client = new OpenAI();
+const composio_toolset = new OpenAIToolSet();
 
-  (async () => {
-    const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
-    const composioToolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY });
-    const tools = await composioToolset.getTools({ actions: ["github_issues_create"] });
-    const prompt = await pull("hwchase17/openai-functions-agent");
+// Get GitHub tools from Composio
+const tools = await composio_toolset.getTools({
+  actions: ["github_star_a_repository_for_the_authenticated_user"]
+});
 
-    const agent = await createOpenAIFunctionsAgent({ llm, tools, prompt });
-    const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
-    const issueDetails = {
-        TITLE: "Sample issue",
-        DESCRIPTION: "Sample issue for the repo - himanshu-dixit/custom-repo-breaking"
-    };
+const task = "Star the repo composiohq/composio on GitHub";
 
-    const result = await agentExecutor.invoke({
-      input: `Create a GitHub issue with the following details: ${JSON.stringify(issueDetails)}`
-    });
-    return result.output;
-  })();
+// Make API call to OpenAI with the tools
+const response = await openai_client.chat.completions.create({
+  model: "gpt-4o-mini",
+  messages: [{ role: "user", content: task }],
+  tools: tools,
+  tool_choice: "auto",
+});
+
+// Execute the tool calls
+const result = await composio_toolset.handleToolCall(response);
+console.log(result);
   ```
 </CodeGroup>
 
-This code demonstrates how to use LLMs to execute an action. 
-Composio supports multiple frameworks for creating Agents including LlamaIndex, CrewAI, Letta, LangChain, you can see it in the **Supported Frameworks** section.
+This code demonstrates how to use LLMs with Composio Tools to execute actions. The example shows how to connect OpenAI's LLM with Composio's tools - in this case, using GitHub tool. The LLM understands the natural language task ("Star the repo") and determines which action to use from Github tool, then executes the action.
+
+Composio supports multiple agent frameworks including LlamaIndex, CrewAI, Letta, and LangChain. See the [**Supported Frameworks**](../../../framework) section for details.

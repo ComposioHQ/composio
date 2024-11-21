@@ -1,21 +1,17 @@
 ---
-title: "🛠️ Enhancing Action Inputs, Outputs & Schemas"
-sidebarTitle: "Processing Actions"
+title: "🛠️ How to modify Actions?"
+sidebarTitle: "Modify Actions"
 icon: "wand-magic-sparkles"
-description: "Master the art of preprocessing, postprocessing, and schema processing for optimal results."
+description: "Learn how to modify Actions & Tools to refine inputs, outputs, and schemas for optimal results."
 ---
-
-## Metadata
-
-The `metadata` in the `ComposioToolSet` configuration is used to add metadata for different Apps/Tools and Actions. e.g., session IDs, agent IDs or API keys. This allows for flexible and dynamic configuration of tools and actions within the Composio framework, ensuring that critical data are reliably passed.
 
 
 ## Refining Action Inputs, Outputs & Schemas
 
 In many scenarios, the raw inputs, outputs, or schemas of actions may benefit from additional processing. This refinement step can significantly improve the quality and usability of your data. Here are three key use cases:
 
-- **Preprocessing**: Generate or modify inputs dynamically at runtime, handling scenarios that may be challenging for the LLM to produce directly.
-- **Postprocessing**: Streamline large action responses by filtering or formatting the data before it reaches the Language Model (LLM).
+- **Preprocessing**: Generate or modify inputs dynamically at runtime, handling scenarios that may be challenging for the LLM to produce directly. e.g., passing project_id & team_id to the `LINEAR_CREATE_LINEAR_ISSUE` action.
+- **Postprocessing**: Streamline large action responses by filtering or formatting the data before it reaches the Language Model (LLM). e.g., extracting just the messageText from the response of `GMAIL_FETCH_EMAILS` action.
 - **Schema Processing**: Modify the request schema to include additional fields or alter existing ones.
 
 Composio empowers you with the ability to define **custom functions** as preprocessors, postprocessors, or schema processors. 
@@ -25,81 +21,264 @@ These can be applied at two levels:
 1. **Tool-level**: Affects all actions within a specific tool.
 2. **Action-level**: Tailored processing for individual actions.
 
-Here's how you can implement these processors:
+
+<Tabs>
+<Tab title="Modify Input">
 <Steps>
-<Step title="Define the Preprocessor, Postprocessor, and Schema Processor Functions">
+<Step title="Import required libraries">
 <CodeGroup>
 ```python Python
-def tool_schema_processor(schema):
-    # Modify schema as needed
-    return modified_schema
-
-def tool_preprocessor(input_data):
-    # Modify input_data as needed
-    return modified_input_data
-
-def tool_postprocessor(output_data):
-    # Process output_data as needed
-    return processed_output_data
-
-def action_schema_processor(schema):
-    # Modify schema as needed
-    return modified_schema
-
-def action_preprocessor(input_data):
-    # Modify input_data as needed
-    return modified_input_data
-
-def action_postprocessor(output_data):
-    # Process output_data as needed
-    return processed_output_data
+from langchain.agents import create_openai_functions_agent, AgentExecutor
+from langchain import hub
+from langchain_openai import ChatOpenAI
+from composio_langchain import ComposioToolSet, Action, App
 ```
-
-``` javascript JavaScript
-coming soon!
+```javascript JavaScript
+Coming Soon
 ```
 </CodeGroup>
 </Step>
-<Step title="Use them while creating the toolset">
+<Step title="Import Prompt template & Initialize ChatOpenAI & composio toolset client">
 <CodeGroup>
 ```python Python
-# While defining the toolset, you can define the metadata, schema, pre, and post processors
-composio_toolset = ComposioToolSet(
-    metadata={
-        App.FILETOOL: {
-            "app": "filetool",
-        },
-        Action.GREPTILE_CODE_QUERY: {
-            "sessionId": "....",
-        },
-        Action.LINEAR_CREATE_LINEAR_ISSUE: {
-            "project_id": "...",
-        },
-    },
-    processors={
-        "schema": {
-            App.GITHUB: tool_schema_processor,
-            Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER: action_schema_processor,
-        },
-        "pre": {
-            App.GITHUB: tool_preprocessor,
-            Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER: action_preprocessor,
-        },
-        "post": {
-            App.GITHUB: tool_postprocessor,
-            Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER: action_postprocessor,
-        },
-    },
-)
+prompt = hub.pull("hwchase17/openai-functions-agent")
 
-tools = composio_toolset.get_tools(apps=[App.GITHUB])
+llm = ChatOpenAI()
+composio_toolset = ComposioToolSet()
 ```
-``` javascript JavaScript
-coming soon!
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Define a Custom Function to Modify Input">
+This function will be used to modify the input data for the `LINEAR_CREATE_LINEAR_ISSUE` action. here we have added the `project_id` and the `team_id` to the input data, by doing this can can avoid specifying these values in the prompt and be sure that agent uses the correct values. The technical term for this is **Action-level Preprocessor**.
+<CodeGroup>
+```python Python
+def linear_pre_processor(input_data: dict) -> dict:
+    input_data['project_id'] = 'e708162b-9b1a-4901-ab93-0f0149f9d805'  
+    input_data['team_id'] = '249ee4cc-7bbb-4ff1-adbe-d3ef2f3df94e'
+    return input_data
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Get Linear Action from Composio">
+When getting tools using the `get_tools()` method, we need to pass the `processors` parameter to specify any preprocessing functions. In this example, we're setting up an Action-level preprocessor by mapping the `LINEAR_CREATE_LINEAR_ISSUE` action to our `request_pre_processor` function defined above. This tells Composio to run the input data through our preprocessor function before executing this specific action.
+
+<CodeGroup>
+```python Python
+tools = composio_toolset.get_tools(
+    processors={
+        "pre": {
+            Action.LINEAR_CREATE_LINEAR_ISSUE: linear_pre_processor,
+        },
+    },
+    actions=[Action.LINEAR_CREATE_LINEAR_ISSUE]
+)
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Invoke the agent">
+<CodeGroup>
+```python Python
+task = "Create a Linear Issue with to update the frontend"
+
+agent = create_openai_functions_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+agent_executor.invoke({"input": task})
+```
+```javascript JavaScript
+Coming Soon
 ```
 </CodeGroup>
 </Step>
 </Steps>
+</Tab>
+<Tab title="Modify Output">
+<Steps>
+<Step title="Import required libraries">
+<CodeGroup>
+```python Python
+from langchain.agents import create_openai_functions_agent, AgentExecutor
+from langchain import hub
+from langchain_openai import ChatOpenAI
+from composio_langchain import ComposioToolSet, Action, App
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Import Prompt template & Initialize ChatOpenAI & composio toolset client">
+<CodeGroup>
+```python Python
+prompt = hub.pull("hwchase17/openai-functions-agent")
+
+llm = ChatOpenAI()
+composio_toolset = ComposioToolSet()
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Define a Custom Function to Modify Output">
+This function will be used to modify the output data for the `GMAIL_FETCH_EMAILS` action. here we are extracting just the messageText from the response, doing this we fine tuning the response and keeping the LLMs context clear & concise. The technical term for this is **Action-level Postprocessor**.
+<CodeGroup>
+```python Python
+def gmail_post_processor(output_data: dict) -> dict:
+    message = output_data.get('data', {}).get('response_data', {}).get('messages', [{}])[0].get('messageText', '')
+    return message
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Get Gmail Action from Composio">
+When getting tools using the `get_tools()` method, we need to pass the `processors` parameter to specify any postprocessing functions. In this example, we're setting up an Action-level postprocessor by mapping the `GMAIL_FETCH_EMAILS` action to our `gmail_post_processor` function defined above. This tells Composio to run the output data through our postprocessor function before returning the response to the LLM.
+
+<CodeGroup>
+```python Python
+tools = composio_toolset.get_tools(
+    processors={
+        "post": {
+            Action.GMAIL_FETCH_EMAILS: gmail_post_processor,
+        },
+    },
+    actions=[Action.GMAIL_FETCH_EMAILS]
+)
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Invoke the agent">
+<CodeGroup>
+```python Python
+task = "List the last email in the inbox (max_results=1)"
+
+agent = create_openai_functions_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+agent_executor.invoke({"input": task})
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+</Steps>
+</Tab>
+<Tab title="Modify Schema">
+<Steps>
+<Step title="Import required libraries">
+<CodeGroup>
+```python Python
+from langchain.agents import create_openai_functions_agent, AgentExecutor
+from langchain import hub
+from langchain_openai import ChatOpenAI
+from composio_langchain import ComposioToolSet, Action, App
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Import Prompt template & Initialize ChatOpenAI & composio toolset client">
+<CodeGroup>
+```python Python
+prompt = hub.pull("hwchase17/openai-functions-agent")
+
+llm = ChatOpenAI()
+composio_toolset = ComposioToolSet()
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Define a Custom Function to Modify Schema">
+This function will be used to modify the schema. The technical term for this is **Action-level Schema Processor**.
+<CodeGroup>
+```python Python
+def modify_schema(schema: dict) -> dict:
+    # modify the schema here
+    return modified_schema
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Get Gmail Action from Composio">
+When getting tools using the `get_tools()` method, we need to pass the `processors` parameter to specify any schema processing functions. In this example, we're demoing how to modify the schema for the any action by mapping the `modify_schema` function defined above. This tells Composio to run the schema through our schema processor function before calling the action.
+
+<CodeGroup>
+```python Python
+tools = composio_toolset.get_tools(
+    processors={
+        "schema": {
+            Action.<action_id>: modify_schema,
+        },
+    },
+    actions=[Action.<action_id>]
+)
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Invoke the agent">
+<CodeGroup>
+```python Python
+task = "prompt"
+
+agent = create_openai_functions_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+agent_executor.invoke({"input": task})
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+</Steps>
+</Tab>
+</Tabs>
+
+### How to use processors at Tool-level / App-level?
+<CodeGroup>
+```python Python
+tools = composio_toolset.get_tools(
+    processors={
+        "pre": {
+            App.<app_name>: processor_function,
+        },
+        "post": {
+            App.<app_name>: processor_function,
+        },
+        "schema": {
+            App.<app_name>: processor_function,
+        },
+    },
+    apps=[App.<app_name>]
+)
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
 
 <Warning>
   Ensure that your schema processing, preprocessing, and postprocessing functions are efficient and don't introduce significant latency.

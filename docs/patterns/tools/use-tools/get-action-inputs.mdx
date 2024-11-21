@@ -1,26 +1,19 @@
 ---
-title: "🛠️ How can I get the input parameters for an Action?"
-sidebarTitle: "Get Action Inputs"   
+title: "🛠️ How can I get the schema for an Action?"
+sidebarTitle: "Get Action Schema"   
 icon: "text-size"
-description: "Get the input parameters for an Action"
+description: "Guide to get the schema for an Action"
 ---
 
 ### When will I need to provide input parameters?
 When executing actions without agents, you'll need to provide the input parameters. There are two ways to obtain these parameters:
 
-1. Through the [API Section](/api-reference/actions/get-action) of our documentation
-2. Programmatically using our SDK
-
-### Using the [API Section](/api-reference/actions/get-action) from the Documentation
-<iframe width="720" height="405" src="https://www.youtube.com/embed/_OoFcJK6W5A?si=xWq2tsZV8YHwZ2xc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-
-1. Navigate to the [API Section](/api-reference/actions/get-action) of our documentation
-2. Click on **Get Action** under the **Actions** category
-3. Enter your Composio API key and the Action ID
-4. The **parameters** attribute in the response contains the required parameters for executing the action
+1. Programmatically using our SDK
+2. Using the [API Section](/api-reference/actions/get-action) of our documentation
 
 
-### Using the SDK
+<Tabs>
+<Tab title="SDK">
 <CodeGroup>
  ```python Python 
 from composio import ComposioToolSet, Action
@@ -62,3 +55,15 @@ console.log(JSON.stringify(schema[0].parameters.properties, null, 2));
   }
 }
 ```
+</Tab>
+
+<Tab title="API Section">
+<iframe width="720" height="405" src="https://www.youtube.com/embed/_OoFcJK6W5A?si=xWq2tsZV8YHwZ2xc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+1. Navigate to the [API Section](/api-reference/actions/get-action) of our documentation
+2. Click on **Get Action** under the **Actions** category
+3. Enter your Composio API key and the Action ID
+4. The **parameters** attribute in the response contains the required parameters for executing the action
+
+</Tab>
+</Tabs>
