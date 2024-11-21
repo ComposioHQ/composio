@@ -17,7 +17,7 @@ DEFAULT_REQUEST_TIMEOUT = 60.0
 
 
 class HttpClient(SyncSession, logging.WithLogger):
-    """Async HTTP client for Composio"""
+    """HTTP client for Composio"""
 
     def __init__(
         self,
