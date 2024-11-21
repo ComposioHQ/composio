@@ -1,106 +1,94 @@
 ---
 title: "🛠️ Configure Tools"
 sidebarTitle: "Configure Tools"
-icon: "wand-magic-sparkles"
+icon: "gear"
 description: "Learn how to configure tools"
 ---
 
 ## Metadata
 
-The `metadata` in the `ComposioToolSet` configuration is used to add metadata for different Apps/Tools and Actions. e.g., session IDs, agent IDs or API keys. This allows for flexible and dynamic configuration of tools and actions within the Composio framework, ensuring that critical data are reliably passed.
+The `metadata` in the `ComposioToolSet` configuration is used to add metadata for different Apps/Tools and Actions. This metadata can include essential configuration like API keys, session IDs, or agent IDs. This allows for flexible and dynamic configuration of tools and actions within the Composio framework.
 
+Composio empowers you with the ability to add metadata at two levels:
 
-## Refining Action Inputs, Outputs & Schemas
+1. **Tool/App-level**: Applies to all actions within a specific tool/app
+2. **Action-level**: Specific configuration for individual actions
 
-In many scenarios, the raw inputs, outputs, or schemas of actions may benefit from additional processing. This refinement step can significantly improve the quality and usability of your data. Here are three key use cases:
-
-- **Preprocessing**: Generate or modify inputs dynamically at runtime, handling scenarios that may be challenging for the LLM to produce directly.
-- **Postprocessing**: Streamline large action responses by filtering or formatting the data before it reaches the Language Model (LLM).
-- **Schema Processing**: Modify the request schema to include additional fields or alter existing ones.
-
-Composio empowers you with the ability to define **custom functions** as preprocessors, postprocessors, or schema processors. 
-
-These can be applied at two levels:
-
-1. **Tool-level**: Affects all actions within a specific tool.
-2. **Action-level**: Tailored processing for individual actions.
-
-Here's how you can implement these processors:
 <Steps>
-<Step title="Define the Preprocessor, Postprocessor, and Schema Processor Functions">
+<Step title="Import required libraries">
 <CodeGroup>
 ```python Python
-def tool_schema_processor(schema):
-    # Modify schema as needed
-    return modified_schema
-
-def tool_preprocessor(input_data):
-    # Modify input_data as needed
-    return modified_input_data
-
-def tool_postprocessor(output_data):
-    # Process output_data as needed
-    return processed_output_data
-
-def action_schema_processor(schema):
-    # Modify schema as needed
-    return modified_schema
-
-def action_preprocessor(input_data):
-    # Modify input_data as needed
-    return modified_input_data
-
-def action_postprocessor(output_data):
-    # Process output_data as needed
-    return processed_output_data
+from langchain.agents import create_openai_functions_agent, AgentExecutor
+from langchain import hub
+from langchain_openai import ChatOpenAI
+from composio_langchain import ComposioToolSet, Action, App
 ```
-
-``` javascript JavaScript
-coming soon!
+```javascript JavaScript
+Coming Soon
 ```
 </CodeGroup>
 </Step>
-<Step title="Use them while creating the toolset">
+<Step title="Import Prompt template & Initialize ChatOpenAI & composio toolset client">
+During the initialization of the `ComposioToolSet` client, we can add metadata for different Actions/Tools. In this example, we're adding an OpenAI API key for the `IMAGE_ANALYSER_ANALYSE` action:
 <CodeGroup>
 ```python Python
-# While defining the toolset, you can define the metadata, schema, pre, and post processors
+prompt = hub.pull("hwchase17/openai-functions-agent")
+
+llm = ChatOpenAI()
 composio_toolset = ComposioToolSet(
     metadata={
-        App.FILETOOL: {
-            "app": "filetool",
-        },
-        Action.GREPTILE_CODE_QUERY: {
-            "sessionId": "....",
-        },
-        Action.LINEAR_CREATE_LINEAR_ISSUE: {
-            "project_id": "...",
-        },
-    },
-    processors={
-        "schema": {
-            App.GITHUB: tool_schema_processor,
-            Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER: action_schema_processor,
-        },
-        "pre": {
-            App.GITHUB: tool_preprocessor,
-            Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER: action_preprocessor,
-        },
-        "post": {
-            App.GITHUB: tool_postprocessor,
-            Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER: action_postprocessor,
+        Action.IMAGE_ANALYSER_ANALYSE: {
+            "OPENAI_API_KEY": "<your-openai-api-key>",
         },
     },
 )
-
-tools = composio_toolset.get_tools(apps=[App.GITHUB])
 ```
-``` javascript JavaScript
-coming soon!
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Get Image Analyser Action from Composio">
+<CodeGroup>
+```python Python
+tools = composio_toolset.get_tools(
+    actions=[Action.IMAGE_ANALYSER_ANALYSE],
+)
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Invoke the agent">
+<CodeGroup>
+```python Python
+task = "Describe the image. Path: /Users/soham/desktop/image.png"
+
+agent = create_openai_functions_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+agent_executor.invoke({"input": task})
+```
+```javascript JavaScript
+Coming Soon
 ```
 </CodeGroup>
 </Step>
 </Steps>
 
-<Warning>
-  Ensure that your schema processing, preprocessing, and postprocessing functions are efficient and don't introduce significant latency.
-</Warning>
+### How to add metadata at Tool-level / App-level?
+<CodeGroup>
+```python Python
+toolset = ComposioToolSet(
+    metadata={
+        App.<app_name>: {
+            "attribute": "value",
+        }
+    }
+)
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>

@@ -142,6 +142,7 @@
                 "patterns/tools/use-tools/use-specific-actions",
                 "patterns/tools/use-tools/get-action-inputs",
                 "patterns/tools/use-tools/processing-actions",
+                "patterns/tools/use-tools/configure-tools",
                 "patterns/tools/use-tools/action-guide-without-agents"
               ]
             },
