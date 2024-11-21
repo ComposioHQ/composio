@@ -46,7 +46,6 @@ from composio.exceptions import ApiKeyNotProvidedError
 from composio.storage.user import UserData
 from composio.utils.url import get_api_url_base
 
-
 _valid_keys: t.Set[str] = set()
 _clients: t.List["Composio"] = []
 
@@ -400,12 +399,19 @@ class Entity:
         :param integration: Optional existing IntegrationModel instance to be used.
         :return: A ConnectionRequestModel instance representing the initiated connection.
         """
+        from composio.tools.toolset import AUTH_SCHEMES, AuthSchemeType
+
         if isinstance(app_name, App):
             app_name = app_name.slug
 
         app = self.client.apps.get(name=app_name)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         if integration is None and auth_mode is not None:
+            if auth_mode not in AUTH_SCHEMES:
+                raise ComposioClientError(
+                    f"'auth_mode' should be one of {AUTH_SCHEMES}"
+                )
+            auth_mode = t.cast(AuthSchemeType, auth_mode)
             if "OAUTH" not in auth_mode:
                 use_composio_auth = False
             integration = self.client.integrations.create(
