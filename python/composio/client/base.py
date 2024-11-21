@@ -8,9 +8,11 @@ import requests
 
 from composio.client.endpoints import Endpoint
 from composio.client.exceptions import HTTPError, NoItemsFound
-from composio.client.http import HttpClient
 from composio.utils import logging
 
+
+if t.TYPE_CHECKING:
+    from composio.client import Composio
 
 ModelType = t.TypeVar("ModelType")
 CollectionType = t.TypeVar("CollectionType", list, dict)
@@ -24,7 +26,7 @@ class Collection(t.Generic[ModelType], logging.WithLogger):
 
     _list_key: str = "items"
 
-    def __init__(self, client: "BaseClient") -> None:
+    def __init__(self, client: "Composio") -> None:
         """Initialize connected accounts models namespace."""
         logging.WithLogger.__init__(self)
         self.client = client
@@ -74,11 +76,3 @@ class Collection(t.Generic[ModelType], logging.WithLogger):
             message=f"Received invalid data object: {request.content.decode()}",
             status_code=request.status_code,
         )
-
-
-class BaseClient:
-    """Composio client abstraction."""
-
-    http: HttpClient
-    local: t.Any
-    api_key: str
