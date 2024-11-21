@@ -1239,6 +1239,32 @@ class Actions(Collection[ActionModel]):
             )
         ).json()
 
+    def request(
+        self,
+        connection_id: str,
+        endpoint: str,
+        method: str,
+        body: t.Optional[t.Dict] = None,
+        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+    ) -> t.Dict:
+        return self.client.http.post(
+            url=str(self.endpoint / "proxy"),
+            json={
+                "connectedAccountId": connection_id,
+                "body": body,
+                "method": method.upper(),
+                "endpoint": endpoint,
+                "parameters": [
+                    {
+                        "in": param["in_"],
+                        "name": param["name"],
+                        "value": param["value"],
+                    }
+                    for param in parameters or []
+                ],
+            },
+        ).json()
+
     @staticmethod
     def _serialize_auth(auth: t.Optional[CustomAuthObject]) -> t.Optional[t.Dict]:
         if auth is None:

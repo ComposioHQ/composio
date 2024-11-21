@@ -781,6 +781,58 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self.logger.info(f"Got {response=} from {action=} with {params=}")
         return response
 
+    @t.overload
+    def execute_request(
+        self,
+        endpoint: str,
+        method: str,
+        body: t.Optional[t.Dict] = None,
+        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+        *,
+        connection_id: t.Optional[str] = None,
+    ) -> t.Dict:
+        pass
+
+    @t.overload
+    def execute_request(
+        self,
+        endpoint: str,
+        method: str,
+        body: t.Optional[t.Dict] = None,
+        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+        *,
+        app: t.Optional[AppType] = None,
+    ) -> t.Dict:
+        pass
+
+    def execute_request(
+        self,
+        endpoint: str,
+        method: str,
+        body: t.Optional[t.Dict] = None,
+        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+        *,
+        connection_id: t.Optional[str] = None,
+        app: t.Optional[AppType] = None,
+    ) -> t.Dict:
+        if app is not None and connection_id is None:
+            connection_id = (
+                self.get_entity(id=self.entity_id).get_connection(app=app).id
+            )
+
+        if connection_id is None:
+            raise ComposioSDKError(
+                "Please provide connection id or app name to execute a request"
+            )
+
+        return self.client.actions.request(
+            connection_id=connection_id,
+            body=body,
+            method=method,
+            endpoint=endpoint,
+            parameters=parameters,
+        )
+
     def validate_tools(
         self,
         apps: t.Optional[t.Sequence[AppType]] = None,
