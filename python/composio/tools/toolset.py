@@ -1317,6 +1317,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         entity_id: t.Optional[str] = None,
         redirect_url: t.Optional[str] = None,
         connected_account_params: t.Optional[t.Dict] = None,
+        *,
+        auth_scheme: t.Optional[str] = None,
     ) -> ConnectionRequestModel:
         if integration_id is None and app is None:
             raise ComposioSDKError(
@@ -1329,7 +1331,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                     app=t.cast(
                         AppType,
                         app,
-                    )
+                    ),
+                    auth_scheme=auth_scheme,
                 ).id
             except NoItemsFound as e:
                 raise ComposioSDKError(
