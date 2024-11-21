@@ -22,7 +22,7 @@ import typing_extensions as te
 from pydantic import BaseModel
 
 from composio import Action, ActionType, App, AppType, TagType
-from composio.client import Composio, Entity
+from composio.client import AUTH_SCHEMES, AuthSchemeType, Composio, Entity
 from composio.client.collections import (
     ActionModel,
     AppAuthScheme,
@@ -76,9 +76,6 @@ _CallableType = t.Callable[[t.Dict], t.Dict]
 MetadataType = t.Dict[_KeyType, t.Dict]
 ParamType = t.TypeVar("ParamType")
 ProcessorType = te.Literal["pre", "post", "schema"]
-
-AUTH_SCHEMES = ("OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN")
-AuthSchemeType = t.Literal["OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN"]
 
 
 class IntegrationParams(te.TypedDict):
@@ -1148,6 +1145,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
         for scheme in AUTH_SCHEMES:
             if scheme in auth_schemes:
+                scheme = t.cast(AuthSchemeType, scheme)
                 return auth_schemes[scheme]
 
         raise ComposioSDKError(

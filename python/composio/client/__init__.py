@@ -50,6 +50,9 @@ from composio.utils.url import get_api_url_base
 _valid_keys: t.Set[str] = set()
 _clients: t.List["Composio"] = []
 
+AUTH_SCHEMES = ("OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN")
+AuthSchemeType = t.Literal["OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN"]
+
 
 class Composio:
     """Composio SDK Client."""
@@ -400,8 +403,6 @@ class Entity:
         :param integration: Optional existing IntegrationModel instance to be used.
         :return: A ConnectionRequestModel instance representing the initiated connection.
         """
-        from composio.tools.toolset import AUTH_SCHEMES, AuthSchemeType
-
         if isinstance(app_name, App):
             app_name = app_name.slug
 
