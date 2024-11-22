@@ -7,12 +7,14 @@ import { getEnvVariable } from "../utils/shared";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
+import { CEG } from '../sdk/utils/error';
 import {  ExecuteActionResDTO } from "./client/types.gen";
 import {  saveFile } from "./utils/fileUtils";
 import { convertReqParams, converReqParamForActionExecution } from "./utils";
 import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 import { getUserDataJson } from "./utils/config";
-
+import apiClient from '../sdk/client/client';
+import { ActionProxyRequestConfigDTO } from './client';
 
 type GetListActionsResponse = any;
 
@@ -213,12 +215,14 @@ export class ComposioToolSet {
         action: string,
         params: Record<string, any>,
         entityId: string = "default",
-        nlaText: string = ""
+        nlaText: string = "",
+        connectedAccountId?: string,
     ): Promise<Record<string, any>> {
         // Custom actions are always executed in the host/local environment for JS SDK
         if(await this.isCustomAction(action)) {
             return this.customActionRegistry.executeAction(action, params, {
-                entityId: entityId
+                entityId: entityId,
+                connectionId: connectedAccountId
             });
         }
         if(this.workspaceEnv && this.workspaceEnv !== ExecEnv.HOST) {
@@ -279,4 +283,5 @@ export class ComposioToolSet {
         logger.warn("execute_action is deprecated, use executeAction instead");
         return this.executeAction(action, params, entityId);
     }
+
 }
