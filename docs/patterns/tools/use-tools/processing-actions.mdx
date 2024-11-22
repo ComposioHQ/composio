@@ -63,7 +63,7 @@ Coming Soon
 ```
 </CodeGroup>
 </Step><Step title="Define a Custom Function to Modify Input">
-This function will be used to modify the input data for the `LINEAR_CREATE_LINEAR_ISSUE` action. here we have added the values for `project_id` and `team_id` parameters to the input data, by doing this can can avoid specifying these values in the prompt and be sure that agent uses the correct values. The technical term for this is **Action-level Pre-Processing**.
+This function will be used to modify the input data for the `LINEAR_CREATE_LINEAR_ISSUE` action. Here we have added the values for `project_id` and `team_id` parameters to the input data. By doing this, we can avoid specifying these values in the prompt and be sure that the agent uses the correct values. The technical term for this is **Action-level Pre-Processing**.
 <CodeGroup>
 ```python Python
 def linear_pre_processor(input_data: dict) -> dict:
@@ -77,12 +77,12 @@ Coming Soon
 </CodeGroup>
 </Step>
 <Step title="Define a Custom Function to Modify Output">
-This function will be used to modify the output data for the `LINEAR_CREATE_LINEAR_ISSUE` action. here we are modifying the output to just return the action execution status `successful` & the `issue_id`, by doing this can keep the LLM context clean. The technical term for this is **Action-level Post-Processing**.
+This function will be used to modify the output data for the `LINEAR_CREATE_LINEAR_ISSUE` action. Here we are modifying the output to just return the action execution status `successful` & the `issue_id`, by doing this can keep the LLM context clean. The technical term for this is **Action-level Post-Processing**.
 <CodeGroup>
 ```python Python
 def linear_post_processor(output_data: dict) -> dict:
     output_data = {
-        'success': output_data['successfull'],
+        'success': output_data['successful'],
         'issue_id': output_data['data']['id']
     }
     return output_data
@@ -120,7 +120,7 @@ Coming Soon
 <Step title="Invoke the agent">
 <CodeGroup>
 ```python Python
-task = "Create a Linear Issue with to update the frontend"
+task = "Create a Linear Issue to update the frontend"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
