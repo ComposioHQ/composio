@@ -5,14 +5,14 @@ icon: "gear"
 description: "Learn how to configure tools"
 ---
 
-## Metadata
+## Initialization Parameters
 
-The `metadata` in the `ComposioToolSet` configuration is used to add metadata for different Apps/Tools and Actions. This metadata can include essential configuration like API keys, session IDs, or agent IDs. This allows for flexible and dynamic configuration of tools and actions within the Composio framework.
+When setting up Composio tools, you'll might need to provide various configuration parameters like API keys, session IDs, or custom settings. These parameters can be specified at two levels:
 
-Composio empowers you with the ability to add metadata at two levels:
+1. **App-level**: Parameters that apply to all actions within a specific tool/app
+2. **Action-level**: Specific parameters needed for individual actions
 
-1. **Tool/App-level**: Applies to all actions within a specific tool/app
-2. **Action-level**: Specific configuration for individual actions
+For example, if you're using the Image Analyzer tool, you'll need to provide an OpenAI API key. Similarly, other tools might require their own specific configuration parameters to function properly.
 
 <Steps>
 <Step title="Import required libraries">
@@ -29,9 +29,9 @@ Coming Soon
 </CodeGroup>
 </Step>
 <Step title="Import Prompt template & Initialize ChatOpenAI & composio toolset client">
-During the initialization of the `ComposioToolSet` client, we can add metadata for different Actions/Tools. In this example, we're adding an OpenAI API key for the `IMAGE_ANALYSER_ANALYSE` action:
+During the initialization of the `ComposioToolSet` client, we can add metadata to actions & apps. In this example, we're adding an OpenAI API key for the `IMAGE_ANALYSER_ANALYSE` action:
 <CodeGroup>
-```python Python
+```python Python {5-9}
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
 llm = ChatOpenAI()
@@ -39,8 +39,8 @@ composio_toolset = ComposioToolSet(
     metadata={
         Action.IMAGE_ANALYSER_ANALYSE: {
             "OPENAI_API_KEY": "<your-openai-api-key>",
-        },
-    },
+        }
+    }
 )
 ```
 ```javascript JavaScript
@@ -63,7 +63,7 @@ Coming Soon
 <Step title="Invoke the agent">
 <CodeGroup>
 ```python Python
-task = "Describe the image. Path: /Users/soham/desktop/image.png"
+task = "Describe the image. Image Path: cat.png"
 
 agent = create_openai_functions_agent(llm, tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
@@ -77,8 +77,8 @@ Coming Soon
 </Step>
 </Steps>
 
-### How to add metadata at Tool-level / App-level?
-Above we saw how to add metadata at the Action-level, now we will see how to add them at the Tool-level/App-level.
+### How to add metadata at App-level?
+Above we saw how to add metadata at the Action-level, below is an example of how to add them at the App-level.
 <CodeGroup>
 ```python Python
 toolset = ComposioToolSet(

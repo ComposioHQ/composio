@@ -10,7 +10,7 @@ description: "Learn how to modify Tools & Actions to refine schemas, inputs, and
 
 In many scenarios, the schemas, inputs, or outputs of tools may benefit from additional processing. This refinement step can significantly improve the quality and usability of your data. Here are three key use cases:
 
-- **Modifying Schema**: Adjust how your tool describes its requirements. For example, if you're automatically providing certain values in input(like project_id), you can mark these fields as "not required" in the schema so the LLM knows it doesn't need to ask for them.
+- **Modifying Schema**: Modify the tool schema like the description of the parameters or the default values. For example, if you're manually providing certain values in input (like project_id), you can mark these fields as "not required" in the schema so the LLM knows it doesn't need to ask for them.
 - **Modifying Inputs**: Add values as inputs to avoid specifying them in the prompt. e.g., passing `project_id` & `team_id` to the `LINEAR_CREATE_LINEAR_ISSUE` action.
 - **Modifying Outputs**: Modify outputs to get the desired data. e.g., extracting `execution_id` & `issue_id` from the response of `LINEAR_CREATE_LINEAR_ISSUE` action. Doing this can help keep the LLM context clean.
 
@@ -18,7 +18,7 @@ Composio empowers you with the ability to define **custom functions** as schema 
 
 These can be applied at two levels:
 
-1. **Tool-level**: Affects all actions within a specific tool.
+1. **App-level**: Affects all actions within a specific tool.
 2. **Action-level**: Tailored processing for individual actions.
 
 
@@ -96,7 +96,7 @@ Coming Soon
 When getting tools using the `get_tools()` method, we need to pass the `processors` parameter to specify the schema, pre-processing, and post-processing functions. In this example, we're setting up an Action-level preprocessor by mapping the `LINEAR_CREATE_LINEAR_ISSUE` action to our `linear_schema_processor`, `linear_pre_processor` and `linear_post_processor` functions defined above respectively in schema, pre, and post processors.
 
 <CodeGroup>
-```python Python
+```python Python {2-12}
 tools = composio_toolset.get_tools(
     processors={
         "schema": {
@@ -134,10 +134,10 @@ Coming Soon
 </Step>
 </Steps>
 
-### How to use processors at Tool-level/App-level?
-Above we saw how to use processors at the Action-level, now we will see how to use them at the Tool-level/App-level.
+### How to use processors at App-level?
+Above we saw how to use processors at the Action-level, below is an example of how to use them at the App-level.
 <CodeGroup>
-```python Python
+```python Python {2-12}
 tools = composio_toolset.get_tools(
     processors={
         "pre": {

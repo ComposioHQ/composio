@@ -1,15 +1,15 @@
 ---
-title: "Build an Action for existing Tool"
-sidebarTitle: "Build an Action for existing Tool"
+title: "Build Tools with Auth"
+sidebarTitle: "Build Tools with Auth"
 icon: "toolbox"
-description: "Extend the functionality of existing tools by creating a custom action which utilises the existing authentication. (e.g., fetch emails from Gmail)"
+description: "Create custom actions that leverage existing tool authentication to extend functionality."
 ---
 
 <Tip>
-Custom Actions are flexible building blocks that let you create any functionality you need - from simple calculations to complex integrations. They work seamlessly with Composio's authentication system for existing tools, or can run independently for custom logic.
+Custom Actions are powerful building blocks that enable you to create custom functionality while leveraging existing tool authentication. They can handle everything from simple data processing to complex third-party integrations, either using pre-configured tool authentication or running independently.
 </Tip>
 
-## Creating a Custom Action for an Existing Tool
+## Creating a Custom Action with Authentication
 
 <Steps>
 <Step title="Import necessary modules">
@@ -30,10 +30,10 @@ const toolset = new OpenAIToolSet({})
 </Step>
 
 <Step title="Creating a custom action">
-Below is an example of creating `my_custom_action` a custom action for the `gmail` tool. The action is designed to fetch emails from a Gmail account for the last 24 hours using the existing authentication provided by Composio.
-<Note>
+Below is an example of creating a custom action called `my_custom_action` that integrates with the `gmail` tool. This action demonstrates how to fetch emails from the last 24 hours while utilizing Composio's built-in Gmail authentication.
 
-As `gmail` toolname is already registered in Composio, `auth` dictionary will be automatically provided!
+<Note>
+Since `gmail` is a registered tool in Composio, the `auth` credentials are automatically injected into your custom action!
 </Note>
 <CodeGroup>
 ```python Python
