@@ -5,7 +5,7 @@
  */
 export type MemberInfoResDTO = {
     id: string;
-    clientId: string;
+    projectId: string;
     email: string;
     name: string;
     role: string;
@@ -86,6 +86,10 @@ export type IdentifyClientResDTO = {
      * The email associated with the client
      */
     email: string;
+    /**
+     * The organization ID associated with the client
+     */
+    orgId: string;
 };
 
 /**
@@ -126,6 +130,9 @@ export type DeleteRowAPIDTO = {
     count: number;
 };
 
+/**
+ * Client information
+ */
 export type ClientDTO = {
     /**
      * Auto-generated ID of the client
@@ -182,14 +189,38 @@ export type ClientDTO = {
 };
 
 export type ClientInfoResDTO = {
-    /**
-     * Client information
-     */
     client: ClientDTO;
     /**
      * API key of the client
      */
     apiKey: string;
+};
+
+export type ProjectReqDTO = {
+    /**
+     * The name of the project
+     */
+    name: string;
+};
+
+export type ProjectResDTO = {
+    /**
+     * The ID of the project
+     */
+    id: string;
+    /**
+     * The name of the project
+     */
+    name: string;
+};
+
+export type ProjectListResDTO = {
+    /**
+     * The list of projects
+     */
+    items: Array<{
+        [key: string]: unknown;
+    }>;
 };
 
 export type InviteMemberReqDTO = {
@@ -818,40 +849,6 @@ export type GetConnectionsResult = {
     pageInfo: PageInfo;
 };
 
-export type ToolsExecuteReqDto = {
-    actionName: string;
-    runInSandbox: boolean;
-    input: {
-        [key: string]: unknown;
-    };
-    nlaInput?: string;
-    authorizationData?: {
-        [key: string]: unknown;
-    };
-    appSchema?: {
-        [key: string]: unknown;
-    };
-};
-
-export type DirectExecuteReqDto = {
-    endpoint: string;
-    base_url: string;
-    headers: {
-        [key: string]: unknown;
-    };
-    queryParams: {
-        [key: string]: unknown;
-    };
-};
-
-export type ActionExecutionResDto = {
-    data: {
-        [key: string]: unknown;
-    };
-    error?: string;
-    successfull?: string;
-};
-
 export type ConnectionParams = {
     integrationId: string;
     connectionParams?: {
@@ -951,10 +948,24 @@ export type GetConnectionInfoResponseDTO = {
 };
 
 export type Parameter = {
+    /**
+     * The name of the parameter. For example, 'x-api-key', 'Content-Type', etc.,
+     */
     name: string;
-    in: string;
+    /**
+     * The location of the parameter. Can be 'query' or 'header'.
+     */
+    in: ParameterLocation;
+    /**
+     * The value of the parameter. For example, '1234567890', 'application/json', etc.,
+     */
     value: string;
 };
+
+/**
+ * The location of the parameter. Can be 'query' or 'header'.
+ */
+export type ParameterLocation = 'query' | 'header';
 
 export type Data = {
     field1: string;
@@ -999,6 +1010,45 @@ export type InitiateConnectionResponse = {
     redirectUrl?: string;
 };
 
+export type ToolsExecuteReqDto = {
+    actionName: string;
+    runInSandbox: boolean;
+    input: {
+        [key: string]: unknown;
+    };
+    nlaInput?: string;
+    authorizationData?: {
+        [key: string]: unknown;
+    };
+    appSchema?: {
+        [key: string]: unknown;
+    };
+    customDescription?: string;
+    systemPrompt?: string;
+};
+
+export type DirectExecuteReqDto = {
+    endpoint: string;
+    base_url: string;
+    headers: {
+        [key: string]: unknown;
+    };
+    queryParams: {
+        [key: string]: unknown;
+    };
+    body?: {
+        [key: string]: unknown;
+    };
+};
+
+export type ActionExecutionResDto = {
+    data: {
+        [key: string]: unknown;
+    };
+    error?: string;
+    successfull?: string;
+};
+
 export type CustomAuthDTO = {
     base_url?: string;
     parameters: Array<Parameter>;
@@ -1006,6 +1056,49 @@ export type CustomAuthDTO = {
         [key: string]: unknown;
     };
 };
+
+export type ActionProxyRequestMethodDTO = {
+    /**
+     * The type of request body to use for the action. Defaults to 'none'.
+     */
+    type?: 'formData' | 'urlEncoded' | 'raw' | 'binary' | 'graphql' | 'none';
+    /**
+     * The data to be sent to the endpoint. This will override the body set in the connected account.
+     */
+    data?: string;
+};
+
+/**
+ * The type of request body to use for the action. Defaults to 'none'.
+ */
+export type type = 'formData' | 'urlEncoded' | 'raw' | 'binary' | 'graphql' | 'none';
+
+export type ActionProxyRequestConfigDTO = {
+    /**
+     * The connected account uuid to use for the action.
+     */
+    connectedAccountId: string;
+    /**
+     * The endpoint to call for the action. If the given url is relative, it will be resolved relative to the base_url set in the connected account info.
+     */
+    endpoint: string;
+    /**
+     * The HTTP method to use for the action.
+     */
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+    parameters: Array<Parameter>;
+    /**
+     * The body to be sent to the endpoint. This can either be a JSON field or a string.
+     */
+    body?: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * The HTTP method to use for the action.
+ */
+export type method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export type SessionInfoDTO = {
     sessionId?: string;
@@ -1025,10 +1118,14 @@ export type ActionExecutionReqDTO = {
     sessionInfo?: SessionInfoDTO;
     authConfig?: CustomAuthDTO;
     text?: string;
+    customDescription?: string;
+    systemPrompt?: string;
 };
 
 export type ActionGetNLAInputsReqDTO = {
     text: string;
+    customDescription?: string;
+    systemPrompt?: string;
 };
 
 export type ProxyExecutionReqDTO = {
@@ -1898,7 +1995,7 @@ export type GetLogsDTO = {
 /**
  * Type of the log
  */
-export type type = 'error' | 'info' | 'debug';
+export type type2 = 'error' | 'info' | 'debug';
 
 /**
  * Time interval for which data needs to be fetched
@@ -2173,6 +2270,31 @@ export type IdentifyClientError = unknown;
 export type GetUserInfoResponse = ClientInfoResDTO;
 
 export type GetUserInfoError = unknown;
+
+export type AddProjectData = {
+    /**
+     * ProjectReqDTO
+     */
+    body?: ProjectReqDTO;
+};
+
+export type AddProjectResponse = unknown;
+
+export type AddProjectError = unknown;
+
+export type DeleteProjectData = {
+    path: {
+        projectId: string;
+    };
+};
+
+export type DeleteProjectResponse = unknown;
+
+export type DeleteProjectError = unknown;
+
+export type GetProjectsResponse = ProjectListResDTO;
+
+export type GetProjectsError = unknown;
 
 export type GenerateApiKeyData = {
     /**
@@ -2599,7 +2721,7 @@ export type ListActionsV2Data = {
         showEnabledOnly?: boolean;
         tags?: string;
         useCase?: string;
-        useCaseLimit?: number;
+        usecaseLimit?: number;
     };
 };
 
@@ -2667,10 +2789,10 @@ export type GetActionV2Response = ActionDetails;
 export type GetActionV2Error = unknown;
 
 export type ExecuteActionProxyV2Data = {
-    query: {
-        connectedAccountId: string;
-        endpoint: string;
-    };
+    /**
+     * ActionProxyRequestConfigDTO
+     */
+    body?: ActionProxyRequestConfigDTO;
 };
 
 export type ExecuteActionProxyV2Response = ActionExecutionResDto;
