@@ -1344,12 +1344,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def fetch_expected_integration_params(
         self,
-        app: AppType,
+        app: AppModel,
         auth_scheme: AuthSchemeType,
     ) -> t.List[AuthSchemeField]:
         """Fetch expected integration params for creating an integration."""
-        app_data = self.client.apps.get(name=str(app))
-        for scheme in app_data.auth_schemes or []:
+        for scheme in app.auth_schemes or []:
             if auth_scheme != scheme.auth_mode.upper():
                 continue
             return [f for f in scheme.fields if not f.expected_from_customer]
@@ -1385,11 +1384,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         redirect_url: t.Optional[str] = None,
         connected_account_params: t.Optional[t.Dict] = None,
         *,
-        auth_scheme: t.Optional[AuthSchemeType] = None,
+        auth_scheme: AuthSchemeType = "OAUTH2",
+        auth_config: t.Optional[t.Dict[str, t.Any]] = None,
     ) -> ConnectionRequestModel:
-        if auth_scheme is not None:
-            if auth_scheme not in AUTH_SCHEMES:
-                raise ComposioSDKError(f"'auth_scheme' must be one of {AUTH_SCHEMES}")
+        if auth_scheme not in AUTH_SCHEMES:
+            raise ComposioSDKError(f"'auth_scheme' must be one of {AUTH_SCHEMES}")
 
         if integration_id is None:
             if app is None:
@@ -1405,6 +1404,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                     auth_scheme=auth_scheme,
                 ).id
             except NoItemsFound:
+                self._validate_auth_config(app, auth_scheme, auth_config)
                 integration = self.create_integration(app=app, auth_mode=auth_scheme)
                 integration_id = integration.id
 
@@ -1415,6 +1415,32 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             labels=labels,
             redirect_url=redirect_url,
         )
+
+    def _validate_auth_config(
+        self,
+        app: AppType,
+        auth_scheme: AuthSchemeType,
+        auth_config: t.Optional[t.Dict[str, t.Any]],
+    ):
+        app_data = self.client.apps.get(name=str(app))
+        if auth_config is None and app_data.testConnectors:
+            # If we have existing connectors, no need for auth config
+            return
+
+        if auth_config is None:
+            auth_config = {}
+
+        auth_fields = self.fetch_expected_integration_params(
+            app=app_data, auth_scheme=auth_scheme
+        )
+        required_fields = [field for field in auth_fields if field.required]
+        unavailable_fields = [
+            field.name for field in required_fields if field.name not in auth_config
+        ]
+        if unavailable_fields:
+            raise ComposioSDKError(
+                f"Expected 'auth_config' to provide these fields: {unavailable_fields}"
+            ) from None
 
 
 def _write_file(file_path: t.Union[str, os.PathLike], content: t.Union[str, bytes]):
