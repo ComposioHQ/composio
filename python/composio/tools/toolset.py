@@ -1248,7 +1248,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 ):
                     continue
                 return self.get_integration(id=integration.id)
-        raise ValueError(f"No integration found for `{app}`")
+        raise NoItemsFound(f"No integration found for `{app}`")
 
     def _get_expected_params_from_app(
         self,
@@ -1387,16 +1387,15 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         *,
         auth_scheme: t.Optional[AuthSchemeType] = None,
     ) -> ConnectionRequestModel:
-        if integration_id is None and app is None:
-            raise ComposioSDKError(
-                message="Both `integration_id` and `app` cannot be None"
-            )
-
         if auth_scheme is not None:
             if auth_scheme not in AUTH_SCHEMES:
                 raise ComposioSDKError(f"'auth_scheme' must be one of {AUTH_SCHEMES}")
 
         if integration_id is None:
+            if app is None:
+                raise ComposioSDKError(
+                    message="Both `integration_id` and `app` cannot be None"
+                )
             try:
                 integration_id = self._get_integration_for_app(
                     app=t.cast(
@@ -1405,14 +1404,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                     ),
                     auth_scheme=auth_scheme,
                 ).id
-            except NoItemsFound as e:
-                raise ComposioSDKError(
-                    message=(
-                        f"No existing integration found for `{str(app)}`, "
-                        "Please create an integration and use the ID to "
-                        "initiate connection."
-                    )
-                ) from e
+            except NoItemsFound:
+                integration = self.create_integration(app=app, auth_mode=auth_scheme)
+                integration_id = integration.id
 
         return self.client.connected_accounts.initiate(
             integration_id=integration_id,
