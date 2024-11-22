@@ -20,7 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from pysher.channel import Channel as PusherChannel
 from pysher.connection import Connection as PusherConnection
 
-from composio.client.base import BaseClient, Collection
+from composio.client.base import Collection
 from composio.client.endpoints import v1, v2
 from composio.client.enums import (
     Action,
@@ -37,11 +37,15 @@ from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
 from composio.utils import logging
 
 
+if t.TYPE_CHECKING:
+    from composio.client import Composio
+
+
 def to_trigger_names(
     triggers: t.Union[t.List[str], t.List[Trigger], t.List[TriggerType]],
 ) -> str:
     """Get trigger names as a string."""
-    return ",".join([Trigger(trigger).name for trigger in triggers])
+    return ",".join([Trigger(trigger).slug for trigger in triggers])
 
 
 class AuthConnectionParamsModel(BaseModel):
@@ -94,7 +98,7 @@ class ConnectionRequestModel(BaseModel):
 
     def save_user_access_data(
         self,
-        client: BaseClient,
+        client: "Composio",
         field_inputs: t.Dict,
         redirect_url: t.Optional[str] = None,
         entity_id: t.Optional[str] = None,
@@ -116,7 +120,7 @@ class ConnectionRequestModel(BaseModel):
 
     def wait_until_active(
         self,
-        client: BaseClient,
+        client: "Composio",
         timeout=60,
     ) -> "ConnectedAccountModel":
         start_time = time.time()
@@ -508,16 +512,16 @@ class TriggerSubscription(logging.WithLogger):
     _connection: PusherConnection
     _alive: bool
 
-    def __init__(self) -> None:
+    def __init__(self, client: "Composio") -> None:
         """Initialize subscription object."""
         logging.WithLogger.__init__(self)
+        self.client = client
         self._alive = False
         self._chunks: t.Dict[str, t.Dict[int, str]] = {}
         self._callbacks: t.List[t.Tuple[TriggerCallback, _TriggerEventFilters]] = []
 
-    @staticmethod
-    def validate_filters(filters: _TriggerEventFilters):
-        docs_link_msg = "\n\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
+    def validate_filters(self, filters: _TriggerEventFilters):
+        docs_link_msg = "\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
         if not isinstance(filters, dict):
             raise ComposioSDKError(
                 "Expected filters to be a dictionary" + docs_link_msg
@@ -549,17 +553,30 @@ class TriggerSubscription(logging.WithLogger):
                 # Our enums are in uppercase but we accept lowercase ones too.
                 value = value.upper()
 
+                # Ensure the app exists
                 app_names = list(App.iter())
-                if value in app_names:
-                    continue
+                if value not in app_names:
+                    error_msg = f"App {value!r} does not exist."
+                    possible_values = difflib.get_close_matches(value, app_names, n=1)
+                    if possible_values:
+                        (possible_value,) = possible_values
+                        error_msg += f" Did you mean {possible_value!r}?"
 
-                error_msg = f"App {value!r} does not exist."
-                possible_values = difflib.get_close_matches(value, app_names, n=1)
-                if possible_values:
-                    (possible_value,) = possible_values
-                    error_msg += f" Did you mean {possible_value!r}?"
+                    raise ComposioSDKError(error_msg + docs_link_msg)
 
-                raise ComposioSDKError(error_msg + docs_link_msg)
+                # Ensure at least one of the app's triggers are enabled on the account.
+                active_triggers = [
+                    trigger.triggerName for trigger in self.client.active_triggers.get()
+                ]
+                apps_for_triggers = {
+                    Trigger(trigger).app.upper() for trigger in active_triggers
+                }
+                if value not in apps_for_triggers:
+                    error_msg = (
+                        f"App {value!r} has no triggers enabled on your account.\n"
+                        "Find the possible triggers by running `composio triggers`."
+                    )
+                    raise ComposioSDKError(error_msg + docs_link_msg)
 
             # Validate trigger name
             if filter == "trigger_name":
@@ -574,17 +591,29 @@ class TriggerSubscription(logging.WithLogger):
                 # Our enums are in uppercase but we accept lowercase ones too.
                 value = value.upper()
 
+                # Ensure the trigger exists
                 trigger_names = list(Trigger.iter())
-                if value in trigger_names:
-                    continue
+                if value not in trigger_names:
+                    error_msg = f"Trigger {value!r} does not exist."
+                    possible_values = difflib.get_close_matches(
+                        value, trigger_names, n=1
+                    )
+                    if possible_values:
+                        (possible_value,) = possible_values
+                        error_msg += f" Did you mean {possible_value!r}?"
 
-                error_msg = f"Trigger {value!r} does not exist."
-                possible_values = difflib.get_close_matches(value, trigger_names, n=1)
-                if possible_values:
-                    (possible_value,) = possible_values
-                    error_msg += f" Did you mean {possible_value!r}?"
+                    raise ComposioSDKError(error_msg + docs_link_msg)
 
-                raise ComposioSDKError(error_msg + docs_link_msg)
+                # Ensure the trigger is added on your account
+                active_triggers = [
+                    trigger.triggerName for trigger in self.client.active_triggers.get()
+                ]
+                if value not in active_triggers:
+                    error_msg = (
+                        f"Trigger {value!r} is not enabled on your account.\nEnable"
+                        f" the trigger by doing `composio triggers enable {value}`."
+                    )
+                    raise ComposioSDKError(error_msg + docs_link_msg)
 
     def callback(
         self,
@@ -717,13 +746,14 @@ class TriggerSubscription(logging.WithLogger):
 class _PusherClient(logging.WithLogger):
     """Pusher client for Composio SDK."""
 
-    def __init__(self, client_id: str, base_url: str, api_key: str) -> None:
+    def __init__(self, client_id: str, client: "Composio") -> None:
         """Initialize pusher client."""
         super().__init__()
         self.client_id = client_id
-        self.base_url = base_url
-        self.api_key = api_key
-        self.subscription = TriggerSubscription()
+        self.client = client
+        self.api_key = self.client.api_key
+        self.base_url = self.client.http.base_url
+        self.subscription = TriggerSubscription(client=self.client)
 
     def _get_connection_handler(
         self,
@@ -817,7 +847,7 @@ class Triggers(Collection[TriggerModel]):
     endpoint = v1.triggers
     callbacks: CallbackCollection
 
-    def __init__(self, client: BaseClient) -> None:
+    def __init__(self, client: "Composio") -> None:
         """Initialize triggers collections."""
         super().__init__(client)
         self.callbacks = CallbackCollection(
@@ -891,8 +921,7 @@ class Triggers(Collection[TriggerModel]):
 
         pusher = _PusherClient(
             client_id=client_id,
-            base_url=self.client.http.base_url,
-            api_key=self.client.api_key,
+            client=self.client,
         )
         return pusher.connect(
             timeout=timeout,
@@ -1237,6 +1266,32 @@ class Actions(Collection[ActionModel]):
                     "authConfig": self._serialize_auth(auth=auth),
                 },
             )
+        ).json()
+
+    def request(
+        self,
+        connection_id: str,
+        endpoint: str,
+        method: str,
+        body: t.Optional[t.Dict] = None,
+        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+    ) -> t.Dict:
+        return self.client.http.post(
+            url=str(self.endpoint / "proxy"),
+            json={
+                "connectedAccountId": connection_id,
+                "body": body,
+                "method": method.upper(),
+                "endpoint": endpoint,
+                "parameters": [
+                    {
+                        "in": param["in_"],
+                        "name": param["name"],
+                        "value": param["value"],
+                    }
+                    for param in parameters or []
+                ],
+            },
         ).json()
 
     @staticmethod
