@@ -154,7 +154,8 @@
                 "patterns/tools/build-tools/custom-action-for-existing-tool"
               ]
             },
-            "patterns/tools/custom-integration"
+            "patterns/tools/custom-integration",
+            "patterns/tools/serve-tools"
       ]
     },
     {
