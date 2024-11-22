@@ -1402,6 +1402,10 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if auth_scheme not in AUTH_SCHEMES:
             raise ComposioSDKError(f"'auth_scheme' must be one of {AUTH_SCHEMES}")
 
+        if auth_scheme is not None:
+            if auth_scheme not in AUTH_SCHEMES:
+                raise ComposioSDKError(f"'auth_scheme' must be one of {AUTH_SCHEMES}")
+
         if integration_id is None:
             if app is None:
                 raise ComposioSDKError(
