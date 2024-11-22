@@ -1,17 +1,13 @@
 ---
-title: "🛠️ How can I execute Actions without my AI Agent?"
-sidebarTitle: "Execute Actions without Agents"
+title: "🛠️ How can I use Tools directly?"
+sidebarTitle: "Use Tools Directly"
 icon: "fax"
-description: "Perform Actions with your account or on behalf of your users without Agents"
+description: "Guide to use Tools directly as function calls"
 ---
 
-## Using Actions
+### Using Tools Directly
 
-Composio lets you perform actions with your account or on behalf of your users. Feel free to check all the [tools](https://app.composio.dev/apps) we support. 
-
-### Execute Actions without Agents
-
-To execute actions without using Agents, you can manually supply the parameters to execute the action or use natural language.
+Composio allows you to execute tools directly as function calls. When calling a tool directly, you'll need to provide the input parameters. Checkout [Get Action Schema](/patterns/tools/use-tools/get-action-inputs) to learn how to get the input parameters for an action.
 
 <CodeGroup>
  ```python Python Star a repo
@@ -53,13 +49,14 @@ console.log("Custom auth action response", customAuthAction)
   ```
 </CodeGroup>
 
-## Execute Actions with Natural Language
-You can also execute Actions by passing in natural language prompts without specific parameters
+### Execute Tools or Actions with Natural Language
+You can also execute Tools or Actions by passing in natural language prompts without specific parameters
 <CodeGroup>
 ```python Python
   tool_set.execute_action(
       action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
       params={},
+      # Natural language prompt
       text="Star the repo composiohq/composio",
       entity_id="Jessica",
   )
@@ -69,6 +66,7 @@ You can also execute Actions by passing in natural language prompts without spec
   await toolset.getEntity("Jessica").execute(
     'github_star_a_repository_for_the_authenticated_user',
     {},
+    // Natural language prompt
     "Star the repo composiohq/composio"
   );
 ```

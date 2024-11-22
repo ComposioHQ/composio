@@ -1,0 +1,112 @@
+---
+title: "Build Tools Without Auth"
+sidebarTitle: "Build Tools Without Auth"
+icon: "plus"
+description: "Create standalone custom tools and actions for any functionality you need (e.g., data processing, calculations, or integrations with other services)"
+---
+
+<Tip>
+Custom Actions are powerful building blocks that enable you to create custom functionality while running independently. They can handle everything from simple data processing to complex third-party integrations.
+</Tip>
+
+## Creating a Custom Tool without Authentication
+
+<Steps>
+<Step title="Import necessary modules">
+
+<CodeGroup>
+```python Python
+from composio import ComposioToolSet, App, action
+
+toolset = ComposioToolSet()
+```
+```javascript JavaScript
+import { OpenAIToolSet } from "composio-core"
+import { z } from "zod"
+
+const toolset = new OpenAIToolSet({})
+```
+</CodeGroup>
+</Step>
+<Step title="Creating a custom action">
+<CodeGroup>
+```python Python
+@action(toolname="cow", requires=["cowsay"])
+def my_custom_action(message: str) -> str:
+    """
+    Cow will say whatever you want it to say.
+
+    :param message: Message to be displayed
+    :return greeting: Formatted message.
+    """
+    import cowsay
+    
+    return cowsay.get_output_string("cow", message)
+```
+```javascript JavaScript
+await toolset.createAction({
+    actionName: "myCustomAction",
+    description: "Cow will say whatever you want it to say",
+    inputParams: z.object({
+        message: z.string()
+    }),
+    callback: async (inputParams) => {
+        const message = inputParams.message;
+        const cowMessage = `Cow says: ${message}`;
+        return cowMessage;
+    }
+});
+```
+</CodeGroup>
+</Step>
+<Step title="Executing the Custom Action">
+Executing the custom action without Agents (it can be used with agents too)
+<CodeGroup>
+```python Python
+result = toolset.execute_action(
+    action=my_custom_action,
+    params={"message": "AI is the future"}
+)
+
+print(result['data']['greeting'])
+```
+
+```javascript JavaScript
+console.log(
+    await toolset.executeAction(
+        "myCustomAction",
+        { message: "AI is the future" }
+    )
+)
+```
+</CodeGroup>
+
+Output from executing Custom Action
+<CodeGroup>
+```shell Output (Python)
+  ________________
+| AI is the future |
+  ================
+                \
+                 \
+                   ^__^
+                   (oo)\_______
+                   (__)\       )\/\
+                       ||----w |
+                       ||     ||
+```
+```shell Output (JavaScript)
+Cow says: AI is the future
+```
+</CodeGroup>
+</Step>
+</Steps>
+
+
+### Why Use Custom Tools or Actions?
+
+Custom Tools or Actions provide several advantages:
+
+- **Data privacy:** Execution happens on the user’s machine, ensuring sensitive data doesn’t leave the local environment
+- **Flexibility:** Users can create and customize as many tools and actions as needed
+- **Compatibility:** Custom actions can be integrated seamlessly across various Composio-supported platforms
