@@ -1,0 +1,163 @@
+---
+title: "🛠️ How to modify Actions?"
+sidebarTitle: "Modify Actions"
+icon: "wand-magic-sparkles"
+description: "Learn how to modify Tools & Actions to refine schemas, inputs, and outputs for optimal results."
+---
+
+
+## Refining Tool Schemas, Inputs, & Outputs
+
+In many scenarios, the schemas, inputs, or outputs of tools may benefit from additional processing. This refinement step can significantly improve the quality and usability of your data. Here are three key use cases:
+
+- **Modifying Schema**: Modify the tool schema like the description of the parameters or the default values. For example, if you're manually providing certain values in input (like project_id), you can mark these fields as "not required" in the schema so the LLM knows it doesn't need to ask for them.
+- **Modifying Inputs**: Add values as inputs to avoid specifying them in the prompt. e.g., passing `project_id` & `team_id` to the `LINEAR_CREATE_LINEAR_ISSUE` action.
+- **Modifying Outputs**: Modify outputs to get the desired data. e.g., extracting `execution_id` & `issue_id` from the response of `LINEAR_CREATE_LINEAR_ISSUE` action. Doing this can help keep the LLM context clean.
+
+Composio empowers you with the ability to define **custom functions** as schema modifiers, input modifiers, or output modifiers.
+
+These can be applied at two levels:
+
+1. **App-level**: Affects all actions within a specific tool.
+2. **Action-level**: Tailored processing for individual actions.
+
+
+<Steps>
+<Step title="Import required libraries">
+<CodeGroup>
+```python Python
+from langchain.agents import create_openai_functions_agent, AgentExecutor
+from langchain import hub
+from langchain_openai import ChatOpenAI
+from composio_langchain import ComposioToolSet, Action, App
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Import Prompt template & Initialize ChatOpenAI & composio toolset client">
+<CodeGroup>
+```python Python
+prompt = hub.pull("hwchase17/openai-functions-agent")
+
+llm = ChatOpenAI()
+composio_toolset = ComposioToolSet()
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Define a Custom Function to Modify Schema">
+This function will be used to modify the schema of the `LINEAR_CREATE_LINEAR_ISSUE` action, here we are modifying the description for the parameters `project_id` & `team_id` to not required, later in the program we will pass these values as inputs to the action. The technical term for this is **Action-level Schema Processing**.
+<CodeGroup>
+```python Python
+def linear_schema_processor(schema: dict) -> dict:
+    schema['project_id']['description'] = schema['project_id']['description'].replace('is required', 'not required')
+    schema['team_id']['description'] = schema['team_id']['description'].replace('is required', 'not required')
+    return schema
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step><Step title="Define a Custom Function to Modify Input">
+This function will be used to modify the input data for the `LINEAR_CREATE_LINEAR_ISSUE` action. here we have added the values for `project_id` and `team_id` parameters to the input data, by doing this can can avoid specifying these values in the prompt and be sure that agent uses the correct values. The technical term for this is **Action-level Pre-Processing**.
+<CodeGroup>
+```python Python
+def linear_pre_processor(input_data: dict) -> dict:
+    input_data['project_id'] = 'e708162b-9b1a-4901-ab93-0f0149f9d805'  
+    input_data['team_id'] = '249ee4cc-7bbb-4ff1-adbe-d3ef2f3df94e'
+    return input_data
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Define a Custom Function to Modify Output">
+This function will be used to modify the output data for the `LINEAR_CREATE_LINEAR_ISSUE` action. here we are modifying the output to just return the action execution status `successful` & the `issue_id`, by doing this can keep the LLM context clean. The technical term for this is **Action-level Post-Processing**.
+<CodeGroup>
+```python Python
+def linear_post_processor(output_data: dict) -> dict:
+    output_data = {
+        'success': output_data['successfull'],
+        'issue_id': output_data['data']['id']
+    }
+    return output_data
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Get Linear Action from Composio">
+When getting tools using the `get_tools()` method, we need to pass the `processors` parameter to specify the schema, pre-processing, and post-processing functions. In this example, we're setting up an Action-level preprocessor by mapping the `LINEAR_CREATE_LINEAR_ISSUE` action to our `linear_schema_processor`, `linear_pre_processor` and `linear_post_processor` functions defined above respectively in schema, pre, and post processors.
+
+<CodeGroup>
+```python Python {2-12}
+tools = composio_toolset.get_tools(
+    processors={
+        "schema": {
+            Action.LINEAR_CREATE_LINEAR_ISSUE: linear_schema_processor,
+        },
+        "pre": {
+            Action.LINEAR_CREATE_LINEAR_ISSUE: linear_pre_processor,
+        },
+        "post": {
+            Action.LINEAR_CREATE_LINEAR_ISSUE: linear_post_processor,
+        }
+    },
+    actions=[Action.LINEAR_CREATE_LINEAR_ISSUE]
+)
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Invoke the agent">
+<CodeGroup>
+```python Python
+task = "Create a Linear Issue with to update the frontend"
+
+agent = create_openai_functions_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+agent_executor.invoke({"input": task})
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+</Steps>
+
+### How to use processors at App-level?
+Above we saw how to use processors at the Action-level, below is an example of how to use them at the App-level.
+<CodeGroup>
+```python Python {2-12}
+tools = composio_toolset.get_tools(
+    processors={
+        "pre": {
+            App.<app_name>: processor_function,
+        },
+        "post": {
+            App.<app_name>: processor_function,
+        },
+        "schema": {
+            App.<app_name>: processor_function,
+        },
+    },
+    apps=[App.<app_name>]
+)
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+
+<Warning>
+  Ensure that your schema processing, preprocessing, and postprocessing functions are efficient and don't introduce significant latency.
+</Warning>

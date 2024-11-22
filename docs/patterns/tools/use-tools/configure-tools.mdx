@@ -1,0 +1,95 @@
+---
+title: "🛠️ Configure Tools"
+sidebarTitle: "Configure Tools"
+icon: "gear"
+description: "Learn how to configure tools"
+---
+
+## Initialization Parameters
+
+When setting up Composio tools, you'll might need to provide various configuration parameters like API keys, session IDs, or custom settings. These parameters can be specified at two levels:
+
+1. **App-level**: Parameters that apply to all actions within a specific tool/app
+2. **Action-level**: Specific parameters needed for individual actions
+
+For example, if you're using the Image Analyzer tool, you'll need to provide an OpenAI API key. Similarly, other tools might require their own specific configuration parameters to function properly.
+
+<Steps>
+<Step title="Import required libraries">
+<CodeGroup>
+```python Python
+from langchain.agents import create_openai_functions_agent, AgentExecutor
+from langchain import hub
+from langchain_openai import ChatOpenAI
+from composio_langchain import ComposioToolSet, Action, App
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Import Prompt template & Initialize ChatOpenAI & composio toolset client">
+During the initialization of the `ComposioToolSet` client, we can add metadata to actions & apps. In this example, we're adding an OpenAI API key for the `IMAGE_ANALYSER_ANALYSE` action:
+<CodeGroup>
+```python Python {5-9}
+prompt = hub.pull("hwchase17/openai-functions-agent")
+
+llm = ChatOpenAI()
+composio_toolset = ComposioToolSet(
+    metadata={
+        Action.IMAGE_ANALYSER_ANALYSE: {
+            "OPENAI_API_KEY": "<your-openai-api-key>",
+        }
+    }
+)
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Get Image Analyser Action from Composio">
+<CodeGroup>
+```python Python
+tools = composio_toolset.get_tools(
+    actions=[Action.IMAGE_ANALYSER_ANALYSE],
+)
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Invoke the agent">
+<CodeGroup>
+```python Python
+task = "Describe the image. Image Path: cat.png"
+
+agent = create_openai_functions_agent(llm, tools, prompt)
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+agent_executor.invoke({"input": task})
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+</Steps>
+
+### How to add metadata at App-level?
+Above we saw how to add metadata at the Action-level, below is an example of how to add them at the App-level.
+<CodeGroup>
+```python Python
+toolset = ComposioToolSet(
+    metadata={
+        App.<app_name>: {
+            "attribute": "value",
+        }
+    }
+)
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
