@@ -18,6 +18,7 @@ from composio.client.collections import (
     AppAuthScheme,
     AppModel,
     AuthSchemeField,
+    AuthSchemeType,
     IntegrationModel,
 )
 from composio.client.exceptions import ComposioClientError
@@ -227,12 +228,13 @@ def add_integration(
         )
 
     if auth_mode is not None:
+        auth_mode = t.cast(AuthSchemeType, auth_mode)
         auth_scheme = auth_modes[auth_mode]
     elif len(auth_modes) == 1:
         ((auth_mode, auth_scheme),) = auth_modes.items()
     else:
         auth_mode = t.cast(
-            str,
+            AuthSchemeType,
             click.prompt(
                 "Select auth mode: ",
                 type=click.Choice(choices=list(auth_modes)),
