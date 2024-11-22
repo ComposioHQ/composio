@@ -6,7 +6,7 @@ description: "Create custom actions that leverage existing tool authentication t
 ---
 
 <Tip>
-Custom Actions are powerful building blocks that enable you to create custom functionality while leveraging existing tool authentication. They can handle everything from simple data processing to complex third-party integrations, either using pre-configured tool authentication or running independently.
+Custom Actions are powerful building blocks that enable you to create custom functionality while leveraging existing tool authentication. They can handle everything from simple data processing to complex third-party integrations, either using a pre-configured tool authentication or running independently.
 </Tip>
 
 ## Creating a Custom Action with Authentication
@@ -38,7 +38,7 @@ Since `gmail` is a registered tool in Composio, the `auth` credentials are autom
 <CodeGroup>
 ```python Python
 @action(toolname="gmail", requires=["example-pypi-package"])  # supports any package
-def my_custom_action(auth: dict, account_id: str) -> str: # Uses existing gmail auth
+def my_custom_action(auth: dict, account_id: str) -> str: # Uses existing Gmail auth
     """
     Fetch emails from Gmail account for last 24 hours
 
