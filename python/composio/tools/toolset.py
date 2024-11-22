@@ -24,10 +24,12 @@ from pydantic import BaseModel
 from composio import Action, ActionType, App, AppType, TagType
 from composio.client import Composio, Entity
 from composio.client.collections import (
+    AUTH_SCHEMES,
     ActionModel,
     AppAuthScheme,
     AppModel,
     AuthSchemeField,
+    AuthSchemeType,
     ConnectedAccountModel,
     ConnectionParams,
     ConnectionRequestModel,
@@ -76,7 +78,6 @@ _CallableType = t.Callable[[t.Dict], t.Dict]
 MetadataType = t.Dict[_KeyType, t.Dict]
 ParamType = t.TypeVar("ParamType")
 ProcessorType = te.Literal["pre", "post", "schema"]
-AuthSchemeType = t.Literal["OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN"]
 
 
 class IntegrationParams(te.TypedDict):
@@ -781,6 +782,76 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self.logger.info(f"Got {response=} from {action=} with {params=}")
         return response
 
+    @t.overload
+    def execute_request(
+        self,
+        endpoint: str,
+        method: str,
+        *,
+        body: t.Optional[t.Dict] = None,
+        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+        connection_id: t.Optional[str] = None,
+    ) -> t.Dict:
+        pass
+
+    @t.overload
+    def execute_request(
+        self,
+        endpoint: str,
+        method: str,
+        *,
+        body: t.Optional[t.Dict] = None,
+        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+        app: t.Optional[AppType] = None,
+    ) -> t.Dict:
+        pass
+
+    def execute_request(
+        self,
+        endpoint: str,
+        method: str,
+        *,
+        body: t.Optional[t.Dict] = None,
+        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+        connection_id: t.Optional[str] = None,
+        app: t.Optional[AppType] = None,
+    ) -> t.Dict:
+        """
+        Execute a proxy request to a connected account.
+
+        :param endpoint: API endpoint to call
+        :param method: HTTP method to use (GET, POST, etc.)
+        :param body: Request body data
+        :param parameters: Additional auth parameters
+        :param connection_id: ID of the connected account
+        :param app: App type to use for connection lookup
+
+        :returns: Response from the proxy request
+        :raises: ComposioSDKError: If neither connection_id nor app is provided
+        """
+        if app is not None and connection_id is None:
+            connection_id = (
+                self.get_entity(id=self.entity_id).get_connection(app=app).id
+            )
+
+        if connection_id is None:
+            raise ComposioSDKError(
+                "Please provide connection id or app name to execute a request"
+            )
+
+        self.logger.info(
+            f"Executing request to {endpoint} with method={method}, connection_id={connection_id}"
+        )
+        response = self.client.actions.request(
+            connection_id=connection_id,
+            body=body,
+            method=method,
+            endpoint=endpoint,
+            parameters=parameters,
+        )
+        self.logger.info(f"Got {response=}")
+        return response
+
     def validate_tools(
         self,
         apps: t.Optional[t.Sequence[AppType]] = None,
@@ -1144,13 +1215,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if auth_scheme is not None:
             return auth_schemes[auth_scheme]
 
-        for scheme in (
-            "OAUTH2",
-            "OAUTH1",
-            "API_KEY",
-            "BASIC",
-        ):
+        for scheme in AUTH_SCHEMES:
             if scheme in auth_schemes:
+                scheme = t.cast(AuthSchemeType, scheme)
                 return auth_schemes[scheme]
 
         raise ComposioSDKError(
@@ -1181,7 +1248,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 ):
                     continue
                 return self.get_integration(id=integration.id)
-        raise ValueError(f"No integration found for `{app}`")
+        raise NoItemsFound(f"No integration found for `{app}`")
 
     def _get_expected_params_from_app(
         self,
@@ -1277,12 +1344,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def fetch_expected_integration_params(
         self,
-        app: AppType,
+        app: AppModel,
         auth_scheme: AuthSchemeType,
     ) -> t.List[AuthSchemeField]:
         """Fetch expected integration params for creating an integration."""
-        app_data = self.client.apps.get(name=str(app))
-        for scheme in app_data.auth_schemes or []:
+        for scheme in app.auth_schemes or []:
             if auth_scheme != scheme.auth_mode.upper():
                 continue
             return [f for f in scheme.fields if not f.expected_from_customer]
@@ -1293,7 +1359,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     def create_integration(
         self,
         app: AppType,
-        auth_mode: t.Optional[str] = None,
+        auth_mode: t.Optional[AuthSchemeType] = None,
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
         use_composio_oauth_app: bool = True,
         force_new_integration: bool = False,
@@ -1317,28 +1383,53 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         entity_id: t.Optional[str] = None,
         redirect_url: t.Optional[str] = None,
         connected_account_params: t.Optional[t.Dict] = None,
+        *,
+        auth_scheme: AuthSchemeType = "OAUTH2",
+        auth_config: t.Optional[t.Dict[str, t.Any]] = None,
     ) -> ConnectionRequestModel:
-        if integration_id is None and app is None:
-            raise ComposioSDKError(
-                message="Both `integration_id` and `app` cannot be None"
-            )
+        """
+        Initiates a connection with the specified integration.
+
+        If no integration exists for the given app, automatically creates one.
+
+        :param integration_id: (Optional[str]): ID of the existing integration
+        :param app: (Optional[AppType]): App to create/use integration for
+        :param redirect_url: (Optional[str]) Redirect URL for the App
+        :param auth_scheme: (Optional[AuthSchemeType]): Authentication scheme to use
+        :return: (ConnectionRequestModel) Details of the connection request.
+        """
+
+        if auth_scheme not in AUTH_SCHEMES:
+            raise ComposioSDKError(f"'auth_scheme' must be one of {AUTH_SCHEMES}")
+
+        if auth_scheme is not None:
+            if auth_scheme not in AUTH_SCHEMES:
+                raise ComposioSDKError(f"'auth_scheme' must be one of {AUTH_SCHEMES}")
 
         if integration_id is None:
+            if app is None:
+                raise ComposioSDKError(
+                    message="Both `integration_id` and `app` cannot be None"
+                )
             try:
                 integration_id = self._get_integration_for_app(
                     app=t.cast(
                         AppType,
                         app,
-                    )
+                    ),
+                    auth_scheme=auth_scheme,
                 ).id
-            except NoItemsFound as e:
-                raise ComposioSDKError(
-                    message=(
-                        f"No existing integration found for `{str(app)}`, "
-                        "Please create an integration and use the ID to "
-                        "initiate connection."
-                    )
-                ) from e
+            except NoItemsFound:
+                auth_config, use_composio_auth = self._validate_auth_config(
+                    app, auth_scheme, auth_config
+                )
+                integration = self.create_integration(
+                    app=app,
+                    auth_mode=auth_scheme,
+                    auth_config=auth_config,
+                    use_composio_oauth_app=use_composio_auth,
+                )
+                integration_id = integration.id
 
         return self.client.connected_accounts.initiate(
             integration_id=integration_id,
@@ -1347,6 +1438,39 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             labels=labels,
             redirect_url=redirect_url,
         )
+
+    def _validate_auth_config(
+        self,
+        app: AppType,
+        auth_scheme: AuthSchemeType,
+        auth_config: t.Optional[t.Dict[str, t.Any]],
+    ) -> t.Tuple[t.Optional[t.Dict[str, t.Any]], bool]:
+        app_data = self.client.apps.get(name=str(app))
+        if auth_config is None and app_data.testConnectors:
+            # If we have connectors, can fallback to composio's own auth
+            return None, True
+
+        if auth_config is None:
+            auth_config = {}
+
+        auth_fields = self.fetch_expected_integration_params(
+            app=app_data, auth_scheme=auth_scheme
+        )
+        # Populate defaults in the auth_config
+        for field in auth_fields:
+            if field.default is not None and field.name not in auth_config:
+                auth_config[field.name] = field.default
+
+        required_fields = [field for field in auth_fields if field.required]
+        unavailable_fields = [
+            field.name for field in required_fields if field.name not in auth_config
+        ]
+        if unavailable_fields:
+            raise ComposioSDKError(
+                f"Expected 'auth_config' to provide these fields: {unavailable_fields}"
+            ) from None
+
+        return auth_config, False
 
 
 def _write_file(file_path: t.Union[str, os.PathLike], content: t.Union[str, bytes]):
