@@ -1,0 +1,155 @@
+---
+title: "🛠️ Serving Tools Over Endpoint"
+sidebarTitle: "Serving Tools Over Endpoint"
+icon: "server"
+description: "Learn how to create a REST API endpoint that processes natural language requests into tool actions using Composio, OpenAI and FastAPI"
+---
+
+<Steps>
+    <Step title="Install Required Packages">
+        First, install all necessary packages:
+
+        <CodeGroup>
+            ```bash Python Install Packages
+            pip install composio_core composio_openai
+            pip install fastapi uvicorn pydantic
+            ```
+        </CodeGroup>
+    </Step>
+
+    <Step title="Set Up Environment Variables">
+        Configure your API keys:
+
+        <CodeGroup>
+            ```bash Environment Setup
+            export COMPOSIO_API_KEY=<your-composio-api-key>
+            export OPENAI_API_KEY=<your-openai-api-key>
+            ```
+        </CodeGroup>
+
+        <Note>
+            Replace the API keys with your actual Composio and OpenAI API keys.
+        </Note>
+    </Step>
+
+    <Step title="Authenticate GitHub Account">
+        <CodeGroup>
+            ```bash Authenticate GitHub Account
+            composio add github # Launches GitHub login
+            ```
+        </CodeGroup>
+
+        <Warning>
+            If you haven't authenticated your GitHub account, complete the authentication process.
+        </Warning>
+    </Step>
+
+    <Step title="Set up FastAPI Imports">
+        Create a new file `main.py` and add the necessary imports:
+
+        <CodeGroup>
+            ```python main.py
+            from fastapi import FastAPI
+            from pydantic import BaseModel
+            from composio_openai import ComposioToolSet, App
+            from openai import OpenAI
+
+            # Initialize FastAPI app
+            app = FastAPI()
+            ```
+        </CodeGroup>
+    </Step>
+
+    <Step title="Create Request Model">
+        Define the Pydantic model for request validation:
+
+        <CodeGroup>
+            ```python main.py
+            class TaskRequest(BaseModel):
+                task: str  # This will contain the natural language task description
+            ```
+        </CodeGroup>
+
+        <Note>
+            Pydantic ensures that incoming requests contain a valid `task` field.
+        </Note>
+    </Step>
+
+    <Step title="Initialize API Clients">
+        Set up the OpenAI and Composio clients:
+
+        <CodeGroup>
+            ```python main.py
+            # Initialize clients
+            openai_client = OpenAI()
+            composio_toolset = ComposioToolSet()
+            tools = composio_toolset.get_tools(apps=[App.GITHUB])
+            ```
+        </CodeGroup>
+
+        <Note>
+            This step prepares the tools needed for GitHub interactions.
+        </Note>
+    </Step>
+
+    <Step title="Create API Endpoint">
+        Add the endpoint that will process tasks:
+
+        <CodeGroup>
+            ```python main.py
+            @app.post("/execute_task")
+            async def execute_task(request: TaskRequest):
+                response = openai_client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    tools=tools,
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant."},
+                        {"role": "user", "content": request.task},
+                    ],
+                )
+                
+                result = composio_toolset.handle_tool_calls(response)
+                return {"result": result}
+            ```
+        </CodeGroup>
+
+        <Tip>
+            This endpoint combines OpenAI's language understanding with Composio's GitHub tools to process natural language requests.
+        </Tip>
+    </Step>
+
+    <Step title="Run the Server">
+        Start your FastAPI server:
+
+        <CodeGroup>
+            ```bash Start Server
+            uvicorn main:app --reload
+            ```
+        </CodeGroup>
+
+        <Tip>
+            The `--reload` flag enables auto-reload during development. Remove it in production.
+        </Tip>
+    </Step>
+
+    <Step title="Test the Endpoint">
+        Test your endpoint using curl:
+
+        <CodeGroup>
+            ```bash Test API
+            curl -X POST \
+              http://localhost:8000/execute_task \
+              -H "Content-Type: application/json" \
+              -d '{"task": "Star the repo composiohq/composio on GitHub"}'
+            ```
+        </CodeGroup>
+    </Step>
+    <Step title="Use specific actions (Optional)">
+        You can use specific actions by passing the action IDs while fetching tools. It's recommended to limit the number of actions to 20 or fewer for optimal performance and clearer AI responses:
+        <CodeGroup>
+            ```python Use specific actions
+            tools = composio_toolset.get_tools(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
+            ```
+        </CodeGroup>
+    </Step>
+</Steps>
