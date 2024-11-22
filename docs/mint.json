@@ -12,7 +12,7 @@
   "colors": {
     "primary": "#343434",
     "light": "#fff",
-    "dark": "#9a4dff",
+    "dark": "#343434",
     "ultraLight": "#9a4dff",
     "ultraDark": "#9a4dff",
     "background": {
@@ -91,12 +91,8 @@
           "pages":[
             "introduction/foundations/basic",
             "introduction/foundations/components/entity/entity-guide",
-            "introduction/foundations/components/actions/action-guide",
-            "introduction/foundations/components/custom_actions",
             "introduction/foundations/components/triggers/trigger-guide",
-            "introduction/foundations/components/integrations/custom-integration",
             "introduction/foundations/components/integrations/integration-guide",
-            "introduction/foundations/components/actions/processing",
             "introduction/foundations/components/workspace",
             "introduction/foundations/components/list_local_tools"
           ]
@@ -110,17 +106,6 @@
             "patterns/Auth/Integrations",
             "patterns/Auth/examples/gmail_example",
             "patterns/Auth/examples/shopify_example"
-          ]
-        },
-        {
-          "group":"Actions",
-          "icon":"shuttle-space" ,
-          "pages":[
-            "patterns/actions/action-guide-with-agents",
-            "patterns/actions/action-guide-without-agents",
-            "patterns/actions/custom_actions",
-            "patterns/actions/usecase",
-            "patterns/actions/action-guide-faqs"
           ]
         },
         {
@@ -143,6 +128,33 @@
           ]
 
         }
+      ]
+    },
+    {
+      "group": "Tools",
+      "pages": [
+            "patterns/tools/what-are-tools",
+            {
+              "group": "Use Tools",
+              "icon": "shuttle-space",
+              "pages": [
+                "patterns/tools/use-tools/action-guide-with-agents",
+                "patterns/tools/use-tools/use-specific-actions",
+                "patterns/tools/use-tools/get-action-inputs",
+                "patterns/tools/use-tools/processing-actions",
+                "patterns/tools/use-tools/configure-tools",
+                "patterns/tools/use-tools/action-guide-without-agents"
+              ]
+            },
+            {
+              "group": "Build Tools",
+              "icon": "hammer",
+              "pages": [
+                "patterns/tools/build-tools/custom-action-for-new-tool",
+                "patterns/tools/build-tools/custom-action-for-existing-tool"
+              ]
+            },
+            "patterns/tools/custom-integration"
       ]
     },
     {
@@ -175,7 +187,7 @@
       ]
     },
     {
-      "group": "SweKit",
+      "group": "SWE Kit",
       "pages": [
         "swekit-tools/introduction",
         "swekit-js/introduction",
