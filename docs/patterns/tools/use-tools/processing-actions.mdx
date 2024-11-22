@@ -77,7 +77,7 @@ Coming Soon
 </CodeGroup>
 </Step>
 <Step title="Define a Custom Function to Modify Output">
-This function will be used to modify the output data for the `LINEAR_CREATE_LINEAR_ISSUE` action. here we are modifing the output to just return the action execution status `successfull` & the `issue_id`, by doing this can keep the LLM context clean. The technical term for this is **Action-level Post-Processing**.
+This function will be used to modify the output data for the `LINEAR_CREATE_LINEAR_ISSUE` action. here we are modifying the output to just return the action execution status `successful` & the `issue_id`, by doing this can keep the LLM context clean. The technical term for this is **Action-level Post-Processing**.
 <CodeGroup>
 ```python Python
 def linear_post_processor(output_data: dict) -> dict:
