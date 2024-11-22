@@ -79,11 +79,16 @@ export class ConnectedAccounts {
 
     async initiate(payload: InitiateConnectionDataReq): Promise<ConnectionRequest> {
         try {
-            let { integrationId, entityId = 'default', labels, data = {}, redirectUri, authMode = '', authConfig = {}, appName } = payload;
+            let { integrationId, entityId = 'default', labels, data = {}, redirectUri, authMode, authConfig, appName } = payload;
 
             if (!integrationId && authMode) {
                 const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
-                const app = await this.apps.get({ appKey: appName! });
+
+                if(!appName) throw new Error("appName is required when integrationId is not provided");
+                if(!authMode) throw new Error("authMode is required when integrationId is not provided");
+                if(!authConfig) throw new Error("authConfig is required when integrationId is not provided");
+
+                const app = await this.apps.get({ appKey: appName });
                 const integration = await this.integrations.create({
                     appId: app.appId!,
                     name: `integration_${timestamp}`,
@@ -91,7 +96,7 @@ export class ConnectedAccounts {
                     authConfig: authConfig,
                     useComposioAuth: false,
                 });
-                integrationId = integration!.id!;
+                integrationId = integration?.id!;
             }
 
             const res = await client.connections.initiateConnection({
