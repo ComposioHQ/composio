@@ -215,12 +215,14 @@ export class ComposioToolSet {
         action: string,
         params: Record<string, any>,
         entityId: string = "default",
-        nlaText: string = ""
+        nlaText: string = "",
+        connectedAccountId?: string,
     ): Promise<Record<string, any>> {
         // Custom actions are always executed in the host/local environment for JS SDK
         if(await this.isCustomAction(action)) {
             return this.customActionRegistry.executeAction(action, params, {
-                entityId: entityId
+                entityId: entityId,
+                connectionId: connectedAccountId
             });
         }
         if(this.workspaceEnv && this.workspaceEnv !== ExecEnv.HOST) {
@@ -282,14 +284,4 @@ export class ComposioToolSet {
         return this.executeAction(action, params, entityId);
     }
 
-    async executeRequest(data: ActionProxyRequestConfigDTO){
-        try {
-            const { data: res } = await apiClient.actionsV2.executeActionProxyV2({
-                body: data as unknown as ActionProxyRequestConfigDTO
-            });
-            return res!;
-        } catch (error) {
-            throw CEG.handleError(error);
-        }
-    }
 }
