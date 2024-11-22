@@ -1,21 +1,15 @@
 ---
-title: "Custom Actions"
-sidebarTitle: "Building Custom Actions"
-icon: "hammer"
-description: "Guide to creating Custom Actions for existing tool or new tool"
+title: "Build Tools with Auth"
+sidebarTitle: "Build Tools with Auth"
+icon: "toolbox"
+description: "Create custom actions that leverage existing tool authentication to extend functionality."
 ---
 
-## What are Custom Actions?
-
-- Extend the functionality of existing tools by creating a custom action which utilises the existing authentication. (Fetch emails from Gmail)
-- Write a custom action code snippet to execute the custom action (Check if number is even or odd)
-
-
 <Tip>
-Custom Actions can be created for any existing tool in Composio, allowing you to tailor the functionality to your specific needs while leveraging the existing authentication.
+Custom Actions are powerful building blocks that enable you to create custom functionality while leveraging existing tool authentication. They can handle everything from simple data processing to complex third-party integrations, either using pre-configured tool authentication or running independently.
 </Tip>
 
-## Creating a Custom Action
+## Creating a Custom Action with Authentication
 
 <Steps>
 <Step title="Import necessary modules">
@@ -34,14 +28,15 @@ const toolset = new OpenAIToolSet({})
 ```
 </CodeGroup>
 </Step>
+
 <Step title="Creating a custom action">
-<Tabs>
-<Tab title="For Existing Tool (Uses existing authentication)">
+Below is an example of creating a custom action called `my_custom_action` that integrates with the `gmail` tool. This action demonstrates how to fetch emails from the last 24 hours while utilizing Composio's built-in Gmail authentication.
+
 <Note>
-As `gmail` toolname is already registered in Composio, `auth` dictionary will be automatically provided!
+Since `gmail` is a registered tool in Composio, the `auth` credentials are automatically injected into your custom action!
 </Note>
 <CodeGroup>
-```python Custom Action - Gmail (python)
+```python Python
 @action(toolname="gmail", requires=["example-pypi-package"])  # supports any package
 def my_custom_action(auth: dict, account_id: str) -> str: # Uses existing gmail auth
     """
@@ -81,7 +76,7 @@ def my_custom_action(auth: dict, account_id: str) -> str: # Uses existing gmail 
     return str(response)
 ```
 
-```javascript Custom Action - Gmail (javascript)
+```javascript Javascript
 await toolset.createAction({
     actionName: "myCustomAction",
     toolName: "gmail",
@@ -112,51 +107,12 @@ await toolset.createAction({
 });
 ```
 </CodeGroup>
-</Tab>
-<Tab title="For a New Tool">
-
-<CodeGroup>
-```python Python
-@action(toolname="cow", requires=["cowsay"])
-def my_custom_action(account_id: str) -> str:
-    """
-    Cow will say whatever you want it to say.
-
-    :param account_id: Account ID, pass 'me' for default account
-    :return greeting: Formatted message.
-    """
-    import cowsay
-    
-    return cowsay.get_output_string("cow", account_id)
-```
-```javascript JavaScript
-await toolset.createAction({
-    actionName: "myCustomAction",
-    description: "Cow will say whatever you want it to say. This can be used to print text in cow style",
-    inputParams: z.object({
-        accountId: z.string()
-    }),
-    callback: async (inputParams) => {
-        const accountId = inputParams.accountId;
-        const cowMessage = `Cow says: ${accountId}`;
-        return cowMessage;
-    }
-});
-```
-</CodeGroup>
-</Tab>
-</Tabs>
 
 </Step>
 <Step title="Executing the Custom Action">
-We can execute the custom action without Agents as well
-<Tabs>
-<Tab title="Without Agents">
+Executing the custom action without Agents (it can be used with agents too)
 <CodeGroup>
 ```python Python
-from composio import ComposioToolSet
-
-toolset = ComposioToolSet()
 toolset.execute_action(
     action=my_custom_action,
     params={
@@ -174,83 +130,11 @@ console.log(
 )
 ```
 </CodeGroup>
-</Tab>
-<Tab title="With Agents">
+
+
+Output from executing Custom Action
 <CodeGroup>
-```python Python Executing Custom Action with Agent
-from openai import OpenAI
-from composio_openai import ComposioToolSet
-
-openai_client = OpenAI()
-# Initialise the Composio Tool Set
-composio_toolset = ComposioToolSet()
-
-# Get GitHub tools that are pre-configured
-# Retrieve actions
-actions = composio_toolset.get_tools(actions=[my_custom_action])
-
-my_task = "Fetch emails from Gmail account for last 24 hours"
-
-# Setup openai assistant
-assistant_instruction = "You are a super intelligent personal assistant"
-
-# Prepare assistant
-assistant = openai_client.beta.assistants.create(
-    name="Personal Assistant",
-    instructions=assistant_instruction,
-    model="gpt-4-turbo-preview",
-    tools=actions,  # type: ignore
-)
-
-# create a thread
-thread = openai_client.beta.threads.create()
-message = openai_client.beta.threads.messages.create(
-    thread_id=thread.id, role="user", content=my_task
-)
-
-# Execute Agent with integrations
-
-run = openai_client.beta.threads.runs.create(
-    thread_id=thread.id, assistant_id=assistant.id
-)
-
-# Execute function calls
-response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
-    client=openai_client,
-    run=run,
-    thread=thread,
-)
-
-url = f"https://platform.openai.com/playground/assistants?assistant={assistant.id}&thread={thread.id}"
-
-print("Visit this URL to view the thread: ", url)
-```
-
-```javascript Javascript Custom Action with Agent
-const tools = await toolset.getTools({ actions: ["myCustomAction"] });
-const instruction = "Fetch emails from Gmail account for last 24 hours"
-
-const client = new OpenAI({ apiKey: process.env.OPEN_AI_API_KEY })
-const response = await client.chat.completions.create({
-    model: "gpt-4-turbo",
-    messages: [{
-        role: "user",
-        content: instruction,
-    }],
-    tools: tools,
-    tool_choice: "auto",
-})
-
-console.log("Result", await toolset.handleToolCall(response));
-```
-</CodeGroup>
-</Tab>
-</Tabs>
-
-
-Output from executing Custom Action without Agents
-<CodeGroup>
-```shell Output from executing Custom Action without Agents
+```shell Output
 [INFO] Logging is set to INFO, use `logging_level` argument or `COMPOSIO_LOGGING_LEVEL` change this
 [INFO] Executing `GMAIL_MY_CUSTOM_ACTION` with params={'query': 'test_query'} and metadata=None connected_account_id=None
 [INFO] Got response={'data': {'info': {'headers': {'Authorization': 'Bearer KEY', 'x-request-id': '2c65e8b'}, 'base_url': 'https://api.github.com', 'query_params': {}}}, 'error': None, 'successful'...
