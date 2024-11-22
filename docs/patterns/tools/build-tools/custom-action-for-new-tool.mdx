@@ -1,6 +1,6 @@
 ---
-title: "Build Tools without Auth"
-sidebarTitle: "Build Tools without Auth"
+title: "Build Tools Without Auth"
+sidebarTitle: "Build Tools Without Auth"
 icon: "plus"
 description: "Create standalone custom tools and actions for any functionality you need (e.g., data processing, calculations, or integrations with other services)"
 ---
@@ -20,7 +20,7 @@ from composio import ComposioToolSet, App, action
 
 toolset = ComposioToolSet()
 ```
-```javascript Javascript
+```javascript JavaScript
 import { OpenAIToolSet } from "composio-core"
 import { z } from "zod"
 
@@ -63,7 +63,7 @@ await toolset.createAction({
 Executing the custom action without Agents (it can be used with agents too)
 <CodeGroup>
 ```python Python
-toolset.execute_action(
+result = toolset.execute_action(
     action=my_custom_action,
     params={"message": "AI is the future"}
 )
@@ -95,7 +95,7 @@ Output from executing Custom Action
                        ||----w |
                        ||     ||
 ```
-```shell Output (Javascript)
+```shell Output (JavaScript)
 Cow says: AI is the future
 ```
 </CodeGroup>
@@ -107,6 +107,6 @@ Cow says: AI is the future
 
 Custom Tools or Actions provide several advantages:
 
-- **Data privacy:** Execution happens on the user’s machine, ensuring sensitive data doesn’t leave the local environment.
-- **Flexibility:** Users can create and customize as many tools and actions as needed.
-- **Compatibility:** Custom actions can be integrated seamlessly across various Composio-supported platforms.
+- **Data privacy:** Execution happens on the user’s machine, ensuring sensitive data doesn’t leave the local environment
+- **Flexibility:** Users can create and customize as many tools and actions as needed
+- **Compatibility:** Custom actions can be integrated seamlessly across various Composio-supported platforms
