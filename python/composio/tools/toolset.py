@@ -1387,6 +1387,18 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         auth_scheme: AuthSchemeType = "OAUTH2",
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
     ) -> ConnectionRequestModel:
+        """
+        Initiates a connection with the specified integration.
+
+        If no integration exists for the given app, automatically creates one.
+
+        :param integration_id: (Optional[str]): ID of the existing integration
+        :param app: (Optional[AppType]): App to create/use integration for
+        :param redirect_url: (Optional[str]) Redirect URL for the App
+        :param auth_scheme: (Optional[AuthSchemeType]): Authentication scheme to use
+        :return: (ConnectionRequestModel) Details of the connection request.
+        """
+
         if auth_scheme not in AUTH_SCHEMES:
             raise ComposioSDKError(f"'auth_scheme' must be one of {AUTH_SCHEMES}")
 
@@ -1404,8 +1416,15 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                     auth_scheme=auth_scheme,
                 ).id
             except NoItemsFound:
-                self._validate_auth_config(app, auth_scheme, auth_config)
-                integration = self.create_integration(app=app, auth_mode=auth_scheme)
+                auth_config, use_composio_auth = self._validate_auth_config(
+                    app, auth_scheme, auth_config
+                )
+                integration = self.create_integration(
+                    app=app,
+                    auth_mode=auth_scheme,
+                    auth_config=auth_config,
+                    use_composio_oauth_app=use_composio_auth,
+                )
                 integration_id = integration.id
 
         return self.client.connected_accounts.initiate(
@@ -1421,11 +1440,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         app: AppType,
         auth_scheme: AuthSchemeType,
         auth_config: t.Optional[t.Dict[str, t.Any]],
-    ):
+    ) -> t.Tuple[t.Optional[t.Dict[str, t.Any]], bool]:
         app_data = self.client.apps.get(name=str(app))
         if auth_config is None and app_data.testConnectors:
-            # If we have existing connectors, no need for auth config
-            return
+            # If we have connectors, can fallback to composio's own auth
+            return None, True
 
         if auth_config is None:
             auth_config = {}
@@ -1433,6 +1452,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         auth_fields = self.fetch_expected_integration_params(
             app=app_data, auth_scheme=auth_scheme
         )
+        # Populate defaults in the auth_config
+        for field in auth_fields:
+            if field.default is not None and field.name not in auth_config:
+                auth_config[field.name] = field.default
+
         required_fields = [field for field in auth_fields if field.required]
         unavailable_fields = [
             field.name for field in required_fields if field.name not in auth_config
@@ -1441,6 +1465,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             raise ComposioSDKError(
                 f"Expected 'auth_config' to provide these fields: {unavailable_fields}"
             ) from None
+
+        return auth_config, False
 
 
 def _write_file(file_path: t.Union[str, os.PathLike], content: t.Union[str, bytes]):
