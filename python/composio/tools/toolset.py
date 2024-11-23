@@ -1353,7 +1353,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 continue
             return [f for f in scheme.fields if not f.expected_from_customer]
         raise ComposioSDKError(
-            message=f"{app} does not support {auth_scheme} auth scheme"
+            message=f"{app.name!r} does not support {auth_scheme!r} auth scheme"
         )
 
     def create_integration(
