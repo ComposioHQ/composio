@@ -1353,7 +1353,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 continue
             return [f for f in scheme.fields if not f.expected_from_customer]
         raise ComposioSDKError(
-            message=f"{app} does not support {auth_scheme} auth scheme"
+            message=f"{app.name!r} does not support {auth_scheme!r} auth scheme"
         )
 
     def create_integration(
@@ -1384,7 +1384,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         redirect_url: t.Optional[str] = None,
         connected_account_params: t.Optional[t.Dict] = None,
         *,
-        auth_scheme: AuthSchemeType = "OAUTH2",
+        auth_scheme: t.Optional[AuthSchemeType] = None,
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
     ) -> ConnectionRequestModel:
         """
@@ -1398,19 +1398,18 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         :param auth_scheme: (Optional[AuthSchemeType]): Authentication scheme to use
         :return: (ConnectionRequestModel) Details of the connection request.
         """
-
-        if auth_scheme not in AUTH_SCHEMES:
+        if auth_scheme is not None and auth_scheme not in AUTH_SCHEMES:
             raise ComposioSDKError(f"'auth_scheme' must be one of {AUTH_SCHEMES}")
-
-        if auth_scheme is not None:
-            if auth_scheme not in AUTH_SCHEMES:
-                raise ComposioSDKError(f"'auth_scheme' must be one of {AUTH_SCHEMES}")
 
         if integration_id is None:
             if app is None:
                 raise ComposioSDKError(
                     message="Both `integration_id` and `app` cannot be None"
                 )
+
+            if auth_scheme is None:
+                auth_scheme = self.get_auth_scheme_for_app(app).auth_mode
+
             try:
                 integration_id = self._get_integration_for_app(
                     app=t.cast(
