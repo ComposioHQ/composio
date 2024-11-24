@@ -72,4 +72,62 @@ console.log(result);
 
 This code demonstrates how to use LLMs with Composio Tools to execute actions. The example shows how to connect OpenAI's LLM with Composio's tools, in this case using the GitHub tool. The LLM understands the natural language task ("Star the repo") and determines which action to use from the GitHub tool, then executes the action.
 
+### How can I use Tools for a specific user?
+You can use the `entity_id` parameter to specify the user on behalf of whom you want to execute the action. Learn more about Entities [here](/patterns/Auth/connected_account#entities).
+<CodeGroup>
+```python Python {10}
+# Import required libraries
+from composio_openai import ComposioToolSet, App
+from openai import OpenAI
+
+# Initialize OpenAI and Composio clients
+openai_client = OpenAI()
+composio_toolset = ComposioToolSet()
+
+# Get GitHub tools from Composio for the entity Jessica
+tools = composio_toolset.get_tools(apps=[App.GITHUB], entity_id="Jessica")
+
+task = "Star the repo composiohq/composio on GitHub"
+
+# Make API call to OpenAI with the tools
+response = openai_client.chat.completions.create(
+    model="gpt-4o-mini",
+    tools=tools,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": task},
+    ],
+)
+
+# Execute the tool calls
+result = composio_toolset.handle_tool_calls(response=response)
+print(result)
+```
+```javascript JavaScript {10}
+// Import required libraries
+import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core";
+
+// Initialize OpenAI and Composio clients
+const openai_client = new OpenAI();
+const composio_toolset = new OpenAIToolSet();
+
+// Get GitHub tools from Composio
+const tools = await composio_toolset.getTools({apps: ['GITHUB'], entityId: "Jessica"})
+
+const task = "Star the repo composiohq/composio on GitHub"
+
+// Make API call to OpenAI with the tools
+const response = await openai_client.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: task }],
+    tools: tools,
+    tool_choice: "auto",
+});
+
+const result = await composio_toolset.handleToolCall(response=response);
+console.log(result);
+```
+</CodeGroup>
+
 Composio supports multiple agent frameworks including LlamaIndex, CrewAI, Letta, and LangChain. See the [**Supported Frameworks**](../../../framework) section for details.

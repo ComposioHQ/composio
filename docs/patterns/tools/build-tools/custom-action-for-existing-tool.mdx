@@ -6,139 +6,130 @@ description: "Create custom actions that leverage existing tool authentication t
 ---
 
 <Tip>
-Custom Actions are powerful building blocks that enable you to create custom functionality while leveraging existing tool authentication. They can handle everything from simple data processing to complex third-party integrations, either using a pre-configured tool authentication or running independently.
+Custom Actions are powerful building blocks that enable you to create custom functionality while leveraging existing tool authentication.
 </Tip>
 
 ## Creating a Custom Action with Authentication
 
 <Steps>
-<Step title="Import necessary modules">
+<Step title="Import necessary modules & initialize them">
 
 <CodeGroup>
 ```python Python
-from composio import ComposioToolSet, App, action
+import typing as t
+from composio_openai import ComposioToolSet, action, Action
+from openai import OpenAI
 
+openai_client = OpenAI()
 toolset = ComposioToolSet()
 ```
 ```javascript Javascript
-import { OpenAIToolSet } from "composio-core"
-import { z } from "zod"
+import { OpenAIToolSet } from "composio-core";
+import { OpenAI } from "openai";
+import { z } from "zod";
 
-const toolset = new OpenAIToolSet({})
+const openai_client = new OpenAI();
+const toolset = new OpenAIToolSet({});
 ```
 </CodeGroup>
 </Step>
 
 <Step title="Creating a custom action">
-Below is an example of creating a custom action called `my_custom_action` that integrates with the `gmail` tool. This action demonstrates how to fetch emails from the last 24 hours while utilizing Composio's built-in Gmail authentication.
+Below is an example of creating a custom action called `list_repositories` that integrates with the `github` tool. This action demonstrates how to list all the repositories for a given user or organization.
 
 <Note>
-Since `gmail` is a registered tool in Composio, the `auth` credentials are automatically injected into your custom action!
+Since `github` is a registered tool in Composio, the authentication credentials are automatically injected into your custom action!
 </Note>
 <CodeGroup>
 ```python Python
-@action(toolname="gmail", requires=["example-pypi-package"])  # supports any package
-def my_custom_action(auth: dict, account_id: str) -> str: # Uses existing Gmail auth
+@action(toolname="github")
+def list_repositories(
+    owner: str,
+    execute_request,
+) -> list[str]:
     """
-    Fetch emails from Gmail account for last 24 hours
+    List repositories for a user.
 
-    :param account_id: Account ID, pass 'me' for default account
-    :param auth: Authentication dictionary provided by Composio for Gmail
-    :return info: Gmail emails information
+    :param owner: Name of the owner.
+    :return repositories: List of repositories for given user.
     """
-
-    # fetch authentication headers
-    headers = auth["headers"]
-    query_params = auth["query_params"]
-    base_url = auth["base_url"]
-
-    yesterday_dateTime = int(
-        (datetime.datetime.now() + datetime.timedelta(days=-1)).timestamp()
-    )
-
-    if account_id and account_id != "":
-        custom_endpoint_url = f"/gmail/v1/users/{account_id}/messages?q=after:{yesterday_dateTime}"
-    else:
-        custom_endpoint_url = f"/gmail/v1/users/me/messages?q=after:{yesterday_dateTime}"
-
-    # add query params to the url
-    for key, value in query_params.items():
-        custom_endpoint_url += f"&{key}={value}"
-    
-    url = f"{base_url}{custom_endpoint_url}"
-
-    response = requests.get(url, headers=headers)
-
-    if response.status_code == 200:
-        print("Successfully fetched emails:", response.json())
-    else:
-        print("Error fetching emails:", response.status_code, response.json())
-    return str(response)
+    return [
+        repo["name"]
+        for repo in execute_request(f"/users/{owner}/repos", "get", None, None).get(
+            "data", []
+        )
+    ]
 ```
 
 ```javascript Javascript
-await toolset.createAction({
-    actionName: "myCustomAction",
-    toolName: "gmail",
-    description: "Fetch emails from Gmail account for last 24 hours",
+await toolSet.createAction({
+    actionName: "my_custom_action",
+    toolName: "$app_name$",
+    description:
+        "my custom action is amazing. This description will tell LLMs about it",
     inputParams: z.object({
-        accountId: z.string().describe("Gmail account ID. Defaults to the primary account, which is 'me'."),
+        param1: z.string().describe("This is a required string parameter"),
+        param2: z.string().describe("This is a required string parameter"),
     }),
-    callback: async (inputParams, authCredentials) => {
-        const headers = authCredentials.headers;
-        const query_params = authCredentials.query_params;
-        const base_url = authCredentials.baseUrl;
-        
-        const oneDayAgo = Math.floor(Date.now() / 1000) - 86400;
-        const customEndpointUrl = `/gmail/v1/users/${inputParams.accountId}/messages?q=after:${oneDayAgo}`;
-        const url = `${base_url}${customEndpointUrl}`;
-        const response = await fetch(url, { headers });
-
-        if (response.ok) {
-            const data = await response.json();
-            console.log("Successfully fetched emails:", data);
-            return data;
-        } else {
-            const errorData = await response.json();
-            console.error("Error fetching emails:", response.status, errorData);
-            throw new Error(`Error fetching emails: ${response.status}`);
+    callback: async (inputParams, executeRequest) => {
+        try {
+            const res = await executeRequest({
+                endpoint: `/user/starred/${inputParams.param1}/${inputParams.param2}`,
+                method: "PUT",
+                parameters: [],
+            });
+            return res;
+        } catch (e) {
+            console.error(e);
+            return {};
         }
-    }
+    },
 });
 ```
 </CodeGroup>
 
 </Step>
 <Step title="Executing the Custom Action">
-Executing the custom action without Agents (it can be used with agents too)
+Executing the custom action using LLM
 <CodeGroup>
 ```python Python
-toolset.execute_action(
-    action=my_custom_action,
-    params={
-        'account_id':'me' 
-    },
+tools = toolset.get_tools(actions=[list_repositories])
+
+task = "List all the repositories for the organization composiohq"
+
+response = openai_client.chat.completions.create(
+model="gpt-4o-mini",
+tools=tools,
+messages=
+    [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": task},
+    ],
 )
+
+result = toolset.handle_tool_calls(response)
+print(result)
 ```
 
 ```javascript JavaScript
-console.log(
-    await toolset.executeAction(
-        "myCustomAction",
-        { accountId: "me" }
-    )
-)
-```
-</CodeGroup>
+const tools = await toolSet.getTools({
+    actions: ["my_custom_action"]
+});
 
+const task = "<task>";
 
-Output from executing Custom Action
-<CodeGroup>
-```shell Output
-[INFO] Logging is set to INFO, use `logging_level` argument or `COMPOSIO_LOGGING_LEVEL` change this
-[INFO] Executing `GMAIL_MY_CUSTOM_ACTION` with params={'query': 'test_query'} and metadata=None connected_account_id=None
-[INFO] Got response={'data': {'info': {'headers': {'Authorization': 'Bearer KEY', 'x-request-id': '2c65e8b'}, 'base_url': 'https://api.github.com', 'query_params': {}}}, 'error': None, 'successful'...
-{'data': {'info': {'headers': {'Authorization': 'Bearer KEY', 'x-request-id': '2c65e8b'}, 'base_url': 'https://api.github.com', 'query_params': {}}}, 'error': None, 'successful': True}
+const response = await openai_client.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+        { "role": "system", "content": "You are a helpful assistant." },
+        { "role": "user", "content": task },
+    ],
+    tools: tools,
+    tool_choice: "auto",
+});
+
+const result = await toolSet.handleToolCall(response);
+console.log(result);
 ```
 </CodeGroup>
 </Step>
