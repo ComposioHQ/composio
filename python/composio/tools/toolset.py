@@ -466,6 +466,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         entity_id: t.Optional[str] = None,
     ) -> t.Dict:
         """Execute a local action."""
+        metadata = metadata or {}
+        metadata["_toolset"] = self
         response = self.workspace.execute_action(
             action=action,
             request_data=params,

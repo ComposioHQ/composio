@@ -319,6 +319,7 @@ class RemoteWorkspace(Workspace):
         if action.is_runtime:
             self._upload(action=action)
 
+        _ = metadata.pop("_toolset", None)
         request = self._request(
             method="post",
             endpoint=f"/actions/execute/{action.slug}",
