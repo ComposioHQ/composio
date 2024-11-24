@@ -16,15 +16,19 @@ Custom Actions are powerful building blocks that enable you to create custom fun
 
 <CodeGroup>
 ```python Python
-from composio import ComposioToolSet, App, action
+from composio_openai import ComposioToolSet, action
+from openai import OpenAI
 
+openai_client = OpenAI()
 toolset = ComposioToolSet()
 ```
 ```javascript JavaScript
 import { OpenAIToolSet } from "composio-core"
+import { OpenAI } from "openai";
 import { z } from "zod"
 
-const toolset = new OpenAIToolSet({})
+const openai_client = new OpenAI();
+const toolset = new OpenAIToolSet();
 ```
 </CodeGroup>
 </Step>
@@ -60,30 +64,49 @@ await toolset.createAction({
 </CodeGroup>
 </Step>
 <Step title="Executing the Custom Action">
-Executing the custom action without Agents (it can be used with agents too)
+Executing the custom action using LLM
 <CodeGroup>
 ```python Python
-result = toolset.execute_action(
-    action=my_custom_action,
-    params={"message": "AI is the future"}
+tools = toolset.get_tools(actions=[my_custom_action])
+
+task = "Say 'AI is the future' using cowsay"
+
+response = openai_client.chat.completions.create(
+model="gpt-4o-mini",
+tools=tools,
+messages=
+    [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": task},
+    ],
 )
 
-print(result['data']['greeting'])
+result = toolset.handle_tool_calls(response)
+print(result)
 ```
 
 ```javascript JavaScript
-console.log(
-    await toolset.executeAction(
-        "myCustomAction",
-        { message: "AI is the future" }
-    )
-)
+const tools = await toolset.getTools({
+    actions: ["myCustomAction"]
+});
+
+const instruction = "Say 'AI is the future' using cowsay";
+
+const response = await openai_client.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: instruction }],
+    tools: tools,
+    tool_choice: "auto",
+});
+
+const result = await toolset.handleToolCall(response);
+console.log(result);
 ```
 </CodeGroup>
 
 Output from executing Custom Action
 <CodeGroup>
-```shell Output (Python)
+```shell Python
   ________________
 | AI is the future |
   ================
@@ -95,7 +118,7 @@ Output from executing Custom Action
                        ||----w |
                        ||     ||
 ```
-```shell Output (JavaScript)
+```shell JavaScript
 Cow says: AI is the future
 ```
 </CodeGroup>
