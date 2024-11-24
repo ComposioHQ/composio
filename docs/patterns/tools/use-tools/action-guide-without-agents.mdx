@@ -72,4 +72,39 @@ You can also execute Tools or Actions by passing in natural language prompts wit
 ```
 </CodeGroup>
 
-<br/>
+### How can I use Tools for a specific user?
+You can you the entity object of a specific user snd execute action on behalf of that user. Learn more about Entities [here](/patterns/Auth/connected_account#entities).
+
+<CodeGroup>
+
+```python Python {4}
+from composio import ComposioToolSet
+
+toolset = ComposioToolSet()
+entity = toolset.get_entity(id='Jessica')
+
+res = entity.execute(
+    action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
+    params={
+        "owner": "composiohq",
+        "repo": "composio"
+    },
+)
+print(res)
+```
+
+```javascript JavaScript {4}
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet();
+const entity = toolset.client.getEntity(id='Jessica');
+const result =  entity.execute(
+    action="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
+    params={
+        "owner": "composiohq",
+        "repo": "composio"
+    },
+)       
+console.log(result);
+```
+</CodeGroup>
