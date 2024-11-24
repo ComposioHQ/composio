@@ -1,5 +1,5 @@
 ---
-title: "Create & Manage Connections for Multiple Users"
+title: "Create & Manage Connections for Users"
 sidebarTitle: "Connections"
 icon: "link"
 description: "Learn how to securely manage and authenticate multiple user connections"
@@ -9,7 +9,7 @@ description: "Learn how to securely manage and authenticate multiple user connec
 
 - Each **user** is represented by a **unique entity ID**.
 - If you have two users, **Jessica** and **Melissa**, they will each have **unique entity IDs**.
-<Info>By default, the entity ID used will be **default**.</Info>
+<Info>If not specified, `default` will be used as the entity ID.</Info>
 
 You can use an entity object to manage connected accounts and perform actions on behalf of a user (more on this [here](/patterns/tools/use-tools/action-guide-without-agents#how-can-i-use-tools-for-a-specific-user)). Here's how to retrieve an entity object:
 
@@ -45,7 +45,7 @@ from composio import ComposioToolSet, App
 toolset = ComposioToolSet()
 
 # URL that the user will be redirected to after completing the authentication process
-redirect_url = "https://yourwebsite.com/connection/callback"
+redirect_url = "https://yourwebsite.com/connection/success"
 
 # Unique identifier for the user for whom the connection is being created
 entity_id = "Jessica" 
@@ -56,7 +56,7 @@ connection_request = toolset.initiate_connection(redirect_url=redirect_url, enti
 # Redirect the user to the URL below
 print(connection_request.redirectUrl)
 
-# Check the status of the connection
+# Check the status of the connection (it can be initiated, active, or failed)
 print(connection_request.connectionStatus)
 ```
 
@@ -65,12 +65,12 @@ import { OpenAIToolSet } from "composio-core";
 const toolset = new OpenAIToolSet();
 
 // URL that the user will be redirected to after completing the authentication process
-const redirectURL = "https://yourwebsite.com/connection/callback"
+const redirectURL = "https://yourwebsite.com/connection/success"
 
 // Unique identifier for the user for whom the connection is being created
 const entityId = "Jessica" 
 
-// Initiate new connection (You can use integrationId instead of app)
+// Initiate new connection (You can use integration_id instead of app)
 const connectionRequest = await toolset.client.connectedAccounts.initiate({
   app: "gmail",
   redirect_url: redirectURL,
@@ -80,7 +80,7 @@ const connectionRequest = await toolset.client.connectedAccounts.initiate({
 // Redirect the user to the URL below
 console.log(connectionRequest.redirectUrl);
 
-// Check the status of the connection
+// Check the status of the connection (it can be initiated, active, or failed)
 console.log(connectionRequest.connectionStatus);
 ```
 </CodeGroup>
@@ -129,7 +129,7 @@ collected_params = {
 # Initiate new connection (You can use integration_id instead of app)
 connection_request = toolset.initiate_connection(connected_account_params=collected_params, entity_id=entity_id, app=App.FIRECRAWL)
 
-# Check the status of the connection
+# Check the status of the connection (it can be initiated, active, or failed)
 print(connection_request.connectionStatus)
 ```
 
@@ -152,7 +152,7 @@ const connectionRequest = await toolset.client.connectedAccounts.initiate({
   });
 
 
-// Check the status of the connection
+// Check the status of the connection (it can be initiated, active, or failed)
 console.log(connectionRequest.connectionStatus);
 ```
 </CodeGroup>
