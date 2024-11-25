@@ -31,6 +31,8 @@ tool_registry: ToolRegistry = {"runtime": {}, "local": {}, "api": {}}
 action_registry: ActionsRegistry = {"runtime": {}, "local": {}, "api": {}}
 trigger_registry: TriggersRegistry = {"runtime": {}, "local": {}, "api": {}}
 
+DEPRECATED_MARKER = "<<DEPRECATED use "
+
 
 def remove_json_ref(data: t.Dict) -> t.Dict:
     return json.loads(
@@ -252,7 +254,7 @@ class ActionBuilder:
             "description",
             cls._get_description(obj),
         )
-        description, *_ = obj.description.split("<<DEPRECATED", maxsplit=1)
+        description, *_ = obj.description.split(DEPRECATED_MARKER, maxsplit=1)
         if len(description) > 1024:
             raise InvalidClassDefinition(
                 f"Description for action `{obj.__name__}` contains more than 1024 characters"
@@ -260,11 +262,16 @@ class ActionBuilder:
 
     @staticmethod
     def _get_description(obj) -> str:
-        return inflection.titleize(
-            (obj.__doc__ if obj.__doc__ else obj.display_name)
-            .replace("\n    ", " ")
-            .strip()
+        description = t.cast(
+            str,
+            (
+                (obj.__doc__ if obj.__doc__ else obj.display_name)
+                .replace("\n    ", " ")
+                .strip()
+            ),
         )
+        description, separator, enum = description.partition(DEPRECATED_MARKER)
+        return inflection.titleize(description) + separator + enum
 
 
 class ActionMeta(type):

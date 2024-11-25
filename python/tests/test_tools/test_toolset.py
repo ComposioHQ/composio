@@ -143,7 +143,7 @@ class TestConnectedAccountProvider:
                 lambda *_: "",
             )
             toolset.execute_action(
-                action=Action.GITHUB_META_ROOT,
+                action=Action.GITHUB_GITHUB_API_ROOT,
                 params={},
             )
 
