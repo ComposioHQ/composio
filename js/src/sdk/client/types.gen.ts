@@ -955,7 +955,7 @@ export type Parameter = {
     /**
      * The location of the parameter. Can be 'query' or 'header'.
      */
-    location: ParameterLocation;
+    in: ParameterLocation;
     /**
      * The value of the parameter. For example, '1234567890', 'application/json', etc.,
      */
