@@ -13,6 +13,7 @@ from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import OpenAISchema, SchemaType
+from composio.tools.toolset import ProcessorsType
 
 
 # pylint: enable=E0611
@@ -151,6 +152,9 @@ class ComposioToolSet(
         apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
+        *,
+        processors: t.Optional[ProcessorsType] = None,
+        check_connected_accounts: bool = True,
     ) -> t.List[OpenAIFunction]:
         """
         Get composio tools wrapped as Camel `OpenAIFunction` objects.
@@ -163,6 +167,8 @@ class ComposioToolSet(
         :return: Composio tools wrapped as `OpenAIFunction` objects
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
+        if processors is not None:
+            self._merge_processors(processors)
         return [
             self._wrap_tool(  # type: ignore
                 t.cast(
@@ -175,5 +181,10 @@ class ComposioToolSet(
                 ).model_dump(),
                 entity_id=entity_id,
             )
-            for schema in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
+            for schema in self.get_action_schemas(
+                actions=actions,
+                apps=apps,
+                tags=tags,
+                check_connected_accounts=check_connected_accounts,
+            )
         ]

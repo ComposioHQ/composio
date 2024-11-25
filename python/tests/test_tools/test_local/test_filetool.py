@@ -88,6 +88,10 @@ class TestFiletool:
         open_response = open_action.execute(OpenFileRequest(file_path="file2.py"), {})
         assert "def test_function():" in open_response.lines
 
+        with pytest.raises(Exception, match="out of bounds"):
+            open_response = open_action.execute(
+                OpenFileRequest(file_path="file2.py", line_number=10), {}
+            )
         # Edit file
         edit_response = edit_action.execute(
             EditFileRequest(
@@ -230,10 +234,10 @@ class TestFiletool:
         write_action._filemanagers = lambda: file_manager
 
         # Try to open a non-existent file
-        response = open_action.execute(
-            OpenFileRequest(file_path="non_existent.txt"), {}
-        )
-        assert response.error is not None
+        with pytest.raises(Exception, match="File not found"):
+            response = open_action.execute(
+                OpenFileRequest(file_path="non_existent.txt"), {}
+            )
 
         # Try to write to a directory
         response = write_action.execute(
@@ -314,6 +318,17 @@ class TestFiletool:
             },
         )
         assert "New content line" in edit_response["data"]["updated_text"]
+
+        # Edit file
+        edit_response = toolset.execute_action(
+            Action.FILETOOL_EDIT_FILE,
+            {
+                "file_path": "file1.txt",
+                "start_line": 1,
+                "end_line": 1,
+            },
+        )
+        assert "Invalid request data provided" in edit_response["error"]
 
         # Edit file
         edit_response = toolset.execute_action(

@@ -55,7 +55,7 @@ composio_toolset.register_actions(
     actions=[
         Action.GITHUB_GET_CODE_CHANGES_IN_PR,
         Action.GITHUB_PULLS_CREATE_REVIEW_COMMENT,
-        Action.GITHUB_ISSUES_CREATE,
+        Action.GITHUB_CREATE_AN_ISSUE,
         Action.SLACKBOT_CHAT_POST_MESSAGE,
     ],
     caller=chatbot,

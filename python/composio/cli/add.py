@@ -18,6 +18,7 @@ from composio.client.collections import (
     AppAuthScheme,
     AppModel,
     AuthSchemeField,
+    AuthSchemeType,
     IntegrationModel,
 )
 from composio.client.exceptions import ComposioClientError
@@ -74,6 +75,13 @@ class AddIntegrationExamples(HelpfulCmd):
     is_flag=True,
     help="Override the existing account.",
 )
+@click.option(
+    "-l",
+    "--label",
+    "labels",
+    help="Labels for connected account.",
+    multiple=True,
+)
 @pass_entity_id
 @handle_exceptions()
 @ensure_login
@@ -84,6 +92,7 @@ def _add(
     scopes: t.Tuple[str, ...],
     entity_id: str,
     integration_id: t.Optional[str],
+    labels: t.List[str],
     no_browser: bool = False,
     auth_mode: t.Optional[str] = None,
     force: bool = False,
@@ -98,6 +107,7 @@ def _add(
         auth_mode=auth_mode,
         scopes=scopes,
         force=force,
+        labels=list(labels or []),
     )
 
 
@@ -115,31 +125,25 @@ def _replace_connection() -> bool:
     )
 
 
-def _collect_input_fields(
-    fields: t.List[AuthSchemeField],
-    expected_from_customer: bool = False,
-) -> t.Dict:
+def _collect_input_fields(fields: t.List[AuthSchemeField]) -> t.Dict:
     """Collect"""
     inputs = {}
     for _field in fields:
         field = _field.model_dump()
-        if field.get("expected_from_customer", True) and expected_from_customer:
-            if field.get("required", False):
-                value = input(
-                    f"> Enter {field.get('display_name', field.get('name'))}: "
+        if field.get("required", False):
+            value = input(f"> Enter {field.get('display_name', field.get('name'))}: ")
+            if not value:
+                raise click.ClickException(
+                    f"{field.get('display_name', field.get('name'))} is required"
                 )
-                if not value:
-                    raise click.ClickException(
-                        f"{field.get('display_name', field.get('name'))} is required"
-                    )
-            else:
-                value = input(
-                    f"Enter {field.get('display_name', field.get('name'))} (Optional):"
-                ) or t.cast(
-                    str,
-                    field.get("default"),
-                )
-            inputs[field.get("name")] = value
+        else:
+            value = input(
+                f"> Enter {field.get('display_name', field.get('name'))} (Optional):"
+            ) or t.cast(
+                str,
+                field.get("default"),
+            )
+        inputs[field.get("name")] = value
     return inputs
 
 
@@ -166,6 +170,7 @@ def add_integration(
     no_browser: bool = False,
     auth_mode: t.Optional[str] = None,
     scopes: t.Optional[t.Tuple[str, ...]] = None,
+    labels: t.Optional[t.List] = None,
     force: bool = False,
 ) -> None:
     """
@@ -223,12 +228,13 @@ def add_integration(
         )
 
     if auth_mode is not None:
+        auth_mode = t.cast(AuthSchemeType, auth_mode)
         auth_scheme = auth_modes[auth_mode]
     elif len(auth_modes) == 1:
         ((auth_mode, auth_scheme),) = auth_modes.items()
     else:
         auth_mode = t.cast(
-            str,
+            AuthSchemeType,
             click.prompt(
                 "Select auth mode: ",
                 type=click.Choice(choices=list(auth_modes)),
@@ -236,51 +242,62 @@ def add_integration(
         )
         auth_scheme = auth_modes[auth_mode]
 
-    if auth_mode.lower() in ("basic", "api_key"):
+    if auth_mode.lower() in ("basic", "api_key", "bearer_token"):
         return _handle_basic_auth(
             entity=entity,
             client=context.client,
             app_name=name,
             auth_mode=auth_mode,
             auth_scheme=auth_scheme,
+            labels=labels,
         )
     return _handle_oauth(
         entity=entity,
         client=context.client,
         app_name=name,
+        auth_scheme=auth_scheme,
         no_browser=no_browser,
         integration=integration,
         scopes=scopes,
+        use_composio_auth=len(app.testConnectors or []) != 0,
+        labels=labels,
     )
-
-
-def _get_auth_config(
-    scopes: t.Optional[t.Tuple[str, ...]] = None
-) -> t.Optional[t.Dict]:
-    """Get auth config."""
-    scopes = scopes or ()
-    if len(scopes) == 0:
-        return None
-    return {"scopes": ",".join(scopes)}
 
 
 def _handle_oauth(
     entity: Entity,
     client: Composio,
     app_name: str,
+    auth_scheme: AppAuthScheme,
     no_browser: bool = False,
     integration: t.Optional[IntegrationModel] = None,
     scopes: t.Optional[t.Tuple[str, ...]] = None,
+    labels: t.Optional[t.List] = None,
+    use_composio_auth: bool = False,
 ) -> None:
     """Handle no auth."""
+    auth_config = {}
+    if not use_composio_auth:
+        auth_config.update(
+            _collect_input_fields(
+                fields=auth_scheme.fields,
+            )
+        )
+
+    if scopes is not None:
+        if auth_config.get("scopes") is not None:
+            scopes = tuple(set([*auth_config["scopes"].split(","), *scopes]))
+        auth_config["scopes"] = ",".join(scopes)
+
     connection = entity.initiate_connection(
         app_name=app_name.lower(),
         redirect_url=get_web_url(path="redirect"),
         integration=integration,
         auth_mode="OAUTH2",
-        auth_config=_get_auth_config(scopes=scopes),
-        use_composio_auth=True,
+        auth_config=auth_config,
+        use_composio_auth=use_composio_auth,
         force_new_integration=len(scopes or []) > 0,
+        labels=labels,
     )
     if not no_browser:
         webbrowser.open(
@@ -292,7 +309,9 @@ def _handle_oauth(
     )
     click.echo(f"⚠ Waiting for {app_name} authentication...")
     connection.wait_until_active(client=client)
-    click.echo(f"✔ {app_name} added successfully!")
+    click.echo(
+        f"✔ {app_name} added successfully with ID: {connection.connectedAccountId}"
+    )
 
 
 def _handle_basic_auth(
@@ -302,24 +321,26 @@ def _handle_basic_auth(
     auth_mode: str,
     auth_scheme: AppAuthScheme,
     integration: t.Optional[IntegrationModel] = None,
+    labels: t.Optional[t.List] = None,
 ) -> None:
     """Handle basic auth."""
-    entity.initiate_connection(
+    auth_config = _collect_input_fields(
+        fields=auth_scheme.fields,
+    )
+    connection = entity.initiate_connection(
         app_name=app_name.lower(),
         auth_mode=auth_mode,
-        auth_config=_collect_input_fields(
-            fields=auth_scheme.fields,
-            expected_from_customer=True,
-        ),
+        auth_config=auth_config,
         integration=integration,
         use_composio_auth=False,
         force_new_integration=True,
-    ).save_user_access_data(
+        labels=labels,
+    )
+    connection.save_user_access_data(
         client=client,
-        field_inputs=_collect_input_fields(
-            fields=auth_scheme.fields,
-            expected_from_customer=False,
-        ),
+        field_inputs=auth_config,
         entity_id=entity.id,
     )
-    click.echo(f"✔ {app_name} added successfully!")
+    click.echo(
+        f"✔ {app_name} added successfully with ID: {connection.connectedAccountId}"
+    )

@@ -75,7 +75,7 @@ from langgraph.prebuilt import ToolNode
 
 <Step title="Fetch GitHub LangGraph Tools via Composio">
 
-- Access GitHub tools provided by Composio for LangGraph, initialize a `ToolNode` with necessary tools obtaned from `ComposioToolSet`.
+- Access GitHub tools provided by Composio for LangGraph, initialize a `ToolNode` with necessary tools obtained from `ComposioToolSet`.
 
 <CodeGroup>
 ```python Get tools
@@ -101,7 +101,7 @@ tool_node = ToolNode(tools)
 <CodeGroup>
     ```python Define model
     model = ChatOpenAI(temperature=0, streaming=True)
-    model_with_tools = model.bind_tools(functions)
+    model_with_tools = model.bind_tools(tools)
     ```
 </CodeGroup>
 

@@ -5,8 +5,8 @@ Shared utils.
 import typing as t
 from inspect import Parameter
 
-from pydantic.v1 import BaseModel, Field, create_model
-from pydantic.v1.fields import FieldInfo
+from pydantic import BaseModel, Field, create_model
+from pydantic.fields import FieldInfo
 
 from composio.utils.logging import get as get_logger
 
@@ -18,8 +18,12 @@ PYDANTIC_TYPE_TO_PYTHON_TYPE = {
     "integer": int,
     "number": float,
     "boolean": bool,
+    "array": t.List,
+    "object": t.Dict,
     "null": t.Optional[t.Any],
 }
+
+CONTAINER_TYPE = ("array", "object")
 
 # Should be deprecated,
 # required values will always be provided by users
@@ -31,7 +35,10 @@ FALLBACK_VALUES = {
     "boolean": False,
     "object": {},
     "array": [],
+    "null": None,
 }
+
+reserved_names = ["validate"]
 
 
 def json_schema_to_pydantic_type(
@@ -91,7 +98,7 @@ def json_schema_to_pydantic_field(
     name: str,
     json_schema: t.Dict[str, t.Any],
     required: t.List[str],
-) -> t.Tuple[t.Type, FieldInfo]:
+) -> t.Tuple[str, t.Type, FieldInfo]:
     """
     Converts a JSON schema property to a Pydantic field definition.
 
@@ -109,7 +116,16 @@ def json_schema_to_pydantic_field(
 
     examples = json_schema.get("examples", [])
     default = json_schema.get("default")
+
+    # Check if the field name is a reserved Pydantic name
+    if name in reserved_names:
+        name = f"{name}_"
+        alias = name
+    else:
+        alias = None
+
     return (
+        name,
         t.cast(
             t.Type,
             json_schema_to_pydantic_type(
@@ -119,7 +135,12 @@ def json_schema_to_pydantic_field(
         Field(
             description=description,
             examples=examples,
-            default=... if name in required else default,
+            default=(
+                ...
+                if (name in required or json_schema.get("required", False))
+                else default
+            ),
+            alias=alias,
         ),
     )
 
@@ -140,10 +161,12 @@ def json_schema_to_fields_dict(json_schema: t.Dict[str, t.Any]) -> t.Dict[str, t
     ```
 
     """
-    field_definitions = {
-        name: json_schema_to_pydantic_field(name, prop, json_schema.get("required", []))
-        for name, prop in json_schema.get("properties", {}).items()
-    }
+    field_definitions = {}
+    for name, prop in json_schema.get("properties", {}).items():
+        updated_name, pydantic_type, pydantic_field = json_schema_to_pydantic_field(
+            name, prop, json_schema.get("required", [])
+        )
+        field_definitions[updated_name] = (pydantic_type, pydantic_field)
     return field_definitions  # type: ignore
 
 
@@ -155,10 +178,12 @@ def json_schema_to_model(json_schema: t.Dict[str, t.Any]) -> t.Type[BaseModel]:
     :return: Pydantic `BaseModel` type
     """
     model_name = json_schema.get("title")
-    field_definitions = {
-        name: json_schema_to_pydantic_field(name, prop, json_schema.get("required", []))
-        for name, prop in json_schema.get("properties", {}).items()
-    }
+    field_definitions = {}
+    for name, prop in json_schema.get("properties", {}).items():
+        updated_name, pydantic_type, pydantic_field = json_schema_to_pydantic_field(
+            name, prop, json_schema.get("required", [])
+        )
+        field_definitions[updated_name] = (pydantic_type, pydantic_field)
     return create_model(model_name, **field_definitions)  # type: ignore
 
 
@@ -200,26 +225,36 @@ def pydantic_model_from_param_schema(param_schema: t.Dict) -> t.Type:
         prop_type = prop_info["type"]
         prop_title = prop_info["title"].replace(" ", "")
         prop_default = prop_info.get("default", FALLBACK_VALUES[prop_type])
-        if prop_type in PYDANTIC_TYPE_TO_PYTHON_TYPE:
+        if (
+            prop_type in PYDANTIC_TYPE_TO_PYTHON_TYPE
+            and prop_type not in CONTAINER_TYPE
+        ):
             signature_prop_type = PYDANTIC_TYPE_TO_PYTHON_TYPE[prop_type]
         else:
             signature_prop_type = pydantic_model_from_param_schema(prop_info)
 
-        if prop_name in required_props:
+        field_kwargs = {
+            "description": prop_info.get(
+                "description", prop_info.get("desc", prop_title)
+            ),
+        }
+
+        # Add alias if the field name is a reserved Pydantic name
+        if prop_name in reserved_names:
+            field_kwargs["alias"] = prop_name
+            field_kwargs["title"] = f"{prop_name}_"
+        else:
+            field_kwargs["title"] = prop_title
+
+        if prop_name in required_props or prop_info.get("required", False):
             required_fields[prop_name] = (
                 signature_prop_type,
-                Field(
-                    ...,
-                    title=prop_title,
-                    description=prop_info.get(
-                        "description", prop_info.get("desc", prop_title)
-                    ),
-                ),
+                Field(..., **field_kwargs),
             )
         else:
             optional_fields[prop_name] = (
                 signature_prop_type,
-                Field(title=prop_title, default=prop_default),
+                Field(default=prop_default, **field_kwargs),
             )
 
     if not required_fields and not optional_fields:
@@ -286,16 +321,21 @@ def get_signature_format_from_schema_params(schema_params: t.Dict) -> t.List[Par
             param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
         else:
             signature_param_type = pydantic_model_from_param_schema(param_schema)
-            param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
+            if param_type is None or param_type == "null":
+                param_default = None
+            else:
+                param_default = param_schema.get("default", FALLBACK_VALUES[param_type])
 
         param_annotation = signature_param_type
+        is_required = param_name in required_params or param_schema.get(
+            "required", False
+        )
         param = Parameter(
             name=param_name,
             kind=Parameter.POSITIONAL_OR_KEYWORD,
             annotation=param_annotation,
-            default=Parameter.empty if param_name in required_params else param_default,
+            default=Parameter.empty if is_required else param_default,
         )
-        is_required = param_name in required_params
         if is_required:
             required_parameters.append(param)
         else:
@@ -341,7 +381,7 @@ def get_pydantic_signature_format_from_schema_params(
             name=param_name,
             kind=Parameter.POSITIONAL_OR_KEYWORD,
             annotation=param_dtype,
-            default=parame_field,
+            default=parame_field.default,
         )
         all_parameters.append(param)
 

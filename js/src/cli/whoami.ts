@@ -9,7 +9,7 @@ export default class WhoamiCommand {
     this.program = program;
     this.program
       .command("whoami")
-      .description("Display current user information")
+      .description("Display current authentication information")
       .action(this.handleAction.bind(this));
   }
 

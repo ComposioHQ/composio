@@ -44,10 +44,10 @@ prompt = hub.pull("hwchase17/openai-functions-agent")
 Access GitHub tools provided by Composio for LangChain.
 
 ```python
-from composio_langchain import ComposioToolset, Action, App
+from composio_langchain import ComposioToolSet, Action, App
 
 # Initialize the toolset for GitHub
-tools = ComposioToolset(apps=[App.GITHUB])
+tools = ComposioToolSet(apps=[App.GITHUB])
 ```
 
 #### 3. Execute the Agent
@@ -82,12 +82,12 @@ Validate the execution and response from the agent to ensure the task was comple
 
 ```python
 # Filter to only allow creating issues on GitHub
-toolsGithubCreateIssue = ComposioToolset(actions=[Action.GITHUB_CREATE_ISSUE])
+toolsGithubCreateIssue = ComposioToolSet(actions=[Action.GITHUB_CREATE_ISSUE])
 ```
 
 - **Filter Specific Apps:** Restrict the tools an agent can use.
 
 ```python
 # Allow usage of Asana and GitHub only
-toolsAsanaGithub = ComposioToolset(apps=[App.ASANA, App.GITHUB])
+toolsAsanaGithub = ComposioToolSet(apps=[App.ASANA, App.GITHUB])
 ```

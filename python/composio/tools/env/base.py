@@ -300,6 +300,9 @@ class RemoteWorkspace(Workspace):
             },
             timeout=600,
         )
+        if request.status_code != 200:
+            raise ComposioSDKError(f"Error installing dependencies: {request.text}")
+
         response = request.json()
         if response["error"] is not None:
             raise ComposioSDKError(
@@ -316,6 +319,7 @@ class RemoteWorkspace(Workspace):
         if action.is_runtime:
             self._upload(action=action)
 
+        _ = metadata.pop("_toolset", None)
         request = self._request(
             method="post",
             endpoint=f"/actions/execute/{action.slug}",

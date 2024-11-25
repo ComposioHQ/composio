@@ -6,6 +6,7 @@ import typing_extensions as te
 from composio import Action, ActionType, AppType
 from composio import ComposioToolSet as BaseComposioToolSet
 from composio import TagType
+from composio.tools.toolset import ProcessorsType
 
 
 _openapi_to_python = {
@@ -187,6 +188,9 @@ class ComposioToolSet(
         apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
+        *,
+        processors: t.Optional[ProcessorsType] = None,
+        check_connected_accounts: bool = True,
     ) -> t.List[str]:
         """
         Get composio tools written as ParisonAi supported tools.
@@ -199,10 +203,17 @@ class ComposioToolSet(
         :return: Name of the tools written
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
+        if processors is not None:
+            self._merge_processors(processors)
         return [
             self._write_tool(
                 schema=tool.model_dump(exclude_none=True),
                 entity_id=entity_id or self.entity_id,
             )
-            for tool in self.get_action_schemas(actions=actions, apps=apps, tags=tags)
+            for tool in self.get_action_schemas(
+                actions=actions,
+                apps=apps,
+                tags=tags,
+                check_connected_accounts=check_connected_accounts,
+            )
         ]

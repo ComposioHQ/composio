@@ -56,13 +56,9 @@ class Endpoint:
         if len(queries) == 0:
             return self
 
-        endpoint = self.endpoint
-        endpoint += "?"
-        for key, value in queries.items():
-            endpoint += (
-                f"{urllib.parse.quote_plus(key)}={urllib.parse.quote_plus(value)}&"
-            )
-        return Endpoint(endpoint=endpoint[:-1])
+        return Endpoint(
+            urllib.parse.urljoin(self.endpoint, "?" + urllib.parse.urlencode(queries))
+        )
 
 
 class _V1(Endpoint):
@@ -123,12 +119,18 @@ class _V2(Endpoint):
     Endpoint: /v1
     """
 
+    class _Actions(Endpoint):
+        """
+        Endpoint /v1/actions
+        """
+
     class _Triggers(Endpoint):
         """
         Endpoint /v1/triggers
         """
 
     triggers: _Triggers
+    actions: _Actions
 
 
 v1 = _V1(endpoint="v1")

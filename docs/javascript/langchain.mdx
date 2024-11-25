@@ -39,7 +39,7 @@ async function setupUserConnectionIfNotExists(entityId) {
       ```
     </CodeGroup>
 
-Learn more about Entities [here](introduction/foundations/components/entity/entity-guide)
+Learn more about Entities [here](../../patterns/Auth/connected_account)
 </Step>
 
 <Step title="Setup Agent with Langchain">
@@ -50,7 +50,7 @@ async function executeAgent (entityName){
         // Create entity and get tools
         const entity = toolset.client.getEntity(entityName)
         await setupUserConnectionIfNotExists(entity.id);
-        const tools = await toolset.getActions({ actions: ["github_issues_create"] },entity.id);
+        const tools = await toolset.getTools({ actions: ["github_issues_create"] },entity.id);
 
         // Create an agent
         const prompt = await pull("hwchase17/openai-functions-agent");

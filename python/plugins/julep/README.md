@@ -61,9 +61,9 @@ default_settings = {
 
 This section guides you through the process of integrating GitHub tools into your LangChain projects using Composio's services.
 ```python
-from composio_julep import App, ComposioToolset
+from composio_julep import App, ComposioToolSet
     
-toolset = ComposioToolset()
+toolset = ComposioToolSet()
 composio_tools = toolset.get_tools(tools=App.GITHUB)
 
 

@@ -21,22 +21,6 @@ class BumpType(Enum):
     POST = "post"
 
 
-TO_REPLACE = (
-    'version="',
-    "composio_core==",
-    "composio_langchain==",
-    "composio_crewai==",
-    "composio_autogen==",
-    "composio_lyzr==",
-    "composio_openai==",
-    "composio_claude==",
-    "composio_griptape==",
-    "composio_langgraph==",
-    "composio_praisonai==",
-    "composio_camel==",
-)
-
-
 def _get_bumped_version(current: VersionInfo, btype: BumpType) -> VersionInfo:
     if btype == BumpType.MAJOR:
         return current.bump_major()
@@ -62,12 +46,23 @@ def _bump_setup(file: Path, bump_type: BumpType) -> None:
     print(f"Current version {version}")
     update = _get_bumped_version(current=version, btype=bump_type)
     print(f"Next version {update}")
-    for to_replace in TO_REPLACE:
-        content = content.replace(
-            f"{to_replace}{version}",
-            f"{to_replace}{update}",
+    content = content.replace(f'version="{version}"', f'version="{update}"')
+    print("Bumping dependencies")
+    for chunk in content.split('"'):
+        if not chunk.startswith("composio") or ">" not in chunk:
+            continue
+        dependency, version_range = chunk.split(">")
+        min_version, max_version = map(
+            VersionInfo.parse,
+            version_range.replace("=", "").replace(">", "").replace("<", "").split(","),
         )
-
+        min_version._patch = max_version.patch - (  # pylint: disable=protected-access
+            max_version.patch % 10
+        )
+        content = content.replace(
+            chunk,
+            f"{dependency}>={min_version},<={_get_bumped_version(current=max_version, btype=bump_type)}",
+        )
     file.write_text(content, encoding="utf-8")
     print(f"Bumped {file} to {update}")
 
@@ -113,7 +108,7 @@ def _bump_dockerfiles(bump_type: BumpType) -> None:
 
 
 def _bump_init(bump_type: BumpType) -> None:
-    file = Path.cwd() / "composio" / "__init__.py"
+    file = Path.cwd() / "composio" / "__version__.py"
     print("=" * 64)
     print(f"Bumping {file}")
     content = file.read_text(encoding="utf-8")

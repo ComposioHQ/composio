@@ -1,6 +1,7 @@
 """
 Trigger enums.
 """
+
 from composio.client.enums.base import TRIGGERS_CACHE, TriggerData, _AnnotatedEnum, enum
 
 
@@ -17,6 +18,7 @@ class Trigger(_AnnotatedEnum[TriggerData], path=TRIGGERS_CACHE):
     GMAIL_NEW_GMAIL_MESSAGE: "Trigger"
     GOOGLEDRIVE_GOOGLE_DRIVE_CHANGES: "Trigger"
     NOTION_PAGE_ADDED_TO_DATABASE: "Trigger"
+    OUTLOOK_OUTLOOK_MESSAGE_TRIGGER: "Trigger"
     SLACKBOT_CHANNEL_CREATED: "Trigger"
     SLACKBOT_REACTION_ADDED: "Trigger"
     SLACKBOT_REACTION_REMOVED: "Trigger"

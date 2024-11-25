@@ -27,6 +27,36 @@ class WorkspaceType:
     E2B = E2BWorkspaceConfig
 
 
+class WorkspaceTemplate:
+
+    @staticmethod
+    def AnthropicComputer(
+        composio_api_key: t.Optional[str] = None,
+        composio_base_url: t.Optional[str] = None,
+        github_access_token: t.Optional[str] = None,
+        environment: t.Optional[t.Dict[str, str]] = None,
+        persistent: bool = False,
+        ports: t.Optional[t.Dict[int, t.Any]] = None,
+    ) -> DockerWorkspaceConfig:
+        # Configure ports
+        ports = ports or {}
+        ports.update({5900: 5900, 8501: 8501, 6080: 6080})
+
+        # Configure environment
+        environment = environment or {}
+        environment["DISPLAY"] = ":1"
+
+        return DockerWorkspaceConfig(
+            composio_api_key=composio_api_key,
+            composio_base_url=composio_base_url,
+            github_access_token=github_access_token,
+            environment=environment,
+            persistent=persistent,
+            image="composio/anthropic-computer:dev",
+            ports=ports,
+        )
+
+
 class WorkspaceFactory:
     """Workspace factory class."""
 
@@ -97,7 +127,11 @@ class WorkspaceFactory:
         """Teardown the workspace with given ID."""
         if id not in cls._workspaces:
             return
-        cls._workspaces[id].teardown()
+        workspace = cls._workspaces[id]
+        if workspace.persistent:
+            return
+
+        workspace.teardown()
 
     @classmethod
     def teardown(cls) -> None:

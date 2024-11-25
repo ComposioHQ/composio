@@ -40,7 +40,7 @@ This step involves fetching and integrating GitHub tools provided by Composio, e
 ```python
 from composio_openai import App, ComposioToolSet
 
-toolset = ComposioToolset()
+toolset = ComposioToolSet()
 actions = toolset.get_tools(apps=[App.GITHUB])
 ```
 

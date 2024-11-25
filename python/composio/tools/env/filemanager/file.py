@@ -4,6 +4,7 @@ import re
 import subprocess
 import sys
 import typing as t
+from collections import deque
 from enum import Enum
 from pathlib import Path
 
@@ -56,6 +57,7 @@ class File(WithLogger):
 
     _start: int
     _end: int
+    _history: deque  # TOFIX: Possible memory leak
 
     def __init__(
         self,
@@ -78,6 +80,7 @@ class File(WithLogger):
         self._start = 0
         self._end = window or 100
         self._window = window or 100
+        self._history = deque(maxlen=10)  # Store last 10 versions
 
     def scroll(
         self,
@@ -120,6 +123,11 @@ class File(WithLogger):
         :param line: Line number to go to.
         :return: None
         """
+        total_lines = self.total_lines()
+        if line >= total_lines:
+            raise Exception(
+                f"Line number {line} is out of bounds for file with {total_lines} lines"
+            )
         self._start = line
         self._end = line + self._window
 
@@ -233,6 +241,7 @@ class File(WithLogger):
 
     def write(self, text: str) -> None:
         """Write the given content to the file."""
+        self._history.append(self.path.read_text(encoding="utf-8"))
         self.path.write_text(text, encoding="utf-8")
 
     def total_lines(self) -> int:
@@ -558,6 +567,14 @@ class File(WithLogger):
             }
         self.path.write_text(update, encoding="utf-8")
         return {"replaced_text": string, "replaced_with": replacement}
+
+    def undo(self) -> t.Optional[str]:
+        """Undo the last edit."""
+        if not self._history:
+            return None
+        previous_content = self._history.pop()
+        self.path.write_text(previous_content, encoding="utf-8")
+        return previous_content
 
     def __str__(self) -> str:
         """String representation."""

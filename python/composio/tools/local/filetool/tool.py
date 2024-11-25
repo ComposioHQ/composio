@@ -12,6 +12,7 @@ from .actions import (
     EditFile,
     FindFile,
     GitClone,
+    GitCustom,
     GitPatch,
     GitRepoTree,
     ListFiles,
@@ -45,4 +46,5 @@ class Filetool(LocalTool, autoload=True):
             GitClone,
             GitRepoTree,
             GitPatch,
+            GitCustom,
         ]

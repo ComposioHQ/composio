@@ -1,6 +1,5 @@
 """Test runtime decorator."""
 
-
 import pytest
 import typing_extensions as te
 from pydantic import BaseModel, Field
@@ -106,6 +105,22 @@ def test_missing_argspec() -> None:
 
         @action(toolname="math")
         def square(number: int) -> int:
+            """
+            Calculate square of a number
+
+            :return result: Square of number
+            """
+            return number**2
+
+
+def test_missing_return_type() -> None:
+    with pytest.raises(
+        InvalidRuntimeAction,
+        match="Please add return type on runtime action `square`",
+    ):
+
+        @action(toolname="math")
+        def square(number: int):
             """
             Calculate square of a number
 

@@ -1,4 +1,4 @@
-FROM python:slim
+FROM python:3.10-slim
 
 # Install dependencies
 RUN apt update \
@@ -19,7 +19,7 @@ RUN /bin/python3 -m venv .composio/venv
 RUN export PATH=$PATH:$(pwd)/.composio/venv/bin
 
 # Install composio
-RUN python -m pip install composio-core[all]==0.5.23 fastapi playwright uvicorn
+RUN python -m pip install composio-core[all]==0.5.46 fastapi playwright uvicorn
 
 # Install playwright deps
 RUN playwright install-deps

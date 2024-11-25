@@ -12,13 +12,22 @@ export default class ConnectionsCommand {
     this.program = program;
 
     const command = this.program.command("triggers");
-
     command
-      .description("List all triggers you have access to")
-      .option("--active", "Only list the active triggers")
+      .description("Manage and list triggers")
       .option("--id <text>", "Filter by trigger id")
       .option("--app <text>", "Filter by app name")
-      .action(this.handleAction.bind(this));
+      .option("--active", "Show only active triggers")
+      .action(async (options) => {
+        if (options.active) {
+          // Run active triggers command if --active flag is present
+          const activeTriggers = new ActiveTriggers(command, false);
+          // @ts-ignore
+          await activeTriggers.handleAction();
+        } else {
+          // Otherwise run normal list action
+          await this.handleAction(options);
+        }
+      });
 
     new TriggerAdd(command);
     new TriggerDisable(command);
@@ -74,7 +83,7 @@ export class TriggerAdd {
 
     this.program
       .command("add")
-      .description("Add a trigger")
+      .description("Add a new trigger")
       .argument("<trigger>", "The trigger name")
       .action(this.handleAction.bind(this));
   }
@@ -124,13 +133,13 @@ export class TriggerAdd {
       }
     }
 
-    await composioClient.triggers.setup(
+   const triggerSetupData = await composioClient.triggers.setup(
       connection.id,
       triggerName,
       configValue,
     );
 
-    console.log(chalk.green(`Trigger ${triggerName} setup to app ${appName}`));
+    console.log(chalk.green(`Trigger ${triggerName} setup to app ${appName} with id ${triggerSetupData?.triggerId}`));
   }
 }
 
@@ -141,7 +150,7 @@ export class TriggerDisable {
 
     this.program
       .command("disable")
-      .description("Disable a trigger")
+      .description("Disable an existing trigger")
       .argument("<triggerid>", "The trigger id")
       .action(this.handleAction.bind(this));
   }
@@ -159,13 +168,15 @@ export class TriggerDisable {
 
 export class ActiveTriggers {
   private program: Command;
-  constructor(program: Command) {
+  constructor(program: Command,register: boolean = true) {
     this.program = program;
 
-    this.program
-      .command("active")
-      .description("Disable a trigger")
-      .action(this.handleAction.bind(this));
+    if (register) {
+      this.program
+        .command("active")
+        .description("Show list of currently active triggers")
+        .action(this.handleAction.bind(this));
+    }
   }
 
   async handleAction(): Promise<void> {

@@ -3,47 +3,17 @@ import { jsonSchemaToModel } from "../utils/shared";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import type { Optional, Dict, Sequence } from "../sdk/types";
-import {ActionsControllerV2ListActionsResponse, ActionsListResponseDTO } from "../sdk/client";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
-import logger from "../utils/logger";
 
 export class LangchainToolSet extends BaseComposioToolSet {
     /**
      * Composio toolset for Langchain framework.
      *
-     * Example:
-     * ```typescript
-     * import * as dotenv from "dotenv";
-     * import { App, ComposioToolSet } from "composio_langchain";
-     * import { AgentExecutor, create_openai_functions_agent } from "langchain/agents";
-     * import { ChatOpenAI } from "langchain_openai";
-     * import { hub } from "langchain";
-     *
-     * // Load environment variables from .env
-     * dotenv.config();
-     *
-     * // Pull relevant agent model.
-     * const prompt = hub.pull("hwchase17/openai-functions-agent");
-     *
-     * // Initialize tools.
-     * const openai_client = new ChatOpenAI({ apiKey: process.env.OPENAI_API_KEY });
-     * const composio_toolset = new ComposioToolSet();
-     *
-     * // Get All the tools
-     * const tools = composio_toolset.get_tools({ apps: [App.GITHUB] });
-     *
-     * // Define task
-     * const task = "Star a repo composiohq/composio on GitHub";
-     *
-     * // Define agent
-     * const agent = create_openai_functions_agent(openai_client, tools, prompt);
-     * const agent_executor = new AgentExecutor({ agent, tools, verbose: true });
-     *
-     * // Execute using agent_executor
-     * agent_executor.invoke({ input: task });
-     * ```
      */
+    static FRAMEWORK_NAME = "langchain";
+    static DEFAULT_ENTITY_ID = "default";
+
     constructor(
         config: {
             apiKey?: Optional<string>,
@@ -55,8 +25,8 @@ export class LangchainToolSet extends BaseComposioToolSet {
         super(
             config.apiKey || null,
             config.baseUrl || COMPOSIO_BASE_URL,
-            "langchain",
-            config.entityId || "default",
+            LangchainToolSet.FRAMEWORK_NAME,
+            config.entityId || LangchainToolSet.DEFAULT_ENTITY_ID,
             config.workspaceConfig || Workspace.Host()
         );
     }
@@ -65,7 +35,6 @@ export class LangchainToolSet extends BaseComposioToolSet {
         schema: Dict<any>,
         entityId: Optional<string> = null
     ): DynamicStructuredTool {
-        const app = schema["appName"];
         const action = schema["name"];
         const description = schema["description"];
 
@@ -89,33 +58,6 @@ export class LangchainToolSet extends BaseComposioToolSet {
         });
     }
 
-    /**
-        * @deprecated Use getTools instead.
-    */
-    async getActions(
-        filters: {
-            actions?: Optional<Sequence<string>>
-        } = {},
-        entityId?: Optional<string>
-    ): Promise<Sequence<DynamicStructuredTool>> {
-        const actions = await this.getActionsSchema(filters as any, entityId);
-        return actions!.map((tool: NonNullable<ActionsListResponseDTO["items"]>[0]) =>
-            this._wrapTool(
-                tool,
-                entityId || this.entityId
-            )
-        ) as any;
-    }
-
-    /**
-     * @deprecated Use getTools instead.
-     */
-    async get_actions(filters: {
-        actions?: Optional<Sequence<string>>
-    } = {}, entityId?: Optional<string>): Promise<Sequence<DynamicStructuredTool>> {
-        logger.warn("get_actions is deprecated, use getActions instead");
-        return this.getActions(filters, entityId);
-    }
 
     async getTools(
         filters: {
@@ -123,11 +65,13 @@ export class LangchainToolSet extends BaseComposioToolSet {
             apps?: Sequence<string>;
             tags?: Optional<Array<string>>;
             useCase?: Optional<string>;
+            usecaseLimit?: Optional<number>;
+            filterByAvailableApps?: Optional<boolean>;
         },
         entityId: Optional<string> = null
     ): Promise<Sequence<DynamicStructuredTool>> {
         const tools = await this.getToolsSchema(filters, entityId);
-        return tools.map((tool: NonNullable<ActionsControllerV2ListActionsResponse["items"]>[0]) =>
+        return tools.map((tool) =>
             this._wrapTool(
                 tool,
                 entityId || this.entityId
@@ -135,15 +79,5 @@ export class LangchainToolSet extends BaseComposioToolSet {
         );
     }
 
-    /**
-     * @deprecated Use getTools instead.
-     */
-    async get_tools(filters: {
-        apps: Sequence<string>;
-        tags?: Optional<Array<string>>;
-        useCase?: Optional<string>;
-    }, entityId?: Optional<string>): Promise<Sequence<DynamicStructuredTool>> {
-        logger.warn("get_tools is deprecated, use getTools instead");
-        return this.getTools(filters, entityId);
-    }
+
 }

@@ -1,160 +1,87 @@
 # pylint: disable=logging-fstring-interpolation
-
-import asyncio
+import concurrent.futures
 import datetime
-import os
+import glob
+import json
 import typing as t
-from pathlib import Path
 
 import docker
 from datasets import Dataset, load_dataset
 from docker import errors as docker_errors
+from swebench.harness.run_evaluation import main as run_evaluation
+from tenacity import retry, stop_after_attempt, wait_exponential
 
-from composio import Action, WorkspaceFactory, WorkspaceType
+from composio import Action, ComposioToolSet, WorkspaceFactory, WorkspaceType
 from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import get as get_logger
 from composio.utils.url import get_api_url_base
-
-from composio_crewai import ComposioToolSet
-
-from swekit.benchmark.constants import MODEL_GPT4
-from swekit.benchmark.docker_utils.evaulate_on_docker import (
-    EvaluateOnDockerArgs,
-    evaluate,
-)
-from swekit.benchmark.get_score_card import generate_scorecard
-from swekit.benchmark.setup_test_bed import create_patches_file
-
-
-DATASET_NAME = os.environ.get("DATASET_NAME", "princeton-nlp/SWE-bench_Verified")
-PATH_TESTBED = "testbed/"
 
 
 logger = get_logger(name="run_evaluation")
 
 
-def get_issues_dataset(test_split, test_instance_ids=[]) -> Dataset:
+def get_issues_dataset(dataset_name, test_split, test_instance_ids=[]) -> Dataset:
     test_dataset = t.cast(
         Dataset,
         load_dataset(
-            DATASET_NAME,
+            dataset_name,
             split=f"test[{test_split}]",
         ),
     )
-    print(f"Original test_dataset size: {len(test_dataset)}")
-    print(f"Number of test_instance_ids: {len(test_instance_ids)}")
-    print(f"First few test_instance_ids: {test_instance_ids[:5]}")
+    logger.info(f"Original test_dataset size: {len(test_dataset)}")
+    logger.info(f"Number of test_instance_ids: {len(test_instance_ids)}")
+    logger.info(f"First few test_instance_ids: {test_instance_ids[:5]}")
 
     if len(test_instance_ids) > 0:
         test_dataset = test_dataset.filter(
             lambda x: x["instance_id"] in test_instance_ids
         )
 
-    print(f"Filtered test_dataset size: {len(test_dataset)}")
+    logger.info(f"Filtered test_dataset size: {len(test_dataset)}")
     return test_dataset
 
 
-def get_score(logs_dir):
-    prediction_patches_path, dataset_on_disk_path = create_patches_file(
-        logs_dir, DATASET_NAME
-    )
-    logger.info(
-        f"logs dir: {logs_dir}, prediction_patches_path: {prediction_patches_path}"
-    )
-    evaluate_args = EvaluateOnDockerArgs(
-        predictions_path=str(prediction_patches_path),
-        swe_bench_tasks=os.path.expanduser(dataset_on_disk_path),
-        log_dir=str(logs_dir),
-    )
-    asyncio.run(evaluate(**evaluate_args.model_dump()))
-    prediction_path_dir = Path(prediction_patches_path).parent
-    testbed_dir = prediction_path_dir / Path(PATH_TESTBED)
-    if not os.path.exists(testbed_dir):
-        os.makedirs(testbed_dir)
-    generate_scorecard(
-        predictions_dir=prediction_path_dir,
-        log_dir=str(logs_dir),
-        swe_bench_path=DATASET_NAME,
-        model=MODEL_GPT4,
+def get_score(logs_dir, run_id, dataset_name):
+    temp = []
+    for files in glob.glob(f"{logs_dir}/agent_logs_*.json"):
+        pred = json.load(open(files, "r"))
+        for key, value in pred.items():
+            temp.append(
+                {
+                    "instance_id": key,
+                    "model_patch": value[0]["agent_output"],
+                    "model_name_or_path": "composio",
+                }
+            )
+    with open(f"{logs_dir}/predictions.json", "w") as f:
+        json.dump(temp, f, indent=4)
+
+    run_evaluation(
+        dataset_name=dataset_name,
+        split="test",
+        instance_ids=[],
+        predictions_path=f"{logs_dir}/predictions.json",
+        max_workers=4,
+        open_file_limit=4096,
+        timeout=1800,
+        force_rebuild=False,
+        cache_level="env",
+        clean=False,
+        run_id=run_id,
     )
 
 
-def build_issue_description(hints, problem_statement, include_hints):
+def build_issue_description(repo, hints, problem_statement, include_hints):
     if not problem_statement or not problem_statement.strip():
         raise ValueError("problem statement is empty")
-    tmpl = f"""Here is the issue, that you have to solve all on your own:\n{problem_statement}"""
+    tmpl = f"""You have the repository {repo} cloned in the workspace. You are at the root of the repository. Here is the issue, that you have to solve all on your own:\n\n{problem_statement}\n\n. You can only make changes in the core repository {repo}.\n\n"""  # noqa: E501
     if include_hints and hints:
         tmpl += f"""\n\nHere are few hints to solve the issue described in problem_statement: \n{hints}"""
 
     return tmpl
 
 
-def get_workspace_from_repo_map(repo, repo_to_workspace_map, base_commit):
-    workspace_id = repo_to_workspace_map.get(repo)
-    if not workspace_id or not workspace_id.strip():
-        return None
-
-    print("Resetting repository to base commit")
-    composio_toolset = ComposioToolSet(workspace_id=workspace_id)
-    composio_toolset.execute_action(
-        action=Action.FILETOOL_GIT_CLONE,
-        params={
-            "repo_name": repo,
-            "just_reset": True,
-            "commit_id": base_commit,
-        },
-    )
-    return workspace_id
-
-
-def create_workspace_from_image(repo, repo_to_image_id_map, base_commit):
-    if not repo_to_image_id_map.get(repo):
-        logger.info("repo: %s not found in repo-to-image-map", repo)
-        return ""
-    logger.info("Using saved image")
-    start_time = datetime.datetime.now()
-    composio_toolset = ComposioToolSet(workspace_config=WorkspaceType.Host())
-    workspace = WorkspaceFactory.new(
-        config=WorkspaceType.Docker(
-            image=repo_to_image_id_map[repo],
-            composio_api_key=composio_toolset.api_key,
-            composio_base_url=composio_toolset._base_url or get_api_url_base(),
-            github_access_token=composio_toolset._try_get_github_access_token_for_current_entity(),
-        ),
-    )
-    workspace_id = workspace.id
-    composio_toolset.set_workspace_id(
-        workspace_id=workspace_id,
-    )
-
-    workspace_creation_time = datetime.datetime.now() - start_time
-    cd_resp = composio_toolset.execute_action(
-        action=Action.SHELL_EXEC_COMMAND,
-        params={
-            "cmd": f"cd /{repo.split('/')[-1]}",
-        },
-    )
-    if isinstance(cd_resp, dict) and cd_resp.get("status") == "failure":
-        raise Exception(f"Error changing directory: {cd_resp['details']}")
-    logger.info(
-        "workspace is created, workspace-id is: %s, creation time: %s",
-        workspace_id,
-        workspace_creation_time,
-    )
-    logger.info("Resetting repository to base commit")
-    reset_resp = composio_toolset.execute_action(
-        action=Action.FILETOOL_GIT_CLONE,
-        params={
-            "repo_name": repo,
-            "just_reset": True,
-            "commit_id": base_commit,
-        },
-    )
-    if isinstance(reset_resp, dict) and not reset_resp.get("success"):
-        raise Exception(f"Error resetting repository: {reset_resp['error']}")
-    return workspace_id
-
-
+@retry(stop=stop_after_attempt(1), wait=wait_exponential(multiplier=1, min=4, max=10))
 def build_image_and_container(
     repo, base_commit, workspace_env=WorkspaceType.Docker, image_name=DEFAULT_IMAGE
 ):
@@ -179,6 +106,7 @@ def build_image_and_container(
         )
     else:
         raise ValueError(f"Unsupported workspace environment: {workspace_env}")
+    logger.info("Workspace created")
     workspace_creation_time = datetime.datetime.now() - start_time
     logger.info(
         "workspace is created, workspace-id is: %s, creation time: %s",
@@ -239,28 +167,25 @@ def setup_workspace(
     base_commit,
     workspace_env=WorkspaceType.Docker,
     image_name=DEFAULT_IMAGE,
+    num_instances=1,
 ):
-    # workspace_id = get_workspace_from_repo_map(
-    #     repo=repo, repo_to_workspace_map=repo_to_workspace_map, base_commit=base_commit
-    # )
-    # if workspace_id:
-    #     return workspace_id
-    # if workspace_env == ExecEnv.DOCKER:
-    #     workspace_id = create_workspace_from_image(
-    #         repo=repo,
-    #         repo_to_image_id_map=repo_to_image_id_map,
-    #         base_commit=base_commit,
-    #     )
-    #     if workspace_id:
-    #         return workspace_id
-    workspace_id = build_image_and_container(
-        repo=repo,
-        base_commit=base_commit,
-        workspace_env=workspace_env,
-        image_name=image_name,
-    )
-    repo_to_workspace_map[repo] = workspace_id
-    return workspace_id
+    workspace_ids = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_instances) as executor:
+        futures = [
+            executor.submit(
+                build_image_and_container,
+                repo=repo,
+                base_commit=base_commit,
+                workspace_env=workspace_env,
+                image_name=image_name,
+            )
+            for _ in range(num_instances)
+        ]
+        workspace_ids = [
+            future.result() for future in concurrent.futures.as_completed(futures)
+        ]
+    repo_to_workspace_map[repo] = workspace_ids
+    return workspace_ids
 
 
 def check_and_pull_image(image_name):
@@ -304,4 +229,8 @@ def check_and_pull_image(image_name):
 
 
 if __name__ == "__main__":
-    get_score(logs_dir="/Users/shrey/.composio_coder/logs/1724766390")
+    get_score(
+        logs_dir="/Users/shrey/.composio_coder/logs/17286398988283/",
+        run_id="langgraph_agent_temp",
+        dataset_name="princeton-nlp/SWE-bench_Verified",
+    )

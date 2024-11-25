@@ -1,0 +1,163 @@
+---
+title: "Create & Manage Connections for Users"
+sidebarTitle: "Connections"
+icon: "link"
+description: "Learn how to securely manage and authenticate multiple user connections"
+---
+
+### Entities
+
+- Each **user** is represented by a **unique entity ID**.
+- If you have two users, **Jessica** and **Melissa**, they will each have **unique entity IDs**.
+<Info>If not specified, `default` will be used as the entity ID.</Info>
+
+You can use an entity object to manage connected accounts and perform actions on behalf of a user (more on this [here](/patterns/tools/use-tools/action-guide-without-agents#how-can-i-use-tools-for-a-specific-user)). Here's how to retrieve an entity object:
+
+<CodeGroup>
+```python Python
+from composio import ComposioToolSet
+
+toolset = ComposioToolSet()
+entity = toolset.get_entity(id='Jessica')
+```
+
+```javascript JavaScript
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet();
+const entity = toolset.client.getEntity(id='Jessica');
+```
+</CodeGroup>
+
+### Connected Accounts
+- When a user connects their account, a `connected_account` object is created. 
+- **Connected Account** securely stores **authentication data** such as **API keys, access tokens and refresh tokens**.
+
+### How to initiate a new connection for your user
+Follow these steps to initiate a new connection for your user (for both OAuth and non-OAuth based Apps):
+
+<Tabs>
+<Tab title="OAuth-Based Apps">
+Initiate a new connection by passing the redirect url, entity id & app.
+<CodeGroup>
+```python Python
+from composio import ComposioToolSet, App 
+toolset = ComposioToolSet()
+
+# URL that the user will be redirected to after completing the authentication process
+redirect_url = "https://yourwebsite.com/connection/success"
+
+# Unique identifier for the user for whom the connection is being created
+entity_id = "Jessica" 
+
+# Initiate new connection (You can use integration_id instead of app)
+connection_request = toolset.initiate_connection(redirect_url=redirect_url, entity_id=entity_id, app=App.GMAIL)
+
+# Redirect the user to the URL below
+print(connection_request.redirectUrl)
+
+# Check the status of the connection (it can be initiated, active, or failed)
+print(connection_request.connectionStatus)
+```
+
+```javascript Javascript
+import { OpenAIToolSet } from "composio-core";
+const toolset = new OpenAIToolSet();
+
+// URL that the user will be redirected to after completing the authentication process
+const redirectURL = "https://yourwebsite.com/connection/success"
+
+// Unique identifier for the user for whom the connection is being created
+const entityId = "Jessica" 
+
+// Initiate new connection (You can use integration_id instead of app)
+const connectionRequest = await toolset.client.connectedAccounts.initiate({
+  app: "gmail",
+  redirect_url: redirectURL,
+  entityId: entityId,
+});
+
+// Redirect the user to the URL below
+console.log(connectionRequest.redirectUrl);
+
+// Check the status of the connection (it can be initiated, active, or failed)
+console.log(connectionRequest.connectionStatus);
+```
+</CodeGroup>
+<Tip>Each App integration has a unique **integration ID**. You can use this ID instead of the **app name** when creating connections.</Tip>
+</Tab>
+<Tab title="Non OAuth-Based Apps">
+Get the expected parameters required to create a connection & pass then while initiating a new connection (API Key, Subdomain URL, Username etc.).
+<Steps>
+<Step title="Collect parameters required to create a connection">
+<CodeGroup>
+```python Python
+from composio import ComposioToolSet, App
+toolset = ComposioToolSet()
+
+# You can use integration_id instead of app
+response = toolset.get_expected_params_for_user(app=App.FIRECRAWL) 
+
+print(response["expected_params"])
+```
+
+```javascript Javascript
+import { OpenAIToolSet } from "composio-core";
+const toolset = new OpenAIToolSet();
+
+// You can use integration_id instead of app
+const expectedInputFields = await toolset.getExpectedParamsForUser({
+    app: "firecrawl",
+});
+
+console.log(expectedInputFields)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Initiate a new connection">
+<CodeGroup>
+```python Python
+# Unique identifier for the user for whom the connection is being created
+entity_id = "Jessica"
+
+# Add the parameters collected from the user
+collected_params = {
+    "api_key": "<your_api_key>"
+}
+
+# Initiate new connection (You can use integration_id instead of app)
+connection_request = toolset.initiate_connection(connected_account_params=collected_params, entity_id=entity_id, app=App.FIRECRAWL)
+
+# Check the status of the connection (it can be initiated, active, or failed)
+print(connection_request.connectionStatus)
+```
+
+```javascript Javascript
+// Unique identifier for the user for whom the connection is being created
+const entityId = "Jessica" 
+
+// Add the parameters collected from the user
+const collectedParams = {
+    "api_key": "<your_api_key>"
+}
+
+// Initiate new connection (You can use integration_id instead of app)
+const connectionRequest = await toolset.client.connectedAccounts.initiate({
+    data: {
+        ...collectedParams
+    },
+    entityId: entityId,
+    app: "firecrawl",
+  });
+
+
+// Check the status of the connection (it can be initiated, active, or failed)
+console.log(connectionRequest.connectionStatus);
+```
+</CodeGroup>
+</Step>
+</Steps>
+<Tip>Each App integration has a unique **integration ID**. You can use this ID instead of the **app name** when creating connections.</Tip>
+</Tab>
+</Tabs>

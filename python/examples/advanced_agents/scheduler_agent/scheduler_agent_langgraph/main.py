@@ -11,8 +11,12 @@ from langgraph.prebuilt import ToolNode
 from composio_langgraph import Action, ComposioToolSet
 from composio.client.collections import TriggerEventData
 
-# Setup
+from datetime import datetime
+from typing import Optional, Any
 load_dotenv()
+
+DATE_TIME: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+TIMEZONE: Optional[Any] = datetime.now().astimezone().tzinfo
 
 # Constants
 SCHEDULER_AGENT_NAME = "Scheduler"
@@ -78,10 +82,9 @@ You are an AI assistant specialized in analyzing emails, creating calendar event
       - Any other relevant details or instructions for the participants
 
 Remember:
-- The current date and time is {DATE_TIME}.
+- The current date and time is {DATE_TIME} and timezone is {TIMEZONE}.
 - All conversations and scheduling occur in the IST timezone.
 - Be courteous and professional in all communications.
-- If you encounter any errors when making function calls, try passing an empty config ({{"config": {{}}}}).
 - Always provide a FINAL ANSWER when you've completed all necessary tasks.
 
 Your goal is to efficiently manage scheduling and communication, ensuring a smooth experience for all parties involved.
@@ -120,6 +123,7 @@ workflow.add_conditional_edges(
     {
         "continue": SCHEDULER_AGENT_NAME,
         "call_tool": TOOL_NODE_NAME,
+        "__end__": "__end__",
     },
 )
 
@@ -154,9 +158,10 @@ listener = composio_toolset.create_trigger_listener()
 @listener.callback(filters={"trigger_name": "gmail_new_gmail_message"})
 def callback_new_message(event: TriggerEventData) -> None:
     payload = event.payload
+    print(payload)
     thread_id = payload.get("threadId")
-    email_content = payload.get("snippet")
-    email_sender = extract_sender_email(payload["payload"])
+    email_content = payload.get("messageText")
+    email_sender = payload["sender"]
 
     if email_sender is None:
         print("No sender email found")

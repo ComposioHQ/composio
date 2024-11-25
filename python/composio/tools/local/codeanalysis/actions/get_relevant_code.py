@@ -4,6 +4,10 @@ from typing import Dict
 from pydantic import BaseModel, Field
 
 from composio.tools.base.local import LocalAction
+from composio.tools.local.codeanalysis.actions.create_codemap import (
+    CreateCodeMap,
+    CreateCodeMapRequest,
+)
 
 
 class GetRelevantCodeRequest(BaseModel):
@@ -32,6 +36,7 @@ class GetRelevantCode(LocalAction[GetRelevantCodeRequest, GetRelevantCodeRespons
     query: "database connection pooling"
 
     The relevance of retrieved code snippets depends on the quality and specificity of the provided query.
+    Don't use this action if you are not sure about the query. And the results returned are not very relevant.
     """
 
     display_name = "Get Relevant Code"
@@ -40,6 +45,7 @@ class GetRelevantCode(LocalAction[GetRelevantCodeRequest, GetRelevantCodeRespons
     def execute(
         self, request: GetRelevantCodeRequest, metadata: Dict
     ) -> GetRelevantCodeResponse:
+        CreateCodeMap().execute(CreateCodeMapRequest(), metadata)
         from composio.tools.local.codeanalysis import (  # pylint: disable=import-outside-toplevel
             embedder,
         )

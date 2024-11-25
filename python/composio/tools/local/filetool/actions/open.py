@@ -2,6 +2,7 @@ import typing as t
 
 from pydantic import Field
 
+from composio.tools.base.exceptions import ExecutionFailed
 from composio.tools.base.local import LocalAction
 from composio.tools.local.filetool.actions.base_action import (
     BaseFileRequest,
@@ -28,13 +29,12 @@ class OpenFileResponse(BaseFileResponse):
 
     message: str = Field(default="", description="Message to display to the user")
     lines: str = Field(default="", description="File content with their line numbers")
-    error: str = Field(default="", description="Error message if any")
 
 
 class OpenFile(LocalAction[OpenFileRequest, OpenFileResponse]):
     """
     Opens a file in the editor based on the provided file path,
-    If line_number is provided, the window will be move to include that line
+    If line_number is provided, the window will be moved after that line. (i.e. 100 lines after the line number will be displayed)
 
     Can result in:
     - ValueError: If file_path is not a string or if the file does not exist.
@@ -56,17 +56,17 @@ class OpenFile(LocalAction[OpenFileRequest, OpenFileResponse]):
 
             content = file.format_text(lines=file.read())
             if len(content) == 0:
-                return OpenFileResponse(error="File is empty")
+                raise ExecutionFailed("File is empty")
 
             return OpenFileResponse(
                 message="File opened successfully. 100 lines after the cursor displayed.",
                 lines=content,
             )
         except FileNotFoundError as e:
-            return OpenFileResponse(error=f"File not found: {str(e)}")
+            raise ExecutionFailed(f"File not found: {str(e)}") from e
         except IsADirectoryError as e:
-            return OpenFileResponse(error=f"Cannot open a directory: {str(e)}")
+            raise ExecutionFailed(f"Cannot open a directory: {str(e)}") from e
         except PermissionError as e:
-            return OpenFileResponse(error=f"Permission denied: {str(e)}")
+            raise ExecutionFailed(f"Permission denied: {str(e)}") from e
         except IOError as e:
-            return OpenFileResponse(error=f"Error reading file: {str(e)}")
+            raise ExecutionFailed(f"Error reading file: {str(e)}") from e

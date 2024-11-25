@@ -1,6 +1,6 @@
 {
   "name": "composio-core",
-  "version": "0.1.17-4",
+  "version": "0.2.9-9",
   "description": "",
   "main": "lib/src/index.js",
   "scripts": {
@@ -11,7 +11,8 @@
     "build:watch": "tsc --watch --project . --outDir lib --watch",
     "type-docs": "typedoc",
     "openapispec:generate": "npx @hey-api/openapi-ts",
-    "run:cli": "ts-node src/cli/index.ts"
+    "run:cli": "ts-node src/cli/index.ts",
+    "run:sample": "ts-node sample.ts"
   },
   "bin": {
     "composio-js": "./lib/src/cli/index",
@@ -71,6 +72,7 @@
     "open": "^8.4.0",
     "openai": "^4.50.0",
     "pusher-js": "8.4.0-rc2",
+    "resolve-package-path": "^4.0.3",
     "ts-node": "^10.9.2",
     "uuid": "^10.0.0",
     "winston": "^3.13.1",

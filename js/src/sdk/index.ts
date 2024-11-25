@@ -12,6 +12,11 @@ import axios from 'axios';
 import { getPackageJsonDir } from './utils/projectUtils';
 import { isNewerVersion } from './utils/other';
 import { getClientBaseConfig } from './utils/config';
+import chalk from 'chalk';
+import { CEG, ERROR } from './utils/error';
+import { ActionProxyRequestConfigDTO } from './client';
+import apiClient from '../sdk/client/client';
+import { GetConnectorInfoResDTO } from './client';
 
 export class Composio {
     /**
@@ -35,8 +40,15 @@ export class Composio {
      * @param {string} [runtime] - The runtime environment for the SDK.
      */
     constructor(apiKey?: string, baseUrl?: string, runtime?: string) {
+       
         // // Parse the base URL and API key, falling back to environment variables or defaults if not provided.
         const { baseURL: baseURLParsed, apiKey: apiKeyParsed } =  getClientBaseConfig(baseUrl, apiKey);
+
+        console.log("Using API Key: ", apiKeyParsed , "and baseURL: ", baseURLParsed);
+        if(!apiKeyParsed){
+            
+            CEG.throwCustomError(ERROR.COMMON.API_KEY_UNAVAILABLE,{});
+        }
 
         // Initialize the BackendClient with the parsed API key and base URL.
         this.backendClient = new BackendClient(apiKeyParsed, baseURLParsed, runtime);
@@ -84,5 +96,111 @@ export class Composio {
     getEntity(id: string = 'default'): Entity {
         return new Entity(this.backendClient, id);
     }
-}
 
+    async getExpectedParamsForUser(
+        params: { app?: string; integrationId?: string; entityId?: string; authScheme?: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" } = {},
+    ): Promise<{ expectedInputFields: GetConnectorInfoResDTO["expectedInputFields"], integrationId: string, authScheme: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" }> {
+        const { app, entityId } = params;
+        let { integrationId } = params;
+        if (integrationId === null && app === null) {
+            throw new Error(
+                "Both `integration_id` and `app` cannot be None"
+            );
+        }
+
+        if (!integrationId) {
+            try {
+                const integrations = await this.integrations.list({
+                    appName: app!,
+                    showDisabled: false
+                })
+                if (params.authScheme && integrations) {
+                    integrations.items = integrations.items.filter((integration: any) => integration.authScheme === params.authScheme);
+                }
+                integrationId = (integrations?.items[0] as any)?.id;
+            } catch (_) {
+                // do nothing
+            }
+        }
+
+        let integration =  integrationId ? (await this.integrations.get({
+            integrationId: integrationId!
+        })) : undefined;
+
+        if(integration) {
+            return {
+                expectedInputFields: integration.expectedInputFields,
+                integrationId: integration.id!,
+                authScheme: integration.authScheme as "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT"
+            }
+        }
+
+        const appInfo = await this.apps.get({
+            appKey: app!.toLocaleLowerCase()
+        });
+
+        const preferredAuthScheme = ["OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN", "BASIC_WITH_JWT"];
+
+        let schema: typeof preferredAuthScheme[number] | undefined = params.authScheme;
+        
+        if(!schema) {
+            for(const scheme of preferredAuthScheme) {
+                if(appInfo.auth_schemes?.map((_authScheme: any) => _authScheme.mode).includes(scheme)) {
+                    schema = scheme;
+                    break;
+                }
+            }
+        }
+
+        const areNoFieldsRequiredForIntegration = (appInfo.testConnectors?.length ?? 0) > 0 || ((appInfo.auth_schemes?.find((_authScheme: any) => _authScheme.mode === schema) as any)?.fields?.filter((field: any) => !field.expected_from_customer)?.length ?? 0) == 0;
+
+        if (!areNoFieldsRequiredForIntegration) {
+            throw new Error(
+                `No default credentials available for this app, please create new integration by going to app.composio.dev or through CLI - composio add ${appInfo.key}`
+            );
+        }
+
+        const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
+        const hasRelevantTestConnectors = params.authScheme ? appInfo.testConnectors?.filter((connector: any) => connector.authScheme === params.authScheme)?.length! > 0 : appInfo.testConnectors?.length! > 0;
+        if(hasRelevantTestConnectors) {
+            integration = await this.integrations.create({
+                appId: appInfo.appId,
+                name: `integration_${timestamp}`,
+                authScheme: schema,
+                authConfig: {},
+                useComposioAuth: true,
+            });
+
+            return { 
+                expectedInputFields: integration?.expectedInputFields!,
+                integrationId: integration?.id!,
+                authScheme: integration?.authScheme as "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT"
+            }
+        }
+
+        if(!schema) {
+            throw new Error(
+                `No supported auth scheme found for \`${String(app)}\`, ` +
+                "Please create an integration and use the ID to " +
+                "get the expected parameters."
+            );
+        }
+
+        integration = await this.integrations.create({
+            appId: appInfo.appId,
+            name: `integration_${timestamp}`,
+            authScheme: schema,
+            authConfig: {},
+            useComposioAuth: false,
+        });
+
+        if(!integration) {
+            throw new Error("An unexpected error occurred while creating the integration, please create an integration manually and use its ID to get the expected parameters");
+        }
+        return { 
+            expectedInputFields: integration.expectedInputFields,
+            integrationId: integration.id!,
+            authScheme: integration.authScheme as "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT"
+        }
+    }
+}

@@ -6,17 +6,20 @@ from autogen.agentchat import AssistantAgent, UserProxyAgent
 from composio_autogen import Action, App, ComposioToolSet
 from composio.client.collections import TriggerEventData
 from datetime import datetime
-
+from typing import Optional, Any
 load_dotenv()
+
+DATE_TIME: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+TIMEZONE: Optional[Any] = datetime.now().astimezone().tzinfo
 
 # Configuration for the language model
 llm_config = {
     "config_list": [{"model": "gpt-4o", "api_key": os.environ["OPENAI_API_KEY"]}]
 }
 
-scheduler_assistant_prompt = """
+scheduler_assistant_prompt = f"""
 You are an AI assistant specialized in creating calendar events based on email information. 
-Current DateTime: {date_time}. All the conversations happen in IST timezone.
+Current DateTime: {DATE_TIME} and timezone is {TIMEZONE}. All the conversations happen in IST timezone.
 Pass empty config ("config": {{}}) for the function calls, if you get an error about not passing config.
 Analyze email, and create event on calendar depending on the email content. 
 You should also draft an email in response to the sender of the previous email    
@@ -72,8 +75,8 @@ def callback_new_message(event: TriggerEventData) -> None:
     print("here in the function")
     payload = event.payload
     thread_id = payload.get("threadId")
-    message = payload.get("snippet")
-    sender_mail = extract_sender_email(payload["payload"])
+    message = payload.get("messageText")
+    sender_mail = payload.get("sender")
     if sender_mail is None:
         print("No sender email found")
         return

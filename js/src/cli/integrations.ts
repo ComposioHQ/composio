@@ -14,14 +14,14 @@ export default class ConnectionsCommand {
     const command = this.program.command("integrations");
 
     command
-      .description("List all integrations you created")
+      .description("List all integrations you have created or connected")
       .option("-a, --active", "Show only active integrations")
       .action(this.handleAction.bind(this));
   }
 
   private async handleAction(options: { active: boolean }): Promise<void> {
     getAPISDK();
-    const { data, error } = await client.appConnector.listGlobalConnectors({
+    const { data, error } = await client.appConnector.listAllConnectors({
       query: options.active ? { status: "ACTIVE" } : {},
       throwOnError: false,
     });

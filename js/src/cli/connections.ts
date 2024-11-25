@@ -53,7 +53,7 @@ export class ConnectionsGetCommand {
     this.program
       .command("get")
       .description("Get a connection by id")
-      .argument("<id>", "Connection id")
+      .argument("<id>", "Connection id (required)")
       .action(this.handleAction.bind(this));
   }
 

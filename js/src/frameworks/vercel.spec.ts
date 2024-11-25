@@ -14,7 +14,7 @@ describe("Apps class tests", () => {
     });
 
     it("check if tools are coming", async () => {
-        const tools = await vercelAIToolSet.get_tools({
+        const tools = await vercelAIToolSet.getTools({
             apps: ['github']
         });
 

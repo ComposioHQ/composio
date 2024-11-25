@@ -25,6 +25,7 @@ from composio import Action, App
 from composio.cli.context import get_context
 from composio.client.collections import ActionModel, AppModel
 from composio.client.enums.base import get_runtime_actions
+from composio.tools.base.abs import action_registry
 from composio.tools.env.base import ENV_ACCESS_TOKEN
 from composio.tools.local import load_local_tools
 from composio.utils.logging import get as get_logger
@@ -168,10 +169,15 @@ def create_app() -> FastAPI:
     @with_exception_handling
     def _update_apps() -> bool:
         """Get list of all available apps."""
-        from composio.cli.apps import update  # pylint: disable=import-outside-toplevel
+        from composio.cli.apps import (  # pylint: disable=import-outside-toplevel
+            update_actions,
+            update_apps,
+            update_triggers,
+        )
 
-        update(context=get_context())
-
+        apps = update_apps(client=get_context().client)
+        update_actions(client=get_context().client, apps=apps)
+        update_triggers(client=get_context().client, apps=apps)
         return True
 
     @app.get("/api/apps/{name}", response_model=APIResponse[AppModel])
@@ -197,7 +203,7 @@ def create_app() -> FastAPI:
     def _get_local_actions() -> t.List[ActionModel]:
         """Get list of all available actions."""
         return get_context().toolset.get_action_schemas(
-            actions=[action.slug for action in Action.all() if action.is_local]
+            actions=list(action_registry["local"])
         )
 
     @app.get("/api/enums/actions", response_model=APIResponse[t.List[str]])

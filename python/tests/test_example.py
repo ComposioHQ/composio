@@ -49,7 +49,7 @@ EXAMPLES = {
     },
     "local_tools": {
         "plugin": "autogen",
-        "file": EXAMPLES_PATH / "local_tools" / "autogen_math.py",
+        "file": EXAMPLES_PATH / "miscellaneous" / "math_agent" / "autogen_math.py",
         "match": {
             "type": "stdout",
             "values": ["11962"],
@@ -58,7 +58,7 @@ EXAMPLES = {
     },
     "runtime_tools": {
         "plugin": "langchain",
-        "file": EXAMPLES_PATH / "runtime_tools" / "langchain_math.py",
+        "file": EXAMPLES_PATH / "miscellaneous" / "runtime_tools" / "langchain_math.py",
         "match": {
             "type": "stdout",
             "values": ["2645406630"],
@@ -130,7 +130,7 @@ EXAMPLES = {
     },
     "upload_file": {
         "plugin": "crew_ai",
-        "file": EXAMPLES_PATH / "attachment" / "send_attachment.py",
+        "file": EXAMPLES_PATH / "miscellaneous" / "attachment" / "send_attachment.py",
         "match": {
             "type": "stdout",
             "values": ["'labelIds': ['SENT']"],
@@ -145,7 +145,10 @@ EXAMPLES = {
             "values": ["composio_output/CODEINTERPRETER_GET_FILE_CMD_default_", ""],
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
-        "cwd": EXAMPLES_PATH / "sql_agent" / "sql_agent_plotter_crewai",
+        "cwd": EXAMPLES_PATH
+        / "quickstarters"
+        / "sql_agent"
+        / "sql_agent_plotter_crewai",
     },
     "multi_entity_api_key": {
         "plugin": "langchain",
@@ -176,7 +179,17 @@ EXAMPLES = {
     #     },
     #     "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     # },
-    # TODO: Fix and add claude, camel
+    # TODO(@kaavee): Add Anthropic API key
+    # "claude": {
+    #     "plugin": "claude",
+    #     "file": PLUGINS / "claude" / "claude_demo.py",
+    #     "match": {
+    #         "type": "stdout",
+    #         "values": ["Action executed successfully"],
+    #     },
+    #     "env": {"COMPOSIO_API_KEY": COMPOSIO_API_KEY},
+    # },
+    # TODO: Add camel
 }
 
 

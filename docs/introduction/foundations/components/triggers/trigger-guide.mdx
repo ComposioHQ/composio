@@ -33,15 +33,17 @@ composio triggers disable <trigger_name>
 <Tab title="Using Python Code">
 <CodeGroup>
 ```python Enable Trigger using python code
-from composio import Composio, Action
+from composio import ComposioToolSet, Action, App
 
-client = Composio() 
-entity = client.get_entity(id="Jessica")
+tool_set = ComposioToolSet()
+entity = tool_set.get_entity()
 
 # config is optional, it can be used to pass additional parameters for the trigger
-entity.enable_trigger(app=App.GOOGLECALENDAR, trigger_name="<trigger_name>", config={}) # Enable trigger
+entity.enable_trigger(
+    app=App.GITHUB, trigger_name="GITHUB_PULL_REQUEST_EVENT", config={"owner": "composiohq", "repo": "composio"}
+)  # Enable trigger
 
-entity.disable_trigger("<tigger_id>") # Disable trigger via ID
+# entity.disable_trigger("<tigger_id>") # Disable trigger via ID
 ```
 </CodeGroup>
 </Tab>
@@ -49,14 +51,30 @@ entity.disable_trigger("<tigger_id>") # Disable trigger via ID
 <Tab title="Using Javascript Code">
 <CodeGroup>
 ```javascript Enable Trigger using javascript code
-Coming soon!
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet({});
+const entity = toolset.client.getEntity("default");
+
+(async () => {
+  // config is optional, it can be used to pass additional parameters for the trigger
+  console.log(
+    "Setting up trigger for",
+    await entity.setupTrigger("github", "GITHUB_PULL_REQUEST_EVENT", {
+      owner: "composiohq",
+      repo: "composio",
+    })
+  ); // Enable trigger
+})();
+
+//await entity.disableTrigger("<trigger_id>")
 ```
 </CodeGroup>
 </Tab>
 <Tab title="Using API">
 When you Initiate a Connection, you receive the connectionAccountID
 <CodeGroup>
-```API curl
+```API curl via curl command
 curl --request POST \
   --url https://backend.composio.dev/api/v1/triggers/enable/{connectedAccountId}/GITHUB_PULL_REQUEST_EVENT \
   --header 'Content-Type: application/json' \
@@ -67,7 +85,6 @@ curl --request POST \
     "repo":"composio"
   }
 }'
-
 ```
 </CodeGroup>
 </Tab>
@@ -121,15 +138,9 @@ listener.listen()
 <Tab title="Using Javascript Code">
 <CodeGroup>
 ```Javascript Create a trigger listener
-import { LangchainToolSet } from "composio-core"; // or any other toolset
+import { Composio } from "composio-core"; // or any other toolset
 
-const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY }); /
-const composio_client = toolset.client
-
-// If not using LangchainToolSet
-// import {Composio} from "composio-core";  
-//const composio_client = new Composio({apiKey: process.env.COMPOSIO_API_KEY});
-
+const composio_client = new Composio({ apiKey: "<x-api-key>" });
 
 // Subscribe to triggers and perform actions
 composio_client.triggers.subscribe((data) => {
@@ -139,7 +150,7 @@ composio_client.triggers.subscribe((data) => {
 </CodeGroup>
 </Tab>
 <Tab title="Using Webhook">
-Coming soon!
+You can set webhook url in the dashboard.
 </Tab>
 </Tabs>
 

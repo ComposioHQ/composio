@@ -2,12 +2,16 @@
 Logging utilities.
 """
 
+import atexit
 import logging
 import os
+import threading
 import typing as t
 from enum import Enum
+from queue import Empty, Queue
 
 from composio.constants import ENV_COMPOSIO_LOGGING_LEVEL
+from composio.exceptions import ApiKeyNotProvidedError
 
 
 _DEFAULT_FORMAT = "[%(asctime)s][%(levelname)s] %(message)s"
@@ -101,15 +105,12 @@ def _parse_log_level_from_env(default: int) -> int:
         return default
 
     try:
-        return _LEVELS[LogLevel(level)]
+        return _LEVELS[LogLevel(level.lower())]
     except (ValueError, KeyError):
         return default
 
 
-def setup(
-    level: LogLevel = LogLevel.INFO,
-    log_format: str = _DEFAULT_FORMAT,
-) -> None:
+def setup(level: LogLevel = LogLevel.INFO, log_format: str = _DEFAULT_FORMAT) -> None:
     """Setup logging config."""
     global _logger_wrapper
     if _logger_wrapper is None:
@@ -168,6 +169,68 @@ class WithLogger:
     def logger(self) -> logging.Logger:
         """Get the component logger."""
         return t.cast(logging.Logger, self._logger)
+
+
+class LogIngester:
+    def __init__(self) -> None:
+        from composio import Composio  # pylint: disable=import-outside-toplevel
+
+        try:
+            self._client = Composio.get_latest()
+        except ApiKeyNotProvidedError:
+            return
+
+        self._queue = Queue[t.Dict]()
+        self._event = threading.Event()
+        self._thread = threading.Thread(target=self._wait, daemon=True)
+        self._thread.start()
+
+        @atexit.register
+        def _teardown():
+            self._teardown()
+
+    def log(
+        self,
+        connection_id,
+        provider_name,
+        action_name,
+        request,
+        response,
+        is_error,
+        session_id,
+    ) -> None:
+        """Log new request."""
+        if not hasattr(self, "_queue"):
+            return
+
+        self._queue.put_nowait(
+            item={
+                "connectionId": connection_id,
+                "providerName": provider_name,
+                "actionName": action_name,
+                "request": request,
+                "response": response,
+                "isError": is_error,
+                "sessionId": session_id,
+            }
+        )
+
+    def _push(self, record: t.Dict) -> None:
+        """Push log to server."""
+        self._client.logs.push(record=record)
+
+    def _wait(self) -> None:
+        """Wait for the logs."""
+        while not self._event.is_set():
+            try:
+                self._push(record=self._queue.get(timeout=0.5))
+            except Empty:
+                continue
+
+    def _teardown(self) -> None:
+        """Teardown the logging client."""
+        self._event.set()
+        self._thread.join()
 
 
 get_logger = get

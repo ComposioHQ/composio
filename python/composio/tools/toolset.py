@@ -5,32 +5,46 @@ Composio SDK tools.
 import base64
 import binascii
 import hashlib
+import importlib
+import inspect
 import itertools
 import json
 import os
 import time
 import typing as t
 import warnings
+from datetime import datetime
 from functools import wraps
 from importlib.util import find_spec
 from pathlib import Path
 
 import typing_extensions as te
 from pydantic import BaseModel
-from pydantic.v1.main import BaseModel as V1BaseModel
 
 from composio import Action, ActionType, App, AppType, TagType
 from composio.client import Composio, Entity
 from composio.client.collections import (
+    AUTH_SCHEMES,
     ActionModel,
     AppAuthScheme,
+    AppModel,
+    AuthSchemeField,
+    AuthSchemeType,
     ConnectedAccountModel,
+    ConnectionParams,
+    ConnectionRequestModel,
+    CustomAuthObject,
+    CustomAuthParameter,
+    ExpectedFieldInput,
     FileType,
+    IntegrationModel,
     SuccessExecuteActionResponseModel,
+    TriggerModel,
     TriggerSubscription,
 )
+from composio.client.enums import TriggerType
 from composio.client.enums.base import EnumStringNotFound
-from composio.client.exceptions import ComposioClientError
+from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
@@ -40,6 +54,7 @@ from composio.constants import (
 )
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.storage.user import UserData
+from composio.tools.base.abs import tool_registry
 from composio.tools.base.local import LocalAction
 from composio.tools.env.base import (
     ENV_GITHUB_ACCESS_TOKEN,
@@ -50,7 +65,7 @@ from composio.tools.env.factory import HostWorkspaceConfig, WorkspaceFactory
 from composio.tools.local import load_local_tools
 from composio.tools.local.handler import LocalClient
 from composio.utils.enums import get_enum_key
-from composio.utils.logging import LogLevel, WithLogger
+from composio.utils.logging import LogIngester, LogLevel, WithLogger
 from composio.utils.url import get_api_url_base
 
 
@@ -58,20 +73,31 @@ T = te.TypeVar("T")
 P = te.ParamSpec("P")
 
 _KeyType = t.Union[AppType, ActionType]
-_ProcessorType = t.Callable[[t.Dict], t.Dict]
+_CallableType = t.Callable[[t.Dict], t.Dict]
 
 MetadataType = t.Dict[_KeyType, t.Dict]
 ParamType = t.TypeVar("ParamType")
+ProcessorType = te.Literal["pre", "post", "schema"]
+
+
+class IntegrationParams(te.TypedDict):
+
+    integration_id: str
+    auth_scheme: str
+    expected_params: t.List[ExpectedFieldInput]
 
 
 class ProcessorsType(te.TypedDict):
     """Request and response processors."""
 
-    pre: te.NotRequired[t.Dict[_KeyType, _ProcessorType]]
+    pre: te.NotRequired[t.Dict[_KeyType, _CallableType]]
     """Request processors."""
 
-    post: te.NotRequired[t.Dict[_KeyType, _ProcessorType]]
+    post: te.NotRequired[t.Dict[_KeyType, _CallableType]]
     """Response processors."""
+
+    schema: te.NotRequired[t.Dict[_KeyType, _CallableType]]
+    """Schema processors"""
 
 
 def _check_agentops() -> bool:
@@ -96,8 +122,34 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
     return wrapper  # type: ignore
 
 
-class ComposioToolSet(WithLogger):
+def load_action(
+    client: Composio, value, warn=True
+) -> Action:  # pylint: disable=used-prior-global-declaration
+    global Action
+    try:
+        return Action(value=value, warn=warn)
+    except EnumStringNotFound as e:
+        # run update apps, and reload actions
+        from composio.cli.apps import (  # pylint: disable=import-outside-toplevel
+            update_actions,
+            update_apps,
+        )
+
+        apps = update_apps(client)
+        update_actions(client, apps)
+        action_enum_module = inspect.getmodule(Action)
+        if action_enum_module is None:
+            raise RuntimeError("Error reloading `Action` enum class") from e
+        reloaded_action_module = importlib.reload(action_enum_module)
+        Action = reloaded_action_module.Action  # type: ignore
+
+    return Action(value=value, warn=warn)
+
+
+class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     """Composio toolset."""
+
+    _custom_auth: t.Dict[App, CustomAuthObject]
 
     _connected_accounts: t.Optional[t.List[ConnectedAccountModel]] = None
     _remote_client: t.Optional[Composio] = None
@@ -105,6 +157,7 @@ class ComposioToolSet(WithLogger):
 
     _runtime: str = "composio"
     _description_char_limit: int = 1024
+    _log_ingester_client: t.Optional[LogIngester] = None
 
     def __init_subclass__(
         cls,
@@ -136,6 +189,7 @@ class ComposioToolSet(WithLogger):
         logging_level: LogLevel = LogLevel.INFO,
         output_dir: t.Optional[Path] = None,
         verbosity_level: t.Optional[int] = None,
+        connected_account_ids: t.Optional[t.Dict[AppType, str]] = None,
         **kwargs: t.Any,
     ) -> None:
         """
@@ -155,7 +209,7 @@ class ComposioToolSet(WithLogger):
             needs to be JSON serialisable dictionary. For example
 
             ```python
-            toolset = ComposioToolset(
+            toolset = ComposioToolSet(
                 ...,
                 metadata={
                     App.IMAGEANALYSER: {
@@ -192,7 +246,7 @@ class ComposioToolSet(WithLogger):
                     response["results"] = response["results"][:100]
                 return response
 
-            toolset = ComposioToolset(
+            toolset = ComposioToolSet(
                 ...,
                 processors={
                     "pre": {
@@ -207,7 +261,8 @@ class ComposioToolSet(WithLogger):
             ```
         :param verbosity_level: This defines the size of the log object that will
             be printed on the console.
-
+        :param connection_ids: Use this to define connection IDs to use when executing
+            an action for a specific app.
         """
         super().__init__(
             logging_level=logging_level,
@@ -236,19 +291,59 @@ class ComposioToolSet(WithLogger):
             self._api_key = None
             self.logger.debug("`api_key` is not set when initializing toolset.")
 
-        self._processors = (
-            processors if processors is not None else {"post": {}, "pre": {}}
-        )
+        if processors is not None:
+            warnings.warn(
+                "Setting 'processors' on the ToolSet is deprecated, they should"
+                "be provided to the 'get_tools()' method instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            self._processors: ProcessorsType = processors
+        else:
+            self._processors = {"post": {}, "pre": {}, "schema": {}}
+
         self._metadata = metadata or {}
         self._workspace_id = workspace_id
         self._workspace_config = workspace_config
         self._local_client = LocalClient()
+        self._custom_auth = {}
 
         if len(kwargs) > 0:
-            self.logger.info(f"Extra kwards while initializing toolset: {kwargs}")
+            self.logger.info(f"Extra kwargs while initializing toolset: {kwargs}")
 
         self.logger.debug("Loading local tools")
         load_local_tools()
+
+        self._connected_account_ids = self._validating_connection_ids(
+            connected_account_ids=connected_account_ids or {}
+        )
+
+    def _validating_connection_ids(
+        self,
+        connected_account_ids: t.Dict[AppType, str],
+    ) -> t.Dict[App, str]:
+        """Validate connection IDs."""
+        valid = {}
+        invalid = []
+        entity = self.client.get_entity(id=self.entity_id)
+        for app, connected_account_id in connected_account_ids.items():
+            self.logger.debug(f"Validating {app} {connected_account_id=}")
+            try:
+                entity.get_connection(
+                    app=app,
+                    connected_account_id=connected_account_id,
+                )
+                valid[App(app)] = connected_account_id
+            except HTTPError:
+                invalid.append((str(app), connected_account_id))
+
+        if len(invalid) == 0:
+            return valid
+
+        raise ComposioSDKError(message=f"Invalid connected accounts found: {invalid}")
+
+    def _get_connected_account(self, action: ActionType) -> t.Optional[str]:
+        return self._connected_account_ids.get(App(Action(action).app))
 
     def _try_get_github_access_token_for_current_entity(self) -> t.Optional[str]:
         """Try and get github access token for current entiry."""
@@ -273,6 +368,12 @@ class ComposioToolSet(WithLogger):
             return token
         except ComposioClientError:
             return None
+
+    @property
+    def _log_ingester(self) -> LogIngester:
+        if self._log_ingester_client is None:
+            self._log_ingester_client = LogIngester()
+        return self._log_ingester_client
 
     @property
     def api_key(self) -> str:
@@ -321,10 +422,26 @@ class ComposioToolSet(WithLogger):
         if self._workspace is not None:
             self._workspace = WorkspaceFactory.get(id=workspace_id)
 
+    def add_auth(
+        self,
+        app: AppType,
+        parameters: t.List[CustomAuthParameter],
+        base_url: t.Optional[str] = None,
+        body: t.Optional[t.Dict] = None,
+    ) -> None:
+        self._custom_auth[App(app)] = CustomAuthObject(
+            body=body or {},
+            base_url=base_url,
+            parameters=parameters,
+        )
+
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
-        action = Action(action)
+        action = load_action(self.client, action)
         if action.no_auth or action.is_runtime:
+            return
+
+        if App(action.app) in self._custom_auth:
             return
 
         if self._connected_accounts is None:
@@ -346,15 +463,33 @@ class ComposioToolSet(WithLogger):
         action: Action,
         params: t.Dict,
         metadata: t.Optional[t.Dict] = None,
+        entity_id: t.Optional[str] = None,
     ) -> t.Dict:
         """Execute a local action."""
+        metadata = metadata or {}
+        metadata["_toolset"] = self
         response = self.workspace.execute_action(
             action=action,
             request_data=params,
-            metadata=metadata or {},
+            metadata={
+                **(metadata or {}),
+                "entity_id": entity_id or self.entity_id,
+            },
         )
+
         if isinstance(response, BaseModel):
-            return response.model_dump()
+            response = response.model_dump()
+
+        self._log_ingester.log(
+            connection_id=None,
+            provider_name=action.app,
+            action_name=action.name,
+            request=params,
+            response=response,
+            is_error=not response.get("successful", False),
+            session_id=self.workspace.id,
+        )
+
         return response
 
     def _execute_remote(
@@ -363,16 +498,23 @@ class ComposioToolSet(WithLogger):
         params: t.Dict,
         entity_id: str = DEFAULT_ENTITY_ID,
         connected_account_id: t.Optional[str] = None,
+        session_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
     ) -> t.Dict:
         """Execute a remote action."""
-        self.check_connected_account(action=action)
+        auth = self._custom_auth.get(App(action.app))
+        if auth is None:
+            self.check_connected_account(action=action)
+
         output = self.client.get_entity(id=entity_id).execute(
             action=action,
             params=params,
-            text=text,
             connected_account_id=connected_account_id,
+            session_id=session_id,
+            text=text,
+            auth=auth,
         )
+
         if self.output_in_file:
             return self._write_to_file(
                 action=action,
@@ -463,14 +605,14 @@ class ComposioToolSet(WithLogger):
         if isinstance(param, BaseModel):
             return param.model_dump_json(exclude_none=True)  # type: ignore
 
-        if isinstance(param, V1BaseModel):
-            return param.dict(exclude_none=True)  # type: ignore
-
         if isinstance(param, list):
             return [self._serialize_execute_params(p) for p in param]  # type: ignore
 
         if isinstance(param, dict):
-            return {key: self._serialize_execute_params(val) for key, val in param.items()}  # type: ignore
+            return {
+                key: self._serialize_execute_params(val)  # type: ignore
+                for key, val in param.items()
+            }
 
         raise ValueError(
             "Invalid value found for execute parameters"
@@ -496,8 +638,8 @@ class ComposioToolSet(WithLogger):
     def _get_processor(
         self,
         key: _KeyType,
-        type_: te.Literal["post", "pre"],
-    ) -> t.Optional[_ProcessorType]:
+        type_: te.Literal["post", "pre", "schema"],
+    ) -> t.Optional[_CallableType]:
         """Get processor for given app or action"""
         processor = self._processors.get(type_, {}).get(key)  # type: ignore
         if processor is not None:
@@ -512,15 +654,22 @@ class ComposioToolSet(WithLogger):
         self,
         key: _KeyType,
         data: t.Dict,
-        type_: te.Literal["pre", "post"],
+        type_: te.Literal["pre", "post", "schema"],
     ) -> t.Dict:
         processor = self._get_processor(key=key, type_=type_)
         if processor is not None:
             self.logger.info(
-                f"Running {'request' if type_ == 'pre' else 'response'}"
+                f"Running {'request' if type_ == 'pre' else 'response' if type_ == 'post' else 'schema'}"
                 f" through: {processor.__name__}"
             )
             data = processor(data)
+            # Users may not respect our type annotations and return something that isn't a dict.
+            # If that happens we should show a friendly error message.
+            if not isinstance(data, t.Dict):
+                warnings.warn(
+                    f"Expected {type_}-processor to return 'dict', got {type(data).__name__!r}",
+                    stacklevel=2,
+                )
         return data
 
     def _process_request(self, action: Action, request: t.Dict) -> t.Dict:
@@ -545,15 +694,44 @@ class ComposioToolSet(WithLogger):
             type_="post",
         )
 
+    def _process_schema_properties(self, action: Action, properties: t.Dict) -> t.Dict:
+        return self._process(
+            key=App(action.app),
+            data=self._process(
+                key=action,
+                data=properties,
+                type_="schema",
+            ),
+            type_="schema",
+        )
+
+    def _merge_processors(self, processors: ProcessorsType) -> None:
+        for processor_type in self._processors.keys():
+            if processor_type not in processors:
+                continue
+
+            processor_type = t.cast(ProcessorType, processor_type)
+            new_processors = processors[processor_type]
+
+            if processor_type in self._processors:
+                existing_processors = self._processors[processor_type]
+            else:
+                existing_processors = {}
+                self._processors[processor_type] = existing_processors
+
+            existing_processors.update(new_processors)
+
     @_record_action_if_available
     def execute_action(
         self,
         action: ActionType,
         params: dict,
         metadata: t.Optional[t.Dict] = None,
-        entity_id: str = DEFAULT_ENTITY_ID,
+        entity_id: t.Optional[str] = None,
         connected_account_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
+        *,
+        processors: t.Optional[ProcessorsType] = None,
     ) -> t.Dict:
         """
         Execute an action on a given entity.
@@ -568,24 +746,34 @@ class ComposioToolSet(WithLogger):
         """
         action = Action(action)
         params = self._serialize_execute_params(param=params)
+        if processors is not None:
+            self._merge_processors(processors)
+
         if not action.is_runtime:
             params = self._process_request(action=action, request=params)
             metadata = self._add_metadata(action=action, metadata=metadata)
+            connected_account_id = connected_account_id or self._get_connected_account(
+                action=action
+            )
 
-        self.logger.info(f"Executing `{action.slug}` with {params=} and {metadata=}")
+        self.logger.info(
+            f"Executing `{action.slug}` with {params=} and {metadata=} {connected_account_id=}"
+        )
         response = (
             self._execute_local(
                 action=action,
                 params=params,
                 metadata=metadata,
+                entity_id=entity_id,
             )
             if action.is_local
             else self._execute_remote(
                 action=action,
                 params=params,
-                entity_id=entity_id,
+                entity_id=entity_id or self.entity_id,
                 connected_account_id=connected_account_id,
                 text=text,
+                session_id=self.workspace.id,
             )
         )
         response = (
@@ -594,6 +782,76 @@ class ComposioToolSet(WithLogger):
             else self._process_respone(action=action, response=response)
         )
         self.logger.info(f"Got {response=} from {action=} with {params=}")
+        return response
+
+    @t.overload
+    def execute_request(
+        self,
+        endpoint: str,
+        method: str,
+        *,
+        body: t.Optional[t.Dict] = None,
+        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+        connection_id: t.Optional[str] = None,
+    ) -> t.Dict:
+        pass
+
+    @t.overload
+    def execute_request(
+        self,
+        endpoint: str,
+        method: str,
+        *,
+        body: t.Optional[t.Dict] = None,
+        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+        app: t.Optional[AppType] = None,
+    ) -> t.Dict:
+        pass
+
+    def execute_request(
+        self,
+        endpoint: str,
+        method: str,
+        *,
+        body: t.Optional[t.Dict] = None,
+        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+        connection_id: t.Optional[str] = None,
+        app: t.Optional[AppType] = None,
+    ) -> t.Dict:
+        """
+        Execute a proxy request to a connected account.
+
+        :param endpoint: API endpoint to call
+        :param method: HTTP method to use (GET, POST, etc.)
+        :param body: Request body data
+        :param parameters: Additional auth parameters
+        :param connection_id: ID of the connected account
+        :param app: App type to use for connection lookup
+
+        :returns: Response from the proxy request
+        :raises: ComposioSDKError: If neither connection_id nor app is provided
+        """
+        if app is not None and connection_id is None:
+            connection_id = (
+                self.get_entity(id=self.entity_id).get_connection(app=app).id
+            )
+
+        if connection_id is None:
+            raise ComposioSDKError(
+                "Please provide connection id or app name to execute a request"
+            )
+
+        self.logger.info(
+            f"Executing request to {endpoint} with method={method}, connection_id={connection_id}"
+        )
+        response = self.client.actions.request(
+            connection_id=connection_id,
+            body=body,
+            method=method,
+            endpoint=endpoint,
+            parameters=parameters,
+        )
+        self.logger.info(f"Got {response=}")
         return response
 
     def validate_tools(
@@ -616,6 +874,8 @@ class ComposioToolSet(WithLogger):
         apps: t.Optional[t.Sequence[AppType]] = None,
         actions: t.Optional[t.Sequence[ActionType]] = None,
         tags: t.Optional[t.Sequence[TagType]] = None,
+        *,
+        check_connected_accounts: bool = True,
     ) -> t.List[ActionModel]:
         runtime_actions = t.cast(
             t.List[t.Type[LocalAction]],
@@ -652,17 +912,34 @@ class ComposioToolSet(WithLogger):
                 actions=remote_actions,
                 tags=tags,
             )
-            for item in remote_items:
-                self.check_connected_account(action=item.name)
+            if check_connected_accounts:
+                for item in remote_items:
+                    self.check_connected_account(action=item.name)
+            else:
+                warnings.warn(
+                    "Not verifying connected accounts for apps."
+                    " Actions may fail when the Agent tries to use them.",
+                    UserWarning,
+                )
             items = items + remote_items
 
         for act in runtime_actions:
             schema = act.schema()
             schema["name"] = act.enum
-            items.append(ActionModel(**schema))
+            items.append(ActionModel(**schema).model_copy(deep=True))
 
         for item in items:
             item = self._process_schema(item)
+
+            # This is to support anthropic-claude
+            if item.name == Action.ANTHROPIC_BASH_COMMAND.slug:
+                item.name = "bash"
+
+            if item.name == Action.ANTHROPIC_COMPUTER.slug:
+                item.name = "computer"
+
+            if item.name == Action.ANTHROPIC_TEXT_EDITOR.slug:
+                item.name = "str_replace_editor"
 
         return items
 
@@ -670,7 +947,7 @@ class ComposioToolSet(WithLogger):
         required_params = action_item.parameters.required or []
         for param_name, param_details in action_item.parameters.properties.items():
             if param_details.get("title") == "FileType" and all(
-                fprop in param_details.get("properties")
+                fprop in param_details.get("properties", {})
                 for fprop in ("name", "content")
             ):
                 action_item.parameters.properties[param_name].pop("properties")
@@ -699,23 +976,18 @@ class ComposioToolSet(WithLogger):
                 "number",
                 "boolean",
             ]:
-                param_type = param_details["type"]
+                ext = f'Please provide a value of type {param_details["type"]}.'
                 description = param_details.get("description", "").rstrip(".")
-                if description:
-                    param_details[
-                        "description"
-                    ] = f"{description}. Please provide a value of type {param_type}."
-                else:
-                    param_details[
-                        "description"
-                    ] = f"Please provide a value of type {param_type}."
+                param_details["description"] = (
+                    f"{description}. {ext}" if description else ext
+                )
 
             if param_name in required_params:
                 description = param_details.get("description", "")
                 if description:
-                    param_details[
-                        "description"
-                    ] = f"{description.rstrip('.')}. This parameter is required."
+                    param_details["description"] = (
+                        f"{description.rstrip('.')}. This parameter is required."
+                    )
                 else:
                     param_details["description"] = "This parameter is required."
 
@@ -723,7 +995,10 @@ class ComposioToolSet(WithLogger):
             action_item.description = action_item.description[
                 : self._description_char_limit
             ]
-
+        action_item.parameters.properties = self._process_schema_properties(
+            action=Action(action_item.name.upper()),
+            properties=action_item.parameters.properties,
+        )
         return action_item
 
     def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:
@@ -838,13 +1113,365 @@ class ComposioToolSet(WithLogger):
         )
         return formatted_schema_info
 
+    def get_auth_params(
+        self,
+        app: t.Optional[AppType] = None,
+        connection_id: t.Optional[str] = None,
+        entity_id: t.Optional[str] = None,
+    ) -> t.Optional[ConnectionParams]:
+        """Get authentication parameters for given app."""
+        if app is None and connection_id is None:
+            raise ComposioSDKError("Both `app` and `connection_id` cannot be `None`")
+
+        try:
+            connection_id = (
+                connection_id
+                or self.client.get_entity(id=entity_id or self.entity_id)
+                .get_connection(app=app)
+                .id
+            )
+            return self.client.connected_accounts.info(connection_id=connection_id)
+        except ComposioClientError:
+            return None
+
     def get_auth_schemes(self, app: AppType) -> t.List[AppAuthScheme]:
         """Get the list of auth schemes for an app."""
         return self.client.apps.get(name=str(app)).auth_schemes or []
 
+    def get_app(self, app: AppType) -> AppModel:
+        return self.client.apps.get(name=str(App(app)))
+
+    def get_apps(
+        self,
+        no_auth: t.Optional[bool] = None,
+        include_local: bool = True,
+    ) -> t.List[AppModel]:
+        apps = self.client.apps.get()
+        if no_auth is not None:
+            apps = [a for a in apps if a.no_auth is no_auth]
+
+        if include_local:
+            for app in tool_registry["local"].values():
+                apps.append(
+                    AppModel(
+                        name=app.name,
+                        key=app.name,
+                        appId=app.name,
+                        description=app.description,
+                        categories=["local"],
+                        meta={},
+                        no_auth=True,
+                    )
+                )
+        return apps
+
+    def get_action(self, action: ActionType) -> ActionModel:
+        return self.client.actions.get(actions=[action]).pop()
+
+    def get_trigger(self, trigger: TriggerType) -> TriggerModel:
+        return self.client.triggers.get(trigger_names=[trigger]).pop()
+
+    def get_integration(self, id: str) -> IntegrationModel:
+        return self.client.integrations.get(id=id)
+
+    def get_integrations(
+        self,
+        app: t.Optional[AppType] = None,
+        auth_scheme: t.Optional[AuthSchemeType] = None,
+    ) -> t.List[IntegrationModel]:
+        integrations = self.client.integrations.get()
+        if app is not None:
+            app = str(app).lower()
+            integrations = [i for i in integrations if i.appName.lower() == app]
+
+        if auth_scheme is not None:
+            integrations = [i for i in integrations if i.authScheme == auth_scheme]
+
+        return integrations
+
+    def get_connected_account(self, id: str) -> ConnectedAccountModel:
+        return self.client.connected_accounts.get(connection_id=id)
+
+    def get_connected_accounts(self) -> t.List[ConnectedAccountModel]:
+        return self.client.connected_accounts.get()
+
     def get_entity(self, id: t.Optional[str] = None) -> Entity:
         """Get entity object for given ID."""
         return self.client.get_entity(id=id or self.entity_id)
+
+    def get_auth_scheme_for_app(
+        self,
+        app: t.Optional[AppType] = None,
+        auth_scheme: t.Optional[AuthSchemeType] = None,
+    ) -> AppAuthScheme:
+        auth_schemes = {
+            scheme.auth_mode: scheme
+            for scheme in self.client.apps.get(name=str(app)).auth_schemes or []
+        }
+
+        if auth_scheme is not None and auth_scheme not in auth_schemes:
+            raise ComposioSDKError(
+                message=f"Auth scheme `{auth_scheme}` not found for app `{app}`"
+            )
+
+        if auth_scheme is not None:
+            return auth_schemes[auth_scheme]
+
+        for scheme in AUTH_SCHEMES:
+            if scheme in auth_schemes:
+                scheme = t.cast(AuthSchemeType, scheme)
+                return auth_schemes[scheme]
+
+        raise ComposioSDKError(
+            message=(
+                f"Error getting expected params for {app=}, {auth_scheme=}, "
+                f"available_schems={list(auth_schemes)}"
+            )
+        )
+
+    def _get_expected_params_from_integration_id(self, id: str) -> IntegrationParams:
+        integration = self.get_integration(id=id)
+        return {
+            "integration_id": integration.id,
+            "auth_scheme": integration.authScheme,
+            "expected_params": integration.expectedInputFields,
+        }
+
+    def _get_integration_for_app(
+        self,
+        app: AppType,
+        auth_scheme: t.Optional[str] = None,
+    ) -> IntegrationModel:
+        for integration in sorted(self.get_integrations(), key=lambda x: x.createdAt):
+            if integration.appName.lower() == str(app).lower():
+                if (
+                    auth_scheme is not None
+                    and integration.authScheme.lower() != auth_scheme.lower()
+                ):
+                    continue
+                return self.get_integration(id=integration.id)
+        raise NoItemsFound(f"No integration found for `{app}`")
+
+    def _get_expected_params_from_app(
+        self,
+        app: AppType,
+        auth_scheme: t.Optional[str] = None,
+    ) -> IntegrationParams:
+        integration = self._get_integration_for_app(app=app, auth_scheme=auth_scheme)
+        return {
+            "integration_id": integration.id,
+            "auth_scheme": integration.authScheme,
+            "expected_params": integration.expectedInputFields,
+        }
+
+    def _can_use_auth_scheme_without_user_input(
+        self, scheme: AppAuthScheme, app: AppModel
+    ) -> bool:
+        if (
+            scheme.auth_mode in ("OAUTH2", "OAUTH1")
+            and len(app.testConnectors or []) > 0
+        ):
+            return True
+
+        for field in scheme.fields:
+            if not field.expected_from_customer and field.required:
+                return False
+
+        return True
+
+    def get_expected_params_for_user(
+        self,
+        app: t.Optional[AppType] = None,
+        auth_scheme: t.Optional[AuthSchemeType] = None,
+        integration_id: t.Optional[str] = None,
+    ) -> IntegrationParams:
+        """
+        This method returns a list of parameters that are suppossed to be
+        provided by the user.
+        """
+        # If `integration_id` is provided, use it to fetch the params
+        if integration_id is not None:
+            response = self._get_expected_params_from_integration_id(id=integration_id)
+            if auth_scheme is not None and response["auth_scheme"] != auth_scheme:
+                raise ComposioSDKError(
+                    message=(
+                        "Auth scheme does not match provided integration ID, "
+                        f"auth scheme associated with integration ID {response['auth_scheme']} "
+                        f"auth scheme provided {auth_scheme}"
+                    )
+                )
+            return response
+
+        if app is None:
+            raise ComposioSDKError(
+                message="Both `integration_id` and `app` cannot be None"
+            )
+
+        try:
+            # Check if integration is available for an app, and if available
+            # return params from that integration
+            return self._get_expected_params_from_app(app=app, auth_scheme=auth_scheme)
+        except ValueError:
+            pass
+
+        app_data = self.client.apps.get(name=str(app))
+        # Go through available schemes and check if any scheme can be used
+        # without user inputs to create an integratuib, if yes then create
+        # an integration and return params from there.
+        for scheme in app_data.auth_schemes or []:
+            if auth_scheme is not None and auth_scheme != scheme.auth_mode.upper():
+                continue
+            if self._can_use_auth_scheme_without_user_input(
+                scheme=scheme, app=app_data
+            ):
+                integration = self.create_integration(
+                    app=app,
+                    auth_mode=scheme.auth_mode,
+                    auth_config={},
+                    use_composio_oauth_app=scheme.auth_mode in ("OAUTH2", "OAUTH1"),
+                )
+                return {
+                    "integration_id": integration.id,
+                    "auth_scheme": integration.authScheme,
+                    "expected_params": integration.expectedInputFields,
+                }
+
+        raise ComposioSDKError(
+            message=(
+                f"No existing integration found for `{str(app)}`, with auth "
+                f"scheme {auth_scheme} Please create an integration and use the"
+                " ID to fetch the expected params."
+            )
+        )
+
+    def fetch_expected_integration_params(
+        self,
+        app: AppModel,
+        auth_scheme: AuthSchemeType,
+    ) -> t.List[AuthSchemeField]:
+        """Fetch expected integration params for creating an integration."""
+        for scheme in app.auth_schemes or []:
+            if auth_scheme != scheme.auth_mode.upper():
+                continue
+            return [f for f in scheme.fields if not f.expected_from_customer]
+        raise ComposioSDKError(
+            message=f"{app.name!r} does not support {auth_scheme!r} auth scheme"
+        )
+
+    def create_integration(
+        self,
+        app: AppType,
+        auth_mode: t.Optional[AuthSchemeType] = None,
+        auth_config: t.Optional[t.Dict[str, t.Any]] = None,
+        use_composio_oauth_app: bool = True,
+        force_new_integration: bool = False,
+    ) -> IntegrationModel:
+        app_data = self.client.apps.get(name=str(app))
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        return self.client.integrations.create(
+            app_id=app_data.appId,
+            name=f"{app}_{timestamp}",
+            auth_mode=auth_mode,
+            auth_config=auth_config,
+            use_composio_auth=use_composio_oauth_app,
+            force_new_integration=force_new_integration,
+        )
+
+    def initiate_connection(
+        self,
+        integration_id: t.Optional[str] = None,
+        app: t.Optional[AppType] = None,
+        labels: t.Optional[t.List] = None,
+        entity_id: t.Optional[str] = None,
+        redirect_url: t.Optional[str] = None,
+        connected_account_params: t.Optional[t.Dict] = None,
+        *,
+        auth_scheme: t.Optional[AuthSchemeType] = None,
+        auth_config: t.Optional[t.Dict[str, t.Any]] = None,
+    ) -> ConnectionRequestModel:
+        """
+        Initiates a connection with the specified integration.
+
+        If no integration exists for the given app, automatically creates one.
+
+        :param integration_id: (Optional[str]): ID of the existing integration
+        :param app: (Optional[AppType]): App to create/use integration for
+        :param redirect_url: (Optional[str]) Redirect URL for the App
+        :param auth_scheme: (Optional[AuthSchemeType]): Authentication scheme to use
+        :return: (ConnectionRequestModel) Details of the connection request.
+        """
+        if auth_scheme is not None and auth_scheme not in AUTH_SCHEMES:
+            raise ComposioSDKError(f"'auth_scheme' must be one of {AUTH_SCHEMES}")
+
+        if integration_id is None:
+            if app is None:
+                raise ComposioSDKError(
+                    message="Both `integration_id` and `app` cannot be None"
+                )
+
+            if auth_scheme is None:
+                auth_scheme = self.get_auth_scheme_for_app(app).auth_mode
+
+            try:
+                integration_id = self._get_integration_for_app(
+                    app=t.cast(
+                        AppType,
+                        app,
+                    ),
+                    auth_scheme=auth_scheme,
+                ).id
+            except NoItemsFound:
+                auth_config, use_composio_auth = self._validate_auth_config(
+                    app, auth_scheme, auth_config
+                )
+                integration = self.create_integration(
+                    app=app,
+                    auth_mode=auth_scheme,
+                    auth_config=auth_config,
+                    use_composio_oauth_app=use_composio_auth,
+                )
+                integration_id = integration.id
+
+        return self.client.connected_accounts.initiate(
+            integration_id=integration_id,
+            entity_id=entity_id or self.entity_id,
+            params=connected_account_params,
+            labels=labels,
+            redirect_url=redirect_url,
+        )
+
+    def _validate_auth_config(
+        self,
+        app: AppType,
+        auth_scheme: AuthSchemeType,
+        auth_config: t.Optional[t.Dict[str, t.Any]],
+    ) -> t.Tuple[t.Optional[t.Dict[str, t.Any]], bool]:
+        app_data = self.client.apps.get(name=str(app))
+        if auth_config is None and app_data.testConnectors:
+            # If we have connectors, can fallback to composio's own auth
+            return None, True
+
+        if auth_config is None:
+            auth_config = {}
+
+        auth_fields = self.fetch_expected_integration_params(
+            app=app_data, auth_scheme=auth_scheme
+        )
+        # Populate defaults in the auth_config
+        for field in auth_fields:
+            if field.default is not None and field.name not in auth_config:
+                auth_config[field.name] = field.default
+
+        required_fields = [field for field in auth_fields if field.required]
+        unavailable_fields = [
+            field.name for field in required_fields if field.name not in auth_config
+        ]
+        if unavailable_fields:
+            raise ComposioSDKError(
+                f"Expected 'auth_config' to provide these fields: {unavailable_fields}"
+            ) from None
+
+        return auth_config, False
 
 
 def _write_file(file_path: t.Union[str, os.PathLike], content: t.Union[str, bytes]):
