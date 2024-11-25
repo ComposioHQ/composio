@@ -15,7 +15,7 @@ describe("Apps class tests", () => {
     });
 
     it("check if tools are coming", async () => {
-        const tools = await cloudflareToolSet.getActions({
+        const tools = await cloudflareToolSet.getTools({
             actions: ['GITHUB_GITHUB_API_ROOT']
         });
 

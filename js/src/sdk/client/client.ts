@@ -2,18 +2,13 @@ import * as SDKClient from "./services.gen";
 
 export default {
     logs: SDKClient.LogsService,
-    actionsV1: SDKClient.ActionsControllerV1Service,
-    actionsV2: SDKClient.ActionsControllerV2Service,
+    actionsV1: SDKClient.ActionsService,
+    actionsV2: SDKClient.ActionsService,
     apiKeys: SDKClient.ApiKeysService,
-    clientAuthService: SDKClient.ClientAuthService,
+    clientAuth: SDKClient.AuthService,
     cli: SDKClient.CliService,
-    appConnector: SDKClient.AppConnectorService,
-
-    apps: SDKClient.AppService,
-    appLogin: SDKClient.AppLoginService,
-
+    appConnector: SDKClient.IntegrationsService,
+    apps: SDKClient.AppsService,
     connections: SDKClient.ConnectionsService,
-    metadata: SDKClient.MetadataService,
-    team: SDKClient.TeamService,
     triggers: SDKClient.TriggersService,
 };

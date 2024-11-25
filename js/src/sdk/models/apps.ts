@@ -1,5 +1,6 @@
-import { AppInfoResponseDto, AppListResDTO, SingleAppInfoResDTO } from "../client";
+import {  AppListResDTO, SingleAppInfoResDTO } from "../client";
 import apiClient from "../client/client"
+import { CEG } from "../utils/error";
 import { BackendClient } from "./backendClient";
 
 export type GetAppData = {
@@ -8,13 +9,26 @@ export type GetAppData = {
 
 export type GetAppResponse = SingleAppInfoResDTO;
 
-export type ListAllAppsResponse = AppListResDTO
+export type ListAllAppsResponse = AppListResDTO;
+
+export type RequiredParamsResponse = {
+    required_fields: string[];
+    expected_from_user: string[];
+    optional_fields: string[];
+};
+
+export type RequiredParamsFullResponse = {
+    availableAuthSchemes: string[];
+    authSchemes: Record<string, RequiredParamsResponse>;
+};
 
 export class Apps {
     backendClient: BackendClient;
     constructor(backendClient: BackendClient) {
         this.backendClient = backendClient;
     }
+
+
     /**
      * Retrieves a list of all available apps in the Composio platform.
      * 
@@ -23,8 +37,13 @@ export class Apps {
      * @returns {Promise<AppListResDTO>} A promise that resolves to the list of all apps.
      * @throws {ApiError} If the request fails.
      */
-    list(): Promise<AppInfoResponseDto[]> {
-        return apiClient.apps.getApps().then(res => res.data!.items)
+    async list(){
+        try {
+            const {data} = await apiClient.apps.getApps();
+            return data?.items || [];
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
     /**
@@ -36,12 +55,76 @@ export class Apps {
      * @returns {CancelablePromise<GetAppResponse>} A promise that resolves to the details of the app.
      * @throws {ApiError} If the request fails.
      */
-    get(data: GetAppData) {
-        return apiClient.apps.getApp({
-            path:{
-                appName: data.appKey
+    async get(data: GetAppData){  
+        try {
+            const {data:response} = await apiClient.apps.getApp({
+                path: {
+                    appName: data.appKey
+                }
+            });
+            if(!response) throw new Error("App not found");
+            return response;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
+    }
+
+    async getRequiredParams(appId: string): Promise<RequiredParamsFullResponse> {
+        try {
+            const appData = await this.get({ appKey: appId });
+            if(!appData) throw new Error("App not found");
+            const authSchemes = appData.auth_schemes;
+            const availableAuthSchemes = (authSchemes as Array<{ mode: string }>)?.map(scheme => scheme?.mode);
+            
+            const authSchemesObject: Record<string, RequiredParamsResponse> = {};
+
+            for (const scheme of authSchemes as Array<{
+                mode: string;
+                fields: Array<{
+                    name: string;
+                    required: boolean;
+                    expected_from_customer: boolean;
+                }>;
+            }>) {
+                const name = scheme.mode;
+                authSchemesObject[name] = {
+                    required_fields: [],
+                    optional_fields: [],
+                    expected_from_user: []
+                };
+
+                scheme.fields.forEach((field) => {
+                    const isExpectedForIntegrationSetup = field.expected_from_customer === false;
+                    const isRequired = field.required;
+                    
+                    if (isExpectedForIntegrationSetup) {
+                        if (isRequired) {
+                            authSchemesObject[name].expected_from_user.push(field.name);
+                        } else {
+                            authSchemesObject[name].optional_fields.push(field.name);
+                        }
+                    } else {
+                        authSchemesObject[name].required_fields.push(field.name);
+                    }
+                });
             }
-        }).then(res=>res.data!)
+
+            return {
+                availableAuthSchemes,
+                authSchemes: authSchemesObject
+            };
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
+    }
+
+    async getRequiredParamsForAuthScheme(appId: string, authScheme: string): Promise<RequiredParamsResponse> {
+        try {
+            const params = await this.getRequiredParams(appId);
+            return params.authSchemes[authScheme];
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 }
 

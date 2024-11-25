@@ -11,7 +11,9 @@ import pytest
 from composio import Action, App
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.tools.base.abs import action_registry, tool_registry
+from composio.tools.base.runtime import action as custom_action
 from composio.tools.toolset import ComposioToolSet
+from composio.utils.pypi import reset_installed_list
 
 from composio_langchain.toolset import ComposioToolSet as LangchainToolSet
 
@@ -50,12 +52,12 @@ def test_uninitialize_app() -> None:
     with pytest.raises(
         ComposioSDKError,
         match=(
-            "No connected account found for app `asana`; "
-            "Run `composio add asana` to fix this"
+            "No connected account found for app `linear`; "
+            "Run `composio add linear` to fix this"
         ),
     ):
         ComposioToolSet().get_action_schemas(
-            actions=[Action.ASANA_ADD_A_PROJECT_TO_A_TASK]
+            actions=[Action.LINEAR_CREATE_LINEAR_ISSUE]
         )
 
 
@@ -70,6 +72,9 @@ class TestValidateTools:
         action_registry["local"][Action.BROWSER_TOOL_CLICK_ELEMENT.slug].requires = [
             cls.package
         ]
+
+    def setup_method(self) -> None:
+        reset_installed_list()
 
     def test_validate_tools_app(self, caplog) -> None:
         """Test `ComposioToolSet.validate_tools` method."""
@@ -265,3 +270,34 @@ def test_check_connected_accounts_flag() -> None:
                 check_connected_accounts=False,
             )
         mocked.assert_not_called()
+
+
+def test_get_action_schemas_description_for_runtime_tool() -> None:
+
+    @custom_action(toolname="runtime")
+    def some_action(name: str) -> str:
+        """
+        Some action
+
+        :param name: Name of the user
+        :return message: Message for user
+        """
+        return f"Hello, {name}"
+
+    (schema_0,) = ComposioToolSet().get_action_schemas(actions=[some_action])
+    assert (
+        schema_0.parameters.properties["name"]["description"]
+        == "Name of the user. Please provide a value of type string. This parameter is required."
+    )
+
+    (schema_1,) = ComposioToolSet().get_action_schemas(actions=[some_action])
+    assert (
+        schema_1.parameters.properties["name"]["description"]
+        == "Name of the user. Please provide a value of type string. This parameter is required."
+    )
+
+
+def test_execute_action() -> None:
+    toolset = ComposioToolSet()
+    response = toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})
+    assert response["successfull"]

@@ -1,0 +1,26 @@
+---
+title: "Basic Concepts"
+sidebarTitle: "Basic Concepts"
+icon: "book"
+description: "Core Platform Modules"
+---
+
+<CardGroup cols={2}>
+<Card color="#7bee0c" title="Tools Guide" icon="arrow-right" href="../../patterns/tools/what-are-tools/">
+Learn how to use, execute, process, and even create tools.
+</Card>
+
+<Card color="#7bee0c" title="User & Auth Guide" icon="users" href="/patterns/Auth/">
+Learn how to manage users and authentication integrations. 
+</Card>
+</CardGroup>
+
+
+| Component         | Description                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 
+| Entity            | **Entity represents your user (Jessica or John)** and all accounts that belong to a specific user will have the same entity ID. 
+| Accounts          | **Accounts represent the link formed when your users connect their accounts (GitHub, Shopify, etc.) to your app**. 
+| Apps              | **Apps refer to the applications** that can be **connected by your users**. 
+| Actions           | **Actions are tasks** on top of tools that you can perform using accounts. (Send a mail using Gmail tool) 
+| Triggers          | **Triggers are predefined conditions** that, when met, initiate webhooks to your agents. (When a mail is received in a Gmail account, send a webhook)
+| Integrations      | **Configuration objects that define how your application connects to external services**, including OAuth credentials, permission scopes, and API specifications. They serve as reusable templates for standardizing authentication flows.

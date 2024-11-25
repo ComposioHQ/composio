@@ -1,6 +1,6 @@
 {
   "name": "composio-core",
-  "version": "0.2.3",
+  "version": "0.2.9-9",
   "description": "",
   "main": "lib/src/index.js",
   "scripts": {
@@ -11,7 +11,8 @@
     "build:watch": "tsc --watch --project . --outDir lib --watch",
     "type-docs": "typedoc",
     "openapispec:generate": "npx @hey-api/openapi-ts",
-    "run:cli": "ts-node src/cli/index.ts"
+    "run:cli": "ts-node src/cli/index.ts",
+    "run:sample": "ts-node sample.ts"
   },
   "bin": {
     "composio-js": "./lib/src/cli/index",

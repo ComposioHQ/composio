@@ -25,17 +25,16 @@ export default class AppsCommand {
 
   private async handleAction(options: { browser: boolean }): Promise<void> {
     getAPISDK();
-    const { data, error } = await client.apps.getApps({});
+    try {
+      const { data } = await client.apps.getApps({});
+      console.log("Here are the apps you have access to:");
 
-    if (!!error) {
+      for (const app of data?.items || []) {
+        console.log(app.key);
+      }
+    } catch (error) {
       console.log(chalk.red((error as any).message));
       return;
-    }
-
-    console.log("Here are the apps you have access to:");
-
-    for (const app of data?.items || []) {
-      console.log(app.key);
     }
   }
 }
@@ -115,14 +114,12 @@ class AppUpdateCommand {
             .map((app) => `'${app.key.toUpperCase()}': '${app.key}'`)
             .join(",\n") || [],
       );
-    // @ts-ignore
-    const actionsList = await client.actionsV2
-      .v2ListActions({})
+    const actionsList = await client.actionsV2.listActionsMinimalV2({})
       .then(
         (res) =>
           res.data?.items
             // @ts-ignore
-            .map((action) => `'${action.enum}': '${action.enum}'`)
+            .map((action) => `'${action.name}': '${action.enum}'`)
             .join(",\n") || [],
       );
 

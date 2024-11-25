@@ -1,8 +1,8 @@
 ---
-title: "🚀 Quick Start - 3"
-sidebarTitle: "Quick Start - Part 3"
+title: "🚀 Quick Start - Triggers"
+sidebarTitle: "Quick Start - Triggers"
 icon: "rocket"
-description: "Quickstart-3: Learn how to use Triggers with Composio."
+description: "Quickstart: Learn how to use Triggers with Composio."
 ---
 
 ## Composio Quick Start
@@ -67,7 +67,7 @@ Ensure you complete the authentication process by following the URL provided in 
 <CodeGroup>
 ```shell CLI
 # Enable the trigger
-composio triggers Enable gmail_new_gmail_message
+composio triggers enable gmail_new_gmail_message
 
 # To disable a trigger
 composio triggers disable <trigger_name>
@@ -115,10 +115,12 @@ Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environ
 
 <CodeGroup>
 ```python Creating a trigger listener for Gmail
+from composio import Trigger
+
 listener = composio_toolset.create_trigger_listener()
 
 # Triggers when a new event takes place
-@listener.callback(filters={"trigger_name": "gmail_new_gmail_message"})
+@listener.callback(filters={"trigger_name": Trigger.GMAIL_NEW_GMAIL_MESSAGE})
 def callback_function(event):
     # Parse event data and perform actions
     payload = event.payload
@@ -127,7 +129,7 @@ def callback_function(event):
     sender_mail = payload.get("sender")
     print(sender_mail + ":" + message)
 
-listener.listen()
+listener.wait_forever()
 ```
 </CodeGroup>
 
@@ -201,11 +203,18 @@ import { LangchainToolSet } from "composio-core";
 
 const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY });
 const composio_client = toolset.client;
-
-// Subscribe to triggers and perform actions
-composio_client.triggers.subscribe((data) => {
-    console.log("trigger received", data);
+const entityId = "Jessica";
+const connectedAccounts = await composio_client.connectedAccounts.list({
+    user_uuid: entityId,
+    appNames: 'gmail',
+    status: 'ACTIVE'
 });
+
+const triggerSetupData = await composio_client.triggers.setup(
+    connectedAccounts.items[0].id,
+    "gmail_new_gmail_message",
+    {}
+);
 ```
 </CodeGroup>
 </Tab>
@@ -273,10 +282,10 @@ Congratulations! You've just:
 <Card title="Compatible Agentic Frameworks" icon="brain" href="/framework/langchain">
 Integrate with popular agentic frameworks
 </Card>
-<Card title="Authorize a User's Account" icon="brain" href="/introduction/foundations/components/entity/entity-guide">
+<Card title="Authorize a User's Account" icon="brain" href="../../patterns/Auth/connected_account">
 Authorize a user's account to perform actions and subscribe to triggers
 </Card>
-<Card title="Execute Actions" icon="wand-magic-sparkles" href="/introduction/foundations/components/actions/action-guide-3">
+<Card title="Execute Actions" icon="wand-magic-sparkles" href="../../patterns/tools/what-are-tools">
 Execute actions on behalf of a user
 </Card>
 <Card title="Triggers" icon="bolt" href="/introduction/foundations/components/triggers/trigger-guide">

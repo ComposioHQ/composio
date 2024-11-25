@@ -9,6 +9,7 @@ import typing_extensions as te
 from pydantic import BaseModel, Field
 
 from composio import Composio
+from composio.client.collections import CustomAuthParameter
 from composio.client.enums.base import ActionData, SentinalObject, add_runtime_action
 from composio.client.exceptions import ComposioClientError
 from composio.exceptions import ComposioSDKError
@@ -22,6 +23,10 @@ from composio.tools.base.abs import (
 from composio.tools.base.local import LocalToolMixin
 from composio.tools.env.host.shell import Shell
 from composio.tools.env.host.workspace import Browsers, FileManagers, Shells
+
+
+if t.TYPE_CHECKING:
+    from composio.tools.toolset import ComposioToolSet
 
 
 class InvalidRuntimeAction(ComposioSDKError):
@@ -291,6 +296,7 @@ def _build_executable_from_args(  # pylint: disable=too-many-statements
     }
     shell_argument = None
     auth_params = False
+    request_executor = False
     if "return" not in argspec.annotations:
         raise InvalidRuntimeAction(
             f"Please add return type on runtime action `{f.__name__}`"
@@ -303,6 +309,10 @@ def _build_executable_from_args(  # pylint: disable=too-many-statements
 
         if arg == "auth":
             auth_params = True
+            continue
+
+        if arg == "execute_request":
+            request_executor = True
             continue
 
         if isinstance(annot, te._AnnotatedAlias):  # pylint: disable=protected-access
@@ -362,6 +372,25 @@ def _build_executable_from_args(  # pylint: disable=too-many-statements
             kwargs["auth"] = (
                 _get_auth_params(app=app, entity_id=metadata["entity_id"]) or {}
             )
+
+        if request_executor:
+            toolset = t.cast("ComposioToolSet", metadata["_toolset"])
+
+            def execute_request(
+                endpoint: str,
+                method: str,
+                body: t.Optional[t.Dict] = None,
+                parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+            ):
+                return toolset.execute_request(
+                    endpoint=endpoint,
+                    method=method,
+                    body=body,
+                    app=app,
+                    parameters=parameters,
+                )
+
+            kwargs["execute_request"] = execute_request
 
         response = f(**kwargs)
         if isinstance(response, BaseModel):

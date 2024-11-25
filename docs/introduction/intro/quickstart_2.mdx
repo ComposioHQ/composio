@@ -1,8 +1,8 @@
 ---
-title: "🚀 Quick Start - 2"
-sidebarTitle: "Quick Start - Part 2"
+title: "🚀 Quick Start - Auth"
+sidebarTitle: "Quick Start - Auth"
 icon: "rocket"
-description: "Quickstart-2: Learn how to authenticate and manage multiple users in your app."
+description: "Quickstart: Learn how to authenticate and manage multiple users in your app."
 ---
 
 ### Introduction to Entities
@@ -208,7 +208,7 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
 
             <CodeGroup>
                 ```javascript Fetch Google Calendar Actions & Interact with LLM
-                const tools = await composio_toolset.getActions({
+                const tools = await composio_toolset.getTools({
                     actions: ["googlecalendar_create_event"]
                 });
 
@@ -265,7 +265,7 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
             <CodeGroup>
                 ```curl Fetch Google Calendar Actions & Interact with LLM
                 curl --request GET \
-                --url 'https://backend.composio.dev/api/v2/actions?appNames=GOOGLECALENDAR' \
+                --url 'https://backend.composio.dev/api/v2/actions?apps=GOOGLECALENDAR' \
                 --header 'X-API-Key: ADD YOUR API KEY HERE'
                 ```
             </CodeGroup>
@@ -281,7 +281,8 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
                 --header 'Content-Type: application/json' \
                 --header 'X-API-Key: ADD YOUR API KEY HERE' \
                 --data '{
-                    "entityId": "Jessica",
+                    "appName": "GOOGLECALENDAR", #add your app name here
+                    "entityId": "Jessica", #add your entity id here
                     "input": {
                         "start_datetime": "11:15 PM, 1 December 2024",
                         "event_duration": "2h"

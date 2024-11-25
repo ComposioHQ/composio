@@ -57,7 +57,7 @@ class TestActionBuilder:
         assert SomeAction.name == "some_action"
         assert SomeAction.enum == "SOME_ACTION"
         assert SomeAction.display_name == "Some action"
-        assert SomeAction.description == "Some action"
+        assert SomeAction.description == "Some Action"
         assert str(SomeAction.file) == __file__
 
 
