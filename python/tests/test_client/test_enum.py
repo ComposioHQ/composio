@@ -94,16 +94,15 @@ class TestDisableRemoteCaching:
 
     def test_error(self) -> None:
         """Test `NO_REMOTE_ENUM_FETCHING` set to True."""
-        enum = Action.GITHUB_META_ROOT
         with pytest.raises(
             ComposioSDKError,
             match=(
-                "No metadata found for enum `GITHUB_META_ROOT`, You might be "
+                "No metadata found for enum `GITHUB_GITHUB_API_ROOT`, You might be "
                 "trying to use an app or action that is deprecated, run "
                 "`composio apps update` and try again"
             ),
         ):
-            enum._cache_from_remote()  # pylint: disable=protected-access
+            Action.GITHUB_GITHUB_API_ROOT._cache_from_remote()  # pylint: disable=protected-access
 
 
 def test_tag_enum() -> None:
