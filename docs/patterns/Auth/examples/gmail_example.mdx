@@ -97,12 +97,11 @@ const redirectUrl = "https://yourwebsite.com/connection/success"
 const entityId = "Jessica" // This is the unique identifier for the user
 
 const connectionRequest = await toolset.client.connectedAccounts.initiate({
-    data: {
-        ...collectedParams // send collected params
-    },
     entityId: entityId,
     integrationId: expectedInputFields.integrationId, 
-    redirectUri: redirectUrl
+    redirectUri: redirectUrl,
+    authMode: "OAUTH2",
+    authConfig: {},
 });
 
 if (connectionRequest.connectionStatus === "INITIATED") {

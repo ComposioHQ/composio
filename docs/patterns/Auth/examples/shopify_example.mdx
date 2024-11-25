@@ -160,7 +160,9 @@ const connectionRequest = await toolset.client.connectedAccounts.initiate({
     },
     entityId: entityId,
     integrationId: expectedInputFields.integrationId, 
-    redirectUri: redirectUrl
+    redirectUri: redirectUrl,
+    authMode: "OAUTH2",
+    authConfig: {},
 });
 
 if (connectionRequest.connectionStatus === "INITIATED") {
