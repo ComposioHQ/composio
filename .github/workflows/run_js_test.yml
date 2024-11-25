@@ -26,9 +26,9 @@ jobs:
       with:
         node-version: '20'
     - name: Install dependencies
-      run: npm install -g pnpm@8.15.7
+      run: npm install -g pnpm
     - name: Install packages in js folder
-      run: cd js && pnpm install
+      run: cd js && pnpm install --frozen-lockfile
     - name: pnpm build
       run: cd js && pnpm build
     - name: run test
