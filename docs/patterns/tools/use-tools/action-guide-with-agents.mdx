@@ -75,17 +75,18 @@ This code demonstrates how to use LLMs with Composio Tools to execute actions. T
 ### How can I use Tools for a specific user?
 You can use the `entity_id` parameter to specify the user on behalf of whom you want to execute the action. Learn more about Entities [here](/patterns/Auth/connected_account#entities).
 <CodeGroup>
-```python Python {10}
+```python Python {7}
 # Import required libraries
 from composio_openai import ComposioToolSet, App
 from openai import OpenAI
 
 # Initialize OpenAI and Composio clients
 openai_client = OpenAI()
-composio_toolset = ComposioToolSet()
+
+composio_toolset = ComposioToolSet(entity_id="Jessica")
 
 # Get GitHub tools from Composio for the entity Jessica
-tools = composio_toolset.get_tools(apps=[App.GITHUB], entity_id="Jessica")
+tools = composio_toolset.get_tools(apps=[App.GITHUB])
 
 task = "Star the repo composiohq/composio on GitHub"
 
@@ -125,7 +126,7 @@ const response = await openai_client.chat.completions.create({
     tool_choice: "auto",
 });
 
-const result = await composio_toolset.handleToolCall(response=response);
+const result = await composio_toolset.handleToolCall(response);
 console.log(result);
 ```
 </CodeGroup>
