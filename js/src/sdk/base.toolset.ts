@@ -220,9 +220,18 @@ export class ComposioToolSet {
     ): Promise<Record<string, any>> {
         // Custom actions are always executed in the host/local environment for JS SDK
         if(await this.isCustomAction(action)) {
+            let accountId = connectedAccountId;
+            if(!connectedAccountId) {
+                // fetch connected account id
+                const connectedAccounts = await this.client.connectedAccounts.list({
+                    user_uuid: entityId
+                });
+                accountId = connectedAccounts.items[0].id;
+            }
+            
             return this.customActionRegistry.executeAction(action, params, {
                 entityId: entityId,
-                connectionId: connectedAccountId
+                connectionId: accountId
             });
         }
         if(this.workspaceEnv && this.workspaceEnv !== ExecEnv.HOST) {

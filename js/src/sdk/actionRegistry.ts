@@ -119,7 +119,7 @@ export class ActionRegistry {
         if (!this.customActions.has(lowerCaseName)) {
             throw new Error(`Action with name ${name} does not exist`);
         }
-
+        console.log("112312312")
         const action = this.customActions.get(lowerCaseName);
         if (!action) {
             throw new Error(`Action with name ${name} could not be retrieved`);
@@ -160,6 +160,7 @@ export class ActionRegistry {
                 });
                 return res!;
             } catch (error) {
+                console.log("error", error);
                 throw CEG.handleError(error);
             }
         };
