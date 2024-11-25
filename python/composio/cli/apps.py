@@ -18,6 +18,7 @@ from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import Composio, enums
 from composio.client.collections import ActionModel, AppModel, TriggerModel
 from composio.core.cls.did_you_mean import DYMGroup
+from composio.tools.base.abs import DEPRECATED_MARKER
 from composio.tools.local import load_local_tools
 from composio.utils import get_enum_key
 
@@ -143,6 +144,7 @@ def _update_apps(apps: t.List[AppModel]) -> None:
     """Create App enum class."""
     app_names = []
     enums.base.APPS_CACHE.mkdir(
+        parents=True,
         exist_ok=True,
     )
     for app in apps:
@@ -176,7 +178,7 @@ def _update_apps(apps: t.List[AppModel]) -> None:
 
 def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
     """Get Action enum."""
-    enums.base.ACTIONS_CACHE.mkdir(exist_ok=True)
+    enums.base.ACTIONS_CACHE.mkdir(parents=True, exist_ok=True)
     deprecated = {}
     action_names = []
     for app in sorted(apps, key=lambda x: x.key):
@@ -186,9 +188,9 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
 
             if (
                 action.description is not None
-                and "<<DEPRECATED use " in action.description
+                and DEPRECATED_MARKER in action.description
             ):
-                _, newact = action.description.split("<<DEPRECATED use ", maxsplit=1)
+                _, newact = action.description.split(DEPRECATED_MARKER, maxsplit=1)
                 deprecated[get_enum_key(name=action.name)] = (
                     action.appName.lower() + "_" + newact.replace(">>", "")
                 ).upper()
@@ -231,7 +233,7 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
 
 def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
     """Create Tag enum class."""
-    enums.base.TAGS_CACHE.mkdir(exist_ok=True)
+    enums.base.TAGS_CACHE.mkdir(parents=True, exist_ok=True)
     tag_map: t.Dict[str, t.Set[str]] = {}
     for app in apps:
         app_name = app.key

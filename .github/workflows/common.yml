@@ -68,7 +68,7 @@ jobs:
     defaults:
       run:
         working-directory: ./python
-    continue-on-error: True
+    continue-on-error: False
     needs:
       - lock_check
     runs-on: ${{ matrix.os }}
@@ -76,7 +76,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9", "3.10", "3.11"]
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v2
         with:
@@ -110,7 +110,7 @@ jobs:
     defaults:
       run:
         working-directory: ./python
-    continue-on-error: True
+    continue-on-error: False
     needs:
       - lock_check
     runs-on: ${{ matrix.os }}

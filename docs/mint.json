@@ -12,7 +12,7 @@
   "colors": {
     "primary": "#343434",
     "light": "#fff",
-    "dark": "#9a4dff",
+    "dark": "#343434",
     "ultraLight": "#9a4dff",
     "ultraDark": "#9a4dff",
     "background": {
@@ -60,16 +60,16 @@
   },
   "tabs": [
     {
-      "name": "Guides",
-      "url": "patterns"
-    },
-    {
       "name": "Examples",
       "url": "examples"
     },
     {
       "name": "API",
       "url": "api-reference"
+    },
+    {
+      "name": "Chat with Repo",
+      "url": "https://dub.composio.dev/composio-chat-with-repo"
     }
   ],
   "navigation": [
@@ -77,49 +77,50 @@
       "group": "Introduction",
       "pages": [
         "introduction/intro/overview",
+        "introduction/intro/basic",
         "introduction/intro/quickstart",
         "introduction/intro/quickstart_2",
         "introduction/intro/quickstart_3"
       ]
     },
     {
-      "group": "Core Concepts",
+      "group": "Tools",
       "pages": [
-        {
-          "group":"Basics",
-          "icon": "star",
-          "pages":[
-            "introduction/foundations/basic",
-            "introduction/foundations/components/entity/entity-guide",
-            "introduction/foundations/components/actions/action-guide",
-            "introduction/foundations/components/custom_actions",
-            "introduction/foundations/components/triggers/trigger-guide",
-            "introduction/foundations/components/integrations/custom-integration"
-          ]
-        },
-        {
-          "group": "Advanced",
-          "icon": "user-helmet-safety",
-          "pages": [
-            "introduction/foundations/components/integrations/integration-guide",
-            "introduction/foundations/components/actions/processing",
-            "introduction/foundations/components/workspace",
-            "introduction/foundations/components/list_local_tools"
-          ]
-        },
-        {
-          "group":"Common Questions",
-          "icon":"question",
-          "pages":[
-            "faq/api_key/api_key",
-            "faq/api_key/cli",
-            "faq/integrations_and_connections/integrations",
-            "faq/integrations_and_connections/connections",
-            "faq/integrations_and_connections/list_of_tools",
-            "faq/supported_llms/supported_llm"
-          ]
-
-        }
+            "patterns/tools/what-are-tools",
+            {
+              "group": "Use Tools",
+              "icon": "shuttle-space",
+              "pages": [
+                "patterns/tools/use-tools/action-guide-with-agents",
+                "patterns/tools/use-tools/use-specific-actions",
+                "patterns/tools/use-tools/get-action-inputs",
+                "patterns/tools/use-tools/processing-actions",
+                "patterns/tools/use-tools/configure-tools",
+                "patterns/tools/use-tools/action-guide-without-agents"
+              ]
+            },
+            {
+              "group": "Build Tools",
+              "icon": "hammer",
+              "pages": [
+                "patterns/tools/build-tools/custom-action-for-new-tool",
+                "patterns/tools/build-tools/custom-action-for-existing-tool"
+              ]
+            },
+            "patterns/tools/custom-integration",
+            "patterns/tools/serve-tools"
+      ]
+    },
+    {
+      "group":"Authentication",
+      "icon":"unlock",
+      "pages":[
+        "patterns/Auth/connected_account",
+        "patterns/Auth/using-connections",
+        "patterns/Auth/Integrations",
+        "patterns/Auth/admin-webhooks",
+        "patterns/Auth/examples/gmail_example",
+        "patterns/Auth/examples/shopify_example"
       ]
     },
     {
@@ -152,7 +153,7 @@
       ]
     },
     {
-      "group": "SweKit",
+      "group": "SWE Kit",
       "pages": [
         "swekit-tools/introduction",
         "swekit-js/introduction",
@@ -160,40 +161,39 @@
         "swekit/benchmarks",
         "swekit-examples/introduction"
       ]
-    },    
+    },   
     {
-      "group": "Guides",
+      "group": "Others",
       "pages": [
-      {
-        "group":"Authentication",
-        "icon":"unlock",
-        "pages":[
-          "patterns/Auth/connected_account",
-          "patterns/Auth/multiple-users",
-          "patterns/Auth/Integrations",
-          "patterns/Auth/examples/gmail_example",
-          "patterns/Auth/examples/shopify_example"
-        ]
-      },
-      {
-        "group":"Actions",
-        "icon":"shuttle-space" ,
-        "pages":[
-          "patterns/actions/action-guide-with-agents",
-          "patterns/actions/action-guide-without-agents",
-          "patterns/actions/custom_actions",
-          "patterns/actions/usecase",
-          "patterns/actions/action-guide-faqs"
-        ]
-      },
-      {
-        "group": "Triggers",
-        "icon":"bolt",
-        "pages": [
-          "patterns/functions/triggers"
-        ]
-      }
-    ]
+        {
+          "group":"Basics",
+          "icon": "star",
+          "pages":[
+            "introduction/foundations/components/triggers/trigger-guide",
+            "introduction/foundations/components/workspace"
+          ]
+        },
+        {
+          "group": "Triggers",
+          "icon":"bolt",
+          "pages": [
+            "patterns/functions/triggers"
+          ]
+        },
+        {
+          "group":"Common Questions",
+          "icon":"question",
+          "pages":[
+            "faq/api_key/api_key",
+            "faq/api_key/cli",
+            "faq/integrations_and_connections/integrations",
+            "faq/integrations_and_connections/connections",
+            "faq/integrations_and_connections/list_of_tools",
+            "faq/supported_llms/supported_llm"
+          ]
+
+        }
+      ]
     },
     {
       "group": "Examples",

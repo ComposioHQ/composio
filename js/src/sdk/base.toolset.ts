@@ -7,12 +7,14 @@ import { getEnvVariable } from "../utils/shared";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
-import {  ExecuteActionResDTO } from "./client/types.gen";
-import {  saveFile } from "./utils/fileUtils";
+import { CEG } from '../sdk/utils/error';
+import { ExecuteActionResDTO } from "./client/types.gen";
+import { saveFile } from "./utils/fileUtils";
 import { convertReqParams, converReqParamForActionExecution } from "./utils";
 import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 import { getUserDataJson } from "./utils/config";
-
+import apiClient from '../sdk/client/client';
+import { ActionProxyRequestConfigDTO } from './client';
 
 type GetListActionsResponse = any;
 
@@ -33,18 +35,18 @@ export class ComposioToolSet {
         runtime: string | null = null,
         entityId: string = "default",
         workspaceConfig: WorkspaceConfig = Workspace.Host()
-    ) {  
+    ) {
         const clientApiKey: string | undefined = apiKey || getEnvVariable("COMPOSIO_API_KEY") || getUserDataJson().api_key as string;
         this.apiKey = clientApiKey;
-        this.client = new Composio(this.apiKey, baseUrl || undefined, runtime as string );
+        this.client = new Composio(this.apiKey, baseUrl || undefined, runtime as string);
         this.customActionRegistry = new ActionRegistry(this.client);
         this.runtime = runtime;
         this.entityId = entityId;
 
-        if(!workspaceConfig.config.composioBaseURL) {
+        if (!workspaceConfig.config.composioBaseURL) {
             workspaceConfig.config.composioBaseURL = baseUrl
         }
-        if(!workspaceConfig.config.composioAPIKey) {
+        if (!workspaceConfig.config.composioAPIKey) {
             workspaceConfig.config.composioAPIKey = apiKey;
         }
         this.workspace = new WorkspaceFactory(workspaceConfig.env, workspaceConfig);
@@ -61,13 +63,13 @@ export class ComposioToolSet {
     async getExpectedParamsForUser(
         params: { app?: string; integrationId?: string; entityId?: string; authScheme?: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" } = {},
     ) {
-       return this.client.getExpectedParamsForUser(params);
+        return this.client.getExpectedParamsForUser(params);
     }
 
     async setup() {
         await this.workspace.new();
 
-        if(!this.localActions && this.workspaceEnv !== ExecEnv.HOST) {
+        if (!this.localActions && this.workspaceEnv !== ExecEnv.HOST) {
             this.localActions = await (this.workspace.workspace as RemoteWorkspace).getLocalActionsSchema();
         }
     }
@@ -90,7 +92,7 @@ export class ComposioToolSet {
         });
         const uniqueLocalActions = Array.from(localActionsMap.values());
         const _newActions = filters.actions?.map((action: string) => action.toLowerCase());
-        const toolsWithCustomActions = (await this.customActionRegistry.getActions({ actions: _newActions!})).filter((action: any) => {
+        const toolsWithCustomActions = (await this.customActionRegistry.getActions({ actions: _newActions! })).filter((action: any) => {
             if (_newActions && !_newActions.includes(action.parameters.title.toLowerCase()!)) {
                 return false;
             }
@@ -100,13 +102,13 @@ export class ComposioToolSet {
         });
 
         const toolsActions = [...actions!, ...uniqueLocalActions, ...toolsWithCustomActions];
-        
+
         return toolsActions.map((action: any) => {
             return this.modifyActionForLocalExecution(action);
         });
     }
 
-    async getAuthParams(data: {connectedAccountId: string}) {
+    async getAuthParams(data: { connectedAccountId: string }) {
         return this.client.connectedAccounts.getAuthParams({
             connectedAccountId: data.connectedAccountId
         })
@@ -129,22 +131,26 @@ export class ComposioToolSet {
             apps?: Array<string>;
             tags?: Optional<Array<string>>;
             useCase?: Optional<string>;
+            useCaseLimit?: Optional<number>;
+            filterByAvailableApps?: Optional<boolean>;
         },
         entityId?: Optional<string>
     ): Promise<Sequence<NonNullable<GetListActionsResponse["items"]>[0]>> {
         await this.setup();
 
-        const apps =  await this.client.actions.list({
+        const apps = await this.client.actions.list({
             ...(filters?.apps && { apps: filters?.apps?.join(",") }),
             ...(filters?.tags && { tags: filters?.tags?.join(",") }),
             ...(filters?.useCase && { useCase: filters?.useCase }),
             ...(filters?.actions && { actions: filters?.actions?.join(",") }),
-         });
+            ...(filters?.useCaseLimit && { usecaseLimit: filters?.useCaseLimit }),
+            filterByAvailableApps: filters?.filterByAvailableApps ?? undefined
+        });
         const localActions = new Map<string, NonNullable<GetListActionsResponse["items"]>[0]>();
-        if(filters.apps && Array.isArray(filters.apps)) {
+        if (filters.apps && Array.isArray(filters.apps)) {
             for (const appName of filters.apps!) {
                 const actionData = this.localActions?.filter((a: any) => a.appName === appName);
-                if(actionData) {
+                if (actionData) {
                     for (const action of actionData) {
                         localActions.set(action.name, action);
                     }
@@ -170,11 +176,11 @@ export class ComposioToolSet {
         });
 
         const toolsActions = [...apps?.items!, ...uniqueLocalActions, ...toolsWithCustomActions];
-        
+
         return toolsActions.map((action: any) => {
             return this.modifyActionForLocalExecution(action);
         });
-        
+
     }
 
     modifyActionForLocalExecution(toolSchema: any) {
@@ -183,7 +189,7 @@ export class ComposioToolSet {
         const response = toolSchema.response.properties;
 
         for (const responseKey of Object.keys(response)) {
-            if(responseKey === "file") {
+            if (responseKey === "file") {
                 response["file_uri_path"] = {
                     type: "string",
                     title: "Name",
@@ -209,25 +215,40 @@ export class ComposioToolSet {
         action: string,
         params: Record<string, any>,
         entityId: string = "default",
-        nlaText: string = ""
+        nlaText: string = "",
+        connectedAccountId?: string,
     ): Promise<Record<string, any>> {
         // Custom actions are always executed in the host/local environment for JS SDK
-        if(await this.isCustomAction(action)) {
+        if (await this.isCustomAction(action)) {
+            let accountId = connectedAccountId;
+            if (!accountId) {
+                // fetch connected account id
+                const connectedAccounts = await this.client.connectedAccounts.list({
+                    user_uuid: entityId
+                });
+                accountId = connectedAccounts?.items[0]?.id;
+            }
+
+            if(!accountId) {
+                throw new Error("No connected account found for the user");
+            }
+            
             return this.customActionRegistry.executeAction(action, params, {
-                entityId: entityId
+                entityId: entityId,
+                connectionId: accountId
             });
         }
-        if(this.workspaceEnv && this.workspaceEnv !== ExecEnv.HOST) {
+        if (this.workspaceEnv && this.workspaceEnv !== ExecEnv.HOST) {
             const workspace = await this.workspace.get();
             return workspace.executeAction(action, params, {
                 entityId: this.entityId
             });
         }
         params = await converReqParamForActionExecution(params);
-        const data =  await this.client.getEntity(entityId).execute(action, params, nlaText) as unknown as ExecuteActionResDTO  
+        const data = await this.client.getEntity(entityId).execute(action, params, nlaText) as unknown as ExecuteActionResDTO
 
 
-        return this.processResponse(data ,{
+        return this.processResponse(data, {
             action: action,
             entityId: entityId
         });
@@ -243,16 +264,16 @@ export class ComposioToolSet {
 
         // @ts-ignore
         const isFile = !!data?.response_data?.file;
-        if(isFile) {
+        if (isFile) {
             // @ts-ignore
             const fileData = data.response_data.file;
-            const {name, content} = fileData as {name: string, content: string};
+            const { name, content } = fileData as { name: string, content: string };
             const file_name_prefix = `${meta.action}_${meta.entityId}_${Date.now()}`;
-            const filePath = saveFile(file_name_prefix, content);   
+            const filePath = saveFile(file_name_prefix, content);
 
             // @ts-ignore
             delete data.response_data.file
- 
+
             return {
                 ...data,
                 response_data: {
@@ -260,7 +281,7 @@ export class ComposioToolSet {
                     ...data.response_data,
                     file_uri_path: filePath
                 }
-            }    
+            }
         }
 
         return data;
@@ -275,4 +296,5 @@ export class ComposioToolSet {
         logger.warn("execute_action is deprecated, use executeAction instead");
         return this.executeAction(action, params, entityId);
     }
+
 }
