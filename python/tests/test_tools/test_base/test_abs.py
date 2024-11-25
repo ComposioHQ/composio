@@ -75,7 +75,9 @@ class TestActionBuilder:
             def execute(self, request: Request, metadata: Dict) -> Response:
                 return Response()
 
-        assert SomeAction.description == "Some Action <<DEPRECATED use some_other_action>>"
+        assert (
+            SomeAction.description == "Some Action <<DEPRECATED use some_other_action>>"
+        )
         assert DEPRECATED_MARKER in SomeAction.description
 
 
