@@ -65,6 +65,8 @@ export class LangchainToolSet extends BaseComposioToolSet {
             apps?: Sequence<string>;
             tags?: Optional<Array<string>>;
             useCase?: Optional<string>;
+            usecaseLimit?: Optional<number>;
+            filterByAvailableApps?: Optional<boolean>;
         },
         entityId: Optional<string> = null
     ): Promise<Sequence<DynamicStructuredTool>> {

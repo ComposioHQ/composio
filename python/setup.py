@@ -38,7 +38,7 @@ core_requirements = [
     "jsonschema>=4.21.1,<5",
     "sentry-sdk>=2.0.0",
     "pysher==1.0.8",
-    "pydantic>=2.6.4,<3",
+    "pydantic>=2.6.4,<2.10",
     "importlib-metadata>=4.8.1",
     "jsonref>=1.1.0",
     "inflection>=0.5.1",
@@ -90,7 +90,7 @@ all_requirements = (
 
 setup(
     name="composio_core",
-    version="0.5.40",
+    version="0.5.46",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",

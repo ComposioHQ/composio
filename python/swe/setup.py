@@ -35,7 +35,7 @@ def scan_for_package_data(
 
 setup(
     name="swekit",
-    version="0.2.38",
+    version="0.2.44",
     author="Shubhra",
     author_email="shubhra@composio.dev",
     description="Tools for running a SWE agent using Composio platform",
@@ -66,7 +66,7 @@ setup(
         "swebench==2.1.0",
         "datasets>=2.20.0",
         "gitpython>=3.1.43",
-        "composio_core>=0.5.30,<=0.5.40",
+        "composio_core>=0.5.40,<=0.5.46",
         "unidiff==0.7.5",
         "tqdm==4.66.4",
         "rich",
@@ -75,7 +75,7 @@ setup(
         "langgraph": [
             "langchain-aws==0.1.17",
             "langgraph>=0.2.16",
-            "composio_langgraph>=0.5.30,<=0.5.40",
+            "composio_langgraph>=0.5.40,<=0.5.46",
             "python-dotenv==1.0.1",
         ]
     },

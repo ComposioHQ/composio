@@ -1,4 +1,4 @@
-import { ActionExecutionReqDTO, ActionExecutionResDto, ActionsListResponseDTO, ExecuteActionResDTO, ExecuteActionV2Data } from "../client";
+import { ActionExecutionReqDTO, ActionProxyRequestConfigDTO, ActionsListResponseDTO } from "../client";
 import apiClient from "../client/client";
 import { CEG } from "../utils/error";
 import { BackendClient } from "./backendClient";
@@ -41,7 +41,7 @@ export type GetListActionsData = {
     /**
      * Limit of use-cases based search
      */
-    usecaseLimit?: string;
+    usecaseLimit?: number;
     /**
      * Show all actions - i.e disable pagination
      */
@@ -54,6 +54,10 @@ export type GetListActionsData = {
      * Use smart tag filtering
      */
     filterImportantActions?: boolean;
+    /**
+     * Should search in available apps only
+     */
+    filterByAvailableApps?: boolean;
 }
 
 export type Parameter = {
@@ -180,15 +184,30 @@ export class Actions {
      */
     async list(data: GetListActionsData = {}): Promise<ActionsListResponseDTO> {
         try {
+
+            let apps = data.apps;
+            
+            // Throw error if user has provided both filterByAvailableApps and apps
+            if(data?.filterByAvailableApps && data?.apps){
+                throw new Error("Both filterByAvailableApps and apps cannot be provided together");
+            }
+
+            if(data?.filterByAvailableApps){
+                // Todo: To create a new API to get all integrated apps for a user instead of fetching all apps
+                const integratedApps = await apiClient.appConnector.listAllConnectors();
+                apps = integratedApps.data?.items.map((app)=> app?.appName).join(",");
+            }
+            
             const response = await apiClient.actionsV2.listActionsV2({
                 query: {
                     actions: data.actions,
-                    apps: data.apps,
+                    apps: apps,
                     showAll: data.showAll,
                     tags: data.tags,
                     useCase: data.useCase as string,
                     filterImportantActions: data.filterImportantActions,
-                    showEnabledOnly: data.showEnabledOnly
+                    showEnabledOnly: data.showEnabledOnly,
+                    usecaseLimit: data.usecaseLimit || undefined
                 }
             });
             return response.data!;
@@ -213,6 +232,27 @@ export class Actions {
                 path: {
                     actionId: data.actionName
                 }
+            });
+            return res!;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
+    }
+
+    /**
+     * Executes a action using Composio Proxy
+     * 
+     * This method allows you to trigger the execution of an action by providing its name and the necessary input parameters. The request includes the connected account ID to identify the app connection to use for the action, and the input parameters required by the action. The response provides details about the execution status and the response data returned by the action.
+     * 
+     * @param {ExecuteActionData} data The data for the request.
+     * @returns {Promise<ActionExecutionResDto>} A promise that resolves to the execution status and response data.
+     * @throws {ApiError} If the request fails.
+     */
+
+    async executeRequest(data: ActionProxyRequestConfigDTO){
+        try {
+            const { data: res } = await apiClient.actionsV2.executeActionProxyV2({
+                body: data as unknown as ActionProxyRequestConfigDTO
             });
             return res!;
         } catch (error) {

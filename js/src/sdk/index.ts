@@ -14,7 +14,10 @@ import { isNewerVersion } from './utils/other';
 import { getClientBaseConfig } from './utils/config';
 import chalk from 'chalk';
 import { CEG, ERROR } from './utils/error';
+import { ActionProxyRequestConfigDTO } from './client';
+import apiClient from '../sdk/client/client';
 import { GetConnectorInfoResDTO } from './client';
+
 export class Composio {
     /**
      * The Composio class serves as the main entry point for interacting with the Composio SDK.
@@ -93,7 +96,6 @@ export class Composio {
     getEntity(id: string = 'default'): Entity {
         return new Entity(this.backendClient, id);
     }
-
 
     async getExpectedParamsForUser(
         params: { app?: string; integrationId?: string; entityId?: string; authScheme?: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" } = {},
@@ -202,4 +204,3 @@ export class Composio {
         }
     }
 }
-

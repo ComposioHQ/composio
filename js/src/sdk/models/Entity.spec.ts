@@ -1,67 +1,100 @@
 import { describe, it, expect } from "@jest/globals";
 import { getBackendClient } from "../testUtils/getBackendClient";
 import { Entity } from "./Entity";
+import { ConnectedAccounts } from "./connectedAccounts";
+import { Integrations } from "./integrations";
 
 describe("Entity class tests", () => {
-    let backendClient = getBackendClient();
-    let entity: Entity;
-    let triggerId: string;
+  let backendClient = getBackendClient();
+  let entity: Entity;
+  let triggerId: string;
+  let connectedAccounts: ConnectedAccounts;
+  let integrations: Integrations;
 
-    beforeAll(() => {
-        entity = new Entity(backendClient, "default");
+  beforeAll(() => {
+    entity = new Entity(backendClient, "default");
+    connectedAccounts = new ConnectedAccounts(backendClient);
+    integrations = new Integrations(backendClient);
+  });
+
+  it("should create an Entity instance with 'default' id", () => {
+    expect(entity).toBeInstanceOf(Entity);
+    expect(entity.id).toBe("default");
+  });
+
+  it("should create for different entities", async () => {
+    const entityId = "test-entity";
+    const entity2 = new Entity(backendClient, entityId);
+    const connection = await entity2.initiateConnection("github");
+    expect(connection.connectionStatus).toBe("INITIATED");
+
+    const connection2 = await connectedAccounts.get({
+      connectedAccountId: connection.connectedAccountId,
     });
+    if (!connection2) throw new Error("Connection not found");
+    expect(connection2.entityId).toBe(entityId);
+  });
 
-    it("should create an Entity instance with 'default' id", () => {
-        expect(entity).toBeInstanceOf(Entity);
-        expect(entity.id).toBe("default");
-    });
+  it("get connection for github", async () => {
+    const app = "github";
+    const connection = await entity.getConnection(app);
+    expect(connection.appUniqueId).toBe(app);
+  });
 
-    it("get connection for github", async () => {
-        const app = "github";
-        const connection = await entity.getConnection(app);
-        expect(connection.appUniqueId).toBe(app);
-    });
+  it("execute action", async () => {
+    const connectedAccount = await entity.getConnection("github");
 
-    it("execute action", async () => {
-        const connectedAccount = await entity.getConnection("github");
+    expect(connectedAccount).toHaveProperty("id");
+    expect(connectedAccount).toHaveProperty("appUniqueId", "github");
+    const actionName = "GITHUB_GITHUB_API_ROOT".toLowerCase();
+    const requestBody = {};
 
-        expect(connectedAccount).toHaveProperty('id');
-        expect(connectedAccount).toHaveProperty('appUniqueId', 'github');
-        const actionName = "GITHUB_GITHUB_API_ROOT".toLowerCase();
-        const requestBody = {};
-      
-        const executionResult = await entity.execute(actionName, requestBody, undefined, connectedAccount.id);
-        expect(executionResult).toBeDefined();
-        expect(executionResult).toHaveProperty('successfull', true);
-        expect(executionResult).toHaveProperty('data.authorizations_url');
-    });
+    const executionResult = await entity.execute(
+      actionName,
+      requestBody,
+      undefined,
+      connectedAccount.id
+    );
+    expect(executionResult).toBeDefined();
+    expect(executionResult).toHaveProperty("successfull", true);
+    expect(executionResult).toHaveProperty("data.authorizations_url");
+  });
 
-    it("get connections", async () => {
-        const connections = await entity.getConnections();
-        expect(connections.length).toBeGreaterThan(0);
-    });
-
-    it("get active triggers", async () => { 
-        // const triggers = await entity.getActiveTriggers();
-        // expect(triggers.length).toBeGreaterThan(0);
-    });
-
-    it("setup trigger", async () => {
-        const trigger = await entity.setupTrigger("gmail", "gmail_new_gmail_message", { "userId": "me", "interval": 60, "labelIds": "INBOX" });
+  it("should have an Id of a connected account with label - primary", async () => {
+    const entityW2Connection = new Entity(backendClient, "ckemvy");
+    const getConnection = await entityW2Connection.getConnection("github");
+    expect(getConnection).toHaveProperty("id");
+  });
   
-        triggerId = trigger.triggerId;
-        expect(trigger.status).toBe("success");
-        expect(trigger.triggerId).toBeDefined();
-    });
+  it("get connections", async () => {
+    const connections = await entity.getConnections();
+    expect(connections.length).toBeGreaterThan(0);
+  });
 
-    it("disable trigger", async () => {
-        const trigger = await entity.disableTrigger(triggerId);
-        expect(trigger.status).toBe("success");
-    });
+  it("get active triggers", async () => {
+    // const triggers = await entity.getActiveTriggers();
+    // expect(triggers.length).toBeGreaterThan(0);
+  });
 
-    it("initiate connection", async () => {
-        const connection = await entity.initiateConnection("github");
-        expect(connection.connectionStatus).toBe("INITIATED");
-    });
-    
+  it("setup trigger", async () => {
+    const trigger = await entity.setupTrigger(
+      "gmail",
+      "gmail_new_gmail_message",
+      { userId: "me", interval: 60, labelIds: "INBOX" }
+    );
+
+    triggerId = trigger.triggerId;
+    expect(trigger.status).toBe("success");
+    expect(trigger.triggerId).toBeDefined();
+  });
+
+  it("disable trigger", async () => {
+    const trigger = await entity.disableTrigger(triggerId);
+    expect(trigger.status).toBe("success");
+  });
+
+  it("initiate connection", async () => {
+    const connection = await entity.initiateConnection("github");
+    expect(connection.connectionStatus).toBe("INITIATED");
+  });
 });

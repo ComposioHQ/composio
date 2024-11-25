@@ -5,7 +5,7 @@ export const $MemberInfoResDTO = {
         id: {
             type: 'string'
         },
-        clientId: {
+        projectId: {
             type: 'string'
         },
         email: {
@@ -57,7 +57,7 @@ export const $MemberInfoResDTO = {
         }
     },
     type: 'object',
-    required: ['id', 'clientId', 'email', 'name', 'role', 'createdAt', 'updatedAt'],
+    required: ['id', 'projectId', 'email', 'name', 'role', 'createdAt', 'updatedAt'],
     description: 'Member information'
 } as const;
 
@@ -172,10 +172,14 @@ export const $IdentifyClientResDTO = {
         email: {
             type: 'string',
             description: 'The email associated with the client'
+        },
+        orgId: {
+            type: 'string',
+            description: 'The organization ID associated with the client'
         }
     },
     type: 'object',
-    required: ['clientId', 'apiKey', 'email']
+    required: ['clientId', 'apiKey', 'email', 'orgId']
 } as const;
 
 export const $UserGitUserInfo = {
@@ -320,14 +324,14 @@ export const $ClientDTO = {
         }
     },
     type: 'object',
-    required: ['autoId', 'id', 'name', 'email', 'createdAt', 'updatedAt', 'triggersEnabled', 'plan']
+    required: ['autoId', 'id', 'name', 'email', 'createdAt', 'updatedAt', 'triggersEnabled', 'plan'],
+    description: 'Client information'
 } as const;
 
 export const $ClientInfoResDTO = {
     properties: {
         client: {
-            '$ref': '#/components/schemas/ClientDTO',
-            description: 'Client information'
+            '$ref': '#/components/schemas/ClientDTO'
         },
         apiKey: {
             type: 'string',
@@ -336,6 +340,46 @@ export const $ClientInfoResDTO = {
     },
     type: 'object',
     required: ['client', 'apiKey']
+} as const;
+
+export const $ProjectReqDTO = {
+    properties: {
+        name: {
+            type: 'string',
+            description: 'The name of the project'
+        }
+    },
+    type: 'object',
+    required: ['name']
+} as const;
+
+export const $ProjectResDTO = {
+    properties: {
+        id: {
+            type: 'string',
+            description: 'The ID of the project'
+        },
+        name: {
+            type: 'string',
+            description: 'The name of the project'
+        }
+    },
+    type: 'object',
+    required: ['id', 'name']
+} as const;
+
+export const $ProjectListResDTO = {
+    properties: {
+        items: {
+            items: {
+                type: 'object'
+            },
+            type: 'array',
+            description: 'The list of projects'
+        }
+    },
+    type: 'object',
+    required: ['items']
 } as const;
 
 export const $InviteMemberReqDTO = {
@@ -707,7 +751,7 @@ export const $AppQueryDTO = {
         },
         includeLocal: {
             type: 'string',
-            description: 'Whether to include local tools or not'
+            description: "Enter 'true' or 'false'"
         }
     },
     type: 'object'
@@ -797,7 +841,7 @@ export const $ExpectedInputFieldsDTO = {
             type: 'string',
             description: 'Description of the field'
         },
-        displayName: {
+        display_name: {
             type: 'string',
             description: 'Display name of the field'
         },
@@ -809,17 +853,17 @@ export const $ExpectedInputFieldsDTO = {
             type: 'boolean',
             description: 'Whether the field is required'
         },
-        expectedFromCustomer: {
+        expected_from_customer: {
             type: 'boolean',
             description: 'Whether the field is expected from customer'
         },
-        isSecret: {
+        is_secret: {
             type: 'boolean',
             description: 'Whether the field is a secret'
         }
     },
     type: 'object',
-    required: ['name', 'type', 'description', 'displayName', 'default', 'required', 'expectedFromCustomer', 'isSecret']
+    required: ['name', 'type', 'description', 'display_name', 'default', 'required', 'expected_from_customer', 'is_secret']
 } as const;
 
 export const $GetConnectorInfoResDTO = {
@@ -1161,6 +1205,12 @@ export const $ConnectionWithAppData = {
                 '$ref': '#/components/schemas/MemberInfoResDTO'
             },
             type: 'object'
+        },
+        labels: {
+            items: {
+                type: 'string'
+            },
+            type: 'array'
         }
     },
     type: 'object',
@@ -1181,66 +1231,6 @@ export const $GetConnectionsResult = {
     },
     type: 'object',
     required: ['connections', 'pageInfo']
-} as const;
-
-export const $ToolsExecuteReqDto = {
-    properties: {
-        actionName: {
-            type: 'string'
-        },
-        runInSandbox: {
-            type: 'boolean'
-        },
-        input: {
-            type: 'object'
-        },
-        nlaInput: {
-            type: 'string'
-        },
-        authorizationData: {
-            type: 'object'
-        },
-        appSchema: {
-            type: 'object'
-        }
-    },
-    type: 'object',
-    required: ['actionName', 'runInSandbox', 'input']
-} as const;
-
-export const $DirectExecuteReqDto = {
-    properties: {
-        endpoint: {
-            type: 'string'
-        },
-        base_url: {
-            type: 'string'
-        },
-        headers: {
-            type: 'object'
-        },
-        queryParams: {
-            type: 'object'
-        }
-    },
-    type: 'object',
-    required: ['endpoint', 'base_url', 'headers', 'queryParams']
-} as const;
-
-export const $ActionExecutionResDto = {
-    properties: {
-        data: {
-            type: 'object'
-        },
-        error: {
-            type: 'string'
-        },
-        successfull: {
-            type: 'string'
-        }
-    },
-    type: 'object',
-    required: ['data']
 } as const;
 
 export const $ConnectionParams = {
@@ -1316,6 +1306,12 @@ export const $ConnectionParams = {
                 '$ref': '#/components/schemas/MemberInfoResDTO'
             },
             type: 'object'
+        },
+        labels: {
+            items: {
+                type: 'string'
+            },
+            type: 'array'
         }
     },
     type: 'object',
@@ -1496,13 +1492,17 @@ export const $GetConnectionInfoResponseDTO = {
 export const $Parameter = {
     properties: {
         name: {
-            type: 'string'
+            type: 'string',
+            description: "The name of the parameter. For example, 'x-api-key', 'Content-Type', etc.,"
         },
         in: {
-            type: 'string'
+            enum: ['query', 'header'],
+            type: 'string',
+            description: "The location of the parameter. Can be 'query' or 'header'."
         },
         value: {
-            type: 'string'
+            type: 'string',
+            description: "The value of the parameter. For example, '1234567890', 'application/json', etc.,"
         }
     },
     type: 'object',
@@ -1631,6 +1631,75 @@ export const $InitiateConnectionResponse = {
     required: ['connectionStatus', 'connectedAccountId']
 } as const;
 
+export const $ToolsExecuteReqDto = {
+    properties: {
+        actionName: {
+            type: 'string'
+        },
+        runInSandbox: {
+            type: 'boolean'
+        },
+        input: {
+            type: 'object'
+        },
+        nlaInput: {
+            type: 'string'
+        },
+        authorizationData: {
+            type: 'object'
+        },
+        appSchema: {
+            type: 'object'
+        },
+        customDescription: {
+            type: 'string'
+        },
+        systemPrompt: {
+            type: 'string'
+        }
+    },
+    type: 'object',
+    required: ['actionName', 'runInSandbox', 'input']
+} as const;
+
+export const $DirectExecuteReqDto = {
+    properties: {
+        endpoint: {
+            type: 'string'
+        },
+        base_url: {
+            type: 'string'
+        },
+        headers: {
+            type: 'object'
+        },
+        queryParams: {
+            type: 'object'
+        },
+        body: {
+            type: 'object'
+        }
+    },
+    type: 'object',
+    required: ['endpoint', 'base_url', 'headers', 'queryParams']
+} as const;
+
+export const $ActionExecutionResDto = {
+    properties: {
+        data: {
+            type: 'object'
+        },
+        error: {
+            type: 'string'
+        },
+        successfull: {
+            type: 'string'
+        }
+    },
+    type: 'object',
+    required: ['data']
+} as const;
+
 export const $CustomAuthDTO = {
     properties: {
         base_url: {
@@ -1648,6 +1717,51 @@ export const $CustomAuthDTO = {
     },
     type: 'object',
     required: ['parameters']
+} as const;
+
+export const $ActionProxyRequestMethodDTO = {
+    properties: {
+        type: {
+            enum: ['formData', 'urlEncoded', 'raw', 'binary', 'graphql', 'none'],
+            type: 'string',
+            description: "The type of request body to use for the action. Defaults to 'none'."
+        },
+        data: {
+            type: 'string',
+            description: 'The data to be sent to the endpoint. This will override the body set in the connected account.'
+        }
+    },
+    type: 'object'
+} as const;
+
+export const $ActionProxyRequestConfigDTO = {
+    properties: {
+        connectedAccountId: {
+            type: 'string',
+            description: 'The connected account uuid to use for the action.'
+        },
+        endpoint: {
+            type: 'string',
+            description: 'The endpoint to call for the action. If the given url is relative, it will be resolved relative to the base_url set in the connected account info.'
+        },
+        method: {
+            enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+            type: 'string',
+            description: 'The HTTP method to use for the action.'
+        },
+        parameters: {
+            items: {
+                '$ref': '#/components/schemas/Parameter'
+            },
+            type: 'array'
+        },
+        body: {
+            type: 'object',
+            description: 'The body to be sent to the endpoint. This can either be a JSON field or a string.'
+        }
+    },
+    type: 'object',
+    required: ['connectedAccountId', 'endpoint', 'method', 'parameters']
 } as const;
 
 export const $SessionInfoDTO = {
@@ -1680,13 +1794,18 @@ export const $ActionExecutionReqDTO = {
             type: 'object'
         },
         sessionInfo: {
-            '$ref': '#/components/schemas/SessionInfoDTO',
-            type: 'object'
+            '$ref': '#/components/schemas/SessionInfoDTO'
         },
         authConfig: {
             '$ref': '#/components/schemas/CustomAuthDTO'
         },
         text: {
+            type: 'string'
+        },
+        customDescription: {
+            type: 'string'
+        },
+        systemPrompt: {
             type: 'string'
         }
     },
@@ -1696,6 +1815,12 @@ export const $ActionExecutionReqDTO = {
 export const $ActionGetNLAInputsReqDTO = {
     properties: {
         text: {
+            type: 'string'
+        },
+        customDescription: {
+            type: 'string'
+        },
+        systemPrompt: {
             type: 'string'
         }
     },

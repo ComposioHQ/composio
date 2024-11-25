@@ -191,6 +191,7 @@ class FileManager(Sessionable):
         pattern: t.Optional[t.Union[str, Path]] = None,
         recursive: bool = True,
         case_insensitive: bool = True,
+        exclude: t.Optional[t.List[t.Union[str, Path]]] = None,
     ) -> t.Dict[str, t.List[t.Tuple[int, str]]]:
         """
         Search for a word in files matching the given pattern.
@@ -199,6 +200,7 @@ class FileManager(Sessionable):
         :param pattern: The file, directory, or glob pattern to search in (if not provided, searches in the current working directory)
         :param recursive: If True, search recursively in subdirectories
         :param case_insensitive: If True, perform case-insensitive search (default is True)
+        :param exclude: List of directory paths to exclude from the search
         :return: A dictionary with file paths as keys and lists of (line number, line content) tuples as values
 
         Examples of patterns:
@@ -213,8 +215,11 @@ class FileManager(Sessionable):
         else:
             pattern = Path(pattern)
 
+        exclude_paths = [self.working_dir / Path(ex) for ex in (exclude or [])]
+
         results: t.Dict[str, t.List[t.Tuple[int, str]]] = {}
         paths_to_search: t.List[Path] = []
+        truncate_length = 1024
 
         if pattern.is_file():
             paths_to_search = [pattern]
@@ -230,6 +235,10 @@ class FileManager(Sessionable):
                 paths_to_search = list(self.working_dir.glob(str(pattern)))
 
         for file_path in paths_to_search:
+            # Skip if file is in an excluded directory
+            if any(ex in file_path.parents for ex in exclude_paths):
+                continue
+
             if file_path.is_file() and not file_path.name.startswith("."):
                 try:
                     with file_path.open("r", encoding="utf-8") as f:
@@ -242,7 +251,16 @@ class FileManager(Sessionable):
                                     )
                                     if rel_path not in results:
                                         results[rel_path] = []
-                                    results[rel_path].append((i, line.strip()))
+                                    results[rel_path].append(
+                                        (
+                                            i,
+                                            (
+                                                line.strip()[:truncate_length] + "..."
+                                                if len(line.strip()) > truncate_length
+                                                else line.strip()
+                                            ),
+                                        )
+                                    )
                             else:
                                 if word in line:
                                     rel_path = str(
@@ -250,7 +268,16 @@ class FileManager(Sessionable):
                                     )
                                     if rel_path not in results:
                                         results[rel_path] = []
-                                    results[rel_path].append((i, line.strip()))
+                                    results[rel_path].append(
+                                        (
+                                            i,
+                                            (
+                                                line.strip()[:truncate_length] + "..."
+                                                if len(line.strip()) > truncate_length
+                                                else line.strip()
+                                            ),
+                                        )
+                                    )
                 except UnicodeDecodeError:
                     # Skip binary files
                     pass
