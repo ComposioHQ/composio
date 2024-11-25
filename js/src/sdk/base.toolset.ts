@@ -226,9 +226,13 @@ export class ComposioToolSet {
                 const connectedAccounts = await this.client.connectedAccounts.list({
                     user_uuid: entityId
                 });
-                accountId = connectedAccounts.items[0].id;
+                accountId = connectedAccounts?.items[0]?.id;
             }
 
+            if(!accountId) {
+                throw new Error("No connected account found for the user");
+            }
+            
             return this.customActionRegistry.executeAction(action, params, {
                 entityId: entityId,
                 connectionId: connectedAccountId
