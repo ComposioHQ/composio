@@ -160,7 +160,6 @@ export class ActionRegistry {
                 });
                 return res!;
             } catch (error) {
-                console.log("error", error);
                 throw CEG.handleError(error);
             }
         };
