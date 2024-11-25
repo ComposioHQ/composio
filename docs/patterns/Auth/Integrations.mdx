@@ -78,7 +78,7 @@ Coming Soon
 You can initiate a connection using the integration by following the steps below:
 <CodeGroup>
 ```python Python
-request = entity.initiate_connection("GITHUB", redirect_url="http://example.com", integration=integration)
+request = entity.initiate_connection("GITHUB", redirect_url="https://yourwebsite.com/connection/success", integration=integration)
 print(request.redirectUrl)
 ```
 ```javascript JavaScript
@@ -138,7 +138,7 @@ toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"), entity_id="Jess
 entity = toolset.get_entity()
 
 integration = entity.client.integrations.get_by_id("integration_id...")
-connection_request = entity.initiate_connection(app_name="TWITTER", redirect_url="redirect_url...", integration=integration)
+connection_request = entity.initiate_connection(app_name="TWITTER", redirect_url="https://yourwebsite.com/connection/success", integration=integration)
 
 # If the connection method is OAuth, redirect the user to the URL below
 print(connection_request.redirectUrl)
