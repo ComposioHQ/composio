@@ -118,6 +118,7 @@
         "patterns/Auth/connected_account",
         "patterns/Auth/using-connections",
         "patterns/Auth/Integrations",
+        "patterns/Auth/admin-webhooks",
         "patterns/Auth/examples/gmail_example",
         "patterns/Auth/examples/shopify_example"
       ]
