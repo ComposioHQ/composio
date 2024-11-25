@@ -8,7 +8,7 @@ import logging
 
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
-composio_toolset = ComposioToolSet(api_key="fcau1ynif45lumo8txt5o", connected_account_ids={"GMAIL": "1b9c7742-ce8a-4f62-811a-b94ddc67ac5d"})
+composio_toolset = ComposioToolSet(api_key="fcau1ynif45lumo8txt5o", connected_account_ids={})
 tools = composio_toolset.get_tools(actions=['BROWSER_TOOL_GET_PAGE_DETAILS','BROWSER_TOOL_GOTO_PAGE', 'BROWSER_TOOL_SCROLL_PAGE', 'BROWSER_TOOL_REFRESH_PAGE', 'GMAIL_SEND_EMAIL'])
 
 agent = create_openai_functions_agent(llm, tools, prompt)
@@ -31,7 +31,7 @@ def get_reviews(url):
          \n- Common complaints or issues \
          \n- Notable specific feedback about product features \
          \nKeep the summary focused on helping potential buyers make an informed decision."
-        "Format the summary and send the summary using gmail send mail samvit@hotmail.com"
+        "Format the summary and send the summary using gmail send mail <add email here>"
     ]
 
     for task in tasks:

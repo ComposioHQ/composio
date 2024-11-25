@@ -12,7 +12,7 @@ import logging
 
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
-composio_toolset = ComposioToolSet(api_key="fcau1ynif45lumo8txt5o")
+composio_toolset = ComposioToolSet(api_key="fcau1ynif45lumo8txt5o", connected_account_ids={})
 tools = composio_toolset.get_tools(actions=['BROWSER_TOOL_GET_PAGE_DETAILS','BROWSER_TOOL_GOTO_PAGE', 'BROWSER_TOOL_SCROLL_PAGE', 'BROWSER_TOOL_REFRESH_PAGE', 'SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL'])
 openai_client = OpenAI()
 
@@ -30,14 +30,14 @@ def handle_slack_message(event: TriggerEventData):
     payload = event.payload
     message = payload.get("text", "")
     channel_id = payload.get("channel", "")
-    if channel_id != "C08260VRBKQ":
+    if channel_id != "<add channel id here>":
         return
     print(message)
     print(channel_id)
     composio_toolset.execute_action(
         action=Action.SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL,
         params={
-            "channel": "C08260VRBKQ",
+            "channel": "<add channel id here>",
             "text": f"Collating responses using the composio browser tool......."
         },
     )
@@ -58,7 +58,7 @@ def get_reviews(url):
          \n- Common complaints or issues \
          \n- Notable specific feedback about product features \
          \nKeep the summary focused on helping potential buyers make an informed decision."
-        "Format the summary and send the summary to the slack channel with id C08260VRBKQ"
+        "Format the summary and send the summary to the slack channel with id <add channel id here>"
     ]
 
     for task in tasks:
