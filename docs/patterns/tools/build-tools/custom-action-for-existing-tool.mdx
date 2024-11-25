@@ -45,7 +45,7 @@ Since `github` is a registered tool in Composio, the authentication credentials 
 @action(toolname="github")
 def list_repositories(
     owner: str,
-    execute_request,
+    execute_request: t.Callable,
 ) -> list[str]:
     """
     List repositories for a user.
