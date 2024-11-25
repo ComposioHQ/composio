@@ -1,16 +1,16 @@
 ---
-title: "How can I get and use specific actions from a Tool?"
+title: "How to use specific actions from a Tool?"
 sidebarTitle: "Use Specific Actions"
 icon: "pickaxe"
-description: "Each Tool (like GitHub, Slack, etc.) comes with many Actions. You can explore all available Tools & Actions [here](https://app.composio.dev/apps). Each Action has an associated action ID which you can use to call the action."
+description: "Each Tool (like GitHub, Slack, etc.) comes with many pre-defined Actions. You can explore all available Tools & Actions [here](https://app.composio.dev/apps)."
 ---
-
+Each Action has an associated action ID which you can use to call the action.
 <Tip>
-  Filtering actions is crucial for optimizing AI agent performance. Providing too many actions can overwhelm the LLM's decision-making process, making it harder to choose the most appropriate action. It's best to narrow down the action set to only the most relevant ones for your specific use case.
+  Filtering actions is crucial for optimizing AI agent performance. Providing too many actions can make it difficult for LLM to choose the most appropriate action. It's best to narrow down the relevant action set for your specific use case.
 </Tip>
 
 ### Specifying Actions
-`GITHUB_CREATE_AN_ISSUE` and `GITHUB_COMMIT_EVENT` are action IDs for actions in the GitHub Tool
+`GITHUB_CREATE_AN_ISSUE` and `GITHUB_COMMIT_EVENT` are action IDs for actions in the GitHub Tool. See the full list of provided GitHub actions [here](https://composio.dev/tools/github/all)
 <CodeGroup>
 ```python Python
 from composio import ComposioToolSet, App, action
@@ -33,9 +33,9 @@ const tools = await toolset.getTools({actions: ['github_issues_create','github_c
 
 ### Filtering Actions
 Actions can be filtered by tags or use case.
-<Tabs>
-<Tab title="Filtering Actions by Tags">
-Filter the Actions in an App based on tags.
+
+#### Filtering Actions by Tags
+Filter the Actions based on tags.
 For example, you can:
 - Filter all user-related Actions using the "users" tag
 - Retrieve metadata-related Actions using the "meta" tag
@@ -77,8 +77,9 @@ console.log(actions);
 composio actions --app 'github' --tag 'code' 
 ```
 </CodeGroup>
-</Tab>
-<Tab title="Filtering Actions by Use Case">
+
+#### Filtering Actions by Use Case
+
 Find relevant actions for your use case by describing your use case in natural language.
 <CodeGroup>
 ```Python Python
@@ -111,5 +112,3 @@ const actionsList = await toolset.client.actions.list({
 composio actions --use-case 'star a repo on github' --app 'github'
 ```
 </CodeGroup>
-</Tab>
-</Tabs>

@@ -1,8 +1,8 @@
 ---
-title: "🛠️ How can I use Tools with LLMs?"
+title: "🛠️ How to use Tools with LLMs?"
 sidebarTitle: "Use Tools with LLMs"
 icon: "robot"
-description: "Guide to using Tools with LLMs"
+description: "Learn How to use Tools with LLMs"
 ---
 
 ### Using Tools with LLMs
@@ -70,12 +70,12 @@ console.log(result);
   ```
 </CodeGroup>
 
-This code demonstrates how to use LLMs with Composio Tools to execute actions. The example shows how to connect OpenAI's LLM with Composio's tools, in this case using the GitHub tool. The LLM understands the natural language task ("Star the repo") and determines which action to use from the GitHub tool, then executes the action.
+The example shows how to connect OpenAI's LLM with Composio's GitHub tool. The LLM understands the natural language task ("Star the repo") and determines which action to use from the GitHub tool, then executes the action.
 
-### How can I use Tools for a specific user?
-You can use the `entity_id` parameter to specify the user on behalf of whom you want to execute the action. Learn more about Entities [here](/patterns/Auth/connected_account#entities).
+### How to use Tools for a specific user?
+You can use the `entity_id` parameter to specify the user for whom the action will be executed. Learn more about Entities [here](/patterns/Auth/connected_account#entities).
 <CodeGroup>
-```python Python {10}
+```python Python
 # Import required libraries
 from composio_openai import ComposioToolSet, App
 from openai import OpenAI
@@ -103,7 +103,7 @@ response = openai_client.chat.completions.create(
 result = composio_toolset.handle_tool_calls(response=response)
 print(result)
 ```
-```javascript JavaScript {10}
+```javascript JavaScript
 // Import required libraries
 import { OpenAI } from "openai";
 import { OpenAIToolSet } from "composio-core";

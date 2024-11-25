@@ -2,7 +2,7 @@
 title: "🛠️ Configure Tools"
 sidebarTitle: "Configure Tools"
 icon: "gear"
-description: "Learn how to configure tools"
+description: "Learn how to configure Tools in Composio"
 ---
 
 ## Initialization Parameters
@@ -12,8 +12,9 @@ When setting up Composio tools, you might need to provide various configuration 
 1. **App-level**: Parameters that apply to all actions within a specific tool/app
 2. **Action-level**: Specific parameters needed for individual actions
 
-For example, if you're using the Image Analyzer tool, you'll need to provide an OpenAI API key. Similarly, other tools might require their own specific configuration parameters to function properly.
+For instance, if you're using the Image Analyzer tool, you'll need to provide an OpenAI API key. Similarly, other tools might require their own specific configuration parameters to function properly.
 
+### How to add metadata at Action-level?
 <Steps>
 <Step title="Import required libraries">
 <CodeGroup>
@@ -28,10 +29,10 @@ Coming Soon
 ```
 </CodeGroup>
 </Step>
-<Step title="Import Prompt template & Initialize ChatOpenAI & composio toolset client">
-During the initialization of the `ComposioToolSet` client, we can add metadata to actions & apps. In this example, we're adding an OpenAI API key for the `IMAGE_ANALYSER_ANALYSE` action:
+<Step title="Import Prompt template & Initialize ChatOpenAI & Composio ToolSet client">
+While initializing the `ComposioToolSet` client, we can add metadata to actions & tools. In this example, we're adding an OpenAI API key for the `IMAGE_ANALYSER_ANALYSE` action:
 <CodeGroup>
-```python Python {5-9}
+```python Python
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
 llm = ChatOpenAI()
@@ -78,7 +79,7 @@ Coming Soon
 </Steps>
 
 ### How to add metadata at App-level?
-Above we saw how to add metadata at the Action-level. Here's an example of how to add metadata at the App-level:
+
 <CodeGroup>
 ```python Python
 toolset = ComposioToolSet(

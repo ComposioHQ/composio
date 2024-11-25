@@ -1,16 +1,18 @@
 ---
-title: "🛠️ How can I use Tools directly?"
+title: "🛠️ How to use Tools directly?"
 sidebarTitle: "Use Tools Directly"
 icon: "fax"
-description: "Guide to use Tools directly as function calls"
+description: "Learn How to use Tools directly as function calls"
 ---
 
 ### Using Tools Directly
 
-Composio allows you to execute tools directly as function calls. When calling a tool directly, you'll need to provide the input parameters. Checkout [Get Action Schema](/patterns/tools/use-tools/get-action-inputs) to learn how to get the input parameters for an action.
+Composio allows you to execute tools directly as function calls. When calling a tool directly, you'll need to provide the input parameters. 
+
+Checkout [Get Action Schema](/patterns/tools/use-tools/get-action-inputs) to learn how to get the input parameters for an action.
 
 <CodeGroup>
- ```python Python Star a repo
+ ```python Python (Star a repo)
 from composio import ComposioToolSet, Action
 
 tool_set = ComposioToolSet(entity_id="Jessica")
@@ -25,7 +27,7 @@ tool_set.execute_action(
 )
 ```
 
-```javascript JavaScript Get Hypermedia links in GitHub
+```javascript JavaScript (Get Hypermedia links in GitHub)
 import { OpenAIToolSet } from "composio-core";
 
 const toolset = new OpenAIToolSet();
@@ -50,7 +52,7 @@ console.log("Custom auth action response", customAuthAction)
 </CodeGroup>
 
 ### Execute Tools or Actions with Natural Language
-You can also execute Tools or Actions by passing in natural language prompts without specific parameters
+You can also execute Tools or Actions by passing the natural language prompts without specific parameters
 <CodeGroup>
 ```python Python
   tool_set.execute_action(
@@ -72,12 +74,12 @@ You can also execute Tools or Actions by passing in natural language prompts wit
 ```
 </CodeGroup>
 
-### How can I use Tools for a specific user?
+### How to use Tools for a specific user?
 You can use the entity object of a specific user and execute action on behalf of that user. Learn more about Entities [here](/patterns/Auth/connected_account#entities).
 
 <CodeGroup>
 
-```python Python {4}
+```python Python
 from composio import ComposioToolSet
 
 toolset = ComposioToolSet()
@@ -93,7 +95,7 @@ res = entity.execute(
 print(res)
 ```
 
-```javascript JavaScript {4}
+```javascript JavaScript
 import { OpenAIToolSet } from "composio-core";
 
 const toolset = new OpenAIToolSet();

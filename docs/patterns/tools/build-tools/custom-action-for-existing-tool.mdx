@@ -35,11 +35,7 @@ const toolset = new OpenAIToolSet({});
 </Step>
 
 <Step title="Creating a custom action">
-Below is an example of creating a custom action called `list_repositories` that integrates with the `github` tool. This action demonstrates how to list all the repositories for a given user or organization.
-
-<Note>
-Since `github` is a registered tool in Composio, the authentication credentials are automatically injected into your custom action!
-</Note>
+Here, we have created a custom action called `list_repositories` that integrates with the `github` tool. This action shows how to list all the repositories for a given user or organization.
 <CodeGroup>
 ```python Python
 @action(toolname="github")
@@ -88,9 +84,12 @@ await toolSet.createAction({
 ```
 </CodeGroup>
 
+<Note>
+Since `github` is a registered tool in Composio, the authentication credentials are automatically passed into your custom action!
+</Note>
+
 </Step>
 <Step title="Executing the Custom Action">
-Executing the custom action using LLM
 <CodeGroup>
 ```python Python
 tools = toolset.get_tools(actions=[list_repositories])
@@ -135,7 +134,7 @@ console.log(result);
 </Step>
 </Steps>
 
-### Why Use Custom Actions?
+### Why to Use Custom Actions?
 
 Custom Actions provide several advantages:
 

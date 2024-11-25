@@ -10,17 +10,18 @@ description: "Learn how to modify Tools & Actions to refine schemas, inputs, and
 
 In many scenarios, the schemas, inputs, or outputs of tools may benefit from additional processing. This refinement step can significantly improve the quality and usability of your data. Here are three key use cases:
 
-- **Modifying Schema**: Modify the tool schema like the description of the parameters or the default values. For example, if you're manually providing certain values in input (like project_id), you can mark these fields as "not required" in the schema so the LLM knows it doesn't need to ask for them.
+- **Modifying Schema**: Modify the tool schema like the description of the parameters or the default values. For example, marking fields (like project_id) as "not required" in the schema so the LLM knows it doesn't need to ask for them.
 - **Modifying Inputs**: Add values as inputs to avoid specifying them in the prompt. e.g., passing `project_id` & `team_id` to the `LINEAR_CREATE_LINEAR_ISSUE` action.
 - **Modifying Outputs**: Modify outputs to get the desired data. e.g., extracting `execution_id` & `issue_id` from the response of `LINEAR_CREATE_LINEAR_ISSUE` action. Doing this can help keep the LLM context clean.
 
-Composio empowers you with the ability to define **custom functions** as schema modifiers, input modifiers, or output modifiers.
+Composio allows you to define **custom functions** as schema modifiers, input modifiers, or output modifiers.
 
 These can be applied at two levels:
 
 1. **App-level**: Affects all actions within a specific tool.
 2. **Action-level**: Tailored processing for individual actions.
 
+### How to use processors at Action-level?
 
 <Steps>
 <Step title="Import required libraries">
@@ -36,7 +37,7 @@ Coming Soon
 ```
 </CodeGroup>
 </Step>
-<Step title="Import Prompt template & Initialize ChatOpenAI & composio toolset client">
+<Step title="Import Prompt template & Initialize ChatOpenAI & Composio ToolSet client">
 <CodeGroup>
 ```python Python
 prompt = hub.pull("hwchase17/openai-functions-agent")
@@ -50,7 +51,9 @@ Coming Soon
 </CodeGroup>
 </Step>
 <Step title="Define a Custom Function to Modify Schema">
-This function will be used to modify the schema of the `LINEAR_CREATE_LINEAR_ISSUE` action, here we are modifying the description for the parameters `project_id` & `team_id` to not required, later in the program we will pass these values as inputs to the action. The technical term for this is **Action-level Schema Processing**.
+This function will modify the schema of the `LINEAR_CREATE_LINEAR_ISSUE` action.
+
+Here we are modifying the description for the parameters `project_id` & `team_id` to "not required", later in the program we will pass these values as inputs to the action. This is known as **Action-level Schema Processing**.
 <CodeGroup>
 ```python Python
 def linear_schema_processor(schema: dict) -> dict:
@@ -63,7 +66,9 @@ Coming Soon
 ```
 </CodeGroup>
 </Step><Step title="Define a Custom Function to Modify Input">
-This function will be used to modify the input data for the `LINEAR_CREATE_LINEAR_ISSUE` action. Here we have added the values for `project_id` and `team_id` parameters to the input data. By doing this, we can avoid specifying these values in the prompt and be sure that the agent uses the correct values. The technical term for this is **Action-level Pre-Processing**.
+This function will modify the input data for the `LINEAR_CREATE_LINEAR_ISSUE` action. 
+
+Here we have added the values for `project_id` and `team_id` parameters to the input data. Now, we can avoid specifying these values in the prompt, thus ensuring the agent will use the correct values. This is known as **Action-level Pre-Processing**.
 <CodeGroup>
 ```python Python
 def linear_pre_processor(input_data: dict) -> dict:
@@ -77,7 +82,9 @@ Coming Soon
 </CodeGroup>
 </Step>
 <Step title="Define a Custom Function to Modify Output">
-This function will be used to modify the output data for the `LINEAR_CREATE_LINEAR_ISSUE` action. Here we are modifying the output to just return the action execution status `successful` & the `issue_id`, by doing this can keep the LLM context clean. The technical term for this is **Action-level Post-Processing**.
+This function will modify the output data for the `LINEAR_CREATE_LINEAR_ISSUE` action.
+
+Here we are modifying the output to just return the action execution status `successful` & the `issue_id`. This will keep the LLM context clean. This is known as **Action-level Post-Processing**.
 <CodeGroup>
 ```python Python
 def linear_post_processor(output_data: dict) -> dict:
@@ -93,10 +100,12 @@ Coming Soon
 </CodeGroup>
 </Step>
 <Step title="Get Linear Action from Composio">
-When getting tools using the `get_tools()` method, we need to pass the `processors` parameter to specify the schema, pre-processing, and post-processing functions. In this example, we're setting up an Action-level preprocessor by mapping the `LINEAR_CREATE_LINEAR_ISSUE` action to our `linear_schema_processor`, `linear_pre_processor` and `linear_post_processor` functions defined above respectively in schema, pre, and post processors.
+To use `get_tools()` method, we need to pass the `processors` parameter to specify the schema, pre-processing, and post-processing functions.
+
+Here, we're setting up an Action-level preprocessor by mapping the `LINEAR_CREATE_LINEAR_ISSUE` action to our `linear_schema_processor`, `linear_pre_processor` and `linear_post_processor` functions defined above respectively in schema, pre, and post processors.
 
 <CodeGroup>
-```python Python {2-12}
+```python Python
 tools = composio_toolset.get_tools(
     processors={
         "schema": {
@@ -135,9 +144,9 @@ Coming Soon
 </Steps>
 
 ### How to use processors at App-level?
-Above we saw how to use processors at the Action-level, below is an example of how to use them at the App-level.
+
 <CodeGroup>
-```python Python {2-12}
+```python Python
 tools = composio_toolset.get_tools(
     processors={
         "pre": {
@@ -158,6 +167,6 @@ Coming Soon
 ```
 </CodeGroup>
 
-<Warning>
+<Note>
   Ensure that your schema processing, preprocessing, and postprocessing functions are efficient and don't introduce significant latency.
-</Warning>
+</Note>

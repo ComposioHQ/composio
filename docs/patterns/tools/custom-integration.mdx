@@ -5,40 +5,45 @@ icon: "puzzle-piece"
 description: "Learn how to add your own App to Composio"
 ---
 
-Creating your own App on Composio is straightforward and can be done via an [OpenAPI Spec](https://swagger.io/specification/). 
+Creating your own App on Composio is straightforward and can be done via an [OpenAPI Spec](https://swagger.io/specification/).
 
 Here's a tutorial showing how to add Notion as an App on Composio
-<iframe 
-  width="560" 
-  height="315" 
-  src="https://www.youtube.com/embed/xU9jY7NsfOA?si=fIrJo6Ya38Mms819" 
-  title="OpenAPI spec import" 
-  frameborder="0" 
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/xU9jY7NsfOA?si=fIrJo6Ya38Mms819"
+  title="OpenAPI spec import"
+  frameborder="0"
   allow="accelerometer; 
   autoplay; 
   clipboard-write; 
   encrypted-media; 
   gyroscope; 
-  picture-in-picture" 
-  allowfullscreen >
-</iframe>
-
+  picture-in-picture"
+  allowfullscreen
+></iframe>
 
 ### Step by Step Guide
+
 <Steps>
 
 <Step title="Create or get the OpenAPI Spec for the App">
-    The first step is to get the OpenAPI Spec for the app you want to integrate with Composio. If the app does not have an OpenAPI Spec, you can create one using the [Swagger Editor](https://editor.swagger.io/). 
-    
-    Or you can keep it empty in case you are not interested in the actions and only need authentication.
+  Get the OpenAPI Spec for the app you want to integrate with Composio. If the
+  app does not have an OpenAPI Spec, you can create one using the [Swagger
+  Editor](https://editor.swagger.io/). In case, you only need authentication and
+  not actions, you can keep it empty
 </Step>
 
 <Step title="Create the integrations.yaml File">
-    Create an `integrations.yaml` file. Below is the base template for the Integrations.yaml file for any custom tool that you create. However, you will modify the auth schemes as each tool supports different auth methods.
+    Create an `integrations.yaml` file. Below is the base template for the integrations.yaml file for any custom tool that you create. 
+    
+    However, you'll have to modify the auth schemes as each tool supports different auth methods.
 
     <AccordionGroup title="integrations.yaml">
     <Accordion title="Base Template">
     ```yaml
+
 name:
 unique_key:
 description:
@@ -48,110 +53,121 @@ docs:
 get_current_user_endpoint: ""
 
 auth_schemes:
-  # OAuth1
-  - name: 
-    auth_mode: OAuth1
-    request_url:
-    authorization_url: 
-    token_url:
-    signature_method:
-    default_scopes: [""]
-    scope_separator: ','
-    authorization_params:
-      expiration:
-    token_params:
-      grant_type:
-    proxy:
-      base_url: "{{base_url}}"
-    fields:
-      - name: base_url
-        displayName: Base URL
-        description: "desc_here"
-        type: string
-        default: {{add the api endpoint URL of the app}}
 
-  # OAuth2
-  - name: 
-    auth_mode: OAUTH2
-    authorization_url: 
-    token_url:
-    default_scopes: [""]
-    scope_separator: ','
-    token_access_request_method: 
-    authorization_params:
-      response_type:
-    token_params:
-      grant_type:
-    proxy:
-      base_url: "{{base_url}}"
-    fields:
-      - name: base_url
-        displayName: Base URL
-        description: "desc_here"
-        type: string
-        default: {{api endpoint URL of the app}}
+# OAuth1
 
-  # API-KEY
-  - name: app_name_api-key
-    auth_mode: API_KEY
-    proxy:
-      base_url: "{{base_url}}"
-      headers:
-        Authorization: "{{api_key}}"
-    fields:
-      - name: api_key
-        expected_from_customer: true 
-        displayName: API Key
-        description: "add_desc_here"
-        type: string
-        required: true
-      - name: base_url
-        expected_from_customer: true 
-        displayName: Base URL
-        description: "add_desc_here"
-        type: string
-        required: false
-        default: {{add the api endpoint URL of the app}}
+- name:
+  auth_mode: OAuth1
+  request_url:
+  authorization_url:
+  token_url:
+  signature_method:
+  default_scopes: [""]
+  scope_separator: ','
+  authorization_params:
+  expiration:
+  token_params:
+  grant_type:
+  proxy:
+  base_url: "{{base_url}}"
+  fields:
+  - name: base_url
+    displayName: Base URL
+    description: "desc_here"
+    type: string
+    default: {{add the api endpoint URL of the app}}
 
-  # BASIC
-  - name: app_name_basic
-    auth_mode: BASIC
-    proxy:
-      base_url: {{add the api_endpoint_url}}
-    fields:
-      - name: api_key
-        displayName: API Key
-        description: "desc_here"
-        type: string
-        expected_from_customer: true
-      - name: username
-        displayName: Username
-        description: "desc_here"
-        type: string
-        expected_from_customer: 
-      - name: password
-        displayName: Password
-        description: "your password here."
-        type: string
-        expected_from_customer: true
-    ```
-    </Accordion>
-    </AccordionGroup>
+# OAuth2
+
+- name:
+  auth_mode: OAUTH2
+  authorization_url:
+  token_url:
+  default_scopes: [""]
+  scope_separator: ','
+  token_access_request_method:
+  authorization_params:
+  response_type:
+  token_params:
+  grant_type:
+  proxy:
+  base_url: "{{base_url}}"
+  fields:
+  - name: base_url
+    displayName: Base URL
+    description: "desc_here"
+    type: string
+    default: {{api endpoint URL of the app}}
+
+# API-KEY
+
+- name: app_name_api-key
+  auth_mode: API_KEY
+  proxy:
+  base_url: "{{base_url}}"
+  headers:
+  Authorization: "{{api_key}}"
+  fields:
+  - name: api_key
+    expected_from_customer: true
+    displayName: API Key
+    description: "add_desc_here"
+    type: string
+    required: true
+  - name: base_url
+    expected_from_customer: true
+    displayName: Base URL
+    description: "add_desc_here"
+    type: string
+    required: false
+    default: {{add the api endpoint URL of the app}}
+
+# BASIC
+
+- name: app_name_basic
+  auth_mode: BASIC
+  proxy:
+  base_url: {{add the api_endpoint_url}}
+  fields:
+
+  - name: api_key
+    displayName: API Key
+    description: "desc_here"
+    type: string
+    expected_from_customer: true
+  - name: username
+    displayName: Username
+    description: "desc_here"
+    type: string
+    expected_from_customer:
+  - name: password
+    displayName: Password
+    description: "your password here."
+    type: string
+    expected_from_customer: true
+
+  ```
+  </Accordion>
+  </AccordionGroup>
+
+<Note>
+  `integrations.yaml` file is indentation sensitive and
+  should be formatted correctly.
+</Note>
 
 Let's start with creating the yaml file for GitHub by adding the basic info.
 
-```yaml
-name: GitHub
-description: Integrate GitHub to manage your repositories directly from Composio.
-logo: https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png
-categories: ["developer tools", "version control"]
-auth_schemes:
+  ```yaml
+  name: GitHub
+  description: Integrate GitHub to manage your repositories directly from Composio.
+  logo: https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png
+  categories: ["developer tools", "version control"]
+  auth_schemes:
+  ```
 
-```
+Determine the supported auth method by the custom tool that you're trying to add. Each Auth Method has its own set of fields. These fields are defined under the Auth Method.
 
-Determine the supported auth method by the custom tool that you're trying to add. Each Auth Method has its own set of fields. These fields are defined under the Auth Method. Please remember that the `integrations.yaml` file is indentation sensitive and should be formatted correctly.
-
-You can refer to below snippets of the each auth method to see how these fields are defined. You can add the supported auth methods in the `integrations.yaml` file by copying from the below snippets.
+Refer to below snippets to see how these fields are defined. You can add the supported auth methods in the `integrations.yaml` file by.
 
     <AccordionGroup title="integrations.yaml">
       <Accordion title="OAuth1">
@@ -160,8 +176,8 @@ You can refer to below snippets of the each auth method to see how these fields 
         - name: tool_name_oauth1
           auth_mode: OAUTH1
           request_url:
-          authorization_url: 
-          
+          authorization_url:
+
           token_url:
           signature_method:
           default_scopes: [""]
@@ -184,11 +200,11 @@ You can refer to below snippets of the each auth method to see how these fields 
       ```yaml
         - name: tool_name_oauth2
           auth_mode: OAUTH2
-          authorization_url: 
+          authorization_url:
           token_url:
           default_scopes: [""]
           scope_separator: ','
-          token_access_request_method: 
+          token_access_request_method:
           authorization_params:
               response_type:
           token_params:
@@ -213,13 +229,13 @@ You can refer to below snippets of the each auth method to see how these fields 
               Authorization: "{{api_key}}"
           fields:
             - name: api_key
-              expected_from_customer: true 
+              expected_from_customer: true
               displayName: API Key
               description: "add_desc_here"
               type: string
               required: true
             - name: base_url
-              expected_from_customer: true 
+              expected_from_customer: true
               displayName: Base URL
               description: "add_desc_here"
               type: string
@@ -243,7 +259,7 @@ You can refer to below snippets of the each auth method to see how these fields 
               displayName: Username
               description: "desc_here"
               type: string
-              expected_from_customer: 
+              expected_from_customer:
             - name: password
               displayName: Password
               description: "your password here."
@@ -251,14 +267,15 @@ You can refer to below snippets of the each auth method to see how these fields 
               expected_from_customer: true
         ```
         </ Accordion>
-        
+
     </AccordionGroup>
 
 <Tip>
-Most tools have their auth methods listed in their docs. You can usually find it by searching "custom_tool_name auth docs" on Google. The first result often has what you need.
+  Most tools have their auth methods listed in their docs. You can usually find
+  it by searching "custom_tool_name auth docs" on Google.
 </Tip>
 
- In this case, GitHub uses OAuth2 for authentication.
+In this case, GitHub uses OAuth2 for authentication.
 
 ```yaml
 name: GitHub
@@ -290,16 +307,14 @@ You need to add the relevant scopes as needed. Now that you have the `integratio
 
 </Step>
 
-
 <Step title="Add your Custom Tool on Composio">
 
-- Go to the <a href="https://app.composio.dev/apps">tools page</a> on Composio 
+- Go to the <a href="https://app.composio.dev/apps">tools page</a> on Composio
 - Click on the **Setup a New Tool** section
-- Upload the Open API Spec file and the `integrations.yaml` file. 
-- Click on the "Start import" button to begin testing.
+- Upload the Open API Spec file and the `integrations.yaml` file.
+- Click on the **Start import** button to begin testing.
 - Once the tests pass successfully, you will be able to access this tool.
 </Step>
-
 
 <Step title="Testing Your Custom tool on Composio">
 

@@ -2,36 +2,46 @@
 title: "🛠️ What are Tools & Actions?"
 sidebarTitle: "What are Tools?"
 icon: "question"
-description: "Learn about tools in Composio"
+description: "Learn about Tools in Composio"
 ---
-### What are tools?
+### What are Tools?
 
-Large Language Models (LLMs) are like a highly intelligent person who can understand and reason about almost anything but is sitting in an empty room with no ability to interact with the outside world. They can think and talk about sending emails, creating a ticket on Jira, or cloning a repository from GitHub, but can't actually DO these things. 
+Tools enable the Large Language Models (LLMs) to interact with the real world and perform specific tasks like  sending emails, creating tickets on Jira, or cloning a repository from GitHub. Without Tools, LLMs can reason anything but can't perform actions. 
 
-This is where tools come in. Tools give this intelligent being specific abilities to interact with the real world. Many AI models support tool calling (also called function calling).
+Many AI models support tool calling (also called function calling).
 
 <Note>
 The term **tools** and **actions** are used interchangeably in the documentation 
 </Note>
 
-### How tool calling works
+### How tool calling works?
 AI models with tool calling capabilities decide when and how to use specific tools to meet user requests. Developers create and provide these tools, equipping the AI with a toolbox to select the best tool for each task
 
 For example, if a user asks an LLM to send an email to `john@example.com` with subject `Meeting Tomorrow`, the LLM can use the [Gmail](https://app.composio.dev/app/gmail) tool's `GMAIL_SEND_EMAIL` action to send the email.
 
 LLM's thinking process:
-1. Recognizes this requires email sending capability
-2. Identifies the appropriate tool ([Gmail](https://app.composio.dev/app/gmail)) & action (`GMAIL_SEND_EMAIL`)
-3. Structures the necessary parameters:
+
+**Step 1.** Recognizes this requires email sending capability
+
+**Step 2.** Identifies the appropriate tool ([Gmail](https://app.composio.dev/app/gmail)) & action (`GMAIL_SEND_EMAIL`)
+
+**Step 3.** Structures the necessary parameters:
    - recipient: john@example.com
    - subject: "Meeting Tomorrow"
    - body: [drafts appropriate content]
-4. Calls the action with these parameters
+
+**Step 4.** Calls the action with these parameters
 
 
 ### Tool calling with Composio
 
-At Composio, we offer tools for multiple platforms, accessible via Python and JavaScript SDKs. These platforms, referred to as **Apps** or **Tools**, include popular services like GitHub, Twitter, Salesforce, Jira, and Notion. Within each of these Apps, we provide **Actions**, which are essentially functions that can be executed. For example, you can send an email on Gmail, star a repository on GitHub, or create an issue on Jira. These tools can also be used directly, similar to function calls, without needing agents.
+At Composio, we offer multiple tools that are accessible via Python and JavaScript SDKs.
+
+These **Tools** or **Apps** includes popular services like GitHub, Twitter, Salesforce, Jira, and many more. Check the full list [here](https://app.composio.dev/apps?category=all)
+
+Within each of these Apps, we provide Actions, which are essentially functions that can be executed. For example, you can send an email on Gmail, star a repository on GitHub, or create an issue on Jira.
+
+These tools can also be used directly, similar to function calls, without needing agents.
 
 <CodeGroup>
 ```python Python 
@@ -67,7 +77,7 @@ const tools = await composioToolset.getTools({ actions: ["github_star_a_reposito
 
 ### Action Limits
 
-Empirical evidence indicates that agents perform optimally when limited to **fewer than 20 actions**. Providing LLMs with too many actions can lead to significant performance issues, such as **increased response time** and **decreased accuracy**.
+Observed results shows that agents perform optimally when limited to **fewer than 20 actions**. Providing LLMs with too many actions can lead to significant performance issues, such as **delay in response time** and **decreased accuracy**.
 
 To optimize agent performance, it's essential to limit the number of actions available. This can be achieved through effective action filtering strategies. Here are some recommended approaches:
 
@@ -77,3 +87,22 @@ To optimize agent performance, it's essential to limit the number of actions ava
 4. Implement custom filtering logic
 
 By carefully curating the action set, you can significantly improve agent efficiency and response quality.
+
+<CardGroup cols={2}>
+  <Card title="Use Tools"
+    color="#7bee0c"
+    href="/patterns/tools/use-tools/action-guide-with-agents"
+    icon="key"
+    iconType="duotone">
+    Get started with Composio Tools & Apps
+  </Card>
+  <Card title="Build Tools" 
+  color="#7bee0c"
+    href="/patterns/tools/build-tools/custom-action-for-new-tool"
+    icon="puzzle-piece"
+    iconType="duotone"
+    >
+    Build your own customize Tools
+  </Card>
+</CardGroup>
+
