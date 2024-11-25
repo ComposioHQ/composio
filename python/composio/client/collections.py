@@ -41,7 +41,14 @@ if t.TYPE_CHECKING:
     from composio.client import Composio
 
 AUTH_SCHEMES = ("OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN")
-AuthSchemeType = t.Literal["OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN"]
+AuthSchemeType = t.Literal[
+    "OAUTH2",
+    "OAUTH1",
+    "API_KEY",
+    "BASIC",
+    "BEARER_TOKEN",
+    "BASIC_WITH_JWT",
+]
 
 
 def to_trigger_names(
