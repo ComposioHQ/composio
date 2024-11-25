@@ -26,9 +26,9 @@ jobs:
         node-version: '20'
         registry-url: 'https://registry.npmjs.org'
     - name: Install dependencies
-      run: npm install -g pnpm@8.15.7
+      run: npm install -g pnpm
     - name: Install packages in js folder
-      run: pnpm install
+      run: pnpm install --frozen-lockfile
 
     - name: Set publishing config
       run: pnpm config set '//registry.npmjs.org/:_authToken' "${NODE_AUTH_TOKEN}"
