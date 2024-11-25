@@ -129,12 +129,12 @@ export class Triggers {
            if(Object.keys(filters).length === 0) return true;
             else{
                 return (
-                    (!filters.appName || data.appName === filters.appName) &&
-                    (!filters.triggerId || data.metadata.id === filters.triggerId) &&
-                    (!filters.connectionId || data.metadata.connectionId === filters.connectionId) &&
-                    (!filters.triggerName || data.metadata.triggerName === filters.triggerName) &&
-                    (!filters.entityId || data.metadata.connection.clientUniqueUserId === filters.entityId) &&
-                    (!filters.integrationId || data.metadata.connection.integrationId === filters.integrationId)
+                    (!filters.appName || data.appName.toLowerCase() === filters.appName.toLowerCase()) &&
+                    (!filters.triggerId || data.metadata.id.toLowerCase() === filters.triggerId.toLowerCase()) &&
+                    (!filters.connectionId || data.metadata.connectionId.toLowerCase() === filters.connectionId.toLowerCase()) &&
+                    (!filters.triggerName || data.metadata.triggerName.toLowerCase() === filters.triggerName.toLowerCase()) &&
+                    (!filters.entityId || data.metadata.connection.clientUniqueUserId.toLowerCase() === filters.entityId.toLowerCase()) &&
+                    (!filters.integrationId || data.metadata.connection.integrationId.toLowerCase() === filters.integrationId.toLowerCase())
                 );
             }
         }
