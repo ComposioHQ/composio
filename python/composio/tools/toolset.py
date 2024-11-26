@@ -1433,10 +1433,14 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 integration_id = integration.id
 
         connected_account_params = connected_account_params or {}
-        expected_params = self.get_expected_params_for_user(auth_scheme=auth_scheme, integration_id=integration_id)["expected_params"]
+        expected_params = self.get_expected_params_for_user(
+            auth_scheme=auth_scheme, integration_id=integration_id
+        )["expected_params"]
         required_params = [param for param in expected_params if param.required]
         unavailable_params = [
-            param.name for param in required_params if param.name not in connected_account_params
+            param.name
+            for param in required_params
+            if param.name not in connected_account_params
         ]
         if unavailable_params:
             raise ComposioSDKError(
