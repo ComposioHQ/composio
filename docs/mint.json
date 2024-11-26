@@ -144,8 +144,6 @@
             "framework/camelai",
             "javascript/cloudflare",
             "javascript/vercel",
-            "javascript/openai",
-            "javascript/langchain",
             "framework/google"
           ]
         }
