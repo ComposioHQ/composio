@@ -8,6 +8,7 @@ import typing as t
 import warnings
 from pathlib import Path
 
+import cachetools.func
 import typing_extensions as te
 
 from composio.constants import LOCAL_CACHE_DIRECTORY
@@ -224,6 +225,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
 
         return None
 
+    @cachetools.func.ttl_cache(maxsize=1, ttl=600)  # 10 minutes
     def _cache_from_remote(self) -> t.Optional[EntityType]:
         if NO_REMOTE_ENUM_FETCHING:
             raise ComposioSDKError(

@@ -43,6 +43,8 @@ core_requirements = [
     "jsonref>=1.1.0",
     "inflection>=0.5.1",
     "semver>=2.13.0",
+    "cachetools>=5.5.0",
+    "types-cachetools>=5.5.0",
     # CLI dependencies
     "click",
     "rich>=13.7.1,<14",
