@@ -1009,22 +1009,32 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self,
         *apps: AppType,
         use_case: str,
+        advanced: bool = False,
     ) -> t.List[Action]:
         """
         Find actions by specified use case.
 
         :param apps: List of apps to search.
         :param use_case: String describing the use case.
+        :param advanced: Use advanced search (will be slower than the normal search)
         :return: A list of actions matching the relevant use case.
         """
-        actions = self.client.actions.get(
-            apps=[App(app) for app in apps],
-            use_case=use_case,
-            allow_all=True,
-        )
-        return [
-            Action(value=get_enum_key(name=action.name).lower()) for action in actions
-        ]
+        if advanced:
+            actions = []
+            for task in self.client.actions.search_for_a_task(use_case=use_case):
+                actions += task.actions
+        else:
+            actions = list(
+                map(
+                    lambda x: get_enum_key(x.name),
+                    self.client.actions.get(
+                        apps=[App(app) for app in apps],
+                        use_case=use_case,
+                        allow_all=True,
+                    ),
+                )
+            )
+        return [Action(action) for action in actions]
 
     def find_actions_by_tags(
         self,
