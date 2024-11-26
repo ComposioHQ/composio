@@ -236,7 +236,7 @@
     ]
   },
   {
-    "group": "Integrations(App  Connectors)",
+    "group": "Integrations(App Connectors)",
     "pages": [
       "api-reference/app-connector/create-connector",
       "api-reference/app-connector/list-global-connectors",
