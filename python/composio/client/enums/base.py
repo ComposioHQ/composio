@@ -165,6 +165,9 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         if self._cache_from_local() is not None:
             return
 
+        if self._cache_from_remote() is not None:
+            return
+
         raise EnumStringNotFound(
             value=self._slug,
             enum=self.__class__.__name__,
@@ -221,7 +224,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
 
         return None
 
-    def _cache_from_remote(self) -> EntityType:
+    def _cache_from_remote(self) -> t.Optional[EntityType]:
         if NO_REMOTE_ENUM_FETCHING:
             raise ComposioSDKError(
                 message=(
@@ -238,11 +241,13 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         )
 
         client = Composio.get_latest()
-        data: t.Union[AppData, TriggerData, ActionData]
-
         if self._model is AppData:
             response = client.http.get(url=str(client.apps.endpoint / self.slug)).json()
-            data = AppData(
+            # TOFIX: Return proper error code when of item is not found
+            if "message" in response:
+                return None
+
+            return AppData(  # type: ignore
                 name=response["name"],
                 path=self._path / self._slug,
                 is_local=False,
@@ -264,7 +269,11 @@ class _AnnotatedEnum(t.Generic[EntityType]):
                     )
                 )
 
-            data = ActionData(
+            # TOFIX: Return proper error code when of item is not found
+            if "appName" not in response:
+                return None
+
+            return ActionData(  # type: ignore
                 name=response["name"],
                 app=response["appName"],
                 tags=response["tags"],
@@ -281,17 +290,31 @@ class _AnnotatedEnum(t.Generic[EntityType]):
 
         if self._model is TriggerData:
             response = client.http.get(url=str(v2.triggers / self.slug)).json()
-            data = TriggerData(
+            # TOFIX: Return proper error code when of item is not found
+            if "appName" not in response:
+                return None
+
+            return TriggerData(  # type: ignore
                 name=response["enum"],
                 app=response["appName"],
                 path=self._path / self._slug,
             )
 
-        return data  # type: ignore
+        return None
 
     def _cache(self) -> None:
         """Create cache for the enum."""
         data = self._cache_from_local() or self._cache_from_remote()
+        if data is None:
+            raise ComposioSDKError(
+                message=(
+                    f"No metadata found for enum {self.slug!r}, "
+                    "You might be trying to use an app or action "
+                    "that is deprecated, run `composio apps update` "
+                    "and try again"
+                )
+            )
+
         _model_cache[self._slug] = data
         try:
             data.store()
