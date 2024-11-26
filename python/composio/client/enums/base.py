@@ -165,9 +165,6 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         if self._cache_from_local() is not None:
             return
 
-        if self._cache_from_remote() is not None:
-            return
-
         raise EnumStringNotFound(
             value=self._slug,
             enum=self.__class__.__name__,

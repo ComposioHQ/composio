@@ -1009,22 +1009,32 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self,
         *apps: AppType,
         use_case: str,
+        advanced: bool = False,
     ) -> t.List[Action]:
         """
         Find actions by specified use case.
 
         :param apps: List of apps to search.
         :param use_case: String describing the use case.
+        :param advanced: Use advanced search (will be slower than the normal search)
         :return: A list of actions matching the relevant use case.
         """
-        actions = self.client.actions.get(
-            apps=[App(app) for app in apps],
-            use_case=use_case,
-            allow_all=True,
-        )
-        return [
-            Action(value=get_enum_key(name=action.name).lower()) for action in actions
-        ]
+        if advanced:
+            actions = []
+            for task in self.client.actions.search_for_a_task(use_case=use_case):
+                actions += task.actions
+        else:
+            actions = list(
+                map(
+                    lambda x: get_enum_key(x.name),
+                    self.client.actions.get(
+                        apps=[App(app) for app in apps],
+                        use_case=use_case,
+                        allow_all=True,
+                    ),
+                )
+            )
+        return [Action(action) for action in actions]
 
     def find_actions_by_tags(
         self,
@@ -1432,6 +1442,26 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 )
                 integration_id = integration.id
 
+        connected_account_params = connected_account_params or {}
+        expected_params = self.get_expected_params_for_user(
+            auth_scheme=auth_scheme, integration_id=integration_id
+        )["expected_params"]
+        required_params = [param for param in expected_params if param.required]
+        unavailable_params = [
+            param.name
+            for param in required_params
+            if param.name not in connected_account_params
+        ]
+        if unavailable_params:
+            raise ComposioSDKError(
+                f"Expected 'connected_account_params' to provide these params: {unavailable_params}"
+            )
+
+        # Populate defaults in the connected_account_params
+        for param in expected_params:
+            if param.default is not None and param.name not in connected_account_params:
+                connected_account_params[param.name] = param.default
+
         return self.client.connected_accounts.initiate(
             integration_id=integration_id,
             entity_id=entity_id or self.entity_id,
@@ -1457,11 +1487,6 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         auth_fields = self.fetch_expected_integration_params(
             app=app_data, auth_scheme=auth_scheme
         )
-        # Populate defaults in the auth_config
-        for field in auth_fields:
-            if field.default is not None and field.name not in auth_config:
-                auth_config[field.name] = field.default
-
         required_fields = [field for field in auth_fields if field.required]
         unavailable_fields = [
             field.name for field in required_fields if field.name not in auth_config
@@ -1470,6 +1495,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             raise ComposioSDKError(
                 f"Expected 'auth_config' to provide these fields: {unavailable_fields}"
             ) from None
+
+        # Populate defaults in the auth_config
+        for field in auth_fields:
+            if field.default is not None and field.name not in auth_config:
+                auth_config[field.name] = field.default
 
         return auth_config, False
 
