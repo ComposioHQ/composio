@@ -42,14 +42,15 @@ For example, you can:
 
 <CodeGroup>
 ```python Python
-from composio_langchain import ComposioToolSet, Action, App
+from composio_langchain import ComposioToolSet, App
+tool_set = ComposioToolSet()
 
 tools = tool_set.get_tools(apps=[App.GITHUB]) 
 
 # Filter by tags
 tag = "users"
 
-action_enums = toolset.find_actions_by_tags(
+action_enums = tool_set.find_actions_by_tags(
     App.GITHUB,
     tags=[tag], 
 )
