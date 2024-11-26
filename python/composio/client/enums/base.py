@@ -243,6 +243,10 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         client = Composio.get_latest()
         if self._model is AppData:
             response = client.http.get(url=str(client.apps.endpoint / self.slug)).json()
+            # TOFIX: Return proper error code when of item is not found
+            if "message" in response:
+                return None
+
             return AppData(  # type: ignore
                 name=response["name"],
                 path=self._path / self._slug,
@@ -265,6 +269,10 @@ class _AnnotatedEnum(t.Generic[EntityType]):
                     )
                 )
 
+            # TOFIX: Return proper error code when of item is not found
+            if "appName" not in response:
+                return None
+
             return ActionData(  # type: ignore
                 name=response["name"],
                 app=response["appName"],
@@ -282,6 +290,10 @@ class _AnnotatedEnum(t.Generic[EntityType]):
 
         if self._model is TriggerData:
             response = client.http.get(url=str(v2.triggers / self.slug)).json()
+            # TOFIX: Return proper error code when of item is not found
+            if "appName" not in response:
+                return None
+
             return TriggerData(  # type: ignore
                 name=response["enum"],
                 app=response["appName"],
