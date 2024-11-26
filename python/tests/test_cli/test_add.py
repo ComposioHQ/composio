@@ -20,8 +20,7 @@ class TestComposioAdd(BaseCliTest):
 
     def test_add_github(self) -> None:
         """Test `composio add` with no-auth."""
-        self.run("add", "github", input="Y")
-
+        self.run("add", "github", input="n")
         self.assert_stdout_regex(
             match=re.compile(
                 "Do you want to replace the existing connection?|Adding integration..."
