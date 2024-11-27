@@ -1,3 +1,4 @@
+// Import core dependencies
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import {
   AiTextGenerationOutput,
@@ -6,20 +7,25 @@ import {
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
-import logger from "../utils/logger";
-import {  ActionsControllerV1ListActionsResponse, ActionsListResponseDTO } from "../sdk/client";
+import { ActionsListResponseDTO } from "../sdk/client";
 
+// Type definitions
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
 
+/**
+ * CloudflareToolSet provides integration with Cloudflare Workers AI
+ * for executing AI tool calls and handling responses
+ */
 export class CloudflareToolSet extends BaseComposioToolSet {
+  // Class constants
+  static FRAMEWORK_NAME = "cloudflare";
+  static DEFAULT_ENTITY_ID = "default";
+
   /**
-   * Composio toolset for Cloudflare framework.
-   *
-   * Example:
-   * ```typescript
-   *
-   * ```
+   * Initialize a new CloudflareToolSet instance
+   * 
+   * @param config Configuration options including API key, base URL, entity ID and workspace config
    */
   constructor(config: {
     apiKey?: Optional<string>;
@@ -30,60 +36,29 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     super(
       config.apiKey || null,
       config.baseUrl || COMPOSIO_BASE_URL,
-      "cloudflare",
-      config.entityId || "default",
+      CloudflareToolSet.FRAMEWORK_NAME,
+      config.entityId || CloudflareToolSet.DEFAULT_ENTITY_ID,
       config.workspaceConfig || Workspace.Host()
     );
   }
 
   /**
-   * @deprecated Use getTools instead.
+   * Retrieve available tools based on provided filters
+   * 
+   * @param filters Optional filters for actions, apps, tags and use cases
+   * @returns Promise resolving to array of AI text generation tools
    */
-  async getActions(filters: {
-    actions: Sequence<string>;
-  }): Promise<Sequence<AiTextGenerationToolInput>> {
-    const actions = await this.getActionsSchema(filters);
-    return actions.map((action: NonNullable<ActionsListResponseDTO["items"]>[0]) => {
-          const formattedSchema: AiTextGenerationToolInput["function"] = {
-            name: action.name!,
-            description: action.description!,
-            parameters: action.parameters as unknown as {
-              type: "object";
-              properties: {
-                [key: string]: {
-                  type: string;
-                  description?: string;
-                };
-              };
-              required: string[];
-            },
-          };
-          const tool: AiTextGenerationToolInput = {
-            type: "function",
-            function: formattedSchema,
-          };
-          return tool;
-        }) || [];
-  }
-
-  /**
-   * @deprecated Use getActions instead.
-   */
-  async get_actions(filters: {
-    actions: Sequence<string>;
-  }): Promise<Sequence<AiTextGenerationToolInput>> {
-    logger.warn("get_actions is deprecated, use getActions instead");
-    return this.getActions(filters);
-  }
-
   async getTools(filters: {
     actions?: Optional<Sequence<string>>;
     apps?: Sequence<string>;
     tags?: Optional<Array<string>>;
     useCase?: Optional<string>;
+    usecaseLimit?: Optional<number>;
+    filterByAvailableApps?: Optional<boolean>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
     const actions = await this.getToolsSchema(filters);
-    return actions.map((action: NonNullable<ActionsControllerV1ListActionsResponse["items"]>[0]) => {
+    return actions.map((action) => {
+        // Format the action schema for Cloudflare Workers AI
         const formattedSchema: AiTextGenerationToolInput["function"] = {
           name: action.name!,
           description: action.description!,
@@ -107,17 +82,12 @@ export class CloudflareToolSet extends BaseComposioToolSet {
   }
 
   /**
-   * @deprecated Use getTools instead.
+   * Execute a single tool call
+   * 
+   * @param tool The tool to execute with name and arguments
+   * @param entityId Optional entity ID to execute the tool for
+   * @returns Promise resolving to stringified tool execution result
    */
-  async get_tools(filters: {
-    apps: Sequence<string>;
-    tags?: Optional<Array<string>>;
-    useCase?: Optional<string>;
-  }): Promise<Sequence<AiTextGenerationToolInput>> {
-    logger.warn("get_tools is deprecated, use getTools instead");
-    return this.getTools(filters);
-  }
-
   async executeToolCall(
     tool: {
       name: string;
@@ -135,19 +105,12 @@ export class CloudflareToolSet extends BaseComposioToolSet {
   }
 
   /**
-   * @deprecated Use executeToolCall instead.
+   * Handle tool calls from AI text generation output
+   * 
+   * @param result The AI text generation output containing tool calls
+   * @param entityId Optional entity ID to execute the tools for
+   * @returns Promise resolving to array of tool execution results
    */
-  async execute_tool_call(
-    tool: {
-      name: string;
-      arguments: unknown;
-    },
-    entityId: Optional<string> = null
-  ): Promise<string> {
-    logger.warn("execute_tool_call is deprecated, use executeToolCall instead");
-    return this.executeToolCall(tool, entityId);
-  }
-
   async handleToolCall(
     result: AiTextGenerationOutput,
     entityId: Optional<string> = null
@@ -163,14 +126,4 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     return outputs;
   }
 
-  /**
-   * @deprecated Use handleToolCall instead.
-   */
-  async handle_tool_call(
-    result: AiTextGenerationOutput,
-    entityId: Optional<string> = null
-  ): Promise<Sequence<string>> {
-    logger.warn("handle_tool_call is deprecated, use handleToolCall instead");
-    return this.handleToolCall(result, entityId);
-  }
 }

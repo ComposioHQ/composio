@@ -1,22 +1,22 @@
-# fmt: off
-
 """
 Composio SDK client.
 """
 
 import os
+import sys
 import typing as t
 from datetime import datetime
 from pathlib import Path
 
 import requests
 
-from composio.client.base import BaseClient
 from composio.client.collections import (
+    AUTH_SCHEMES,
     Actions,
     ActiveTriggerModel,
     ActiveTriggers,
     Apps,
+    AuthSchemeType,
     ConnectedAccountModel,
     ConnectedAccounts,
     ConnectionRequestModel,
@@ -53,9 +53,10 @@ _valid_keys: t.Set[str] = set()
 _clients: t.List["Composio"] = []
 
 
-class Composio(BaseClient):
+class Composio:
     """Composio SDK Client."""
 
+    local: t.Any
     _api_key: t.Optional[str] = None
     _http: t.Optional[HttpClient] = None
 
@@ -63,7 +64,7 @@ class Composio(BaseClient):
         self,
         api_key: t.Optional[str] = None,
         base_url: t.Optional[str] = None,
-        runtime: t.Optional[str] = None
+        runtime: t.Optional[str] = None,
     ) -> None:
         """
         Initialize Composio SDK client
@@ -98,12 +99,10 @@ class Composio(BaseClient):
             cache_dir = Path.home() / LOCAL_CACHE_DIRECTORY_NAME
             user_data_path = cache_dir / USER_DATA_FILE_NAME
             user_data = (
-                UserData.load(path=user_data_path)
-                if user_data_path.exists() else None
+                UserData.load(path=user_data_path) if user_data_path.exists() else None
             )
             env_api_key = (
-                (user_data.api_key if user_data else None)
-                or os.environ.get(ENV_COMPOSIO_API_KEY)
+                user_data.api_key if user_data else os.environ.get(ENV_COMPOSIO_API_KEY)
             )
             if env_api_key:
                 self._api_key = env_api_key
@@ -262,7 +261,7 @@ class Entity:
                 entity_id=self.id,
                 session_id=session_id,
                 text=text,
-                auth=auth
+                auth=auth,
             )
 
         connected_account = self.get_connection(
@@ -277,7 +276,7 @@ class Entity:
             connected_account=connected_account.id,
             session_id=session_id,
             text=text,
-            auth=auth
+            auth=auth,
         )
 
     def get_connection(
@@ -315,11 +314,28 @@ class Entity:
                     latest_account = connected_account
 
         if latest_account is None:
-            raise NoItemsFound(
-                f"Could not find a connection with app='{app}',"
-                f"connected_account_id=`{connected_account_id}` and "
-                f"entity=`{self.id}`"
+            entity = self.id
+            suggestion = (
+                f"composio add {app}"
+                if entity == DEFAULT_ENTITY_ID
+                else f"composio add {app} -e {entity}"
             )
+            note = f"Run this command to create a new connection: {suggestion}"
+            doc_note = "Read more here: https://dub.composio.dev/auth-help"
+            if sys.version_info >= (3, 11):
+                exception = NoItemsFound(
+                    f"Could not find a connection with {app=},"
+                    f" {connected_account_id=} and {entity=}."
+                )
+                exception.add_note(note)
+                exception.add_note(doc_note)
+            else:
+                exception = NoItemsFound(
+                    f"Could not find a connection with {app=},"
+                    f" {connected_account_id=} and {entity=}.\n{note}\n{doc_note}"
+                )
+            raise exception
+
         return latest_account
 
     def get_connections(self) -> t.List[ConnectedAccountModel]:
@@ -374,6 +390,7 @@ class Entity:
         use_composio_auth: bool = True,
         force_new_integration: bool = False,
         connected_account_params: t.Optional[t.Dict] = None,
+        labels: t.Optional[t.List] = None,
     ) -> ConnectionRequestModel:
         """
         Initiate an integration connection process for a specified application.
@@ -391,6 +408,13 @@ class Entity:
         app = self.client.apps.get(name=app_name)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         if integration is None and auth_mode is not None:
+            if auth_mode not in AUTH_SCHEMES:
+                raise ComposioClientError(
+                    f"'auth_mode' should be one of {AUTH_SCHEMES}"
+                )
+            auth_mode = t.cast(AuthSchemeType, auth_mode)
+            if "OAUTH" not in auth_mode:
+                use_composio_auth = False
             integration = self.client.integrations.create(
                 app_id=app.appId,
                 name=f"{app_name}_{timestamp}",
@@ -413,6 +437,7 @@ class Entity:
             integration_id=t.cast(IntegrationModel, integration).id,
             entity_id=self.id,
             params=connected_account_params,
+            labels=labels,
             redirect_url=redirect_url,
         )
 

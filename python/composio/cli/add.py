@@ -18,6 +18,7 @@ from composio.client.collections import (
     AppAuthScheme,
     AppModel,
     AuthSchemeField,
+    AuthSchemeType,
     IntegrationModel,
 )
 from composio.client.exceptions import ComposioClientError
@@ -74,6 +75,13 @@ class AddIntegrationExamples(HelpfulCmd):
     is_flag=True,
     help="Override the existing account.",
 )
+@click.option(
+    "-l",
+    "--label",
+    "labels",
+    help="Labels for connected account.",
+    multiple=True,
+)
 @pass_entity_id
 @handle_exceptions()
 @ensure_login
@@ -84,6 +92,7 @@ def _add(
     scopes: t.Tuple[str, ...],
     entity_id: str,
     integration_id: t.Optional[str],
+    labels: t.List[str],
     no_browser: bool = False,
     auth_mode: t.Optional[str] = None,
     force: bool = False,
@@ -98,6 +107,7 @@ def _add(
         auth_mode=auth_mode,
         scopes=scopes,
         force=force,
+        labels=list(labels or []),
     )
 
 
@@ -160,6 +170,7 @@ def add_integration(
     no_browser: bool = False,
     auth_mode: t.Optional[str] = None,
     scopes: t.Optional[t.Tuple[str, ...]] = None,
+    labels: t.Optional[t.List] = None,
     force: bool = False,
 ) -> None:
     """
@@ -217,12 +228,13 @@ def add_integration(
         )
 
     if auth_mode is not None:
+        auth_mode = t.cast(AuthSchemeType, auth_mode)
         auth_scheme = auth_modes[auth_mode]
     elif len(auth_modes) == 1:
         ((auth_mode, auth_scheme),) = auth_modes.items()
     else:
         auth_mode = t.cast(
-            str,
+            AuthSchemeType,
             click.prompt(
                 "Select auth mode: ",
                 type=click.Choice(choices=list(auth_modes)),
@@ -237,6 +249,7 @@ def add_integration(
             app_name=name,
             auth_mode=auth_mode,
             auth_scheme=auth_scheme,
+            labels=labels,
         )
     return _handle_oauth(
         entity=entity,
@@ -247,6 +260,7 @@ def add_integration(
         integration=integration,
         scopes=scopes,
         use_composio_auth=len(app.testConnectors or []) != 0,
+        labels=labels,
     )
 
 
@@ -258,6 +272,7 @@ def _handle_oauth(
     no_browser: bool = False,
     integration: t.Optional[IntegrationModel] = None,
     scopes: t.Optional[t.Tuple[str, ...]] = None,
+    labels: t.Optional[t.List] = None,
     use_composio_auth: bool = False,
 ) -> None:
     """Handle no auth."""
@@ -282,6 +297,7 @@ def _handle_oauth(
         auth_config=auth_config,
         use_composio_auth=use_composio_auth,
         force_new_integration=len(scopes or []) > 0,
+        labels=labels,
     )
     if not no_browser:
         webbrowser.open(
@@ -305,23 +321,24 @@ def _handle_basic_auth(
     auth_mode: str,
     auth_scheme: AppAuthScheme,
     integration: t.Optional[IntegrationModel] = None,
+    labels: t.Optional[t.List] = None,
 ) -> None:
     """Handle basic auth."""
+    auth_config = _collect_input_fields(
+        fields=auth_scheme.fields,
+    )
     connection = entity.initiate_connection(
         app_name=app_name.lower(),
         auth_mode=auth_mode,
-        auth_config=_collect_input_fields(
-            fields=auth_scheme.fields,
-        ),
+        auth_config=auth_config,
         integration=integration,
         use_composio_auth=False,
         force_new_integration=True,
+        labels=labels,
     )
     connection.save_user_access_data(
         client=client,
-        field_inputs=_collect_input_fields(
-            fields=auth_scheme.fields,
-        ),
+        field_inputs=auth_config,
         entity_id=entity.id,
     )
     click.echo(

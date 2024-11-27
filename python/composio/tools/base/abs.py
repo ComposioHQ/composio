@@ -31,6 +31,8 @@ tool_registry: ToolRegistry = {"runtime": {}, "local": {}, "api": {}}
 action_registry: ActionsRegistry = {"runtime": {}, "local": {}, "api": {}}
 trigger_registry: TriggersRegistry = {"runtime": {}, "local": {}, "api": {}}
 
+DEPRECATED_MARKER = "<<DEPRECATED use "
+
 
 def remove_json_ref(data: t.Dict) -> t.Dict:
     return json.loads(
@@ -229,8 +231,8 @@ class ActionBuilder:
         if getattr(getattr(obj, "execute"), "__isabstractmethod__", False):
             raise InvalidClassDefinition(f"Please implement {name}.execute")
 
-    @staticmethod
-    def set_metadata(obj: t.Type["Action"]) -> None:
+    @classmethod
+    def set_metadata(cls, obj: t.Type["Action"]) -> None:
         setattr(obj, "file", getattr(obj, "file", Path(inspect.getfile(obj))))
         setattr(obj, "name", getattr(obj, "name", inflection.underscore(obj.__name__)))
         setattr(
@@ -250,12 +252,26 @@ class ActionBuilder:
         setattr(
             obj,
             "description",
-            (obj.__doc__ or obj.display_name).lstrip().rstrip(),
+            cls._get_description(obj),
         )
-        if len(obj.description) > 1024:
+        description, *_ = obj.description.split(DEPRECATED_MARKER, maxsplit=1)
+        if len(description) > 1024:
             raise InvalidClassDefinition(
                 f"Description for action `{obj.__name__}` contains more than 1024 characters"
             )
+
+    @staticmethod
+    def _get_description(obj) -> str:
+        description = t.cast(
+            str,
+            (
+                (obj.__doc__ if obj.__doc__ else obj.display_name)
+                .replace("\n    ", " ")
+                .strip()
+            ),
+        )
+        description, separator, enum = description.partition(DEPRECATED_MARKER)
+        return inflection.titleize(description) + separator + enum
 
 
 class ActionMeta(type):
@@ -319,21 +335,16 @@ class Action(
     @classmethod
     def _generate_schema(cls) -> None:
         """Generate action schema."""
-        description = (
-            cls.__doc__.lstrip().rstrip()
-            if cls.__doc__
-            else inflection.titleize(cls.display_name)
-        )
         cls._schema = {
             "name": cls.name,
             "enum": cls.enum,
             "appName": cls.tool,
             "appId": generate_app_id(cls.tool),
             "tags": cls.tags(),
-            "displayName": cls.display_name,
-            "description": description,
-            "parameters": cls.request.schema(),
             "response": cls.response.schema(),
+            "parameters": cls.request.schema(),
+            "displayName": cls.display_name,
+            "description": cls.description,
         }
 
     @classmethod

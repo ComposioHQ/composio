@@ -1,5 +1,6 @@
-import { ActionsListResponseDTO, ExecuteActionResDTO } from "../client";
+import { ActionExecutionReqDTO, ActionProxyRequestConfigDTO, ActionsListResponseDTO } from "../client";
 import apiClient from "../client/client";
+import { CEG } from "../utils/error";
 import { BackendClient } from "./backendClient";
 
 /**
@@ -40,7 +41,7 @@ export type GetListActionsData = {
     /**
      * Limit of use-cases based search
      */
-    usecaseLimit?: string;
+    usecaseLimit?: number;
     /**
      * Show all actions - i.e disable pagination
      */
@@ -53,6 +54,10 @@ export type GetListActionsData = {
      * Use smart tag filtering
      */
     filterImportantActions?: boolean;
+    /**
+     * Should search in available apps only
+     */
+    filterByAvailableApps?: boolean;
 }
 
 export type Parameter = {
@@ -155,13 +160,17 @@ export class Actions {
      * @throws {ApiError} If the request fails.
      */
     async get(data: { actionName: string; }) {
-        const actions = await apiClient.actionsV1.v1GetAction({
+        try{
+        const actions = await apiClient.actionsV2.getActionV2({
             path: {
                 actionId: data.actionName
             }
         });
 
-        return (actions.data! as unknown as any[])[0];
+            return (actions.data!);
+        } catch(e){
+            throw CEG.handleError(e)
+        }
     }
 
     /**
@@ -170,24 +179,41 @@ export class Actions {
      * This method allows you to fetch a list of all the available actions. It supports pagination to handle large numbers of actions. The response includes an array of action objects, each containing information such as the action's name, display name, description, input parameters, expected response, associated app information, and enabled status.
      * 
      * @param {GetListActionsData} data The data for the request.
-     * @returns {CancelablePromise<GetListActionsResponse>} A promise that resolves to the list of all actions.
+     * @returns {Promise<ActionsListResponseDTO>} A promise that resolves to the list of all actions.
      * @throws {ApiError} If the request fails.
      */
-    list(data: GetListActionsData = {}): Promise<ActionsListResponseDTO> {
-        return apiClient.actionsV2.v2ListActions({
-            query: {
-                actions: data.actions,
-                apps: data.apps,
-                showAll: data.showAll,
-                tags: data.tags,
-                useCase: data.useCase as string,
-                filterImportantActions: data.filterImportantActions,
-                showEnabledOnly: data.showEnabledOnly
+    async list(data: GetListActionsData = {}): Promise<ActionsListResponseDTO> {
+        try {
 
+            let apps = data.apps;
+            
+            // Throw error if user has provided both filterByAvailableApps and apps
+            if(data?.filterByAvailableApps && data?.apps){
+                throw new Error("Both filterByAvailableApps and apps cannot be provided together");
             }
-        }).then(res => {
-            return res.data!
-        })
+
+            if(data?.filterByAvailableApps){
+                // Todo: To create a new API to get all integrated apps for a user instead of fetching all apps
+                const integratedApps = await apiClient.appConnector.listAllConnectors();
+                apps = integratedApps.data?.items.map((app)=> app?.appName).join(",");
+            }
+            
+            const response = await apiClient.actionsV2.listActionsV2({
+                query: {
+                    actions: data.actions,
+                    apps: apps,
+                    showAll: data.showAll,
+                    tags: data.tags,
+                    useCase: data.useCase as string,
+                    filterImportantActions: data.filterImportantActions,
+                    showEnabledOnly: data.showEnabledOnly,
+                    usecaseLimit: data.usecaseLimit || undefined
+                }
+            });
+            return response.data!;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 
     /**
@@ -196,17 +222,41 @@ export class Actions {
      * This method allows you to trigger the execution of an action by providing its name and the necessary input parameters. The request includes the connected account ID to identify the app connection to use for the action, and the input parameters required by the action. The response provides details about the execution status and the response data returned by the action.
      * 
      * @param {ExecuteActionData} data The data for the request.
-     * @returns {CancelablePromise<ExecuteActionResponse>} A promise that resolves to the execution status and response data.
+     * @returns {Promise<ActionExecutionResDto>} A promise that resolves to the execution status and response data.
      * @throws {ApiError} If the request fails.
      */
-    async execute(data: ExecuteActionData): Promise<ExecuteActionResDTO> {
-        const {data:res,error} = await apiClient.actionsV2.v2ExecuteAction({
-            body: data.requestBody,
-            path: {
-                actionId: data.actionName
-            }
-        })
+    async execute(data: ExecuteActionData){
+        try {
+            const { data: res } = await apiClient.actionsV2.executeActionV2({
+                body: data.requestBody as unknown as ActionExecutionReqDTO,
+                path: {
+                    actionId: data.actionName
+                }
+            });
+            return res!;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
+    }
 
-        return res!
+    /**
+     * Executes a action using Composio Proxy
+     * 
+     * This method allows you to trigger the execution of an action by providing its name and the necessary input parameters. The request includes the connected account ID to identify the app connection to use for the action, and the input parameters required by the action. The response provides details about the execution status and the response data returned by the action.
+     * 
+     * @param {ExecuteActionData} data The data for the request.
+     * @returns {Promise<ActionExecutionResDto>} A promise that resolves to the execution status and response data.
+     * @throws {ApiError} If the request fails.
+     */
+
+    async executeRequest(data: ActionProxyRequestConfigDTO){
+        try {
+            const { data: res } = await apiClient.actionsV2.executeActionProxyV2({
+                body: data as unknown as ActionProxyRequestConfigDTO
+            });
+            return res!;
+        } catch (error) {
+            throw CEG.handleError(error);
+        }
     }
 }

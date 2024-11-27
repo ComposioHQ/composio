@@ -1,1 +1,0 @@
-"""Composio-LangGraph SWE Agent"""
