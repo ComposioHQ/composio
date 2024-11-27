@@ -37,7 +37,7 @@ jobs:
 
     - name: Upload `coverage` folder to R2
       if: ${{ always() }}
-      uses: himanshu-dixit/r2-upload-action-parallel@v1.2
+      uses: himanshu-dixit/r2-upload-action-parallel@v1.3
       with:
         r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
         r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -53,7 +53,7 @@ jobs:
        
     - name: Upload jest html-reporters folder to R2
       if: ${{ always() }}
-      uses: himanshu-dixit/r2-upload-action-parallel@v1.2
+      uses: himanshu-dixit/r2-upload-action-parallel@v1.3
       with:
         r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
         r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}

@@ -11,6 +11,8 @@ export enum ExecEnv {
     E2B = "E2B"
 }
 
+
+
 export class WorkspaceFactory {
     workspace: Workspace | null = null;
     id: string | null = null;
@@ -27,7 +29,14 @@ export class WorkspaceFactory {
         if (this.workspace) {
             return;
         }
-        logger.debug(`Creating workspace with env=${this.workspaceConfig.env} and kwargs=${JSON.stringify(this.workspaceConfig.config)}`);
+
+        const sanitizedConfig = {
+            ...this.workspaceConfig,
+            host: this.workspaceConfig.config.composioBaseURL,
+            composioAPIKey: this.workspaceConfig.config.composioAPIKey ? "REDACTED" : "NOT DEFINED"
+        };
+        logger.debug("Creating workspace with config", sanitizedConfig);
+        
         let workspace: Workspace | null = null;
         switch (this.workspaceConfig.env) {
             case ExecEnv.DOCKER:
