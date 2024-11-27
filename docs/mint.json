@@ -236,6 +236,14 @@
     ]
   },
   {
+    "group": "Integrations(App Connectors)",
+    "pages": [
+      "api-reference/app-connector/create-connector",
+      "api-reference/app-connector/list-global-connectors",
+      "api-reference/app-connector/get-connector-info"
+    ]
+  },
+  {
     "group": "Connections",
     "pages": [
       "api-reference/connections/get-connections",
