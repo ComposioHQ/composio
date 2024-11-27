@@ -2,11 +2,11 @@
 title: "֎ Using Composio With OpenAI"
 sidebarTitle: "OpenAI"
 icon: "robot"
-description: "Integrate Composio with OpenAI agents to let them seamlessly interact with external apps"
+description: "Integrate Composio with OpenAI Assistants to let them seamlessly interact with external apps"
 ---
 
 ## Star A Repository on Github
-In this example, we will use OpenAI Agent to star a repository on Github using Composio Tools
+In this example, we will use OpenAI Assistant to star a repository on Github using Composio Tools
 
 <Steps>
 <Step title="Install Packages">
@@ -15,7 +15,7 @@ In this example, we will use OpenAI Agent to star a repository on Github using C
 pip install composio-openai openai
 ```
 ```javascript JavaScript
-coming soon
+npm i composio-core openai
 ```
 </CodeGroup>
 </Step>
@@ -29,7 +29,11 @@ openai_client = OpenAI()
 composio_toolset = ComposioToolSet()
 ```
 ```javascript JavaScript
-coming soon
+import { OpenAIToolSet } from "composio-core";
+import OpenAI from "openai";
+
+const toolset = new OpenAIToolSet();
+const openai = new OpenAI();
 ```
 </CodeGroup>
 </Step>
@@ -41,7 +45,7 @@ You can get all the tools for a given app as shown below, but you can get **spec
 tools = composio_toolset.get_tools(apps=[App.GITHUB])
 ```
 ```javascript JavaScript
-coming soon
+const tools = await toolset.getTools({ apps: ["github"] });
 ```
 </CodeGroup>
 
@@ -71,7 +75,14 @@ response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_call
 )
 ```
 ```javascript JavaScript
-coming soon
+async function createGithubAssistant(openai, tools) {
+    return await openai.beta.assistants.create({
+        name: "Github Assistant",
+        instructions: "You're a GitHub Assistant, you can do operations on GitHub",
+        tools: tools,
+        model: "gpt-4o-mini"
+    });
+}
 ```
 </CodeGroup>
 </Step>
@@ -82,7 +93,30 @@ coming soon
 print(response_after_tool_calls)
 ```
 ```javascript JavaScript
-coming soon
+async function executeAssistantTask(openai, toolset, assistant, task) {
+    const thread = await openai.beta.threads.create();
+    const run = await openai.beta.threads.runs.create(thread.id, {
+        assistant_id: assistant.id,
+        instructions: task,
+        tools: tools,
+        model: "gpt-4o-mini",
+        stream: true
+    });
+
+    for await (const result of toolset.waitAndHandleAssistantStreamToolCalls(openai, run, thread)) {
+        console.log(result);
+    }
+}
+
+(async() => {
+    const githubAssistant = await createGithubAssistant(openai, tools);
+    await executeAssistantTask(
+        openai, 
+        toolset, 
+        githubAssistant, 
+        "Star the repository 'composiohq/composio'"
+    );
+})();
 ```
 </CodeGroup>
 </Step>
