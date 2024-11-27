@@ -27,7 +27,14 @@ export class WorkspaceFactory {
         if (this.workspace) {
             return;
         }
-        logger.debug(`Creating workspace with env=${this.workspaceConfig.env} and kwargs=${JSON.stringify(this.workspaceConfig.config)}`);
+
+        const sanitizedConfig = {
+            ...this.workspaceConfig,
+            host: this.workspaceConfig.config.composioBaseURL,
+            composioAPIKey: this.workspaceConfig.config.composioAPIKey ? "REDACTED" : "NOT DEFINED"
+        };
+        logger.debug("Creating workspace with config", sanitizedConfig);
+        
         let workspace: Workspace | null = null;
         switch (this.workspaceConfig.env) {
             case ExecEnv.DOCKER:

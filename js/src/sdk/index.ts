@@ -17,6 +17,7 @@ import { CEG, ERROR } from './utils/error';
 import { ActionProxyRequestConfigDTO } from './client';
 import apiClient from '../sdk/client/client';
 import { GetConnectorInfoResDTO } from './client';
+import logger from '../utils/logger';
 
 export class Composio {
     /**
@@ -44,7 +45,8 @@ export class Composio {
         // // Parse the base URL and API key, falling back to environment variables or defaults if not provided.
         const { baseURL: baseURLParsed, apiKey: apiKeyParsed } =  getClientBaseConfig(baseUrl, apiKey);
 
-        console.log("Using API Key: ", apiKeyParsed , "and baseURL: ", baseURLParsed);
+
+        logger.info(`Using API Key: [REDACTED] and baseURL: ${baseURLParsed}`);
         if(!apiKeyParsed){
             
             CEG.throwCustomError(ERROR.COMMON.API_KEY_UNAVAILABLE,{});
