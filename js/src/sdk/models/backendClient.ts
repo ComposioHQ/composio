@@ -1,4 +1,3 @@
-
 import apiClient from "../client/client"
 import { client as axiosClient } from "../client/services.gen"
 import { setAxiosClientConfig } from "../utils/config";

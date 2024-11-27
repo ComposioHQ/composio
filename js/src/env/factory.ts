@@ -11,8 +11,6 @@ export enum ExecEnv {
     E2B = "E2B"
 }
 
-
-
 export class WorkspaceFactory {
     workspace: Workspace | null = null;
     id: string | null = null;
