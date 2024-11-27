@@ -248,7 +248,7 @@
     "pages": [
       "api-reference/actions/list-actions-minimal",
       "api-reference/actions/get-action",
-      "api-reference/actions-controller-v-2/execute-action",
+      "api-reference/actions/execute-action",
       "api-reference/actions/execute-action-proxy",
       "api-reference/actions/get-action-inputs"
     ]
