@@ -111,8 +111,14 @@ export class CEG {
                     errorKey = ERROR.BACKEND.UNKNOWN;
                     break;
             }
-            if (errorKey) {
+            if (errorKey !== ERROR.BACKEND.UNKNOWN) {
                 errorDetails = PREDEFINED_ERROR_REGISTRY[errorKey];
+            }else{
+                errorDetails = {
+                    message: axiosError.message,
+                    description: axiosError.response.data.message || axiosError.response.data.error || axiosError.message,
+                    possibleFix: "Please check the network connection, request parameters, and ensure the API endpoint is correct."
+                }
             }
         }
 
