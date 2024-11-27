@@ -102,7 +102,7 @@ export class CEG {
                     errorKey = ERROR.BACKEND.RATE_LIMIT;
                     break;
                 case 401:
-                    errorKey = ERROR.COMMON.API_KEY_UNAVAILABLE;
+                    errorKey = ERROR.BACKEND.UNAUTHORIZED;
                     break;
                 case 500:
                     errorKey = ERROR.BACKEND.SERVER_ERROR;
