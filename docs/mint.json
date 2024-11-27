@@ -141,7 +141,6 @@
           "pages": [
             "framework/groq",
             "framework/phidata",
-            "framework/camelai",
             "javascript/cloudflare",
             "javascript/vercel",
             "framework/google"
