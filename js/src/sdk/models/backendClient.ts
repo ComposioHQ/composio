@@ -1,5 +1,7 @@
+
 import apiClient from "../client/client"
-import { client as axiosClient, client } from "../client/services.gen"
+import { client as axiosClient } from "../client/services.gen"
+import { setAxiosClientConfig } from "../utils/config";
 import { CEG } from "../utils/error";
 
 /**
@@ -74,5 +76,6 @@ export class BackendClient {
             throwOnError: true
         });
 
+        setAxiosClientConfig(axiosClient.instance);
     }
 }
