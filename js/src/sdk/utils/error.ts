@@ -116,7 +116,12 @@ export class CEG {
                 errorDetails = PREDEFINED_ERROR_REGISTRY[errorKey];
             }if(errorKey === ERROR.BACKEND.BAD_REQUEST){    
                 const validationErrorFromDTO = axiosError?.response?.data;
-                const validationErrors = Array.isArray(validationErrorFromDTO) ? validationErrorFromDTO?.map((error) => JSON.stringify(error))?.join(", ") : JSON.stringify(validationErrorFromDTO);
+                let validationErrors = "";
+                if(Array.isArray(validationErrorFromDTO)){
+                    validationErrors = validationErrorFromDTO?.map((error) => JSON.stringify(error))?.join(", ");
+                }else{
+                    validationErrors = JSON.stringify(validationErrorFromDTO);
+                }
                 errorDetails = {
                     ...PREDEFINED_ERROR_REGISTRY.UNKNOWN,
                     description: validationErrors
