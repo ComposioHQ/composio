@@ -12,10 +12,7 @@ import axios from 'axios';
 import { getPackageJsonDir } from './utils/projectUtils';
 import { isNewerVersion } from './utils/other';
 import { getClientBaseConfig } from './utils/config';
-import chalk from 'chalk';
 import { CEG, ERROR } from './utils/error';
-import { ActionProxyRequestConfigDTO } from './client';
-import apiClient from '../sdk/client/client';
 import { GetConnectorInfoResDTO } from './client';
 import logger from '../utils/logger';
 
