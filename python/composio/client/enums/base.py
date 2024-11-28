@@ -37,12 +37,15 @@ class EnumStringNotFound(ComposioSDKError):
 
     def __init__(self, value: str, enum: str, possible_values: t.List[str]) -> None:
         error_message = f"Invalid value `{value}` for enum class `{enum}`"
-
         matches = difflib.get_close_matches(value, possible_values, n=1)
         if matches:
             (match,) = matches
             error_message += f". Did you mean {match!r}?"
 
+        error_message += (
+            " (If you have recently created a custom tool, run `composio apps update` "
+            "to update local apps)"
+        )
         super().__init__(message=error_message)
 
 
