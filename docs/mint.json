@@ -68,6 +68,10 @@
       "url": "api-reference"
     },
     {
+      "name": "All Tools",
+      "url": "https://composio.dev/tools"
+    },
+    {
       "name": "Chat with Repo",
       "url": "https://dub.composio.dev/composio-chat-with-repo"
     }
@@ -126,28 +130,20 @@
     {
       "group":"Supported Frameworks",
       "pages":[
-        "framework/llamaindex",
         "framework/crewai",
-        "framework/letta",
         "framework/langchain",
+        "framework/langgraph",
+        "framework/letta",
+        "framework/llamaindex",
+        "framework/openai",
         {
           "group": "Other Frameworks",
           "pages": [
             "framework/groq",
-            "framework/openai",
-            "framework/autogen",
-            "framework/langgraph",
             "framework/phidata",
-            "framework/camelai",
             "javascript/cloudflare",
             "javascript/vercel",
-            "javascript/openai",
-            "javascript/langchain",
-            "framework/google",
-            "framework/lyzr",
-            "framework/praisonai",
-            "framework/julep",
-            "framework/griptape"
+            "framework/google"
           ]
         }
       ]
@@ -236,6 +232,14 @@
     ]
   },
   {
+    "group": "Integrations(App Connectors)",
+    "pages": [
+      "api-reference/app-connector/create-connector",
+      "api-reference/app-connector/list-global-connectors",
+      "api-reference/app-connector/get-connector-info"
+    ]
+  },
+  {
     "group": "Connections",
     "pages": [
       "api-reference/connections/get-connections",
@@ -248,7 +252,7 @@
     "pages": [
       "api-reference/actions/list-actions-minimal",
       "api-reference/actions/get-action",
-      "api-reference/actions-controller-v-2/execute-action",
+      "api-reference/actions/execute-action",
       "api-reference/actions/execute-action-proxy",
       "api-reference/actions/get-action-inputs"
     ]

@@ -29,6 +29,11 @@ export default class ConnectionsCommand {
         }
       });
 
+    command
+      .command("list")
+      .description("List all triggers")
+      .action(this.handleAction.bind(this));
+
     new TriggerAdd(command);
     new TriggerDisable(command);
     new ActiveTriggers(command);
