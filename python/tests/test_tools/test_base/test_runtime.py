@@ -1,5 +1,7 @@
 """Test runtime decorator."""
 
+import re
+
 import pytest
 import typing_extensions as te
 from pydantic import BaseModel, Field
@@ -151,3 +153,25 @@ def test_tool_namespace() -> None:
     assert len(actions) == 2
     assert square in actions
     assert inverse in actions
+
+
+def test_untyped_param() -> None:
+    """Test if error is raised if a param is missing type annotation."""
+    with pytest.raises(
+        InvalidRuntimeAction,
+        match=re.escape(
+            "Following arguments are missing type annotations: {'execute_request'}"
+        ),
+    ):
+
+        # pylint: disable=unused-argument
+        @action(toolname="github")
+        def list_prs(owner: str, repo: str, execute_request) -> list[str]:
+            """
+            List PRs for a repo
+
+            :param owner: Owner
+            :param repo: Repository
+            :return repositories: Repositories
+            """
+            return []
