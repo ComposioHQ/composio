@@ -123,9 +123,10 @@ export class CEG {
                 }
             }
             else{
+                const description = axiosError.response.data.message || axiosError.response.data.error || axiosError.message;
                 errorDetails = {
                     message: axiosError.message,
-                    description: axiosError.response.data.message || axiosError.response.data.error || axiosError.message,
+                    description: description,
                     possibleFix: "Please check the network connection, request parameters, and ensure the API endpoint is correct."
                 }
             }
