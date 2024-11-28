@@ -188,36 +188,39 @@ class _AnnotatedEnum(t.Generic[EntityType]):
 
         load_local_tools()
 
-        for gid, actions in action_registry.items():
-            if self._slug in actions:
-                action = actions[self._slug]
-                _model_cache[self._slug] = ActionData(
-                    name=action.name,
-                    app=action.tool,
-                    tags=action.tags(),
-                    no_auth=action.no_auth,
-                    is_local=gid in ("runtime", "local"),
-                    path=self._path / self._slug,
-                )
-                return _model_cache[self._slug]  # type: ignore
+        if self._model is ActionData:
+            for gid, actions in action_registry.items():
+                if self._slug in actions:
+                    action = actions[self._slug]
+                    _model_cache[self._slug] = ActionData(
+                        name=action.name,
+                        app=action.tool,
+                        tags=action.tags(),
+                        no_auth=action.no_auth,
+                        is_local=gid in ("runtime", "local"),
+                        path=self._path / self._slug,
+                    )
+                    return _model_cache[self._slug]  # type: ignore
 
-        for gid, tools in tool_registry.items():
-            if self._slug in tools:
-                _model_cache[self._slug] = AppData(
-                    name=tools[self._slug].name,
-                    is_local=gid in ("runtime", "local"),
-                    path=self._path / self._slug,
-                )
-                return _model_cache[self._slug]  # type: ignore
+        if self._model is AppData:
+            for gid, tools in tool_registry.items():
+                if self._slug in tools:
+                    _model_cache[self._slug] = AppData(
+                        name=tools[self._slug].name,
+                        is_local=gid in ("runtime", "local"),
+                        path=self._path / self._slug,
+                    )
+                    return _model_cache[self._slug]  # type: ignore
 
-        for gid, triggers in trigger_registry.items():
-            if self._slug in triggers:
-                _model_cache[self._slug] = TriggerData(
-                    name=triggers[self._slug].name,
-                    app=triggers[self._slug].tool,
-                    path=self._path / self._slug,
-                )
-                return _model_cache[self._slug]  # type: ignore
+        if self._model is TriggerData:
+            for gid, triggers in trigger_registry.items():
+                if self._slug in triggers:
+                    _model_cache[self._slug] = TriggerData(
+                        name=triggers[self._slug].name,
+                        app=triggers[self._slug].tool,
+                        path=self._path / self._slug,
+                    )
+                    return _model_cache[self._slug]  # type: ignore
 
         return None
 
