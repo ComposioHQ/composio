@@ -1,4 +1,3 @@
-
 export const ERROR = {
     BACKEND: {
         NOT_FOUND: "BACKEND::NOT_FOUND", 
@@ -21,8 +20,8 @@ export const PREDEFINED_ERROR_REGISTRY = {
         possibleFix: "Verify the URL or resource identifier."
     },
     [ERROR.BACKEND.BAD_REQUEST]: {
-        message: "🚫 That didn't work as expected.",
-        description: "Your request was malformed or incorrect.",
+        message: "🚫 Bad Request. The request was malformed or incorrect.",
+        description: null,
         possibleFix: "Please check your request format and parameters."
     },
     [ERROR.BACKEND.UNAUTHORIZED]: {
@@ -32,7 +31,7 @@ export const PREDEFINED_ERROR_REGISTRY = {
     },
     [ERROR.BACKEND.SERVER_ERROR]: {
         message: "💥 Oops! Something went wrong on our end.",
-        description: "An unexpected error occurred on the server.",
+        description: null,
         possibleFix: "Please try again later. If the issue persists, contact support."
     },
     [ERROR.BACKEND.RATE_LIMIT]: {
@@ -47,12 +46,12 @@ export const PREDEFINED_ERROR_REGISTRY = {
     },
     UNKNOWN: {
         message: "❓ An unknown error occurred.",
-        description: "The error is not recognized by our system.",
+        description: null,
         possibleFix: "Contact our support team with the error details for further assistance."
     },
     [ERROR.BACKEND.UNKNOWN]: {
         message: "❓ An unknown error occurred.",
-        description: "The error is not recognized by our system.",
+        description: null,
         possibleFix: "Contact our support team with the error details for further assistance."
     }
 }
@@ -65,7 +64,6 @@ class ComposioError extends Error {
         this.possibleFix = possibleFix;
 
         let detailedMessage = `Error Code: ${errCode}\nMessage: ${message}\n`;
-        let detailedDescription = description;
      
         if (description) detailedMessage += `Description: ${description}\n`;
         if (possibleFix) detailedMessage += `Suggested Fix: ${possibleFix}\n`;
@@ -75,8 +73,7 @@ class ComposioError extends Error {
         Object.defineProperty(this, 'description', { enumerable: false });
         Object.defineProperty(this, 'possibleFix', { enumerable: false });
 
-
-        this.stack = `${this.name}: ${detailedMessage}Stack Trace:\n${(new Error()).stack}`;
+        this.stack = `${this.name}:${detailedMessage}Stack Trace: \n ${ originalError?.stack}`;
     }
 }
 
@@ -84,7 +81,11 @@ class ComposioError extends Error {
 // Composio Error Generator
 export class CEG {
     static handleError(axiosError: any,) {
-         let errorDetails = PREDEFINED_ERROR_REGISTRY.UNKNOWN;
+         let errorDetails: {
+            message: string;    
+            description: string | null;
+            possibleFix: string;
+         } = PREDEFINED_ERROR_REGISTRY.UNKNOWN as any;
 
         let errorKey = ERROR.COMMON.UNKNOWN;
         
@@ -102,7 +103,7 @@ export class CEG {
                     errorKey = ERROR.BACKEND.RATE_LIMIT;
                     break;
                 case 401:
-                    errorKey = ERROR.COMMON.API_KEY_UNAVAILABLE;
+                    errorKey = ERROR.BACKEND.UNAUTHORIZED;
                     break;
                 case 500:
                     errorKey = ERROR.BACKEND.SERVER_ERROR;
@@ -111,8 +112,23 @@ export class CEG {
                     errorKey = ERROR.BACKEND.UNKNOWN;
                     break;
             }
-            if (errorKey) {
+            if (errorKey !== ERROR.BACKEND.UNKNOWN) {
                 errorDetails = PREDEFINED_ERROR_REGISTRY[errorKey];
+            }if(errorKey === ERROR.BACKEND.BAD_REQUEST){    
+                const axiosErrorMessage = axiosError.response.data.message;
+                const errors = axiosError.response.data.errors;
+                errorDetails = {
+                    ...PREDEFINED_ERROR_REGISTRY.UNKNOWN,
+                    description: `${axiosErrorMessage} ${errors.map((error:any) => JSON.stringify(error)).join(", ")}`
+                }
+            }
+            else{
+                const description = axiosError.response.data.message || axiosError.response.data.error || axiosError.message;
+                errorDetails = {
+                    message: axiosError.message,
+                    description: description,
+                    possibleFix: "Please check the network connection, request parameters, and ensure the API endpoint is correct."
+                }
             }
         }
 
@@ -122,11 +138,11 @@ export class CEG {
         const request_id = axiosError.response?.headers?.["x-request-id"];
         const urlAndStatus = axiosError.config?.url ? ` got 📊 ${status} response from URL🔗: ${axiosError.config.url}, request_id: ${request_id}` : '';
 
-        axiosDataMessage = `❌ ${ifObjectStringify(axiosDataMessage) || errorDetails.description || "No additional information available."} ${urlAndStatus}`;
+        const errorDescription = `❌ ${ifObjectStringify(errorDetails.description || axiosDataMessage) || "No additional information available."} ${urlAndStatus}`;
         throw new ComposioError(
             errorKey as string,
             errorDetails.message,
-            axiosDataMessage || errorDetails.description  || "No additional information available.",
+            errorDescription,
             errorDetails.possibleFix || "Please check the network connection and the request parameters.",
             axiosError
         );
@@ -148,10 +164,13 @@ export class CEG {
     }): never {
     
         const finalErrorCode = !!messageCode ? messageCode : `${type}::${subtype}`;
-
         const errorDetails = PREDEFINED_ERROR_REGISTRY[finalErrorCode] || PREDEFINED_ERROR_REGISTRY.UNKNOWN;
       
-        throw new ComposioError(messageCode,  message || errorDetails.message, description || errorDetails.description, possibleFix || errorDetails.possibleFix);
+        const finalMessage = message || errorDetails.message;
+        const finalDescription = description || errorDetails.description || undefined;
+        const finalPossibleFix = possibleFix || errorDetails.possibleFix;
+
+        throw new ComposioError(finalErrorCode,  finalMessage, finalDescription, finalPossibleFix);
     }
 }
 

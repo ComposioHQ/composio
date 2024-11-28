@@ -27,7 +27,9 @@ export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
      axiosClientInstance.interceptors.response.use(
         (response) => {
             const responseSize = Math.round(JSON.stringify(response.data).length / 1024);
-            logger.debug(`API Res [${response.status}] ${response.config.method?.toUpperCase()} ${response.config.url} ${responseSize} KB`);
+            logger.debug(`API Res [${response.status}] ${response.config.method?.toUpperCase()} ${response.config.url} ${responseSize} KB`, {
+                'x-request-id': response.headers['x-request-id']
+            });
             return response;
         },
         (error) => {
