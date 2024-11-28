@@ -45,7 +45,6 @@ export class Composio {
 
         logger.info(`Using API Key: [REDACTED] and baseURL: ${baseURLParsed}`);
         if(!apiKeyParsed){
-            
             CEG.throwCustomError(ERROR.COMMON.API_KEY_UNAVAILABLE,{});
         }
 
