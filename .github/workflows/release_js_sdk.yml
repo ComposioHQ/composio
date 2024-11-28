@@ -1,13 +1,16 @@
 name: Release JS SDK
 
 on:
-  push:
-    # Pattern matched against refs/tags
-    # This workflow will run when a tag starting with 'js-' is pushed
-    # For example, 'js-v1.0.0' or 'js-release-2.3.1'
-    tags:        
-      - 'js-*'  
-    
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 1.0.0)'
+        required: true
+        type: string
+      isRCRelease:
+        description: 'Is this a release candidate release?'
+        required: true
+        type: boolean
 
 jobs:
   run-js-tests:
@@ -35,9 +38,14 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
 
+    - name: Update version
+      run: npm version ${{ github.event.inputs.version }} --no-git-tag-version
+
+    - name: Commit and push
+      run: git commit -am "Release ${{ github.event.inputs.version }}" && git push
+
     - name: pnpm build
       run: pnpm build
       
     - name: pnpm publish
       run: pnpm publish --no-git-checks
-
