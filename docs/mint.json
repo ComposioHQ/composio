@@ -12,7 +12,7 @@
   "colors": {
     "primary": "#343434",
     "light": "#fff",
-    "dark": "#9a4dff",
+    "dark": "#343434",
     "ultraLight": "#9a4dff",
     "ultraDark": "#9a4dff",
     "background": {
@@ -60,16 +60,20 @@
   },
   "tabs": [
     {
-      "name": "Guides",
-      "url": "patterns"
-    },
-    {
       "name": "Examples",
       "url": "examples"
     },
     {
       "name": "API",
       "url": "api-reference"
+    },
+    {
+      "name": "All Tools",
+      "url": "https://composio.dev/tools"
+    },
+    {
+      "name": "Chat with Repo",
+      "url": "https://dub.composio.dev/composio-chat-with-repo"
     }
   ],
   "navigation": [
@@ -77,34 +81,99 @@
       "group": "Introduction",
       "pages": [
         "introduction/intro/overview",
+        "introduction/intro/basic",
         "introduction/intro/quickstart",
         "introduction/intro/quickstart_2",
         "introduction/intro/quickstart_3"
       ]
     },
     {
-      "group": "Core Concepts",
+      "group": "Tools",
+      "pages": [
+            "patterns/tools/what-are-tools",
+            {
+              "group": "Use Tools",
+              "icon": "shuttle-space",
+              "pages": [
+                "patterns/tools/use-tools/action-guide-with-agents",
+                "patterns/tools/use-tools/use-specific-actions",
+                "patterns/tools/use-tools/get-action-inputs",
+                "patterns/tools/use-tools/processing-actions",
+                "patterns/tools/use-tools/configure-tools",
+                "patterns/tools/use-tools/action-guide-without-agents"
+              ]
+            },
+            {
+              "group": "Build Tools",
+              "icon": "hammer",
+              "pages": [
+                "patterns/tools/build-tools/custom-action-for-new-tool",
+                "patterns/tools/build-tools/custom-action-for-existing-tool"
+              ]
+            },
+            "patterns/tools/custom-integration",
+            "patterns/tools/serve-tools"
+      ]
+    },
+    {
+      "group":"Authentication",
+      "icon":"unlock",
+      "pages":[
+        "patterns/Auth/connected_account",
+        "patterns/Auth/using-connections",
+        "patterns/Auth/Integrations",
+        "patterns/Auth/admin-webhooks",
+        "patterns/Auth/examples/gmail_example",
+        "patterns/Auth/examples/shopify_example"
+      ]
+    },
+    {
+      "group":"Supported Frameworks",
+      "pages":[
+        "framework/crewai",
+        "framework/langchain",
+        "framework/langgraph",
+        "framework/letta",
+        "framework/llamaindex",
+        "framework/openai",
+        {
+          "group": "Other Frameworks",
+          "pages": [
+            "framework/groq",
+            "framework/phidata",
+            "javascript/cloudflare",
+            "javascript/vercel",
+            "framework/google"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "SWE Kit",
+      "pages": [
+        "swekit-tools/introduction",
+        "swekit-js/introduction",
+        "swekit/introduction",
+        "swekit/benchmarks",
+        "swekit-examples/introduction"
+      ]
+    },   
+    {
+      "group": "Others",
       "pages": [
         {
           "group":"Basics",
           "icon": "star",
           "pages":[
-            "introduction/foundations/basic",
-            "introduction/foundations/components/entity/entity-guide",
-            "introduction/foundations/components/actions/action-guide",
-            "introduction/foundations/components/custom_actions",
             "introduction/foundations/components/triggers/trigger-guide",
-            "introduction/foundations/components/integrations/custom-integration"
+            "introduction/foundations/components/workspace"
           ]
         },
         {
-          "group": "Advanced",
-          "icon": "user-helmet-safety",
+          "group": "Triggers",
+          "icon":"bolt",
           "pages": [
-            "introduction/foundations/components/integrations/integration-guide",
-            "introduction/foundations/components/actions/processing",
-            "introduction/foundations/components/workspace",
-            "introduction/foundations/components/list_local_tools"
+            "patterns/functions/triggers"
           ]
         },
         {
@@ -121,77 +190,6 @@
 
         }
       ]
-    },
-    {
-      "group":"Supported Frameworks",
-      "pages":[
-        "framework/llamaindex",
-        "framework/crewai",
-        "framework/letta",
-        "framework/langchain",
-        {
-          "group": "Other Frameworks",
-          "pages": [
-            "framework/groq",
-            "framework/openai",
-            "framework/autogen",
-            "framework/langgraph",
-            "framework/phidata",
-            "framework/camelai",
-            "javascript/cloudflare",
-            "javascript/vercel",
-            "javascript/openai",
-            "javascript/langchain",
-            "framework/google",
-            "framework/lyzr",
-            "framework/praisonai",
-            "framework/julep",
-            "framework/griptape"
-          ]
-        }
-      ]
-    },
-    {
-      "group": "SweKit",
-      "pages": [
-        "swekit-js/introduction",
-        "swekit/introduction",
-        "swekit/benchmarks"
-      ]
-    },    
-    {
-      "group": "Guides",
-      "pages": [
-      {
-        "group":"Authentication",
-        "icon":"unlock",
-        "pages":[
-          "patterns/Auth/connected_account",
-          "patterns/Auth/multiple-users",
-          "patterns/Auth/Integrations",
-          "patterns/Auth/examples/gmail_example",
-          "patterns/Auth/examples/shopify_example"
-        ]
-      },
-      {
-        "group":"Actions",
-        "icon":"shuttle-space" ,
-        "pages":[
-          "patterns/actions/action-guide-with-agents",
-          "patterns/actions/action-guide-without-agents",
-          "patterns/actions/custom_actions",
-          "patterns/actions/usecase",
-          "patterns/actions/action-guide-faqs"
-        ]
-      },
-      {
-        "group": "Triggers",
-        "icon":"bolt",
-        "pages": [
-          "patterns/functions/triggers"
-        ]
-      }
-    ]
     },
     {
       "group": "Examples",
@@ -234,6 +232,14 @@
     ]
   },
   {
+    "group": "Integrations(App Connectors)",
+    "pages": [
+      "api-reference/app-connector/create-connector",
+      "api-reference/app-connector/list-global-connectors",
+      "api-reference/app-connector/get-connector-info"
+    ]
+  },
+  {
     "group": "Connections",
     "pages": [
       "api-reference/connections/get-connections",
@@ -246,7 +252,7 @@
     "pages": [
       "api-reference/actions/list-actions-minimal",
       "api-reference/actions/get-action",
-      "api-reference/actions-controller-v-2/execute-action",
+      "api-reference/actions/execute-action",
       "api-reference/actions/execute-action-proxy",
       "api-reference/actions/get-action-inputs"
     ]

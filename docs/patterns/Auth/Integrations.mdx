@@ -1,49 +1,124 @@
 ---
-title: "Integrations"
-sidebarTitle: "Integrations"
+title: "How To Configure Connections?"
+sidebarTitle: "Configuring Connection"
 icon: "sliders"
-description: "What are Integrations, how to create them and use them to connect user accounts"
+description: "Learn how to configure connections for your users"
 ---
 
-### What is an Integration? (Controlling the OAuth Experience)
+### What is an Integration?
 
-Integrations in Composio are configuration objects that define how your application connects to external services and APIs. Each integration encapsulates the authentication details, permissions, and API specifications needed to establish secure connections with services like GitHub, Slack, or HubSpot.
-
-<Note>
-  Integrations include critical configuration like OAuth credentials (Client ID/Secret), required permissions scopes, and API endpoint specifications that determine how your users can interact with the external service.
-</Note>
+Integrations in Composio are configuration objects that define how your application connects to external services (like GitHub, Slack, or HubSpot). Each integration encapsulates authentication credentials (OAuth Client ID/Secret), permission scopes, and API specifications that determine how your users can interact with the external service. These configuration objects are used to configure and manage connections with external services.
 
 For example:
-- When you create a GitHub integration, you specify OAuth authentication parameters and permission scopes like "repo:read"
+- When you create a GitHub integration, you specify OAuth authentication parameters and permission scopes like `repo:read`
 - This integration then serves as a reusable template - any user connecting their GitHub account through this integration will have the same standardized access level and authentication flow
 - This ensures consistent and secure access patterns across your entire user base
 
-### Creating an Integration
-
-<Note> Recommended method to create an integration is via UI. (Only limited integrations are required) </Note>
-
-<Info> One integration can be used by multiple users to connect their accounts. </Info>
-
-![Creating an Integration with Dashboard](/patterns/Auth/gifs/only_integration.gif)
+### Creating a New Integration
+<Info>
+A single integration can be used by multiple users to connect their accounts. Ideally, create one integration per app unless you need different configurations for specific use cases.
+</Info>
+<Tabs>
+<Tab title="Using Dashboard">
+<iframe
+  width="720" 
+  height="405"
+  src="https://www.youtube.com/embed/LmyWy4LiedQ?si=9T7jVc1wbeDEqR-K"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen
+></iframe>
 
 1. Login at [Composio's Website](https://app.composio.dev)
 2. Go to the Tools section
 3. Click on any app you want to integrate
 4. Click on Setup on [App Name] Integration
 5. Choose your integration name and click Save
-6. Then Click on "Connect to [App Name]" and Authenticate with your Account
-7. Congratulations! Integration was successful!
+</Tab>
+<Tab title="Using SDK">
+You can create an integration using the SDK by following the steps below:
+<Steps>
+<Step title="Import required libraries, initialize Composio clients and get the entity object">
+<CodeGroup>
+```python Python
+from composio import ComposioToolSet
 
-### Fetching all Integrations
+toolset = ComposioToolSet()
+entity = toolset.get_entity("Jessica")
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Create a new integration">
+You need to provide the following parameters to create an integration:
+- `name`: Name of the integration
+- `app_id`: App ID of the integration, you can find it [here](https://docs.composio.dev/api-reference/apps/get-app)
+- `auth_mode`: Authentication mode of the integration (e.g., OAUTH2, OAUTH1, API_KEY, BASIC, BEARER_TOKEN)
+- `use_composio_auth`: You can use the OAuth flow provided by Composio by setting this to `True` or use your own ClientID and ClientSecret by setting this to `False` & providing the fields as shown below
+<CodeGroup>
+```python Python
+# Using Composio's default OAuth flow
+integration = entity.client.integrations.create(
+    name="GITHUB_Integration_Demo", 
+    app_id="01e22f33-dc3f-46ae-b58d-050e4d2d1909", 
+    auth_mode="OAUTH2", 
+    use_composio_auth=True
+)
+
+# Using your own OAuth flow
+integration = entity.client.integrations.create(
+    name="GITHUB_Integration_Demo", 
+    app_id="01e22f33-dc3f-46ae-b58d-050e4d2d1909", 
+    auth_mode="OAUTH2", 
+    use_composio_auth=False,
+    auth_config={
+        "client_id": "",
+        "client_secret": ""
+    }
+)
+
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+<Step title="Initiate a connection using the integration">
+<Info>Since the created integration uses OAuth, you need to redirect the user to the URL returned by the `redirectUrl` field in the response.</Info>
+You can initiate a connection using the integration by following the steps below:
+<CodeGroup>
+```python Python
+request = entity.initiate_connection("GITHUB", redirect_url="https://yourwebsite.com/connection/success", integration=integration)
+print(request.redirectUrl)
+```
+```javascript JavaScript
+Coming Soon
+```
+</CodeGroup>
+</Step>
+</Steps>
+</Tab>
+</Tabs>
+
+
+### How to Fetch Integrations
 
 <CodeGroup>
 ```python Python
 from composio import ComposioToolSet, App
 toolset = ComposioToolSet()
 
-print(toolset.get_integrations()) # get all integrations
-print(toolset.get_integrations(app=App.GMAIL)) #filter based on app 
-print(toolset.get_integration(id="ADD THE ID HERE")) #filter based on integration id
+# get all integrations
+print(toolset.get_integrations()) 
+
+#filter based on app 
+print(toolset.get_integrations(app=App.GMAIL)) 
+
+#filter based on integration id
+print(toolset.get_integration(id="<integration_id>")) 
 
 # By auth scheme
 print(toolset.get_integrations(auth_scheme="BEARER_TOKEN"))
@@ -51,16 +126,16 @@ print(toolset.get_integrations(auth_scheme="BEARER_TOKEN"))
 
 ```javascript JavaScript
 import { OpenAIToolSet } from "composio-core";
+const openai_client = new OpenAIToolSet();
 
-const openai_client = new OpenAIToolSet({
-    apiKey: process.env.OPENAIKEY
-});
+// //get all integrations
+console.log(openai_client.client.integrations.list()) 
 
-console.log(openai_client.client.integrations.list()) //lists all integrations
-console.log(openai_client.client.integrations.get({
-    appName:'gmail'
-})) //filter based on app name
-console.log(await openai_client.client.integrations.get({integrationId:"ADD THE ID HERE"})) //filter based on integration id
+// //filter based on app
+console.log(openai_client.client.integrations.get({ appName:'gmail'})) 
+
+// //filter based on integration id
+console.log(await openai_client.client.integrations.get({integrationId:"<integration_id>"}))
 ```
 </CodeGroup>
 
@@ -76,19 +151,24 @@ toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"), entity_id="Jess
 entity = toolset.get_entity()
 
 integration = entity.client.integrations.get_by_id("integration_id...")
-connection_request = entity.initiate_connection(app_name="TWITTER", redirect_url="redirect_url...", integration=integration)
+connection_request = entity.initiate_connection(app_name="TWITTER", redirect_url="https://yourwebsite.com/connection/success", integration=integration)
 
 # If the connection method is OAuth, redirect the user to the URL below
 print(connection_request.redirectUrl)
 ```
 </CodeGroup>
 
-### Whitelabeling the OAuth Developer App Using Integrations 
+### Using Your Own OAuth Developer App
 
-Integrations can be used to customise the OAuth Developer App that is shown to the user when initiating a connection.
+When creating an integration, you can use your own OAuth Developer App instead of Composio's default one, you can follow the same steps as mentioned in [Creating a New Integration](#creating-a-new-integration) and:
 
-Create an Integration and toggle on "Use your own Developer App"
+1. Enable the toggle "Use your own Developer App"
+2. Enter your OAuth credentials:
+   - Client ID
+   - Client Secret
 
-Enter your ClientID and ClientSecret and save the integration.
+<Info>
+When users connect using this integration, they'll see your app's name and logo in the OAuth consent screen instead of Composio's. Checkout the live demo [here](https://whitelabel-eight.vercel.app/)
+</Info>
 
-Now you can use this integration and the user in auth flow should see the custom developer app. 
+<img width="500" height="500" src="../../media/images/custom-oauth.png" />

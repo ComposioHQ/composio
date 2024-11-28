@@ -2,150 +2,95 @@
 title: "🦜🕸️ Using Composio With LangGraph"
 sidebarTitle: "LangGraph"
 icon: "spider-web"
-description: "Integrate Composio with LangGraph Agentic workfows & enable them to interact seamlessly with external apps, enhancing their functionality and reach."
+description: "Integrate Composio with LangGraph agents to let them seamlessly interact with external apps"
 ---
 
-**Composio enables** your **LangGraph agents** to **connect** with many **tools**!
-
-<Tip>
-  Goal: Star a repository on GitHub using natural language commands through a LangGraph Agent.
-</Tip>
-
-### Install Packages & Connect a Tool
-
-Ensure you have the necessary packages installed and connect your GitHub account to allow your agents to utilize GitHub functionalities.
-
-<CodeGroup>
-    ``` bash Run command
-    pip install composio-langgraph
-    # login to composio
-    composio login
-    ```
-</CodeGroup>
-
-### Goal: Use LangGraph Agent to Interact with Github using Composio
+## Star A Repository on Github
+In this example, we will use LangGraph Agent to star a repository on Github using Composio Tools
 
 <Steps>
-<Step title="Connect GitHub account">
-
-- Connect user `Jessica` GitHub account to allow your agents to utilize GitHub functionalities.
-<Tabs>
-<Tab title="CLI">
+<Step title="Install Packages">
 <CodeGroup>
-```bash Authenticate GitHub Account 
-composio add github -e "Jessica"
+```bash Python
+pip install composio-langgraph
+```
+```javascript JavaScript
+coming soon
 ```
 </CodeGroup>
-</Tab>
-<Tab title="Python">
-<CodeGroup>
-```python Authenticate GitHub Account 
-from composio_langgraph import ComposioToolSet, App
-
-toolset = ComposioToolSet(entity_id="Jessica")
-
-entity = toolset.get_entity()
-
-request = entity.initiate_connection(App.GITHUB)
-
-print(
-    f"Open this URL in your browser: {request.redirectUrl}"
-)
-```
-</CodeGroup>
-</Tab>
-</Tabs>
 </Step>
-
-<Step title="Import Base Packages">
-
-- Prepare your environment by initializing necessary imports from LangGraph & LangChain for setting up your agent.
-
+<Step title="Import Libraries & Initialize ComposioToolSet & LLM">
+You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
 <CodeGroup>
-```python Default Imports
+```python Python
 from typing import Literal
-
 from langchain_openai import ChatOpenAI
 from langgraph.graph import MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
-```
-</CodeGroup>
+from composio_langgraph import Action, ComposioToolSet, App
 
-</Step>
-
-<Step title="Fetch GitHub LangGraph Tools via Composio">
-
-- Access GitHub tools provided by Composio for LangGraph, initialize a `ToolNode` with necessary tools obtaned from `ComposioToolSet`.
-
-<CodeGroup>
-```python Get tools
-from composio_langgraph import Action, ComposioToolSet
-
-# Initialize the toolset for GitHub
-composio_toolset = ComposioToolSet(entity_id="Jessica")
+composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_tools(
-    actions=[
-        Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER,
-        Action.GITHUB_USERS_GET_AUTHENTICATED,
-    ])
+    apps=[App.GITHUB]
+)
+
 tool_node = ToolNode(tools)
+
+model = ChatOpenAI(temperature=0, streaming=True)
+model_with_tools = model.bind_tools(tools)
+```
+```javascript JavaScript
+coming soon
 ```
 </CodeGroup>
-
 </Step>
 
-<Step title="Prepare the model">
-
-- Initialize the LLM class and bind obtained functions to the model.
-
+<Step title="Define the model calling function">
 <CodeGroup>
-    ```python Define model
-    model = ChatOpenAI(temperature=0, streaming=True)
-    model_with_tools = model.bind_tools(tools)
-    ```
-</CodeGroup>
-
-</Step>
-
-
-<Step title="Define the Graph Nodes">
-
-- LangGraph expects you to define different nodes of the agentic workflow as separate functions.
-
-<CodeGroup>
-```python Define nodes
+```python Python
 def call_model(state: MessagesState):
+    """
+    Process messages through the LLM and return the response
+    """
     messages = state["messages"]
     response = model_with_tools.invoke(messages)
     return {"messages": [response]}
 ```
+```javascript JavaScript
+coming soon
+```
 </CodeGroup>
-
 </Step>
 
-
-<Step title="Define the Graph Nodes and Edges">
-
-- We begin by initializing the workflow with `agent` and `tools` nodes, followed by specifying the connecting edges between nodes, finally compiling the workflow.
-
-- These edges can be straightforward or conditional, depending on the workflow requirements.
-
+<Step title="Define the decision function for workflow routing">
 <CodeGroup>
-```python Define edges
+```python Python
 def should_continue(state: MessagesState) -> Literal["tools", "__end__"]:
+    """
+    Determine if the conversation should continue to tools or end
+    Returns:
+        - "tools" if the last message contains tool calls
+        - "__end__" otherwise
+    """
     messages = state["messages"]
     last_message = messages[-1]
     if last_message.tool_calls:
         return "tools"
     return "__end__"
+```
+```javascript JavaScript
+coming soon
+```
+</CodeGroup>
+</Step>
 
-
+<Step title="Define the workflow graph">
+<CodeGroup>
+```python Python
 workflow = StateGraph(MessagesState)
 
-# Define the two nodes we will cycle between
 workflow.add_node("agent", call_model)
 workflow.add_node("tools", tool_node)
-
 workflow.add_edge("__start__", "agent")
 workflow.add_conditional_edges(
     "agent",
@@ -155,25 +100,21 @@ workflow.add_edge("tools", "agent")
 
 app = workflow.compile()
 ```
+```javascript JavaScript
+coming soon
+```
 </CodeGroup>
-
 </Step>
 
-
-
-<Step title="Invoke & Check Response">
-
-- After the compilation of workflow, we invoke the LLM with a task, and stream the response.
-
+<Step title="Execute the workflow">
 <CodeGroup>
-```python Execute workflow
+```python Python
 for chunk in app.stream(
     {
         "messages": [
             (
                 "human",
-                # "Star the Github Repository composiohq/composio",
-                "Get my information.",
+                "Star the Github Repository composiohq/composio",
             )
         ]
     },
@@ -181,7 +122,9 @@ for chunk in app.stream(
 ):
     chunk["messages"][-1].pretty_print()
 ```
+```javascript JavaScript
+coming soon
+```
 </CodeGroup>
-
 </Step>
 </Steps>

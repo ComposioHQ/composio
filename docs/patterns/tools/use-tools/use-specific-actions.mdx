@@ -1,0 +1,121 @@
+---
+title: "How can I get and use specific actions from a Tool?"
+sidebarTitle: "Use Specific Actions"
+icon: "pickaxe"
+description: "Each Tool (like GitHub, Slack, etc.) comes with many Actions. You can explore all available Tools & Actions [here](https://app.composio.dev/apps). Each Action has an associated action ID which you can use to call the action."
+---
+
+<Tip>
+  Providing too many actions can overwhelm the LLM's decision-making process. It's best to narrow down the action set to only the most relevant ones for your specific use case.
+</Tip>
+
+### Specifying Actions
+`GITHUB_CREATE_AN_ISSUE` and `GITHUB_COMMIT_EVENT` are action IDs for actions in the GitHub Tool
+<CodeGroup>
+```python Python
+from composio import ComposioToolSet, App, action
+
+toolset = ComposioToolSet()
+
+# can pass multiple actions
+tools = toolset.get_tools(actions=[Action.GITHUB_CREATE_AN_ISSUE,Action.GITHUB_COMMIT_EVENT])
+```
+
+```javascript Javascript
+import { LangchainToolSet } from "composio-core";
+
+const toolset = new LangchainToolSet();
+
+// can pass multiple actions
+const tools = await toolset.getTools({actions: ['github_issues_create','github_commit_event']});
+```
+</CodeGroup>
+
+### Filtering Actions
+Actions can be filtered by tags or use case.
+<Tabs>
+<Tab title="Filtering Actions by Tags">
+Filter the Actions in an App based on tags.
+For example, you can:
+- Filter all user-related Actions using the "users" tag
+- Retrieve metadata-related Actions using the "meta" tag
+
+<CodeGroup>
+```python Python
+from composio_langchain import ComposioToolSet, App
+tool_set = ComposioToolSet()
+
+tools = tool_set.get_tools(apps=[App.GITHUB]) 
+
+# Filter by tags
+tag = "users"
+
+action_enums = tool_set.find_actions_by_tags(
+    App.GITHUB,
+    tags=[tag], 
+)
+
+tools = tool_set.get_tools(actions=action_enums)
+```
+
+```javascript Javascript
+import { OpenAIToolSet } from "composio-core";
+
+const composio_toolset = new OpenAIToolSet();
+
+// Filter by tags
+const tag = "meta";
+
+const actions = await composio_toolset.getTools({
+  apps: ["github"],
+  tags: [tag],
+});
+
+console.log(actions);
+```
+
+```bash CLI
+composio actions --app 'github' --tag 'code' 
+```
+</CodeGroup>
+</Tab>
+<Tab title="Filtering Actions by Use Case">
+Find relevant actions for your use case by describing your use case in natural language.
+- Pass the use case as a string to the `use_case` parameter.
+<CodeGroup>
+```Python Python
+from composio_openai import ComposioToolSet, App
+
+composio_toolset = ComposioToolSet()
+
+use_case="Create an issue in Linear & send the issue URL on Slack to a slack channel"
+
+action_enums=composio_toolset.find_actions_by_use_case(App.GITHUB, use_case=use_case, advanced=False)
+tools = composio_toolset.get_tools(actions=action_enums)
+
+print(tools)
+```
+
+```Javascript Javascript
+import { LangchainToolSet } from "composio-core";
+
+const toolset = new LangchainToolSet();
+
+// Specify the use case
+const useCase = "Star a repo on github";
+
+const actionsList = await toolset.client.actions.list({
+  useCase: useCase,
+  apps: "github",
+});
+```
+
+```bash CLI
+composio actions --use-case 'star a repo on github' --app 'github'
+```
+</CodeGroup>
+<Tip>
+Set the `advanced` flag to `True` to get actions for complex use cases (support for JavaScript & CLI coming soon)
+</Tip>
+</Tab>
+</Tabs>

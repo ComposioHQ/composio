@@ -5,12 +5,42 @@ import { getEnvVariable } from "../../utils/shared";
 
 import { client as axiosClient } from "../client/services.gen"
 import apiClient from "../client/client"
+import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import logger from '../../utils/logger';
 
 
 // Constants
 const LOCAL_CACHE_DIRECTORY_NAME = '.composio';
 const USER_DATA_FILE_NAME = 'user_data.json';
 const DEFAULT_BASE_URL = "https://backend.composio.dev";
+
+export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
+   
+     axiosClientInstance.interceptors.request.use(
+        (request) => {
+            logger.debug(`API Req [${request.method?.toUpperCase()}] ${request.url}`, {
+                data: request.data
+            });
+            return request;
+        }
+    );
+     axiosClientInstance.interceptors.response.use(
+        (response) => {
+            const responseSize = Math.round(JSON.stringify(response.data).length / 1024);
+            logger.debug(`API Res [${response.status}] ${response.config.method?.toUpperCase()} ${response.config.url} ${responseSize} KB`);
+            return response;
+        },
+        (error) => {
+            logger.debug(`API Error [${error.response?.status || 'Unknown'}] ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
+                headers: error.response?.headers,
+                data: error.response?.data,
+                error: error.message
+            });
+            return Promise.reject(error);
+        }
+    );
+
+}
 
 export const userDataPath = () => path.join(os.homedir(), LOCAL_CACHE_DIRECTORY_NAME, USER_DATA_FILE_NAME);
 
@@ -46,6 +76,8 @@ export function getAPISDK(baseUrl?: string, apiKey?: string) {
         throwOnError: true
     });
 
+    setAxiosClientConfig(axiosClient.instance);  
+ 
     return apiClient;
 }
 
@@ -65,8 +97,8 @@ export const writeToFile = (filePath: string, data: any) => {
         // Write the data to the file as a formatted JSON string
         fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
     }catch(error){  
-        console.error("Oops! We couldn't save your settings. Here's why:", (error as Error).message);
-        console.log("Need help? Check file permissions for file:", filePath);
+        logger.error("Oops! We couldn't save your settings. Here's why:", (error as Error).message);
+        logger.info("Need help? Check file permissions for file:", filePath);
     }
 }
 

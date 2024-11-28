@@ -10,12 +10,13 @@ from pathlib import Path
 
 import requests
 
-from composio.client.base import BaseClient
 from composio.client.collections import (
+    AUTH_SCHEMES,
     Actions,
     ActiveTriggerModel,
     ActiveTriggers,
     Apps,
+    AuthSchemeType,
     ConnectedAccountModel,
     ConnectedAccounts,
     ConnectionRequestModel,
@@ -52,9 +53,10 @@ _valid_keys: t.Set[str] = set()
 _clients: t.List["Composio"] = []
 
 
-class Composio(BaseClient):
+class Composio:
     """Composio SDK Client."""
 
+    local: t.Any
     _api_key: t.Optional[str] = None
     _http: t.Optional[HttpClient] = None
 
@@ -388,6 +390,7 @@ class Entity:
         use_composio_auth: bool = True,
         force_new_integration: bool = False,
         connected_account_params: t.Optional[t.Dict] = None,
+        labels: t.Optional[t.List] = None,
     ) -> ConnectionRequestModel:
         """
         Initiate an integration connection process for a specified application.
@@ -405,6 +408,13 @@ class Entity:
         app = self.client.apps.get(name=app_name)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         if integration is None and auth_mode is not None:
+            if auth_mode not in AUTH_SCHEMES:
+                raise ComposioClientError(
+                    f"'auth_mode' should be one of {AUTH_SCHEMES}"
+                )
+            auth_mode = t.cast(AuthSchemeType, auth_mode)
+            if "OAUTH" not in auth_mode:
+                use_composio_auth = False
             integration = self.client.integrations.create(
                 app_id=app.appId,
                 name=f"{app_name}_{timestamp}",
@@ -427,6 +437,7 @@ class Entity:
             integration_id=t.cast(IntegrationModel, integration).id,
             entity_id=self.id,
             params=connected_account_params,
+            labels=labels,
             redirect_url=redirect_url,
         )
 

@@ -2,6 +2,7 @@
 Enum helper base.
 """
 
+import difflib
 import os
 import typing as t
 import warnings
@@ -34,10 +35,18 @@ NO_REMOTE_ENUM_FETCHING = (
 class EnumStringNotFound(ComposioSDKError):
     """Raise when user provides invalid enum string."""
 
-    def __init__(self, value: str, enum: str) -> None:
-        super().__init__(
-            message=f"Invalid value `{value}` for enum class `{enum}`",
+    def __init__(self, value: str, enum: str, possible_values: t.List[str]) -> None:
+        error_message = f"Invalid value `{value}` for enum class `{enum}`"
+        matches = difflib.get_close_matches(value, possible_values, n=1)
+        if matches:
+            (match,) = matches
+            error_message += f". Did you mean {match!r}?"
+
+        error_message += (
+            " (If you have recently created a custom tool, run `composio apps update` "
+            "to update local apps)"
         )
+        super().__init__(message=error_message)
 
 
 class SentinalObject:
@@ -132,8 +141,18 @@ class _AnnotatedEnum(t.Generic[EntityType]):
 
         if isinstance(value, _AnnotatedEnum):
             value = value._slug
-
         self._slug = t.cast(str, value).upper()
+
+        # Anthropic 😭
+        if self._slug == "BASH":
+            self._slug = "ANTHROPIC_BASH_COMMAND"
+
+        if self._slug == "COMPUTER":
+            self._slug = "ANTHROPIC_COMPUTER"
+
+        if self._slug == "STR_REPLACE_EDITOR":
+            self._slug = "ANTHROPIC_TEXT_EDITOR"
+
         if self._slug in self._deprecated and warn:
             warnings.warn(
                 f"`{self._slug}` is deprecated and will be removed. "
@@ -149,7 +168,11 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         if self._cache_from_local() is not None:
             return
 
-        raise EnumStringNotFound(value=self._slug, enum=self.__class__.__name__)
+        raise EnumStringNotFound(
+            value=self._slug,
+            enum=self.__class__.__name__,
+            possible_values=list(self.iter()),
+        )
 
     @property
     def slug(self) -> str:
@@ -201,7 +224,7 @@ class _AnnotatedEnum(t.Generic[EntityType]):
 
         return None
 
-    def _cache_from_remote(self) -> EntityType:
+    def _cache_from_remote(self) -> t.Optional[EntityType]:
         if NO_REMOTE_ENUM_FETCHING:
             raise ComposioSDKError(
                 message=(
@@ -218,11 +241,13 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         )
 
         client = Composio.get_latest()
-        data: t.Union[AppData, TriggerData, ActionData]
-
         if self._model is AppData:
             response = client.http.get(url=str(client.apps.endpoint / self.slug)).json()
-            data = AppData(
+            # TOFIX: Return proper error code when of item is not found
+            if "message" in response:
+                return None
+
+            return AppData(  # type: ignore
                 name=response["name"],
                 path=self._path / self._slug,
                 is_local=False,
@@ -244,7 +269,11 @@ class _AnnotatedEnum(t.Generic[EntityType]):
                     )
                 )
 
-            data = ActionData(
+            # TOFIX: Return proper error code when of item is not found
+            if "appName" not in response:
+                return None
+
+            return ActionData(  # type: ignore
                 name=response["name"],
                 app=response["appName"],
                 tags=response["tags"],
@@ -261,17 +290,31 @@ class _AnnotatedEnum(t.Generic[EntityType]):
 
         if self._model is TriggerData:
             response = client.http.get(url=str(v2.triggers / self.slug)).json()
-            data = TriggerData(
+            # TOFIX: Return proper error code when of item is not found
+            if "appName" not in response:
+                return None
+
+            return TriggerData(  # type: ignore
                 name=response["enum"],
                 app=response["appName"],
                 path=self._path / self._slug,
             )
 
-        return data  # type: ignore
+        return None
 
     def _cache(self) -> None:
         """Create cache for the enum."""
         data = self._cache_from_local() or self._cache_from_remote()
+        if data is None:
+            raise ComposioSDKError(
+                message=(
+                    f"No metadata found for enum {self.slug!r}, "
+                    "You might be trying to use an app or action "
+                    "that is deprecated, run `composio apps update` "
+                    "and try again"
+                )
+            )
+
         _model_cache[self._slug] = data
         try:
             data.store()
@@ -300,23 +343,27 @@ class _AnnotatedEnum(t.Generic[EntityType]):
         return t.cast(EntityType, _model_cache[self._slug])
 
     @classmethod
-    def all(cls) -> t.Iterator[te.Self]:
-        """Iterate over available object."""
+    def iter(cls) -> t.Iterator[str]:
+        """Yield the enum names as strings."""
         for name in cls.__annotations__:
             if name == "_deprecated":
                 continue
-            yield cls._create(name=name)
+
+            yield name
 
     @classmethod
-    def _create(cls, name: str) -> te.Self:
-        """Create a `_AnnotatedEnum` class."""
-        return cls(name)
+    def all(cls) -> t.Iterator[te.Self]:
+        """Iterate over available object."""
+        for app_name in cls.iter():
+            yield cls(app_name)
 
     def __str__(self) -> str:
         """String representation."""
-        return t.cast(str, self._slug)
+        return self._slug
 
-    __repr__ = __str__
+    def __repr__(self) -> str:
+        """Developer friendly representation."""
+        return f"{self.__class__.__qualname__}.{self}"
 
     def __eq__(self, other: object) -> bool:
         """Check equivalence of two objects."""

@@ -27,6 +27,15 @@ describe("Apps class tests", () => {
         expect(actionsList.items).not.toHaveLength(0);
     });
 
+    it("should get a list of actions from integrated apps in an account", async () => {
+        const actionsList = await actions.list({
+            filterByAvailableApps: true
+        });
+        expect(actionsList.items).toBeInstanceOf(Array);
+        expect(actionsList.items).not.toHaveLength(0);
+    });
+
+
     it("should execute an action with a connected account for GitHub", async () => {
 
         const actionName = "GITHUB_GITHUB_API_ROOT".toLowerCase();

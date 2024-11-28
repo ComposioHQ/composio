@@ -3,7 +3,6 @@ import { jsonSchemaToModel } from "../utils/shared";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import type { Optional, Dict, Sequence } from "../sdk/types";
-import {ActionsControllerV2ListActionsResponse, ActionsListResponseDTO } from "../sdk/client";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 
@@ -66,11 +65,13 @@ export class LangchainToolSet extends BaseComposioToolSet {
             apps?: Sequence<string>;
             tags?: Optional<Array<string>>;
             useCase?: Optional<string>;
+            usecaseLimit?: Optional<number>;
+            filterByAvailableApps?: Optional<boolean>;
         },
         entityId: Optional<string> = null
     ): Promise<Sequence<DynamicStructuredTool>> {
         const tools = await this.getToolsSchema(filters, entityId);
-        return tools.map((tool: NonNullable<ActionsControllerV2ListActionsResponse["items"]>[0]) =>
+        return tools.map((tool) =>
             this._wrapTool(
                 tool,
                 entityId || this.entityId

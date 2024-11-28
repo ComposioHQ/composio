@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_phidata",
-    version="0.5.37",
+    version="0.5.49",
     author="Sawradip",
     author_email="sawradip@composio.dev",
     description="Use Composio to get an array of tools with your Phidata Plugin.",
@@ -23,8 +23,8 @@ setup(
     ],
     python_requires=">=3.9,<4",
     install_requires=[
-        "composio_core>=0.5.30,<=0.5.37",
-        "composio_openai>=0.5.30,<=0.5.37",
+        "composio_core>=0.5.40,<=0.5.49",
+        "composio_openai>=0.5.40,<=0.5.49",
         "phidata",
     ],
     include_package_data=True,
