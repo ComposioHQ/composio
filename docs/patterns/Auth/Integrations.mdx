@@ -45,7 +45,6 @@ You can create an integration using the SDK by following the steps below:
 from composio import ComposioToolSet
 
 toolset = ComposioToolSet()
-
 entity = toolset.get_entity("Jessica")
 ```
 ```javascript JavaScript
@@ -57,16 +56,30 @@ Coming Soon
 You need to provide the following parameters to create an integration:
 - `name`: Name of the integration
 - `app_id`: App ID of the integration, you can find it [here](https://docs.composio.dev/api-reference/apps/get-app)
-- `auth_mode`: Authentication mode of the integration
-- `use_composio_auth`: You can use the OAuth flow provided by Composio or use your own ClientID and ClientSecret by setting this to `False`
+- `auth_mode`: Authentication mode of the integration (e.g., OAUTH2, OAUTH1, API_KEY, BASIC, BEARER_TOKEN)
+- `use_composio_auth`: You can use the OAuth flow provided by Composio by setting this to `True` or use your own ClientID and ClientSecret by setting this to `False` & providing the fields as shown below
 <CodeGroup>
 ```python Python
+# Using Composio's default OAuth flow
 integration = entity.client.integrations.create(
     name="GITHUB_Integration_Demo", 
     app_id="01e22f33-dc3f-46ae-b58d-050e4d2d1909", 
-    auth_mode="oauth2", 
+    auth_mode="OAUTH2", 
     use_composio_auth=True
 )
+
+# Using your own OAuth flow
+integration = entity.client.integrations.create(
+    name="GITHUB_Integration_Demo", 
+    app_id="01e22f33-dc3f-46ae-b58d-050e4d2d1909", 
+    auth_mode="OAUTH2", 
+    use_composio_auth=False,
+    auth_config={
+        "client_id": "",
+        "client_secret": ""
+    }
+)
+
 ```
 ```javascript JavaScript
 Coming Soon
