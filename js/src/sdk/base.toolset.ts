@@ -171,7 +171,6 @@ export class ComposioToolSet {
             }
             return true;
         }).map((action: any) => {
-            console.log("Action is", action);
             return action.schema;
         });
 
