@@ -164,10 +164,13 @@ export class CEG {
     }): never {
     
         const finalErrorCode = !!messageCode ? messageCode : `${type}::${subtype}`;
-
         const errorDetails = PREDEFINED_ERROR_REGISTRY[finalErrorCode] || PREDEFINED_ERROR_REGISTRY.UNKNOWN;
       
-        throw new ComposioError(messageCode,  message || errorDetails.message, description || errorDetails.description || undefined, possibleFix || errorDetails.possibleFix);
+        const finalMessage = message || errorDetails.message;
+        const finalDescription = description || errorDetails.description || undefined;
+        const finalPossibleFix = possibleFix || errorDetails.possibleFix;
+
+        throw new ComposioError(finalErrorCode,  finalMessage, finalDescription, finalPossibleFix);
     }
 }
 
