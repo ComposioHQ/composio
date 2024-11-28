@@ -20,8 +20,8 @@ export const PREDEFINED_ERROR_REGISTRY = {
         possibleFix: "Verify the URL or resource identifier."
     },
     [ERROR.BACKEND.BAD_REQUEST]: {
-        message: "🚫 That didn't work as expected.",
-        description: "Your request was malformed or incorrect.",
+        message: "🚫 Bad Request. The request was malformed or incorrect.",
+        description: null,
         possibleFix: "Please check your request format and parameters."
     },
     [ERROR.BACKEND.UNAUTHORIZED]: {
@@ -31,7 +31,7 @@ export const PREDEFINED_ERROR_REGISTRY = {
     },
     [ERROR.BACKEND.SERVER_ERROR]: {
         message: "💥 Oops! Something went wrong on our end.",
-        description: "An unexpected error occurred on the server.",
+        description: null,
         possibleFix: "Please try again later. If the issue persists, contact support."
     },
     [ERROR.BACKEND.RATE_LIMIT]: {
@@ -46,7 +46,7 @@ export const PREDEFINED_ERROR_REGISTRY = {
     },
     UNKNOWN: {
         message: "❓ An unknown error occurred.",
-        description: "The error is not recognized by our system.",
+        description: null,
         possibleFix: "Contact our support team with the error details for further assistance."
     },
     [ERROR.BACKEND.UNKNOWN]: {
@@ -114,7 +114,15 @@ export class CEG {
             }
             if (errorKey !== ERROR.BACKEND.UNKNOWN) {
                 errorDetails = PREDEFINED_ERROR_REGISTRY[errorKey];
-            }else{
+            }if(errorKey === ERROR.BACKEND.BAD_REQUEST){    
+                const axiosErrorMessage = axiosError.response.data.message;
+                const errors = axiosError.response.data.errors;
+                errorDetails = {
+                    ...PREDEFINED_ERROR_REGISTRY.UNKNOWN,
+                    description: `${axiosErrorMessage} ${errors.map((error:any) => JSON.stringify(error)).join(", ")}`
+                }
+            }
+            else{
                 errorDetails = {
                     message: axiosError.message,
                     description: axiosError.response.data.message || axiosError.response.data.error || axiosError.message,
@@ -129,11 +137,11 @@ export class CEG {
         const request_id = axiosError.response?.headers?.["x-request-id"];
         const urlAndStatus = axiosError.config?.url ? ` got 📊 ${status} response from URL🔗: ${axiosError.config.url}, request_id: ${request_id}` : '';
 
-        axiosDataMessage = `❌ ${ifObjectStringify(axiosDataMessage) || errorDetails.description || "No additional information available."} ${urlAndStatus}`;
+        const errorDescription = `❌ ${ifObjectStringify(errorDetails.description || axiosDataMessage) || "No additional information available."} ${urlAndStatus}`;
         throw new ComposioError(
             errorKey as string,
             errorDetails.message,
-            axiosDataMessage || errorDetails.description  || "No additional information available.",
+            errorDescription,
             errorDetails.possibleFix || "Please check the network connection and the request parameters.",
             axiosError
         );
