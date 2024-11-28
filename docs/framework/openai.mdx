@@ -93,6 +93,7 @@ async function createGithubAssistant(openai, tools) {
 print(response_after_tool_calls)
 ```
 ```javascript JavaScript
+//With Streaming
 async function executeAssistantTask(openai, toolset, assistant, task) {
     const thread = await openai.beta.threads.create();
     const run = await openai.beta.threads.runs.create(thread.id, {
@@ -106,6 +107,20 @@ async function executeAssistantTask(openai, toolset, assistant, task) {
     for await (const result of toolset.waitAndHandleAssistantStreamToolCalls(openai, run, thread)) {
         console.log(result);
     }
+}
+
+// Without Streaming
+async function executeAssistantTask(openai, toolset, assistant, task) {
+    const thread = await openai.beta.threads.create();
+    const run = await openai.beta.threads.runs.create(thread.id, {
+        assistant_id: assistant.id,
+        instructions: task,
+        tools: tools,
+        model: "gpt-4o-mini",
+        stream: false
+    });
+    const call = await toolset.waitAndHandleAssistantToolCalls(openai, run, thread);
+    console.log(call);
 }
 
 (async() => {
