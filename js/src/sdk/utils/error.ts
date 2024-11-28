@@ -63,10 +63,10 @@ class ComposioError extends Error {
         this.description = description;
         this.possibleFix = possibleFix;
 
-        let detailedMessage = `Error Code: ${errCode}\nMessage: ${message}\n`;
+        let detailedMessage = `Code: ${errCode}\nMessage: ${message}\n`;
      
-        if (description) detailedMessage += `Description: ${description}\n`;
-        if (possibleFix) detailedMessage += `Suggested Fix: ${possibleFix}\n`;
+        if (description) detailedMessage += `Debug Info: ${description}\n`;
+        if (possibleFix) detailedMessage += `How to fix: ${possibleFix}\n`;
 
         Object.defineProperty(this, 'errCode', { enumerable: false });
         Object.defineProperty(this, 'message', { enumerable: false });
@@ -115,11 +115,11 @@ export class CEG {
             if (errorKey !== ERROR.BACKEND.UNKNOWN) {
                 errorDetails = PREDEFINED_ERROR_REGISTRY[errorKey];
             }if(errorKey === ERROR.BACKEND.BAD_REQUEST){    
-                const axiosErrorMessage = axiosError.response.data.message;
-                const errors = axiosError.response.data.errors;
+                const validationErrorFromDTO = axiosError?.response?.data;
+                const validationErrors = Array.isArray(validationErrorFromDTO) ? validationErrorFromDTO?.map((error) => JSON.stringify(error))?.join(", ") : JSON.stringify(validationErrorFromDTO);
                 errorDetails = {
                     ...PREDEFINED_ERROR_REGISTRY.UNKNOWN,
-                    description: `${axiosErrorMessage} ${errors.map((error:any) => JSON.stringify(error)).join(", ")}`
+                    description: validationErrors
                 }
             }
             else{
