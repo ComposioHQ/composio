@@ -273,6 +273,12 @@ def _build_executable_from_args(  # pylint: disable=too-many-statements
 ) -> t.Tuple[t.Callable, t.Type[BaseModel], t.Type[BaseModel], bool]:
     """Build execute action from function arguments."""
     argspec = inspect.getfullargspec(f)
+    missing_annot = set(argspec.args) - set(argspec.annotations)
+    if len(missing_annot) > 0:
+        raise InvalidRuntimeAction(
+            message=f"Following arguments are missing type annotations: {missing_annot}"
+        )
+
     defaults = dict(
         zip(
             reversed(argspec.annotations),
@@ -294,6 +300,7 @@ def _build_executable_from_args(  # pylint: disable=too-many-statements
     response_schema: t.Dict[str, t.Any] = {
         "__annotations__": {},
     }
+
     shell_argument = None
     auth_params = False
     request_executor = False
