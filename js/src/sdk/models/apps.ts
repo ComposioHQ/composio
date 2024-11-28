@@ -40,6 +40,10 @@ export class Apps {
     async list(){
         try {
             const {data} = await apiClient.apps.getApps();
+
+            const a = 5;
+            // @ts-ignore
+            return a.b.c;
             return data?.items || [];
         } catch (error) {
             throw CEG.handleError(error);

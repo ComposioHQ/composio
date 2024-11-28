@@ -1,4 +1,3 @@
-
 export const ERROR = {
     BACKEND: {
         NOT_FOUND: "BACKEND::NOT_FOUND", 
@@ -52,7 +51,7 @@ export const PREDEFINED_ERROR_REGISTRY = {
     },
     [ERROR.BACKEND.UNKNOWN]: {
         message: "❓ An unknown error occurred.",
-        description: "The error is not recognized by our system.",
+        description: null,
         possibleFix: "Contact our support team with the error details for further assistance."
     }
 }
@@ -65,7 +64,6 @@ class ComposioError extends Error {
         this.possibleFix = possibleFix;
 
         let detailedMessage = `Error Code: ${errCode}\nMessage: ${message}\n`;
-        let detailedDescription = description;
      
         if (description) detailedMessage += `Description: ${description}\n`;
         if (possibleFix) detailedMessage += `Suggested Fix: ${possibleFix}\n`;
@@ -75,8 +73,7 @@ class ComposioError extends Error {
         Object.defineProperty(this, 'description', { enumerable: false });
         Object.defineProperty(this, 'possibleFix', { enumerable: false });
 
-
-        this.stack = `${this.name}: ${detailedMessage}Stack Trace:\n${(new Error()).stack}`;
+        this.stack = `${this.name}:${detailedMessage}Stack Trace: \n ${ originalError?.stack}`;
     }
 }
 
@@ -84,7 +81,11 @@ class ComposioError extends Error {
 // Composio Error Generator
 export class CEG {
     static handleError(axiosError: any,) {
-         let errorDetails = PREDEFINED_ERROR_REGISTRY.UNKNOWN;
+         let errorDetails: {
+            message: string;    
+            description: string | null;
+            possibleFix: string;
+         } = PREDEFINED_ERROR_REGISTRY.UNKNOWN as any;
 
         let errorKey = ERROR.COMMON.UNKNOWN;
         
@@ -157,7 +158,7 @@ export class CEG {
 
         const errorDetails = PREDEFINED_ERROR_REGISTRY[finalErrorCode] || PREDEFINED_ERROR_REGISTRY.UNKNOWN;
       
-        throw new ComposioError(messageCode,  message || errorDetails.message, description || errorDetails.description, possibleFix || errorDetails.possibleFix);
+        throw new ComposioError(messageCode,  message || errorDetails.message, description || errorDetails.description || undefined, possibleFix || errorDetails.possibleFix);
     }
 }
 
