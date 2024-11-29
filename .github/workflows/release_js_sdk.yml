@@ -46,7 +46,12 @@ jobs:
 
 
     - name: Commit and push
-      run: git commit -am "Release ${{ github.event.inputs.version }}" && git push
+      run: |
+        if git diff --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -am "Release ${{ github.event.inputs.version }}" && git push
+        fi
 
     - name: pnpm build
       run: pnpm build
