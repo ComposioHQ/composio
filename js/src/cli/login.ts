@@ -4,12 +4,12 @@ import inquirer from "inquirer";
 import open from "open";
 
 import {
-  getClientBaseConfig,
-  getAPISDK,
-  setCliConfig,
+  getSDKConfig,
+  getOpenAPIClient,
 } from "../sdk/utils/config";
 import client from "../sdk/client/client";
 import { FRONTEND_BASE_URL } from "./src/constants";
+import { setCliConfig } from "../sdk/utils/cli";
 
 export default class LoginCommand {
   private program: Command;
@@ -27,8 +27,8 @@ export default class LoginCommand {
   }
 
   private async handleAction(options: { browser: boolean }): Promise<void> {
-    getAPISDK();
-    const { apiKey, baseURL } = getClientBaseConfig();
+    getOpenAPIClient();
+    const { apiKey, baseURL } = getSDKConfig();
 
     if (apiKey) {
       console.log(
