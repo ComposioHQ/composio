@@ -1,13 +1,16 @@
 name: Release JS SDK
 
 on:
-  push:
-    # Pattern matched against refs/tags
-    # This workflow will run when a tag starting with 'js-' is pushed
-    # For example, 'js-v1.0.0' or 'js-release-2.3.1'
-    tags:        
-      - 'js-*'  
-    
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 0.3.0 | 0.3.0-beta)'
+        required: true
+        type: string
+      isRCRelease:
+        description: 'Is this a release candidate release?'
+        required: true
+        type: boolean
 
 jobs:
   run-js-tests:
@@ -35,9 +38,28 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
 
+    - name: Update version
+      run: |
+        git config --global user.email "tech@composio.dev"
+        git config --global user.name "Composio"
+        npm version ${{ github.event.inputs.version }} --no-git-tag-version
+
+
+    - name: Commit and push
+      run: |
+        if git diff --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -am "Release ${{ github.event.inputs.version }}" && git push
+        fi
+
     - name: pnpm build
       run: pnpm build
       
     - name: pnpm publish
-      run: pnpm publish --no-git-checks
-
+      run: |
+        if ${{ github.event.inputs.isRCRelease }}; then
+          pnpm publish --no-git-checks --tag rc
+        else
+          pnpm publish --no-git-checks
+        fi

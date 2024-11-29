@@ -124,7 +124,7 @@ export class DockerWorkspace extends RemoteWorkspace {
 
 
         if (!imageExists) {
-            logger.info(`Pulling Docker image ${this.image}...`);
+            logger.debug(`Pulling Docker image ${this.image}...`);
             let cliProgress = nodeExternalRequire("cli-progress");
 
             const bar: CliProgress.Bar = new cliProgress.SingleBar({
@@ -219,7 +219,7 @@ export class DockerWorkspace extends RemoteWorkspace {
 
     async teardown() {
         if (this.container) {
-            logger.info(`Stopping container ${this.container.id}...`);
+            logger.debug(`Stopping container ${this.container.id}...`);
             try {
                 await this.container.kill();
                 await this.container.remove();
