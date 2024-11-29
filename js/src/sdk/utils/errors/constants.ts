@@ -51,6 +51,11 @@ export const PREDEFINED_ERROR_REGISTRY = {
         description: "The server is currently unable to handle the request.",
         possibleFix: "Please try again later. If the issue persists, contact support."
     },
+    [ERROR.COMMON.BASE_URL_INVALID]: {
+        message: "🔗 Base URL is not valid.",
+        description: "The base URL provided is not valid.",
+        possibleFix: "Ensure that the base URL is correct and accessible."
+    },
     UNKNOWN: {
         message: null,
         description: null,
