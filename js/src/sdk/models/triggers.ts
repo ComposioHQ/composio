@@ -139,7 +139,7 @@ export class Triggers {
             }
         }
         
-        logger.info("Subscribing to triggers",filters)
+        logger.debug("Subscribing to triggers",filters)
         PusherUtils.triggerSubscribe(clientId, (data: TriggerData) => {
             if (shouldSendTrigger(data)) {
                 fn(data);

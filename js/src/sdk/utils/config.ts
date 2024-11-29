@@ -100,7 +100,7 @@ export const writeToFile = (filePath: string, data: any) => {
         fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
     }catch(error){  
         logger.error("Oops! We couldn't save your settings. Here's why:", (error as Error).message);
-        logger.info("Need help? Check file permissions for file:", filePath);
+        logger.error("Need help? Check file permissions for file:", filePath);
     }
 }
 

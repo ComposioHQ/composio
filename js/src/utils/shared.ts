@@ -146,6 +146,7 @@ export const getEnvVariable = (name: string, defaultValue: string | undefined = 
     }
 }
 
+
 export const nodeExternalRequire = (name: string) => {
     try {
         if (typeof process !== 'undefined') {
