@@ -11,7 +11,7 @@ import { Entity } from './models/Entity';
 import axios from 'axios';
 import { getPackageJsonDir } from './utils/projectUtils';
 import { isNewerVersion } from './utils/other';
-import { getClientBaseConfig } from './utils/config';
+import { getSDKConfig } from './utils/config';
 import { CEG, ERROR } from './utils/error';
 import { GetConnectorInfoResDTO } from './client';
 import logger, { getLogLevel } from '../utils/logger';
@@ -40,7 +40,7 @@ export class Composio {
     constructor(apiKey?: string, baseUrl?: string, runtime?: string) {
        
         // // Parse the base URL and API key, falling back to environment variables or defaults if not provided.
-        const { baseURL: baseURLParsed, apiKey: apiKeyParsed } =  getClientBaseConfig(baseUrl, apiKey);
+        const { baseURL: baseURLParsed, apiKey: apiKeyParsed } =  getSDKConfig(baseUrl, apiKey);
         const loggingLevel = getLogLevel();
 
         if(!apiKeyParsed){
