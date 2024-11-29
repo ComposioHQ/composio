@@ -12,9 +12,10 @@ import axios from 'axios';
 import { getPackageJsonDir } from './utils/projectUtils';
 import { isNewerVersion } from './utils/other';
 import { getClientBaseConfig } from './utils/config';
-import { CEG, ERROR } from './utils/error';
+import { CEG } from './utils/error';
 import { GetConnectorInfoResDTO } from './client';
 import logger from '../utils/logger';
+import { ERROR } from './utils/errors/constants';
 
 export class Composio {
     /**

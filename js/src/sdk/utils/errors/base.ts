@@ -28,6 +28,19 @@ export class ComposioError extends Error {
         Object.defineProperty(this, 'description', { enumerable: false });
         Object.defineProperty(this, 'possibleFix', { enumerable: false });
 
-        this.stack = `${this.name}:${detailedMessage}Stack Trace: \n ${originalError?.stack}`;
+
+        // Log error details in a structured format for better debugging
+        console.error('\n===== Composio Error =====');
+        console.table({
+            'Error Code': this.errCode,
+            'Message': this.message,
+            'Description': this.description || 'No additional details provided',
+            'Possible Fix': this.possibleFix || 'No fix suggestion available',
+            'Timestamp': new Date().toISOString(),
+        });
+
+        if(originalError){
+            this.stack = `${originalError?.stack}`;
+        }
     }
 }

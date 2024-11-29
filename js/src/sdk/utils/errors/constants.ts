@@ -43,7 +43,7 @@ export const PREDEFINED_ERROR_REGISTRY = {
     [ERROR.COMMON.API_KEY_UNAVAILABLE]: {
         message: "🔑 API Key Missing or Invalid.",
         description: "The API key provided is missing or incorrect.",
-        possibleFix: "Ensure that your API key is passed to Client or set in your environment variables."
+        possibleFix: "Ensure that your API key is passed to client or set in COMPOSIO_API_KEY environment variable."
     },
     [ERROR.BACKEND.SERVER_UNAVAILABLE]: {
         message: "🚫 Server Unavailable.",
