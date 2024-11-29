@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import { Command } from "commander";
 
-import { getAPISDK } from "../sdk/utils/config";
+import { getOpenAPIClient } from "../sdk/utils/config";
 import client from "../sdk/client/client";
 
 // @ts-ignore
@@ -24,7 +24,7 @@ export default class AppsCommand {
   }
 
   private async handleAction(options: { browser: boolean }): Promise<void> {
-    getAPISDK();
+    getOpenAPIClient();
     try {
       const { data } = await client.apps.getApps({});
       console.log("Here are the apps you have access to:");
@@ -104,7 +104,7 @@ class AppUpdateCommand {
   }
 
   async handleAction(): Promise<void> {
-    getAPISDK();
+    getOpenAPIClient();
 
     const appList = await client.apps
       .getApps({})

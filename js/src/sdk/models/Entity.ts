@@ -244,13 +244,13 @@ export class Entity {
       if (!isTestConnectorAvailable && app.no_auth === false) {
         if (!authMode) {
           // @ts-ignore
-          logger.info(
+          logger.debug(
             "Auth schemes not provided, available auth schemes and authConfig"
           );
           // @ts-ignore
           for (const authScheme of app.auth_schemes) {
             // @ts-ignore
-            logger.info(
+            logger.debug(
               "autheScheme:",
               authScheme.name,
               "\n",
