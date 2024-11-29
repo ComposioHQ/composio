@@ -23,7 +23,7 @@ const LOG_COLORS = {
  * @returns {keyof typeof LOG_LEVELS} The current log level
  */
 export const getLogLevel = (): keyof typeof LOG_LEVELS => {
-  const envLevel = getEnvVariable("COMPOSIO_LOGGING_LEVEL", "info");
+  const envLevel = getEnvVariable("COMPOSIO_LOGGING_LEVEL", "info")?.toLowerCase();
   return (envLevel && envLevel in LOG_LEVELS) ? envLevel as keyof typeof LOG_LEVELS : 'info';
 };
 
