@@ -10,6 +10,7 @@ export  const ERROR = {
     },
     COMMON: {
         API_KEY_UNAVAILABLE: "COMMON::API_KEY_INVALID",
+        BASE_URL_INVALID: "COMMON::BASE_URL_INVALID",
         UNKNOWN: "SDK::UNKNOWN"
     }
 }

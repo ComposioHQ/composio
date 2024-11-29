@@ -61,6 +61,7 @@ export class CEG {
         const finalMessage = message || errorDetails.message || "";
         const finalDescription = description || errorDetails.description || undefined;
         const finalPossibleFix = possibleFix || errorDetails.possibleFix || "";
-        throw new ComposioError(finalErrorCode, finalMessage, finalDescription, finalPossibleFix);
+        
+        throw new ComposioError(messageCode, finalMessage, finalDescription, finalPossibleFix);
     }
 }

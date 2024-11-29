@@ -2,6 +2,7 @@ import apiClient from "../client/client"
 import { client as axiosClient } from "../client/services.gen"
 import { setAxiosClientConfig } from "../utils/config";
 import { CEG } from "../utils/error";
+import { ERROR } from "../utils/errors/constants";
 
 /**
  * Class representing the details required to initialize and configure the API client.
@@ -35,12 +36,12 @@ export class BackendClient {
         this.baseUrl = baseUrl;
 
         if (!apiKey) {
-            throw new Error(`API Key is required for initializing the client`);
+            CEG.throwCustomError(ERROR.COMMON.API_KEY_UNAVAILABLE,{});
         }
 
         // Validate baseUrl
         if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
-            throw new Error(`Base URL is not valid, got ${baseUrl}`);
+            CEG.throwCustomError(ERROR.COMMON.BASE_URL_INVALID,{});
         }
 
         this.initializeApiClient();
