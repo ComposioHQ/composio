@@ -955,17 +955,12 @@ export type Parameter = {
     /**
      * The location of the parameter. Can be 'query' or 'header'.
      */
-    in: ParameterLocation;
+    in: 'query' | 'header';
     /**
      * The value of the parameter. For example, '1234567890', 'application/json', etc.,
      */
     value: string;
 };
-
-/**
- * The location of the parameter. Can be 'query' or 'header'.
- */
-export type ParameterLocation = 'query' | 'header';
 
 export type Data = {
     field1: string;
@@ -1175,6 +1170,25 @@ export type ActionsMinimalListResponseDTO = {
     items: Array<ActionDetailsMinimal>;
     page: number;
     totalPages: number;
+};
+
+export type AdvancedUseCaseSearchQueryDTO = {
+    useCase: string;
+    limit?: number;
+    maxActionsPerTask?: number;
+    minActionsPerTask?: number;
+    apps?: string;
+};
+
+export type AdvancedUseCaseSearchTask = {
+    app: string;
+    actions: Array<(string)>;
+    description: string;
+    order: number;
+};
+
+export type AdvancedUseCaseSearchResponse = {
+    items: Array<AdvancedUseCaseSearchTask>;
 };
 
 export type ExecuteActionResDTO = {
@@ -2798,6 +2812,20 @@ export type ExecuteActionProxyV2Data = {
 export type ExecuteActionProxyV2Response = ActionExecutionResDto;
 
 export type ExecuteActionProxyV2Error = unknown;
+
+export type AdvancedUseCaseSearchData = {
+    query: {
+        apps?: string;
+        limit?: number;
+        maxActionsPerTask?: number;
+        minActionsPerTask?: number;
+        useCase: string;
+    };
+};
+
+export type AdvancedUseCaseSearchResponse2 = AdvancedUseCaseSearchResponse;
+
+export type AdvancedUseCaseSearchError = unknown;
 
 export type GetAnalyticsData = {
     query?: {
