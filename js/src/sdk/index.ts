@@ -43,7 +43,11 @@ export class Composio {
         const loggingLevel = getLogLevel();
 
         if(!apiKeyParsed){
-            CEG.throwCustomError(ERROR.COMMON.API_KEY_UNAVAILABLE,{});
+            CEG.throwCustomError(ERROR.COMMON.API_KEY_UNAVAILABLE,{
+                message: "🔑 API Key is not provided",
+                description: "You need to provide it in the constructor or as an environment variable COMPOSIO_API_KEY",
+                possibleFix: "Please provide a valid API Key. You can get it from https://app.composio.dev/settings"
+            });
         }
         logger.info(`Initilizing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}, Current log level: ${loggingLevel.toUpperCase()}`);
 

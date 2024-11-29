@@ -41,7 +41,10 @@ export class BackendClient {
 
         // Validate baseUrl
         if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
-            CEG.throwCustomError(ERROR.COMMON.BASE_URL_INVALID,{});
+            CEG.throwCustomError(ERROR.COMMON.BASE_URL_INVALID,{
+                message: "🔗 Base URL is not valid",
+                description: "The composio backend URL provided is not valid"
+            });
         }
 
         this.initializeApiClient();

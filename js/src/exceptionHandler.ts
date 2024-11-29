@@ -1,10 +1,11 @@
-import { getClientBaseConfig } from "./sdk/utils/config";
+
 // @ts-ignore
 import { COMPOSIO_VERSION } from "./constants";
 import axios from "axios";
+import { getSDKConfig } from "./sdk/utils/config";
 
 async function logError(message: string, error: Error) {
-    const { apiKey,baseURL } = getClientBaseConfig();
+    const { apiKey,baseURL } = getSDKConfig();
 
     const payload = {
         apiKey,
