@@ -14,7 +14,7 @@ import { isNewerVersion } from './utils/other';
 import { getClientBaseConfig } from './utils/config';
 import { CEG, ERROR } from './utils/error';
 import { GetConnectorInfoResDTO } from './client';
-import logger from '../utils/logger';
+import logger, { getLogLevel } from '../utils/logger';
 
 export class Composio {
     /**
@@ -41,13 +41,13 @@ export class Composio {
        
         // // Parse the base URL and API key, falling back to environment variables or defaults if not provided.
         const { baseURL: baseURLParsed, apiKey: apiKeyParsed } =  getClientBaseConfig(baseUrl, apiKey);
+        const loggingLevel = getLogLevel();
 
-
-        logger.info(`Using API Key: [REDACTED] and baseURL: ${baseURLParsed}`);
         if(!apiKeyParsed){
             
             CEG.throwCustomError(ERROR.COMMON.API_KEY_UNAVAILABLE,{});
         }
+        logger.info(`Initilizing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}, log level: ${loggingLevel.toUpperCase()}`);
 
         // Initialize the BackendClient with the parsed API key and base URL.
         this.backendClient = new BackendClient(apiKeyParsed, baseURLParsed, runtime);

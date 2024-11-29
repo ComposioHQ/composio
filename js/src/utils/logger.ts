@@ -22,7 +22,7 @@ const LOG_COLORS = {
  * Defaults to 'info' if not set or invalid.
  * @returns {keyof typeof LOG_LEVELS} The current log level
  */
-const getLogLevel = (): keyof typeof LOG_LEVELS => {
+export const getLogLevel = (): keyof typeof LOG_LEVELS => {
   const envLevel = getEnvVariable("COMPOSIO_LOGGING_LEVEL", "info");
   return (envLevel && envLevel in LOG_LEVELS) ? envLevel as keyof typeof LOG_LEVELS : 'info';
 };

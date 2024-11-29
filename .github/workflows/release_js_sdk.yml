@@ -39,7 +39,11 @@ jobs:
         NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
 
     - name: Update version
-      run: npm version ${{ github.event.inputs.version }} --no-git-tag-version
+      run: |
+        git config --global user.email "tech@composio.dev"
+        git config --global user.name "Composio"
+        npm version ${{ github.event.inputs.version }} --no-git-tag-version
+
 
     - name: Commit and push
       run: git commit -am "Release ${{ github.event.inputs.version }}" && git push
