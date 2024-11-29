@@ -47,7 +47,7 @@ export class Composio {
             
             CEG.throwCustomError(ERROR.COMMON.API_KEY_UNAVAILABLE,{});
         }
-        logger.info(`Initilizing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}, log level: ${loggingLevel.toUpperCase()}`);
+        logger.info(`Initilizing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}, Current log level: ${loggingLevel.toUpperCase()}`);
 
         // Initialize the BackendClient with the parsed API key and base URL.
         this.backendClient = new BackendClient(apiKeyParsed, baseURLParsed, runtime);
