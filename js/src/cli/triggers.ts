@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import { Command } from "commander";
 
-import { getAPISDK } from "../sdk/utils/config";
+import { getOpenAPIClient } from "../sdk/utils/config";
 import { Composio } from "../sdk";
 import inquirer from "inquirer";
 
@@ -29,6 +29,11 @@ export default class ConnectionsCommand {
         }
       });
 
+    command
+      .command("list")
+      .description("List all triggers")
+      .action(this.handleAction.bind(this));
+
     new TriggerAdd(command);
     new TriggerDisable(command);
     new ActiveTriggers(command);
@@ -40,7 +45,7 @@ export default class ConnectionsCommand {
     app: string;
   }): Promise<void> {
     const { active, id, app } = options;
-    const client = getAPISDK();
+    const client = getOpenAPIClient();
     const { data, error } = await client.triggers.listTriggers({
       query: {
         ...(!!active && { showEnabledOnly: true }),

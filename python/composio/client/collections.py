@@ -41,7 +41,14 @@ if t.TYPE_CHECKING:
     from composio.client import Composio
 
 AUTH_SCHEMES = ("OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN")
-AuthSchemeType = t.Literal["OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN"]
+AuthSchemeType = t.Literal[
+    "OAUTH2",
+    "OAUTH1",
+    "API_KEY",
+    "BASIC",
+    "BEARER_TOKEN",
+    "BASIC_WITH_JWT",
+]
 
 
 def to_trigger_names(
@@ -1038,6 +1045,26 @@ class CustomAuthObject(BaseModel):
     parameters: t.List[CustomAuthParameter] = Field(default_factory=lambda: [])
 
 
+class SearchResultTask(BaseModel):
+
+    app: str = Field(
+        description="Name of the app required to perform the subtask.",
+    )
+    actions: list[str] = Field(
+        description=(
+            "List of possible actions in order of relevance that can be used to "
+            "perform the task, provide minimum of {-min_actions-} and maximum of "
+            "{-max_actions-} actions."
+        ),
+    )
+    description: str = Field(
+        description="Descrption of the subtask.",
+    )
+    order: int = Field(
+        description="Order of the subtask, SHOULD START FROM 0",
+    )
+
+
 class Actions(Collection[ActionModel]):
     """Collection of composio actions.."""
 
@@ -1308,6 +1335,39 @@ class Actions(Collection[ActionModel]):
             for d in data["parameters"]
         ]
         return data
+
+    def search_for_a_task(
+        self,
+        use_case: str,
+        limit: t.Optional[int] = None,
+        min_actions_per_task: t.Optional[int] = None,
+        max_actions_per_task: t.Optional[int] = None,
+        apps: t.Optional[t.List[str]] = None,
+    ) -> t.List[SearchResultTask]:
+        params: t.Dict[str, t.Any] = {"useCase": use_case}
+        if limit is not None:
+            params["limit"] = limit
+
+        if min_actions_per_task is not None:
+            params["minActionsPerTask"] = min_actions_per_task
+
+        if max_actions_per_task is not None:
+            params["maxActionsPerTask"] = max_actions_per_task
+
+        if apps is not None:
+            params["apps"] = ",".join(apps)
+
+        response = self._raise_if_required(
+            response=self.client.http.get(
+                str(self.endpoint / "search" / "advanced"),
+                params=params,
+            )
+        )
+
+        return [
+            SearchResultTask.model_validate(task)
+            for task in response.json().get("items", [])
+        ]
 
 
 class ExpectedFieldInput(BaseModel):

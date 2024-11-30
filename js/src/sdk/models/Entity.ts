@@ -7,6 +7,7 @@ import { ConnectedAccounts } from "./connectedAccounts";
 import { BackendClient } from "./backendClient";
 import { Triggers } from "./triggers";
 import { CEG } from "../utils/error";
+import logger from "../../utils/logger";
 
 const LABELS = {
   PRIMARY: "primary",
@@ -243,13 +244,13 @@ export class Entity {
       if (!isTestConnectorAvailable && app.no_auth === false) {
         if (!authMode) {
           // @ts-ignore
-          console.log(
+          logger.debug(
             "Auth schemes not provided, available auth schemes and authConfig"
           );
           // @ts-ignore
           for (const authScheme of app.auth_schemes) {
             // @ts-ignore
-            console.log(
+            logger.debug(
               "autheScheme:",
               authScheme.name,
               "\n",

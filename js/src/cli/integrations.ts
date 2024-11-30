@@ -2,7 +2,7 @@ import chalk from "chalk";
 import { Command } from "commander";
 
 import client from "../sdk/client/client";
-import { getAPISDK } from "../sdk/utils/config";
+import { getOpenAPIClient } from "../sdk/utils/config";
 import { parseDate } from "./src/util";
 
 export default class ConnectionsCommand {
@@ -20,7 +20,7 @@ export default class ConnectionsCommand {
   }
 
   private async handleAction(options: { active: boolean }): Promise<void> {
-    getAPISDK();
+    getOpenAPIClient();
     const { data, error } = await client.appConnector.listAllConnectors({
       query: options.active ? { status: "ACTIVE" } : {},
       throwOnError: false,

@@ -106,7 +106,7 @@ export class PusherUtils {
         var channel = PusherUtils.pusherClient.subscribe(`private-${clientId}_triggers`);
         PusherUtils.bindWithChunking(channel, "trigger_to_client", fn);
 
-        logger.info(`Subscribed to ${clientId}_triggers`);
+        logger.info(`Subscribed to triggers. You should start receiving events now.`);
     }
 
     static triggerUnsubscribe(clientId: string): void {

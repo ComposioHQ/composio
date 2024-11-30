@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { Command } from "commander";
-import { setCliConfig } from "../sdk/utils/config";
+import { setCliConfig } from "../sdk/utils/cli";
 
 export default class LogoutCommand {
   private program: Command;

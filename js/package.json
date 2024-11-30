@@ -1,6 +1,6 @@
 {
   "name": "composio-core",
-  "version": "0.2.9-9",
+  "version": "0.3.0",
   "description": "",
   "main": "lib/src/index.js",
   "scripts": {
@@ -12,7 +12,8 @@
     "type-docs": "typedoc",
     "openapispec:generate": "npx @hey-api/openapi-ts",
     "run:cli": "ts-node src/cli/index.ts",
-    "run:sample": "ts-node sample.ts"
+    "run:sample": "ts-node sample.ts",
+    "eslint": "eslint src/**/*.ts"
   },
   "bin": {
     "composio-js": "./lib/src/cli/index",
