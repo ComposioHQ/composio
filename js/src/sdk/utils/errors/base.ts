@@ -1,10 +1,8 @@
-// Helper function to stringify objects if needed
-export const ifObjectStringify = (obj: any) => {
-    return typeof obj === 'object' ? JSON.stringify(obj) : obj;
-}
 
 // Custom error class for Composio errors
 export class ComposioError extends Error {
+    _originalStack: string | undefined;
+    timestamp: string;
     constructor(
         public errCode: string, 
         public message: string, 
@@ -17,16 +15,14 @@ export class ComposioError extends Error {
         this.errCode = errCode;
         this.description = description;
         this.possibleFix = possibleFix;
-        // @ts-ignore
         this.timestamp = new Date().toISOString();
+
+        if(originalError){
+          this._originalStack = `${originalError?.stack}`;
+        }
 
         let detailedMessage = `Code: ${errCode}\nMessage: ${message}\n`;
         if (description) detailedMessage += `Debug Info: ${description}\n`;
-        if (possibleFix) detailedMessage += `How to fix: ${possibleFix}\n`;
-
-        if(originalError){
-           this.stack = `${originalError?.stack}`;
-        }
-
+        if (possibleFix) detailedMessage += `How to fix: ${possibleFix}\n`
     }
 }

@@ -12,7 +12,7 @@ import { isNewerVersion } from './utils/other';
 import { CEG } from './utils/error';
 import { GetConnectorInfoResDTO } from './client';
 import logger, { getLogLevel } from '../utils/logger';
-import { ERROR } from './utils/errors/constants';
+import { SDK_ERROR_CODES } from './utils/errors/constants';
 import { getSDKConfig } from './utils/config';
 
 export class Composio {
@@ -43,7 +43,7 @@ export class Composio {
         const loggingLevel = getLogLevel();
 
         if(!apiKeyParsed){
-            CEG.throwCustomError(ERROR.COMMON.API_KEY_UNAVAILABLE,{
+            CEG.throwCustomError(SDK_ERROR_CODES.COMMON.API_KEY_UNAVAILABLE,{
                 message: "🔑 API Key is not provided",
                 description: "You need to provide it in the constructor or as an environment variable COMPOSIO_API_KEY",
                 possibleFix: "Please provide a valid API Key. You can get it from https://app.composio.dev/settings"

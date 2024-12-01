@@ -100,7 +100,7 @@ export class AppsService {
     public static getApps<ThrowOnError extends boolean = false>(options?: Options<GetAppsData, ThrowOnError>) {
         return (options?.client ?? client).get<GetAppsResponse, GetAppsError, ThrowOnError>({
             ...options,
-            url: '/api/v1/apps'
+            url: '/api/v1/appdffd'
         });
     }
     
