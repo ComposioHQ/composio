@@ -1981,6 +1981,9 @@ export const $AdvancedUseCaseSearchQueryDTO = {
         },
         apps: {
             type: 'string'
+        },
+        filterByAvailableApps: {
+            type: 'boolean'
         }
     },
     type: 'object',

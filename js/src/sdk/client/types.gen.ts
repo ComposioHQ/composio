@@ -1178,6 +1178,7 @@ export type AdvancedUseCaseSearchQueryDTO = {
     maxActionsPerTask?: number;
     minActionsPerTask?: number;
     apps?: string;
+    filterByAvailableApps?: boolean;
 };
 
 export type AdvancedUseCaseSearchTask = {
@@ -2816,6 +2817,7 @@ export type ExecuteActionProxyV2Error = unknown;
 export type AdvancedUseCaseSearchData = {
     query: {
         apps?: string;
+        filterByAvailableApps?: boolean;
         limit?: number;
         maxActionsPerTask?: number;
         minActionsPerTask?: number;

@@ -241,10 +241,14 @@ export class Actions {
 
     async findActionEnumsByUseCase(data: {
         apps: Array<string>,
+        filterByAvailableApps?: boolean,
         useCase: string,
         limit?: number,
     }): Promise<Array<string>> {
         try {
+            if (data.filterByAvailableApps && data.apps) {
+                throw new Error("Both filterByAvailableApps and apps cannot be provided together, please provide either apps or filterByAvailableApps");
+            }
             const { data: res } = await apiClient.actionsV2.advancedUseCaseSearch({
                 query: {
                     apps: data.apps.join(","),
