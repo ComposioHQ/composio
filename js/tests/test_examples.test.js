@@ -24,7 +24,7 @@ const EXAMPLES = {
     },
     env: { COMPOSIO_API_KEY },
   },
-  lead_genetaor_agent: {
+  lead_generator_agent: {
     file: path.join(EXAMPLES_PATH, 'reddit-research', 'demo.mjs'),
     match: {
       type: 'stdout',
