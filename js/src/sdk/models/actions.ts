@@ -1,6 +1,6 @@
 import { ActionExecutionReqDTO, ActionProxyRequestConfigDTO, ActionsListResponseDTO } from "../client";
 import apiClient from "../client/client";
-import { CEG } from "../utils/error";
+import { CEG } from "../utils/ceg";
 import { BackendClient } from "./backendClient";
 
 /**

@@ -1,3 +1,4 @@
+
 export  const SDK_ERROR_CODES = {
     BACKEND: {
         NOT_FOUND: "BACKEND::NOT_FOUND", 
@@ -11,7 +12,7 @@ export  const SDK_ERROR_CODES = {
     },
     COMMON: {
         API_KEY_UNAVAILABLE: "COMMON::API_KEY_INVALID",
-        BASE_URL_INVALID: "COMMON::BASE_URL_INVALID",
+        BASE_URL_NOT_REACHABLE: "COMMON::BASE_URL_NOT_REACHABLE",
         UNKNOWN: "SDK::UNKNOWN",
         SERVER_UNAVAILABLE: "COMMON::SERVER_UNAVAILABLE",
         REQUEST_TIMEOUT: "COMMON::REQUEST_TIMEOUT"
@@ -54,7 +55,7 @@ export const BASE_ERROR_CODE_INFO = {
         description: "The server is currently unable to handle the request.",
         possibleFix: "Please try again later. If the issue persists, contact support."
     },
-    [SDK_ERROR_CODES.COMMON.BASE_URL_INVALID]: {
+    [SDK_ERROR_CODES.COMMON.BASE_URL_NOT_REACHABLE]: {
         message: "🔗 Base URL is not valid.",
         description: "The base URL provided is not valid.",
         possibleFix: "Ensure that the base URL is correct and accessible."

@@ -5,7 +5,7 @@ import {BackendClient} from "./backendClient"
 
 import apiClient from "../client/client"
 
-import { CEG } from "../utils/error";
+import { CEG } from "../utils/ceg";
 import { ListTriggersData } from "../client";
 
 type RequiredQuery = ListTriggersData["query"];

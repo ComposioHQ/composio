@@ -1,8 +1,8 @@
 import apiClient from "../client/client"
 import { client as axiosClient } from "../client/services.gen"
 import { setAxiosClientConfig } from "../utils/config";
-import { CEG } from "../utils/error";
-import { SDK_ERROR_CODES } from "../utils/errors/constants";
+import { CEG } from "../utils/ceg";
+import { SDK_ERROR_CODES } from "../utils/errors/codes";
 
 /**
  * Class representing the details required to initialize and configure the API client.
@@ -41,8 +41,8 @@ export class BackendClient {
 
         // Validate baseUrl
         if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
-            CEG.throwCustomError(SDK_ERROR_CODES.COMMON.BASE_URL_INVALID,{
-                message: "🔗 Base URL is not valid",
+            CEG.throwCustomError(SDK_ERROR_CODES.COMMON.BASE_URL_NOT_REACHABLE,{
+                message: `🔗 Base URL ${baseUrl} is not valid`,
                 description: "The composio backend URL provided is not valid"
             });
         }

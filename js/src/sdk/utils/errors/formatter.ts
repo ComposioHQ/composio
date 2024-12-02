@@ -1,4 +1,4 @@
-import { SDK_ERROR_CODES, BASE_ERROR_CODE_INFO, BE_STATUS_CODE_TO_SDK_ERROR_CODES } from "./constants";
+import { SDK_ERROR_CODES, BASE_ERROR_CODE_INFO, BE_STATUS_CODE_TO_SDK_ERROR_CODES } from "./codes";
 
 interface ErrorResponse {
     errorKey: string;
@@ -13,21 +13,21 @@ interface ErrorDetails {
     possibleFix: string;
 }
 
-export const getBackendErrorResponseFormat = (axiosError: any): ErrorResponse => {
+export const makeAPIError = (axiosError: any): ErrorResponse => {
     const statusCode = axiosError.response?.status;
     const errorKey = BE_STATUS_CODE_TO_SDK_ERROR_CODES[statusCode] || SDK_ERROR_CODES.BACKEND.UNKNOWN;
     const predefinedError = BASE_ERROR_CODE_INFO[errorKey];
 
-    const errorDetails = generateBaseErrorInfo(errorKey, axiosError, predefinedError);
-    enrichWithReDetails(errorDetails, axiosError);
+    const errorDetails = getAPIErrorDetails(errorKey, axiosError, predefinedError);
+    const enrichedErrorDetails = betterDescription(errorDetails, axiosError);
 
     return {
         errorKey,
-        ...errorDetails
+        ...enrichedErrorDetails
     };
 };
 
-const generateBaseErrorInfo = (errorKey: string, axiosError: any, predefinedError: any): ErrorDetails => {
+const getAPIErrorDetails = (errorKey: string, axiosError: any, predefinedError: any): ErrorDetails => {
     const defaultErrorDetails = {
         message: axiosError.message,
         description: axiosError.response?.data?.message || axiosError.response?.data?.error || axiosError.message,
@@ -75,7 +75,7 @@ const generateBaseErrorInfo = (errorKey: string, axiosError: any, predefinedErro
     }
 };
 
-const enrichWithReDetails = (errorDetails: ErrorDetails, axiosError: any): void => {
+const betterDescription = (errorDetails: ErrorDetails, axiosError: any): ErrorDetails => {
     const requestId = axiosError.response?.headers["x-request-id"];
     const requestInfo = {
         url: axiosError.config.url,
@@ -85,5 +85,8 @@ const enrichWithReDetails = (errorDetails: ErrorDetails, axiosError: any): void 
         description: errorDetails.description
     };
 
-    errorDetails.description = `${errorDetails.description}\n\nRequest Details:\n${JSON.stringify(requestInfo, null, 2)}`;
+    return {
+        ...errorDetails,
+        description: `${errorDetails.description}\n\nRequest Details:\n${JSON.stringify(requestInfo, null, 2)}`
+    };
 };

@@ -2,7 +2,7 @@
 import { GetActiveTriggersData } from "../client/types.gen";
 import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
-import { CEG } from "../utils/error";
+import { CEG } from "../utils/ceg";
 
 type TActiveTrigger = {
         id: string;

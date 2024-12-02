@@ -9,10 +9,10 @@ import { Entity } from './models/Entity';
 import axios from 'axios';
 import { getPackageJsonDir } from './utils/projectUtils';
 import { isNewerVersion } from './utils/other';
-import { CEG } from './utils/error';
+import { CEG } from './utils/ceg';
 import { GetConnectorInfoResDTO } from './client';
 import logger, { getLogLevel } from '../utils/logger';
-import { SDK_ERROR_CODES } from './utils/errors/constants';
+import { SDK_ERROR_CODES } from './utils/errors/codes';
 import { getSDKConfig } from './utils/config';
 
 export class Composio {
@@ -49,7 +49,7 @@ export class Composio {
                 possibleFix: "Please provide a valid API Key. You can get it from https://app.composio.dev/settings"
             });
         }
-        logger.info(`Initilizing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}, Current log level: ${loggingLevel.toUpperCase()}`);
+        logger.info(`Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}, Current log level: ${loggingLevel.toUpperCase()}`);
 
         // Initialize the BackendClient with the parsed API key and base URL.
         this.backendClient = new BackendClient(apiKeyParsed, baseURLParsed, runtime);

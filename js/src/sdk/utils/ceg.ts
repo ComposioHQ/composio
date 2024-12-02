@@ -1,12 +1,20 @@
 import { SDK_ERROR_CODES, BASE_ERROR_CODE_INFO } from "./errors/codes";
-import {  ComposioError } from "./errors/base";
+import { ComposioError } from "./errors/base";
 import { makeAPIError } from "./errors/formatter";
 import { ifObjectStringify } from "./common";
 
-// Composio Error Generator - handles error creation and formatting
+type NonResponseError = {
+    config: {
+        baseURL: string;
+        url: string;
+    };
+    description: string;
+    message: string;
+    code: string;
+}
+
 export class CEG {
-    // Handle errors without HTTP response (network issues, etc)
-    private static makeNonResponeError(error: any) {
+    private static handleNonResponseError(error: NonResponseError) {
         const fullUrl = error.config.baseURL + error.config.url;
         if(error.code === "ECONNREFUSED"){
             return this.throwCustomError(SDK_ERROR_CODES.COMMON.BASE_URL_NOT_REACHABLE, {
@@ -36,11 +44,18 @@ export class CEG {
         );
     }
 
-    // Main error handler for Axios errors and generic errors
-    static makeError(axiosError: any) {
-        // Handle non-response errors (network issues, etc.)
-        if (!axiosError.response) {
-            return this.makeNonResponeError(axiosError);
+    static handleError(axiosError: unknown) {
+        if (!axiosError || typeof axiosError !== 'object') {
+            throw new ComposioError(
+                SDK_ERROR_CODES.COMMON.UNKNOWN,
+                "Invalid error object received",
+                "The error handler received an invalid or empty error object",
+                "Please ensure a valid error object is being passed",
+                axiosError
+            );
+        }
+        if (!('response' in axiosError)) {
+            return this.handleNonResponseError(axiosError as unknown as NonResponseError);
         }
         const errorBody = makeAPIError(axiosError);
         throw new ComposioError(
@@ -49,18 +64,9 @@ export class CEG {
             errorBody.description,
             errorBody.possibleFix,
             axiosError
-        );;
+        );
     }
 
-    // This method allows throwing custom errors with configurable details
-    // @param messageCode - The error code to use, either a predefined code from ERROR constants or a custom one
-    // @param options - Configuration object containing:
-    //   - message: Custom error message to override default
-    //   - type: Error type for generating error code if messageCode not provided 
-    //   - subtype: Error subtype for generating error code if messageCode not provided
-    //   - description: Additional error details/context
-    //   - possibleFix: Suggested solution for the error
-    // @throws ComposioError with the configured details
     static throwCustomError(messageCode: string, {
         message,
         type,
@@ -74,7 +80,7 @@ export class CEG {
         message?: string;
         description?: string;
         possibleFix?: string;
-        originalError?: any;
+        originalError?: unknown;
     }): never {
         const finalErrorCode = !!messageCode ? messageCode : `${type}::${subtype}`;
         const errorDetails = BASE_ERROR_CODE_INFO[finalErrorCode] || BASE_ERROR_CODE_INFO.UNKNOWN;
