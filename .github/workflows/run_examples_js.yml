@@ -1,0 +1,12 @@
+# Run examples inside JS folders
+name: Run examples JS
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  test-examples:
+    uses: ./.github/workflows/examples_js.yml
+    with:
+      working-directory: ./js
+    secrets: inherit
