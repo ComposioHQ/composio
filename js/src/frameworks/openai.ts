@@ -142,11 +142,13 @@ export class OpenAIToolSet extends BaseComposioToolSet {
 
                 // Check if the run is still in a state that accepts tool outputs
                 const currentRun = await client.beta.threads.runs.retrieve(thread.id, runId);
-                if (["queued", "in_progress", "requires_action"].includes(currentRun.status)) {
+                if (currentRun.status === "requires_action") {
                     // Submit the tool outputs
                     await client.beta.threads.runs.submitToolOutputs(thread.id, runId, {
                         tool_outputs: toolOutputs
                     });
+                } else {
+                    logger.warn(`Run ${runId} is in ${currentRun.status} state, skipping tool output submission`);
                 }
             }
 
@@ -167,9 +169,14 @@ export class OpenAIToolSet extends BaseComposioToolSet {
             if (finalRun.status === "requires_action") {
                 const toolOutputs = await this.handleAssistantMessage(finalRun, entityId);
                 // Submit tool outputs
-                finalRun = await client.beta.threads.runs.submitToolOutputs(thread.id, runId, {
-                    tool_outputs: toolOutputs
-                });
+                const runInfo = await client.beta.threads.runs.retrieve(thread.id, runId);
+                if (runInfo.status === "requires_action") {
+                    finalRun = await client.beta.threads.runs.submitToolOutputs(thread.id, runId, {
+                        tool_outputs: toolOutputs
+                    });
+                } else {
+                    logger.warn(`Run ${runId} is in ${runInfo.status} state, skipping tool output submission`);
+                }
             } else {
                 // Update the run status
                 finalRun = await client.beta.threads.runs.retrieve(thread.id, runId);
