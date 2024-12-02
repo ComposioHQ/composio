@@ -132,7 +132,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
                 runId = id;
             }
 
-            if(!runId) {
+            if (!runId) {
                 continue;
             }
 
@@ -140,10 +140,14 @@ export class OpenAIToolSet extends BaseComposioToolSet {
             if (event.event === 'thread.run.requires_action') {
                 const toolOutputs = await this.handleAssistantMessage(event.data, entityId);
 
-                // Submit the tool outputs
-                await client.beta.threads.runs.submitToolOutputs(thread.id, runId, {
-                    tool_outputs: toolOutputs
-                });
+                // Check if the run is still in a state that accepts tool outputs
+                const currentRun = await client.beta.threads.runs.retrieve(thread.id, runId);
+                if (["queued", "in_progress", "requires_action"].includes(currentRun.status)) {
+                    // Submit the tool outputs
+                    await client.beta.threads.runs.submitToolOutputs(thread.id, runId, {
+                        tool_outputs: toolOutputs
+                    });
+                }
             }
 
             // Break if the run status becomes inactive
@@ -152,7 +156,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
             }
         }
 
-        if(!runId) {
+        if (!runId) {
             throw new Error("No run ID found");
         }
 
@@ -163,10 +167,13 @@ export class OpenAIToolSet extends BaseComposioToolSet {
             if (finalRun.status === "requires_action") {
                 const toolOutputs = await this.handleAssistantMessage(finalRun, entityId);
 
-                // Submit tool outputs
-                finalRun = await client.beta.threads.runs.submitToolOutputs(thread.id, runId, {
-                    tool_outputs: toolOutputs
-                });
+                // Check if the run is still in a state that accepts tool outputs
+                if (["queued", "in_progress", "requires_action"].includes(finalRun.status)) {
+                    // Submit tool outputs
+                    finalRun = await client.beta.threads.runs.submitToolOutputs(thread.id, runId, {
+                        tool_outputs: toolOutputs
+                    });
+                }
             } else {
                 // Update the run status
                 finalRun = await client.beta.threads.runs.retrieve(thread.id, runId);
