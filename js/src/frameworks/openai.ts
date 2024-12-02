@@ -166,14 +166,10 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         while (["queued", "in_progress", "requires_action"].includes(finalRun.status)) {
             if (finalRun.status === "requires_action") {
                 const toolOutputs = await this.handleAssistantMessage(finalRun, entityId);
-
-                // Check if the run is still in a state that accepts tool outputs
-                if (["queued", "in_progress", "requires_action"].includes(finalRun.status)) {
-                    // Submit tool outputs
-                    finalRun = await client.beta.threads.runs.submitToolOutputs(thread.id, runId, {
-                        tool_outputs: toolOutputs
-                    });
-                }
+                // Submit tool outputs
+                finalRun = await client.beta.threads.runs.submitToolOutputs(thread.id, runId, {
+                    tool_outputs: toolOutputs
+                });
             } else {
                 // Update the run status
                 finalRun = await client.beta.threads.runs.retrieve(thread.id, runId);
