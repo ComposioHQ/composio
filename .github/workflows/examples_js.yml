@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       working-directory:
-        required: true
+        required: false
         type: string
       api_key:
         required: false
