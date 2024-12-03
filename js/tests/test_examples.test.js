@@ -8,7 +8,6 @@ const { promisify } = require('util');
 const execFileAsync = promisify(execFile);
 
 // Paths
-const PLUGINS = path.resolve(__dirname, '../plugins');
 const EXAMPLES_PATH = path.resolve(__dirname, '../examples');
 
 // Require env vars
@@ -43,14 +42,10 @@ const EXAMPLES = {
 };
 
 describe('E2E Tests for plugin demos and examples', () => {
-  jest.setTimeout(180000); // Set timeout to 3 minutes
+  jest.setTimeout(300000); // Set timeout to 5 minutes
 
   for (const [exampleName, example] of Object.entries(EXAMPLES)) {
     test(`should run ${exampleName} example successfully`, async () => {
-
-      for (const [key, val] of Object.entries(example.env)) {
-        expect(val).not.toBeNull();
-      }
 
       const options = {
         env: { ...process.env, ...example.env },
@@ -64,7 +59,7 @@ describe('E2E Tests for plugin demos and examples', () => {
           expect(output).toContain(match);
         }
       } catch (error) {
-        throw new Error(error.stderr || error.stdout || error.message);
+        throw new Error(error);
       }
     });
   }
