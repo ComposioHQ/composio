@@ -46,6 +46,7 @@ from composio.constants import (
 )
 from composio.exceptions import ApiKeyNotProvidedError
 from composio.storage.user import UserData
+from composio.utils.shared import generate_request_id
 from composio.utils.url import get_api_url_base
 
 
@@ -146,6 +147,7 @@ class Composio:
             url=base_url + str(v1 / "client" / "auth" / "client_info"),
             headers={
                 "x-api-key": key,
+                "x-request-id": generate_request_id(),
             },
             timeout=60,
         )
