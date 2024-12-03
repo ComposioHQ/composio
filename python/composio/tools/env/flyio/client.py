@@ -10,7 +10,6 @@ import typing_extensions as te
 
 from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import WithLogger
-from composio.utils.shared import generate_request_id
 
 
 try:
