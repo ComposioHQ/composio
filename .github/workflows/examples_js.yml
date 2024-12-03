@@ -80,7 +80,7 @@ jobs:
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_TECH_WEBHOOK }}
-          SLACK_TITLE: "Example Tests Failed"
+          SLACK_TITLE: "JS Example Tests Failed"
           SLACK_MSG_AUTHOR: ${{ inputs.author || github.actor }}
           SLACK_MESSAGE: "<@Apoorv> <@kaavee> ${{ inputs.commit_message || github.event.head_commit.message }}"
           SLACK_LINK_NAMES: "true"
