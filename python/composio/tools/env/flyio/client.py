@@ -214,10 +214,7 @@ class FlyIO(WithLogger):
             try:
                 requests.get(
                     self.url,
-                    headers={
-                        "x-api-key": self.access_token,
-                        "x-request-id": generate_request_id(),
-                    },
+                    headers={"x-api-key": self.access_token},
                     timeout=30.0,
                 ).content.decode()
                 return

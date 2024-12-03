@@ -13,7 +13,6 @@ from composio.constants import ENV_COMPOSIO_API_KEY, ENV_COMPOSIO_BASE_URL
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.id import generate_id
 from composio.utils.logging import WithLogger
-from composio.utils.shared import generate_request_id
 
 
 ENV_GITHUB_ACCESS_TOKEN = "GITHUB_ACCESS_TOKEN"
@@ -236,7 +235,6 @@ class RemoteWorkspace(Workspace):
             json=json,
             headers={
                 "x-api-key": self.access_token,
-                "x-request-id": generate_request_id(),
             },
             timeout=timeout,
         )
