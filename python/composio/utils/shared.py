@@ -3,8 +3,8 @@ Shared utils.
 """
 
 import typing as t
-from inspect import Parameter
 import uuid
+from inspect import Parameter
 
 from pydantic import BaseModel, Field, create_model
 from pydantic.fields import FieldInfo
