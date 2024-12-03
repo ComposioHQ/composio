@@ -23,19 +23,19 @@ from openai import OpenAI
 openai_client = OpenAI()
 toolset = ComposioToolSet()
 ```
-```javascript Javascript
-import { OpenAIToolSet } from "composio-core";
+```javascript JavaScript
 import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core";
 import { z } from "zod";
 
 const openai_client = new OpenAI();
-const toolset = new OpenAIToolSet({});
+const openAIToolset = new OpenAIToolSet();
 ```
 </CodeGroup>
 </Step>
 
 <Step title="Creating a custom action">
-Below is an example of creating a custom action called `list_repositories` that integrates with the `github` tool. This action demonstrates how to list all the repositories for a given user or organization.
+Below are examples of creating a custom action called `list_repositories` (Python) & `star_repo` (JavaScript) that integrates with the `github` tool. This action demonstrates how to list all the repositories for a given user or organization.
 
 <Note>
 Since `github` is a registered tool in Composio, the authentication credentials are automatically injected into your custom action!
@@ -61,22 +61,22 @@ def list_repositories(
     ]
 ```
 
-```javascript Javascript
-await toolSet.createAction({
-    actionName: "my_custom_action",
-    toolName: "$app_name$",
-    description:
-        "my custom action is amazing. This description will tell LLMs about it",
+```javascript JavaScript
+const action = await openAIToolset.createAction({
+    actionName: "star_repo",
+    toolName: "github",
+    description: "Stars a repository on GitHub",
     inputParams: z.object({
-        param1: z.string().describe("This is a required string parameter"),
-        param2: z.string().describe("This is a required string parameter"),
+        owner: z.string().describe("The owner of the repository"),
+        repo: z.string().describe("The name of the repository"),
     }),
-    callback: async (inputParams, executeRequest) => {
+    callback: async (inputParams, authCredentials, executeRequest) => {
         try {
             const res = await executeRequest({
-                endpoint: `/user/starred/${inputParams.param1}/${inputParams.param2}`,
+                endpoint: `/user/starred/${inputParams.owner}/${inputParams.repo}`,
                 method: "PUT",
                 parameters: [],
+                body: {}
             });
             return res;
         } catch (e) {
@@ -84,7 +84,7 @@ await toolSet.createAction({
             return {};
         }
     },
-});
+})
 ```
 </CodeGroup>
 
@@ -112,11 +112,11 @@ print(result)
 ```
 
 ```javascript JavaScript
-const tools = await toolSet.getTools({
-    actions: ["my_custom_action"]
+const tools = await openAIToolset.getTools({
+    actions: ["star_repo"]
 });
 
-const task = "<task>";
+const task = "Star the repository composioHQ/composio";
 
 const response = await openai_client.chat.completions.create({
     model: "gpt-4o-mini",
@@ -128,7 +128,7 @@ const response = await openai_client.chat.completions.create({
     tool_choice: "auto",
 });
 
-const result = await toolSet.handleToolCall(response);
+const result = await openAIToolset.handleToolCall(response, "default");
 console.log(result);
 ```
 </CodeGroup>
