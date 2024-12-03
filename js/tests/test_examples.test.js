@@ -10,9 +10,6 @@ const execFileAsync = promisify(execFile);
 // Paths
 const EXAMPLES_PATH = path.resolve(__dirname, "../examples");
 
-// Require env vars
-const { COMPOSIO_API_KEY, OPENAI_API_KEY } = process.env;
-
 // Plugin test definitions
 const EXAMPLES = {
   portfolio_generator: {
@@ -21,7 +18,6 @@ const EXAMPLES = {
       type: "stdout",
       values: ["🎉Output from agent: "],
     },
-    env: { COMPOSIO_API_KEY },
   },
   lead_generator_agent: {
     file: path.join(EXAMPLES_PATH, "reddit-research", "demo.mjs"),
@@ -29,7 +25,6 @@ const EXAMPLES = {
       type: "stdout",
       values: ["🎉Output from agent: "],
     },
-    env: { COMPOSIO_API_KEY },
   },
   lead_outreach_agent: {
     file: path.join(EXAMPLES_PATH, "lead_outreach_agent", "demo.mjs"),
@@ -37,7 +32,6 @@ const EXAMPLES = {
       type: "stdout",
       values: ["🎉Output from agent: "],
     },
-    env: { COMPOSIO_API_KEY, OPENAI_API_KEY },
   },
 };
 
@@ -47,7 +41,7 @@ describe("E2E Tests for plugin demos and examples", () => {
   for (const [exampleName, example] of Object.entries(EXAMPLES)) {
     test(`should run ${exampleName} example successfully`, async () => {
       const options = {
-        env: { ...process.env, ...example.env },
+        env: { ...process.env },
         cwd: example.cwd || process.cwd(),
       };
 
