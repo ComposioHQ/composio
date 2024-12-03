@@ -10,6 +10,7 @@ import typing_extensions as te
 
 from composio.tools.env.constants import DEFAULT_IMAGE
 from composio.utils.logging import WithLogger
+from composio.utils.shared import generate_request_id
 
 
 try:
@@ -213,7 +214,10 @@ class FlyIO(WithLogger):
             try:
                 requests.get(
                     self.url,
-                    headers={"x-api-key": self.access_token},
+                    headers={
+                        "x-api-key": self.access_token,
+                        "x-request-id": generate_request_id(),
+                    },
                     timeout=30.0,
                 ).content.decode()
                 return

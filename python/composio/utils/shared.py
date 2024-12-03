@@ -4,6 +4,7 @@ Shared utils.
 
 import typing as t
 from inspect import Parameter
+import uuid
 
 from pydantic import BaseModel, Field, create_model
 from pydantic.fields import FieldInfo
@@ -386,3 +387,8 @@ def get_pydantic_signature_format_from_schema_params(
         all_parameters.append(param)
 
     return all_parameters
+
+
+def generate_request_id() -> str:
+    """Generate a unique request ID."""
+    return str(uuid.uuid4())
