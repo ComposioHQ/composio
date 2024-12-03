@@ -1,3 +1,4 @@
+import os
 import dotenv
 from openai import OpenAI
 
@@ -11,15 +12,20 @@ logger = get_logger(__name__)
 dotenv.load_dotenv()
 
 # Initialize tools.
-openai_client = OpenAI()
+openai_client = OpenAI(
+    base_url="https://oai.helicone.ai/v1",
+    default_headers={
+        "Helicone-Auth": f"Bearer {os.environ['HELICONE_API_KEY']}",
+        "Helicone-Cache-Enabled": "true",
+    },
+)
 composio_toolset = ComposioToolSet()
 
 # Retrieve actions
 actions = composio_toolset.get_tools(apps=[App.SYSTEMTOOLS, App.IMAGEANALYSERTOOL])
 
 # Setup openai assistant
-assistant_instruction = (
-    """You are an intelligent and proactive personal productivity assistant.
+assistant_instruction = """You are an intelligent and proactive personal productivity assistant.
     Your primary tasks are:
     1. Regularly capture and analyze screenshots of the user's screen.
     2. Monitor user activity and provide timely, helpful interventions.
@@ -47,7 +53,6 @@ assistant_instruction = (
         7. Try to maintain history of the user's activity and notify them if they are doing something that is not right.
 
     Remember: Your goal is to enhance productivity while respecting the user's autonomy and work style."""
-)
 
 # Prepare assistant
 assistant = openai_client.beta.assistants.create(
@@ -58,13 +63,13 @@ assistant = openai_client.beta.assistants.create(
 )
 
 
-
 # create a thread
 thread = openai_client.beta.threads.create()
 print("Thread ID: ", thread.id)
 print("Assistant ID: ", assistant.id)
 
 import time
+
 
 def check_and_run_assistant():
     logger.info("Checking and running assistant")
@@ -91,6 +96,7 @@ def check_and_run_assistant():
     )
 
     # logger.info(f"Run after tool calls: {run_after_tool_calls}")
+
 
 # Run the assistant check every 10 seconds
 while True:

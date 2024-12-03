@@ -221,22 +221,15 @@ def test_example(
         cwd=cwd,
     )
 
-    # Wait for 2 minutes for example to run
+    # Wait for 3 minutes for example to run
     proc.wait(timeout=180)
 
     # Check if process exited with success
-    assert proc.returncode == 0, (
-        t.cast(t.IO[bytes], proc.stderr).read().decode(encoding="utf-8")
-    )
+    assert proc.returncode == 0, proc.stderr.read().decode(encoding="utf-8")  # type: ignore
 
     # Validate output
-    output = (
-        t.cast(
-            t.IO[bytes],
-            (proc.stdout if example["match"]["type"] == "stdout" else proc.stderr),
-        )
-        .read()
-        .decode(encoding="utf-8")
-    )
+    output_stream = proc.stdout if example["match"]["type"] == "stdout" else proc.stderr
+    assert output_stream is not None
+    output = output_stream.read().decode(encoding="utf-8")
     for match in example["match"]["values"]:
         assert match in output
