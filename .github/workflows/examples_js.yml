@@ -79,12 +79,12 @@ jobs:
         if: ${{ failure() && github.ref == 'refs/heads/master' && !contains(github.event.head_commit.message, 'release') && !contains(github.event.head_commit.message, 'Release') && !inputs.dont_notify }}
         uses: rtCamp/action-slack-notify@v2
         env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_TITLE: "JS Example Tests Failed"
+          SLACK_WEBHOOK: ${{ secrets.SLACK_TECH_WEBHOOK }}
+          SLACK_TITLE: "Example Tests Failed"
           SLACK_MSG_AUTHOR: ${{ inputs.author || github.actor }}
-          SLACK_MESSAGE: "<@team> ${{ inputs.commit_message || github.event.head_commit.message }}"
+          SLACK_MESSAGE: "<@Apoorv> <@kaavee> ${{ inputs.commit_message || github.event.head_commit.message }}"
           SLACK_LINK_NAMES: "true"
           SLACK_COLOR: "failure"
           SLACK_USERNAME: "GitHub Actions Bot"
           SLACK_ICON_EMOJI: ":x:"
-          SLACK_FOOTER: "Failed JS Example Tests | GitHub Actions"
+          SLACK_FOOTER: "Failed Example Tests | GitHub Actions"
