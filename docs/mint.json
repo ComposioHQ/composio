@@ -107,8 +107,8 @@
               "group": "Build Tools",
               "icon": "hammer",
               "pages": [
-                "patterns/tools/build-tools/custom-action-for-new-tool",
-                "patterns/tools/build-tools/custom-action-for-existing-tool"
+                "patterns/tools/build-tools/custom-action-without-auth",
+                "patterns/tools/build-tools/custom-action-with-auth"
               ]
             },
             "patterns/tools/custom-integration",
