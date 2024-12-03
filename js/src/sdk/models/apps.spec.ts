@@ -52,7 +52,7 @@ describe("Apps class tests", () => {
         const OAUTH2_SCHEME = "OAUTH2";
         expect(inputFields.availableAuthSchemes).toContain(OAUTH2_SCHEME);
         expect(inputFields.authSchemes[OAUTH2_SCHEME].expected_from_user).toEqual(["client_id", "client_secret"]);
-        expect(inputFields.authSchemes[OAUTH2_SCHEME].optional_fields).toEqual(["scopes"]);
+        expect(inputFields.authSchemes[OAUTH2_SCHEME].optional_fields).toEqual(["oauth_redirect_uri", "scopes"]);
         expect(inputFields.authSchemes[OAUTH2_SCHEME].required_fields).toEqual(["shop"]);
     });
 
@@ -61,7 +61,7 @@ describe("Apps class tests", () => {
         const requiredParams = await apps.getRequiredParamsForAuthScheme("shopify", OAUTH2_SCHEME);
         expect(requiredParams).toEqual({
             required_fields: ["shop"],
-            optional_fields: ["scopes"],
+            optional_fields: ["oauth_redirect_uri", "scopes"],
             expected_from_user: ["client_id", "client_secret"]
         });
     });
