@@ -48,7 +48,10 @@ toolset = ComposioToolSet()
 entity = toolset.get_entity("Jessica")
 ```
 ```javascript JavaScript
-Coming Soon
+import { Composio } from "composio-core";
+
+const toolset = new Composio();
+const entity = toolset.getEntity("Jessica");
 ```
 </CodeGroup>
 </Step>
@@ -82,7 +85,25 @@ integration = entity.client.integrations.create(
 
 ```
 ```javascript JavaScript
-Coming Soon
+// Using Composio's default OAuth flow
+const integration = await entity.integrations.create({
+    name: "GITHUB_Integration_Demo",
+    appId: "01e22f33-dc3f-46ae-b58d-050e4d2d1909",
+    authScheme: "OAUTH2",
+    useComposioAuth: true,
+});
+
+// Using your own OAuth flow
+const integration = await entity.integrations.create({
+    name: "GITHUB_Integration_Demo",
+    appId: "01e22f33-dc3f-46ae-b58d-050e4d2d1909",
+    authScheme: "OAUTH2",
+    useComposioAuth: false,
+    authConfig: {
+        client_id: "",
+        client_secret: ""
+    }
+});
 ```
 </CodeGroup>
 </Step>
@@ -95,7 +116,12 @@ request = entity.initiate_connection("GITHUB", redirect_url="https://yourwebsite
 print(request.redirectUrl)
 ```
 ```javascript JavaScript
-Coming Soon
+const request = await entity.initiateConnection({
+    appName: "github",
+    redirectUrl: "https://composio.dev",
+    integrationId: integration.id
+});
+console.log(request.redirectUrl)
 ```
 </CodeGroup>
 </Step>
@@ -140,20 +166,39 @@ console.log(await openai_client.client.integrations.get({integrationId:"<integra
 
 ### Creating a new connection using an Integration
 
-You can follow the same steps as mentioned in [Creating a new connection](/patterns/Auth/connected_account) and use integration object.
+You can follow the same steps as mentioned in [Creating a new connection](/patterns/Auth/connected_account) and use integration object (Python) or integrationId (JavaScript).
 <CodeGroup>
 ```python Python
 from composio import ComposioToolSet
 
-toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"), entity_id="Jessica")
+toolset = ComposioToolSet(entity_id="Jessica")
 
 entity = toolset.get_entity()
 
 integration = entity.client.integrations.get_by_id("integration_id...")
-connection_request = entity.initiate_connection(app_name="TWITTER", redirect_url="https://yourwebsite.com/connection/success", integration=integration)
+connection_request = entity.initiate_connection(
+    app_name="TWITTER",
+    redirect_url="https://yourwebsite.com/connection/success",
+    integration=integration,
+)
 
 # If the connection method is OAuth, redirect the user to the URL below
 print(connection_request.redirectUrl)
+```
+
+```javascript JavaScript
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet();
+
+const connectionRequest = await toolset.client.connectedAccounts.initiate({
+  appName: "gmail",
+  redirect_url: "https://yourwebsite.com/connection/success",
+  integrationId: integration.id,
+  entityId:"Jessica"
+});
+
+console.log(connectionRequest.redirectUrl);
 ```
 </CodeGroup>
 

@@ -1,0 +1,157 @@
+---
+title: "Getting Started with Triggers"
+sidebarTitle: "Triggers"
+icon: "webhook"
+description: "Triggers monitor specific events in apps like GitHub or Gmail and notify your agents via webhooks. When triggered, they send relevant data that your agents can act upon"
+---
+
+## Enabling & Disabling Triggers
+You can enable a trigger by specifying the trigger enum, available on the [dashboard](https://app.composio.dev/app/github)
+<Tabs>
+<Tab title="CLI">
+<Steps>
+<Step title="Enable Trigger">
+You need to pass the trigger enum to enable a trigger.
+```Bash
+composio triggers enable GITHUB_STAR_ADDED_EVENT
+``` 
+</Step>
+<Step title="Disable Trigger">
+You need to pass the trigger id to disable a trigger. You can get the trigger id from logs (when you enable a trigger) or from the dashboard.
+```Bash
+composio triggers disable 818bd52e-c527-446b-b2b5-7410db9aa607
+```
+</Step>
+</Steps>
+</Tab>
+<Tab title="Python">
+<Steps>
+<Step title="Import packages">
+```python
+from composio import ComposioToolSet, App
+```
+</Step>
+<Step title="Get Config Parameters">
+Triggers require you to pass config parameters, which can be obtained by calling the `get_trigger` method and passing the trigger enum.
+```python
+toolset = ComposioToolSet()
+
+trigger_schema = toolset.get_trigger("GITHUB_STAR_ADDED_EVENT")
+print(trigger_schema.config)
+```
+</Step>
+<Step title="Enable Trigger">
+You need to pass the trigger enum and the config parameters to enable a trigger, and **trigger id** will be returned.
+<Tip>You can pass entity id to enable trigger for a specific entity. Learn more about entities [here](../auth/connected_account#entities)</Tip>
+```python {1}
+entity = toolset.get_entity()
+response = entity.enable_trigger(
+    app=App.GITHUB,
+    trigger_name="GITHUB_PULL_REQUEST_EVENT",
+    config={"owner": "composiohq", "repo": "composio"},
+)
+print(response)
+```
+</Step>
+<Step title="Disable Trigger">
+You need to pass the trigger id to disable a trigger. You can get the trigger id from response (when you enable a trigger) or from the dashboard.
+```python
+entity.disable_trigger("818bd52e-c527-446b-b2b5-7410db9aa607")
+```
+</Step>
+</Steps>
+</Tab>
+<Tab title="JavaScript">
+<Steps>
+<Step title="Import packages & Initialize Toolset">
+```javascript
+import { OpenAIToolSet } from "composio-core";
+const toolset = new OpenAIToolSet();
+```
+</Step>
+<Step title="Get Config Parameters">
+Triggers have a config schema, which can be obtained by calling the `get_trigger` method and passing the trigger enum.
+```javascript
+coming soon
+```
+</Step>
+<Step title="Enable Trigger">
+You need to pass the trigger enum and the config parameters to enable a trigger, and **trigger id** will be returned.
+<Tip>You can pass entity id to enable trigger for a specific entity. Learn more about entities [here](../auth/connected_account#entities)</Tip>
+```javascript {1}
+const entity = toolset.client.getEntity();
+
+(async () => {
+  console.log(
+    "res: ",
+        await entity.setupTrigger("github", "GITHUB_STAR_ADDED_EVENT", {
+            owner: "composiohq",
+            repo: "composio",
+        })
+  );
+})();
+```
+</Step>
+<Step title="Disable Trigger">
+You need to pass the trigger id to disable a trigger. You can get the trigger id from response (when you enable a trigger) or from the dashboard.
+```javascript
+const res = await entity.disableTrigger("f95b3f90-ea09-4ef2-945c-dce50f9c7eeb")
+console.log(res)
+```
+</Step>
+</Steps>
+</Tab>
+
+<Tab title="Dashboard">
+<div
+  style={{
+    width: '100%',
+    position: 'relative',
+    paddingTop: '56.25%',
+  }}>
+  <iframe
+    src="https://app.supademo.com/embed/cly4qu1q001istgvzirl1sj8y"
+    frameBorder="0"
+    title="Direct Action Execution"
+    allow="clipboard-write"
+    webkitallowfullscreen="true"
+    mozallowfullscreen="true"
+    allowfullscreen
+    style={{
+      position: 'absolute',
+      top: 0,left: 0, width: '100%', height: '100%',
+      border: '3px solid #5E43CE',
+      borderRadius: '10px',
+    }}/>
+</div>
+</Tab>
+</Tabs>
+
+## Listening to Triggers
+<Tabs>
+<Tab title="Python">
+```python
+listener = toolset.create_trigger_listener()
+
+@listener.callback(filters={"trigger_name": "GITHUB_STAR_ADDED_EVENT"})
+def callback_function(event):
+    print(event)
+
+print("Listening")
+listener.wait_forever()
+```
+</Tab>
+<Tab title="Javascript">
+```javascript
+toolset.triggers.subscribe(
+    (data) => {
+        console.log(data);
+    },
+    {
+        triggerName: "GITHUB_STAR_ADDED_EVENT"
+    }
+);
+```
+</Tab>
+</Tabs>
+<Tip>To learn how to configure and use your own webhooks for listening to triggers, visit our [Webhooks Guide](/patterns/triggers/webhooks).</Tip>
