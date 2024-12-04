@@ -99,9 +99,10 @@ print(tools)
 ```
 
 ```Javascript Javascript
-import { LangchainToolSet } from "composio-core";
+//  -- Normal way --
+import { OpenAIToolSet } from "composio-core";
 
-const toolset = new LangchainToolSet();
+const toolset = new OpenAIToolSet();
 
 // Specify the use case
 const useCase = "Star a repo on github";
@@ -110,6 +111,22 @@ const actionsList = await toolset.client.actions.list({
   useCase: useCase,
   apps: "github",
 });
+
+console.log(actionsList);
+
+
+// -- Advanced way --
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet();
+
+(async() => {
+    const actionsEnums = await toolset.client.actions.findActionEnumsByUseCase({
+        apps: ["github", "gmail"],
+        useCase: "get repo details and send an email to the owner of the repo"
+    });
+    console.log(actionsEnums);
+})();
 ```
 
 ```bash CLI
@@ -117,7 +134,7 @@ composio actions --use-case 'star a repo on github' --app 'github'
 ```
 </CodeGroup>
 <Tip>
-Set the `advanced` flag to `True` to get actions for complex use cases (support for JavaScript & CLI coming soon)
+Set the `advanced` flag to `True` to get actions for complex use cases (Python)
 </Tip>
 </Tab>
 </Tabs>
