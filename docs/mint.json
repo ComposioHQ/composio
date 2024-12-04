@@ -137,6 +137,7 @@
     {
       "group": "Supported Frameworks",
       "pages": [
+        "framework/autogen",
         "framework/crewai",
         "framework/langchain",
         "framework/langgraph",
