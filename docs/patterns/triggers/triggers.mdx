@@ -64,21 +64,21 @@ entity.disable_trigger("818bd52e-c527-446b-b2b5-7410db9aa607")
 <Tab title="JavaScript">
 <Steps>
 <Step title="Import packages & Initialize Toolset">
-```python
+```javascript
 import { OpenAIToolSet } from "composio-core";
 const toolset = new OpenAIToolSet();
 ```
 </Step>
 <Step title="Get Config Parameters">
 Triggers have a config schema, which can be obtained by calling the `get_trigger` method and passing the trigger enum.
-```python
+```javascript
 coming soon
 ```
 </Step>
 <Step title="Enable Trigger">
 You need to pass the trigger enum and the config parameters to enable a trigger, and **trigger id** will be returned.
 <Tip>You can pass entity id to enable trigger for a specific entity. Learn more about entities [here](../auth/connected_account#entities)</Tip>
-```python {1}
+```javascript {1}
 const entity = toolset.client.getEntity();
 
 (async () => {
@@ -94,7 +94,7 @@ const entity = toolset.client.getEntity();
 </Step>
 <Step title="Disable Trigger">
 You need to pass the trigger id to disable a trigger. You can get the trigger id from response (when you enable a trigger) or from the dashboard.
-```python
+```javascript
 const res = await entity.disableTrigger("f95b3f90-ea09-4ef2-945c-dce50f9c7eeb")
 console.log(res)
 ```
@@ -142,7 +142,7 @@ listener.wait_forever()
 ```
 </Tab>
 <Tab title="Javascript">
-```Javascript
+```javascript
 toolset.triggers.subscribe(
     (data) => {
         console.log(data);
