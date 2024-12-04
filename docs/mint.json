@@ -147,9 +147,14 @@
         {
           "group": "Other Frameworks",
           "pages": [
-            "framework/groq",
-            "framework/phidata",
+            "framework/camelai",
             "javascript/cloudflare",
+            "framework/griptape",
+            "framework/groq",
+            "framework/julep",
+            "framework/lyzr",
+            "framework/phidata",
+            "framework/praisonai",
             "javascript/vercel",
             "framework/google"
           ]
