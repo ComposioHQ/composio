@@ -99,11 +99,11 @@ print(tools)
 ```
 
 ```Javascript Javascript
-//  -- Normal way --
 import { OpenAIToolSet } from "composio-core";
 
 const toolset = new OpenAIToolSet();
 
+//  -- Normal way --
 // Specify the use case
 const useCase = "Star a repo on github";
 
@@ -116,10 +116,6 @@ console.log(actionsList);
 
 
 // -- Advanced way --
-import { OpenAIToolSet } from "composio-core";
-
-const toolset = new OpenAIToolSet();
-
 (async() => {
     const actionsEnums = await toolset.client.actions.findActionEnumsByUseCase({
         apps: ["github", "gmail"],
