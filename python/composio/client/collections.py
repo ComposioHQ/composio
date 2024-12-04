@@ -35,6 +35,7 @@ from composio.client.enums import (
 from composio.client.exceptions import ComposioClientError, ComposioSDKError
 from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
 from composio.utils import logging
+from composio.utils.shared import generate_request_id
 
 
 if t.TYPE_CHECKING:
@@ -822,6 +823,7 @@ class _PusherClient(logging.WithLogger):
             auth_endpoint=f"{self.base_url}/v1/client/auth/pusher_auth?fromPython=true",
             auth_endpoint_headers={
                 "x-api-key": self.api_key,
+                "x-request-id": generate_request_id(),
             },
         )
 

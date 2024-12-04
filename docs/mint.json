@@ -90,29 +90,29 @@
     {
       "group": "Tools",
       "pages": [
-        "patterns/tools/what-are-tools",
-        {
-          "group": "Use Tools",
-          "icon": "shuttle-space",
-          "pages": [
-            "patterns/tools/use-tools/action-guide-with-agents",
-            "patterns/tools/use-tools/use-specific-actions",
-            "patterns/tools/use-tools/get-action-inputs",
-            "patterns/tools/use-tools/processing-actions",
-            "patterns/tools/use-tools/configure-tools",
-            "patterns/tools/use-tools/action-guide-without-agents"
-          ]
-        },
-        {
-          "group": "Build Tools",
-          "icon": "hammer",
-          "pages": [
-            "patterns/tools/build-tools/custom-action-for-new-tool",
-            "patterns/tools/build-tools/custom-action-for-existing-tool"
-          ]
-        },
-        "patterns/tools/custom-integration",
-        "patterns/tools/serve-tools"
+            "patterns/tools/what-are-tools",
+            {
+              "group": "Use Tools",
+              "icon": "shuttle-space",
+              "pages": [
+                "patterns/tools/use-tools/action-guide-with-agents",
+                "patterns/tools/use-tools/use-specific-actions",
+                "patterns/tools/use-tools/get-action-inputs",
+                "patterns/tools/use-tools/processing-actions",
+                "patterns/tools/use-tools/configure-tools",
+                "patterns/tools/use-tools/action-guide-without-agents"
+              ]
+            },
+            {
+              "group": "Build Tools",
+              "icon": "hammer",
+              "pages": [
+                "patterns/tools/build-tools/custom-action-without-auth",
+                "patterns/tools/build-tools/custom-action-with-auth"
+              ]
+            },
+            "patterns/tools/custom-integration",
+            "patterns/tools/serve-tools"
       ]
     },
     {

@@ -1,0 +1,22 @@
+# Run examples inside JS folders
+name: Run examples JS
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '**/*.js'
+      - '**/*.ts'
+  push:
+    branches:
+      - master
+    paths:
+      - '**/*.js'
+      - '**/*.ts'
+
+jobs:
+  test-examples:
+    uses: ./.github/workflows/examples_js.yml
+    with:
+      working-directory: ./js
+    secrets: inherit
