@@ -97,7 +97,10 @@
 - [🤗 Contributions](#-contributions)
 - [🔗 Links](#-links)
 - [🛡️ License](#️-license)
-- [💪 Thanks To All Contributors](#-thanks-to-all-contributors)
+
+## Contributors
+- SWEKit: Major contributor to the project.
+
 
 ## 🤔 Why Composio?
 
