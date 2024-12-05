@@ -4,7 +4,7 @@ import tseslint from "typescript-eslint";
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
-  {files: ["**/*.{js,mjs,cjs,ts}"]},
+  {files: ["src/**/*.{ts,js}"]},
   {languageOptions: { globals: globals.browser }},
   ...tseslint.configs.recommended,
   {
@@ -24,7 +24,7 @@ export default [
       "no-console": "warn",
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": [
-        "warn", // or "error"
+        "warn",
         {
           "argsIgnorePattern": "^_",
           "varsIgnorePattern": "^_",
