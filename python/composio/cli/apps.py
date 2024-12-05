@@ -72,7 +72,7 @@ class UpdateExamples(HelpfulCmdBase, click.Command):
     "--beta",
     is_flag=True,
     default=True,
-    help="Include beta apps.",
+    help="Include beta apps. [DEPRECATED]",
 )
 @click.help_option("--help", "-h", "-help")
 @handle_exceptions()
