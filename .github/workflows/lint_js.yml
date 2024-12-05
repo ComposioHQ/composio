@@ -14,21 +14,29 @@ jobs:
   lint-and-prettify:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: js
+
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
       with:
-        node-version: lts/*
-    - name: Install dependencies
-      run: npm install -g pnpm@8.15.7 && pnpm install
+        node-version: '22'
+
+    - name: Install pnpm
+      run: npm install -g pnpm
 
     - name: Install packages in js folder
-      run: cd js/ && pnpm install --frozen-lockfile
+      run: pnpm install --frozen-lockfile
 
     - name: Run ESLint
-      run: cd js/ && pnpm run eslint
+      run: pnpm run eslint
       continue-on-error: false
 
     - name: Run Prettier
-      run: cd js/ && pnpm run prettier:check
+      run: pnpm run prettier:check
       continue-on-error: false
