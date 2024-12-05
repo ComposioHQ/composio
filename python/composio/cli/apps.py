@@ -71,12 +71,13 @@ class UpdateExamples(HelpfulCmdBase, click.Command):
 @click.option(
     "--beta",
     is_flag=True,
+    default=True,
     help="Include beta apps.",
 )
 @click.help_option("--help", "-h", "-help")
 @handle_exceptions()
 @pass_context
-def _update(context: Context, beta: bool = False) -> None:
+def _update(context: Context, beta: bool = True) -> None:
     """Updates local Apps database."""
     apps = update_apps(client=context.client, beta=beta)
     update_actions(client=context.client, apps=apps, beta=beta)
