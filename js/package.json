@@ -14,8 +14,8 @@
     "run:cli": "ts-node src/cli/index.ts",
     "run:sample": "ts-node sample.ts",
     "eslint": "eslint 'src/**/*.{ts,js}' --max-warnings=281",
-    "prettier": "prettier --write src/**/*.{ts,js,cjs}",
-    "prettier:check": "prettier --check src/**/*.{ts,js,mjs,cjs}"
+    "prettier": "prettier --write 'src/**/*.{ts,js,cjs}'",
+    "prettier:check": "prettier --check 'src/**/*.{ts,js,mjs,cjs}'"
   },
   "bin": {
     "composio-js": "./lib/src/cli/index",
