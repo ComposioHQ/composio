@@ -13,7 +13,7 @@
     "openapispec:generate": "npx @hey-api/openapi-ts",
     "run:cli": "ts-node src/cli/index.ts",
     "run:sample": "ts-node sample.ts",
-    "eslint": "eslint src/**/*.{ts,js} --config ./.eslintrc.js",
+    "eslint": "eslint src/**/*.{ts,js} --config ./.eslint.config.mjs",
     "prettier": "prettier --write src/**/*.{ts,js}",
     "prettier:check": "prettier --check src/**/*.{ts,js}"
   },
