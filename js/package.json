@@ -13,7 +13,8 @@
     "openapispec:generate": "npx @hey-api/openapi-ts",
     "run:cli": "ts-node src/cli/index.ts",
     "run:sample": "ts-node sample.ts",
-    "eslint": "eslint src/**/*.ts"
+    "eslint": "eslint src/**/*.{ts,js}",
+    "prettier": "prettier --write src/**/*.{ts,js}"
   },
   "bin": {
     "composio-js": "./lib/src/cli/index",
@@ -72,6 +73,7 @@
     "langchain": "^0.2.11",
     "open": "^8.4.0",
     "openai": "^4.50.0",
+    "prettier": "^3.4.2",
     "pusher-js": "8.4.0-rc2",
     "resolve-package-path": "^4.0.3",
     "ts-node": "^10.9.2",

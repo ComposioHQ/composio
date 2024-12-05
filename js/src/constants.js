@@ -1,16 +1,14 @@
 const APPS = {
-    // apps list start here
-
-    // apps list end here
-}
+  // apps list start here
+  // apps list end here
+};
 
 const ACTIONS = {
-    // actions list start here
-
-    // actions list end here
-}
+  // actions list start here
+  // actions list end here
+};
 
 module.exports = {
-    APPS,
-    ACTIONS
-}
+  APPS,
+  ACTIONS,
+};

@@ -24,27 +24,29 @@ export class CloudflareToolSet extends BaseComposioToolSet {
 
   /**
    * Initialize a new CloudflareToolSet instance
-   * 
+   *
    * @param config Configuration options including API key, base URL, entity ID and workspace config
    */
-  constructor(config: {
-    apiKey?: Optional<string>;
-    baseUrl?: Optional<string>;
-    entityId?: string;
-    workspaceConfig?: WorkspaceConfig
-  }={}) {
+  constructor(
+    config: {
+      apiKey?: Optional<string>;
+      baseUrl?: Optional<string>;
+      entityId?: string;
+      workspaceConfig?: WorkspaceConfig;
+    } = {},
+  ) {
     super(
       config.apiKey || null,
       config.baseUrl || COMPOSIO_BASE_URL,
       CloudflareToolSet.FRAMEWORK_NAME,
       config.entityId || CloudflareToolSet.DEFAULT_ENTITY_ID,
-      config.workspaceConfig || Workspace.Host()
+      config.workspaceConfig || Workspace.Host(),
     );
   }
 
   /**
    * Retrieve available tools based on provided filters
-   * 
+   *
    * @param filters Optional filters for actions, apps, tags and use cases
    * @returns Promise resolving to array of AI text generation tools
    */
@@ -57,7 +59,8 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     filterByAvailableApps?: Optional<boolean>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
     const actions = await this.getToolsSchema(filters);
-    return actions.map((action) => {
+    return (
+      actions.map((action) => {
         // Format the action schema for Cloudflare Workers AI
         const formattedSchema: AiTextGenerationToolInput["function"] = {
           name: action.name!,
@@ -78,12 +81,13 @@ export class CloudflareToolSet extends BaseComposioToolSet {
           function: formattedSchema,
         };
         return tool;
-      }) || [];
+      }) || []
+    );
   }
 
   /**
    * Execute a single tool call
-   * 
+   *
    * @param tool The tool to execute with name and arguments
    * @param entityId Optional entity ID to execute the tool for
    * @returns Promise resolving to stringified tool execution result
@@ -93,27 +97,29 @@ export class CloudflareToolSet extends BaseComposioToolSet {
       name: string;
       arguments: unknown;
     },
-    entityId: Optional<string> = null
+    entityId: Optional<string> = null,
   ): Promise<string> {
     return JSON.stringify(
       await this.execute_action(
         tool.name,
-        typeof tool.arguments === "string" ? JSON.parse(tool.arguments) : tool.arguments,
-        entityId || this.entityId
-      )
+        typeof tool.arguments === "string"
+          ? JSON.parse(tool.arguments)
+          : tool.arguments,
+        entityId || this.entityId,
+      ),
     );
   }
 
   /**
    * Handle tool calls from AI text generation output
-   * 
+   *
    * @param result The AI text generation output containing tool calls
    * @param entityId Optional entity ID to execute the tools for
    * @returns Promise resolving to array of tool execution results
    */
   async handleToolCall(
     result: AiTextGenerationOutput,
-    entityId: Optional<string> = null
+    entityId: Optional<string> = null,
   ): Promise<Sequence<string>> {
     const outputs = [];
     if ("tool_calls" in result && Array.isArray(result.tool_calls)) {
@@ -125,5 +131,4 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     }
     return outputs;
   }
-
 }

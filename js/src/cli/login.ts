@@ -3,10 +3,7 @@ import { Command } from "commander";
 import inquirer from "inquirer";
 import open from "open";
 
-import {
-  getSDKConfig,
-  getOpenAPIClient,
-} from "../sdk/utils/config";
+import { getSDKConfig, getOpenAPIClient } from "../sdk/utils/config";
 import client from "../sdk/client/client";
 import { FRONTEND_BASE_URL } from "./src/constants";
 import { setCliConfig } from "../sdk/utils/cli";
@@ -45,7 +42,7 @@ export default class LoginCommand {
 
       const cliKey = data?.key as string;
       const loginUrl = `${FRONTEND_BASE_URL}?cliKey=${cliKey}`;
-  
+
       this.displayLoginInstructions(loginUrl, options.browser);
       const authCode = await this.promptForAuthCode();
       await this.verifyAndSetupCli(cliKey, authCode, baseURL);

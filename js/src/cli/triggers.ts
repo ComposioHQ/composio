@@ -138,13 +138,17 @@ export class TriggerAdd {
       }
     }
 
-   const triggerSetupData = await composioClient.triggers.setup(
+    const triggerSetupData = await composioClient.triggers.setup(
       connection.id,
       triggerName,
       configValue,
     );
 
-    console.log(chalk.green(`Trigger ${triggerName} setup to app ${appName} with id ${triggerSetupData?.triggerId}`));
+    console.log(
+      chalk.green(
+        `Trigger ${triggerName} setup to app ${appName} with id ${triggerSetupData?.triggerId}`,
+      ),
+    );
   }
 }
 
@@ -173,7 +177,7 @@ export class TriggerDisable {
 
 export class ActiveTriggers {
   private program: Command;
-  constructor(program: Command,register: boolean = true) {
+  constructor(program: Command, register: boolean = true) {
     this.program = program;
 
     if (register) {

@@ -12,7 +12,7 @@ describe("ActionRegistry", () => {
   beforeAll(() => {
     client = new Composio(
       testConfig.COMPOSIO_API_KEY!,
-      testConfig.BACKEND_HERMES_URL!
+      testConfig.BACKEND_HERMES_URL!,
     );
   });
 
@@ -62,7 +62,7 @@ describe("ActionRegistry", () => {
     };
 
     await expect(actionRegistry.createAction(options as any)).rejects.toThrow(
-      "Callback must be a function"
+      "Callback must be a function",
     );
   });
 
@@ -81,7 +81,7 @@ describe("ActionRegistry", () => {
     };
 
     await expect(actionRegistry.createAction(options)).rejects.toThrow(
-      "You must provide actionName for this action"
+      "You must provide actionName for this action",
     );
   });
 
@@ -106,7 +106,7 @@ describe("ActionRegistry", () => {
     const result = await actionRegistry.executeAction(
       "testAction2",
       { param1: "value1" },
-      {}
+      {},
     );
 
     expect(result).toEqual({ success: true });
@@ -114,7 +114,7 @@ describe("ActionRegistry", () => {
 
   it("should throw an error if action does not exist", async () => {
     await expect(
-      actionRegistry.executeAction("nonExistentAction", {}, {})
+      actionRegistry.executeAction("nonExistentAction", {}, {}),
     ).rejects.toThrow("Action with name nonExistentAction does not exist");
   });
 
