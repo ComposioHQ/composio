@@ -55,10 +55,14 @@ export class ConnectedAccounts {
       const { data: res } = await apiClient.connections.initiateConnection({
         body: data,
       });
+
       //@ts-ignore
       return new ConnectionRequest(
+        //@ts-ignore
         res.connectionStatus,
+        //@ts-ignore
         res.connectedAccountId,
+        //@ts-ignore
         res.redirectUrl
       );
     } catch (error) {
