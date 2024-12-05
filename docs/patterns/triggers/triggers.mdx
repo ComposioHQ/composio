@@ -143,6 +143,9 @@ listener.wait_forever()
 </Tab>
 <Tab title="Javascript">
 ```javascript
+import { Composio } from "composio-core";
+const toolset = new Composio();
+
 toolset.triggers.subscribe(
     (data) => {
         console.log(data);
