@@ -18,9 +18,12 @@ export default [
       "no-constant-condition": "off",
       "no-ex-assign": "off",
       "no-constant-binary-expression": "off",
+      "@typescript-eslint/no-empty-object-type": "warn",
       "@typescript-eslint/no-non-null-asserted-optional-chain": "off",
       "no-unsafe-optional-chaining": "off",
       "no-extra-boolean-cast": "off",
+      "no-var": "warn",
+      "prefer-const": "warn",
       "no-console": "warn",
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": [
