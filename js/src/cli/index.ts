@@ -33,13 +33,13 @@ program.addHelpText("before", (options) => {
     formatLine(""),
     formatLine(`  ${chalk.bold("📚 Commands:")}\n`),
     ...options.command.commands.map((cmd) =>
-      formatLine(`    ${chalk.cyanBright(cmd.name())} - ${cmd.description()}`),
+      formatLine(`    ${chalk.cyanBright(cmd.name())} - ${cmd.description()}`)
     ),
     formatLine(`    ${chalk.cyan("help")}   - Display help for command`),
     formatLine(""),
     formatLine(`  ${chalk.bold("⚙️ Options:")}\n`),
     formatLine(
-      `    ${chalk.magenta("-h, --help")}    ℹ️ Display help for command`,
+      `    ${chalk.magenta("-h, --help")}    ℹ️ Display help for command`
     ),
     formatLine(""),
   ].join("\n");

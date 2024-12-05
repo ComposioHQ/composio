@@ -34,7 +34,7 @@ export class ComposioToolSet {
     baseUrl: string | null = COMPOSIO_BASE_URL,
     runtime: string | null = null,
     entityId: string = "default",
-    workspaceConfig: WorkspaceConfig = Workspace.Host(),
+    workspaceConfig: WorkspaceConfig = Workspace.Host()
   ) {
     const clientApiKey: string | undefined =
       apiKey ||
@@ -44,7 +44,7 @@ export class ComposioToolSet {
     this.client = new Composio(
       this.apiKey,
       baseUrl || undefined,
-      runtime as string,
+      runtime as string
     );
     this.customActionRegistry = new ActionRegistry(this.client);
     this.runtime = runtime;
@@ -78,7 +78,7 @@ export class ComposioToolSet {
         | "BASIC"
         | "BEARER_TOKEN"
         | "BASIC_WITH_JWT";
-    } = {},
+    } = {}
   ) {
     return this.client.getExpectedParamsForUser(params);
   }
@@ -95,7 +95,7 @@ export class ComposioToolSet {
 
   async getActionsSchema(
     filters: { actions?: Optional<Sequence<string>> } = {},
-    entityId?: Optional<string>,
+    entityId?: Optional<string>
   ): Promise<Sequence<NonNullable<GetListActionsResponse["items"]>[0]>> {
     await this.setup();
     const actions = (
@@ -116,7 +116,7 @@ export class ComposioToolSet {
     });
     const uniqueLocalActions = Array.from(localActionsMap.values());
     const _newActions = filters.actions?.map((action: string) =>
-      action.toLowerCase(),
+      action.toLowerCase()
     );
     const toolsWithCustomActions = (
       await this.customActionRegistry.getActions({ actions: _newActions! })
@@ -157,7 +157,7 @@ export class ComposioToolSet {
       tags?: Optional<Array<string>>;
       useCase?: Optional<string>;
     },
-    entityId?: Optional<string>,
+    entityId?: Optional<string>
   ): Promise<any> {
     throw new Error("Not implemented");
   }
@@ -171,7 +171,7 @@ export class ComposioToolSet {
       useCaseLimit?: Optional<number>;
       filterByAvailableApps?: Optional<boolean>;
     },
-    entityId?: Optional<string>,
+    entityId?: Optional<string>
   ): Promise<Sequence<NonNullable<GetListActionsResponse["items"]>[0]>> {
     await this.setup();
 
@@ -190,7 +190,7 @@ export class ComposioToolSet {
     if (filters.apps && Array.isArray(filters.apps)) {
       for (const appName of filters.apps!) {
         const actionData = this.localActions?.filter(
-          (a: any) => a.appName === appName,
+          (a: any) => a.appName === appName
         );
         if (actionData) {
           for (const action of actionData) {
@@ -210,7 +210,7 @@ export class ComposioToolSet {
           !filters.actions.some(
             (actionName) =>
               actionName.toLowerCase() ===
-              action.metadata.actionName!.toLowerCase(),
+              action.metadata.actionName!.toLowerCase()
           )
         ) {
           return false;
@@ -219,7 +219,7 @@ export class ComposioToolSet {
           filters.apps &&
           !filters.apps.some(
             (appName) =>
-              appName.toLowerCase() === action.metadata.toolName!.toLowerCase(),
+              appName.toLowerCase() === action.metadata.toolName!.toLowerCase()
           )
         ) {
           return false;
@@ -227,7 +227,7 @@ export class ComposioToolSet {
         if (
           filters.tags &&
           !filters.tags.some(
-            (tag) => tag.toLocaleLowerCase() === "custom".toLocaleLowerCase(),
+            (tag) => tag.toLocaleLowerCase() === "custom".toLocaleLowerCase()
           )
         ) {
           return false;
@@ -285,7 +285,7 @@ export class ComposioToolSet {
     params: Record<string, any>,
     entityId: string = "default",
     nlaText: string = "",
-    connectedAccountId?: string,
+    connectedAccountId?: string
   ): Promise<Record<string, any>> {
     // Custom actions are always executed in the host/local environment for JS SDK
     if (await this.isCustomAction(action)) {
@@ -329,7 +329,7 @@ export class ComposioToolSet {
     meta: {
       action: string;
       entityId: string;
-    },
+    }
   ): Promise<ExecuteActionResDTO> {
     // @ts-ignore
     const isFile = !!data?.response_data?.file;
@@ -360,7 +360,7 @@ export class ComposioToolSet {
     action: string,
     // this need to improve
     params: Record<string, any>,
-    entityId: string = "default",
+    entityId: string = "default"
   ): Promise<Record<string, any>> {
     logger.warn("execute_action is deprecated, use executeAction instead");
     return this.executeAction(action, params, entityId);

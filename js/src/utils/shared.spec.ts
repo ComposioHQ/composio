@@ -15,7 +15,7 @@ describe("shared utilities", () => {
       expect(jsonSchemaToTsType({ type: "boolean" })).toBe(Boolean);
       expect(jsonSchemaToTsType({ type: "null" })).toBe(null);
       expect(() => jsonSchemaToTsType({ type: "unknown" })).toThrow(
-        "Unsupported JSON schema type: unknown",
+        "Unsupported JSON schema type: unknown"
       );
     });
   });
@@ -33,7 +33,7 @@ describe("shared utilities", () => {
       const model = jsonSchemaToModel(schema);
       expect(model).toBeInstanceOf(z.ZodObject);
       expect(() =>
-        model.parse({ name: "John", age: "not a number" }),
+        model.parse({ name: "John", age: "not a number" })
       ).toThrow();
       expect(model.parse({ name: "John", age: 30 })).toEqual({
         name: "John",

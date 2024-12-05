@@ -9,7 +9,7 @@ describe("ComposioToolSet class tests", () => {
   beforeAll(() => {
     toolset = new ComposioToolSet(
       testConfig.COMPOSIO_API_KEY,
-      testConfig.BACKEND_HERMES_URL,
+      testConfig.BACKEND_HERMES_URL
     );
   });
 
@@ -48,7 +48,7 @@ describe("ComposioToolSet class tests", () => {
     const executionResult = await toolset.executeAction(
       actionName,
       requestBody,
-      "default",
+      "default"
     );
     expect(executionResult).toBeDefined();
     // @ts-ignore
@@ -62,7 +62,7 @@ describe("ComposioToolSet class tests", () => {
 
     // Check if exist
     expect(
-      actions[0].parameters.properties["attachment_file_uri_path"],
+      actions[0].parameters.properties["attachment_file_uri_path"]
     ).toBeDefined();
 
     const requestBody = {
@@ -76,7 +76,7 @@ describe("ComposioToolSet class tests", () => {
     const executionResult = await toolset.executeAction(
       ACTION_NAME,
       requestBody,
-      "default",
+      "default"
     );
     expect(executionResult).toBeDefined();
     // @ts-ignore

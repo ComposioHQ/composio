@@ -25,7 +25,7 @@ const LOG_COLORS = {
 export const getLogLevel = (): keyof typeof LOG_LEVELS => {
   const envLevel = getEnvVariable(
     "COMPOSIO_LOGGING_LEVEL",
-    "info",
+    "info"
   )?.toLowerCase();
   return envLevel && envLevel in LOG_LEVELS
     ? (envLevel as keyof typeof LOG_LEVELS)
@@ -54,7 +54,7 @@ const logFormat = winston.format.combine(
     }
 
     return `[${level}]: ${formattedTime} - ${message}${metadataStr}`;
-  }),
+  })
 );
 
 // Create and configure logger instance

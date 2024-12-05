@@ -19,8 +19,8 @@ export default class WhoamiCommand {
     if (!apiKey) {
       console.log(
         chalk.red(
-          "You are not authenticated. Please run `composio login` to authenticate.",
-        ),
+          "You are not authenticated. Please run `composio login` to authenticate."
+        )
       );
       return;
     }
@@ -28,7 +28,7 @@ export default class WhoamiCommand {
     console.log(`\n🔑  API Key:  ${chalk.cyan(apiKey)}`);
     console.log(`🌐  Base URL: ${chalk.cyan(baseURL)}`);
     console.log(
-      `${chalk.yellow("✨")} You are authenticated and ready to use Composio! ${chalk.yellow("✨")} \n`,
+      `${chalk.yellow("✨")} You are authenticated and ready to use Composio! ${chalk.yellow("✨")} \n`
     );
   }
 }

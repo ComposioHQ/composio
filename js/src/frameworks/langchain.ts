@@ -21,27 +21,27 @@ export class LangchainToolSet extends BaseComposioToolSet {
       entityId?: string;
       workspaceConfig?: WorkspaceConfig;
       runtime?: string;
-    } = {},
+    } = {}
   ) {
     super(
       config.apiKey || null,
       config.baseUrl || COMPOSIO_BASE_URL,
       config?.runtime || LangchainToolSet.FRAMEWORK_NAME,
       config.entityId || LangchainToolSet.DEFAULT_ENTITY_ID,
-      config.workspaceConfig || Workspace.Host(),
+      config.workspaceConfig || Workspace.Host()
     );
   }
 
   private _wrapTool(
     schema: Dict<any>,
-    entityId: Optional<string> = null,
+    entityId: Optional<string> = null
   ): DynamicStructuredTool {
     const action = schema["name"];
     const description = schema["description"];
 
     const func = async (...kwargs: any[]): Promise<any> => {
       return JSON.stringify(
-        await this.executeAction(action, kwargs[0], entityId || this.entityId),
+        await this.executeAction(action, kwargs[0], entityId || this.entityId)
       );
     };
 
@@ -66,7 +66,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
       usecaseLimit?: Optional<number>;
       filterByAvailableApps?: Optional<boolean>;
     },
-    entityId: Optional<string> = null,
+    entityId: Optional<string> = null
   ): Promise<Sequence<DynamicStructuredTool>> {
     const tools = await this.getToolsSchema(filters, entityId);
     return tools.map((tool) => this._wrapTool(tool, entityId || this.entityId));

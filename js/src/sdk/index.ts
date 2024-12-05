@@ -41,7 +41,7 @@ export class Composio {
     // // Parse the base URL and API key, falling back to environment variables or defaults if not provided.
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
       baseUrl,
-      apiKey,
+      apiKey
     );
     const loggingLevel = getLogLevel();
 
@@ -49,14 +49,14 @@ export class Composio {
       CEG.throwCustomError(ERROR.COMMON.API_KEY_UNAVAILABLE, {});
     }
     logger.info(
-      `Initilizing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}, Current log level: ${loggingLevel.toUpperCase()}`,
+      `Initilizing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}, Current log level: ${loggingLevel.toUpperCase()}`
     );
 
     // Initialize the BackendClient with the parsed API key and base URL.
     this.backendClient = new BackendClient(
       apiKeyParsed,
       baseURLParsed,
-      runtime,
+      runtime
     );
 
     // Instantiate models with dependencies as needed.
@@ -79,17 +79,17 @@ export class Composio {
       const packageName = "composio-core";
       const packageJsonDir = getPackageJsonDir();
       const currentVersionFromPackageJson = require(
-        packageJsonDir + "/package.json",
+        packageJsonDir + "/package.json"
       ).version;
 
       const response = await axios.get(
-        `https://registry.npmjs.org/${packageName}/latest`,
+        `https://registry.npmjs.org/${packageName}/latest`
       );
       const latestVersion = response.data.version;
 
       if (isNewerVersion(latestVersion, currentVersionFromPackageJson)) {
         console.warn(
-          `🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`,
+          `🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`
         );
       }
     } catch (error) {
@@ -119,7 +119,7 @@ export class Composio {
         | "BASIC"
         | "BEARER_TOKEN"
         | "BASIC_WITH_JWT";
-    } = {},
+    } = {}
   ): Promise<{
     expectedInputFields: GetConnectorInfoResDTO["expectedInputFields"];
     integrationId: string;
@@ -145,7 +145,7 @@ export class Composio {
         });
         if (params.authScheme && integrations) {
           integrations.items = integrations.items.filter(
-            (integration: any) => integration.authScheme === params.authScheme,
+            (integration: any) => integration.authScheme === params.authScheme
           );
         }
         integrationId = (integrations?.items[0] as any)?.id;
@@ -207,21 +207,21 @@ export class Composio {
       (appInfo.testConnectors?.length ?? 0) > 0 ||
       ((
         appInfo.auth_schemes?.find(
-          (_authScheme: any) => _authScheme.mode === schema,
+          (_authScheme: any) => _authScheme.mode === schema
         ) as any
       )?.fields?.filter((field: any) => !field.expected_from_customer)
         ?.length ?? 0) == 0;
 
     if (!areNoFieldsRequiredForIntegration) {
       throw new Error(
-        `No default credentials available for this app, please create new integration by going to app.composio.dev or through CLI - composio add ${appInfo.key}`,
+        `No default credentials available for this app, please create new integration by going to app.composio.dev or through CLI - composio add ${appInfo.key}`
       );
     }
 
     const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
     const hasRelevantTestConnectors = params.authScheme
       ? appInfo.testConnectors?.filter(
-          (connector: any) => connector.authScheme === params.authScheme,
+          (connector: any) => connector.authScheme === params.authScheme
         )?.length! > 0
       : appInfo.testConnectors?.length! > 0;
     if (hasRelevantTestConnectors) {
@@ -250,7 +250,7 @@ export class Composio {
       throw new Error(
         `No supported auth scheme found for \`${String(app)}\`, ` +
           "Please create an integration and use the ID to " +
-          "get the expected parameters.",
+          "get the expected parameters."
       );
     }
 
@@ -264,7 +264,7 @@ export class Composio {
 
     if (!integration) {
       throw new Error(
-        "An unexpected error occurred while creating the integration, please create an integration manually and use its ID to get the expected parameters",
+        "An unexpected error occurred while creating the integration, please create an integration manually and use its ID to get the expected parameters"
       );
     }
     return {

@@ -17,7 +17,7 @@ export default class LoginCommand {
       .command("login")
       .option(
         "-n, --no-browser",
-        "No browser will be opened, you will have to manually copy the link and paste it in your browser",
+        "No browser will be opened, you will have to manually copy the link and paste it in your browser"
       )
       .description("Authenticate and login to Composio")
       .action(this.handleAction.bind(this));
@@ -30,8 +30,8 @@ export default class LoginCommand {
     if (apiKey) {
       console.log(
         chalk.yellow(
-          "✨ You are already authenticated and ready to use Composio! ✨\n",
-        ),
+          "✨ You are already authenticated and ready to use Composio! ✨\n"
+        )
       );
       return;
     }
@@ -72,7 +72,7 @@ export default class LoginCommand {
   private async verifyAndSetupCli(
     cliKey: string,
     authCode: string,
-    baseURL: string,
+    baseURL: string
   ): Promise<void> {
     const { data, error } = await client.cli.verifyCliCode({
       query: { key: cliKey, code: authCode },
@@ -87,7 +87,7 @@ export default class LoginCommand {
     setCliConfig(apiKeyFromServer as string, "");
 
     console.log(
-      chalk.yellow("✨ You are authenticated and ready to use Composio! ✨\n"),
+      chalk.yellow("✨ You are authenticated and ready to use Composio! ✨\n")
     );
   }
 }

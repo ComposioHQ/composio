@@ -21,7 +21,7 @@ export interface CreateActionOptions {
   callback: (
     inputParams: Record<string, any>,
     authCredentials: Record<string, any> | undefined,
-    executeRequest: (data: ExecuteRequest) => Promise<any>,
+    executeRequest: (data: ExecuteRequest) => Promise<any>
   ) => Promise<Record<string, any>>;
 }
 
@@ -49,7 +49,7 @@ export class ActionRegistry {
   }
 
   async createAction(
-    options: CreateActionOptions,
+    options: CreateActionOptions
   ): Promise<Record<string, any>> {
     const { callback } = options;
     if (typeof callback !== "function") {
@@ -113,7 +113,7 @@ export class ActionRegistry {
   async executeAction(
     name: string,
     inputParams: Record<string, any>,
-    metadata: ExecuteMetadata,
+    metadata: ExecuteMetadata
   ): Promise<any> {
     const lowerCaseName = name.toLocaleLowerCase();
     if (!this.customActions.has(lowerCaseName)) {
@@ -131,11 +131,11 @@ export class ActionRegistry {
       const entity = await this.client.getEntity(metadata.entityId);
       const connection = await entity.getConnection(
         toolName,
-        metadata.connectionId,
+        metadata.connectionId
       );
       if (!connection) {
         throw new Error(
-          `Connection with app name ${toolName} and entityId ${metadata.entityId} not found`,
+          `Connection with app name ${toolName} and entityId ${metadata.entityId} not found`
         );
       }
       authCredentials = {
@@ -167,7 +167,7 @@ export class ActionRegistry {
     return await callback(
       inputParams,
       authCredentials,
-      (data: ExecuteRequest) => executeRequest(data),
+      (data: ExecuteRequest) => executeRequest(data)
     );
   }
 }

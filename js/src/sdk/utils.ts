@@ -27,7 +27,7 @@ export const convertReqParams = (properties: Record<string, any>) => {
 };
 
 export const converReqParamForActionExecution = async (
-  params: Record<string, any>,
+  params: Record<string, any>
 ) => {
   const clonedParams = JSON.parse(JSON.stringify(params));
   for (const key of Object.keys(clonedParams)) {
@@ -47,7 +47,7 @@ export const converReqParamForActionExecution = async (
           responseType: "arraybuffer",
         });
         newKey.content = Buffer.from(response.data, "binary").toString(
-          "base64",
+          "base64"
         );
       } else {
         const file = await fs.promises.readFile(valuePassedByClient, {

@@ -33,14 +33,14 @@ export class CloudflareToolSet extends BaseComposioToolSet {
       baseUrl?: Optional<string>;
       entityId?: string;
       workspaceConfig?: WorkspaceConfig;
-    } = {},
+    } = {}
   ) {
     super(
       config.apiKey || null,
       config.baseUrl || COMPOSIO_BASE_URL,
       CloudflareToolSet.FRAMEWORK_NAME,
       config.entityId || CloudflareToolSet.DEFAULT_ENTITY_ID,
-      config.workspaceConfig || Workspace.Host(),
+      config.workspaceConfig || Workspace.Host()
     );
   }
 
@@ -97,7 +97,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
       name: string;
       arguments: unknown;
     },
-    entityId: Optional<string> = null,
+    entityId: Optional<string> = null
   ): Promise<string> {
     return JSON.stringify(
       await this.execute_action(
@@ -105,8 +105,8 @@ export class CloudflareToolSet extends BaseComposioToolSet {
         typeof tool.arguments === "string"
           ? JSON.parse(tool.arguments)
           : tool.arguments,
-        entityId || this.entityId,
-      ),
+        entityId || this.entityId
+      )
     );
   }
 
@@ -119,7 +119,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
    */
   async handleToolCall(
     result: AiTextGenerationOutput,
-    entityId: Optional<string> = null,
+    entityId: Optional<string> = null
   ): Promise<Sequence<string>> {
     const outputs = [];
     if ("tool_calls" in result && Array.isArray(result.tool_calls)) {

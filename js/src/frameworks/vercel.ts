@@ -11,13 +11,13 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       apiKey?: Optional<string>;
       baseUrl?: Optional<string>;
       entityId?: string;
-    } = {},
+    } = {}
   ) {
     super(
       config.apiKey || null,
       config.baseUrl || null,
       "vercel-ai",
-      config.entityId || "default",
+      config.entityId || "default"
     );
   }
 
@@ -32,7 +32,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
             name: schema.name,
             arguments: JSON.stringify(params),
           },
-          this.entityId,
+          this.entityId
         );
       },
     });
@@ -81,7 +81,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
 
   async execute_tool_call(
     tool: { name: string; arguments: unknown },
-    entityId: Optional<string> = null,
+    entityId: Optional<string> = null
   ): Promise<string> {
     return JSON.stringify(
       await this.executeAction(
@@ -89,8 +89,8 @@ export class VercelAIToolSet extends BaseComposioToolSet {
         typeof tool.arguments === "string"
           ? JSON.parse(tool.arguments)
           : tool.arguments,
-        entityId || this.entityId,
-      ),
+        entityId || this.entityId
+      )
     );
   }
 }

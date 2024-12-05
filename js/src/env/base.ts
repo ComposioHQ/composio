@@ -128,7 +128,7 @@ export class Workspace {
     this.accessToken = uuidv4().replace(/-/g, "");
     this.composioAPIKey = _readEnvVar(
       ENV_COMPOSIO_API_KEY,
-      configRepo.config.composioAPIKey!,
+      configRepo.config.composioAPIKey!
     );
     this.composioBaseURL =
       _readEnvVar(ENV_COMPOSIO_BASE_URL, configRepo.config.composioBaseURL!) +
@@ -168,7 +168,7 @@ export class Workspace {
   executeAction(
     action: any,
     request_data: any,
-    metadata: IExecuteActionMetadata = {},
+    metadata: IExecuteActionMetadata = {}
   ): Promise<Record<string, any>> {
     throw new Error("Method 'execute_action()' must be implemented.");
   }
@@ -192,7 +192,7 @@ export class RemoteWorkspace extends Workspace {
     endpoint: string,
     method: string,
     json: any = null,
-    timeout: number = 60000.0,
+    timeout: number = 60000.0
   ): Promise<AxiosResponse> {
     return axios({
       url: `${this.url}${endpoint}`,
@@ -221,7 +221,7 @@ export class RemoteWorkspace extends Workspace {
   async executeAction(
     action: string,
     request_data: any,
-    metadata: IExecuteActionMetadata = {},
+    metadata: IExecuteActionMetadata = {}
   ): Promise<any> {
     if (!metadata.entityId) {
       metadata.entityId = "default";

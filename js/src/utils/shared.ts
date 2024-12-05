@@ -48,7 +48,7 @@ export function jsonSchemaToTsType(jsonSchema: Record<string, any>): any {
 export function jsonSchemaToTsField(
   name: string,
   jsonSchema: Record<string, any>,
-  required: string[],
+  required: string[]
 ): [any, any] {
   const description = jsonSchema.description;
   const examples = jsonSchema.examples || [];
@@ -75,7 +75,7 @@ function jsonSchemaPropertiesToTSTypes(value: any): z.ZodTypeAny {
         .string()
         .describe(
           (value.description || "") +
-            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""),
+            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : "")
         );
       break;
     case "number":
@@ -83,7 +83,7 @@ function jsonSchemaPropertiesToTSTypes(value: any): z.ZodTypeAny {
         .number()
         .describe(
           (value.description || "") +
-            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""),
+            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : "")
         );
       break;
     case "integer":
@@ -92,7 +92,7 @@ function jsonSchemaPropertiesToTSTypes(value: any): z.ZodTypeAny {
         .int()
         .describe(
           (value.description || "") +
-            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""),
+            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : "")
         );
       break;
     case "boolean":
@@ -100,7 +100,7 @@ function jsonSchemaPropertiesToTSTypes(value: any): z.ZodTypeAny {
         .boolean()
         .describe(
           (value.description || "") +
-            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""),
+            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : "")
         );
       break;
     case "array":
@@ -108,13 +108,13 @@ function jsonSchemaPropertiesToTSTypes(value: any): z.ZodTypeAny {
         .array(jsonSchemaPropertiesToTSTypes(value.items))
         .describe(
           (value.description || "") +
-            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""),
+            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : "")
         );
       break;
     case "object":
       zodType = jsonSchemaToModel(value).describe(
         (value.description || "") +
-          (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""),
+          (value.examples ? `\nExamples: ${value.examples.join(", ")}` : "")
       );
       break;
     case "null":
@@ -128,7 +128,7 @@ function jsonSchemaPropertiesToTSTypes(value: any): z.ZodTypeAny {
 }
 
 export function jsonSchemaToModel(
-  jsonSchema: Record<string, any>,
+  jsonSchema: Record<string, any>
 ): z.ZodObject<any> {
   const properties = jsonSchema.properties;
   const requiredFields = jsonSchema.required || [];
@@ -142,17 +142,17 @@ export function jsonSchemaToModel(
     let zodType;
     if (value.anyOf) {
       const anyOfTypes = value.anyOf.map((schema: any) =>
-        jsonSchemaPropertiesToTSTypes(schema),
+        jsonSchemaPropertiesToTSTypes(schema)
       );
       zodType = z
         .union(anyOfTypes)
         .describe(
           (value.description || "") +
-            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""),
+            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : "")
         );
     } else if (value.allOf) {
       const allOfTypes = value.allOf.map((schema: any) =>
-        jsonSchemaPropertiesToTSTypes(schema),
+        jsonSchemaPropertiesToTSTypes(schema)
       );
       zodType = z
         .intersection(
@@ -161,12 +161,12 @@ export function jsonSchemaToModel(
             .slice(1)
             .reduce(
               (acc: z.ZodTypeAny, schema: z.ZodTypeAny) => acc.and(schema),
-              allOfTypes[0],
-            ),
+              allOfTypes[0]
+            )
         )
         .describe(
           (value.description || "") +
-            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : ""),
+            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : "")
         );
     } else {
       if (!value.type) {
@@ -191,7 +191,7 @@ export function jsonSchemaToModel(
 
 export const getEnvVariable = (
   name: string,
-  defaultValue: string | undefined = undefined,
+  defaultValue: string | undefined = undefined
 ): string | undefined => {
   try {
     return process.env[name] || defaultValue;

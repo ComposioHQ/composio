@@ -19,7 +19,7 @@ export class LangGraphToolSet extends BaseComposioToolSet {
       baseUrl?: Optional<string>;
       entityId?: string;
       workspaceConfig?: WorkspaceConfig;
-    } = {},
+    } = {}
   ) {
     super({
       apiKey: config.apiKey || null,
