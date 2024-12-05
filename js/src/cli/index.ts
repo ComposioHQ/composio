@@ -5,7 +5,6 @@ import apps from "./apps";
 import connections from "./connections";
 import integrations from "./integrations";
 import triggers from "./triggers";
-// @ts-ignore
 import add from "./add";
 
 import { Command } from "commander";
