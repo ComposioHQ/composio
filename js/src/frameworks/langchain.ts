@@ -20,12 +20,13 @@ export class LangchainToolSet extends BaseComposioToolSet {
             baseUrl?: Optional<string>,
             entityId?: string,
             workspaceConfig?: WorkspaceConfig
+            runtime?: string
         }={}
     ) {
         super(
             config.apiKey || null,
             config.baseUrl || COMPOSIO_BASE_URL,
-            LangchainToolSet.FRAMEWORK_NAME,
+            config?.runtime || LangchainToolSet.FRAMEWORK_NAME,
             config.entityId || LangchainToolSet.DEFAULT_ENTITY_ID,
             config.workspaceConfig || Workspace.Host()
         );
@@ -48,7 +49,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
 
         const parameters = jsonSchemaToModel(schema["parameters"]);
 
-        // @TODO: Add escriiption an othjer stuff here
+        // @TODO: Add escriiption an other stuff here
 
         return new DynamicStructuredTool({
             name: action,
