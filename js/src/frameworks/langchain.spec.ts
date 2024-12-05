@@ -54,7 +54,6 @@ describe("Apps class tests", () => {
           });
           return res;
         } catch (e) {
-          console.error(e);
           return {};
         }
       },
