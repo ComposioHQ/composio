@@ -3,12 +3,15 @@ Local storage helpers.
 """
 
 import json
+import logging
 import typing as t
 from pathlib import Path
 
 import typing_extensions as tx
 from pydantic import BaseModel
 
+
+logger = logging.getLogger(__name__)
 
 class LocalStorage(BaseModel):
     """
@@ -58,6 +61,7 @@ class LocalStorage(BaseModel):
         if "path" in data:
             del data["path"]
 
+        logger.debug(f"Storing {self.__class__.__name__} to {self.path}")
         self.path.write_text(
             json.dumps(
                 data,

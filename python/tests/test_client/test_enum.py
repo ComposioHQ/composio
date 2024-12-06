@@ -2,6 +2,7 @@
 Test the auto-generate Enum
 """
 
+import logging
 from typing import Dict, List
 from unittest import mock
 
@@ -64,25 +65,46 @@ class TestBase:
 
         enum = Action(say)
         assert enum.slug == say.enum
+        assert enum.app == "COW"
         assert enum.is_runtime
         assert enum.is_local
 
     @mock.patch("pathlib.Path.exists", return_value=False)
-    def test_load_remote_app(self, _patch) -> None:
+    def test_load_remote_app(self, _patch, caplog: pytest.LogCaptureFixture) -> None:
+        caplog.set_level(logging.DEBUG)
         enum = App(value=App.ATTIO.slug)
         assert enum.slug == App.ATTIO.slug
-        assert not enum.is_local
+        assert not enum.is_local # This load()s the app from cache
+        assert any(
+            "Storing AppData to" in record.message and "apps/ATTIO" in record.message
+            for record in caplog.records
+        )
 
     @mock.patch("pathlib.Path.exists", return_value=False)
-    def test_load_remote_action(self, _patch) -> None:
+    def test_load_remote_action(self, _patch, caplog: pytest.LogCaptureFixture) -> None:
+        caplog.set_level(logging.DEBUG)
         enum = Action(value=Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION.slug)
         assert enum.slug == Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION.slug
-        assert not enum.is_local
+        assert not enum.is_local  # This load()s the action from cache
+        assert any(
+            "Storing ActionData to" in record.message
+            and "actions/GITHUB_ACCEPT_A_REPOSITORY_INVITATION" in record.message
+            for record in caplog.records
+        )
 
     @mock.patch("pathlib.Path.exists", return_value=False)
-    def test_load_remote_trigger(self, _patch) -> None:
+    def test_load_remote_trigger(
+        self, _patch, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        caplog.set_level(logging.DEBUG)
         enum = Trigger(value=Trigger.GITHUB_COMMIT_EVENT.slug)
         assert enum.slug == Trigger.GITHUB_COMMIT_EVENT.slug
+        assert enum.name == "GITHUB_COMMIT_EVENT" # This load()s the trigger from cache
+        assert any(
+            "Storing TriggerData to" in record.message
+            and "triggers/GITHUB_COMMIT_EVENT" in record.message
+            for record in caplog.records
+        )
 
 
 class TestDisableRemoteCaching:
@@ -116,21 +138,40 @@ def test_app_enum() -> None:
     """Test `App` enum."""
     assert App.GITHUB == "GITHUB"
     assert not App.GITHUB.is_local
+    assert App("OUTLOOK") == App.OUTLOOK
+    assert App("gmail") == App.GMAIL
+    assert App.SHELLTOOL == "SHELLTOOL"
     assert App.SHELLTOOL.is_local
 
 
 def test_action_enum() -> None:
     """Test `Action` enum."""
-    act = Action("github_issues_list")
-    assert act.app == "github"
-    assert act.slug == "GITHUB_LIST_ISSUES_ASSIGNED_TO_THE_AUTHENTICATED_USER"
-    assert not act.no_auth
+    # Auth enums
+    action = Action("GMAIL_SEND_EMAIL")
+    assert action == Action.GMAIL_SEND_EMAIL
+    assert action.app == "gmail"
+    assert action.slug == "GMAIL_SEND_EMAIL"
+    assert not action.no_auth
+
+    # Non-auth enums
+    action = Action("HACKERNEWS_GET_FRONTPAGE")
+    assert action == Action.HACKERNEWS_GET_FRONTPAGE
+    assert action.app == "hackernews"
+    assert action.slug == "HACKERNEWS_GET_FRONTPAGE"
+    assert action.no_auth
+
+    # Deprecated enum should redirect to new one
+    action = Action("github_issues_list")
+    assert action == Action.GITHUB_LIST_ISSUES_ASSIGNED_TO_THE_AUTHENTICATED_USER
+    assert action.app == "github"
+    assert action.slug == "GITHUB_LIST_ISSUES_ASSIGNED_TO_THE_AUTHENTICATED_USER"
+    assert not action.no_auth
 
 
 def test_trigger_enum() -> None:
     """Test `Trigger` enum."""
     trg = Trigger("slack_receive_message")
-    assert trg.app.upper() == "SLACK"
+    assert trg.app == "slack"
     assert trg.name == "SLACK_RECEIVE_MESSAGE"
 
 
