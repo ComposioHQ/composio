@@ -9,7 +9,7 @@ import { Entity } from './models/Entity';
 import axios from 'axios';
 import { getPackageJsonDir } from './utils/projectUtils';
 import { isNewerVersion } from './utils/other';
-import { CEG } from './utils/ceg';
+import { CEG } from './utils/error';
 import { GetConnectorInfoResDTO } from './client';
 import logger, { getLogLevel } from '../utils/logger';
 import { SDK_ERROR_CODES } from './utils/errors/src/codes';

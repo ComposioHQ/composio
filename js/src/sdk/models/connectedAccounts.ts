@@ -5,7 +5,7 @@ import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
 import { Integrations } from "./integrations";
 import { Apps } from "./apps";
-import { CEG } from "../utils/ceg";
+import { CEG } from "../utils/error";
 
 type ConnectedAccountsListData = GetConnectionsData['query'] & { appNames?: string };
 

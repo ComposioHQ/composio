@@ -10,7 +10,7 @@ import { zodToJsonSchema, JsonSchema7Type } from "zod-to-json-schema";
 import { ActionProxyRequestConfigDTO } from "./client";
 import { Composio } from ".";
 import apiClient from "../sdk/client/client";
-import { CEG } from "./utils/ceg";
+import { CEG } from "./utils/error";
 
 type ExecuteRequest = Omit<ActionProxyRequestConfigDTO, "connectedAccountId">;
 export interface CreateActionOptions {

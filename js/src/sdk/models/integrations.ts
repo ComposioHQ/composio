@@ -1,7 +1,7 @@
 import { DeleteConnectorData, GetConnectorInfoData, GetConnectorInfoResDTO, GetConnectorListResDTO } from "../client";
 import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
-import { CEG } from "../utils/ceg";
+import { CEG } from "../utils/error";
 
 export type ListAllIntegrationsData = {
     /**

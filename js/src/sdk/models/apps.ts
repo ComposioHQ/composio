@@ -1,6 +1,6 @@
 import {  AppListResDTO, SingleAppInfoResDTO } from "../client";
 import apiClient from "../client/client"
-import { CEG } from "../utils/ceg";
+import { CEG } from "../utils/error";
 
 import { BackendClient } from "./backendClient";
 

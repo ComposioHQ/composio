@@ -6,7 +6,7 @@ import { ActiveTriggers } from "./activeTriggers";
 import { ConnectedAccounts } from "./connectedAccounts";
 import { BackendClient } from "./backendClient";
 import { Triggers } from "./triggers";
-import { CEG } from "../utils/ceg";
+import { CEG } from "../utils/error";
 import logger from "../../utils/logger";
 
 const LABELS = {

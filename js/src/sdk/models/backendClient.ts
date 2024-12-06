@@ -1,7 +1,7 @@
 import apiClient from "../client/client"
 import { client as axiosClient } from "../client/services.gen"
 import { setAxiosClientConfig } from "../utils/config";
-import { CEG } from "../utils/ceg";
+import { CEG } from "../utils/error";
 import { SDK_ERROR_CODES } from "../utils/errors/src/codes";
 
 /**
