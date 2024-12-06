@@ -1,4 +1,5 @@
 import { SDK_ERROR_CODES, BASE_ERROR_CODE_INFO, BE_STATUS_CODE_TO_SDK_ERROR_CODES } from "./codes";
+import { AxiosError } from "axios";
 
 interface ErrorResponse {
     errorKey: string;
@@ -13,13 +14,11 @@ interface ErrorDetails {
     possibleFix: string;
 }
 
-interface AxiosError {
-    response: { status: number };
-}
+
 
 export const makeAPIError = (axiosError: AxiosError): ErrorResponse => {
-    const statusCode = axiosError?.response?.status;
-    const errorKey = BE_STATUS_CODE_TO_SDK_ERROR_CODES[statusCode] || SDK_ERROR_CODES.BACKEND.UNKNOWN;
+    const statusCode = axiosError?.response?.status || null;
+    const errorKey = statusCode ? BE_STATUS_CODE_TO_SDK_ERROR_CODES[statusCode] || SDK_ERROR_CODES.BACKEND.UNKNOWN : SDK_ERROR_CODES.BACKEND.UNKNOWN;
     const predefinedError = BASE_ERROR_CODE_INFO[errorKey];
 
     const errorDetails = getAPIErrorDetails(errorKey, axiosError, predefinedError);
