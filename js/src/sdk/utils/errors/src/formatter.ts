@@ -13,8 +13,12 @@ interface ErrorDetails {
     possibleFix: string;
 }
 
-export const makeAPIError = (axiosError: any): ErrorResponse => {
-    const statusCode = axiosError.response?.status;
+interface AxiosError {
+    response: { status: number };
+}
+
+export const makeAPIError = (axiosError: AxiosError): ErrorResponse => {
+    const statusCode = axiosError?.response?.status;
     const errorKey = BE_STATUS_CODE_TO_SDK_ERROR_CODES[statusCode] || SDK_ERROR_CODES.BACKEND.UNKNOWN;
     const predefinedError = BASE_ERROR_CODE_INFO[errorKey];
 
