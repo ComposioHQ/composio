@@ -6,167 +6,177 @@ description: "Integrate Composio with LangGraph agents to let them seamlessly in
 ---
 
 ## Star A Repository on Github
+
 In this example, we will use LangGraph Agent to star a repository on Github using Composio Tools
 
 <Steps>
-<Step title="Install Packages">
-<CodeGroup>
-```bash Python
-pip install composio-langgraph
-```
-```bash TypeScript
-npm i @langchain/langgraph
-npm i composio-core 
-npm i @langchain/openai
-```
-</CodeGroup>
-</Step>
-<Step title="Import Libraries & Initialize ComposioToolSet & LLM">
-You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
-<CodeGroup>
-```python Python
-from typing import Literal
-from langchain_openai import ChatOpenAI
-from langgraph.graph import MessagesState, StateGraph
-from langgraph.prebuilt import ToolNode
-from composio_langgraph import Action, ComposioToolSet, App
+  <Step title="Install Packages">
+    <CodeGroup>
+      ```bash Python
+      pip install composio-langgraph
+      ```
 
-composio_toolset = ComposioToolSet()
-tools = composio_toolset.get_tools(
-    apps=[App.GITHUB]
-)
+      ```bash TypeScript
+      npm i @langchain/langgraph
+      npm i composio-core 
+      npm i @langchain/openai
+      npm i @langchain/core
+      ```
+    </CodeGroup>
+  </Step>
 
-tool_node = ToolNode(tools)
+  <Step title="Import Libraries & Initialize ComposioToolSet & LLM">
+    You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
 
-model = ChatOpenAI(temperature=0, streaming=True)
-model_with_tools = model.bind_tools(tools)
-```
-```typescript TypeScript
-import { LangGraphToolSet } from "composio-core";
-import { ToolNode } from "@langchain/langgraph/prebuilt";
-import { ChatOpenAI } from "@langchain/openai";
-import { StateGraph, END, MessagesAnnotation, START } from "@langchain/langgraph";
-import { HumanMessage } from "@langchain/core/messages";
+    <CodeGroup>
+      ```python Python
+      from typing import Literal
+      from langchain_openai import ChatOpenAI
+      from langgraph.graph import MessagesState, StateGraph
+      from langgraph.prebuilt import ToolNode
+      from composio_langgraph import Action, ComposioToolSet, App
 
-const composioToolset = new LangGraphToolSet();
+      composio_toolset = ComposioToolSet()
+      tools = composio_toolset.get_tools(
+          apps=[App.GITHUB]
+      )
 
-const tools = await composioToolset.getTools({
-    apps: ["github"],
-});
+      tool_node = ToolNode(tools)
 
-const toolNode = new ToolNode(tools);
+      model = ChatOpenAI(temperature=0, streaming=True)
+      model_with_tools = model.bind_tools(tools)
+      ```
 
-const model = new ChatOpenAI({ temperature: 0, apiKey:""}).bindTools(tools);
-```
-</CodeGroup>
-</Step>
+      ```typescript TypeScript
+      import { LangGraphToolSet } from "composio-core";
+      import { ToolNode } from "@langchain/langgraph/prebuilt";
+      import { ChatOpenAI } from "@langchain/openai";
+      import { StateGraph, END, MessagesAnnotation, START } from "@langchain/langgraph";
+      import { HumanMessage } from "@langchain/core/messages";
 
-<Step title="Define the model calling function">
-<CodeGroup>
-```python Python
-def call_model(state: MessagesState):
-    """
-    Process messages through the LLM and return the response
-    """
-    messages = state["messages"]
-    response = model_with_tools.invoke(messages)
-    return {"messages": [response]}
-```
-```typescript TypeScript
-async function callModal(state) {
-    const { messages } = state;
-    const response = await model.invoke(messages);
-    return { messages: [response] };
-}
-```
-</CodeGroup>
-</Step>
+      const composioToolset = new LangGraphToolSet();
 
-<Step title="Define the decision function for workflow routing">
-<CodeGroup>
-```python Python
-def should_continue(state: MessagesState) -> Literal["tools", "__end__"]:
-    """
-    Determine if the conversation should continue to tools or end
-    Returns:
-        - "tools" if the last message contains tool calls
-        - "__end__" otherwise
-    """
-    messages = state["messages"]
-    last_message = messages[-1]
-    if last_message.tool_calls:
-        return "tools"
-    return "__end__"
-```
-```typescript TypeScript
-async function shouldContinue(state) {
-    const { messages } = state;
-    const lastMessage = messages[messages.length - 1];
+      const tools = await composioToolset.getTools({
+          apps: ["github"],
+      });
 
-    if (lastMessage.additional_kwargs.tool_calls) {
-        return "tools";
-    } else {
-        return END;
-    }
-}
-```
-</CodeGroup>
-</Step>
+      const toolNode = new ToolNode(tools);
 
-<Step title="Define the workflow graph">
-<CodeGroup>
-```python Python
-workflow = StateGraph(MessagesState)
+      const model = new ChatOpenAI({ temperature: 0, apiKey:""}).bindTools(tools);
+      ```
+    </CodeGroup>
+  </Step>
 
-workflow.add_node("agent", call_model)
-workflow.add_node("tools", tool_node)
-workflow.add_edge("__start__", "agent")
-workflow.add_conditional_edges(
-    "agent",
-    should_continue,
-)
-workflow.add_edge("tools", "agent")
+  <Step title="Define the model calling function">
+    <CodeGroup>
+      ```python Python
+      def call_model(state: MessagesState):
+          """
+          Process messages through the LLM and return the response
+          """
+          messages = state["messages"]
+          response = model_with_tools.invoke(messages)
+          return {"messages": [response]}
+      ```
 
-app = workflow.compile()
-```
-```typescript TypeScript
-const workflow = new StateGraph(MessagesAnnotation)
-    .addNode("agent", callModal)
-    .addEdge(START, "agent")
-    .addNode("tools", toolNode)
-    .addConditionalEdges("agent", shouldContinue)
-    .addEdge("tools", "agent");
+      ```typescript TypeScript
+      async function callModal(state) {
+          const { messages } = state;
+          const response = await model.invoke(messages);
+          return { messages: [response] };
+      }
+      ```
+    </CodeGroup>
+  </Step>
 
-const app = workflow.compile();
-```
-</CodeGroup>
-</Step>
+  <Step title="Define the decision function for workflow routing">
+    <CodeGroup>
+      ```python Python
+      def should_continue(state: MessagesState) -> Literal["tools", "__end__"]:
+          """
+          Determine if the conversation should continue to tools or end
+          Returns:
+              - "tools" if the last message contains tool calls
+              - "__end__" otherwise
+          """
+          messages = state["messages"]
+          last_message = messages[-1]
+          if last_message.tool_calls:
+              return "tools"
+          return "__end__"
+      ```
 
-<Step title="Execute the workflow">
-<CodeGroup>
-```python Python
-for chunk in app.stream(
-    {
-        "messages": [
-            (
-                "human",
-                "Star the Github Repository composiohq/composio",
-            )
-        ]
-    },
-    stream_mode="values",
-):
-    chunk["messages"][-1].pretty_print()
-```
-```typescript TypeScript
-const stream = await app.invoke({
-    messages: [
-        new HumanMessage("Star the Github Repository composiohq/composio"),
-    ],
-});
+      ```typescript TypeScript
+      async function shouldContinue(state) {
+          const { messages } = state;
+          const lastMessage = messages[messages.length - 1];
 
-console.log(stream.messages[stream.messages.length - 1].content);
-```
-</CodeGroup>
-</Step>
+          if (lastMessage.additional_kwargs.tool_calls) {
+              return "tools";
+          } else {
+              return END;
+          }
+      }
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Define the workflow graph">
+    <CodeGroup>
+      ```python Python
+      workflow = StateGraph(MessagesState)
+
+      workflow.add_node("agent", call_model)
+      workflow.add_node("tools", tool_node)
+      workflow.add_edge("__start__", "agent")
+      workflow.add_conditional_edges(
+          "agent",
+          should_continue,
+      )
+      workflow.add_edge("tools", "agent")
+
+      app = workflow.compile()
+      ```
+
+      ```typescript TypeScript
+      const workflow = new StateGraph(MessagesAnnotation)
+          .addNode("agent", callModal)
+          .addEdge(START, "agent")
+          .addNode("tools", toolNode)
+          .addConditionalEdges("agent", shouldContinue)
+          .addEdge("tools", "agent");
+
+      const app = workflow.compile();
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Execute the workflow">
+    <CodeGroup>
+      ```python Python
+      for chunk in app.stream(
+          {
+              "messages": [
+                  (
+                      "human",
+                      "Star the Github Repository composiohq/composio",
+                  )
+              ]
+          },
+          stream_mode="values",
+      ):
+          chunk["messages"][-1].pretty_print()
+      ```
+
+      ```typescript TypeScript
+      const stream = await app.invoke({
+          messages: [
+              new HumanMessage("Star the Github Repository composiohq/composio"),
+          ],
+      });
+
+      console.log(stream.messages[stream.messages.length - 1].content);
+      ```
+    </CodeGroup>
+  </Step>
 </Steps>
