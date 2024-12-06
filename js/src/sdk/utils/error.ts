@@ -1,6 +1,7 @@
 import { SDK_ERROR_CODES, BASE_ERROR_CODE_INFO } from "./errors/src/codes";
 import { ComposioError } from "./errors/src/base";
 import { makeAPIError } from "./errors/src/formatter";
+import { AxiosError } from "axios";
 import { ifObjectStringify } from "./common";
 
 type NonResponseError = {
@@ -57,7 +58,7 @@ export class CEG {
         if (!('response' in axiosError)) {
             return this.handleNonResponseError(axiosError as unknown as NonResponseError);
         }
-        const errorBody = makeAPIError(axiosError);
+        const errorBody = makeAPIError(axiosError as AxiosError);
         throw new ComposioError(
             errorBody.errorKey,
             errorBody.message,
