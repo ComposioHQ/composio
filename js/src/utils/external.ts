@@ -63,7 +63,7 @@ export async function sendBrowserReq(info:{
     };
 
     // Send the reporting payload as a JSON string
-        xhr.send(JSON.stringify(info.reportingPayload));
+        xhr.send(JSON.stringify(info.data));
     } catch (error) {
         console.error("Error sending error to telemetry", error);
         // DO NOTHING
