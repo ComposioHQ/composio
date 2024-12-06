@@ -53,7 +53,7 @@ jobs:
           sudo apt-get autoremove
           sudo apt-get autoclean
           pip install --user --upgrade setuptools
-          pip install tox==4.6.3
+          pip install 'tox>=4.21,<5' tox-uv
       - name: Code style check
         run: |
           tox -e black-diff
@@ -91,7 +91,7 @@ jobs:
           sudo apt-get autoremove
           sudo apt-get autoclean
           pip install --user --upgrade setuptools
-          pip install tox==4.6.3
+          pip install 'tox>=4.21,<5' tox-uv
       - name: Unittests
         run: |
           export COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY_STAGING }}
@@ -145,7 +145,7 @@ jobs:
           sudo apt-get autoremove
           sudo apt-get autoclean
           pip install --user --upgrade setuptools
-          pip install tox==4.6.3
+          pip install 'tox>=4.21,<5' tox-uv
       - name: Build docker images
         run: |
           cd dockerfiles
