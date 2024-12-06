@@ -1,6 +1,6 @@
-import { SDK_ERROR_CODES, BASE_ERROR_CODE_INFO } from "./errors/codes";
-import { ComposioError } from "./errors/base";
-import { makeAPIError } from "./errors/formatter";
+import { SDK_ERROR_CODES, BASE_ERROR_CODE_INFO } from "./errors/src/codes";
+import { ComposioError } from "./errors/src/base";
+import { makeAPIError } from "./errors/src/formatter";
 import { ifObjectStringify } from "./common";
 
 type NonResponseError = {

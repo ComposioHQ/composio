@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
-import { getLogLevel } from '../../../utils/logger';
+import { getLogLevel } from '../../../../utils/logger';
+import { logError } from '..';
 
 /**
  * Custom error class for Composio that provides rich error details, tracking, and improved debugging
@@ -21,10 +22,10 @@ export class ComposioError extends Error {
     ) {
         // Ensure message is never empty
         super(message || 'An unknown error occurred');
-        
+
         // Ensure proper prototype chain for instanceof checks
         Object.setPrototypeOf(this, new.target.prototype);
-        
+
         this.name = 'ComposioError';
         this.errCode = errCode;
         this.description = description;
@@ -32,13 +33,14 @@ export class ComposioError extends Error {
         this.timestamp = new Date().toISOString();
         this.errorId = uuidv4();
 
-        // Safely store original error info
+        let originalErrorString: string = '';
+
+        // Only print original error if COMPOSIO_LOGGING_LEVEL is debug
         if (originalError) {
-            let originalErrorString: string;
             try {
-                originalErrorString = typeof originalError === 'object' ? 
-                    JSON.parse(JSON.stringify(originalError)) : 
-                    originalError;
+                originalErrorString = typeof originalError === 'object'
+                    ? JSON.parse(JSON.stringify(originalError))
+                    : originalError;
             } catch (e) {
                 originalErrorString = String(originalError);
             }
@@ -48,13 +50,25 @@ export class ComposioError extends Error {
             }
         }
 
+        // Wait for logError to complete before continuing
+        logError({
+            error_id: this.errorId,
+            error_code: this.errCode,
+            original_error: originalErrorString,
+            description: this.description || '',
+            message: this.message,
+            possible_fix: this.possibleFix || '',
+            current_stack: this.stack?.split('\n') || []
+        });
+
+        
         // Capture stack trace, excluding constructor call
         Error.captureStackTrace(this, this.constructor);
     }
 
- 
- 
-    get originalError(): any { return this._originalError; }
+    get originalError(): any {
+        return this._originalError;
+    }
 
     /**
      * Returns a formatted string representation of the error with all relevant details
@@ -63,12 +77,12 @@ export class ComposioError extends Error {
         const parts = [
             `ComposioError [${this.errorId}]`,
             `Code: ${this.errCode}`,
-            `Message: ${this.message}`
+            `Message: ${this.message}`,
         ];
 
         if (this.description) parts.push(`Description: ${this.description}`);
         if (this.possibleFix) parts.push(`Possible Fix: ${this.possibleFix}`);
-        
+
         parts.push(`Time: ${this.timestamp}`);
 
         return parts.join('\n    ');
@@ -88,16 +102,15 @@ export class ComposioError extends Error {
             possibleFix: this.possibleFix,
             timestamp: this.timestamp,
             stack: this.stack?.split('\n'),
-            originalStack: this.originalError?.stack?.split('\n')
+            originalStack: this.originalError?.stack?.split('\n'),
         };
 
         // Remove undefined/null properties
-        return Object.entries(errorObj)
-            .reduce((acc, [key, value]) => {
-                if (value !== undefined && value !== null) {
-                    acc[key] = value;
-                }
-                return acc;
-            }, {} as Record<string, any>);
+        return Object.entries(errorObj).reduce((acc, [key, value]) => {
+            if (value !== undefined && value !== null) {
+                acc[key] = value;
+            }
+            return acc;
+        }, {} as Record<string, any>);
     }
 }

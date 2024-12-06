@@ -12,8 +12,11 @@ import { isNewerVersion } from './utils/other';
 import { CEG } from './utils/ceg';
 import { GetConnectorInfoResDTO } from './client';
 import logger, { getLogLevel } from '../utils/logger';
-import { SDK_ERROR_CODES } from './utils/errors/codes';
+import { SDK_ERROR_CODES } from './utils/errors/src/codes';
 import { getSDKConfig } from './utils/config';
+import ComposioSDKContext from './utils/composioContext';
+import { TELEMETRY_LOGGER } from './utils/telemetry';
+import { TELEMETRY_EVENTS } from './utils/telemetry/events';
 
 export class Composio {
     /**
@@ -42,6 +45,12 @@ export class Composio {
         const { baseURL: baseURLParsed, apiKey: apiKeyParsed } =  getSDKConfig(baseUrl, apiKey);
         const loggingLevel = getLogLevel();
 
+        ComposioSDKContext.apiKey = apiKeyParsed;
+        ComposioSDKContext.baseURL = baseURLParsed;
+        ComposioSDKContext.frameworkRuntime = runtime;
+        ComposioSDKContext.composioVersion = require(getPackageJsonDir() + '/package.json').version;
+
+        TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_INITIALIZED, {});
         if(!apiKeyParsed){
             CEG.throwCustomError(SDK_ERROR_CODES.COMMON.API_KEY_UNAVAILABLE,{
                 message: "🔑 API Key is not provided",
@@ -49,6 +58,8 @@ export class Composio {
                 possibleFix: "Please provide a valid API Key. You can get it from https://app.composio.dev/settings"
             });
         }
+
+
         logger.info(`Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}, Current log level: ${loggingLevel.toUpperCase()}`);
 
         // Initialize the BackendClient with the parsed API key and base URL.
