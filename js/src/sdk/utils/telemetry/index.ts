@@ -24,7 +24,7 @@ export class TELEMETRY_LOGGER {
     private static async sendTelemetry(payload: Record<string, unknown>[]) {
         const url = `${TELEMETRY_URL}/api/sdk_metrics/telemetry`;
         const reqPayload = {
-            reportingPayload: { events: payload },
+            data: { events: payload },
             url,
             method: "POST",
             headers: { "Content-Type": "application/json" }

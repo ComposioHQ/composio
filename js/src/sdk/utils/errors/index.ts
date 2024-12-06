@@ -17,7 +17,7 @@ export async function logError(payload: ErrorPayload) {
         const isBrowser = typeof window !== 'undefined';
         const reportingPayload = await generateReportingPayload(payload);
         const reqPayload = {
-            reportingPayload,
+            data: reportingPayload,
             url: `${TELEMETRY_URL}/api/sdk_metrics/error`,
             method: "POST",
             headers: {

@@ -50,7 +50,6 @@ export class ComposioError extends Error {
             }
         }
 
-        // Wait for logError to complete before continuing
         logError({
             error_id: this.errorId,
             error_code: this.errCode,
