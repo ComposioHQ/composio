@@ -6,85 +6,93 @@ description: "Integrate Composio with LangChain agents to let them seamlessly in
 ---
 
 ## Star A Repository on Github
+
 In this example, we will use LangChain Agent to star a repository on Github using Composio Tools
 
 <Steps>
-<Step title="Install Packages">
-<CodeGroup>
-```bash Python
-pip install composio-langchain langchain_openai
-```
-```javascript JavaScript
-npm install composio-core langchain
-```
-</CodeGroup>
-</Step>
-<Step title="Import Libraries & Initialize ComposioToolSet & LLM">
-<CodeGroup>
-```python Python
-from langchain.agents import create_openai_functions_agent, AgentExecutor
-from langchain import hub
-from langchain_openai import ChatOpenAI
-from composio_langchain import ComposioToolSet, App
+  <Step title="Install Packages">
+    <CodeGroup>
+      ```bash Python
+      pip install composio-langchain langchain_openai
+      ```
 
-llm = ChatOpenAI()
-composio_toolset = ComposioToolSet()
-```
-```javascript JavaScript
-import { ChatOpenAI } from "@langchain/openai";
-import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
-import { LangchainToolSet } from "composio-core";
-import { pull } from "langchain/hub";
+      ```javascript JavaScript
+      npm install composio-core langchain @langchain/openai
+      ```
+    </CodeGroup>
+  </Step>
 
-const llm = new ChatOpenAI();
-const toolset = new LangchainToolSet();
-```
-</CodeGroup>
-</Step>
+  <Step title="Import Libraries & Initialize ComposioToolSet & LLM">
+    <CodeGroup>
+      ```python Python
+      from langchain.agents import create_openai_functions_agent, AgentExecutor
+      from langchain import hub
+      from langchain_openai import ChatOpenAI
+      from composio_langchain import ComposioToolSet, App
 
-<Step title="Get All Github Tools">
-You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
-<CodeGroup>
-```python Python
-tools = composio_toolset.get_tools(apps=[App.GITHUB])
-```
-```javascript JavaScript
-const tools = await toolset.getTools({ apps: ["github"] });
-```
-</CodeGroup>
+      llm = ChatOpenAI()
+      composio_toolset = ComposioToolSet()
+      ```
 
-</Step>
-<Step title="Define the Agent">
-<CodeGroup>
-```python Python
-prompt = hub.pull("hwchase17/openai-functions-agent")
-agent = create_openai_functions_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-```
-```javascript JavaScript
-const prompt = await pull(
-    "hwchase17/openai-functions-agent"
-);
-const agent = await createOpenAIFunctionsAgent({
-    llm,
-    tools: tools,
-    prompt,
-});
-const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
-```
-</CodeGroup>
-</Step>
+      ```javascript JavaScript
+      import { ChatOpenAI } from "@langchain/openai";
+      import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+      import { LangchainToolSet } from "composio-core";
+      import { pull } from "langchain/hub";
 
-<Step title="Execute the Agent">
-<CodeGroup>
-```python Python
-task = "Star a repo composiohq/composio on GitHub"
-agent_executor.invoke({"input": task})
-```
-```javascript JavaScript
-const response = await agentExecutor.invoke({ input: "Star a repo composiohq/composio on GitHub" });
-console.log(response);
-```
-</CodeGroup>
-</Step>
+      const llm = new ChatOpenAI();
+      const toolset = new LangchainToolSet();
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Get All Github Tools">
+    You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
+
+    <CodeGroup>
+      ```python Python
+      tools = composio_toolset.get_tools(apps=[App.GITHUB])
+      ```
+
+      ```javascript JavaScript
+      const tools = await toolset.getTools({ apps: ["github"] });
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Define the Agent">
+    <CodeGroup>
+      ```python Python
+      prompt = hub.pull("hwchase17/openai-functions-agent")
+      agent = create_openai_functions_agent(llm, tools, prompt)
+      agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+      ```
+
+      ```javascript JavaScript
+      const prompt = await pull(
+          "hwchase17/openai-functions-agent"
+      );
+      const agent = await createOpenAIFunctionsAgent({
+          llm,
+          tools: tools,
+          prompt,
+      });
+      const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Execute the Agent">
+    <CodeGroup>
+      ```python Python
+      task = "Star a repo composiohq/composio on GitHub"
+      agent_executor.invoke({"input": task})
+      ```
+
+      ```javascript JavaScript
+      const response = await agentExecutor.invoke({ input: "Star a repo composiohq/composio on GitHub" });
+      console.log(response);
+      ```
+    </CodeGroup>
+  </Step>
 </Steps>
