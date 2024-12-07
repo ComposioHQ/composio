@@ -122,30 +122,6 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
     return wrapper  # type: ignore
 
 
-def load_action(
-    client: Composio, value, warn=True
-) -> Action:  # pylint: disable=used-prior-global-declaration
-    global Action
-    try:
-        return Action(value=value, warn=warn)
-    except EnumStringNotFound as e:
-        # run update apps, and reload actions
-        from composio.cli.apps import (  # pylint: disable=import-outside-toplevel
-            update_actions,
-            update_apps,
-        )
-
-        apps = update_apps(client)
-        update_actions(client, apps)
-        action_enum_module = inspect.getmodule(Action)
-        if action_enum_module is None:
-            raise RuntimeError("Error reloading `Action` enum class") from e
-        reloaded_action_module = importlib.reload(action_enum_module)
-        Action = reloaded_action_module.Action  # type: ignore
-
-    return Action(value=value, warn=warn)
-
-
 class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     """Composio toolset."""
 
@@ -437,7 +413,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
-        action = load_action(self.client, action)
+        action = Action(action)
         if action.no_auth or action.is_runtime:
             return
 

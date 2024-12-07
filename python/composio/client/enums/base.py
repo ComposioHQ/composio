@@ -99,6 +99,9 @@ class ActionData(LocalStorage):
     shell: bool = False
     "If set `True` the action will be executed using a shell."
 
+    replaced_by: t.Optional[str] = None
+    "If set, the action is deprecated and replaced by the given action."
+
 
 class TriggerData(LocalStorage):
     """Local storage for `Trigger` object."""

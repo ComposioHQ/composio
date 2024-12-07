@@ -169,7 +169,7 @@ def create_app() -> FastAPI:
     @with_exception_handling
     def _update_apps() -> bool:
         """Get list of all available apps."""
-        from composio.cli.apps import (  # pylint: disable=import-outside-toplevel
+        from composio.client.utils import (  # pylint: disable=import-outside-toplevel
             update_actions,
             update_apps,
             update_triggers,
