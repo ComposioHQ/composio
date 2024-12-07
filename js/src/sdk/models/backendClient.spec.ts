@@ -20,7 +20,7 @@ describe("Apps class tests", () => {
     });
 
     it("should throw and error if wrong base url is provided", async () => {
-        expect(() => new BackendClient(testConfig.COMPOSIO_API_KEY, "htt://wrong.url")).toThrow('Base URL is not valid');
+        expect(() => new BackendClient(testConfig.COMPOSIO_API_KEY, "htt://wrong.url")).toThrow('🔗 Base URL htt://wrong.url is not valid');
     });
 
 });
