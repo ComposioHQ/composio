@@ -1,5 +1,4 @@
 import { openai } from "@ai-sdk/openai";
-import { groq } from "@ai-sdk/groq";
 import { VercelAIToolSet } from "composio-core";
 import dotenv from "dotenv";
 import { generateText } from "ai";
@@ -46,4 +45,4 @@ async function executeAgent(entityName) {
   console.log("🎉Output from agent: ", output.text);
 }
 
-executeAgent("default_user");
+executeAgent("default");

@@ -1,4 +1,4 @@
-import { ActionExecutionReqDTO, ActionProxyRequestConfigDTO, ActionsListResponseDTO } from "../client";
+import { ActionExecutionReqDTO, ActionProxyRequestConfigDTO, ActionsListResponseDTO, AdvancedUseCaseSearchData } from "../client";
 import apiClient from "../client/client";
 import { CEG } from "../utils/error";
 import { BackendClient } from "./backendClient";
@@ -236,6 +236,25 @@ export class Actions {
             return res!;
         } catch (error) {
             throw CEG.handleAllError(error);
+        }
+    }
+
+    async findActionEnumsByUseCase(data: {
+        apps: Array<string>,
+        useCase: string,
+        limit?: number,
+    }): Promise<Array<string>> {
+        try {
+            const { data: res } = await apiClient.actionsV2.advancedUseCaseSearch({
+                query: {
+                    apps: data.apps.join(","),
+                    useCase: data.useCase,
+                    limit: data.limit || undefined
+                }
+            });
+            return res!.items.map((item) => item.actions).flat() || [];
+        } catch (error) {
+            throw CEG.handleError(error);
         }
     }
 

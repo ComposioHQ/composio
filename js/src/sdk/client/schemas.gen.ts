@@ -1965,6 +1965,63 @@ export const $ActionsMinimalListResponseDTO = {
     required: ['items', 'page', 'totalPages']
 } as const;
 
+export const $AdvancedUseCaseSearchQueryDTO = {
+    properties: {
+        useCase: {
+            type: 'string'
+        },
+        limit: {
+            type: 'number'
+        },
+        maxActionsPerTask: {
+            type: 'number'
+        },
+        minActionsPerTask: {
+            type: 'number'
+        },
+        apps: {
+            type: 'string'
+        }
+    },
+    type: 'object',
+    required: ['useCase']
+} as const;
+
+export const $AdvancedUseCaseSearchTask = {
+    properties: {
+        app: {
+            type: 'string'
+        },
+        actions: {
+            items: {
+                type: 'string'
+            },
+            type: 'array'
+        },
+        description: {
+            type: 'string'
+        },
+        order: {
+            type: 'number'
+        }
+    },
+    type: 'object',
+    required: ['app', 'actions', 'description', 'order']
+} as const;
+
+export const $AdvancedUseCaseSearchResponse = {
+    properties: {
+        items: {
+            items: {
+                '$ref': '#/components/schemas/AdvancedUseCaseSearchTask'
+            },
+            type: 'array'
+        }
+    },
+    type: 'object',
+    required: ['items']
+} as const;
+
 export const $ExecuteActionResDTO = {
     properties: {
         response_data: {
