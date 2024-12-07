@@ -2,7 +2,7 @@ import apiClient from "../client/client"
 import { client as axiosClient } from "../client/services.gen"
 import { setAxiosClientConfig } from "../utils/config";
 import { CEG } from "../utils/error";
-import { SDK_ERROR_CODES } from "../utils/errors/src/codes";
+import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 
 /**
  * Class representing the details required to initialize and configure the API client.
@@ -60,7 +60,7 @@ export class BackendClient {
             const {data} = await apiClient.clientAuth.getUserInfo()
             return data?.client?.id || '';
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 

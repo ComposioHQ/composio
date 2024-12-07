@@ -40,6 +40,7 @@
     "@types/node": "^20.14.2",
     "@types/uuid": "^10.0.0",
     "@types/winston": "^2.4.4",
+    "axios-mock-adapter": "^2.1.0",
     "clean-webpack-plugin": "^4.0.0",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
     "jest": "^29.7.0",

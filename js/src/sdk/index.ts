@@ -12,7 +12,7 @@ import { isNewerVersion } from './utils/other';
 import { CEG } from './utils/error';
 import { GetConnectorInfoResDTO } from './client';
 import logger, { getLogLevel } from '../utils/logger';
-import { SDK_ERROR_CODES } from './utils/errors/src/codes';
+import { SDK_ERROR_CODES } from './utils/errors/src/constants';
 import { getSDKConfig } from './utils/config';
 import ComposioSDKContext from './utils/composioContext';
 import { TELEMETRY_LOGGER } from './utils/telemetry';
@@ -60,7 +60,7 @@ export class Composio {
         }
 
 
-        logger.info(`Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}, Current log level: ${loggingLevel.toUpperCase()}`);
+        logger.info(`Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}, Log level: ${loggingLevel.toUpperCase()}`);
 
         // Initialize the BackendClient with the parsed API key and base URL.
         this.backendClient = new BackendClient(apiKeyParsed, baseURLParsed, runtime);

@@ -6,11 +6,25 @@ import { logError } from '..';
  * Custom error class for Composio that provides rich error details, tracking, and improved debugging
  */
 export class ComposioError extends Error {
-    private readonly timestamp: string;
+    // time at which the error occurred
+    public readonly timestamp: string;
+
+    // unique identifier for the error
     private readonly errorId: string;
+
+    // error code
     private readonly errCode: string;
+
+    // additional metadata about the error
+    private readonly metadata?: Record<string, any> = {};
+
+    // description of the error
     private readonly description?: string;
+
+    // possible fix for the error
     private readonly possibleFix?: string;
+
+    // original error object
     private readonly _originalError?: any;
 
     constructor(
@@ -18,6 +32,7 @@ export class ComposioError extends Error {
         message: string,
         description?: string,
         possibleFix?: string,
+        metadata?: Record<string, any>,
         originalError?: any,
     ) {
         // Ensure message is never empty
@@ -31,6 +46,7 @@ export class ComposioError extends Error {
         this.description = description;
         this.possibleFix = possibleFix;
         this.timestamp = new Date().toISOString();
+        this.metadata = metadata;
         this.errorId = uuidv4();
 
         let originalErrorString: string = '';
@@ -55,6 +71,7 @@ export class ComposioError extends Error {
             error_code: this.errCode,
             original_error: originalErrorString,
             description: this.description || '',
+            metadata: this.metadata || {},
             message: this.message,
             possible_fix: this.possibleFix || '',
             current_stack: this.stack?.split('\n') || []
@@ -69,23 +86,6 @@ export class ComposioError extends Error {
         return this._originalError;
     }
 
-    /**
-     * Returns a formatted string representation of the error with all relevant details
-     */
-    toString(): string {
-        const parts = [
-            `ComposioError [${this.errorId}]`,
-            `Code: ${this.errCode}`,
-            `Message: ${this.message}`,
-        ];
-
-        if (this.description) parts.push(`Description: ${this.description}`);
-        if (this.possibleFix) parts.push(`Possible Fix: ${this.possibleFix}`);
-
-        parts.push(`Time: ${this.timestamp}`);
-
-        return parts.join('\n    ');
-    }
 
     /**
      * Returns a complete object representation for logging/serialization

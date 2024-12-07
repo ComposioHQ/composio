@@ -160,7 +160,7 @@ export class ActionRegistry {
                 });
                 return res!;
             } catch (error) {
-                throw CEG.handleError(error);
+                throw CEG.handleAllError(error);
             }
         };
 

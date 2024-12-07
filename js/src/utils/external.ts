@@ -1,6 +1,7 @@
 
 import { spawn } from "child_process";
-import { TELEMETRY_URL } from "../sdk/utils/constants";
+import { IS_DEVELOPMENT_OR_CI, TELEMETRY_URL } from "../sdk/utils/constants";
+import { ifObjectStringify } from "../sdk/utils/common";
 
 /**
  * Sends a reporting payload to the telemetry server using a child process.
@@ -8,24 +9,25 @@ import { TELEMETRY_URL } from "../sdk/utils/constants";
  * 
  * @param {any} reportingPayload - The payload to be sent to the telemetry server.
  */
-export async function sendProcessReq(payload:{
+export async function sendProcessReq(info:{
     url: string,
     method: string,
     headers: Record<string, string>,
     data: Record<string, unknown>
 }) {
+     if(IS_DEVELOPMENT_OR_CI){
+        console.log(`Hitting ${info.url}[${info.method}] with ${ifObjectStringify(info.data)}`);
+        return true;
+    }
     try {
         // Spawn a child process to execute a Node.js script
         const child = spawn('node', ['-e', `
         const axios = require('axios');
-        axios.post('${payload.url}', {
-            data: ${JSON.stringify(payload.data)},
-            headers: ${JSON.stringify(payload.headers)}
+        axios.post('${info.url}', {
+            data: ${JSON.stringify(info.data)},
+            headers: ${JSON.stringify(info.headers)}
         });
         `]);
-
-        // Write the reporting payload to the child process's stdin
-        child.stdin.write(JSON.stringify(payload.data));
         // Close the stdin stream
         child.stdin.end();
     } catch (error) {
@@ -46,6 +48,10 @@ export async function sendBrowserReq(info:{
     headers: Record<string, string>,
     data: Record<string, unknown>
 }) {
+    if(IS_DEVELOPMENT_OR_CI){
+        console.log(`Hitting ${info.url}[${info.method}] with ${ifObjectStringify(info.data)}`);
+        return true;
+    }
     try {
         // Create a new XMLHttpRequest object
         const xhr = new XMLHttpRequest();

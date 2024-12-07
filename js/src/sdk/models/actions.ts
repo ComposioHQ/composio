@@ -169,7 +169,7 @@ export class Actions {
 
             return (actions.data!);
         } catch(e){
-            throw CEG.handleError(e)
+            throw CEG.handleAllError(e)
         }
     }
 
@@ -212,7 +212,7 @@ export class Actions {
             });
             return response.data!;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -235,7 +235,7 @@ export class Actions {
             });
             return res!;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -256,7 +256,7 @@ export class Actions {
             });
             return res!;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 }
