@@ -11,6 +11,7 @@ class Tag(Enum[TagData], metaclass=EnumGenerator):
     cache = _TAG_CACHE
     storage = TagData
 
+    # TODO: why is it value in tag but name in trigger
     @property
     def value(self) -> str:
         return self.load().value
