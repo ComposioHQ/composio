@@ -8,7 +8,4 @@ const ACTIONS = {
   // actions list end here
 };
 
-module.exports = {
-  APPS,
-  ACTIONS,
-};
+export { APPS, ACTIONS };

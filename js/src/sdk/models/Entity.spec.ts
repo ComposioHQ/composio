@@ -65,7 +65,7 @@ describe("Entity class tests", () => {
     const getConnection = await entityW2Connection.getConnection("github");
     expect(getConnection).toHaveProperty("id");
   });
-  
+
   it("get connections", async () => {
     const connections = await entity.getConnections();
     expect(connections.length).toBeGreaterThan(0);

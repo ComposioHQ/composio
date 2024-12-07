@@ -3,10 +3,7 @@ import { Command } from "commander";
 import inquirer from "inquirer";
 import open from "open";
 
-import {
-  getSDKConfig,
-  getOpenAPIClient,
-} from "../sdk/utils/config";
+import { getSDKConfig, getOpenAPIClient } from "../sdk/utils/config";
 import client from "../sdk/client/client";
 import { FRONTEND_BASE_URL } from "./src/constants";
 import { setCliConfig } from "../sdk/utils/cli";
@@ -20,7 +17,7 @@ export default class LoginCommand {
       .command("login")
       .option(
         "-n, --no-browser",
-        "No browser will be opened, you will have to manually copy the link and paste it in your browser",
+        "No browser will be opened, you will have to manually copy the link and paste it in your browser"
       )
       .description("Authenticate and login to Composio")
       .action(this.handleAction.bind(this));
@@ -33,8 +30,8 @@ export default class LoginCommand {
     if (apiKey) {
       console.log(
         chalk.yellow(
-          "✨ You are already authenticated and ready to use Composio! ✨\n",
-        ),
+          "✨ You are already authenticated and ready to use Composio! ✨\n"
+        )
       );
       return;
     }
@@ -45,7 +42,7 @@ export default class LoginCommand {
 
       const cliKey = data?.key as string;
       const loginUrl = `${FRONTEND_BASE_URL}?cliKey=${cliKey}`;
-  
+
       this.displayLoginInstructions(loginUrl, options.browser);
       const authCode = await this.promptForAuthCode();
       await this.verifyAndSetupCli(cliKey, authCode, baseURL);
@@ -75,7 +72,7 @@ export default class LoginCommand {
   private async verifyAndSetupCli(
     cliKey: string,
     authCode: string,
-    baseURL: string,
+    baseURL: string
   ): Promise<void> {
     const { data, error } = await client.cli.verifyCliCode({
       query: { key: cliKey, code: authCode },
@@ -90,7 +87,7 @@ export default class LoginCommand {
     setCliConfig(apiKeyFromServer as string, "");
 
     console.log(
-      chalk.yellow("✨ You are authenticated and ready to use Composio! ✨\n"),
+      chalk.yellow("✨ You are authenticated and ready to use Composio! ✨\n")
     );
   }
 }

@@ -16,7 +16,7 @@ export default class LogoutCommand {
   private handleAction(): void {
     setCliConfig("", "");
     console.log(
-      chalk.yellow("✨ You have been logged out from Composio! ✨\n"),
+      chalk.yellow("✨ You have been logged out from Composio! ✨\n")
     );
   }
 }

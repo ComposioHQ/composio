@@ -13,7 +13,9 @@
     "openapispec:generate": "npx @hey-api/openapi-ts",
     "run:cli": "ts-node src/cli/index.ts",
     "run:sample": "ts-node sample.ts",
-    "eslint": "eslint src/**/*.ts"
+    "eslint": "eslint 'src/**/*.{ts,js}' --max-warnings=281",
+    "prettier": "prettier --write 'src/**/*.{ts,js,cjs}'",
+    "prettier:check": "prettier --check 'src/**/*.{ts,js,mjs,cjs}'"
   },
   "bin": {
     "composio-js": "./lib/src/cli/index",
@@ -24,6 +26,7 @@
   "license": "ISC",
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240718.0",
+    "@eslint/js": "^9.16.0",
     "@hey-api/openapi-ts": "^0.52.4",
     "@jest/globals": "^29.7.0",
     "@swc/core": "^1.7.10",
@@ -36,15 +39,19 @@
     "@types/uuid": "^10.0.0",
     "@types/winston": "^2.4.4",
     "clean-webpack-plugin": "^4.0.0",
+    "eslint": "^9.16.0",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
+    "globals": "^15.13.0",
     "jest": "^29.7.0",
     "jest-html-reporters": "^3.1.7",
+    "prettier": "^3.4.2",
     "regenerator-runtime": "^0.14.1",
     "terser-webpack-plugin": "^5.3.10",
     "ts-jest": "^29.1.2",
     "ts-loader": "^9.5.1",
     "typedoc": "^0.25.13",
     "typescript": "^5.4.5",
+    "typescript-eslint": "^8.17.0",
     "webpack": "^5.91.0",
     "webpack-cli": "^5.1.4",
     "wrangler": "^3.63.1"

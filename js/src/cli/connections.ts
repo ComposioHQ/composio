@@ -35,10 +35,10 @@ export default class ConnectionsCommand {
     for (const connection of data?.items || []) {
       console.log(chalk.cyan(`• ${chalk.bold("Id")}: ${connection.id}`));
       console.log(
-        chalk.magenta(`  ${chalk.bold("App")}: ${connection.appName}`),
+        chalk.magenta(`  ${chalk.bold("App")}: ${connection.appName}`)
       );
       console.log(
-        chalk.yellow(`  ${chalk.bold("Status")}: ${connection.status}`),
+        chalk.yellow(`  ${chalk.bold("Status")}: ${connection.status}`)
       );
       console.log(""); // Add an empty line for better readability between connections
     }
@@ -71,7 +71,7 @@ export class ConnectionsGetCommand {
 
     for (const [key, value] of Object.entries(data as Record<string, any>)) {
       console.log(
-        `- ${chalk.cyan.bold(key)}: ${JSON.stringify(value, null, 2)}`,
+        `- ${chalk.cyan.bold(key)}: ${JSON.stringify(value, null, 2)}`
       );
     }
   }

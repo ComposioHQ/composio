@@ -48,13 +48,12 @@ describe("Apps class tests", () => {
       callback: async (inputParams, authCredentials, executeRequest) => {
         try {
           const res = await executeRequest({
-              endpoint: `/user/starred/${inputParams.owner}/${inputParams.repo}`,
-              method: "PUT",
-              parameters: [],
+            endpoint: `/user/starred/${inputParams.owner}/${inputParams.repo}`,
+            method: "PUT",
+            parameters: [],
           });
           return res;
         } catch (e) {
-          console.error(e);
           return {};
         }
       },
