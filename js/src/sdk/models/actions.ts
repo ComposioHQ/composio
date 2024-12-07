@@ -254,7 +254,7 @@ export class Actions {
             });
             return res!.items.map((item) => item.actions).flat() || [];
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
