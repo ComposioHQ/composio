@@ -43,6 +43,7 @@ from composio.client.collections import (
 from composio.client.enums import TriggerType
 from composio.client.enums.base import EnumStringNotFound
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
+from composio.client.utils import update_apps, update_actions, update_triggers
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
@@ -291,6 +292,15 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self._connected_account_ids = self._validating_connection_ids(
             connected_account_ids=connected_account_ids or {}
         )
+
+        # TODO: only do a full update if the cache is old.
+        # Detect if the cache is old by checking if the actions
+        # don't contain a "replace_by" field.
+        # If the cache isn't old, diff the enums and only cache
+        # the ones that don't exist.
+        apps = update_apps(self.client)
+        update_actions(self.client, apps)
+        update_triggers(self.client, apps)
 
     def _validating_connection_ids(
         self,
