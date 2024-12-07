@@ -1,7 +1,9 @@
 import typing as t
 
 from composio.client.enums.enum import Enum, EnumGenerator
+
 from .base import TagData
+
 
 _TAG_CACHE: t.Dict[str, "Tag"] = {}
 

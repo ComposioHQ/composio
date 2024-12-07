@@ -2,7 +2,9 @@ import typing as t
 
 from composio.client.enums.action import Action
 from composio.client.enums.enum import Enum, EnumGenerator
+
 from .base import AppData, EnumStringNotFound
+
 
 _APP_CACHE: t.Dict[str, "App"] = {}
 
@@ -18,8 +20,8 @@ class App(Enum[AppData], metaclass=EnumGenerator):
 
         except EnumStringNotFound:
             # re-load local tools, and check if it's a runtime app
-            from composio.tools.local import load_local_tools
             from composio.tools.base.abs import tool_registry
+            from composio.tools.local import load_local_tools
 
             load_local_tools()
 

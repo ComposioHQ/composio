@@ -1,7 +1,9 @@
 import typing as t
 
 from composio.client.enums.enum import Enum, EnumGenerator
+
 from .base import ActionData, EnumStringNotFound
+
 
 _ACTION_CACHE: t.Dict[str, "Action"] = {}
 

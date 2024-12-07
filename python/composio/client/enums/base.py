@@ -5,18 +5,12 @@ Enum helper base.
 import difflib
 import os
 import typing as t
-import warnings
-from pathlib import Path
-
-import typing_extensions as te
 
 from composio.constants import LOCAL_CACHE_DIRECTORY
 from composio.exceptions import ComposioSDKError
 from composio.storage.base import LocalStorage
 
 
-_model_cache: t.Dict[str, LocalStorage] = {}
-_local_actions: t.Dict[str, "ActionData"] = {}
 _runtime_actions: t.Dict[str, "ActionData"] = {}
 
 EntityType = t.TypeVar("EntityType", bound=LocalStorage)

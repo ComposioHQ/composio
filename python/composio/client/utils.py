@@ -6,6 +6,7 @@ from composio.tools.base.abs import DEPRECATED_MARKER
 from composio.tools.local import load_local_tools
 from composio.utils import get_enum_key
 
+
 EnumModels = t.Union[AppModel, ActionModel, TriggerModel]
 
 

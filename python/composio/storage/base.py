@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
+
 class LocalStorage(BaseModel):
     """
     Local storage object.
