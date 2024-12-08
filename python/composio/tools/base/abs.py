@@ -25,6 +25,7 @@ ActionRequest = t.TypeVar("ActionRequest")
 Loadable = t.TypeVar("Loadable")
 ToolRegistry = t.Dict[GroupID, t.Dict[str, "Tool"]]
 ActionsRegistry = t.Dict[GroupID, t.Dict[str, "Action"]]
+# TODO: create a Trigger type for this
 TriggersRegistry = t.Dict[GroupID, t.Dict[str, t.Any]]
 
 tool_registry: ToolRegistry = {"runtime": {}, "local": {}, "api": {}}

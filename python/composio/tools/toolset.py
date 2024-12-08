@@ -5,8 +5,6 @@ Composio SDK tools.
 import base64
 import binascii
 import hashlib
-import importlib
-import inspect
 import itertools
 import json
 import os
@@ -45,6 +43,7 @@ from composio.client.collections import (
 from composio.client.enums import TriggerType
 from composio.client.enums.base import EnumStringNotFound
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
+from composio.client.utils import update_apps, update_actions, update_triggers
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
@@ -120,30 +119,6 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
         return func(self, *args, **kwargs)  # type: ignore
 
     return wrapper  # type: ignore
-
-
-def load_action(
-    client: Composio, value, warn=True
-) -> Action:  # pylint: disable=used-prior-global-declaration
-    global Action
-    try:
-        return Action(value=value, warn=warn)
-    except EnumStringNotFound as e:
-        # run update apps, and reload actions
-        from composio.cli.apps import (  # pylint: disable=import-outside-toplevel
-            update_actions,
-            update_apps,
-        )
-
-        apps = update_apps(client)
-        update_actions(client, apps)
-        action_enum_module = inspect.getmodule(Action)
-        if action_enum_module is None:
-            raise RuntimeError("Error reloading `Action` enum class") from e
-        reloaded_action_module = importlib.reload(action_enum_module)
-        Action = reloaded_action_module.Action  # type: ignore
-
-    return Action(value=value, warn=warn)
 
 
 class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
@@ -318,6 +293,15 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             connected_account_ids=connected_account_ids or {}
         )
 
+        # TODO: only do a full update if the cache is old.
+        # Detect if the cache is old by checking if the actions
+        # don't contain a "replace_by" field.
+        # If the cache isn't old, diff the enums and only cache
+        # the ones that don't exist.
+        apps = update_apps(self.client)
+        update_actions(self.client, apps)
+        update_triggers(self.client, apps)
+
     def _validating_connection_ids(
         self,
         connected_account_ids: t.Dict[AppType, str],
@@ -437,7 +421,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
-        action = load_action(self.client, action)
+        action = Action(action)
         if action.no_auth or action.is_runtime:
             return
 
