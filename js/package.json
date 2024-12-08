@@ -17,8 +17,8 @@
     "build": "rollup -c rollup.config.mjs"
   },
   "bin": {
-    "composio-js": "./lib/src/cli/index",
-    "composio": "./lib/src/cli/index"
+    "composio-js": "./dist/src/cli/index",
+    "composio": "./dist/src/cli/index"
   },
   "lint-staged": {
     "src/**/*.{js,jsx,ts,tsx}": "eslint --fix"
