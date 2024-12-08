@@ -176,7 +176,7 @@ class ComposioToolSet(
         :return: Object containing output data from the tool call.
         """
         return self.execute_action(
-            action=Action(value=tool_call.function.name),
+            action=tool_call.function.name,
             params=json.loads(tool_call.function.arguments),
             entity_id=entity_id or self.entity_id,
         )

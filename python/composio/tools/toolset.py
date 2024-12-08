@@ -886,7 +886,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         actions = t.cast(
             t.List[Action],
             [
-                Action(action)
+                load_action(self.client, action)
                 for action in actions or []
                 if action not in runtime_actions
             ],
