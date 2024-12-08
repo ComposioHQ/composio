@@ -50,7 +50,7 @@ export class ActiveTriggers {
             }) 
             return data?.triggers[0];
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -69,7 +69,7 @@ export class ActiveTriggers {
             
             return response?.triggers || [];
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -91,7 +91,7 @@ export class ActiveTriggers {
             });
             return true;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -105,7 +105,7 @@ export class ActiveTriggers {
             });
             return true;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 }

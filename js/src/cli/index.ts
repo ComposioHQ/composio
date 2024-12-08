@@ -1,14 +1,20 @@
-import whoami from "./whoami";
-import login from "./login";
-import logout from "./logout";
+// Node Imports
+import { Command } from "commander";
+import chalk from "chalk";
+
+// CLI Imports
+import add from "./add";
 import apps from "./apps";
 import connections from "./connections";
 import integrations from "./integrations";
+import login from "./login";
+import logout from "./logout";
 import triggers from "./triggers";
-import add from "./add";
+import whoami from "./whoami";
 
-import { Command } from "commander";
-import chalk from "chalk";
+// SDK Imports
+import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
+import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 
 const program = new Command().name("composio").description("Composio CLI");
 
@@ -46,6 +52,10 @@ program.addHelpText("before", (options) => {
 
   console.log(helpText);
   process.exit(0);
+});
+
+program.hook("preAction", () => {
+  TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.CLI_INVOKED, {});
 });
 
 program.parse();

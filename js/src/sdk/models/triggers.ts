@@ -36,7 +36,7 @@ export class Triggers {
             });
             return response || [];
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -60,7 +60,7 @@ export class Triggers {
             });
             return response.data as {status: string, triggerId: string};
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -76,7 +76,7 @@ export class Triggers {
                 status: "success"
             }
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -92,7 +92,7 @@ export class Triggers {
                 status: "success"
             }
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -105,7 +105,7 @@ export class Triggers {
                 status: "success"
             }
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 

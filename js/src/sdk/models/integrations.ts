@@ -108,7 +108,7 @@ export class Integrations {
             
             return response.data
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -128,7 +128,7 @@ export class Integrations {
             });
             return response.data;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -142,7 +142,7 @@ export class Integrations {
             });
             return response.data?.expectedInputFields;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -174,7 +174,7 @@ export class Integrations {
             });
             return response.data;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -183,7 +183,7 @@ export class Integrations {
             const response = await apiClient.appConnector.deleteConnector(data);
             return response.data;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }   
 }

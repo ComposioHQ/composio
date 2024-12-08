@@ -1,6 +1,7 @@
 import {  AppListResDTO, SingleAppInfoResDTO } from "../client";
 import apiClient from "../client/client"
 import { CEG } from "../utils/error";
+
 import { BackendClient } from "./backendClient";
 
 export type GetAppData = {
@@ -42,7 +43,7 @@ export class Apps {
             const {data} = await apiClient.apps.getApps();
             return data?.items || [];
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -65,7 +66,7 @@ export class Apps {
             if(!response) throw new Error("App not found");
             return response;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -114,7 +115,7 @@ export class Apps {
                 authSchemes: authSchemesObject
             };
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -123,7 +124,7 @@ export class Apps {
             const params = await this.getRequiredParams(appId);
             return params.authSchemes[authScheme];
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 }

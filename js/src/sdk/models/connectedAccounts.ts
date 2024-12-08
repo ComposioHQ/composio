@@ -36,7 +36,7 @@ export class ConnectedAccounts {
             const res = await apiClient.connections.getConnections({ query: data });
             return res.data!;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -46,7 +46,7 @@ export class ConnectedAccounts {
             //@ts-ignore
             return new ConnectionRequest(res.connectionStatus, res.connectedAccountId, res.redirectUrl);
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -55,7 +55,7 @@ export class ConnectedAccounts {
             const res = await apiClient.connections.getConnection({ path: data });
             return res.data;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -64,7 +64,7 @@ export class ConnectedAccounts {
             const res = await apiClient.connections.deleteConnection({ path: data });
             return res.data;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -73,7 +73,7 @@ export class ConnectedAccounts {
             const res = await apiClient.connections.getConnection({ path: { connectedAccountId: data.connectedAccountId } });
             return res.data;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -111,7 +111,7 @@ export class ConnectedAccounts {
 
             return new ConnectionRequest(res?.connectionStatus!, res?.connectedAccountId!, res?.redirectUrl!)
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 }
@@ -146,7 +146,7 @@ export class ConnectionRequest {
                 }
             });
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -155,7 +155,7 @@ export class ConnectionRequest {
             const res = await client.connections.getConnectionInfo({ path: data });
             return res.data!;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -172,7 +172,7 @@ export class ConnectionRequest {
             }
             throw new Error('Connection did not become active within the timeout period.');
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 }

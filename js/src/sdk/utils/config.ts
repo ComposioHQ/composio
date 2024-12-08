@@ -48,6 +48,11 @@ export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
             const responseData = response.data ? JSON.stringify(response.data) : '';
             const status = response.status;
 
+            // @ts-expect-error
+            response["metadata"] = {
+                responseTime,
+                responseSize
+            }
             logger.debug(`API Res [${method}] ${response.config.url} - ${status} - ${responseSize} KB ${responseTime}ms`, {
                 ...(responseData && { response: JSON.parse(responseData) })
             });
@@ -57,6 +62,13 @@ export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
             const requestStartTime = error.config?.metadata?.startTime;
             const responseTime = requestStartTime ? Date.now() - requestStartTime : 0;
             const status = error.response?.status || 'Unknown';
+            const length = JSON.stringify(error.response?.data)?.length || 0;
+            const responseSize = Math.round(length / 1024);
+         
+            error["metadata"] = {
+                responseTime,
+                responseSize
+            }
             logger.debug(`API Error [${status}] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${status} - ${responseTime}ms`, {
                 headers: error.response?.headers,
                 data: error.response?.data,
