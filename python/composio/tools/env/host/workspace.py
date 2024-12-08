@@ -171,12 +171,16 @@ class HostWorkspace(Workspace):
                 missing[app.slug].add(dependency)
 
         actions = actions or []
+
         def is_action(obj):
             try:
                 return hasattr(obj, "app")
             except AttributeError:
                 return False
-        actions = t.cast(t.List[Action], [Action(a) if not is_action(a) else a for a in actions])
+
+        actions = t.cast(
+            t.List[Action], [Action(a) if not is_action(a) else a for a in actions]
+        )
         for action in actions:
             if not action.is_local or action.is_runtime:
                 continue
