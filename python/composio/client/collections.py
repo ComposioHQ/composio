@@ -1111,6 +1111,7 @@ class Actions(Collection[ActionModel]):
         )
         apps = t.cast(t.List[App], [App(app) for app in apps or []])
         tags = t.cast(t.List[Tag], [Tag(tag) for tag in tags or []])
+        allow_all = allow_all or any(tag.slug == "all" for tag in tags)
 
         # Filter out local apps and actions
         local_apps = [app for app in apps if app.is_local]
