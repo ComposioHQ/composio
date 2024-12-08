@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_openai",
-    version="0.5.51",
+    version="0.5.52-rc.1",
     author="Sawradip",
     author_email="sawradip@composio.dev",
     description="Use Composio to get an array of tools with your OpenAI Function Call.",
@@ -22,6 +22,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    install_requires=["composio_core>=0.5.50,<=0.5.51", "openai"],
+    install_requires=["composio_core>=0.5.50,<=0.5.52-rc.1", "openai"],
     include_package_data=True,
 )
