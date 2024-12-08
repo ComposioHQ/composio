@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Computer Use Demo</title>
+        <meta name="permissions-policy" content="fullscreen=*" />
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+            }
+            .container {
+                display: flex;
+                height: 100vh;
+                width: 100vw;
+            }
+            .left {
+                flex: 1;
+                border: none;
+                height: 100vh;
+            }
+            .right {
+                flex: 2;
+                border: none;
+                height: 100vh;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <iframe
+                src="http://localhost:8501"
+                class="left"
+                allow="fullscreen"
+            ></iframe>
+            <iframe
+                id="vnc"
+                src="http://127.0.0.1:6080/vnc.html?&resize=scale&autoconnect=1&view_only=1&reconnect=1&reconnect_delay=2000"
+                class="right"
+                allow="fullscreen"
+            ></iframe>
+            <button
+                id="toggleViewOnly"
+                style="position: absolute; top: 10px; right: 10px; z-index: 1000"
+            >
+                Toggle Screen Control (Off)
+            </button>
+            <script>
+                document
+                    .getElementById("toggleViewOnly")
+                    .addEventListener("click", function () {
+                        var vncIframe = document.getElementById("vnc");
+                        var button = document.getElementById("toggleViewOnly");
+                        var currentSrc = vncIframe.src;
+                        if (currentSrc.includes("view_only=1")) {
+                            vncIframe.src = currentSrc.replace(
+                                "view_only=1",
+                                "view_only=0",
+                            );
+                            button.innerText = "Toggle Screen Control (On)";
+                        } else {
+                            vncIframe.src = currentSrc.replace(
+                                "view_only=0",
+                                "view_only=1",
+                            );
+                            button.innerText = "Toggle Screen Control (Off)";
+                        }
+                    });
+            </script>
+        </div>
+    </body>
+</html>
