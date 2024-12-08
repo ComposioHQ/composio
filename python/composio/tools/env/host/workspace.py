@@ -171,7 +171,7 @@ class HostWorkspace(Workspace):
                 missing[app.slug].add(dependency)
 
         actions = actions or []
-        for action in map(Action, actions):
+        for action in [Action(a) if not isinstance(a, Action) else a for a in actions]:
             if not action.is_local or action.is_runtime:
                 continue
 
