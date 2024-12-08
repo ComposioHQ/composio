@@ -2,7 +2,7 @@
   "name": "composio-core",
   "version": "0.3.2",
   "description": "",
-  "main": "lib/src/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "test": "jest --testMatch=\"**/*.spec.ts\"",
     "test:watch": "jest --testMatch=\"**/*.spec.ts\" --watch",
@@ -53,10 +53,8 @@
     "tslib": "^2.6.2",
     "typedoc": "^0.25.13",
     "typescript": "^5.4.5",
-    "wrangler": "^3.63.1"
-  },
-  "dependencies": {
-    "@ai-sdk/openai": "^0.0.36",
+    "wrangler": "^3.63.1",
+     "@ai-sdk/openai": "^0.0.36",
     "@e2b/code-interpreter": "^0.0.8",
     "@e2b/sdk": "^0.16.1",
     "@faker-js/faker": "^8.4.1",
@@ -64,9 +62,7 @@
     "@hono/node-server": "^1.12.0",
     "@langchain/core": "^0.2.18",
     "@langchain/openai": "^0.2.5",
-    "@rollup/plugin-commonjs": "^28.0.1",
     "@rollup/plugin-json": "^6.1.0",
-    "@rollup/plugin-node-resolve": "^15.3.0",
     "@rollup/plugin-replace": "^6.0.1",
     "ai": "^3.2.22",
     "axios": "^1.7.2",
@@ -84,14 +80,15 @@
     "openai": "^4.50.0",
     "pusher-js": "8.4.0-rc2",
     "resolve-package-path": "^4.0.3",
-    "rollup": "^4.28.1",
-    "rollup-plugin-dts": "^6.1.1",
     "rollup-plugin-terser": "^7.0.2",
     "ts-node": "^10.9.2",
     "uuid": "^10.0.0",
     "winston": "^3.13.1",
     "zod": "^3.23.8",
     "zod-to-json-schema": "^3.23.2"
+  },
+  "dependencies": {
+   
   },
   "publishConfig": {
     "access": "public"
