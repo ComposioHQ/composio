@@ -142,6 +142,7 @@
         "framework/langchain",
         "framework/langgraph",
         "framework/letta",
+        "framework/litellm",
         "framework/llamaindex",
         "framework/openai",
         {
