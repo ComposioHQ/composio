@@ -176,7 +176,7 @@ export class ComposioToolSet {
         },
         entityId?: Optional<string>
     ): Promise<any> {
-        throw new Error("Not implemented. Please define in extension");
+        throw new Error("Not implemented. Please define in extended toolset");
     }
 
     async getToolsSchema(
