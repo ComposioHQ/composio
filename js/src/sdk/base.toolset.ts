@@ -28,7 +28,7 @@ const ZExecuteActionParams = z.object({
 });
 
 
-type TPreProcessor =  ({action, toolRequest}: {action: string, toolRequest: Record<string, any>}) => Record<string, any>;
+type TPreProcessor =  ({action, toolRequest}: {action: string, toolRequest: Record<string, unknown>}) => Record<string, unknown>;
 type TPostProcessor =  ({action, toolResponse}: {action: string, toolResponse: ActionExecutionResDto}) => ActionExecutionResDto;
 
 const fileProcessor = ({action, toolResponse}:{action: string, toolResponse: ActionExecutionResDto}): ActionExecutionResDto => {
@@ -143,18 +143,16 @@ export class ComposioToolSet {
         });
         const uniqueLocalActions = Array.from(localActionsMap.values());
         const _newActions = filters.actions?.map((action: string) => action.toLowerCase());
-        const toolsWithCustomActions = (await this.customActionRegistry.getActions({ actions: _newActions! })).filter((action: any) => {
+        const toolsWithCustomActions = (await this.customActionRegistry.getActions({ actions: _newActions! })).filter((action) => {
             if (_newActions && !_newActions.includes(action.parameters.title.toLowerCase()!)) {
                 return false;
             }
             return true;
-        }).map((action: any) => {
-            return action;
         });
 
         const toolsActions = [...actions!, ...uniqueLocalActions, ...toolsWithCustomActions];
 
-        return toolsActions.map((action: any) => {
+        return toolsActions.map((action) => {
             return this.modifyActionForLocalExecution(action);
         });
     }
@@ -175,7 +173,7 @@ export class ComposioToolSet {
             useCase?: Optional<string>;
         },
         entityId?: Optional<string>
-    ): Promise<any> {
+    ): Promise<unknown> {
         throw new Error("Not implemented. Please define in extended toolset");
     }
 
@@ -203,7 +201,7 @@ export class ComposioToolSet {
         const localActions = new Map<string, NonNullable<GetListActionsResponse["items"]>[0]>();
         if (filters.apps && Array.isArray(filters.apps)) {
             for (const appName of filters.apps!) {
-                const actionData = this.localActions?.filter((a: any) => a.appName === appName);
+                const actionData = this.localActions?.filter((a: { appName: string }) => a.appName === appName);
                 if (actionData) {
                     for (const action of actionData) {
                         localActions.set(action.name, action);
@@ -213,7 +211,7 @@ export class ComposioToolSet {
         }
         const uniqueLocalActions = Array.from(localActions.values());
 
-        const toolsWithCustomActions = (await this.customActionRegistry.getAllActions()).filter((action: any) => {
+        const toolsWithCustomActions = (await this.customActionRegistry.getAllActions()).filter((action) => {
             if (filters.actions && !filters.actions.some(actionName => actionName.toLowerCase() === action.metadata.actionName!.toLowerCase())) {
                 return false;
             }
@@ -224,13 +222,13 @@ export class ComposioToolSet {
                 return false;
             }
             return true;
-        }).map((action: any) => {
+        }).map((action) => {
             return action.schema;
         });
 
         const toolsActions = [...apps?.items!, ...uniqueLocalActions, ...toolsWithCustomActions];
 
-        return toolsActions.map((action: any) => {
+        return toolsActions.map((action) => {
             return this.modifyActionForLocalExecution(action);
         });
 
@@ -261,7 +259,7 @@ export class ComposioToolSet {
     }
 
     private isCustomAction(action: string) {
-        return this.customActionRegistry.getActions({ actions: [action] }).then((actions: any) => actions.length > 0);
+        return this.customActionRegistry.getActions({ actions: [action] }).then((actions) => actions.length > 0);
     }
 
     async executeAction(functionParams: z.infer<typeof ZExecuteActionParams>) {
