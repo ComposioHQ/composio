@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 // Node Imports
 import { Command } from "commander";
 import chalk from "chalk";
