@@ -18,8 +18,6 @@ describe("Apps class tests", () => {
             apps: ['github']
         });
 
-        console.log(tools);
-
         expect(Object.keys(tools)).toBeInstanceOf(Array);
 
     });
