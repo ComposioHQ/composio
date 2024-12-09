@@ -110,5 +110,5 @@ class SearchWord(LocalAction[SearchWordRequest, SearchWordResponse]):
             )
         except PermissionError as e:
             return SearchWordResponse(error=f"Permission denied: {str(e)}")
-        except IOError as e:
+        except OSError as e:
             return SearchWordResponse(error=f"Error reading files: {str(e)}")

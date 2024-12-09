@@ -250,7 +250,7 @@ class RepoMap:
         query_scm = scm_fname.read_text()
 
         # Parse code
-        with open(fname, "r", encoding="utf-8") as file:
+        with open(fname, encoding="utf-8") as file:
             code = file.read().strip()
 
         if not code:
@@ -396,7 +396,7 @@ class RepoMap:
 
         # If no references, use definitions as references
         if not references:
-            references = dict((k, list(v)) for k, v in defines.items())
+            references = {k: list(v) for k, v in defines.items()}
 
         idents = set(defines.keys()).intersection(set(references.keys()))
 
@@ -449,11 +449,11 @@ class RepoMap:
             if fname not in chat_rel_fnames:
                 ranked_tags.extend(definitions.get((fname, ident), []))
 
-        rel_other_fnames_without_tags = set(
+        rel_other_fnames_without_tags = {
             get_rel_fname(self.root, fname) for fname in other_fnames
-        )
+        }
 
-        fnames_already_included = set(rt[0] for rt in ranked_tags)
+        fnames_already_included = {rt[0] for rt in ranked_tags}
 
         # Add remaining files to ranked tags
         top_rank = sorted(
@@ -536,7 +536,7 @@ class RepoMap:
             return self.tree_cache[key]
 
         # use python to read the file
-        with open(abs_fname, "r", encoding="utf-8") as file:
+        with open(abs_fname, encoding="utf-8") as file:
             code = file.read()
         if not code.endswith("\n"):
             code += "\n"

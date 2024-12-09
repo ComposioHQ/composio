@@ -464,7 +464,7 @@ def fetch_relevant_elem(
             f"No elements found for FQDN '{fqdn_use}' with expected type '{expected_type}'"
         )
 
-    if len(set(name.type for name in all_names)) != 1:
+    if len({name.type for name in all_names}) != 1:
         raise ValueError(f"Multiple types found for FQDN '{fqdn_use}'")
 
     entity_class_map = {"class": ClassObj, "function": FunctionObj}
@@ -475,7 +475,7 @@ def fetch_relevant_elem(
     original_contents = {}
     for name in all_names:
         file_path = os.path.normpath(os.path.abspath(name.module_path))
-        with open(file_path, "r", encoding="utf-8") as fp:
+        with open(file_path, encoding="utf-8") as fp:
             original_contents[file_path] = fp.read()
 
     entity_objs = [
@@ -634,7 +634,7 @@ class ClassObj(EntityObj):
         """
         new_script_obj = fetch_script_obj_for_file_in_repo(global_path, repo_dir)
 
-        with open(global_path, "r") as fd:
+        with open(global_path) as fd:
             all_lines = fd.readlines()
 
         line_id = len(all_lines)
@@ -677,7 +677,7 @@ class ClassObj(EntityObj):
             _class_obj.goto_obj
         )
 
-        with open(_class_obj.global_path, "r", encoding="utf-8") as fp:
+        with open(_class_obj.global_path, encoding="utf-8") as fp:
             _original_file_content = fp.read()
 
         _class_completion_file_new_content = (
@@ -978,7 +978,7 @@ class FunctionObj(EntityObj):
             self.parent_class_defined_location,
         ) = self.find_parent_details(self.goto_obj)
 
-        with open(self.global_path, "r") as file:
+        with open(self.global_path) as file:
             source_lines = file.readlines()
         func_body_starting_line = self.goto_obj.get_definition_start_position()[0]
         self.func_decorators = self.get_decorators(
@@ -1143,7 +1143,7 @@ def fetch_node_definition_body(
         if file_path is None:
             file_path = str(node_get_obj.module_path)
 
-        with open(file_path, "r") as file:
+        with open(file_path) as file:
             lines = file.readlines()
 
         extracted_content_lines = lines[start_line : end_line + 1]  # noqa: E203

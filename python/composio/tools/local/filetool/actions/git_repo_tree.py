@@ -74,9 +74,9 @@ class GitRepoTree(LocalAction[GitRepoTreeRequest, GitRepoTreeResponse]):
             )
 
         try:
-            with open(tree_file_path, "r", encoding="utf-8") as f:
+            with open(tree_file_path, encoding="utf-8") as f:
                 tree_content = f.read()
-        except IOError as e:
+        except OSError as e:
             return GitRepoTreeResponse(
                 success=False, message=f"Error reading git_repo_tree.txt: {str(e)}"
             )

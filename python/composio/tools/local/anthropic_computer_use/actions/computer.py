@@ -335,8 +335,7 @@ class Computer(LocalAction[ComputerRequest, ComputerResponse]):
         """Run shell command and return result with optional screenshot."""
         proc = subprocess.run(
             shlex.split(command),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             check=True,
         )
         base64_image = None

@@ -126,9 +126,9 @@ class _Request(t.Generic[ModelType]):
                     ] += f" Note: choose value only from following options - {prop['enum']}"
 
             if "anyOf" in prop:
-                typedef, *_ = [
+                typedef, *_ = (
                     td for td in prop["anyOf"] if td.get("type", "null") != "null"
-                ]
+                )
                 prop["type"] = typedef["type"]
 
         request["properties"] = properties
