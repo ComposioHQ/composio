@@ -61,14 +61,6 @@ export class VercelAIToolSet extends BaseComposioToolSet {
   }): Promise<{ [key: string]: any }> {
 
     const {apps, tags, useCase, usecaseLimit, filterByAvailableApps, actions} = zExecuteToolCallParams.parse(filters);
-
-    if(!apps || !actions) { 
-      CEG.throwCustomError(SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED, {
-        message: "Either apps or actions must be provided",
-        description: "Either apps or actions must be provided",
-        possibleFix: "Add apps or actions to the filters"
-      });
-    }
     
     const actionsList = await this.client.actions.list({
       ...(apps && { apps: apps?.join(",") }),

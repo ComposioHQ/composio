@@ -83,6 +83,7 @@ export class Entity {
   
       if (!connectedAccount) {
         CEG.throwCustomError(SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND, {
+          message: `Could not find a connection with app='${action.appKey}' and entity='${this.id}'`,
           description: `Could not find a connection with app='${action.appKey}' and entity='${this.id}'`,
         });
       }
