@@ -7,7 +7,7 @@ import { getEnvVariable } from "../utils/shared";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
-import { CEG } from '../sdk/utils/error';
+import { CEG } from './utils/error';
 import { ExecuteActionResDTO } from "./client/types.gen";
 import { saveFile } from "./utils/fileUtils";
 import { convertReqParams, converReqParamForActionExecution } from "./utils";
