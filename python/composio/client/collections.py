@@ -35,6 +35,7 @@ from composio.client.enums import (
 from composio.client.exceptions import ComposioClientError, ComposioSDKError
 from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
 from composio.utils import logging
+from composio.utils.shared import generate_request_id
 
 
 if t.TYPE_CHECKING:
@@ -822,6 +823,7 @@ class _PusherClient(logging.WithLogger):
             auth_endpoint=f"{self.base_url}/v1/client/auth/pusher_auth?fromPython=true",
             auth_endpoint_headers={
                 "x-api-key": self.api_key,
+                "x-request-id": generate_request_id(),
             },
         )
 
@@ -1093,7 +1095,20 @@ class Actions(Collection[ActionModel]):
                         app
         :return: List of actions
         """
-        actions = t.cast(t.List[Action], [Action(action) for action in actions or []])
+
+        def is_action(obj):
+            try:
+                return hasattr(obj, "app")
+            except AttributeError:
+                return False
+
+        actions = t.cast(
+            t.List[Action],
+            [
+                action if is_action(action) else Action(action)
+                for action in actions or []
+            ],
+        )
         apps = t.cast(t.List[App], [App(app) for app in apps or []])
         tags = t.cast(t.List[Tag], [Tag(tag) for tag in tags or []])
 

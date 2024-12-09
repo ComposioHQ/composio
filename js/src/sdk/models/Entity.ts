@@ -8,6 +8,7 @@ import { BackendClient } from "./backendClient";
 import { Triggers } from "./triggers";
 import { CEG } from "../utils/error";
 import logger from "../../utils/logger";
+import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 
 const LABELS = {
   PRIMARY: "primary",
@@ -72,8 +73,10 @@ export class Entity {
           status: "ACTIVE",
         });
         // @ts-ignore
-        if (connectedAccounts?.items!.length === 0) {
-          throw new Error("No connected account found");
+        if (connectedAccounts?.items?.length === 0) {
+          throw CEG.getCustomError(SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND, {
+            description: "No connected account found",
+          });
         }
 
         for (const account of connectedAccounts.items!) {
@@ -98,7 +101,7 @@ export class Entity {
         },
       });
     } catch (error) {
-      throw CEG.handleError(error);
+      throw CEG.handleAllError(error);
     }
   }
 
@@ -123,6 +126,7 @@ export class Entity {
       if (!connectedAccounts.items || connectedAccounts.items.length === 0) {
         return null;
       }
+
 
       for (const account of connectedAccounts.items!) {
         if (account?.labels && account?.labels.includes(LABELS.PRIMARY)) {
@@ -156,7 +160,7 @@ export class Entity {
         connectedAccountId: latestAccount.id!,
       });
     } catch (error) {
-      throw CEG.handleError(error);
+      throw CEG.handleAllError(error);
     }
   }
 
@@ -179,7 +183,7 @@ export class Entity {
       );
       return trigger;
     } catch (error) {
-      throw CEG.handleError(error);
+      throw CEG.handleAllError(error);
     }
   }
 
@@ -188,7 +192,7 @@ export class Entity {
       await this.activeTriggers.disable({ triggerId: triggerId });
       return { status: "success" };
     } catch (error) {
-      throw CEG.handleError(error);
+      throw CEG.handleAllError(error);
     }
   }
 
@@ -203,7 +207,7 @@ export class Entity {
       });
       return connectedAccounts.items!;
     } catch (error) {
-      throw CEG.handleError(error);
+      throw CEG.handleAllError(error);
     }
   }
 
@@ -221,7 +225,7 @@ export class Entity {
       });
       return activeTriggers;
     } catch (error) {
-      throw CEG.handleError(error);
+      throw CEG.handleAllError(error);
     }
   }
 
@@ -297,7 +301,7 @@ export class Entity {
         labels: labels,
       });
     } catch (error) {
-      throw CEG.handleError(error);
+      throw CEG.handleAllError(error);
     }
   }
 }
