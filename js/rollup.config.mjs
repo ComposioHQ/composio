@@ -5,7 +5,6 @@ import dts from 'rollup-plugin-dts';
 import json from '@rollup/plugin-json'; // Import the @rollup/plugin-json to handle JSON files
 
 const generateBundleAndTypeBundles = (file) => {
-
   return [{
     input: `src/${file}.ts`,
     output: [
@@ -75,4 +74,3 @@ export default [
   ...generateBundleAndTypeBundles('frameworks/vercel'),
   ...generateBundleAndTypeBundles('sdk/index'),
 ];
-
