@@ -53,14 +53,14 @@ export class ConnectedAccounts {
 
   async create(data: InitiateConnectionPayloadDto) {
     try {
-      const { data: res } = await apiClient.connections.initiateConnection({
+      const { data: res } = (await apiClient.connections.initiateConnection({
         body: data,
-      }) as { data: InitiateConnectionResponse2 };
+      })) as { data: InitiateConnectionResponse2 };
 
       return new ConnectionRequest({
         connectionStatus: res.connectionStatus,
         connectedAccountId: res.connectedAccountId,
-        redirectUri: res.redirectUrl ?? null
+        redirectUri: res.redirectUrl ?? null,
       });
     } catch (error) {
       throw CEG.handleAllError(error);

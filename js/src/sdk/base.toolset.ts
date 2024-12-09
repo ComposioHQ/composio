@@ -391,13 +391,11 @@ export class ComposioToolSet {
       });
     }
     const convertedParams = await converReqParamForActionExecution(params);
-    const data = (await this.client
-      .getEntity(entityId)
-      .execute({
-        actionName: action,
-        params: convertedParams,
-        text: nlaText,
-      })) as ActionExecutionResDto;
+    const data = (await this.client.getEntity(entityId).execute({
+      actionName: action,
+      params: convertedParams,
+      text: nlaText,
+    })) as ActionExecutionResDto;
 
     return this.processResponse(data, {
       action: action,
