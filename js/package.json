@@ -14,13 +14,13 @@
     "eslint": "eslint 'src/**/*.{ts,js}' --max-warnings=281",
     "prettier": "prettier --write 'src/**/*.{ts,js,cjs}'",
     "prettier:check": "prettier --check 'src/**/*.{ts,js,mjs,cjs}'",
-    "build": "rollup -c rollup.config.mjs",
+    "build": "rollup -c rollup.config.mjs && ./setup_cli.sh",
     "lint": "eslint 'src/**/*.ts'",
     "format": "pnpm lint && pnpm prettier"
   },
   "bin": {
-    "composio-js": "./dist/src/cli/index",
-    "composio": "./dist/src/cli/index"
+    "composio-js": "./dist/cli/index",
+    "composio": "./dist/cli/index"
   },
   "lint-staged": {
     "src/**/*.{js,jsx,ts,tsx}": "eslint --fix"
