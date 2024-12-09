@@ -67,8 +67,8 @@ const logger = winston.createLogger({
   transports: [
     new winston.transports.Console({
       handleExceptions: false,
-      handleRejections: false
-    })
+      handleRejections: false,
+    }),
   ],
   exitOnError: false, // Prevent crashes on uncaught exceptions
 });

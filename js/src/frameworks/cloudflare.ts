@@ -102,8 +102,11 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     return JSON.stringify(
       await this.executeAction({
         action: tool.name,
-        params: typeof tool.arguments === "string" ? JSON.parse(tool.arguments) : tool.arguments,
-        entityId: entityId || this.entityId
+        params:
+          typeof tool.arguments === "string"
+            ? JSON.parse(tool.arguments)
+            : tool.arguments,
+        entityId: entityId || this.entityId,
       })
     );
   }

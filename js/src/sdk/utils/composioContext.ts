@@ -6,11 +6,11 @@
     Warning: Can cause problems if there are multiple instances of the SDK running in the same process.
 */
 class ComposioSDKContext {
-    static apiKey: string;
-    static baseURL: string; 
-    static frameworkRuntime?: string;
-    static source?: string = "javascript";
-    static composioVersion?: string;
+  static apiKey: string;
+  static baseURL: string;
+  static frameworkRuntime?: string;
+  static source?: string = "javascript";
+  static composioVersion?: string;
 }
 
 export default ComposioSDKContext;

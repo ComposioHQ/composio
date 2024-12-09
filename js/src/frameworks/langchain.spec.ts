@@ -66,7 +66,7 @@ describe("Apps class tests", () => {
         repo: "achievementsof.life",
       },
       entityId: "default",
-      connectedAccountId: "db3c8d95-73e9-474e-8ae8-edfbdaab98b1"
+      connectedAccountId: "db3c8d95-73e9-474e-8ae8-edfbdaab98b1",
     });
 
     expect(actionOuput).toHaveProperty("successfull", true);

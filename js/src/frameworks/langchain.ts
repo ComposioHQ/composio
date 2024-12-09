@@ -39,13 +39,15 @@ export class LangchainToolSet extends BaseComposioToolSet {
     const action = schema["name"];
     const description = schema["description"];
 
-        const func = async (...kwargs: any[]): Promise<any> => {
-            return JSON.stringify(await this.executeAction({
-                action,
-                params: kwargs[0],
-                entityId: entityId || this.entityId
-            }));
-        };
+    const func = async (...kwargs: any[]): Promise<any> => {
+      return JSON.stringify(
+        await this.executeAction({
+          action,
+          params: kwargs[0],
+          entityId: entityId || this.entityId,
+        })
+      );
+    };
 
     const parameters = jsonSchemaToModel(schema["parameters"]);
 

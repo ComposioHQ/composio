@@ -139,7 +139,7 @@ export class TriggerAdd {
       }
     }
 
-   const triggerSetupData = await composioClient.triggers.setup({
+    const triggerSetupData = await composioClient.triggers.setup({
       connectedAccountId: connection.id,
       triggerName,
       config: configValue,
