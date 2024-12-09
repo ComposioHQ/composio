@@ -1,20 +1,20 @@
-import { getEnvVariable } from './shared';
-import winston from 'winston';
+import { getEnvVariable } from "./shared";
+import winston from "winston";
 
 // Define log levels with corresponding priorities
 const LOG_LEVELS = {
   error: 0, // Highest priority - critical errors
-  warn: 1,  // Warning messages
-  info: 2,  // General information
-  debug: 3  // Debug information
+  warn: 1, // Warning messages
+  info: 2, // General information
+  debug: 3, // Debug information
 } as const;
 
 // Define colors for each log level for better visibility
 const LOG_COLORS = {
-  error: 'red',     // Critical errors in red
-  warn: 'yellow',   // Warnings in yellow
-  info: 'blue',     // Info in blue  
-  debug: 'green'    // Debug in green
+  error: "red", // Critical errors in red
+  warn: "yellow", // Warnings in yellow
+  info: "blue", // Info in blue
+  debug: "green", // Debug in green
 };
 
 /**
@@ -23,8 +23,13 @@ const LOG_COLORS = {
  * @returns {keyof typeof LOG_LEVELS} The current log level
  */
 export const getLogLevel = (): keyof typeof LOG_LEVELS => {
-  const envLevel = getEnvVariable("COMPOSIO_LOGGING_LEVEL", "info")?.toLowerCase();
-  return (envLevel && envLevel in LOG_LEVELS) ? envLevel as keyof typeof LOG_LEVELS : 'info';
+  const envLevel = getEnvVariable(
+    "COMPOSIO_LOGGING_LEVEL",
+    "info"
+  )?.toLowerCase();
+  return envLevel && envLevel in LOG_LEVELS
+    ? (envLevel as keyof typeof LOG_LEVELS)
+    : "info";
 };
 
 // Configure winston colors
@@ -36,15 +41,15 @@ const logFormat = winston.format.combine(
   winston.format.colorize(),
   winston.format.printf(({ timestamp, level, message, ...metadata }) => {
     // Format timestamp for readability
-    const formattedTime = timestamp.slice(5, 22).replace('T', ' ');
-    
+    const formattedTime = timestamp.slice(5, 22).replace("T", " ");
+
     // Handle metadata serialization
-    let metadataStr = '';
+    let metadataStr = "";
     if (Object.keys(metadata).length) {
       try {
         metadataStr = ` - ${JSON.stringify(metadata)}`;
       } catch {
-        metadataStr = ' - [Circular metadata object]';
+        metadataStr = " - [Circular metadata object]";
       }
     }
 
@@ -62,10 +67,10 @@ const logger = winston.createLogger({
   transports: [
     new winston.transports.Console({
       handleExceptions: false,
-      handleRejections: false
-    })
+      handleRejections: false,
+    }),
   ],
-  exitOnError: false // Prevent crashes on uncaught exceptions
+  exitOnError: false, // Prevent crashes on uncaught exceptions
 });
 
 export default logger;

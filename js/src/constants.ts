@@ -8,10 +8,4 @@ const ACTIONS = {
   // actions list end here
 };
 
-const COMPOSIO_VERSION = `0.3.0`;
-
-module.exports = {
-  APPS,
-  ACTIONS,
-  COMPOSIO_VERSION,
-};
+export { APPS, ACTIONS };
