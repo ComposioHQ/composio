@@ -26,6 +26,29 @@ const ZExecuteActionParams = z.object({
 });
 
 
+type TProcessor =  ({action, data}: {action: string, data: Record<string, any>}) => Record<string, any>;
+type TPostProcessor =  ({action, data}: {action: string, data: ExecuteActionResDTO}) => ExecuteActionResDTO;
+
+const fileProcessor: TPostProcessor = ({action, data}): ExecuteActionResDTO => {
+
+    // @ts-expect-error
+    const fileData = data.response_data.file;
+    const { name, content } = fileData as { name: string, content: string };
+    const file_name_prefix = `${action}_${Date.now()}`;
+    const filePath = saveFile(file_name_prefix, content);
+
+    // @ts-ignore
+    delete data.response_data.file
+
+    return {
+        ...data,
+        response_data: {
+            // @ts-ignore
+                    ...data.response_data,
+                    file_uri_path: filePath
+                }
+    }
+}
 
 export class ComposioToolSet {
     client: Composio;
@@ -39,12 +62,9 @@ export class ComposioToolSet {
     customActionRegistry: ActionRegistry;
 
     processors: {
-        pre?: (input: Record<string, any>) => Record<string, any>;
-        post?: (input: Record<string, any>) => Record<string, any>;
-    } = {
-        pre: (input: Record<string, any>) => input,
-        post: (input: Record<string, any>) => input
-    }
+        pre?: TProcessor;
+        post?: TPostProcessor;
+    } = {};
 
     constructor(
         apiKey: string | null,
@@ -229,8 +249,16 @@ export class ComposioToolSet {
 
     async executeAction(functionParams: z.infer<typeof ZExecuteActionParams>) {
 
-        const {action, params={}, entityId, nlaText, connectedAccountId} = ZExecuteActionParams.parse(functionParams);
-        let {params: {}} = params;
+        const {action, params:inputParams={}, entityId, nlaText, connectedAccountId} = ZExecuteActionParams.parse(functionParams);
+        let params = inputParams;
+
+        const passThruPreProcessor = this.processors.pre;
+        if(passThruPreProcessor) {
+            params = passThruPreProcessor({
+                action: action,
+                data: params
+            });
+        }
         // Custom actions are always executed in the host/local environment for JS SDK
         if (await this.isCustomAction(action)) {
             let accountId = connectedAccountId;
@@ -274,35 +302,36 @@ export class ComposioToolSet {
             entityId: string
         }
     ): Promise<ExecuteActionResDTO> {
-
+        let dataToReturn = {...data};
         // @ts-ignore
         const isFile = !!data?.response_data?.file;
         if (isFile) {
-            // @ts-ignore
-            const fileData = data.response_data.file;
-            const { name, content } = fileData as { name: string, content: string };
-            const file_name_prefix = `${meta.action}_${meta.entityId}_${Date.now()}`;
-            const filePath = saveFile(file_name_prefix, content);
-
-            // @ts-ignore
-            delete data.response_data.file
-
-            return {
-                ...data,
-                response_data: {
-                    // @ts-ignore
-                    ...data.response_data,
-                    file_uri_path: filePath
-                }
-            }
+            dataToReturn = fileProcessor({
+                action: meta.action,
+                data: data
+            });
         }
 
-        return data;
+        const isPostProcessorAndIsFunction = !!this.processors.post && typeof this.processors.post === "function";
+        if (isPostProcessorAndIsFunction && this.processors.post) {
+            dataToReturn = this.processors.post({
+                action: meta.action,
+                data: dataToReturn
+            });
+        }
+
+        return dataToReturn;
     }
 
 
-    async addPreprocessor(type: "pre" | "post", processor: (input: Record<string, any>) => Record<string, any>) {
-        this.processors[type] = processor;
+    async addPreprocessor(type: "pre" | "post", processor: TProcessor | TPostProcessor) {
+        if(type === "pre" && typeof processor === "function") {
+            this.processors.pre = processor as TProcessor;
+        } else if(type === "post" && typeof processor === "function") {
+            this.processors.post = processor as TPostProcessor;
+        } else {
+            throw new Error("Invalid processor type");
+        }
     }
 
     async removePreprocessor(type: "pre" | "post") {
