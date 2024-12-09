@@ -121,7 +121,6 @@ export class Entity {
         return null;
       }
 
-
       for (const account of connectedAccounts.items!) {
         if (account?.labels && account?.labels.includes(LABELS.PRIMARY)) {
           latestAccount = account;
@@ -223,6 +222,7 @@ export class Entity {
     try {
       const {appName, authMode, authConfig, integrationId, connectionData} = ZInitiateConnectionParams.parse(data);
       const {redirectUrl, labels} = data.config || {};
+
       // Get the app details from the client
       const app = await this.apps.get({ appKey: appName });
 
