@@ -2,6 +2,7 @@ import apiClient from "../client/client"
 import { client as axiosClient } from "../client/services.gen"
 import { setAxiosClientConfig } from "../utils/config";
 import { CEG } from "../utils/error";
+import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 
 /**
  * Class representing the details required to initialize and configure the API client.
@@ -35,12 +36,15 @@ export class BackendClient {
         this.baseUrl = baseUrl;
 
         if (!apiKey) {
-            throw new Error(`API Key is required for initializing the client`);
+            throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.API_KEY_UNAVAILABLE,{});
         }
 
         // Validate baseUrl
         if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
-            throw new Error(`Base URL is not valid, got ${baseUrl}`);
+            throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.BASE_URL_NOT_REACHABLE,{
+                message: `🔗 Base URL ${baseUrl} is not valid`,
+                description: "The composio backend URL provided is not valid"
+            });
         }
 
         this.initializeApiClient();
@@ -56,7 +60,7 @@ export class BackendClient {
             const {data} = await apiClient.clientAuth.getUserInfo()
             return data?.client?.id || '';
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 

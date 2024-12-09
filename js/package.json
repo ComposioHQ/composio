@@ -13,11 +13,16 @@
     "openapispec:generate": "npx @hey-api/openapi-ts",
     "run:cli": "ts-node src/cli/index.ts",
     "run:sample": "ts-node sample.ts",
-    "eslint": "eslint src/**/*.ts"
+    "lint": "eslint 'src/**/*.ts'",
+    "prettier": "prettier --write 'src/**/*.ts'",
+    "format": "pnpm lint && pnpm prettier"
   },
   "bin": {
     "composio-js": "./lib/src/cli/index",
     "composio": "./lib/src/cli/index"
+  },
+  "lint-staged": {
+    "src/**/*.{js,jsx,ts,tsx}": "eslint --fix"
   },
   "keywords": [],
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",
@@ -35,6 +40,7 @@
     "@types/node": "^20.14.2",
     "@types/uuid": "^10.0.0",
     "@types/winston": "^2.4.4",
+    "axios-mock-adapter": "^2.1.0",
     "clean-webpack-plugin": "^4.0.0",
     "fork-ts-checker-webpack-plugin": "^9.0.2",
     "jest": "^29.7.0",
