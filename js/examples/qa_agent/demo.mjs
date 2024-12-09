@@ -1,4 +1,4 @@
-import { openai } from "@ai-sdk/openai";
+import { groq } from "@ai-sdk/groq";
 import { VercelAIToolSet } from "composio-core";
 import dotenv from "dotenv";
 import { generateText } from "ai";
@@ -9,7 +9,7 @@ const toolset = new VercelAIToolSet({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const appName = "reddit";
+const appName = "codeinterpreter";
 
 async function setupUserConnectionIfNotExists(entityId) {
   const entity = await toolset.client.getEntity(entityId);
@@ -31,14 +31,33 @@ async function executeAgent(entityName) {
   await setupUserConnectionIfNotExists(entity.id);
 
   // Retrieve tools for the specified app
-  const tools = await toolset.getTools({ apps: [appName] }, entity.id);
-  const subreddit = "r/developersIndia/";
+  const tools = await toolset.getTools({ apps: ['CODEANALYSISTOOL',appName] }, entity.id);
+  const task = "Your job is to be a QA test engineer.";
+  const code = `
+class Calculator:
+    """A simple calculator class."""
+    
+    def add(self, a, b):
+        return a + b
+
+    def subtract(self, a, b):
+        return a - b
+
+    def multiply(self, a, b):
+        return a * b
+
+    def divide(self, a, b):
+        # This method has a bug. It does not handle division by zero.
+        return a / b
+
+  
+  `;
   // Generate text using the model and tools
   const output = await generateText({
-    model: openai("gpt-4o"),//groq("llama3-8b-8192"),
+    model: groq("llama-3.3-70b-versatile"),//groq("llama3-8b-8192"),
     streamText: false,
     tools: tools,
-    prompt: `Research the subreddit ${subreddit} and provide a summary of the top posts. Look at patterns of writing and suggest ideas that can go viral on this subreddit.`, 
+    prompt: task+'write tests for this and return the test code:'+code, 
     maxToolRoundtrips: 5,
   });
 
