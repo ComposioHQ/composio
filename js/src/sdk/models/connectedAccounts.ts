@@ -4,6 +4,7 @@ import {
   GetConnectionInfoData,
   GetConnectionInfoResponse,
   GetConnectionsData,
+  InitiateConnectionResponse2,
 } from "../client";
 import client from "../client/client";
 import apiClient from "../client/client";
@@ -11,6 +12,7 @@ import { BackendClient } from "./backendClient";
 import { Integrations } from "./integrations";
 import { Apps } from "./apps";
 import { CEG } from "../utils/error";
+import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 
 type ConnectedAccountsListData = GetConnectionsData["query"] & {
   appNames?: string;
@@ -53,13 +55,13 @@ export class ConnectedAccounts {
     try {
       const { data: res } = await apiClient.connections.initiateConnection({
         body: data,
+      }) as { data: InitiateConnectionResponse2 };
+
+      return new ConnectionRequest({
+        connectionStatus: res.connectionStatus,
+        connectedAccountId: res.connectedAccountId,
+        redirectUri: res.redirectUrl ?? null
       });
-      //@ts-ignore
-      return new ConnectionRequest(
-        res.connectionStatus,
-        res.connectedAccountId,
-        res.redirectUrl
-      );
     } catch (error) {
       throw CEG.handleAllError(error);
     }

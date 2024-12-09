@@ -5,10 +5,14 @@ import { Command } from "commander";
 import { getOpenAPIClient } from "../sdk/utils/config";
 import client from "../sdk/client/client";
 
-// @ts-ignore
 import resolvePackagePath from "resolve-package-path";
 import fs from "fs";
 import path from "path";
+
+type ErrorWithMessage = {
+  message: string;
+};
+
 export default class AppsCommand {
   private program: Command;
 
@@ -34,7 +38,7 @@ export default class AppsCommand {
         console.log(app.key);
       }
     } catch (error) {
-      console.log(chalk.red((error as any).message));
+      console.log(chalk.red((error as ErrorWithMessage).message));
       return;
     }
   }
@@ -77,7 +81,7 @@ class AppUpdateCommand {
         }
       } catch (e) {
         console.log(chalk.red("Error while updating constants file"));
-        console.log(chalk.red((e as any).message));
+        console.log(chalk.red((e as ErrorWithMessage).message));
       }
 
       const constantFile = fs.readFileSync(constantFilePath, "utf8");
@@ -100,7 +104,7 @@ class AppUpdateCommand {
       );
     } catch (e) {
       console.log(chalk.red("Error while updating constants file"));
-      console.log(chalk.red((e as any).message));
+      console.log(chalk.red((e as ErrorWithMessage).message));
     }
   }
 
