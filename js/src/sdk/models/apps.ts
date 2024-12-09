@@ -119,7 +119,7 @@ export class Apps {
         }
     }
 
-    async getRequiredParamsForAuthScheme(appId: string, authScheme: string): Promise<RequiredParamsResponse> {
+    async getRequiredParamsForAuthScheme({appId, authScheme}: {appId: string, authScheme: string}): Promise<RequiredParamsResponse> {
         try {
             const params = await this.getRequiredParams(appId);
             return params.authSchemes[authScheme];
