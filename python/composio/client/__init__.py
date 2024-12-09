@@ -46,6 +46,7 @@ from composio.constants import (
 )
 from composio.exceptions import ApiKeyNotProvidedError
 from composio.storage.user import UserData
+from composio.utils.decorators import deprecated
 from composio.utils.url import get_api_url_base
 
 
@@ -226,6 +227,7 @@ class Entity:
         self.client = client
         self.id = id
 
+    @deprecated(version="0.5.52", replacement="execute_action")
     def execute(
         self,
         action: Action,
