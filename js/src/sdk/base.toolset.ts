@@ -249,12 +249,12 @@ export class ComposioToolSet {
 
     async executeAction(functionParams: z.infer<typeof ZExecuteActionParams>) {
 
-        const {action, params:inputParams={}, entityId, nlaText, connectedAccountId} = ZExecuteActionParams.parse(functionParams);
+        const {action, params:inputParams={}, entityId="default", nlaText="", connectedAccountId} = ZExecuteActionParams.parse(functionParams);
         let params = inputParams;
 
-        const passThruPreProcessor = this.processors.pre;
-        if(passThruPreProcessor) {
-            params = passThruPreProcessor({
+        const isPreProcessorAndIsFunction = typeof this?.processors?.pre === "function";
+        if(isPreProcessorAndIsFunction && this.processors.pre) {
+            params = this.processors.pre({
                 action: action,
                 data: params
             });

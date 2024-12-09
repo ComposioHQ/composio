@@ -79,7 +79,7 @@ export class Entity {
           },
         });
       }
-      const connectedAccount = this.getConnection({app: action.appKey, connectedAccountId});
+      const connectedAccount = await this.getConnection({app: action.appKey, connectedAccountId});
   
       if (!connectedAccount) {
         CEG.throwCustomError(SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND, {
