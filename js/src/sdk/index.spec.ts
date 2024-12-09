@@ -7,19 +7,9 @@ import AxiosMockAdapter from "axios-mock-adapter";
 const { COMPOSIO_API_KEY, BACKEND_HERMES_URL } = getTestConfig();
 
 describe("Basic SDK spec suite", () => {
-  it("should create a basic client", () => {
-    const client = new Composio(COMPOSIO_API_KEY);
-    expect(client).toBeInstanceOf(Composio);
-  });
-
-    it("should throw an error if apiKey is not provided", async () => {
-        const originalExit = process.exit;
-
-        // @ts-expect-error
-        process.exit = jest.fn();
-        expect(() => new Composio()).toThrow('🔑 API Key is not provided');
-        process.exit = originalExit;
-
+    it("should create a basic client", () => {
+        const client = new Composio(COMPOSIO_API_KEY);
+        expect(client).toBeInstanceOf(Composio);
     });
 
     it("should throw an error if apiKey is not provided", async () => {
