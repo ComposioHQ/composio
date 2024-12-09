@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Gedit
+Comment=Open gedit
+Exec=gedit
+Icon=text-editor-symbolic
+Terminal=false
+Type=Application
+Categories=TextEditor;
