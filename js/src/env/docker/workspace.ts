@@ -130,7 +130,7 @@ export class DockerWorkspace extends RemoteWorkspace {
 
     if (!imageExists) {
       logger.debug(`Pulling Docker image ${this.image}...`);
-      let cliProgress = nodeExternalRequire("cli-progress");
+      const cliProgress = nodeExternalRequire("cli-progress");
 
       const bar: CliProgress.Bar = new cliProgress.SingleBar(
         {

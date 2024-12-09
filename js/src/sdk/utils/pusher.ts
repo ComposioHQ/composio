@@ -120,7 +120,7 @@ export class PusherUtils {
     clientId: string,
     fn: (data: TriggerData) => void
   ): void {
-    var channel = PusherUtils.pusherClient.subscribe(
+    const channel = PusherUtils.pusherClient.subscribe(
       `private-${clientId}_triggers`
     );
     PusherUtils.bindWithChunking(channel, "trigger_to_client", fn);

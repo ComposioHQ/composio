@@ -11,6 +11,7 @@ export default [
     rules: {
       "@typescript-eslint/no-var-requires": "off",
       "@typescript-eslint/no-require-imports": "warn",
+      "@typescript-eslint/no-unsafe-function-type": "off",
       "no-prototype-builtins": "off",
       "max-lines-per-function": ["error", 250],
       "no-unused-vars": "off",

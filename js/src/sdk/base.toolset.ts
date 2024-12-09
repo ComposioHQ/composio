@@ -165,7 +165,7 @@ export class ComposioToolSet {
     entityId?: Optional<string>
   ): Promise<Sequence<NonNullable<GetListActionsResponse["items"]>[0]>> {
     await this.setup();
-    let actions = (
+    const actions = (
       await this.client.actions.list({
         actions: filters.actions?.join(","),
         showAll: true,

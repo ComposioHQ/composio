@@ -5,7 +5,7 @@ import { ConnectedAccounts } from "./connectedAccounts";
 import { Integrations } from "./integrations";
 
 describe("Entity class tests", () => {
-  let backendClient = getBackendClient();
+  const backendClient = getBackendClient();
   let entity: Entity;
   let triggerId: string;
   let connectedAccounts: ConnectedAccounts;
