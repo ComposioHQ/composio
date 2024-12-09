@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from "@jest/globals";
 import { ComposioToolSet } from "./base.toolset";
 import { getTestConfig } from "../../config/getTestConfig";
+import { ActionExecutionResDto, ExecuteActionResDTO } from "./client";
 
 describe("ComposioToolSet class tests", () => {
     let toolset: ComposioToolSet;
@@ -50,6 +51,69 @@ describe("ComposioToolSet class tests", () => {
 
     });
 
+
+    it("should execute an action with pre processor", async () => {
+        const actionName = "github_issues_create";
+        const requestBody = {
+            owner: "utkarsh-dixit",
+            repo: "speedy",
+            title: "Test issue",
+            body: "This is a test issue",
+            appNames: "github"
+        };
+
+        const preProcessor = ({ action, toolRequest }) => {
+            return {
+                ...toolRequest,
+                owner: "utkarsh-dixit",
+                repo: "speedy",
+                title: "Test issue2",
+            };
+        };
+
+        const postProcessor = ({ action, toolResponse }) => {
+            return {
+                data: {
+                    ...toolResponse.data,
+                    isPostProcessed: true
+                },
+                error: toolResponse.error,
+                successfull: toolResponse.successfull
+            };
+        };
+
+        toolset.addPreProcessor(preProcessor);
+        toolset.addPostProcessor(postProcessor);
+
+        const executionResult = await toolset.executeAction({
+            action: actionName,
+            params: requestBody,
+            entityId: "default"
+        });
+
+        expect(executionResult).toBeDefined();
+        // @ts-ignore
+        expect(executionResult).toHaveProperty('successfull', true);
+        expect(executionResult.data).toBeDefined();
+        expect(executionResult.data.title).toBe("Test issue2");
+        expect(executionResult.data.isPostProcessed).toBe(true);
+
+        // Remove pre processor and post processor
+
+        toolset.removePreProcessor();
+
+        const executionResultAfterRemove = await toolset.executeAction({
+            action: actionName,
+            params: requestBody,
+            entityId: "default"
+        });
+
+        expect(executionResultAfterRemove).toBeDefined();
+        // @ts-ignore
+        expect(executionResultAfterRemove).toHaveProperty('successfull', true);
+        expect(executionResultAfterRemove.data).toBeDefined();
+        expect(executionResultAfterRemove.data.title).toBe("Test issue");
+    });
 
     it("should execute an file upload", async () => {
         const ACTION_NAME = "GMAIL_SEND_EMAIL";

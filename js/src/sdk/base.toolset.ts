@@ -6,7 +6,7 @@ import type { IPythonActionDetails, Optional, Sequence } from "./types";
 import { getEnvVariable } from "../utils/shared";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
-import { ExecuteActionResDTO } from "./client/types.gen";
+import { ActionExecutionResDto, ExecuteActionResDTO } from "./client/types.gen";
 import { saveFile } from "./utils/fileUtils";
 import { convertReqParams, converReqParamForActionExecution } from "./utils";
 import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
@@ -27,29 +27,43 @@ const ZExecuteActionParams = z.object({
   }).optional(),
 });
 
+type ActionExecuteRes = {
+    data: Record<string, any>,
+    error: string | null,
+    successfull: boolean,
+}
 
-type TProcessor =  ({action, data}: {action: string, data: Record<string, any>}) => Record<string, any>;
-type TPostProcessor =  ({action, data}: {action: string, data: ExecuteActionResDTO}) => ExecuteActionResDTO;
+type TProcessor =  ({action, toolRequest}: {action: string, toolRequest: Record<string, any>}) => Record<string, any>;
+type TPostProcessor =  ({action, toolResponse}: {action: string, toolResponse: ActionExecutionResDto}) => ActionExecutionResDto;
 
-const fileProcessor: TPostProcessor = ({action, data}): ExecuteActionResDTO => {
+const fileProcessor = ({action, toolResponse}:{action: string, toolResponse: ActionExecutionResDto}): ActionExecutionResDto => {
 
     // @ts-expect-error
-    const fileData = data.response_data.file;
+    const isFile = !!toolResponse.data.response_data.file as boolean;
+
+    if(!isFile) {
+        return toolResponse;
+    }
+
+    // @ts-expect-error
+    const fileData = toolResponse.data.response_data.file
     const { name, content } = fileData as { name: string, content: string };
     const file_name_prefix = `${action}_${Date.now()}`;
     const filePath = saveFile(file_name_prefix, content);
 
     // @ts-ignore
-    delete data.response_data.file
+    delete toolResponse.data.response_data.file
 
     return {
-        ...data,
-        response_data: {
-            // @ts-ignore
-                    ...data.response_data,
-                    file_uri_path: filePath
-                }
+        error: toolResponse.error,
+        successfull: toolResponse.successfull,
+        data: {
+            ...toolResponse.data,
+            file_uri_path: filePath
+        }
     }
+
+
 }
 
 export class ComposioToolSet {
@@ -63,7 +77,7 @@ export class ComposioToolSet {
     localActions: IPythonActionDetails["data"] | undefined;
     customActionRegistry: ActionRegistry;
 
-    processors: {
+    private processors: {
         pre?: TProcessor;
         post?: TPostProcessor;
     } = {};
@@ -247,7 +261,7 @@ export class ComposioToolSet {
         if(isPreProcessorAndIsFunction && this.processors.pre) {
             params = this.processors.pre({
                 action: action,
-                data: params
+                toolRequest: params
             });
         }
         // Custom actions are always executed in the host/local environment for JS SDK
@@ -277,7 +291,7 @@ export class ComposioToolSet {
             });
         }
         const convertedParams = await converReqParamForActionExecution(params);
-        const data = await this.client.getEntity(entityId).execute({actionName: action, params: convertedParams, text: nlaText}) as unknown as ExecuteActionResDTO
+        const data = await this.client.getEntity(entityId).execute({actionName: action, params: convertedParams, text: nlaText}) as ActionExecutionResDto;
 
 
         return this.processResponse(data, {
@@ -287,27 +301,27 @@ export class ComposioToolSet {
     }
 
     private async processResponse(
-        data: ExecuteActionResDTO,
+        data: ActionExecutionResDto,
         meta: {
             action: string,
             entityId: string
         }
-    ): Promise<ExecuteActionResDTO> {
+    ): Promise<ActionExecutionResDto> {
         let dataToReturn = {...data};
         // @ts-ignore
         const isFile = !!data?.response_data?.file;
         if (isFile) {
             dataToReturn = fileProcessor({
                 action: meta.action,
-                data: data
-            });
+                toolResponse: dataToReturn
+            }) as ActionExecutionResDto;
         }
 
         const isPostProcessorAndIsFunction = !!this.processors.post && typeof this.processors.post === "function";
         if (isPostProcessorAndIsFunction && this.processors.post) {
             dataToReturn = this.processors.post({
                 action: meta.action,
-                data: dataToReturn
+                toolResponse: dataToReturn
             });
         }
 
@@ -315,18 +329,30 @@ export class ComposioToolSet {
     }
 
 
-    async addPreprocessor(type: "pre" | "post", processor: TProcessor | TPostProcessor) {
-        if(type === "pre" && typeof processor === "function") {
+    async addPreProcessor(processor: TProcessor) {
+        if(typeof processor === "function") {
             this.processors.pre = processor as TProcessor;
-        } else if(type === "post" && typeof processor === "function") {
-            this.processors.post = processor as TPostProcessor;
-        } else {
+        }
+        else {
             throw new Error("Invalid processor type");
         }
     }
 
-    async removePreprocessor(type: "pre" | "post") {
-        delete this.processors[type];
+    async addPostProcessor(processor: TPostProcessor) {
+        if(typeof processor === "function") {
+            this.processors.post = processor as TPostProcessor;
+        }
+        else {
+            throw new Error("Invalid processor type");
+        }
+    }
+
+    async removePreProcessor() {
+        delete this.processors.pre;
+    }
+
+    async removePostProcessor() {
+        delete this.processors.post;
     }
 
 }
