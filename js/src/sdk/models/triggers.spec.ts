@@ -68,11 +68,11 @@ describe("Apps class tests subscribe", () => {
         if(!connectedAccountId) {
             throw new Error("No connected account found");
         }
-        const trigger = await triggers.setup(connectedAccountId, 'gmail_new_gmail_message', {
+        const trigger = await triggers.setup({connectedAccountId, triggerName: 'gmail_new_gmail_message', config: {
             "userId": connectedAccount.items[0].id,
             "interval": 60,
             "labelIds": "INBOX",
-        },);
+        }});
 
         expect(trigger.status).toBe("success");
         expect(trigger.triggerId).toBeTruthy();

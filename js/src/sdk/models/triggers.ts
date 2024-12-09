@@ -36,7 +36,7 @@ export class Triggers {
             });
             return response || [];
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -47,7 +47,7 @@ export class Triggers {
      * @returns {CancelablePromise<SetupTriggerResponse>} A promise that resolves to the setup trigger response.
      * @throws {ApiError} If the request fails.
      */
-    async setup(connectedAccountId: string, triggerName: string, config: Record<string, any>): Promise<{status: string, triggerId: string}> {
+    async setup({connectedAccountId, triggerName, config}: {connectedAccountId: string, triggerName: string, config: Record<string, any>}): Promise<{status: string, triggerId: string}> {
         try {
             const response = await apiClient.triggers.enableTrigger({
                 path: {
@@ -60,7 +60,7 @@ export class Triggers {
             });
             return response.data as {status: string, triggerId: string};
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -76,7 +76,7 @@ export class Triggers {
                 status: "success"
             }
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -92,7 +92,7 @@ export class Triggers {
                 status: "success"
             }
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -105,7 +105,7 @@ export class Triggers {
                 status: "success"
             }
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 

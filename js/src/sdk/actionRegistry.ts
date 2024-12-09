@@ -10,7 +10,7 @@ import { zodToJsonSchema, JsonSchema7Type } from "zod-to-json-schema";
 import { ActionProxyRequestConfigDTO } from "./client";
 import { Composio } from ".";
 import apiClient from "../sdk/client/client";
-import { CEG } from "../sdk/utils/error";
+import { CEG } from "./utils/error";
 
 type ExecuteRequest = Omit<ActionProxyRequestConfigDTO, "connectedAccountId">;
 export interface CreateActionOptions {
@@ -129,10 +129,10 @@ export class ActionRegistry {
         let authCredentials = {};
         if (toolName) {
             const entity = await this.client.getEntity(metadata.entityId);
-            const connection = await entity.getConnection(
-                toolName,
-                metadata.connectionId
-            );
+            const connection = await entity.getConnection({
+                app: toolName,
+                connectedAccountId: metadata.connectionId
+            });
             if (!connection) {
                 throw new Error(
                     `Connection with app name ${toolName} and entityId ${metadata.entityId} not found`
@@ -160,7 +160,7 @@ export class ActionRegistry {
                 });
                 return res!;
             } catch (error) {
-                throw CEG.handleError(error);
+                throw CEG.handleAllError(error);
             }
         };
 

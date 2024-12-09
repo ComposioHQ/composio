@@ -1,4 +1,4 @@
-import { ActionExecutionReqDTO, ActionProxyRequestConfigDTO, ActionsListResponseDTO, AdvancedUseCaseSearchData } from "../client";
+import { ActionExecutionReqDTO, ActionProxyRequestConfigDTO, ActionsListResponseDTO } from "../client";
 import apiClient from "../client/client";
 import { CEG } from "../utils/error";
 import { BackendClient } from "./backendClient";
@@ -169,7 +169,7 @@ export class Actions {
 
             return (actions.data!);
         } catch(e){
-            throw CEG.handleError(e)
+            throw CEG.handleAllError(e)
         }
     }
 
@@ -212,7 +212,7 @@ export class Actions {
             });
             return response.data!;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -235,7 +235,7 @@ export class Actions {
             });
             return res!;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -254,7 +254,7 @@ export class Actions {
             });
             return res!.items.map((item) => item.actions).flat() || [];
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -275,7 +275,7 @@ export class Actions {
             });
             return res!;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 }

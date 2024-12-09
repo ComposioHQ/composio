@@ -16,15 +16,7 @@ type TActiveTrigger = {
         disabledAt: string | null;
         disabledReason: string | null;
 }
-type TActiveTriggersListResponse = {
-    triggers: Array<TActiveTrigger>;
-    pageInfo: {
-        currentPage: number;
-        perPage: number;
-        totalPages: number;
-    };
-    status: "success";
-}
+
 export class ActiveTriggers {
 
     backendClient: BackendClient;
@@ -50,7 +42,7 @@ export class ActiveTriggers {
             }) 
             return data?.triggers[0];
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -69,7 +61,7 @@ export class ActiveTriggers {
             
             return response?.triggers || [];
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -91,7 +83,7 @@ export class ActiveTriggers {
             });
             return true;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 
@@ -105,7 +97,7 @@ export class ActiveTriggers {
             });
             return true;
         } catch (error) {
-            throw CEG.handleError(error);
+            throw CEG.handleAllError(error);
         }
     }
 }
