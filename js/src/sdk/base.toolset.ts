@@ -6,15 +6,11 @@ import type { IPythonActionDetails, Optional, Sequence } from "./types";
 import { getEnvVariable } from "../utils/shared";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
-import logger from "../utils/logger";
-import { CEG } from './utils/error';
 import { ExecuteActionResDTO } from "./client/types.gen";
 import { saveFile } from "./utils/fileUtils";
 import { convertReqParams, converReqParamForActionExecution } from "./utils";
 import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 import { getUserDataJson } from "./utils/config";
-import apiClient from '../sdk/client/client';
-import { ActionProxyRequestConfigDTO } from './client';
 
 type GetListActionsResponse = any;
 
@@ -28,6 +24,14 @@ export class ComposioToolSet {
 
     localActions: IPythonActionDetails["data"] | undefined;
     customActionRegistry: ActionRegistry;
+
+    processors: {
+        pre?: (input: Record<string, any>) => Record<string, any>;
+        post?: (input: Record<string, any>) => Record<string, any>;
+    } = {
+        pre: (input: Record<string, any>) => input,
+        post: (input: Record<string, any>) => input
+    }
 
     constructor(
         apiKey: string | null,
@@ -210,13 +214,7 @@ export class ComposioToolSet {
         return this.customActionRegistry.getActions({ actions: [action] }).then((actions: any) => actions.length > 0);
     }
 
-    async executeAction(
-        action: string,
-        params: Record<string, any>,
-        entityId: string = "default",
-        nlaText: string = "",
-        connectedAccountId?: string,
-    ): Promise<Record<string, any>> {
+    async executeAction({action, params, entityId, nlaText, connectedAccountId}: {action: string, params: Record<string, any>, entityId: string, nlaText: string, connectedAccountId?: string}): Promise<Record<string, any>> {
         // Custom actions are always executed in the host/local environment for JS SDK
         if (await this.isCustomAction(action)) {
             let accountId = connectedAccountId;
@@ -244,7 +242,7 @@ export class ComposioToolSet {
             });
         }
         params = await converReqParamForActionExecution(params);
-        const data = await this.client.getEntity(entityId).execute(action, params, nlaText) as unknown as ExecuteActionResDTO
+        const data = await this.client.getEntity(entityId).execute({actionName: action, params, text: nlaText}) as unknown as ExecuteActionResDTO
 
 
         return this.processResponse(data, {
@@ -286,14 +284,13 @@ export class ComposioToolSet {
         return data;
     }
 
-    async execute_action(
-        action: string,
-        // this need to improve
-        params: Record<string, any>,
-        entityId: string = "default"
-    ): Promise<Record<string, any>> {
-        logger.warn("execute_action is deprecated, use executeAction instead");
-        return this.executeAction(action, params, entityId);
+
+    async addPreprocessor(type: "pre" | "post", processor: (input: Record<string, any>) => Record<string, any>) {
+        this.processors[type] = processor;
+    }
+
+    async removePreprocessor(type: "pre" | "post") {
+        delete this.processors[type];
     }
 
 }

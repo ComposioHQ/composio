@@ -121,10 +121,10 @@ export class ConnectionRequest {
     connectedAccountId: string;
     redirectUrl: string | null;
 
-    constructor(connectionStatus: string, connectedAccountId: string, redirectUrl: string | null = null) {
+    constructor({connectionStatus,connectedAccountId, redirectUri}: {connectionStatus: string,connectedAccountId: string, redirectUri: string | null}) {
         this.connectionStatus = connectionStatus;
         this.connectedAccountId = connectedAccountId;
-        this.redirectUrl = redirectUrl;
+        this.redirectUrl = redirectUri;
     }
 
     async saveUserAccessData(data: {
