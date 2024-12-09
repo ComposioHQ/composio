@@ -129,10 +129,10 @@ export class ActionRegistry {
         let authCredentials = {};
         if (toolName) {
             const entity = await this.client.getEntity(metadata.entityId);
-            const connection = await entity.getConnection(
-                toolName,
-                metadata.connectionId
-            );
+            const connection = await entity.getConnection({
+                app: toolName,
+                connectedAccountId: metadata.connectionId
+            });
             if (!connection) {
                 throw new Error(
                     `Connection with app name ${toolName} and entityId ${metadata.entityId} not found`

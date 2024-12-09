@@ -25,7 +25,7 @@ describe("Entity class tests", () => {
   it("should create for different entities", async () => {
     const entityId = "test-entity";
     const entity2 = new Entity(backendClient, entityId);
-    const connection = await entity2.initiateConnection("github");
+    const connection = await entity2.initiateConnection({appName: "github"});
     expect(connection.connectionStatus).toBe("INITIATED");
 
     const connection2 = await connectedAccounts.get({
@@ -89,7 +89,7 @@ describe("Entity class tests", () => {
   });
 
   it("initiate connection", async () => {
-    const connection = await entity.initiateConnection("github");
+    const connection = await entity.initiateConnection({appName: "github"});
     expect(connection.connectionStatus).toBe("INITIATED");
   });
 });

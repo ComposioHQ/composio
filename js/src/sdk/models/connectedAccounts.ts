@@ -109,7 +109,11 @@ export class ConnectedAccounts {
                 }
             }).then(res => res.data);
 
-            return new ConnectionRequest(res?.connectionStatus!, res?.connectedAccountId!, res?.redirectUrl!)
+            return new ConnectionRequest({
+                connectionStatus: res?.connectionStatus!,
+                connectedAccountId: res?.connectedAccountId!,
+                redirectUri: res?.redirectUrl!
+            })
         } catch (error) {
             throw CEG.handleAllError(error);
         }

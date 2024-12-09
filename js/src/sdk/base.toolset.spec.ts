@@ -38,7 +38,11 @@ describe("ComposioToolSet class tests", () => {
             appNames: "github"
        };
 
-       const executionResult = await toolset.executeAction(actionName, requestBody, "default");
+       const executionResult = await toolset.executeAction({
+        action: actionName,
+        params: requestBody,
+        entityId: "default"
+       });
        expect(executionResult).toBeDefined();
        // @ts-ignore
        expect(executionResult).toHaveProperty('successfull', true);
@@ -61,7 +65,11 @@ describe("ComposioToolSet class tests", () => {
             attachment_file_uri_path: "https://composio.dev/wp-content/uploads/2024/07/Composio-Logo.webp"
         };
 
-        const executionResult = await toolset.executeAction(ACTION_NAME, requestBody, "default");
+        const executionResult = await toolset.executeAction({
+            action: ACTION_NAME,
+            params: requestBody,
+            entityId: "default"
+        });
         expect(executionResult).toBeDefined();
         // @ts-ignore
         expect(executionResult).toHaveProperty('successfull', true);

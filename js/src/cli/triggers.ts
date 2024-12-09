@@ -110,7 +110,7 @@ export class TriggerAdd {
 
     const connection = await composioClient
       .getEntity("default")
-      .getConnection(appName);
+      .getConnection({ app: appName });
 
     if (!connection) {
       console.log(chalk.red(`Connection to app ${appName} not found`));
@@ -138,11 +138,11 @@ export class TriggerAdd {
       }
     }
 
-   const triggerSetupData = await composioClient.triggers.setup(
-      connection.id,
+   const triggerSetupData = await composioClient.triggers.setup({
+      connectedAccountId: connection.id,
       triggerName,
-      configValue,
-    );
+      config: configValue,
+    });
 
     console.log(chalk.green(`Trigger ${triggerName} setup to app ${appName} with id ${triggerSetupData?.triggerId}`));
   }

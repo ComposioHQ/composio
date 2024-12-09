@@ -11,8 +11,21 @@ import { saveFile } from "./utils/fileUtils";
 import { convertReqParams, converReqParamForActionExecution } from "./utils";
 import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 import { getUserDataJson } from "./utils/config";
-
+import { z } from "zod";
 type GetListActionsResponse = any;
+
+const ZExecuteActionParams = z.object({
+  action: z.string(),
+  params: z.record(z.any()).optional(),
+  entityId: z.string(),
+  nlaText: z.string().optional(),
+  connectedAccountId: z.string().optional(),
+  config: z.object({
+    labels: z.array(z.string()).optional(),
+  }).optional(),
+});
+
+
 
 export class ComposioToolSet {
     client: Composio;
@@ -214,7 +227,10 @@ export class ComposioToolSet {
         return this.customActionRegistry.getActions({ actions: [action] }).then((actions: any) => actions.length > 0);
     }
 
-    async executeAction({action, params, entityId, nlaText, connectedAccountId}: {action: string, params: Record<string, any>, entityId: string, nlaText: string, connectedAccountId?: string}): Promise<Record<string, any>> {
+    async executeAction(functionParams: z.infer<typeof ZExecuteActionParams>) {
+
+        const {action, params={}, entityId, nlaText, connectedAccountId} = ZExecuteActionParams.parse(functionParams);
+        let {params: {}} = params;
         // Custom actions are always executed in the host/local environment for JS SDK
         if (await this.isCustomAction(action)) {
             let accountId = connectedAccountId;
@@ -241,8 +257,8 @@ export class ComposioToolSet {
                 entityId: this.entityId
             });
         }
-        params = await converReqParamForActionExecution(params);
-        const data = await this.client.getEntity(entityId).execute({actionName: action, params, text: nlaText}) as unknown as ExecuteActionResDTO
+        const convertedParams = await converReqParamForActionExecution(params);
+        const data = await this.client.getEntity(entityId).execute({actionName: action, params: convertedParams, text: nlaText}) as unknown as ExecuteActionResDTO
 
 
         return this.processResponse(data, {
