@@ -1,5 +1,5 @@
 
-import { InitiateConnectionPayloadDto, GetConnectionsResponseDto, GetConnectionInfoData, GetConnectionInfoResponse, GetConnectionsData, InitiateConnectionData } from "../client";
+import { InitiateConnectionPayloadDto, GetConnectionsResponseDto, GetConnectionInfoData, GetConnectionInfoResponse, GetConnectionsData } from "../client";
 import client from "../client/client";
 import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";

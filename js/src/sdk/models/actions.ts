@@ -1,4 +1,4 @@
-import { ActionExecutionReqDTO, ActionProxyRequestConfigDTO, ActionsListResponseDTO, AdvancedUseCaseSearchData } from "../client";
+import { ActionExecutionReqDTO, ActionProxyRequestConfigDTO, ActionsListResponseDTO } from "../client";
 import apiClient from "../client/client";
 import { CEG } from "../utils/error";
 import { BackendClient } from "./backendClient";

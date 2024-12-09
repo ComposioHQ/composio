@@ -12,7 +12,9 @@ import { convertReqParams, converReqParamForActionExecution } from "./utils";
 import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 import { getUserDataJson } from "./utils/config";
 import { z } from "zod";
-type GetListActionsResponse = any;
+type GetListActionsResponse = {
+    items: any[]
+};
 
 const ZExecuteActionParams = z.object({
   action: z.string(),
@@ -97,12 +99,6 @@ export class ComposioToolSet {
 
     }
 
-    async getExpectedParamsForUser(
-        params: { app?: string; integrationId?: string; entityId?: string; authScheme?: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" } = {},
-    ) {
-        return this.client.getExpectedParamsForUser(params);
-    }
-
     async setup() {
         await this.workspace.new();
 
@@ -145,11 +141,6 @@ export class ComposioToolSet {
         });
     }
 
-    async getAuthParams(data: { connectedAccountId: string }) {
-        return this.client.connectedAccounts.getAuthParams({
-            connectedAccountId: data.connectedAccountId
-        })
-    }
 
     async getTools(
         filters: {
@@ -295,7 +286,7 @@ export class ComposioToolSet {
         });
     }
 
-    async processResponse(
+    private async processResponse(
         data: ExecuteActionResDTO,
         meta: {
             action: string,
