@@ -1,4 +1,4 @@
-from typing import Dict
+import typing as t
 
 from pydantic import Field
 
@@ -13,7 +13,7 @@ from composio.tools.local.filetool.actions.base_action import (
 class WriteRequest(BaseFileRequest):
     """Request to write a file."""
 
-    file_path: str = Field(
+    file_path: t.Optional[str] = Field(
         default=None,
         description=(
             "The path to the file that will be edited. If not provided, "
@@ -48,7 +48,7 @@ class Write(LocalAction[WriteRequest, WriteResponse]):
     """
 
     @include_cwd  # type: ignore
-    def execute(self, request: WriteRequest, metadata: Dict) -> WriteResponse:
+    def execute(self, request: WriteRequest, metadata: t.Dict) -> WriteResponse:
         try:
             filemanager = self.filemanagers.get(request.file_manager_id)
             (
