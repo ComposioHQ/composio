@@ -1,6 +1,7 @@
 import { spawn } from "child_process";
 import { IS_DEVELOPMENT_OR_CI, TELEMETRY_URL } from "../sdk/utils/constants";
 import { serializeValue } from "../sdk/utils/common";
+import logger from "./logger";
 
 /**
  * Sends a reporting payload to the telemetry server using a child process.
@@ -52,7 +53,7 @@ export async function sendProcessReq(info: {
     // Close the stdin stream
     child.stdin.end();
   } catch (error) {
-    console.error("Error sending error to telemetry", error);
+    logger.error("Error sending error to telemetry", error);
     // DO NOTHING
   }
 }
@@ -70,7 +71,7 @@ export async function sendBrowserReq(info: {
   data: Record<string, unknown>;
 }) {
   if (IS_DEVELOPMENT_OR_CI) {
-    console.log(
+    logger.debug(
       `Hitting ${info.url}[${info.method}] with ${serializeValue(info.data)}`
     );
     return true;
@@ -90,14 +91,14 @@ export async function sendBrowserReq(info: {
     xhr.onload = function () {
       // Log the response if the request was successful
       if (xhr.status === 200) {
-        console.log(xhr.response);
+        logger.debug(xhr.response);
       }
     };
 
     // Send the reporting payload as a JSON string
     xhr.send(JSON.stringify(info.data));
   } catch (error) {
-    console.error("Error sending error to telemetry", error);
+    logger.error("Error sending error to telemetry", error);
     // DO NOTHING
   }
 }
