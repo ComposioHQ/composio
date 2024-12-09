@@ -13,7 +13,7 @@ from composio.tools.local.filetool.actions.base_action import (
 class EditFileRequest(BaseFileRequest):
     """Request to edit a file."""
 
-    file_path: str = Field(
+    file_path: Optional[str] = Field(
         default=None,
         description=(
             "The path to the file that will be edited. If not provided, "

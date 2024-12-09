@@ -18,32 +18,32 @@ class CreateFolderlessListRequest(BaseModel):
         alias="name",
         description="Name",
     )
-    content: str = Field(
+    content: t.Optional[str] = Field(
         default=None,
         alias="content",
         description="Content",
     )
-    due_date: int = Field(
+    due_date: t.Optional[int] = Field(
         default=None,
         alias="due_date",
         description="Due Date",
     )
-    due_date_time: bool = Field(
+    due_date_time: t.Optional[bool] = Field(
         default=None,
         alias="due_date_time",
         description="Due Date Time",
     )
-    priority: int = Field(
+    priority: t.Optional[int] = Field(
         default=None,
         alias="priority",
         description="Priority",
     )
-    assignee: int = Field(
+    assignee: t.Optional[int] = Field(
         default=None,
         alias="assignee",
         description="Include a `user_id` to add a List owner.",
     )
-    status: str = Field(
+    status: t.Optional[str] = Field(
         default=None,
         alias="status",
         description=(
