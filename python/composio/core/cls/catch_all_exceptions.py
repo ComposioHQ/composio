@@ -14,9 +14,7 @@ def CatchAllExceptions(cls, handler):
 
             try:
                 # pylint: disable=super-with-arguments
-                return super().make_context(
-                    info_name, args, parent=parent, **extra
-                )
+                return super().make_context(info_name, args, parent=parent, **extra)
                 # pylint: enable=super-with-arguments
             except Exception as exc:
                 # call the handler
