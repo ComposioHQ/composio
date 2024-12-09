@@ -6,37 +6,61 @@ import { ZodError } from "zod";
 
 export class CEG {
     
-    static handleAllError(error: unknown) {
+    static handleAllError(error: unknown, shouldThrow: boolean = false) {
         if(error instanceof ComposioError) {
-            throw error;
+            if(shouldThrow) {
+               throw error;
+            }
+            return error;
         }
 
         if (!(error instanceof Error)) {
-            throw new Error("Passed error is not an instance of Error");
+            const error = new Error("Passed error is not an instance of Error");
+            if(shouldThrow) {
+               throw error;
+            }
+            return error;
         }
 
         if(error instanceof ZodError) {
-            this.throwZodError(error);
+            const zodError = this.returnZodError(error);
+            if(shouldThrow) {
+               throw zodError;
+            }
+            return zodError;
         }
 
         const isAxiosError = (error as AxiosError).isAxiosError;
 
         if (!isAxiosError) {
-             this.throwCustomError(SDK_ERROR_CODES.COMMON.UNKNOWN, {
+            const customError = this.getCustomError(SDK_ERROR_CODES.COMMON.UNKNOWN, {
                 message: error.message,
                 description: "",
                 possibleFix: "Please check error message and stack trace",
                 originalError: error,
                 metadata: {}
             });
+            if(shouldThrow) {
+               throw customError;
+            }
+            return customError;
         } else {
             const isResponseNotPresent = !('response' in error);    
             if(isResponseNotPresent) {
-                this.handleNonResponseAxiosError(error as AxiosError);
+                const nonResponseError = this.handleNonResponseAxiosError(error as AxiosError);
+                if(shouldThrow) {
+                   throw nonResponseError;
+                }
+                return nonResponseError;
             }
-            this.throwAPIError(error as AxiosError);
+            const apiError = this.throwAPIError(error as AxiosError);
+            if(shouldThrow) {
+               throw apiError;
+            }
+            return apiError;
         }
     }
+
     private static handleNonResponseAxiosError(error: AxiosError) {
         const fullUrl = (error.config?.baseURL || "") + (error.config?.url || "");
         const metadata = generateMetadataFromAxiosError(error);
@@ -52,11 +76,22 @@ export class CEG {
             );
         }
 
-        if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+        if ( error.code === "ETIMEDOUT") {
             throw new ComposioError(
                 SDK_ERROR_CODES.COMMON.REQUEST_TIMEOUT,
                 `ECONNABORTED for ${fullUrl}`,
                 `Request to ${fullUrl} timed out after the configured timeout period. This could be due to slow network conditions, server performance issues, or the request being too large. Error code: ECONNABORTED`,
+                "Try:\n1. Checking your network speed and stability\n2. Increasing the request timeout setting if needed\n3. Breaking up large requests into smaller chunks\n4. Retrying the request when network conditions improve\n5. Contact tech@composio.dev if the issue persists",
+                metadata,
+                error
+            );
+        }
+
+        if(error.code === "ECONNABORTED") {
+           throw new ComposioError(
+                SDK_ERROR_CODES.COMMON.REQUEST_ABORTED,
+                error.message,
+                "The request was aborted due to a timeout or other network-related issues. This could be due to network instability, server issues, or the request being too large. Error code: ECONNABORTED",
                 "Try:\n1. Checking your network speed and stability\n2. Increasing the request timeout setting if needed\n3. Breaking up large requests into smaller chunks\n4. Retrying the request when network conditions improve\n5. Contact tech@composio.dev if the issue persists",
                 metadata,
                 error
@@ -84,7 +119,7 @@ export class CEG {
         throw new ComposioError(errorCode, errorDetails.message, errorDetails.description, errorDetails.possibleFix, metadata, error)
     }
 
-    static throwZodError(error: ZodError) {
+    static returnZodError(error: ZodError) {
         const errorCode = SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED;
         const errorMessage = error.message;
         const errorDescription = "The parameters passed are invalid";
@@ -93,10 +128,10 @@ export class CEG {
             issues: error.issues
         };
         
-        throw new ComposioError(errorCode, errorMessage, errorDescription, possibleFix, metadata, error);
+        return new ComposioError(errorCode, errorMessage, errorDescription, possibleFix, metadata, error);
     }
 
-    static throwCustomError(messageCode: string, {
+    static getCustomError(messageCode: string, {
         message,
         type,
         subtype,
