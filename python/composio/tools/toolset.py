@@ -744,7 +744,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         :param connected_account_id: Connection ID for executing the remote action
         :return: Output object from the function call
         """
-        action = Action(action)
+        action = load_action(self.client, action)
         params = self._serialize_execute_params(param=params)
         if processors is not None:
             self._merge_processors(processors)
@@ -863,6 +863,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         # NOTE: This an experimental, can convert to decorator for more convinience
         if not apps and not actions and not tags:
             return
+        if actions:
+            actions = [load_action(self.client, action) for action in actions]
         self.workspace.check_for_missing_dependencies(
             apps=apps,
             actions=actions,
@@ -884,7 +886,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         actions = t.cast(
             t.List[Action],
             [
-                Action(action)
+                load_action(self.client, action)
                 for action in actions or []
                 if action not in runtime_actions
             ],
