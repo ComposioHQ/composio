@@ -1,7 +1,7 @@
 
 import { spawn } from "child_process";
 import { IS_DEVELOPMENT_OR_CI, TELEMETRY_URL } from "../sdk/utils/constants";
-import { ifObjectStringify } from "../sdk/utils/common";
+import { serializeValue } from "../sdk/utils/common";
 
 /**
  * Sends a reporting payload to the telemetry server using a child process.
@@ -16,7 +16,7 @@ export async function sendProcessReq(info:{
     data: Record<string, unknown>
 }) {
      if(IS_DEVELOPMENT_OR_CI){
-        console.log(`Hitting ${info.url}[${info.method}] with ${ifObjectStringify(info.data)}`);
+        console.log(`Hitting ${info.url}[${info.method}] with ${serializeValue(info.data)}`);
         return true;
     }
     try {
@@ -49,7 +49,7 @@ export async function sendBrowserReq(info:{
     data: Record<string, unknown>
 }) {
     if(IS_DEVELOPMENT_OR_CI){
-        console.log(`Hitting ${info.url}[${info.method}] with ${ifObjectStringify(info.data)}`);
+        console.log(`Hitting ${info.url}[${info.method}] with ${serializeValue(info.data)}`);
         return true;
     }
     try {
