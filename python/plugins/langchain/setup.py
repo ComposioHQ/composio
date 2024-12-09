@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_langchain",
-    version="0.5.52-rc.2",
+    version="0.5.52",
     author="Karan",
     author_email="karan@composio.dev",
     description="Use Composio to get an array of tools with your LangChain agent.",
@@ -27,7 +27,7 @@ setup(
         "langchain-openai>=0.0.2.post1",
         "pydantic>=2.6.4",
         "langchainhub>=0.1.15",
-        "composio_core>=0.5.50,<=0.5.52-rc.2",
+        "composio_core>=0.5.50,<=0.5.52",
     ],
     include_package_data=True,
 )
