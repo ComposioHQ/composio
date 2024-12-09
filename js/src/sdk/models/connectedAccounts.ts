@@ -1,5 +1,5 @@
 
-import { InitiateConnectionPayloadDto, GetConnectionsResponseDto, GetConnectionInfoData, GetConnectionInfoResponse, GetConnectionsData, InitiateConnectionData } from "../client";
+import { InitiateConnectionPayloadDto, GetConnectionsResponseDto, GetConnectionInfoData, GetConnectionInfoResponse, GetConnectionsData } from "../client";
 import client from "../client/client";
 import apiClient from "../client/client"
 import { BackendClient } from "./backendClient";
@@ -109,7 +109,11 @@ export class ConnectedAccounts {
                 }
             }).then(res => res.data);
 
-            return new ConnectionRequest(res?.connectionStatus!, res?.connectedAccountId!, res?.redirectUrl!)
+            return new ConnectionRequest({
+                connectionStatus: res?.connectionStatus!,
+                connectedAccountId: res?.connectedAccountId!,
+                redirectUri: res?.redirectUrl!
+            })
         } catch (error) {
             throw CEG.handleAllError(error);
         }
@@ -121,10 +125,10 @@ export class ConnectionRequest {
     connectedAccountId: string;
     redirectUrl: string | null;
 
-    constructor(connectionStatus: string, connectedAccountId: string, redirectUrl: string | null = null) {
+    constructor({connectionStatus,connectedAccountId, redirectUri}: {connectionStatus: string,connectedAccountId: string, redirectUri: string | null}) {
         this.connectionStatus = connectionStatus;
         this.connectedAccountId = connectedAccountId;
-        this.redirectUrl = redirectUrl;
+        this.redirectUrl = redirectUri;
     }
 
     async saveUserAccessData(data: {

@@ -6,17 +6,60 @@ import type { IPythonActionDetails, Optional, Sequence } from "./types";
 import { getEnvVariable } from "../utils/shared";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
-import logger from "../utils/logger";
-import { CEG } from './utils/error';
-import { ExecuteActionResDTO } from "./client/types.gen";
+import { ActionExecutionResDto } from "./client/types.gen";
 import { saveFile } from "./utils/fileUtils";
 import { convertReqParams, converReqParamForActionExecution } from "./utils";
 import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 import { getUserDataJson } from "./utils/config";
-import apiClient from '../sdk/client/client';
-import { ActionProxyRequestConfigDTO } from './client';
+import { z } from "zod";
+type GetListActionsResponse = {
+    items: any[]
+};
 
-type GetListActionsResponse = any;
+const ZExecuteActionParams = z.object({
+  action: z.string(),
+  params: z.record(z.any()).optional(),
+  entityId: z.string(),
+  nlaText: z.string().optional(),
+  connectedAccountId: z.string().optional(),
+  config: z.object({
+    labels: z.array(z.string()).optional(),
+  }).optional(),
+});
+
+
+type TPreProcessor =  ({action, toolRequest}: {action: string, toolRequest: Record<string, any>}) => Record<string, any>;
+type TPostProcessor =  ({action, toolResponse}: {action: string, toolResponse: ActionExecutionResDto}) => ActionExecutionResDto;
+
+const fileProcessor = ({action, toolResponse}:{action: string, toolResponse: ActionExecutionResDto}): ActionExecutionResDto => {
+
+    // @ts-expect-error
+    const isFile = !!toolResponse.data.response_data.file as boolean;
+
+    if(!isFile) {
+        return toolResponse;
+    }
+
+    // @ts-expect-error
+    const fileData = toolResponse.data.response_data.file
+    const { name, content } = fileData as { name: string, content: string };
+    const file_name_prefix = `${action}_${Date.now()}`;
+    const filePath = saveFile(file_name_prefix, content);
+
+    // @ts-ignore
+    delete toolResponse.data.response_data.file
+
+    return {
+        error: toolResponse.error,
+        successfull: toolResponse.successfull,
+        data: {
+            ...toolResponse.data,
+            file_uri_path: filePath
+        }
+    }
+
+
+}
 
 export class ComposioToolSet {
     client: Composio;
@@ -28,6 +71,11 @@ export class ComposioToolSet {
 
     localActions: IPythonActionDetails["data"] | undefined;
     customActionRegistry: ActionRegistry;
+
+    private processors: {
+        pre?: TPreProcessor;
+        post?: TPostProcessor;
+    } = {};
 
     constructor(
         apiKey: string | null,
@@ -60,6 +108,9 @@ export class ComposioToolSet {
 
     }
 
+    /**
+     * @deprecated This method is deprecated. Please use this.client.getExpectedParamsForUser instead.
+     */
     async getExpectedParamsForUser(
         params: { app?: string; integrationId?: string; entityId?: string; authScheme?: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" } = {},
     ) {
@@ -108,10 +159,13 @@ export class ComposioToolSet {
         });
     }
 
+    /**
+     * @deprecated This method is deprecated. Please use this.client.connectedAccounts.getAuthParams instead.
+     */
     async getAuthParams(data: { connectedAccountId: string }) {
         return this.client.connectedAccounts.getAuthParams({
             connectedAccountId: data.connectedAccountId
-        })
+        });
     }
 
     async getTools(
@@ -122,7 +176,7 @@ export class ComposioToolSet {
         },
         entityId?: Optional<string>
     ): Promise<any> {
-        throw new Error("Not implemented");
+        throw new Error("Not implemented. Please define in extended toolset");
     }
 
     async getToolsSchema(
@@ -210,13 +264,18 @@ export class ComposioToolSet {
         return this.customActionRegistry.getActions({ actions: [action] }).then((actions: any) => actions.length > 0);
     }
 
-    async executeAction(
-        action: string,
-        params: Record<string, any>,
-        entityId: string = "default",
-        nlaText: string = "",
-        connectedAccountId?: string,
-    ): Promise<Record<string, any>> {
+    async executeAction(functionParams: z.infer<typeof ZExecuteActionParams>) {
+
+        const {action, params:inputParams={}, entityId="default", nlaText="", connectedAccountId} = ZExecuteActionParams.parse(functionParams);
+        let params = inputParams;
+
+        const isPreProcessorAndIsFunction = typeof this?.processors?.pre === "function";
+        if(isPreProcessorAndIsFunction && this.processors.pre) {
+            params = this.processors.pre({
+                action: action,
+                toolRequest: params
+            });
+        }
         // Custom actions are always executed in the host/local environment for JS SDK
         if (await this.isCustomAction(action)) {
             let accountId = connectedAccountId;
@@ -243,8 +302,8 @@ export class ComposioToolSet {
                 entityId: this.entityId
             });
         }
-        params = await converReqParamForActionExecution(params);
-        const data = await this.client.getEntity(entityId).execute(action, params, nlaText) as unknown as ExecuteActionResDTO
+        const convertedParams = await converReqParamForActionExecution(params);
+        const data = await this.client.getEntity(entityId).execute({actionName: action, params: convertedParams, text: nlaText}) as ActionExecutionResDto;
 
 
         return this.processResponse(data, {
@@ -253,47 +312,59 @@ export class ComposioToolSet {
         });
     }
 
-    async processResponse(
-        data: ExecuteActionResDTO,
+    private async processResponse(
+        data: ActionExecutionResDto,
         meta: {
             action: string,
             entityId: string
         }
-    ): Promise<ExecuteActionResDTO> {
-
+    ): Promise<ActionExecutionResDto> {
+        let dataToReturn = {...data};
         // @ts-ignore
         const isFile = !!data?.response_data?.file;
         if (isFile) {
-            // @ts-ignore
-            const fileData = data.response_data.file;
-            const { name, content } = fileData as { name: string, content: string };
-            const file_name_prefix = `${meta.action}_${meta.entityId}_${Date.now()}`;
-            const filePath = saveFile(file_name_prefix, content);
-
-            // @ts-ignore
-            delete data.response_data.file
-
-            return {
-                ...data,
-                response_data: {
-                    // @ts-ignore
-                    ...data.response_data,
-                    file_uri_path: filePath
-                }
-            }
+            dataToReturn = fileProcessor({
+                action: meta.action,
+                toolResponse: dataToReturn
+            }) as ActionExecutionResDto;
         }
 
-        return data;
+        const isPostProcessorAndIsFunction = !!this.processors.post && typeof this.processors.post === "function";
+        if (isPostProcessorAndIsFunction && this.processors.post) {
+            dataToReturn = this.processors.post({
+                action: meta.action,
+                toolResponse: dataToReturn
+            });
+        }
+
+        return dataToReturn;
     }
 
-    async execute_action(
-        action: string,
-        // this need to improve
-        params: Record<string, any>,
-        entityId: string = "default"
-    ): Promise<Record<string, any>> {
-        logger.warn("execute_action is deprecated, use executeAction instead");
-        return this.executeAction(action, params, entityId);
+
+    async addPreProcessor(processor: TPreProcessor) {
+        if(typeof processor === "function") {
+            this.processors.pre = processor as TPreProcessor;
+        }
+        else {
+            throw new Error("Invalid processor type");
+        }
+    }
+
+    async addPostProcessor(processor: TPostProcessor) {
+        if(typeof processor === "function") {
+            this.processors.post = processor as TPostProcessor;
+        }
+        else {
+            throw new Error("Invalid processor type");
+        }
+    }
+
+    async removePreProcessor() {
+        delete this.processors.pre;
+    }
+
+    async removePostProcessor() {
+        delete this.processors.post;
     }
 
 }
