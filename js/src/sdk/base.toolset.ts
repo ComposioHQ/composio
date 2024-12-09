@@ -6,7 +6,7 @@ import type { IPythonActionDetails, Optional, Sequence } from "./types";
 import { getEnvVariable } from "../utils/shared";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
-import { ActionExecutionResDto, ExecuteActionResDTO } from "./client/types.gen";
+import { ActionExecutionResDto } from "./client/types.gen";
 import { saveFile } from "./utils/fileUtils";
 import { convertReqParams, converReqParamForActionExecution } from "./utils";
 import { ActionRegistry, CreateActionOptions } from "./actionRegistry";

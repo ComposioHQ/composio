@@ -10,6 +10,7 @@ import { CEG } from "../utils/error";
 import logger from "../../utils/logger";
 import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { z } from "zod";
+
 const LABELS = {
   PRIMARY: "primary",
 };
@@ -120,6 +121,7 @@ export class Entity {
       if (!connectedAccounts.items || connectedAccounts.items.length === 0) {
         return null;
       }
+
 
       for (const account of connectedAccounts.items!) {
         if (account?.labels && account?.labels.includes(LABELS.PRIMARY)) {
