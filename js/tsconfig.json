@@ -9,7 +9,6 @@
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
     "rootDir": "./",
-    
     "sourceMap": true,
   },
   "include": ["src/**/*"],
