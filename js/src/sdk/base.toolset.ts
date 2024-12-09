@@ -27,13 +27,8 @@ const ZExecuteActionParams = z.object({
   }).optional(),
 });
 
-type ActionExecuteRes = {
-    data: Record<string, any>,
-    error: string | null,
-    successfull: boolean,
-}
 
-type TProcessor =  ({action, toolRequest}: {action: string, toolRequest: Record<string, any>}) => Record<string, any>;
+type TPreProcessor =  ({action, toolRequest}: {action: string, toolRequest: Record<string, any>}) => Record<string, any>;
 type TPostProcessor =  ({action, toolResponse}: {action: string, toolResponse: ActionExecutionResDto}) => ActionExecutionResDto;
 
 const fileProcessor = ({action, toolResponse}:{action: string, toolResponse: ActionExecutionResDto}): ActionExecutionResDto => {
@@ -78,7 +73,7 @@ export class ComposioToolSet {
     customActionRegistry: ActionRegistry;
 
     private processors: {
-        pre?: TProcessor;
+        pre?: TPreProcessor;
         post?: TPostProcessor;
     } = {};
 
@@ -329,9 +324,9 @@ export class ComposioToolSet {
     }
 
 
-    async addPreProcessor(processor: TProcessor) {
+    async addPreProcessor(processor: TPreProcessor) {
         if(typeof processor === "function") {
-            this.processors.pre = processor as TProcessor;
+            this.processors.pre = processor as TPreProcessor;
         }
         else {
             throw new Error("Invalid processor type");

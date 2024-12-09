@@ -62,7 +62,10 @@ describe("ComposioToolSet class tests", () => {
             appNames: "github"
         };
 
-        const preProcessor = ({ action, toolRequest }) => {
+        const preProcessor = ({ action, toolRequest }:{
+            action: string,
+            toolRequest: Record<string, any>
+        }) => {
             return {
                 ...toolRequest,
                 owner: "utkarsh-dixit",
@@ -71,7 +74,10 @@ describe("ComposioToolSet class tests", () => {
             };
         };
 
-        const postProcessor = ({ action, toolResponse }) => {
+        const postProcessor = ({ action, toolResponse }:{
+            action: string,
+            toolResponse: ActionExecutionResDto
+        }) => {
             return {
                 data: {
                     ...toolResponse.data,
@@ -99,7 +105,6 @@ describe("ComposioToolSet class tests", () => {
         expect(executionResult.data.isPostProcessed).toBe(true);
 
         // Remove pre processor and post processor
-
         toolset.removePreProcessor();
 
         const executionResultAfterRemove = await toolset.executeAction({
