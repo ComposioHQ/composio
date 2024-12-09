@@ -16,15 +16,7 @@ type TActiveTrigger = {
         disabledAt: string | null;
         disabledReason: string | null;
 }
-type TActiveTriggersListResponse = {
-    triggers: Array<TActiveTrigger>;
-    pageInfo: {
-        currentPage: number;
-        perPage: number;
-        totalPages: number;
-    };
-    status: "success";
-}
+
 export class ActiveTriggers {
 
     backendClient: BackendClient;

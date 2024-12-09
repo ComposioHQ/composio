@@ -112,7 +112,7 @@ export class Composio {
     async getExpectedParamsForUser(
         params: { app?: string; integrationId?: string; entityId?: string; authScheme?: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" } = {},
     ): Promise<{ expectedInputFields: GetConnectorInfoResDTO["expectedInputFields"], integrationId: string, authScheme: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" }> {
-        const { app, entityId } = params;
+        const { app } = params;
         let { integrationId } = params;
         if (integrationId === null && app === null) {
             throw new Error(

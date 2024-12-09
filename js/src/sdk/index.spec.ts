@@ -127,7 +127,7 @@ describe("Basic SDK spec suite", () => {
 
         expect(entity.id).toBe("default");
 
-        const connection = await entity.getConnection(app!);
+        const connection = await entity.getConnection({app: app!});
         expect(connection.appUniqueId).toBe(app);
     });
 });
