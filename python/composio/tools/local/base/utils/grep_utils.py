@@ -36,7 +36,7 @@ def get_files_excluding_gitignore(root_path, no_gitignore=False, file_patterns=N
     import pathspec  # TODO: simplify import  # pylint: disable=C0415
 
     if gitignore:
-        with open(gitignore, "r", encoding="utf-8") as f:
+        with open(gitignore, encoding="utf-8") as f:
             spec = pathspec.PathSpec.from_lines("gitwildmatch", f)
     else:
         spec = pathspec.PathSpec.from_lines("gitwildmatch", [])
@@ -103,7 +103,7 @@ def grep_util(
 def process_file(filename, pattern, encoding, ignore_case, color, verbose, line_number):
     file_results = []
     try:
-        with open(filename, "r", encoding=encoding) as f:
+        with open(filename, encoding=encoding) as f:
             content = f.read()
     except UnicodeDecodeError:
         return file_results

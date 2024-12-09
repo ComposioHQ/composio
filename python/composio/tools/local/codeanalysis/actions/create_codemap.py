@@ -154,7 +154,7 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
         for file in tqdm(
             python_files, total=len(python_files), desc="Processing files"
         ):
-            with open(file, "r", encoding="utf-8") as f:
+            with open(file, encoding="utf-8") as f:
                 file_content = f.read()
 
             chunk, metadata, id = chunking.chunk(
@@ -308,5 +308,5 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
         status_file = Path(repo_path) / ".indexing_status.json"
         if not status_file.exists():
             return {"status": Status.NOT_STARTED}
-        with open(status_file, "r", encoding="utf-8") as f:
+        with open(status_file, encoding="utf-8") as f:
             return json.load(f)

@@ -68,5 +68,5 @@ class OpenFile(LocalAction[OpenFileRequest, OpenFileResponse]):
             raise ExecutionFailed(f"Cannot open a directory: {str(e)}") from e
         except PermissionError as e:
             raise ExecutionFailed(f"Permission denied: {str(e)}") from e
-        except IOError as e:
+        except OSError as e:
             raise ExecutionFailed(f"Error reading file: {str(e)}") from e

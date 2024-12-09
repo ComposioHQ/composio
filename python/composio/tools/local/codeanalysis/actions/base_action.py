@@ -23,7 +23,7 @@ class BaseCodeAnalysisAction:
                 f"FQDN cache file not found: {self.fqdn_cache_file}"
             )
 
-        with open(self.fqdn_cache_file, "r", encoding="utf-8") as f:
+        with open(self.fqdn_cache_file, encoding="utf-8") as f:
             self.all_fqdns_df = json.load(f)
 
         self.fqdn_index = {

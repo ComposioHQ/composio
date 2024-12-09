@@ -408,14 +408,14 @@ class File(WithLogger):
                 return file_name, line_number, column_number, error_code, error_message
             return "", "", "", "", error
 
-        before_errors = set(
+        before_errors = {
             (error_code, error_message)
             for _, _, _, error_code, error_message in map(parse_lint_error, before)
-        )
-        after_errors = set(
+        }
+        after_errors = {
             (error_code, error_message)
             for _, _, _, error_code, error_message in map(parse_lint_error, after)
-        )
+        }
 
         new_errors = after_errors - before_errors
         return [

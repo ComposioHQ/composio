@@ -97,8 +97,7 @@ class HostShell(Shell):
 
         output = subprocess.run(  # pylint: disable=subprocess-run-check
             ["ps", "-e"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
         ).stdout.decode()
         return all(_cmd.lstrip().rstrip() not in output for _cmd in cmd.split("&&"))
 
@@ -210,12 +209,12 @@ class SSHShell(Shell):
     def _send(self, buffer: str, stdin: t.Optional[str] = None) -> None:
         """Send buffer to shell."""
         if stdin is None:
-            self.channel.sendall(f"{buffer}\n".encode("utf-8"))
+            self.channel.sendall(f"{buffer}\n".encode())
             time.sleep(0.05)
             return
 
-        self.channel.send(f"{buffer}\n".encode("utf-8"))
-        self.channel.sendall(f"{stdin}\n".encode("utf-8"))
+        self.channel.send(f"{buffer}\n".encode())
+        self.channel.sendall(f"{stdin}\n".encode())
         time.sleep(0.05)
 
     def _read(self) -> str:

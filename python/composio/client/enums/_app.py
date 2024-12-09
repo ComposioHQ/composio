@@ -305,5 +305,5 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
                 continue
             if len(tags) == 0:
                 yield action
-            if any((tag in action.tags for tag in tags)):
+            if any(tag in action.tags for tag in tags):
                 yield action

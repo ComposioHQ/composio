@@ -121,13 +121,11 @@ def get_shell_env() -> ShellEnvironment:
             filetype = "utility"
         else:
             raise ValueError(
-                (
                     f"Non-shell script file {file} does not start with "
                     "shebang.\nEither add a shebang (#!) or change the "
                     "file extension to .sh if you want to source it.\n"
                     "You can override this behavior by adding an underscore "
                     "to the file name (e.g. _utils.py)."
-                )
             )
         formatted.append(
             CommandFile(

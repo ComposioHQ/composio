@@ -126,7 +126,7 @@ def fetch_nodes_of_type(file_path: str, types_allowed: List[str]) -> List[Dict]:
         List[Dict]: A list of dictionaries containing node details.
     """
     parser = get_parser("python")
-    with open(file_path, "r", encoding="utf-8") as file:
+    with open(file_path, encoding="utf-8") as file:
         test_code_str = file.read()
 
     root_node = fetch_tree(parser, test_code_str).root_node
@@ -192,7 +192,7 @@ def fetch_class_and_function_nodes_defn_identifiers(file_path: str) -> List[Dict
     )
 
     # Read the code from the file
-    with open(file_path, "r", encoding="utf-8") as file:
+    with open(file_path, encoding="utf-8") as file:
         file_body = file.read()
 
     # Find the identifier nodes in the children of the definition nodes
@@ -227,7 +227,7 @@ def find_left_side_identifiers_of_assignments(file_path: str) -> List[Dict]:
     wanted_definition_nodes = fetch_nodes_of_type(file_path, ["assignment"])
 
     # Read the code from the file
-    with open(file_path, "r", encoding="utf-8") as file:
+    with open(file_path, encoding="utf-8") as file:
         file_body = file.read()
 
     identifier_nodes = []

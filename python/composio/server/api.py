@@ -259,8 +259,7 @@ def create_app() -> FastAPI:
         if len(request.dependencies) > 0:
             process = subprocess.run(
                 args=["pip", "install", *request.dependencies],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
             )
             if process.returncode != 0:
                 raise RuntimeError(
