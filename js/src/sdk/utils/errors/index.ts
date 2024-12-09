@@ -1,6 +1,7 @@
 import { TELEMETRY_URL } from "../constants";
 import ComposioSDKContext from "../composioContext";
 import { sendBrowserReq, sendProcessReq } from "../../../utils/external";
+import { getEnvVariable } from "../../../utils/shared";
 
 type ErrorPayload = {
     error_id: string,
@@ -14,6 +15,10 @@ type ErrorPayload = {
 }
 
 export async function logError(payload: ErrorPayload) {
+    const isTelementryDisabled = getEnvVariable("TELEMETRY_DISABLED", "false") === "true";
+    if(isTelementryDisabled) {
+        return;
+    }
     try {
         const isBrowser = typeof window !== 'undefined';
         const reportingPayload = await generateReportingPayload(payload);
@@ -25,6 +30,7 @@ export async function logError(payload: ErrorPayload) {
                 "Content-Type": "application/json"
             }
         }
+        
         if (isBrowser) {
             await sendBrowserReq(reqPayload);
         } else {    
@@ -37,6 +43,7 @@ export async function logError(payload: ErrorPayload) {
 }
 
 async function generateReportingPayload(payload: ErrorPayload) {
+
     const { apiKey, baseURL, composioVersion, frameworkRuntime, source } = ComposioSDKContext
     const { 
         error_id,

@@ -36,12 +36,12 @@ export class BackendClient {
         this.baseUrl = baseUrl;
 
         if (!apiKey) {
-            CEG.throwCustomError(SDK_ERROR_CODES.COMMON.API_KEY_UNAVAILABLE,{});
+            throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.API_KEY_UNAVAILABLE,{});
         }
 
         // Validate baseUrl
         if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
-            CEG.throwCustomError(SDK_ERROR_CODES.COMMON.BASE_URL_NOT_REACHABLE,{
+            throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.BASE_URL_NOT_REACHABLE,{
                 message: `🔗 Base URL ${baseUrl} is not valid`,
                 description: "The composio backend URL provided is not valid"
             });

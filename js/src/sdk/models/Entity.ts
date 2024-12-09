@@ -74,7 +74,7 @@ export class Entity {
         });
         // @ts-ignore
         if (connectedAccounts?.items?.length === 0) {
-          CEG.throwCustomError(SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND, {
+          throw CEG.getCustomError(SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND, {
             description: "No connected account found",
           });
         }

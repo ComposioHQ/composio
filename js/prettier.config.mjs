@@ -1,4 +1,3 @@
-
 const config = {
     plugins: [],
     semi: true,

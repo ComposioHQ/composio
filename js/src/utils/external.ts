@@ -1,7 +1,7 @@
 
 import { spawn } from "child_process";
 import { IS_DEVELOPMENT_OR_CI, TELEMETRY_URL } from "../sdk/utils/constants";
-import { ifObjectStringify } from "../sdk/utils/common";
+import { serializeValue } from "../sdk/utils/common";
 
 /**
  * Sends a reporting payload to the telemetry server using a child process.
@@ -16,17 +16,34 @@ export async function sendProcessReq(info:{
     data: Record<string, unknown>
 }) {
      if(IS_DEVELOPMENT_OR_CI){
-        console.log(`Hitting ${info.url}[${info.method}] with ${ifObjectStringify(info.data)}`);
+        console.log(`Hitting ${info.url}[${info.method}] with ${serializeValue(info.data)}`);
         return true;
     }
     try {
         // Spawn a child process to execute a Node.js script
         const child = spawn('node', ['-e', `
-        const axios = require('axios');
-        axios.post('${info.url}', {
-            data: ${JSON.stringify(info.data)},
+        const http = require('http');
+        const options = {
+            hostname: '${info.url}',
+            method: 'POST',
             headers: ${JSON.stringify(info.headers)}
+        };
+        
+        const req = http.request(options, (res) => {
+            console.log('statusCode:', res.statusCode);
+            console.log('headers:', res.headers);
+        
+            res.on('data', (d) => {
+                process.stdout.write(d);
+            });
         });
+        
+        req.on('error', (error) => {
+            console.error("Error sending error to telemetry", error);
+        });
+        
+        req.write(JSON.stringify(info.data));
+        req.end();
         `]);
         // Close the stdin stream
         child.stdin.end();
@@ -49,7 +66,7 @@ export async function sendBrowserReq(info:{
     data: Record<string, unknown>
 }) {
     if(IS_DEVELOPMENT_OR_CI){
-        console.log(`Hitting ${info.url}[${info.method}] with ${ifObjectStringify(info.data)}`);
+        console.log(`Hitting ${info.url}[${info.method}] with ${serializeValue(info.data)}`);
         return true;
     }
     try {
@@ -59,6 +76,9 @@ export async function sendBrowserReq(info:{
         xhr.open(info.method, info.url, true);
         // Set the request header to indicate JSON content
         xhr.setRequestHeader('Content-Type', 'application/json');
+        Object.entries(info.headers || {}).forEach(([key, value]) => {
+            xhr.setRequestHeader(key, value);
+        });
 
     // Define the onload event handler
     xhr.onload = function() {

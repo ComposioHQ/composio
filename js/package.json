@@ -11,10 +11,10 @@
     "openapispec:generate": "npx @hey-api/openapi-ts",
     "run:cli": "ts-node src/cli/index.ts",
     "run:sample": "ts-node sample.ts",
-    "lint": "eslint src/**/*.ts",
-    "prettier": "prettier --write src/",
-    "format": "pnpm lint && pnpm prettier",
-    "build": "rollup -c rollup.config.mjs"
+    "build": "rollup -c rollup.config.mjs",
+    "lint": "eslint 'src/**/*.ts'",
+    "prettier": "prettier --write 'src/**/*.ts'",
+    "format": "pnpm lint && pnpm prettier"
   },
   "bin": {
     "composio-js": "./dist/src/cli/index",
