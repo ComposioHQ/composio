@@ -58,7 +58,7 @@ describe("Apps class tests", () => {
 
     it("should get required params for a specific auth scheme", async () => {
         const OAUTH2_SCHEME = "OAUTH2";
-        const requiredParams = await apps.getRequiredParamsForAuthScheme("shopify", OAUTH2_SCHEME);
+        const requiredParams = await apps.getRequiredParamsForAuthScheme({appId: "shopify", authScheme: OAUTH2_SCHEME});
         expect(requiredParams).toEqual({
             required_fields: ["shop"],
             optional_fields: ["oauth_redirect_uri", "scopes"],

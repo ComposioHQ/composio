@@ -71,11 +71,11 @@ export class OpenAIToolSet extends BaseComposioToolSet {
         tool: OpenAI.ChatCompletionMessageToolCall,
         entityId: Optional<string> = null
     ): Promise<string> {
-        return JSON.stringify(await this.executeAction(
-            tool.function.name,
-            JSON.parse(tool.function.arguments),
-            entityId || this.entityId
-        ));
+        return JSON.stringify(await this.executeAction({
+            action: tool.function.name,
+            params: JSON.parse(tool.function.arguments),
+            entityId: entityId || this.entityId
+        }));
     }
 
 

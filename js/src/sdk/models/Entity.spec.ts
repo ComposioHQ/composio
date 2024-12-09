@@ -25,7 +25,7 @@ describe("Entity class tests", () => {
   it("should create for different entities", async () => {
     const entityId = "test-entity";
     const entity2 = new Entity(backendClient, entityId);
-    const connection = await entity2.initiateConnection("github");
+    const connection = await entity2.initiateConnection({appName: "github"});
     expect(connection.connectionStatus).toBe("INITIATED");
 
     const connection2 = await connectedAccounts.get({
@@ -37,24 +37,19 @@ describe("Entity class tests", () => {
 
   it("get connection for github", async () => {
     const app = "github";
-    const connection = await entity.getConnection(app);
+    const connection = await entity.getConnection({app});
     expect(connection.appUniqueId).toBe(app);
   });
 
   it("execute action", async () => {
-    const connectedAccount = await entity.getConnection("github");
+    const connectedAccount = await entity.getConnection({app: "github"});
 
     expect(connectedAccount).toHaveProperty("id");
     expect(connectedAccount).toHaveProperty("appUniqueId", "github");
     const actionName = "GITHUB_GITHUB_API_ROOT".toLowerCase();
     const requestBody = {};
 
-    const executionResult = await entity.execute(
-      actionName,
-      requestBody,
-      undefined,
-      connectedAccount.id
-    );
+    const executionResult = await entity.execute({actionName, params: requestBody, connectedAccountId: connectedAccount.id});
     expect(executionResult).toBeDefined();
     expect(executionResult).toHaveProperty("successfull", true);
     expect(executionResult).toHaveProperty("data.authorizations_url");
@@ -62,7 +57,7 @@ describe("Entity class tests", () => {
 
   it("should have an Id of a connected account with label - primary", async () => {
     const entityW2Connection = new Entity(backendClient, "ckemvy");
-    const getConnection = await entityW2Connection.getConnection("github");
+    const getConnection = await entityW2Connection.getConnection({app: "github"});
     expect(getConnection).toHaveProperty("id");
   });
   
@@ -94,7 +89,7 @@ describe("Entity class tests", () => {
   });
 
   it("initiate connection", async () => {
-    const connection = await entity.initiateConnection("github");
+    const connection = await entity.initiateConnection({appName: "github"});
     expect(connection.connectionStatus).toBe("INITIATED");
   });
 });

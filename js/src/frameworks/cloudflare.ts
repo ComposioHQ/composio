@@ -96,11 +96,11 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     entityId: Optional<string> = null
   ): Promise<string> {
     return JSON.stringify(
-      await this.execute_action(
-        tool.name,
-        typeof tool.arguments === "string" ? JSON.parse(tool.arguments) : tool.arguments,
-        entityId || this.entityId
-      )
+      await this.executeAction({
+        action: tool.name,
+        params: typeof tool.arguments === "string" ? JSON.parse(tool.arguments) : tool.arguments,
+        entityId: entityId || this.entityId
+      })
     );
   }
 
