@@ -6,7 +6,6 @@ import { CEG } from "../sdk/utils/error";
 import { SDK_ERROR_CODES } from "../sdk/utils/errors/src/constants";
 type Optional<T> = T | null;
 
-
 const zExecuteToolCallParams = z.object({
   actions: z.array(z.string()).optional(),
   apps: z.array(z.string()).optional(),
@@ -18,14 +17,16 @@ const zExecuteToolCallParams = z.object({
   tags: z.array(z.string()).optional(),
 
   filterByAvailableApps: z.boolean().optional().default(false),
-})
+});
 
 export class VercelAIToolSet extends BaseComposioToolSet {
-  constructor(config: {
-    apiKey?: Optional<string>;
-    baseUrl?: Optional<string>;
-    entityId?: string;
-  }={}) {
+  constructor(
+    config: {
+      apiKey?: Optional<string>;
+      baseUrl?: Optional<string>;
+      entityId?: string;
+    } = {}
+  ) {
     super(
       config.apiKey || null,
       config.baseUrl || null,
@@ -40,40 +41,46 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       description: schema.description,
       parameters,
       execute: async (params: Record<string, string>) => {
-        return await this.executeToolCall({
-          name: schema.name,
-          arguments: JSON.stringify(params)
-        }, this.entityId);
+        return await this.executeToolCall(
+          {
+            name: schema.name,
+            arguments: JSON.stringify(params),
+          },
+          this.entityId
+        );
       },
     });
   }
 
-
-
   // change this implementation
   async getTools(filters: {
-    actions?: Array<string>
+    actions?: Array<string>;
     apps?: Array<string>;
     tags?: Optional<Array<string>>;
     useCase?: Optional<string>;
     usecaseLimit?: Optional<number>;
     filterByAvailableApps?: Optional<boolean>;
   }): Promise<{ [key: string]: any }> {
+    const {
+      apps,
+      tags,
+      useCase,
+      usecaseLimit,
+      filterByAvailableApps,
+      actions,
+    } = zExecuteToolCallParams.parse(filters);
 
-    const {apps, tags, useCase, usecaseLimit, filterByAvailableApps, actions} = zExecuteToolCallParams.parse(filters);
-    
     const actionsList = await this.client.actions.list({
       ...(apps && { apps: apps?.join(",") }),
       ...(tags && { tags: tags?.join(",") }),
       ...(useCase && { useCase: useCase }),
       ...(actions && { actions: actions?.join(",") }),
       ...(usecaseLimit && { usecaseLimit: usecaseLimit }),
-      filterByAvailableApps: filterByAvailableApps ?? undefined
+      filterByAvailableApps: filterByAvailableApps ?? undefined,
     });
 
-
     const tools = {};
-    actionsList.items?.forEach(actionSchema => {
+    actionsList.items?.forEach((actionSchema) => {
       // @ts-ignore
       tools[actionSchema.name!] = this.generateVercelTool(actionSchema);
     });
@@ -81,18 +88,19 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     return tools;
   }
 
-
   async executeToolCall(
-    tool: { name: string; arguments: unknown; },
+    tool: { name: string; arguments: unknown },
     entityId: Optional<string> = null
   ): Promise<string> {
     return JSON.stringify(
       await this.executeAction({
         action: tool.name,
-        params: typeof tool.arguments === "string" ? JSON.parse(tool.arguments) : tool.arguments,
-        entityId: entityId || this.entityId
+        params:
+          typeof tool.arguments === "string"
+            ? JSON.parse(tool.arguments)
+            : tool.arguments,
+        entityId: entityId || this.entityId,
       })
     );
   }
-
 }

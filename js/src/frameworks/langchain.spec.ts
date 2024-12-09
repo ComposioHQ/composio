@@ -48,13 +48,12 @@ describe("Apps class tests", () => {
       callback: async (inputParams, authCredentials, executeRequest) => {
         try {
           const res = await executeRequest({
-              endpoint: `/user/starred/${inputParams.owner}/${inputParams.repo}`,
-              method: "PUT",
-              parameters: [],
+            endpoint: `/user/starred/${inputParams.owner}/${inputParams.repo}`,
+            method: "PUT",
+            parameters: [],
           });
           return res;
         } catch (e) {
-          console.error(e);
           return {};
         }
       },
@@ -67,7 +66,7 @@ describe("Apps class tests", () => {
         repo: "achievementsof.life",
       },
       entityId: "default",
-      connectedAccountId: "db3c8d95-73e9-474e-8ae8-edfbdaab98b1"
+      connectedAccountId: "db3c8d95-73e9-474e-8ae8-edfbdaab98b1",
     });
 
     expect(actionOuput).toHaveProperty("successfull", true);

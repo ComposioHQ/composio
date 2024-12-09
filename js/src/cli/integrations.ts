@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import chalk from "chalk";
 import { Command } from "commander";
 
@@ -35,12 +36,12 @@ export default class ConnectionsCommand {
       const typedIntegration = integration as Record<string, any>;
       console.log(chalk.cyan(`• ${chalk.bold("Id")}: ${typedIntegration.id}`));
       console.log(
-        chalk.magenta(`  ${chalk.bold("App")}: ${typedIntegration.appName}`),
+        chalk.magenta(`  ${chalk.bold("App")}: ${typedIntegration.appName}`)
       );
       console.log(
         chalk.magenta(
-          `  ${chalk.bold("Created At")}: ${parseDate(typedIntegration.createdAt)}`,
-        ),
+          `  ${chalk.bold("Created At")}: ${parseDate(typedIntegration.createdAt)}`
+        )
       );
       console.log(""); // Add an empty line for better readability between connections
     }
