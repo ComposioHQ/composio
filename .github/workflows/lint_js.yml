@@ -5,6 +5,10 @@ on:
     paths:
       - '**/*.js'
       - '**/*.ts'
+  pull_request:
+    paths:
+      - '**/*.js'
+      - '**/*.ts'
 
 jobs:
   lint-and-prettify:
