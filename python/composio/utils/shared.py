@@ -7,7 +7,6 @@ import uuid
 from inspect import Parameter
 
 from pydantic import BaseModel, Field, create_model
-from pydantic_core import PydanticUndefined
 from pydantic.fields import FieldInfo
 
 from composio.utils.logging import get as get_logger
