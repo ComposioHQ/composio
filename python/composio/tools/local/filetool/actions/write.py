@@ -51,11 +51,13 @@ class Write(LocalAction[WriteRequest, WriteResponse]):
     def execute(self, request: WriteRequest, metadata: t.Dict) -> WriteResponse:
         try:
             filemanager = self.filemanagers.get(request.file_manager_id)
-            (
+            file = (
                 filemanager.recent
                 if request.file_path is None
                 else filemanager.open(path=request.file_path)
-            ).write(text=request.text)
+            )
+            assert file is not None
+            file.write(text=request.text)
             return WriteResponse()
         except FileNotFoundError as e:
             return WriteResponse(error=f"File not found: {str(e)}")

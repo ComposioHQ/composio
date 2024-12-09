@@ -7,6 +7,7 @@ import uuid
 from inspect import Parameter
 
 from pydantic import BaseModel, Field, create_model
+from pydantic_core import PydanticUndefined
 from pydantic.fields import FieldInfo
 
 from composio.utils.logging import get as get_logger
@@ -133,7 +134,7 @@ def json_schema_to_pydantic_field(
                 json_schema=json_schema,
             ),
         ),
-        Field(
+        Field(  # type: ignore
             description=description,
             examples=examples,
             default=(
