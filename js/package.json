@@ -13,8 +13,8 @@
     "openapispec:generate": "npx @hey-api/openapi-ts",
     "run:cli": "ts-node src/cli/index.ts",
     "run:sample": "ts-node sample.ts",
-    "lint": "eslint src/**/*.ts",
-    "prettier": "prettier --write src/",
+    "lint": "eslint 'src/**/*.ts'",
+    "prettier": "prettier --write 'src/**/*.ts'",
     "format": "pnpm lint && pnpm prettier"
   },
   "bin": {

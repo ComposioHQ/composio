@@ -2,6 +2,7 @@ import { TELEMETRY_URL } from "../constants";
 import { sendProcessReq, sendBrowserReq } from "../../../utils/external";
 import ComposioSDKContext from "../composioContext";
 import { BatchProcessor } from "../base/batchProcessor";
+import { getEnvVariable } from "../../../utils/shared";
 
 export class TELEMETRY_LOGGER {
     private static batchProcessor = new BatchProcessor(1000, 100, async (data) => {
@@ -22,6 +23,10 @@ export class TELEMETRY_LOGGER {
     }
 
     private static async sendTelemetry(payload: Record<string, unknown>[]) {
+        const isTelementryDisabled = getEnvVariable("TELEMETRY_DISABLED", "false") === "true";
+        if(isTelementryDisabled) {
+            return;
+        }
         const url = `${TELEMETRY_URL}/api/sdk_metrics/telemetry`;
         const reqPayload = {
             data: { events: payload },

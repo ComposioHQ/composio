@@ -13,7 +13,13 @@ describe("Basic SDK spec suite", () => {
     });
 
     it("should throw an error if apiKey is not provided", async () => {
+        const originalExit = process.exit;
+
+        // @ts-expect-error
+        process.exit = jest.fn();
         expect(() => new Composio()).toThrow('🔑 API Key is not provided');
+        process.exit = originalExit;
+
     });
 
     it("should handle 404 error gracefully", async () => {

@@ -82,7 +82,7 @@ export class Entity {
       const connectedAccount = await this.getConnection({app: action.appKey, connectedAccountId});
   
       if (!connectedAccount) {
-        CEG.throwCustomError(SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND, {
+        throw CEG.getCustomError(SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND, {
           message: `Could not find a connection with app='${action.appKey}' and entity='${this.id}'`,
           description: `Could not find a connection with app='${action.appKey}' and entity='${this.id}'`,
         });
@@ -165,7 +165,7 @@ export class Entity {
     try {
       const connectedAccount = await this.getConnection({app});
       if (!connectedAccount) {
-        CEG.throwCustomError(SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND, {
+        throw CEG.getCustomError(SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND, {
           description: `Could not find a connection with app='${app}' and entity='${this.id}'`,
         });
       }
