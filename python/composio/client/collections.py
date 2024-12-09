@@ -386,7 +386,7 @@ class TriggerConfigPropertyModel(BaseModel):
 
     description: str
     title: str
-    default: t.Any
+    default: t.Any = None
 
     type: t.Optional[str] = None
 
