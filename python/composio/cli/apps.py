@@ -6,15 +6,18 @@ Usage:
 """
 
 import ast
-import inspect
+import os.path
+import shutil
 import typing as t
-from pathlib import Path
 
 import click
 
-from composio.cli.context import Context, get_context, pass_context
+from composio import constants
+from composio.cli.context import Context, pass_context
 from composio.cli.utils.decorators import handle_exceptions
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
+from composio.client import Composio
+from composio.client.utils import update_actions, update_apps, update_triggers
 from composio.core.cls.did_you_mean import DYMGroup
 
 
@@ -62,131 +65,70 @@ class UpdateExamples(HelpfulCmdBase, click.Command):
     ]
 
 
-@_apps.command(name="update-types", cls=UpdateExamples)
+@_apps.command(name="generate-types", cls=UpdateExamples)
 @click.help_option("--help", "-h", "-help")
 @handle_exceptions()
 @pass_context
 def _update(context: Context) -> None:
     """Updates the local type stubs with the latest app data."""
-    # TODO: implement
+    context.console.print("Fetching latest data from Composio API...")
+    generate_type_stubs(context.client)
+    context.console.print(
+        "[green]Successfully updated type stubs for Apps, Actions, and Triggers[/green]"
+    )
 
 
-# TODO: use this to generate updated types
-def _update_annotations(
-    cls: t.Type,
-    attributes: t.List[str],
-    deprecated: t.Optional[t.Dict[str, str]] = None,
-) -> None:
-    """Update annontations for `cls`"""
-    console = get_context().console
-    file = Path(inspect.getmodule(cls).__file__)  # type: ignore
-    annotations = []
-    for attribute in sorted(attributes):
-        annotations.append(
+def generate_type_stub(enum_file: str) -> None:
+    # app.py becomes apps/ folder, etc.
+    cache_folder_name = os.path.basename(enum_file).replace(".py", "") + "s"
+    cache_folder = os.path.join(constants.LOCAL_CACHE_DIRECTORY, cache_folder_name)
+
+    # Get all enum filenames
+    enum_names = os.listdir(cache_folder)
+
+    # Get the enum class
+    with open(enum_file, "r") as f:
+        tree = ast.parse(f.read())
+
+    enum_class = tree.body[-1]
+    assert isinstance(enum_class, ast.ClassDef)
+
+    # Remove the bodies of all methods in the class, replace with ellipsis
+    for node in enum_class.body:
+        if isinstance(node, ast.FunctionDef):
+            node.body = [ast.Expr(ast.Constant(...))]
+
+    # Add all enum names as class attributes
+    for enum_name in enum_names:
+        enum_class.body.append(
             ast.AnnAssign(
-                target=ast.Name(id=attribute),
-                annotation=ast.Constant(value=f"{cls.__name__}"),
+                target=ast.Name(id=enum_name, ctx=ast.Store()),
+                annotation=ast.Constant(value=f"{enum_class.name}"),
+                value=None,
                 simple=1,
-            ),
+            )
         )
 
-    _deprecated = []
-    _deprecated_names = []
-    deprecated = deprecated or {}
-    for old, new in deprecated.items():
-        if old.lower() == new.lower():
-            continue
-
-        if new.upper() not in attributes:
-            continue
-
-        _deprecated.append(_build_deprecated_node(old=old, new=new))
-        _deprecated_names.append(old.upper())
-
-    tree = ast.parse(file.read_text(encoding="utf-8"))
-    for node in tree.body:
-        if not isinstance(node, ast.ClassDef):
-            continue
-        if node.name != cls.__name__:
-            continue
-
-        cls_attributes = [
-            child.target.id  # type: ignore
-            for child in node.body[1:]
-            if isinstance(child, ast.AnnAssign)
-            and child.target.id != "_deprecated"  # type: ignore
-        ]
-        if set(cls_attributes) == set(attributes):
-            console.print(f"[yellow]⚠️ {cls.__name__}s does not require update[/yellow]")
-            return
-
-        def _filter(child: ast.AST) -> bool:
-            if isinstance(child, ast.AnnAssign) and child.target.id == "_deprecated":  # type: ignore
-                child.value = ast.Dict(
-                    keys=list(map(ast.Constant, deprecated.keys())),  # type: ignore
-                    values=list(map(ast.Constant, deprecated.values())),  # type: ignore
-                )
-                return True
-            if isinstance(child, ast.AnnAssign):
-                return False
-            if isinstance(child, ast.FunctionDef) and child.name in _deprecated_names:
-                return False
-            if "@te.deprecated" in ast.unparse(child):
-                return False
-            return True
-
-        body = [child for child in node.body[1:] if _filter(child=child)]
-        node.body = node.body[:1] + annotations + _deprecated + body
-        break
-
-    code = ast.unparse(tree)
-    code = code.replace(
-        "@classmethod",
-        "@classmethod  # type: ignore",
-    )
-    code = code.replace(
-        "import typing as t",
-        "\n# pylint: disable=too-many-public-methods, unused-import\n\nimport typing as t"
-        "\nimport typing_extensions as te  # noqa: F401",
-    )
-    with file.open("w", encoding="utf-8") as fp:
-        fp.write(code)
-    console.print(f"[green]✔ {cls.__name__}s updated[/green]")
+    # Write the type stub
+    with open(enum_file + "i", "w") as f:
+        f.write(ast.unparse(tree))
 
 
-def _build_deprecated_node(old: str, new: str) -> ast.FunctionDef:
-    """Function definition."""
-    return ast.FunctionDef(
-        name=old.upper(),
-        args=ast.arguments(
-            posonlyargs=[],
-            args=[ast.arg(arg="cls")],
-            kwonlyargs=[],
-            kw_defaults=[],
-            defaults=[],
-        ),
-        body=[
-            ast.Return(
-                value=ast.Attribute(
-                    value=ast.Name(id="cls", ctx=ast.Load()),
-                    attr=new.upper(),
-                    ctx=ast.Load(),
-                )
-            )
-        ],
-        decorator_list=[
-            ast.Name(id="classmethod", ctx=ast.Load()),
-            ast.Name(id="property", ctx=ast.Load()),
-            ast.Call(
-                func=ast.Attribute(
-                    value=ast.Name(id="te", ctx=ast.Load()),
-                    attr="deprecated",
-                    ctx=ast.Load(),
-                ),
-                args=[ast.Constant(value=f"Use {new.upper()} instead.")],
-                keywords=[],
-            ),
-        ],
-        returns=ast.Constant(value="Action"),
-        lineno=0,
-    )
+def generate_type_stubs(client: Composio) -> None:
+    # Update local cache first
+    for cache_folder in ["apps", "actions", "triggers", "tags"]:
+        shutil.rmtree(
+            constants.LOCAL_CACHE_DIRECTORY / cache_folder,
+            ignore_errors=True,
+        )
+    apps = update_apps(client)
+    update_actions(client, apps)
+    update_triggers(client, apps)
+
+    enums_folder = os.path.join(os.path.dirname(__file__), "..", "client", "enums")
+    apps_enum = os.path.join(enums_folder, "app.py")
+    actions_enum = os.path.join(enums_folder, "action.py")
+    triggers_enum = os.path.join(enums_folder, "trigger.py")
+
+    for enum_file in [apps_enum, actions_enum, triggers_enum]:
+        generate_type_stub(enum_file)
