@@ -38,13 +38,6 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
 
-    - name: Update version
-      run: |
-        git config --global user.email "tech@composio.dev"
-        git config --global user.name "Composio"
-        npm version ${{ github.event.inputs.version }} --no-git-tag-version
-
-
     - name: pnpm build
       run: pnpm build
       
