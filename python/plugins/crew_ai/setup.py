@@ -24,7 +24,7 @@ setup(
     python_requires=">=3.9,<4",
     install_requires=[
         "composio_langchain>=0.5.50,<=0.5.52-rc.2",
-        "crewai>=0.51.0,<=0.75.0",
+        "crewai>=0.51.0",
     ],
     include_package_data=True,
 )
