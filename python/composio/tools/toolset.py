@@ -364,12 +364,6 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 base_url=self._base_url,
                 runtime=self._runtime,
             )
-            # if not NO_REMOTE_ENUM_FETCHING:
-            #     self.logger.debug("Updating local cache...")
-            #     apps = update_apps(self._remote_client)
-            #     update_actions(self._remote_client, apps)
-            #     update_triggers(self._remote_client, apps)
-            #     self.logger.debug("Local cache updated.")
 
         self._remote_client.local = self._local_client
         return self._remote_client
