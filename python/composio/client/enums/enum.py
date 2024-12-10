@@ -30,7 +30,8 @@ class Enum(t.Generic[DataT]):
         if isinstance(value, cls):
             return value
 
-        value = t.cast(str, value)
+        # Because people will pass weird stuff into the constructor
+        value = str(value)
 
         # Normalize slug
         value = value.upper()
@@ -60,8 +61,7 @@ class Enum(t.Generic[DataT]):
             if not isinstance(slug, str):
                 raise ComposioSDKError(f"Invalid enum type: {slug!r}, expected str")
         else:
-            slug = value
-            assert isinstance(slug, str)
+            slug = str(value)
 
         # Normalize slug
         slug = slug.upper()
