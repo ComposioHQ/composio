@@ -49,6 +49,11 @@ def test_find_actions_by_tags() -> None:
 
 def test_uninitialize_app() -> None:
     """Test if the usage of an app without connected account raises error or not."""
+    # Ensure the app is cached
+    # TODO: remove this once App.iter() uses a dedicated endpoint
+    # for fetching latest enums
+    App.ATTIO.load()
+
     with pytest.raises(
         ComposioSDKError,
         match=(
