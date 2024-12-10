@@ -240,7 +240,8 @@ export default class AddCommand {
     if (
       !app.no_auth &&
       testConnectors.length > 0 &&
-      !skipDefaultConnectorAuth
+      !skipDefaultConnectorAuth &&
+      testConnectors.find((connector) => connector.auth_mode === userAuthMode)
     ) {
       const { doYouWantToUseComposioAuth } = await inquirer.prompt({
         type: "confirm",
