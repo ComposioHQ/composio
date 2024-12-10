@@ -159,6 +159,15 @@ def _enable_trigger(context: Context, name: str) -> None:
 
     config = {}
     properties = trigger.config.properties or {}
+    # Populate default values for optional fields
+    config.update(
+        {
+            field: field_props.default
+            for field, field_props in properties.items()
+            if field_props.default is not None
+        }
+    )
+
     for field in trigger.config.required or []:
         field_props = properties[field]
         field_title = field_props.title or field

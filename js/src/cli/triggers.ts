@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import chalk from "chalk";
 import { Command } from "commander";
 
@@ -65,15 +66,15 @@ export default class ConnectionsCommand {
       const typedTrigger = trigger as any;
       console.log(
         chalk.cyan(`  ${chalk.bold("Name")}:`),
-        chalk.white(typedTrigger.appName),
+        chalk.white(typedTrigger.appName)
       );
       console.log(
         chalk.cyan(`  ${chalk.bold("Enum")}:`),
-        chalk.white(typedTrigger.enum),
+        chalk.white(typedTrigger.enum)
       );
       console.log(
         chalk.cyan(`  ${chalk.bold("Description")}:`),
-        chalk.white(typedTrigger.description),
+        chalk.white(typedTrigger.description)
       );
       console.log(""); // Add an empty line for better readability between triggers
     }
@@ -98,7 +99,7 @@ export class TriggerAdd {
 
     const data = (await composioClient.triggers.list()).find(
       // @ts-ignore
-      (trigger) => trigger.enum.toLowerCase() === triggerName.toLowerCase(),
+      (trigger) => trigger.enum.toLowerCase() === triggerName.toLowerCase()
     );
 
     if (!data) {
@@ -110,12 +111,12 @@ export class TriggerAdd {
 
     const connection = await composioClient
       .getEntity("default")
-      .getConnection(appName);
+      .getConnection({ app: appName });
 
     if (!connection) {
       console.log(chalk.red(`Connection to app ${appName} not found`));
       console.log(
-        `Connect to the app by running: ${chalk.cyan(`composio add ${appName}`)}`,
+        `Connect to the app by running: ${chalk.cyan(`composio add ${appName}`)}`
       );
       return;
     }
@@ -138,13 +139,17 @@ export class TriggerAdd {
       }
     }
 
-   const triggerSetupData = await composioClient.triggers.setup(
-      connection.id,
+    const triggerSetupData = await composioClient.triggers.setup({
+      connectedAccountId: connection.id,
       triggerName,
-      configValue,
-    );
+      config: configValue,
+    });
 
-    console.log(chalk.green(`Trigger ${triggerName} setup to app ${appName} with id ${triggerSetupData?.triggerId}`));
+    console.log(
+      chalk.green(
+        `Trigger ${triggerName} setup to app ${appName} with id ${triggerSetupData?.triggerId}`
+      )
+    );
   }
 }
 
@@ -173,7 +178,7 @@ export class TriggerDisable {
 
 export class ActiveTriggers {
   private program: Command;
-  constructor(program: Command,register: boolean = true) {
+  constructor(program: Command, register: boolean = true) {
     this.program = program;
 
     if (register) {
@@ -191,7 +196,7 @@ export class ActiveTriggers {
       console.log(`Id: ${chalk.bold(trigger.id)}`);
       console.log(`Trigger Name: ${chalk.cyan(trigger.triggerName)}`);
       console.log(
-        `TriggerConfig: ${chalk.magenta(JSON.stringify(trigger.triggerConfig, null, 2))}`,
+        `TriggerConfig: ${chalk.magenta(JSON.stringify(trigger.triggerConfig, null, 2))}`
       );
       console.log(`Connection ID: ${chalk.yellow(trigger.connectionId)}`);
       console.log(""); // Add an empty line for better readability between triggers

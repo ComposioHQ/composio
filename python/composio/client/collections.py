@@ -386,6 +386,7 @@ class TriggerConfigPropertyModel(BaseModel):
 
     description: str
     title: str
+    default: t.Any = None
 
     type: t.Optional[str] = None
 
@@ -1095,7 +1096,20 @@ class Actions(Collection[ActionModel]):
                         app
         :return: List of actions
         """
-        actions = t.cast(t.List[Action], [Action(action) for action in actions or []])
+
+        def is_action(obj):
+            try:
+                return hasattr(obj, "app")
+            except AttributeError:
+                return False
+
+        actions = t.cast(
+            t.List[Action],
+            [
+                action if is_action(action) else Action(action)
+                for action in actions or []
+            ],
+        )
         apps = t.cast(t.List[App], [App(app) for app in apps or []])
         tags = t.cast(t.List[Tag], [Tag(tag) for tag in tags or []])
 
