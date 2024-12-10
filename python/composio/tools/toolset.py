@@ -43,6 +43,7 @@ from composio.client.collections import (
 from composio.client.enums import TriggerType
 from composio.client.enums.base import EnumStringNotFound
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
+from composio.client.utils import check_cache_refresh
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
@@ -76,6 +77,9 @@ _CallableType = t.Callable[[t.Dict], t.Dict]
 MetadataType = t.Dict[_KeyType, t.Dict]
 ParamType = t.TypeVar("ParamType")
 ProcessorType = te.Literal["pre", "post", "schema"]
+
+
+NO_CACHE_REFRESH = os.environ.get("COMPOSIO_NO_CACHE_REFRESH", "false") == "true"
 
 
 class IntegrationParams(te.TypedDict):
@@ -363,6 +367,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 base_url=self._base_url,
                 runtime=self._runtime,
             )
+            if not NO_CACHE_REFRESH:
+                check_cache_refresh(self._remote_client)
 
         self._remote_client.local = self._local_client
         return self._remote_client

@@ -1,3 +1,4 @@
+import json
 import typing as t
 
 from composio.client import Composio, enums
@@ -5,9 +6,13 @@ from composio.client.collections import ActionModel, AppModel, TriggerModel
 from composio.tools.base.abs import DEPRECATED_MARKER
 from composio.tools.local import load_local_tools
 from composio.utils import get_enum_key
+from composio.utils.logging import get_logger
 
 
 EnumModels = t.Union[AppModel, ActionModel, TriggerModel]
+
+
+logger = get_logger(__name__)
 
 
 def filter_non_beta_items(items: t.Sequence[EnumModels]) -> t.List:
@@ -179,10 +184,6 @@ def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
         value="important",
         path=enums.base.TAGS_CACHE / "DEFAULT",
     )
-    # _update_annotations(
-    #     cls=enums.Tag,
-    #     attributes=tag_names,
-    # )
 
 
 def _update_triggers(
@@ -203,3 +204,19 @@ def _update_triggers(
                 app=app.key,
                 path=enums.base.TRIGGERS_CACHE / trigger_names[-1],
             ).store()
+
+
+def check_cache_refresh(client: Composio) -> None:
+    """Check if the actions have a 'replaced_by' field and refresh the cache if not."""
+    if enums.base.ACTIONS_CACHE.exists():
+        first_file = next(enums.base.ACTIONS_CACHE.iterdir(), None)
+        if first_file is not None:
+            first_action = json.loads(first_file.read_text())
+            if "replaced_by" in first_action:
+                logger.debug("Actions cache is up-to-date")
+                return
+
+    logger.info("Actions cache is outdated, refreshing cache...")
+    apps = update_apps(client)
+    update_actions(client, apps)
+    update_triggers(client, apps)

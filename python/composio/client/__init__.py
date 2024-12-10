@@ -104,7 +104,9 @@ class Composio:
                 UserData.load(path=user_data_path) if user_data_path.exists() else None
             )
             env_api_key = (
-                user_data.api_key if user_data else os.environ.get(ENV_COMPOSIO_API_KEY)
+                user_data.api_key
+                if user_data is not None and user_data.api_key is not None
+                else os.environ.get(ENV_COMPOSIO_API_KEY)
             )
             if env_api_key:
                 self._api_key = env_api_key

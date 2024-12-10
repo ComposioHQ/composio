@@ -16,6 +16,7 @@ from composio.cli.context import Context, pass_context
 from composio.cli.utils.decorators import handle_exceptions
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import Composio
+from composio.client.enums.base import ACTIONS_CACHE, APPS_CACHE, TRIGGERS_CACHE
 from composio.client.utils import update_actions, update_apps, update_triggers
 from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
@@ -83,13 +84,9 @@ def _generate_types(context: Context) -> None:
     )
 
 
-def generate_type_stub(enum_file: str) -> None:
-    # app.py becomes apps/ folder, etc.
-    cache_folder_name = os.path.basename(enum_file).replace(".py", "") + "s"
-    cache_folder = os.path.join(constants.LOCAL_CACHE_DIRECTORY, cache_folder_name)
-
+def generate_type_stub(enum_file: str, cache_folder: os.PathLike) -> None:
     # Get all enum filenames
-    enum_names = os.listdir(cache_folder)
+    enum_names = sorted(os.listdir(cache_folder))
 
     # Get the enum class
     with open(enum_file, "r") as f:
@@ -146,5 +143,9 @@ def generate_type_stubs(client: Composio) -> None:
     actions_enum = os.path.join(enums_folder, "action.py")
     triggers_enum = os.path.join(enums_folder, "trigger.py")
 
-    for enum_file in [apps_enum, actions_enum, triggers_enum]:
-        generate_type_stub(enum_file)
+    for enum_file, cache_folder in [
+        (apps_enum, APPS_CACHE),
+        (actions_enum, ACTIONS_CACHE),
+        (triggers_enum, TRIGGERS_CACHE),
+    ]:
+        generate_type_stub(enum_file, cache_folder)
