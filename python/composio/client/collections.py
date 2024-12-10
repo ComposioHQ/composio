@@ -554,7 +554,7 @@ class TriggerSubscription(logging.WithLogger):
             # Validate app name
             if filter == "app_name":
                 if isinstance(value, App):
-                    value = value.slug
+                    slug = value.slug
 
                 elif not isinstance(value, str):
                     raise ComposioSDKError(
@@ -563,13 +563,13 @@ class TriggerSubscription(logging.WithLogger):
                     )
 
                 # Our enums are in uppercase but we accept lowercase ones too.
-                value = value.upper()
+                slug = slug.upper()
 
                 # Ensure the app exists
                 app_names = list(App.iter())
-                if value not in app_names:
-                    error_msg = f"App {value!r} does not exist."
-                    possible_values = difflib.get_close_matches(value, app_names, n=1)
+                if slug not in app_names:
+                    error_msg = f"App {slug!r} does not exist."
+                    possible_values = difflib.get_close_matches(slug, app_names, n=1)
                     if possible_values:
                         (possible_value,) = possible_values
                         error_msg += f" Did you mean {possible_value!r}?"
@@ -583,9 +583,9 @@ class TriggerSubscription(logging.WithLogger):
                 apps_for_triggers = {
                     Trigger(trigger).app.upper() for trigger in active_triggers
                 }
-                if value not in apps_for_triggers:
+                if slug not in apps_for_triggers:
                     error_msg = (
-                        f"App {value!r} has no triggers enabled on your account.\n"
+                        f"App {slug!r} has no triggers enabled on your account.\n"
                         "Find the possible triggers by running `composio triggers`."
                     )
                     raise ComposioSDKError(error_msg + docs_link_msg)
@@ -593,7 +593,7 @@ class TriggerSubscription(logging.WithLogger):
             # Validate trigger name
             if filter == "trigger_name":
                 if isinstance(value, Trigger):
-                    value = value.slug
+                    slug = value.slug
                 elif not isinstance(value, str):
                     raise ComposioSDKError(
                         f"Expected 'trigger_name' to be Trigger or str, found {value!r}"
@@ -601,14 +601,14 @@ class TriggerSubscription(logging.WithLogger):
                     )
 
                 # Our enums are in uppercase but we accept lowercase ones too.
-                value = value.upper()
+                slug = slug.upper()
 
                 # Ensure the trigger exists
                 trigger_names = list(Trigger.iter())
-                if value not in trigger_names:
-                    error_msg = f"Trigger {value!r} does not exist."
+                if slug not in trigger_names:
+                    error_msg = f"Trigger {slug!r} does not exist."
                     possible_values = difflib.get_close_matches(
-                        value, trigger_names, n=1
+                        slug, trigger_names, n=1
                     )
                     if possible_values:
                         (possible_value,) = possible_values
@@ -620,10 +620,10 @@ class TriggerSubscription(logging.WithLogger):
                 active_triggers = [
                     trigger.triggerName for trigger in self.client.active_triggers.get()
                 ]
-                if value not in active_triggers:
+                if slug not in active_triggers:
                     error_msg = (
-                        f"Trigger {value!r} is not enabled on your account.\nEnable"
-                        f" the trigger by doing `composio triggers enable {value}`."
+                        f"Trigger {slug!r} is not enabled on your account.\nEnable"
+                        f" the trigger by doing `composio triggers enable {slug}`."
                     )
                     raise ComposioSDKError(error_msg + docs_link_msg)
 

@@ -386,6 +386,7 @@ class Entity:
 
     def initiate_connection(
         self,
+        # TODO: Rename this parameter to 'app'
         app_name: t.Union[str, App],
         auth_mode: t.Optional[str] = None,
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
@@ -407,9 +408,11 @@ class Entity:
         :return: A ConnectionRequestModel instance representing the initiated connection.
         """
         if isinstance(app_name, App):
-            app_name = app_name.slug
+            app_name_str = app_name.slug
+        else:
+            app_name_str = app_name
 
-        app = self.client.apps.get(name=app_name)
+        app = self.client.apps.get(name=app_name_str)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         if integration is None and auth_mode is not None:
             if auth_mode not in AUTH_SCHEMES:
