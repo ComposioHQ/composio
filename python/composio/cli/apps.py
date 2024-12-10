@@ -58,18 +58,23 @@ def _apps(context: Context, enabled: bool = False) -> None:
         context.console.print(f"• {app.key}")
 
 
-class UpdateExamples(HelpfulCmdBase, click.Command):
-    examples = [
-        click.style("composio apps update", fg="green")
-        + click.style("  # Update local Apps database\n", fg="black"),
-    ]
-
-
-@_apps.command(name="generate-types", cls=UpdateExamples)
+@_apps.command(name="update")
 @click.help_option("--help", "-h", "-help")
 @handle_exceptions()
 @pass_context
 def _update(context: Context) -> None:
+    """Deprecated, has no effect."""
+    context.console.print(
+        "[yellow]Warning:[/yellow] the 'apps update' command has been deprecated"
+        " and has no effect."
+    )
+
+
+@_apps.command(name="generate-types")
+@click.help_option("--help", "-h", "-help")
+@handle_exceptions()
+@pass_context
+def _generate_types(context: Context) -> None:
     """Updates the local type stubs with the latest app data."""
     context.console.print("Fetching latest data from Composio API...")
     generate_type_stubs(context.client)
