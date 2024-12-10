@@ -555,8 +555,9 @@ class TriggerSubscription(logging.WithLogger):
             if filter == "app_name":
                 if isinstance(value, App):
                     slug = value.slug
-
-                elif not isinstance(value, str):
+                elif isinstance(value, str):
+                    slug = value
+                else:
                     raise ComposioSDKError(
                         f"Expected 'app_name' to be App or str, found {value!r}"
                         + docs_link_msg
@@ -594,7 +595,9 @@ class TriggerSubscription(logging.WithLogger):
             if filter == "trigger_name":
                 if isinstance(value, Trigger):
                     slug = value.slug
-                elif not isinstance(value, str):
+                elif isinstance(value, str):
+                    slug = value
+                else:
                     raise ComposioSDKError(
                         f"Expected 'trigger_name' to be Trigger or str, found {value!r}"
                         + docs_link_msg
