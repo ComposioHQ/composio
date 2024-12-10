@@ -18,6 +18,7 @@ from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import Composio
 from composio.client.utils import update_actions, update_apps, update_triggers
 from composio.core.cls.did_you_mean import DYMGroup
+from composio.exceptions import ComposioSDKError
 
 
 class AppsExamples(HelpfulCmdBase, DYMGroup):
@@ -94,8 +95,19 @@ def generate_type_stub(enum_file: str) -> None:
     with open(enum_file, "r") as f:
         tree = ast.parse(f.read())
 
-    enum_class = tree.body[-1]
-    assert isinstance(enum_class, ast.ClassDef)
+    enum_classes = [
+        node
+        for node in tree.body
+        if isinstance(node, ast.ClassDef)
+        and isinstance(node.bases[0], ast.Subscript)
+        and isinstance(node.bases[0].value, ast.Name)
+        and node.bases[0].value.id == "Enum"
+    ]
+    if not enum_classes:
+        raise ComposioSDKError(
+            "No Enum class found in the SDK source, please re-install `composio`."
+        )
+    enum_class = enum_classes[0]
 
     # Remove the bodies of all methods in the class, replace with ellipsis
     for node in enum_class.body:
