@@ -200,6 +200,11 @@ def test_trigger_filter_errors_not_enabled(monkeypatch: pytest.MonkeyPatch) -> N
             id=name, connectionId=name, triggerName=name, triggerConfig={}
         )
 
+    # Ensure the trigger is cached
+    # TODO: remove this once Trigger.iter() uses a dedicated endpoint
+    # for fetching latest enums
+    composio.Trigger.GMAIL_NEW_GMAIL_MESSAGE.load()
+
     # Ensure trigger is enabled on the account
     monkeypatch.setattr(
         client.active_triggers,
@@ -217,6 +222,11 @@ def test_trigger_filter_errors_not_enabled(monkeypatch: pytest.MonkeyPatch) -> N
         == "Trigger 'GMAIL_NEW_GMAIL_MESSAGE' is not enabled on your account.\n"
         "Enable the trigger by doing `composio triggers enable GMAIL_NEW_GMAIL_MESSAGE`.\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
     )
+
+    # Ensure the app is cached
+    # TODO: remove this once App.iter() uses a dedicated endpoint
+    # for fetching latest enums
+    composio.App.ATTIO.load()
 
     # Ensure the app being enabled has at least one enabled trigger on the account
     monkeypatch.setattr(
