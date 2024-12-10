@@ -14,6 +14,8 @@ on:
 
 jobs:
   run-js-tests:
+    permissions:
+      contents: write
     timeout-minutes: 60
     runs-on: ubuntu-latest
 
