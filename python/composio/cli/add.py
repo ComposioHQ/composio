@@ -286,7 +286,7 @@ def _handle_oauth(
 
     if scopes is not None:
         if auth_config.get("scopes") is not None:
-            scopes = tuple(set([*auth_config["scopes"].split(","), *scopes]))
+            scopes = tuple({*auth_config["scopes"].split(","), *scopes})
         auth_config["scopes"] = ",".join(scopes)
 
     connection = entity.initiate_connection(

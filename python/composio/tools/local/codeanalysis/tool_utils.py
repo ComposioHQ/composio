@@ -71,7 +71,7 @@ def find_python_files(
         readable_files = []
         for file in python_files:
             try:
-                with open(file, "r", encoding="utf-8") as f:
+                with open(file, encoding="utf-8") as f:
                     f.read()
                 readable_files.append(file)
             except Exception:
