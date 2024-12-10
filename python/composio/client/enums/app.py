@@ -14,27 +14,38 @@ class App(Enum[AppData], metaclass=EnumGenerator):
     cache = _APP_CACHE
     storage = AppData
 
-    def load(self) -> AppData:
-        try:
-            return super().load()
+    def load_from_runtime(self) -> AppData | None:
+        # re-load local tools, and check if it's a runtime app
+        from composio.tools.base.abs import tool_registry
+        from composio.tools.local import load_local_tools
 
-        except EnumStringNotFound:
-            # re-load local tools, and check if it's a runtime app
-            from composio.tools.base.abs import tool_registry
-            from composio.tools.local import load_local_tools
+        load_local_tools()
 
-            load_local_tools()
+        for gid, tools in tool_registry.items():
+            if self.slug in tools:
+                self._data = AppData(
+                    name=tools[self.slug].name,
+                    is_local=gid in ("runtime", "local"),
+                    path=self.storage_path,
+                )
+                return self._data
 
-            for gid, tools in tool_registry.items():
-                if self.slug in tools:
-                    self._data = AppData(
-                        name=tools[self.slug].name,
-                        is_local=gid in ("runtime", "local"),
-                        path=self.storage_path,
-                    )
-                    return self._data
+        return None
 
-            raise
+    def fetch_and_cache(self) -> AppData | None:
+        from composio.client import Composio  # pylint: disable=import-outside-toplevel
+
+        client = Composio.get_latest()
+        response = client.http.get(url=str(client.apps.endpoint / self.slug)).json()
+        # TOFIX: Return proper error code when of item is not found
+        if "message" in response:
+            return None
+
+        return AppData(
+            name=response["name"],
+            path=self.storage_path,
+            is_local=False,
+        )
 
     @property
     def name(self) -> str:

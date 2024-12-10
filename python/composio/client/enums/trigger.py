@@ -13,26 +13,39 @@ class Trigger(Enum[TriggerData], metaclass=EnumGenerator):
     cache = _TRIGGER_CACHE
     storage = TriggerData
 
-    def load(self) -> TriggerData:
-        try:
-            trigger_data = super().load()
+    def load_from_runtime(self) -> TriggerData | None:
+        from composio.tools.base.abs import trigger_registry
 
-        except EnumStringNotFound:
-            # check if it's a runtime trigger
-            from composio.tools.base.abs import trigger_registry
+        for triggers in trigger_registry.values():
+            if self.slug in triggers:
+                self._data = TriggerData(
+                    name=triggers[self.slug].name,
+                    app=triggers[self.slug].tool,
+                    path=self.storage_path,
+                )
+                return self._data
 
-            for triggers in trigger_registry.values():
-                if self.slug in triggers:
-                    self._data = TriggerData(
-                        name=triggers[self.slug].name,
-                        app=triggers[self.slug].tool,
-                        path=self.storage_path,
-                    )
-                    return self._data
+        return None
 
-            raise
+    def fetch_and_cache(self) -> TriggerData | None:
+        from composio.client import Composio  # pylint: disable=import-outside-toplevel
+        from composio.client.endpoints import (  # pylint: disable=import-outside-toplevel
+            v2,
+        )
 
-        return trigger_data
+        client = Composio.get_latest()
+
+        # TODO: client.triggers.endpoint is still v1, migrate that
+        response = client.http.get(url=str(v2.triggers / self.slug)).json()
+        # TOFIX: Return proper error code when of item is not found
+        if "appName" not in response:
+            return None
+
+        return TriggerData(  # type: ignore
+            name=response["enum"],
+            app=response["appName"],
+            path=self.storage_path,
+        )
 
     @property
     def name(self) -> str:

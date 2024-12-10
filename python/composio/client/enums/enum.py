@@ -108,11 +108,30 @@ class Enum(t.Generic[DataT]):
             self._data = data
             return self._data
 
+        # Try to fetch from runtime
+        runtime_data = self.load_from_runtime()
+        if runtime_data is not None:
+            self._data = runtime_data
+            return self._data
+
+        # Try to fetch from API, and cache it locally
+        remote_data = self.fetch_and_cache()
+        if remote_data is not None:
+            remote_data.store()
+            self._data = remote_data
+            return self._data
+
         raise EnumStringNotFound(
             value=self.slug,
             enum=self.__class__.__name__,
             possible_values=list(self.iter()),
         )
+
+    def load_from_runtime(self) -> DataT | None:
+        raise NotImplementedError
+
+    def fetch_and_cache(self) -> DataT | None:
+        raise NotImplementedError
 
 
 class EnumGenerator(type):

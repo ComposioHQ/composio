@@ -58,6 +58,7 @@ class LocalStorage(BaseModel):
                 f"Value of `path` is not set for `{self.__class__.__name__}`"
             )
 
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         data = self.to_json()
         if "path" in data:
             del data["path"]
