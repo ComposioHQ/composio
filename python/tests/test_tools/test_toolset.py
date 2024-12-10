@@ -115,7 +115,7 @@ class TestConnectedAccountProvider:
         with pytest.raises(
             ComposioSDKError,
             match=re.escape(
-                f"Invalid connected accounts found: [('GITHUB', '{self.connected_account}')]"
+                f"Invalid connected accounts found: [('App.GITHUB', '{self.connected_account}')]"
             ),
         ):
             ComposioToolSet(
