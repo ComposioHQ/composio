@@ -427,7 +427,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             )
 
         if action.app not in [
-            connection.appUniqueId for connection in self._connected_accounts
+            # Normalize app names/ids coming from API
+            connection.appUniqueId.upper()
+            for connection in self._connected_accounts
         ]:
             raise ComposioSDKError(
                 f"No connected account found for app `{action.app}`; "
