@@ -3,7 +3,11 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'python/**'
   pull_request:
+    paths:
+      - 'python/**'
 
 jobs:
   lock_check:
