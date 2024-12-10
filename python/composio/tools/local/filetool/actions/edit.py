@@ -13,7 +13,7 @@ from composio.tools.local.filetool.actions.base_action import (
 class EditFileRequest(BaseFileRequest):
     """Request to edit a file."""
 
-    file_path: str = Field(
+    file_path: Optional[str] = Field(
         default=None,
         description=(
             "The path to the file that will be edited. If not provided, "
@@ -49,18 +49,18 @@ class EditFileRequest(BaseFileRequest):
 class EditFileResponse(BaseFileResponse):
     """Response to edit a file."""
 
-    old_text: str = Field(
+    old_text: Optional[str] = Field(
         default=None,
         description=(
             "The updated changes. If the file was not edited, the original file "
             "will be returned."
         ),
     )
-    error: str = Field(
+    error: Optional[str] = Field(
         default=None,
         description="Error message if any",
     )
-    updated_text: str = Field(
+    updated_text: Optional[str] = Field(
         default=None,
         description="The updated text. If the file was not edited, this will be empty.",
     )

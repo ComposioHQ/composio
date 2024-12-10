@@ -13,7 +13,7 @@ class GetTaskRequest(BaseModel):
         alias="task_id",
         description="",
     )
-    custom_task_ids: bool = Field(
+    custom_task_ids: t.Optional[bool] = Field(
         default=None,
         alias="custom_task_ids",
         description=(
@@ -21,7 +21,7 @@ class GetTaskRequest(BaseModel):
             "be `true`. "
         ),
     )
-    team_id: int = Field(
+    team_id: t.Optional[int] = Field(
         default=None,
         alias="team_id",
         description=(
@@ -29,12 +29,12 @@ class GetTaskRequest(BaseModel):
             "`custom_task_ids=true&team_id=123`. "
         ),
     )
-    include_subtasks: bool = Field(
+    include_subtasks: t.Optional[bool] = Field(
         default=None,
         alias="include_subtasks",
         description="Include subtasks, default false",
     )
-    include_markdown_description: bool = Field(
+    include_markdown_description: t.Optional[bool] = Field(
         default=None,
         alias="include_markdown_description",
         description=(

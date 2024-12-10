@@ -13,17 +13,17 @@ class GetTimeEntriesWithinADateRangeRequest(BaseModel):
         alias="team_Id",
         description="Team ID (Workspace)",
     )
-    start_date: int = Field(
+    start_date: t.Optional[int] = Field(
         default=None,
         alias="start_date",
         description="Unix time in milliseconds",
     )
-    end_date: int = Field(
+    end_date: t.Optional[int] = Field(
         default=None,
         alias="end_date",
         description="Unix time in milliseconds",
     )
-    assignee: int = Field(
+    assignee: t.Optional[int] = Field(
         default=None,
         alias="assignee",
         description=(
@@ -32,14 +32,14 @@ class GetTimeEntriesWithinADateRangeRequest(BaseModel):
             "have access to do this.* "
         ),
     )
-    include_task_tags: bool = Field(
+    include_task_tags: t.Optional[bool] = Field(
         default=None,
         alias="include_task_tags",
         description=(
             "Include task tags in the response for time entries associated with tasks. "
         ),
     )
-    include_location_names: bool = Field(
+    include_location_names: t.Optional[bool] = Field(
         default=None,
         alias="include_location_names",
         description=(
@@ -47,27 +47,27 @@ class GetTimeEntriesWithinADateRangeRequest(BaseModel):
             "and `space_id`. "
         ),
     )
-    space_id: int = Field(
+    space_id: t.Optional[int] = Field(
         default=None,
         alias="space_id",
         description="Only include time entries associated with tasks in a specific Space.",
     )
-    folder_id: int = Field(
+    folder_id: t.Optional[int] = Field(
         default=None,
         alias="folder_id",
         description="Only include time entries associated with tasks in a specific Folder.",
     )
-    list_id: int = Field(
+    list_id: t.Optional[int] = Field(
         default=None,
         alias="list_id",
         description="Only include time entries associated with tasks in a specific List.",
     )
-    task_id: str = Field(
+    task_id: t.Optional[str] = Field(
         default=None,
         alias="task_id",
         description="Only include time entries associated with a specific task.",
     )
-    custom_task_ids: bool = Field(
+    custom_task_ids: t.Optional[bool] = Field(
         default=None,
         alias="custom_task_ids",
         description=(
@@ -75,7 +75,7 @@ class GetTimeEntriesWithinADateRangeRequest(BaseModel):
             "be `true`. "
         ),
     )
-    team_id: int = Field(
+    team_id: t.Optional[int] = Field(
         default=None,
         alias="team_id",
         description=(
