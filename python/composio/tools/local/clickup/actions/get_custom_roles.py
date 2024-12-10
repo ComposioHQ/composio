@@ -13,7 +13,7 @@ class GetCustomRolesRequest(BaseModel):
         alias="team_id",
         description="",
     )
-    include_members: bool = Field(
+    include_members: t.Optional[bool] = Field(
         default=None,
         alias="include_members",
         description="",

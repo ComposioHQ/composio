@@ -13,7 +13,7 @@ class AddDependencyRequest(BaseModel):
         alias="task_id",
         description="This is the task which is waiting on or blocking another task.",
     )
-    custom_task_ids: bool = Field(
+    custom_task_ids: t.Optional[bool] = Field(
         default=None,
         alias="custom_task_ids",
         description=(
@@ -21,7 +21,7 @@ class AddDependencyRequest(BaseModel):
             "be `true`. "
         ),
     )
-    team_id: int = Field(
+    team_id: t.Optional[int] = Field(
         default=None,
         alias="team_id",
         description=(
@@ -29,12 +29,12 @@ class AddDependencyRequest(BaseModel):
             "`custom_task_ids=true&team_id=123`. "
         ),
     )
-    depends_on: str = Field(
+    depends_on: t.Optional[str] = Field(
         default=None,
         alias="depends_on",
         description="Depends On",
     )
-    depedency_of: str = Field(
+    depedency_of: t.Optional[str] = Field(
         default=None,
         alias="depedency_of",
         description="Dependency Of",
