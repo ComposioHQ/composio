@@ -41,9 +41,8 @@ from composio.client.collections import (
     TriggerSubscription,
 )
 from composio.client.enums import TriggerType
-from composio.client.enums.base import NO_REMOTE_ENUM_FETCHING, EnumStringNotFound
+from composio.client.enums.base import EnumStringNotFound
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
-from composio.client.utils import update_actions, update_apps, update_triggers
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,

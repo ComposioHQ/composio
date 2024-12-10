@@ -5,9 +5,9 @@ Test collections module.
 from logging import DEBUG
 from unittest import mock
 
-import composio
 import pytest
 
+import composio
 from composio.client import Composio
 from composio.client.collections import (
     ActiveTriggerModel,

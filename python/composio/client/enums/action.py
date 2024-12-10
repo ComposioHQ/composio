@@ -3,7 +3,7 @@ import typing as t
 from composio.client.enums.enum import Enum, EnumGenerator
 from composio.exceptions import ComposioSDKError
 
-from .base import ActionData, EnumStringNotFound
+from .base import ActionData
 
 
 _ACTION_CACHE: t.Dict[str, "Action"] = {}

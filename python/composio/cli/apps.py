@@ -8,7 +8,6 @@ Usage:
 import ast
 import os.path
 import shutil
-import typing as t
 
 import click
 

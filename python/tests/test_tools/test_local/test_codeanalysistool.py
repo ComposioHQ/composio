@@ -45,10 +45,10 @@ class TestCodeAnalysisTool:
     def test_get_class_info(self):
         get_class_info = GetClassInfo()
         response = get_class_info.execute(
-            GetClassInfoRequest(class_name="UpdateExamples"),
+            GetClassInfoRequest(class_name="AppsExamples"),
             metadata={"dir_to_index_path": self.repo_path},
         )
-        assert "UpdateExamples" in str(response.result)
+        assert "AppsExamples" in str(response.result)
         assert "apps.py" in str(response.result)
 
         response = get_class_info.execute(
