@@ -41,8 +41,9 @@ from composio.client.collections import (
     TriggerSubscription,
 )
 from composio.client.enums import TriggerType
-from composio.client.enums.base import EnumStringNotFound
+from composio.client.enums.base import NO_REMOTE_ENUM_FETCHING, EnumStringNotFound
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
+from composio.client.utils import update_actions, update_apps, update_triggers
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
@@ -363,6 +364,12 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 base_url=self._base_url,
                 runtime=self._runtime,
             )
+            if not NO_REMOTE_ENUM_FETCHING:
+                print("Updating local cache...")
+                apps = update_apps(self._remote_client)
+                update_actions(self._remote_client, apps)
+                update_triggers(self._remote_client, apps)
+
         self._remote_client.local = self._local_client
         return self._remote_client
 

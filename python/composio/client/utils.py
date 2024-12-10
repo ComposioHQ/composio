@@ -121,6 +121,8 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
                 action_names.append(get_enum_key(name=action.name))
                 replaced_by = None
 
+            # TODO: there is duplicate ActionData creation code in
+            # `load_from_runtime` and `fetch_and_cache` in client/enums/action.py
             enums.base.ActionData(
                 name=action.name,
                 app=app.key,

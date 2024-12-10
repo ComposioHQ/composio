@@ -86,6 +86,12 @@ class TestBase:
         assert enum.name == "GITHUB_COMMIT_EVENT"  # This load()s the trigger from cache
 
 
+@pytest.mark.xfail(
+    reason=(
+        "This relies on the fact that we ran 'composio apps update'"
+        "before starting the test suite. Need to get rid of tag enums actually."
+    )
+)
 def test_tag_enum() -> None:
     """Test `Tag` enum."""
     tag = Tag("GITHUB_ORGS")

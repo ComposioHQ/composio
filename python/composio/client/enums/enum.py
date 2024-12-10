@@ -85,6 +85,11 @@ class Enum(t.Generic[DataT]):
     def iter(cls) -> t.Iterator[str]:
         """Yield the enum names as strings."""
         path = LOCAL_CACHE_DIRECTORY / cls.cache_folder
+        # If we try to fetch Actions.iter() with NO_REMOTE_ENUM_FETCHING
+        # enabled for example, we'd get here.
+        if not path.exists():
+            return
+
         for file in os.listdir(path):
             yield file
 
