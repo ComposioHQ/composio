@@ -12,6 +12,17 @@ Custom Actions are powerful building blocks that enable you to create custom fun
 ## Creating a Custom Action with Authentication
 
 <Steps>
+<Step title="Install Dependencies">
+<CodeGroup>
+```bash Python
+pip install composio_openai openai
+```
+
+```bash JavaScript
+npm install composio-core openai
+```
+</CodeGroup>
+</Step>
 <Step title="Import necessary modules & initialize them">
 
 <CodeGroup>
@@ -37,6 +48,11 @@ const openAIToolset = new OpenAIToolSet();
 <Step title="Creating a custom action">
 Below are examples of creating a custom action called `list_repositories` (Python) & `star_repo` (JavaScript) that integrates with the `github` tool. This action demonstrates how to list all the repositories for a given user or organization.
 
+The `execute_request/executeRequest` method is used to make API calls, it accepts the following arguments:
+- `endpoint`: Endpoint URL. The base URL of the API will be prepended to this. You can find it in your connection's **Connection Info** section
+- `method`: HTTP method to use
+- `parameters`: Custom Authentication Parameters
+- `body`: Request body to pass to the API
 <Note>
 Since `github` is a registered tool in Composio, the authentication credentials are automatically injected into your custom action!
 </Note>
