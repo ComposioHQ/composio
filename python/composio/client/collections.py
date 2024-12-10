@@ -1145,10 +1145,8 @@ class Actions(Collection[ActionModel]):
 
         if len(apps) > 0 and len(tags) == 0 and not allow_all:
             warnings.warn(
-                "Using all the actions of an app is not recommended. "
-                "Please use tags to filter actions or provide specific actions. "
-                "We just pass the important actions to the agent, but this is not meant "
-                "to be used in production. Check out https://docs.composio.dev/sdk/python/actions for more information.",
+                "Using all actions of an app is not recommended for production."
+                "Learn more: https://docs.composio.dev/patterns/tools/use-tools/use-specific-actions",
                 UserWarning,
             )
             tags = ["important"]
