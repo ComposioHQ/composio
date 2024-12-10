@@ -13,11 +13,11 @@ class Tag(Enum[TagData], metaclass=EnumGenerator):
     cache = _TAG_CACHE
     storage = TagData
 
-    def fetch_and_cache(self) -> TagData | None:
+    def fetch_and_cache(self) -> t.Optional[TagData]:
         # Tags are only fetched at startup right now.
         return None
 
-    def load_from_runtime(self) -> TagData | None:
+    def load_from_runtime(self) -> t.Optional[TagData]:
         # Tags are not used at runtime right now.
         return None
 
