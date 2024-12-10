@@ -5,6 +5,7 @@ Test collections module.
 from logging import DEBUG
 from unittest import mock
 
+import composio
 import pytest
 
 from composio.client import Composio
@@ -156,6 +157,10 @@ def test_trigger_filter_errors() -> None:
         == "App 'DOES_NOT_EXIST' does not exist.\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
     )
 
+    # Ensure hackernews app is cached
+    # TODO: remove this once App.iter() uses a dedicated endpoint
+    # for fetching latest enums
+    composio.App.HACKERNEWS.load()
     with pytest.raises(ComposioSDKError) as exc:
         sub.callback(filters={"app_name": "hacker_news"})
 
@@ -164,6 +169,10 @@ def test_trigger_filter_errors() -> None:
         == "App 'HACKER_NEWS' does not exist. Did you mean 'HACKERNEWS'?\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
     )
 
+    # Ensure the trigger is cached
+    # TODO: remove this once Trigger.iter() uses a dedicated endpoint
+    # for fetching latest enums
+    composio.Trigger.GMAIL_NEW_GMAIL_MESSAGE.load()
     with pytest.raises(ComposioSDKError) as exc:
         sub.callback(filters={"triggerName": "gmail_new_gmail_message"})  # type: ignore
 

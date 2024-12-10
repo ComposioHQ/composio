@@ -84,6 +84,7 @@ class Enum(t.Generic[DataT]):
     @classmethod
     def iter(cls) -> t.Iterator[str]:
         """Yield the enum names as strings."""
+        # TODO: fetch trigger names from dedicated endpoint in the future
         path = LOCAL_CACHE_DIRECTORY / cls.cache_folder
         # If we try to fetch Actions.iter() with NO_REMOTE_ENUM_FETCHING
         # enabled for example, we'd get here.
