@@ -110,8 +110,13 @@ class Enum(t.Generic[DataT]):
 
         if self.storage_path.exists():
             data = self.storage.load(self.storage_path)
-            self._data = data
-            return self._data
+            # HACK: if 'replaced_by' field is not present, delete this cached file
+            # as it is outdated.
+            if hasattr(data, "replaced_by"):
+                self._data = data
+                return self._data
+            else:
+                self.storage_path.unlink()
 
         # Try to fetch from runtime
         runtime_data = self.load_from_runtime()
