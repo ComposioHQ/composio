@@ -31,7 +31,8 @@ class Action(Enum[ActionData], metaclass=EnumGenerator):
                 action = actions[self.slug]
                 self._data = ActionData(
                     name=action.name,
-                    app=action.tool,
+                    # Normalize app name
+                    app=action.tool.upper(),
                     tags=action.tags(),
                     no_auth=action.no_auth,
                     is_local=gid in ("runtime", "local"),
@@ -67,7 +68,8 @@ class Action(Enum[ActionData], metaclass=EnumGenerator):
 
         return ActionData(  # type: ignore
             name=response["name"],
-            app=response["appName"],
+            # Normalize app name
+            app=response["appName"].upper(),
             tags=response["tags"],
             no_auth=(
                 client.http.get(url=str(client.apps.endpoint / response["appName"]))
