@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Type
+from typing import List, Optional, Type
 
 from pydantic import BaseModel, Field
 
@@ -13,7 +13,7 @@ class CreateVectorStoreInputSchema(BaseModel):
 
 class CreateVectorStoreOutputSchema(BaseModel):
     result: str = Field(..., description="Result of the action")
-    error: str = Field(default=None, description="Error message if any")
+    error: Optional[str] = Field(default=None, description="Error message if any")
 
 
 class CreateImageVectorStore(

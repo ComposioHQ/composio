@@ -3,8 +3,8 @@
 import shutil
 import subprocess
 import tempfile
+import typing as t
 from pathlib import Path
-from typing import Dict
 
 from pydantic import BaseModel, Field
 
@@ -26,7 +26,7 @@ class SpawnRequest(BaseModel):
             "yarn start",
         ],
     )
-    working_dir: str = Field(
+    working_dir: t.Optional[str] = Field(
         None,
         description=(
             "Directory where this command should be executed, "
@@ -68,7 +68,7 @@ class SpawnProcess(LocalAction[SpawnRequest, SpawnResponse]):
 
     _tags = ["workspace", "shell"]
 
-    def execute(self, request: SpawnRequest, metadata: Dict) -> SpawnResponse:
+    def execute(self, request: SpawnRequest, metadata: t.Dict) -> SpawnResponse:
         """Execute a shell command."""
         _cmd, *args = request.cmd.split(" ")
         cmd = shutil.which(cmd=_cmd)  # type: ignore

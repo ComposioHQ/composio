@@ -13,7 +13,7 @@ class GetRunningTimeEntryRequest(BaseModel):
         alias="team_id",
         description="Team ID (Workspace)",
     )
-    assignee: int = Field(
+    assignee: t.Optional[int] = Field(
         default=None,
         alias="assignee",
         description="user id",

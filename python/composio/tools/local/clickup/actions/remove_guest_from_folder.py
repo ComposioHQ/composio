@@ -18,7 +18,7 @@ class RemoveGuestFromFolderRequest(BaseModel):
         alias="guest_id",
         description="",
     )
-    include_shared: bool = Field(
+    include_shared: t.Optional[bool] = Field(
         default=None,
         alias="include_shared",
         description=(

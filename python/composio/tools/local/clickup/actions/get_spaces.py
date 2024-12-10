@@ -13,7 +13,7 @@ class GetSpacesRequest(BaseModel):
         alias="team_id",
         description="Team ID (Workspace)",
     )
-    archived: bool = Field(
+    archived: t.Optional[bool] = Field(
         default=None,
         alias="archived",
         description="",

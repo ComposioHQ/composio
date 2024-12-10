@@ -47,7 +47,7 @@ class TextEditorResponse(BaseFileResponse):
     """Response from text editor operations."""
 
     output: str = Field(..., description="The output of the operation")
-    error: str = Field(default=None, description="Error message, if any")
+    error: t.Optional[str] = Field(default=None, description="Error message, if any")
 
 
 class TextEditor(LocalAction[TextEditorRequest, TextEditorResponse]):

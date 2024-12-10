@@ -16,7 +16,7 @@ class BashRequest(BaseModel):
         ...,
         description="Bash command to be executed.",
     )
-    session_id: str = Field(
+    session_id: t.Optional[str] = Field(
         default=None,
         description=(
             "ID of the bash session where this command will be executed. "

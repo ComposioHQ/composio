@@ -23,7 +23,7 @@ class InviteUserToWorkspaceRequest(BaseModel):
         alias="admin",
         description="Admin",
     )
-    custom_role_id: int = Field(
+    custom_role_id: t.Optional[int] = Field(
         default=None,
         alias="custom_role_id",
         description="Custom Role Id",

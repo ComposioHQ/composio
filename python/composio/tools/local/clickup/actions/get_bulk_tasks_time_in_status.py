@@ -16,7 +16,7 @@ class GetBulkTasksTimeInStatusRequest(BaseModel):
             "ids per request. For example: `task_ids=3cuh&task_ids=g4fs` "
         ),
     )
-    custom_task_ids: bool = Field(
+    custom_task_ids: t.Optional[bool] = Field(
         default=None,
         alias="custom_task_ids",
         description=(
@@ -24,7 +24,7 @@ class GetBulkTasksTimeInStatusRequest(BaseModel):
             "be `true`. "
         ),
     )
-    team_id: int = Field(
+    team_id: t.Optional[int] = Field(
         default=None,
         alias="team_id",
         description=(

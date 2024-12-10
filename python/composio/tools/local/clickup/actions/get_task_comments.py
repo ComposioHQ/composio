@@ -13,7 +13,7 @@ class GetTaskCommentsRequest(BaseModel):
         alias="task_id",
         description="",
     )
-    custom_task_ids: bool = Field(
+    custom_task_ids: t.Optional[bool] = Field(
         default=None,
         alias="custom_task_ids",
         description=(
@@ -21,7 +21,7 @@ class GetTaskCommentsRequest(BaseModel):
             "be `true`. "
         ),
     )
-    team_id: int = Field(
+    team_id: t.Optional[int] = Field(
         default=None,
         alias="team_id",
         description=(
@@ -29,12 +29,12 @@ class GetTaskCommentsRequest(BaseModel):
             "`custom_task_ids=true&team_id=123`. "
         ),
     )
-    start: int = Field(
+    start: t.Optional[int] = Field(
         default=None,
         alias="start",
         description="Enter the `date` of a task comment using Unix time in milliseconds.",
     )
-    start_id: str = Field(
+    start_id: t.Optional[str] = Field(
         default=None,
         alias="start_id",
         description="Enter the Comment `id` of a task comment.",
