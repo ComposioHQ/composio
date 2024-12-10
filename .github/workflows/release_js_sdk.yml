@@ -45,14 +45,6 @@ jobs:
         npm version ${{ github.event.inputs.version }} --no-git-tag-version
 
 
-    - name: Commit and push
-      run: |
-        if git diff --quiet; then
-          echo "No changes to commit"
-        else
-          git commit -am "Release ${{ github.event.inputs.version }}" && git push
-        fi
-
     - name: pnpm build
       run: pnpm build
       
