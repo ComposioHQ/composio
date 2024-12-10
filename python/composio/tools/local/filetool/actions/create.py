@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 
 from pydantic import Field, field_validator
 
@@ -36,7 +36,7 @@ class CreateFileRequest(BaseFileRequest):
 class CreateFileResponse(BaseFileResponse):
     """Response to create a file or directory."""
 
-    path: str = Field(
+    path: Optional[str] = Field(
         default=None,
         description="Path of the created file or directory.",
     )

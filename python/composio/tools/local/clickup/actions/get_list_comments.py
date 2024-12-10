@@ -13,12 +13,12 @@ class GetListCommentsRequest(BaseModel):
         alias="list_id",
         description="",
     )
-    start: int = Field(
+    start: t.Optional[int] = Field(
         default=None,
         alias="start",
         description="Enter the `date` of a List info comment using Unix time in milliseconds.",
     )
-    start_id: str = Field(
+    start_id: t.Optional[str] = Field(
         default=None,
         alias="start_id",
         description="Enter the Comment `id` of a List info comment.",
