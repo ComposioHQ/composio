@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Computer Use Demo</title>
+        <meta name="permissions-policy" content="fullscreen=*" />
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+            }
+            .container {
+                display: flex;
+                height: 100vh;
+                width: 100vw;
+            }
+            .left {
+                flex: 1;
+                border: none;
+                height: 100vh;
+            }
+            .right {
+                flex: 2;
+                border: none;
+                height: 100vh;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <iframe
+                src="http://localhost:8501"
+                class="left"
+                allow="fullscreen"
+            ></iframe>
+            <iframe
+                src="http://localhost:6080/vnc.html?view_only=1&autoconnect=1&resize=scale"
+                class="right"
+                allow="fullscreen"
+            ></iframe>
+        </div>
+    </body>
+</html>
