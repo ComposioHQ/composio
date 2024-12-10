@@ -13,7 +13,7 @@ class Trigger(Enum[TriggerData], metaclass=EnumGenerator):
     cache = _TRIGGER_CACHE
     storage = TriggerData
 
-    def load_from_runtime(self) -> TriggerData | None:
+    def load_from_runtime(self) -> t.Optional[TriggerData]:
         from composio.tools.base.abs import trigger_registry
 
         for triggers in trigger_registry.values():
@@ -27,7 +27,7 @@ class Trigger(Enum[TriggerData], metaclass=EnumGenerator):
 
         return None
 
-    def fetch_and_cache(self) -> TriggerData | None:
+    def fetch_and_cache(self) -> t.Optional[TriggerData]:
         from composio.client import Composio  # pylint: disable=import-outside-toplevel
         from composio.client.endpoints import (  # pylint: disable=import-outside-toplevel
             v2,

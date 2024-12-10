@@ -14,7 +14,7 @@ class App(Enum[AppData], metaclass=EnumGenerator):
     cache = _APP_CACHE
     storage = AppData
 
-    def load_from_runtime(self) -> AppData | None:
+    def load_from_runtime(self) -> t.Optional[AppData]:
         # re-load local tools, and check if it's a runtime app
         from composio.tools.base.abs import tool_registry
         from composio.tools.local import load_local_tools
@@ -32,7 +32,7 @@ class App(Enum[AppData], metaclass=EnumGenerator):
 
         return None
 
-    def fetch_and_cache(self) -> AppData | None:
+    def fetch_and_cache(self) -> t.Optional[AppData]:
         from composio.client import Composio  # pylint: disable=import-outside-toplevel
 
         client = Composio.get_latest()

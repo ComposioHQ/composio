@@ -22,7 +22,7 @@ class Action(Enum[ActionData], metaclass=EnumGenerator):
 
         return action_data
 
-    def load_from_runtime(self) -> ActionData | None:
+    def load_from_runtime(self) -> t.Optional[ActionData]:
         """Try to see if the action is a runtime action."""
         from composio.tools.base.abs import action_registry
 
@@ -42,7 +42,7 @@ class Action(Enum[ActionData], metaclass=EnumGenerator):
 
         return None
 
-    def fetch_and_cache(self) -> ActionData | None:
+    def fetch_and_cache(self) -> t.Optional[ActionData]:
         from composio.client import Composio  # pylint: disable=import-outside-toplevel
 
         client = Composio.get_latest()

@@ -48,7 +48,7 @@ class Enum(t.Generic[DataT]):
             # Object was pulled from cache and is already initialized
             return
 
-        self._data: DataT | None = None
+        self._data: t.Optional[DataT] = None
 
         # If we get an enum object, return it as is
         if isinstance(value, self.__class__):
@@ -126,10 +126,10 @@ class Enum(t.Generic[DataT]):
             possible_values=list(self.iter()),
         )
 
-    def load_from_runtime(self) -> DataT | None:
+    def load_from_runtime(self) -> t.Optional[DataT]:
         raise NotImplementedError
 
-    def fetch_and_cache(self) -> DataT | None:
+    def fetch_and_cache(self) -> t.Optional[DataT]:
         raise NotImplementedError
 
 
