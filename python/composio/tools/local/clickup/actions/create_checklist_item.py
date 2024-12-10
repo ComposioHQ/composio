@@ -13,12 +13,12 @@ class CreateChecklistItemRequest(BaseModel):
         alias="checklist_id",
         description="b8a8-48d8-a0c6-b4200788a683 (uuid)",
     )
-    name: str = Field(
+    name: t.Optional[str] = Field(
         default=None,
         alias="name",
         description="Name",
     )
-    assignee: int = Field(
+    assignee: t.Optional[int] = Field(
         default=None,
         alias="assignee",
         description="Assignee",
