@@ -39,11 +39,15 @@ class Enum(t.Generic[DataT]):
         if cached_enum is not None:
             return cached_enum  # type: ignore[return-value]
 
-        app = super().__new__(cls)
-        cls.cache[value] = app
-        return app
+        enum = super().__new__(cls)
+        cls.cache[value] = enum
+        return enum
 
     def __init__(self, value: t.Union[str, te.Self, t.Type[SentinalObject]]) -> None:
+        if hasattr(self, "_data"):
+            # Object was pulled from cache and is already initialized
+            return
+
         self._data: DataT | None = None
 
         # If we get an enum object, return it as is
@@ -62,6 +66,9 @@ class Enum(t.Generic[DataT]):
         # Normalize slug
         slug = slug.upper()
         self.slug = slug
+
+    def __hash__(self) -> int:
+        return hash(self.slug)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}.{self.slug}"
