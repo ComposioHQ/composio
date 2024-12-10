@@ -14,7 +14,6 @@ from .base import EnumStringNotFound, SentinalObject
 DataT = t.TypeVar("DataT", bound=LocalStorage)
 
 
-# TODO: can we remove the generic altogether, we already have storage
 class Enum(t.Generic[DataT]):
     cache_folder: str
     cache: t.Dict[str, "te.Self"]
