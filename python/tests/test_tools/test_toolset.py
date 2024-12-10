@@ -57,7 +57,7 @@ def test_uninitialize_app() -> None:
     with pytest.raises(
         ComposioSDKError,
         match=(
-            "No connected account found for app `attio`; "
+            "No connected account found for app `ATTIO`; "
             "Run `composio add attio` to fix this"
         ),
     ):
