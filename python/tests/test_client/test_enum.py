@@ -63,7 +63,7 @@ class TestBase:
 
         enum = Action(say)
         assert enum.slug == say.enum
-        assert enum.app == "cow"
+        assert enum.app == "COW"
         assert enum.is_runtime
         assert enum.is_local
 
@@ -95,7 +95,7 @@ class TestBase:
 def test_tag_enum() -> None:
     """Test `Tag` enum."""
     tag = Tag("GITHUB_ORGS")
-    assert tag.app.upper() == "GITHUB"
+    assert tag.app == "GITHUB"
     assert tag.value == "orgs"
 
 
@@ -114,36 +114,36 @@ def test_action_enum() -> None:
     # Auth enums
     action = Action("GMAIL_SEND_EMAIL")
     assert action is Action.GMAIL_SEND_EMAIL
-    assert action.app == "gmail"
+    assert action.app == "GMAIL"
     assert action.slug == "GMAIL_SEND_EMAIL"
     assert not action.no_auth
 
     # Non-auth enums
     action = Action("HACKERNEWS_GET_FRONTPAGE")
     assert action is Action.HACKERNEWS_GET_FRONTPAGE
-    assert action.app == "hackernews"
+    assert action.app == "HACKERNEWS"
     assert action.slug == "HACKERNEWS_GET_FRONTPAGE"
     assert action.no_auth
 
     # Deprecated enum should redirect to new one
     action = Action("github_issues_list")
     assert action.load().name == "GITHUB_LIST_ISSUES_ASSIGNED_TO_THE_AUTHENTICATED_USER"
-    assert action.app == "github"
+    assert action.app == "GITHUB"
     assert not action.no_auth
 
 
 def test_trigger_enum() -> None:
     """Test `Trigger` enum."""
     trg = Trigger("slack_receive_message")
-    assert trg.app == "slack"
+    assert trg.app == "SLACK"
     assert trg.name == "SLACK_RECEIVE_MESSAGE"
 
 
 def test_get_actions() -> None:
     """Test `App.get_actions` method."""
     for act in App.GITHUB.get_actions():
-        assert act.app == "github"
+        assert act.app == "GITHUB"
 
     for act in App.GITHUB.get_actions(tags=["repo"]):
-        assert act.app == "github"
+        assert act.app == "GITHUB"
         assert "repo" in act.tags

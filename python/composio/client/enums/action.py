@@ -90,7 +90,8 @@ class Action(Enum[ActionData], metaclass=EnumGenerator):
     @property
     def app(self) -> str:
         """App name where the actions belongs to."""
-        return self.load().app
+        # Normalize app name
+        return self.load().app.upper()
 
     @property
     def tags(self) -> t.List[str]:

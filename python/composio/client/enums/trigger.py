@@ -53,4 +53,5 @@ class Trigger(Enum[TriggerData], metaclass=EnumGenerator):
 
     @property
     def app(self) -> str:
-        return self.load().app
+        # Normalize app name
+        return self.load().app.upper()
