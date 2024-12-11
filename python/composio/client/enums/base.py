@@ -107,3 +107,15 @@ def add_runtime_action(name: str, data: ActionData) -> None:
 def get_runtime_actions() -> t.List:
     """Add action at runtime."""
     return list(_runtime_actions)
+
+
+DEPRECATED_MARKER = "<<DEPRECATED use "
+
+
+def replacement_action_name(description: str, app_name: str) -> t.Optional[str]:
+    """If the action is deprecated, get the replacement action name."""
+    if description is not None and DEPRECATED_MARKER in description:
+        _, newact = description.split(DEPRECATED_MARKER, maxsplit=1)
+        return (app_name + "_" + newact.replace(">>", "")).upper()
+
+    return None

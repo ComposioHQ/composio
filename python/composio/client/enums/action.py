@@ -1,9 +1,9 @@
 import typing as t
+import warnings
 
+from composio.client.enums.base import ActionData, replacement_action_name
 from composio.client.enums.enum import Enum, EnumGenerator
 from composio.exceptions import ComposioSDKError
-
-from .base import ActionData
 
 
 _ACTION_CACHE: t.Dict[str, "Action"] = {}
@@ -18,7 +18,13 @@ class Action(Enum[ActionData], metaclass=EnumGenerator):
         """Handle deprecated actions"""
         action_data = super().load()
         if action_data.replaced_by is not None:
-            return Action(action_data.replaced_by).load()
+            replacement_enum = Action(action_data.replaced_by)
+            warnings.warn(
+                f"{self!r} is deprecated and will be removed. "
+                f"Use {replacement_enum!r} instead.",
+                UserWarning,
+            )
+            return replacement_enum.load()
 
         return action_data
 
@@ -66,6 +72,9 @@ class Action(Enum[ActionData], metaclass=EnumGenerator):
         if "appName" not in response:
             return None
 
+        replaced_by = replacement_action_name(
+            response["description"], response["appName"]
+        )
         return ActionData(  # type: ignore
             name=response["name"],
             app=response["appName"],
@@ -79,6 +88,7 @@ class Action(Enum[ActionData], metaclass=EnumGenerator):
             is_runtime=False,
             shell=False,
             path=self.storage_path,
+            replaced_by=replaced_by,
         )
 
     @property

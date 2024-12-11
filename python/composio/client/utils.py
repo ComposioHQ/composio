@@ -3,7 +3,7 @@ import typing as t
 
 from composio.client import Composio, enums
 from composio.client.collections import ActionModel, AppModel, TriggerModel
-from composio.tools.base.abs import DEPRECATED_MARKER
+from composio.client.enums.base import replacement_action_name
 from composio.tools.local import load_local_tools
 from composio.utils import get_enum_key
 from composio.utils.logging import get_logger
@@ -114,14 +114,13 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
             if action.appName != app.key:
                 continue
 
-            if (
-                action.description is not None
-                and DEPRECATED_MARKER in action.description
-            ):
-                _, newact = action.description.split(DEPRECATED_MARKER, maxsplit=1)
+            new_action_name = replacement_action_name(
+                action.description or "", action.appName
+            )
+            if new_action_name is not None:
                 replaced_by = deprecated[get_enum_key(name=action.name)] = (
-                    action.appName.lower() + "_" + newact.replace(">>", "")
-                ).upper()
+                    new_action_name
+                )
             else:
                 action_names.append(get_enum_key(name=action.name))
                 replaced_by = None
