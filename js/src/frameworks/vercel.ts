@@ -4,6 +4,8 @@ import { jsonSchemaToModel } from "../utils/shared";
 import { z } from "zod";
 import { CEG } from "../sdk/utils/error";
 import { SDK_ERROR_CODES } from "../sdk/utils/errors/src/constants";
+import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
+import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 type Optional<T> = T | null;
 
 const zExecuteToolCallParams = z.object({
@@ -20,6 +22,7 @@ const zExecuteToolCallParams = z.object({
 });
 
 export class VercelAIToolSet extends BaseComposioToolSet {
+  fileName: string = "js/src/frameworks/vercel.ts";
   constructor(
     config: {
       apiKey?: Optional<string>;
@@ -61,6 +64,12 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     usecaseLimit?: Optional<number>;
     filterByAvailableApps?: Optional<boolean>;
   }): Promise<{ [key: string]: any }> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getTools",
+      file: this.fileName,
+      params: filters,
+    });
+
     const {
       apps,
       tags,
@@ -92,6 +101,12 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     tool: { name: string; arguments: unknown },
     entityId: Optional<string> = null
   ): Promise<string> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "executeToolCall",
+      file: this.fileName,
+      params: { tool, entityId },
+    });
+
     return JSON.stringify(
       await this.executeAction({
         action: tool.name,

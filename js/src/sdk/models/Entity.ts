@@ -10,6 +10,8 @@ import { CEG } from "../utils/error";
 import logger from "../../utils/logger";
 import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { z } from "zod";
+import { TELEMETRY_LOGGER } from "../utils/telemetry";
+import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 
 const LABELS = {
   PRIMARY: "primary",
@@ -50,6 +52,8 @@ export class Entity {
   integrations: Integrations;
   activeTriggers: ActiveTriggers;
 
+  fileName: string = "js/src/sdk/models/Entity.ts";
+
   constructor(backendClient: BackendClient, id: string = "default") {
     this.backendClient = backendClient;
     this.id = id;
@@ -67,6 +71,11 @@ export class Entity {
     text,
     connectedAccountId,
   }: TExecuteActionParams) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "execute",
+      file: this.fileName,
+      params: { actionName, params, text, connectedAccountId },
+    });
     try {
       ZExecuteActionParams.parse({
         actionName,
@@ -128,6 +137,11 @@ export class Entity {
     app?: string;
     connectedAccountId?: string;
   }): Promise<any | null> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getConnection",
+      file: this.fileName,
+      params: { app, connectedAccountId },
+    });
     try {
       if (connectedAccountId) {
         return await this.connectedAccounts.get({
@@ -187,6 +201,11 @@ export class Entity {
     triggerName: string,
     config: { [key: string]: any }
   ) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "setupTrigger",
+      file: this.fileName,
+      params: { app, triggerName, config },
+    });
     try {
       const connectedAccount = await this.getConnection({ app });
       if (!connectedAccount) {
@@ -209,6 +228,11 @@ export class Entity {
   }
 
   async disableTrigger(triggerId: string) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "disableTrigger",
+      file: this.fileName,
+      params: { triggerId },
+    });
     try {
       await this.activeTriggers.disable({ triggerId: triggerId });
       return { status: "success" };
@@ -221,6 +245,11 @@ export class Entity {
     /**
      * Get all connections for an entity.
      */
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getConnections",
+      file: this.fileName,
+      params: {},
+    });
     try {
       const connectedAccounts = await this.connectedAccounts.list({
         // @ts-ignore
@@ -236,6 +265,11 @@ export class Entity {
     /**
      * Get all active triggers for an entity.
      */
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getActiveTriggers",
+      file: this.fileName,
+      params: {},
+    });
     try {
       const connectedAccounts = await this.getConnections();
       const activeTriggers = await this.activeTriggers.list({
@@ -253,6 +287,11 @@ export class Entity {
   async initiateConnection(
     data: TInitiateConnectionParams
   ): Promise<ConnectionRequest> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "initiateConnection",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       const { appName, authMode, authConfig, integrationId, connectionData } =
         ZInitiateConnectionParams.parse(data);

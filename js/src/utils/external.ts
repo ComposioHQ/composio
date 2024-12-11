@@ -3,7 +3,14 @@ import { IS_DEVELOPMENT_OR_CI, TELEMETRY_URL } from "../sdk/utils/constants";
 import { serializeValue } from "../sdk/utils/common";
 import logger from "./logger";
 
-type AcceptableJSONValue = Record<string, unknown> | Array<Record<string, unknown>> | string | number | boolean | null | undefined
+type AcceptableJSONValue =
+  | Record<string, unknown>
+  | Array<Record<string, unknown>>
+  | string
+  | number
+  | boolean
+  | null
+  | undefined;
 /**
  * Sends a reporting payload to the telemetry server using a child process.
  * This function is intended for use in Node.js environments.
@@ -85,7 +92,6 @@ export function sendBrowserReq(info: {
 }) {
   if (IS_DEVELOPMENT_OR_CI) {
     logger.debug(
-
       `Hitting ${info.url}[${info.method}] with ${serializeValue(info.data)}`
     );
     return true;

@@ -32,6 +32,8 @@ export class Composio {
   integrations: Integrations;
   activeTriggers: ActiveTriggers;
 
+  fileName: string = "js/src/sdk/index.ts";
+
   /**
    * Initializes a new instance of the Composio class.
    *
@@ -45,7 +47,6 @@ export class Composio {
       baseUrl,
       apiKey
     );
-    const loggingLevel = getLogLevel();
 
     ComposioSDKContext.apiKey = apiKeyParsed;
     ComposioSDKContext.baseURL = baseURLParsed;
@@ -121,6 +122,11 @@ export class Composio {
    * @returns {Entity} An instance of the Entity class.
    */
   getEntity(id: string = "default"): Entity {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getEntity",
+      file: this.fileName,
+      params: { id },
+    });
     return new Entity(this.backendClient, id);
   }
 
@@ -148,6 +154,11 @@ export class Composio {
       | "BEARER_TOKEN"
       | "BASIC_WITH_JWT";
   }> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getExpectedParamsForUser",
+      file: this.fileName,
+      params: params,
+    });
     const { app } = params;
     let { integrationId } = params;
     if (integrationId === null && app === null) {

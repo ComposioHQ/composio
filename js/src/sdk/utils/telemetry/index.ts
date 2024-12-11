@@ -54,15 +54,6 @@ export class TELEMETRY_LOGGER {
     }
   }
 
-  static wrapClassMethodsForTelemetry(classInstance: any, methods: string[]) {
-    methods.forEach((method) => {
-      classInstance[method] = TELEMETRY_LOGGER.createTelemetryWrapper(
-        classInstance[method],
-        classInstance.constructor.name
-      );
-    });
-  }
-
   static manualTelemetry(eventName: string, data: Record<string, unknown>) {
     const payload = {
       eventName,
