@@ -154,7 +154,7 @@ def test_get_actions() -> None:
 
 def test_invalid_enum():
     with pytest.raises(EnumStringNotFound):
-        App("some_bs")
+        App("some_bs").is_local
 
     with pytest.raises(EnumStringNotFound):
-        App.SOME_BS
+        App.SOME_BS.load()
