@@ -3,6 +3,7 @@ import { Command } from "commander";
 import client from "../sdk/client/client";
 import { getOpenAPIClient } from "../sdk/utils/config";
 import { ListActionsV2Data } from "../sdk/client";
+import { AxiosError } from "axios";
 
 export default class ActionCommand {
   private program: Command;
@@ -24,7 +25,10 @@ export default class ActionCommand {
         (value, previous: string[]) => previous.concat([value]),
         []
       )
-      .option("--use-case <useCase>", "Search for actions based on the given use case")
+      .option(
+        "--use-case <useCase>",
+        "Search for actions based on the given use case"
+      )
       .option("--limit <limit>", "Limit the number of actions to display")
       .option("--enabled", "Only show enabled actions")
       .action(this.handleAction.bind(this));
@@ -70,8 +74,8 @@ export default class ActionCommand {
         // render list
         const actions = response.data?.items || [];
         actions.forEach((action) => console.log(action.name));
-      } catch (error) {
-        console.log(chalk.red((error as any).message));
+      } catch (error: any) {
+        console.log(chalk.red(error?.message));
         return;
       }
     }
