@@ -16,11 +16,15 @@ export default class ConnectionsCommand {
 
     command
       .description("List all integrations you have created or connected")
-      .option("-a, --active", "Show only active integrations").option('-r, --remove <id>', 'Remove an integration with the given id')
+      .option("-a, --active", "Show only active integrations")
+      .option("-r, --remove <id>", "Remove an integration with the given id")
       .action(this.handleAction.bind(this));
   }
 
-  private async handleAction(options: { active: boolean, remove: string }): Promise<void> {
+  private async handleAction(options: {
+    active: boolean;
+    remove: string;
+  }): Promise<void> {
     getOpenAPIClient();
     const { data, error } = await client.appConnector.listAllConnectors({
       query: options.active ? { status: "ACTIVE" } : {},
@@ -31,15 +35,17 @@ export default class ConnectionsCommand {
       console.log(chalk.red((error as any).message));
       return;
     }
-    const removeIntegrationId = options.remove || '';
+    const removeIntegrationId = options.remove || "";
 
-    if(removeIntegrationId){
-      console.log(chalk.yellow(`Removing integration with id ${removeIntegrationId}`));
+    if (removeIntegrationId) {
+      console.log(
+        chalk.yellow(`Removing integration with id ${removeIntegrationId}`)
+      );
 
       const { error } = await client.appConnector.deleteConnector({
         path: {
-          integrationId: removeIntegrationId
-        }
+          integrationId: removeIntegrationId,
+        },
       });
 
       if (error) {
@@ -47,7 +53,11 @@ export default class ConnectionsCommand {
         return;
       }
 
-      console.log(chalk.green(`Integration with id ${removeIntegrationId} removed successfully!`));
+      console.log(
+        chalk.green(
+          `Integration with id ${removeIntegrationId} removed successfully!`
+        )
+      );
       return;
     }
 
@@ -66,4 +76,3 @@ export default class ConnectionsCommand {
     }
   }
 }
-
