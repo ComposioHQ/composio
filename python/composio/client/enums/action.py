@@ -56,8 +56,7 @@ class Action(Enum[ActionData], metaclass=EnumGenerator):
                 message=(
                     f"No metadata found for enum `{self.slug}`, "
                     "You might be trying to use an app or action "
-                    "that is deprecated, run `composio apps update` "
-                    "and try again"
+                    "that is deprecated."
                 )
             )
 

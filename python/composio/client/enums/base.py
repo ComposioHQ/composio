@@ -35,10 +35,6 @@ class EnumStringNotFound(ComposioSDKError):
             (match,) = matches
             error_message += f". Did you mean {match!r}?"
 
-        error_message += (
-            " (If you have recently created a custom tool, run `composio apps update` "
-            "to update local apps)"
-        )
         super().__init__(message=error_message)
 
 

@@ -25,11 +25,11 @@ from composio.exceptions import ComposioSDKError
 class AppsExamples(HelpfulCmdBase, DYMGroup):
     examples = [
         click.style("composio apps", fg="green")
-        + click.style("            # List all apps\n", fg="black"),
+        + click.style("                # List all apps\n", fg="black"),
         click.style("composio apps --enabled", fg="green")
-        + click.style("  # List only enabled apps\n", fg="black"),
-        click.style("composio apps update", fg="green")
-        + click.style("     # Update local Apps database\n", fg="black"),
+        + click.style("      # List only enabled apps\n", fg="black"),
+        click.style("composio apps generate-types", fg="green")
+        + click.style(" # Update type stubs for enums\n", fg="black"),
     ]
 
 
@@ -67,7 +67,9 @@ def _update(context: Context) -> None:
     """Deprecated, has no effect."""
     context.console.print(
         "[yellow]Warning:[/yellow] the 'apps update' command has been deprecated"
-        " and has no effect."
+        " and has no effect.\n"
+        "If you wish to update the local type stubs for auto-completion, use"
+        " 'composio apps generate-types' instead."
     )
 
 
