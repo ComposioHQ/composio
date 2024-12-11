@@ -32,12 +32,15 @@ export class TELEMETRY_LOGGER {
   private static async sendTelemetry(payload: Record<string, unknown>[]) {
     const isTelementryDisabled =
       getEnvVariable("TELEMETRY_DISABLED", "false") === "true";
+
     if (isTelementryDisabled) {
       return;
     }
+
     const url = `${TELEMETRY_URL}/api/sdk_metrics/telemetry`;
+
     const reqPayload = {
-      data: { events: payload },
+      data: payload,
       url,
       method: "POST",
       headers: { "Content-Type": "application/json" },

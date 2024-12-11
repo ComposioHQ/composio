@@ -80,10 +80,11 @@ export function sendBrowserReq(info: {
   url: string;
   method: string;
   headers: Record<string, string>;
-  data: Record<string, unknown>;
+  data: Record<string, unknown> | Array<Record<string, unknown>>;
 }) {
   if (IS_DEVELOPMENT_OR_CI) {
     logger.debug(
+
       `Hitting ${info.url}[${info.method}] with ${serializeValue(info.data)}`
     );
     return true;
