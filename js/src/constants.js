@@ -8,7 +8,7 @@ const ACTIONS = {
   // actions list end here
 };
 
-const COMPOSIO_VERSION = `0.4.1-beta`;
+const COMPOSIO_VERSION = `0.4.2-beta`;
 
 module.exports = {
   APPS,
