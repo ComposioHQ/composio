@@ -76,6 +76,7 @@ class TestBase:
         enum = App(value=App.ATTIO.slug)
         assert enum.slug == App.ATTIO.slug
         assert not enum.is_local  # This load()s the app from api
+        print(caplog.messages)
         assert any(
             "Storing AppData to" in message and ".composio/apps/ATTIO" in message
             for message in caplog.messages
@@ -89,6 +90,7 @@ class TestBase:
         enum = Action(value=Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION.slug)
         assert enum.slug == Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION.slug
         assert not enum.is_local  # This load()s the action from api
+        print(caplog.messages)
         assert (
             "Storing ActionData to" in message
             and ".composio/actions/GITHUB_ACCEPT_A_REPOSITORY_INVITATION" in message
@@ -103,6 +105,7 @@ class TestBase:
         enum = Trigger(value=Trigger.GITHUB_COMMIT_EVENT.slug)
         assert enum.slug == Trigger.GITHUB_COMMIT_EVENT.slug
         assert enum.name == "GITHUB_COMMIT_EVENT"  # This load()s the trigger from api
+        print(caplog.messages)
         assert (
             "Storing TriggerData to" in message
             and ".composio/triggers/GITHUB_COMMIT_EVENT" in message
