@@ -1,10 +1,12 @@
 {
 	"scripts": {
 		"dev": "mintlify dev",
-		"generate": "npx @mintlify/scraping@latest openapi-file ./composio_openapi.json -o api-reference"
+		"generate:dev": "wget http://localhost:9900/openapi.json -O composio_openapi.json && pnpm generate",
+		"generate": "rm -rf api-reference && npx @mintlify/scraping@latest openapi-file ./composio_openapi.json -o api-reference && node scripts/render_mint_json_template.js"
 	},
 	"dependencies": {
 		"axios": "^1.6.8",
+		"ejs": "^3.1.10",
 		"mintlify": "^4.0.172"
 	}
 }
