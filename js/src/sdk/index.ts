@@ -66,7 +66,7 @@ export class Composio {
     }
 
     logger.info(
-      `Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}, Log level: ${loggingLevel.toUpperCase()}`
+      `Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}`
     );
 
     // Initialize the BackendClient with the parsed API key and base URL.

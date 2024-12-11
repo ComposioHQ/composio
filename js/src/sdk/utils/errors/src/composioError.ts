@@ -67,6 +67,18 @@ export class ComposioError extends Error {
       }
     }
 
+    console.log(
+      `🚀 [Info] Give Feedback / Get Help: https://dub.composio.dev/discord `
+    );
+    console.log(
+      `🐛 [Info] Create a new issue: https://github.com/ComposioHQ/composio/issues `
+    );
+    if (getLogLevel() !== "debug") {
+      console.log(
+        `⛔ [Info] If you need to debug this error, set env variable COMPOSIO_LOGGING_LEVEL=debug`
+      );
+    }
+
     logError({
       error_id: this.errorId,
       error_code: this.errCode,

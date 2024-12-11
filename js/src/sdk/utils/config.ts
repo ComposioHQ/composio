@@ -12,7 +12,7 @@ import { client as axiosClient } from "../client/services.gen";
 import apiClient from "../client/client";
 import { AxiosInstance } from "axios";
 import logger from "../../utils/logger";
-
+import { v4 as uuidv4 } from "uuid";
 declare module "axios" {
   export interface InternalAxiosRequestConfig {
     metadata?: {
@@ -37,9 +37,14 @@ export const getUserDataJson = () => {
 export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
   axiosClientInstance.interceptors.request.use((request) => {
     const body = request.data ? JSON.stringify(request.data) : "";
-    logger.debug(`API Req [${request.method?.toUpperCase()}] ${request.url}`, {
-      ...(body && { body }),
-    });
+    // set x-request-id header
+    request.headers["x-request-id"] = uuidv4();
+    logger.debug(
+      `API Req [${request.method?.toUpperCase()}] ${request.url}, x-request-id: ${request.headers["x-request-id"]}`,
+      {
+        ...(body && { body }),
+      }
+    );
     request.metadata = { startTime: Date.now() };
     return request;
   });
@@ -52,7 +57,6 @@ export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
       );
       const requestStartTime = response.config.metadata?.startTime;
       const responseTime = requestStartTime ? Date.now() - requestStartTime : 0;
-      const responseData = response.data ? JSON.stringify(response.data) : "";
       const status = response.status;
 
       // @ts-expect-error
@@ -61,10 +65,7 @@ export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
         responseSize,
       };
       logger.debug(
-        `API Res [${method}] ${response.config.url} - ${status} - ${responseSize} KB ${responseTime}ms`,
-        {
-          ...(responseData && { response: JSON.parse(responseData) }),
-        }
+        `API Res [${method}] ${response.config.url} - ${status} - ${responseSize} KB ${responseTime}ms`
       );
       return response;
     },

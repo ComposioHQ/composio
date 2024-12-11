@@ -88,7 +88,7 @@ export class CEG {
       throw new ComposioError(
         SDK_ERROR_CODES.COMMON.REQUEST_TIMEOUT,
         `ECONNABORTED for ${fullUrl}`,
-        `Request to ${fullUrl} timed out after the configured timeout period. This could be due to slow network conditions, server performance issues, or the request being too large. Error code: ECONNABORTED`,
+        `Request to ${fullUrl} timed out after the configured timeout period. This could be due to slow network conditions, server performance issues, or the request being too large. Error code: ETIMEDOUT`,
         "Try:\n1. Checking your network speed and stability\n2. Increasing the request timeout setting if needed\n3. Breaking up large requests into smaller chunks\n4. Retrying the request when network conditions improve\n5. Contact tech@composio.dev if the issue persists",
         metadata,
         error
@@ -107,9 +107,10 @@ export class CEG {
     }
 
     throw new ComposioError(
-      SDK_ERROR_CODES.COMMON.UNKNOWN,
-      error.message,
-      "",
+      SDK_ERROR_CODES.BACKEND.SERVER_UNREACHABLE,
+      error.message ||
+        "Server is unreachable. Please contact tech@composio.dev with the error details.",
+      "Server is unreachable. Please contact tech@composio.dev with the error details.",
       "Please contact tech@composio.dev with the error details.",
       metadata,
       error
