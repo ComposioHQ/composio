@@ -30,10 +30,10 @@ export class TELEMETRY_LOGGER {
   }
 
   private static async sendTelemetry(payload: Record<string, unknown>[]) {
-    const isTelementryDisabled =
+    const isTelemetryDisabled =
       getEnvVariable("TELEMETRY_DISABLED", "false") === "true";
 
-    if (isTelementryDisabled) {
+    if (isTelemetryDisabled) {
       return;
     }
 
