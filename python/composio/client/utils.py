@@ -207,7 +207,15 @@ def _update_triggers(
 
 
 def check_cache_refresh(client: Composio) -> None:
-    """Check if the actions have a 'replaced_by' field and refresh the cache if not."""
+    """
+    Check if the actions have a 'replaced_by' field and refresh the cache if not.
+    This is a workaround to invalidate local caches from older Composio versionos
+    that do not have the 'replaced_by' field.
+
+    Before this version, checking if an action is deprecated or not depended on the
+    SDK version, and didn't come from the API. We need to start storing the data
+    from the API and invalidate the cache if the data is not already stored.
+    """
     if enums.base.ACTIONS_CACHE.exists():
         first_file = next(enums.base.ACTIONS_CACHE.iterdir(), None)
         if first_file is not None:
