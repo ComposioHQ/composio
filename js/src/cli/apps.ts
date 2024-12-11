@@ -19,7 +19,10 @@ export default class AppsCommand {
   constructor(program: Command) {
     this.program = program;
 
-    const command = this.program.command("apps");
+    const command = this.program.command("apps").option(
+      "--enabled",
+      "Only show enabled apps"
+    )
 
     command
       .description("List all apps you have access to")
@@ -28,13 +31,18 @@ export default class AppsCommand {
     new AppUpdateCommand(command);
   }
 
-  private async handleAction(options: { browser: boolean }): Promise<void> {
+  private async handleAction(options: { browser: boolean, enabled: boolean }): Promise<void> {
     getOpenAPIClient();
+    const onlyShowEnabledApps = options.enabled;
+    console.log(onlyShowEnabledApps)
     try {
       const { data } = await client.apps.getApps({});
       console.log("Here are the apps you have access to:");
 
       for (const app of data?.items || []) {
+        if (onlyShowEnabledApps && !app.enabled) {
+          continue;
+        }
         console.log(app.key);
       }
     } catch (error) {
