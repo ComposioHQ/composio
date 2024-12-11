@@ -64,8 +64,9 @@ You need to add the action, input parameters & return content description, this 
 The `execute_request/executeRequest` method is used to make API calls, it accepts the following arguments:
 - `endpoint`: Endpoint URL. The base URL of the API will be prepended to this. You can find it in your connection's **Connection Info** section
 - `method`: HTTP method to use
-- `parameters`: Custom Authentication Parameters
 - `body`: Request body to pass to the API
+- `parameters`: Custom Authentication Parameters
+- `connection_id`: ID of the connected account
 
 <Note>
 Since `github` is a registered tool in Composio, the authentication credentials are automatically injected into your custom action!
