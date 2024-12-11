@@ -20,10 +20,6 @@ APPS_CACHE = LOCAL_CACHE_DIRECTORY / "apps"
 ACTIONS_CACHE = LOCAL_CACHE_DIRECTORY / "actions"
 TRIGGERS_CACHE = LOCAL_CACHE_DIRECTORY / "triggers"
 
-NO_REMOTE_ENUM_FETCHING = (
-    os.environ.get("COMPOSIO_NO_REMOTE_ENUM_FETCHING", "false") == "true"
-)
-
 
 class EnumStringNotFound(ComposioSDKError):
     """Raise when user provides invalid enum string."""

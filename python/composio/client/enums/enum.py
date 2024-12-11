@@ -14,6 +14,11 @@ from .base import EnumStringNotFound, SentinalObject
 DataT = t.TypeVar("DataT", bound=LocalStorage)
 
 
+NO_REMOTE_ENUM_FETCHING = (
+    os.environ.get("COMPOSIO_NO_REMOTE_ENUM_FETCHING", "false") != "false"
+)
+
+
 class Enum(t.Generic[DataT]):
     cache_folder: str
     cache: t.Dict[str, "te.Self"]
@@ -86,8 +91,8 @@ class Enum(t.Generic[DataT]):
         """Yield the enum names as strings."""
         # TODO: fetch trigger names from dedicated endpoint in the future
         path = LOCAL_CACHE_DIRECTORY / cls.cache_folder
-        # If we try to fetch Actions.iter() with NO_REMOTE_ENUM_FETCHING
-        # enabled for example, we'd get here.
+        # If we try to fetch Actions.iter() with local caching disabled
+        # for example, we'd get here.
         if not path.exists():
             return
 
@@ -124,11 +129,12 @@ class Enum(t.Generic[DataT]):
             return self._data
 
         # Try to fetch from API, and cache it locally
-        remote_data = self.fetch_and_cache()
-        if remote_data is not None:
-            remote_data.store()
-            self._data = remote_data
-            return self._data
+        if not NO_REMOTE_ENUM_FETCHING:
+            remote_data = self.fetch_and_cache()
+            if remote_data is not None:
+                remote_data.store()
+                self._data = remote_data
+                return self._data
 
         raise EnumStringNotFound(
             value=self.slug,
