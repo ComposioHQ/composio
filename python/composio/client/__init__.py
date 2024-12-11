@@ -251,7 +251,7 @@ class Entity:
         :param session_id: ID of the current workspace session
         :return: Dictionary containing execution result
         """
-        self._execute(action, params, connected_account_id, session_id, text, auth)
+        return self._execute(action, params, connected_account_id, session_id, text, auth)
 
     def _execute(
         self,
