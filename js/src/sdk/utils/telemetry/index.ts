@@ -5,13 +5,9 @@ import { BatchProcessor } from "../base/batchProcessor";
 import { getEnvVariable } from "../../../utils/shared";
 
 export class TELEMETRY_LOGGER {
-  private static batchProcessor = new BatchProcessor(
-    100,
-    10,
-    async (data) => {
-      await TELEMETRY_LOGGER.sendTelemetry(data as Record<string, unknown>[]);
-    }
-  );
+  private static batchProcessor = new BatchProcessor(100, 10, async (data) => {
+    await TELEMETRY_LOGGER.sendTelemetry(data as Record<string, unknown>[]);
+  });
 
   private static createTelemetryWrapper(method: Function, className: string) {
     return async (...args: unknown[]) => {

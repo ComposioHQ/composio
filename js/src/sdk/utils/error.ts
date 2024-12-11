@@ -108,7 +108,8 @@ export class CEG {
 
     throw new ComposioError(
       SDK_ERROR_CODES.BACKEND.SERVER_UNREACHABLE,
-      error.message || "Server is unreachable. Please contact tech@composio.dev with the error details.",
+      error.message ||
+        "Server is unreachable. Please contact tech@composio.dev with the error details.",
       "Server is unreachable. Please contact tech@composio.dev with the error details.",
       "Please contact tech@composio.dev with the error details.",
       metadata,
