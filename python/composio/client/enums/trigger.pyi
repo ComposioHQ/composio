@@ -4,7 +4,6 @@ from composio.client.enums.enum import Enum, EnumGenerator
 
 from .base import TriggerData
 
-
 _TRIGGER_CACHE: t.Dict[str, "Trigger"] = {}
 
 class Trigger(Enum[TriggerData], metaclass=EnumGenerator):

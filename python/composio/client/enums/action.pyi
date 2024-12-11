@@ -5,7 +5,6 @@ from composio.exceptions import ComposioSDKError
 
 from .base import ActionData
 
-
 _ACTION_CACHE: t.Dict[str, "Action"] = {}
 
 class Action(Enum[ActionData], metaclass=EnumGenerator):

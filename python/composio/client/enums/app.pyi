@@ -5,7 +5,6 @@ from composio.client.enums.enum import Enum, EnumGenerator
 
 from .base import AppData
 
-
 _APP_CACHE: t.Dict[str, "App"] = {}
 
 class App(Enum[AppData], metaclass=EnumGenerator):
