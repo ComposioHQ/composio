@@ -27,7 +27,6 @@ export default class ActionCommand {
       .option("--use-case", "Search for actions based on the given use case")
       .option("--limit <limit>", "Limit the number of actions to display")
       .option("--enabled", "Only show enabled actions")
-      .option("--copy", "Copy the action to the clipboard")
       .action(this.handleAction.bind(this));
   }
 
@@ -37,6 +36,7 @@ export default class ActionCommand {
     useCase?: string;
     limit?: number;
     enabled?: boolean;
+    copy?: boolean;
   }): Promise<void> {
     getOpenAPIClient();
     const { apps = [], tags = [], useCase, limit, enabled } = options;
