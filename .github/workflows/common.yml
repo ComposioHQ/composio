@@ -18,7 +18,7 @@ jobs:
         python-version: ["3.10"]
     timeout-minutes: 10
     concurrency:
-      group: 'test:common:${{ github.ref }}'
+      group: 'test:lock-check:${{ github.ref }}'
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +46,7 @@ jobs:
         python-version: ["3.10"]
     timeout-minutes: 30
     concurrency:
-      group: 'test:common:${{ github.ref }}'
+      group: 'test:linter_checks:${{ github.ref }}'
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
@@ -84,7 +84,7 @@ jobs:
         python-version: ["3.9", "3.10", "3.11"]
     timeout-minutes: 20
     concurrency:
-      group: 'test:common:${{ github.ref }}'
+      group: 'test:common:${{ matrix.python-version }}:${{ github.ref }}'
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
