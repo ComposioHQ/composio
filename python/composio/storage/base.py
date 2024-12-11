@@ -3,11 +3,15 @@ Local storage helpers.
 """
 
 import json
+import logging
 import typing as t
 from pathlib import Path
 
 import typing_extensions as tx
 from pydantic import BaseModel
+
+
+logger = logging.getLogger(__name__)
 
 
 class LocalStorage(BaseModel):
@@ -54,10 +58,12 @@ class LocalStorage(BaseModel):
                 f"Value of `path` is not set for `{self.__class__.__name__}`"
             )
 
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         data = self.to_json()
         if "path" in data:
             del data["path"]
 
+        logger.debug("Storing %s to %s", self.__class__.__name__, self.path)
         self.path.write_text(
             json.dumps(
                 data,
