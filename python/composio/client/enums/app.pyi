@@ -1,21 +1,26 @@
-"""
-App enums.
-"""
-
-# pylint: disable=too-many-public-methods, unused-import
-
 import typing as t
 
-import typing_extensions as te  # noqa: F401
+from composio.client.enums.action import Action
+from composio.client.enums.enum import Enum, EnumGenerator
 
-from composio.client.enums._action import Action
-from composio.client.enums.base import APPS_CACHE, AppData, _AnnotatedEnum, enum
+from .base import AppData
 
+_APP_CACHE: t.Dict[str, "App"] = {}
 
-@enum
-class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
-    """Class to represent `App` entity."""
+class App(Enum[AppData], metaclass=EnumGenerator):
+    cache_folder = "apps"
+    cache = _APP_CACHE
+    storage = AppData
 
+    def load_from_runtime(self) -> t.Optional[AppData]: ...
+    def fetch_and_cache(self) -> t.Optional[AppData]: ...
+    @property
+    def name(self) -> str: ...
+    @property
+    def is_local(self) -> bool: ...
+    def get_actions(
+        self, tags: t.Optional[t.List[str]] = None
+    ) -> t.Iterator[Action]: ...
     ABLY: "App"
     ACCELO: "App"
     ACTIVE_CAMPAIGN: "App"
@@ -23,6 +28,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     AERO_WORKFLOW: "App"
     AFFINITY: "App"
     AGENCYZOOM: "App"
+    AHREFS: "App"
     AIRTABLE: "App"
     ALCHEMY: "App"
     ALTOVIZ: "App"
@@ -106,7 +112,6 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     FILETOOL: "App"
     FINAGE: "App"
     FIRECRAWL: "App"
-    FIRECRAWLV1: "App"
     FITBIT: "App"
     FLUTTERWAVE: "App"
     FOMO: "App"
@@ -118,7 +123,6 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     GIT: "App"
     GITHUB: "App"
     GMAIL: "App"
-    GMAIL_BETA: "App"
     GOOGLEBIGQUERY: "App"
     GOOGLECALENDAR: "App"
     GOOGLEDOCS: "App"
@@ -127,7 +131,6 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     GOOGLESHEETS: "App"
     GOOGLETASKS: "App"
     GOOGLE_ANALYTICS: "App"
-    GOOGLE_DRIVE_BETA: "App"
     GORGIAS: "App"
     GO_TO_WEBINAR: "App"
     GREPTILE: "App"
@@ -229,7 +232,6 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     SMUGMUG: "App"
     SNOWFLAKE: "App"
     SPIDERTOOL: "App"
-    SPOTIFY: "App"
     SQLTOOL: "App"
     SQUARE: "App"
     STACK_EXCHANGE: "App"
@@ -264,6 +266,7 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     WIZ: "App"
     WORKIOM: "App"
     WORKSPACE_TOOL: "App"
+    WRIKE: "App"
     XERO: "App"
     YANDEX: "App"
     YNAB: "App"
@@ -280,30 +283,3 @@ class App(_AnnotatedEnum[AppData], path=APPS_CACHE):
     ZOHO_INVOICE: "App"
     ZOHO_MAIL: "App"
     ZOOM: "App"
-
-    @property
-    def is_local(self) -> bool:
-        """The tool is local if set to `True`"""
-        return self.load().is_local
-
-    @property
-    def name(self) -> str:
-        """Name of the app."""
-        return self.load().name
-
-    def get_actions(self, tags: t.Optional[t.List[str]] = None) -> t.Iterator[Action]:
-        """
-        Get actions for the given app filtered by the `tags`
-
-        :param tags: List of tags to filter the actions
-        :return: Iterator object which yields `Action`
-        """
-        tags = tags or []
-        app = f"{self.slug.lower()}_"
-        for action in Action.all():
-            if not action.slug.lower().startswith(app):
-                continue
-            if len(tags) == 0:
-                yield action
-            if any((tag in action.tags for tag in tags)):
-                yield action

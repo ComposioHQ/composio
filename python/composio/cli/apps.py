@@ -6,31 +6,35 @@ Usage:
 """
 
 import ast
-import inspect
-import typing as t
-from pathlib import Path
+import os.path
+import shutil
 
 import click
 
-from composio.cli.context import Context, get_context, pass_context
+from composio import constants
+from composio.cli.context import Context, pass_context
 from composio.cli.utils.decorators import handle_exceptions
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
-from composio.client import Composio, enums
-from composio.client.collections import ActionModel, AppModel, TriggerModel
+from composio.client import Composio
+from composio.client.enums.base import (
+    ACTIONS_CACHE,
+    APPS_CACHE,
+    TAGS_CACHE,
+    TRIGGERS_CACHE,
+)
+from composio.client.utils import update_actions, update_apps, update_triggers
 from composio.core.cls.did_you_mean import DYMGroup
-from composio.tools.base.abs import DEPRECATED_MARKER
-from composio.tools.local import load_local_tools
-from composio.utils import get_enum_key
+from composio.exceptions import ComposioSDKError
 
 
 class AppsExamples(HelpfulCmdBase, DYMGroup):
     examples = [
         click.style("composio apps", fg="green")
-        + click.style("            # List all apps\n", fg="black"),
+        + click.style("                # List all apps\n", fg="black"),
         click.style("composio apps --enabled", fg="green")
-        + click.style("  # List only enabled apps\n", fg="black"),
-        click.style("composio apps update", fg="green")
-        + click.style("     # Update local Apps database\n", fg="black"),
+        + click.style("      # List only enabled apps\n", fg="black"),
+        click.style("composio apps generate-types", fg="green")
+        + click.style(" # Update type stubs for enums\n", fg="black"),
     ]
 
 
@@ -60,351 +64,97 @@ def _apps(context: Context, enabled: bool = False) -> None:
         context.console.print(f"• {app.key}")
 
 
-class UpdateExamples(HelpfulCmdBase, click.Command):
-    examples = [
-        click.style("composio apps update", fg="green")
-        + click.style("  # Update local Apps database\n", fg="black"),
-    ]
-
-
-@_apps.command(name="update", cls=UpdateExamples)
-@click.option(
-    "--beta",
-    is_flag=True,
-    default=True,
-    help="Include beta apps. [DEPRECATED]",
-)
+@_apps.command(name="update")
 @click.help_option("--help", "-h", "-help")
 @handle_exceptions()
 @pass_context
-def _update(context: Context, beta: bool = True) -> None:
-    """Updates local Apps database."""
-    apps = update_apps(client=context.client, beta=beta)
-    update_actions(client=context.client, apps=apps, beta=beta)
-    update_triggers(client=context.client, apps=apps, beta=beta)
-
-
-def filter_non_beta_items(items):
-    filtered_items = []
-    for item in items:
-        if not item.name.lower().endswith("beta"):
-            filtered_items.append(item)
-
-    seen = set()
-    unique_items = []
-    for item in filtered_items:
-        if item.name not in seen:
-            unique_items.append(item)
-            seen.add(item.name)
-    return unique_items
-
-
-def update_apps(client: Composio, beta: bool = False) -> t.List[AppModel]:
-    """Update apps."""
-    apps = sorted(
-        client.apps.get(),
-        key=lambda x: x.key,
+def _update(context: Context) -> None:
+    """Deprecated, has no effect."""
+    context.console.print(
+        "[yellow]Warning:[/yellow] the 'apps update' command has been deprecated"
+        " and has no effect.\n"
+        "If you wish to update the local type stubs for auto-completion, use"
+        " 'composio apps generate-types' instead."
     )
-    if not beta:
-        apps = filter_non_beta_items(apps)
-
-    _update_apps(apps=apps)
-    return apps
 
 
-def update_actions(
-    client: Composio, apps: t.List[AppModel], beta: bool = False
-) -> None:
-    """Update actions and tags."""
-    actions = sorted(
-        client.actions.get(allow_all=True),
-        key=lambda x: f"{x.appName}_{x.name}",
+@_apps.command(name="generate-types")
+@click.help_option("--help", "-h", "-help")
+@handle_exceptions()
+@pass_context
+def _generate_types(context: Context) -> None:
+    """Updates the local type stubs with the latest app data."""
+    context.console.print("Fetching latest data from Composio API...")
+    generate_type_stubs(context.client)
+    context.console.print(
+        "[green]Successfully updated type stubs for Apps, Actions, and Triggers[/green]"
     )
-    if not beta:
-        actions = filter_non_beta_items(actions)
-
-    _update_tags(apps=apps, actions=actions)
-    _update_actions(apps=apps, actions=actions)
 
 
-def update_triggers(
-    client: Composio, apps: t.List[AppModel], beta: bool = False
-) -> None:
-    """Update triggers."""
-    triggers = sorted(
-        client.triggers.get(),
-        key=lambda x: f"{x.appKey}_{x.name}",
-    )
-    if not beta:
-        triggers = filter_non_beta_items(triggers)
+def generate_type_stub(enum_file: str, cache_folder: os.PathLike) -> None:
+    # Get all enum filenames
+    enum_names = sorted(os.listdir(cache_folder))
 
-    _update_triggers(apps=apps, triggers=triggers)
+    # Get the enum class
+    with open(enum_file, encoding="utf-8") as f:
+        tree = ast.parse(f.read())
 
-
-def _update_apps(apps: t.List[AppModel]) -> None:
-    """Create App enum class."""
-    app_names = []
-    enums.base.APPS_CACHE.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-    for app in apps:
-        app_names.append(
-            get_enum_key(
-                name=app.key.lower().replace(" ", "_").replace("-", "_"),
-            )
+    enum_classes = [
+        node
+        for node in tree.body
+        if isinstance(node, ast.ClassDef)
+        and isinstance(node.bases[0], ast.Subscript)
+        and isinstance(node.bases[0].value, ast.Name)
+        and node.bases[0].value.id == "Enum"
+    ]
+    if not enum_classes:
+        raise ComposioSDKError(
+            "No Enum class found in the SDK source, please re-install `composio`."
         )
-        enums.base.AppData(
-            name=app.name,
-            path=enums.base.APPS_CACHE / app_names[-1],
-            is_local=False,
-        ).store()
+    enum_class = enum_classes[0]
 
-    for tool in load_local_tools()["local"].values():
-        if tool.enum in app_names:
-            continue
+    # Remove the bodies of all methods in the class, replace with ellipsis
+    for node in enum_class.body:
+        if isinstance(node, ast.FunctionDef):
+            node.body = [ast.Expr(ast.Constant(...))]
 
-        app_names.append(tool.enum)
-        enums.base.AppData(
-            name=tool.name,
-            path=enums.base.APPS_CACHE / app_names[-1],
-            is_local=True,
-        ).store()
-
-    _update_annotations(
-        cls=enums.App,
-        attributes=app_names,
-    )
-
-
-def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
-    """Get Action enum."""
-    enums.base.ACTIONS_CACHE.mkdir(parents=True, exist_ok=True)
-    deprecated = {}
-    action_names = []
-    for app in sorted(apps, key=lambda x: x.key):
-        for action in actions:
-            if action.appName != app.key:
-                continue
-
-            if (
-                action.description is not None
-                and DEPRECATED_MARKER in action.description
-            ):
-                _, newact = action.description.split(DEPRECATED_MARKER, maxsplit=1)
-                deprecated[get_enum_key(name=action.name)] = (
-                    action.appName.lower() + "_" + newact.replace(">>", "")
-                ).upper()
-            else:
-                action_names.append(get_enum_key(name=action.name))
-
-            enums.base.ActionData(
-                name=action.name,
-                app=app.key,
-                tags=action.tags,
-                no_auth=app.no_auth,
-                is_local=False,
-                path=enums.base.ACTIONS_CACHE / get_enum_key(name=action.name),
-            ).store()
-
-    processed = []
-    for tool in load_local_tools()["local"].values():
-        if tool.name in processed:
-            continue
-
-        processed.append(tool.name)
-        for actcls in tool.actions():
-            action_names.append(actcls.enum)
-            enums.base.ActionData(
-                name=actcls.enum,
-                app=tool.name,
-                tags=actcls.tags(),
-                no_auth=True,
-                is_local=True,
-                path=enums.base.ACTIONS_CACHE / action_names[-1],
-                shell=False,
-            ).store()
-
-    _update_annotations(
-        cls=enums.Action,
-        attributes=action_names,
-        deprecated=deprecated,
-    )
-
-
-def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
-    """Create Tag enum class."""
-    enums.base.TAGS_CACHE.mkdir(parents=True, exist_ok=True)
-    tag_map: t.Dict[str, t.Set[str]] = {}
-    for app in apps:
-        app_name = app.key
-        for action in [action for action in actions if action.appName == app_name]:
-            if app_name not in tag_map:
-                tag_map[app_name] = set()
-            tag_map[app_name].update(action.tags or [])
-
-    tag_names = ["DEFAULT"]
-    for app_name in sorted(tag_map):
-        for tag in sorted(tag_map[app_name]):
-            tag_name = get_enum_key(name=f"{app_name}_{tag}")
-            tag_names.append(tag_name)
-            enums.base.TagData(
-                app=app_name,
-                value=tag,
-                path=enums.base.TAGS_CACHE / tag_names[-1],
-            ).store()
-
-    enums.base.TagData(
-        app="default",
-        value="important",
-        path=enums.base.TAGS_CACHE / "DEFAULT",
-    )
-    _update_annotations(
-        cls=enums.Tag,
-        attributes=tag_names,
-    )
-
-
-def _update_triggers(
-    apps: t.List[AppModel],
-    triggers: t.List[TriggerModel],
-) -> None:
-    """Get Trigger enum."""
-    trigger_names = []
-    enums.base.TRIGGERS_CACHE.mkdir(exist_ok=True)
-    for app in apps:
-        for trigger in triggers:
-            if trigger.appKey != app.key:
-                continue
-
-            trigger_names.append(get_enum_key(name=trigger.name).upper())
-            enums.base.TriggerData(
-                name=trigger.name,
-                app=app.key,
-                path=enums.base.TRIGGERS_CACHE / trigger_names[-1],
-            ).store()
-
-    _update_annotations(
-        cls=enums.Trigger,
-        attributes=trigger_names,
-    )
-
-
-def _update_annotations(
-    cls: t.Type,
-    attributes: t.List[str],
-    deprecated: t.Optional[t.Dict[str, str]] = None,
-) -> None:
-    """Update annontations for `cls`"""
-    console = get_context().console
-    file = Path(inspect.getmodule(cls).__file__)  # type: ignore
-    annotations = []
-    for attribute in sorted(attributes):
-        annotations.append(
+    # Add all enum names as class attributes
+    for enum_name in enum_names:
+        enum_class.body.append(
             ast.AnnAssign(
-                target=ast.Name(id=attribute),
-                annotation=ast.Constant(value=f"{cls.__name__}"),
+                target=ast.Name(id=enum_name, ctx=ast.Store()),
+                annotation=ast.Constant(value=f"{enum_class.name}"),
+                value=None,
                 simple=1,
-            ),
+            )
         )
 
-    _deprecated = []
-    _deprecated_names = []
-    deprecated = deprecated or {}
-    for old, new in deprecated.items():
-        if old.lower() == new.lower():
-            continue
-
-        if new.upper() not in attributes:
-            continue
-
-        _deprecated.append(_build_deprecated_node(old=old, new=new))
-        _deprecated_names.append(old.upper())
-
-    tree = ast.parse(file.read_text(encoding="utf-8"))
-    for node in tree.body:
-        if not isinstance(node, ast.ClassDef):
-            continue
-        if node.name != cls.__name__:
-            continue
-
-        cls_attributes = [
-            child.target.id  # type: ignore
-            for child in node.body[1:]
-            if isinstance(child, ast.AnnAssign)
-            and child.target.id != "_deprecated"  # type: ignore
-        ]
-        if set(cls_attributes) == set(attributes):
-            console.print(f"[yellow]⚠️ {cls.__name__}s does not require update[/yellow]")
-            return
-
-        def _filter(child: ast.AST) -> bool:
-            if isinstance(child, ast.AnnAssign) and child.target.id == "_deprecated":  # type: ignore
-                child.value = ast.Dict(
-                    keys=list(map(ast.Constant, deprecated.keys())),  # type: ignore
-                    values=list(map(ast.Constant, deprecated.values())),  # type: ignore
-                )
-                return True
-            if isinstance(child, ast.AnnAssign):
-                return False
-            if isinstance(child, ast.FunctionDef) and child.name in _deprecated_names:
-                return False
-            if "@te.deprecated" in ast.unparse(child):
-                return False
-            return True
-
-        body = [child for child in node.body[1:] if _filter(child=child)]
-        node.body = node.body[:1] + annotations + _deprecated + body
-        break
-
-    code = ast.unparse(tree)
-    code = code.replace(
-        "@classmethod",
-        "@classmethod  # type: ignore",
-    )
-    code = code.replace(
-        "import typing as t",
-        "\n# pylint: disable=too-many-public-methods, unused-import\n\nimport typing as t"
-        "\nimport typing_extensions as te  # noqa: F401",
-    )
-    with file.open("w", encoding="utf-8") as fp:
-        fp.write(code)
-    console.print(f"[green]✔ {cls.__name__}s updated[/green]")
+    # Write the type stub
+    with open(enum_file + "i", "w", encoding="utf-8") as f:
+        f.write(ast.unparse(tree))
 
 
-def _build_deprecated_node(old: str, new: str) -> ast.FunctionDef:
-    """Function definition."""
-    return ast.FunctionDef(
-        name=old.upper(),
-        args=ast.arguments(
-            posonlyargs=[],
-            args=[ast.arg(arg="cls")],
-            kwonlyargs=[],
-            kw_defaults=[],
-            defaults=[],
-        ),
-        body=[
-            ast.Return(
-                value=ast.Attribute(
-                    value=ast.Name(id="cls", ctx=ast.Load()),
-                    attr=new.upper(),
-                    ctx=ast.Load(),
-                )
-            )
-        ],
-        decorator_list=[
-            ast.Name(id="classmethod", ctx=ast.Load()),
-            ast.Name(id="property", ctx=ast.Load()),
-            ast.Call(
-                func=ast.Attribute(
-                    value=ast.Name(id="te", ctx=ast.Load()),
-                    attr="deprecated",
-                    ctx=ast.Load(),
-                ),
-                args=[ast.Constant(value=f"Use {new.upper()} instead.")],
-                keywords=[],
-            ),
-        ],
-        returns=ast.Constant(value="Action"),
-        lineno=0,
-    )
+def generate_type_stubs(client: Composio) -> None:
+    # Update local cache first
+    for cache_folder in ["apps", "actions", "triggers", "tags"]:
+        shutil.rmtree(
+            constants.LOCAL_CACHE_DIRECTORY / cache_folder,
+            ignore_errors=True,
+        )
+    apps = update_apps(client)
+    update_actions(client, apps)
+    update_triggers(client, apps)
+
+    enums_folder = os.path.join(os.path.dirname(__file__), "..", "client", "enums")
+    apps_enum = os.path.join(enums_folder, "app.py")
+    actions_enum = os.path.join(enums_folder, "action.py")
+    triggers_enum = os.path.join(enums_folder, "trigger.py")
+    tags_enum = os.path.join(enums_folder, "tag.py")
+
+    for enum_file, cache_folder_path in [
+        (apps_enum, APPS_CACHE),
+        (actions_enum, ACTIONS_CACHE),
+        (triggers_enum, TRIGGERS_CACHE),
+        (tags_enum, TAGS_CACHE),
+    ]:
+        generate_type_stub(enum_file, cache_folder_path)

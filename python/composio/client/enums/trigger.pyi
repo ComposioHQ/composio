@@ -1,14 +1,22 @@
-"""
-Trigger enums.
-"""
+import typing as t
 
-from composio.client.enums.base import TRIGGERS_CACHE, TriggerData, _AnnotatedEnum, enum
+from composio.client.enums.enum import Enum, EnumGenerator
 
+from .base import TriggerData
 
-@enum
-class Trigger(_AnnotatedEnum[TriggerData], path=TRIGGERS_CACHE):
-    """Trigger object."""
+_TRIGGER_CACHE: t.Dict[str, "Trigger"] = {}
 
+class Trigger(Enum[TriggerData], metaclass=EnumGenerator):
+    cache_folder = "triggers"
+    cache = _TRIGGER_CACHE
+    storage = TriggerData
+
+    def load_from_runtime(self) -> t.Optional[TriggerData]: ...
+    def fetch_and_cache(self) -> t.Optional[TriggerData]: ...
+    @property
+    def name(self) -> str: ...
+    @property
+    def app(self) -> str: ...
     ASANA_TASK_TRIGGER: "Trigger"
     GITHUB_COMMIT_EVENT: "Trigger"
     GITHUB_FOLLOWER_EVENT: "Trigger"
@@ -16,10 +24,8 @@ class Trigger(_AnnotatedEnum[TriggerData], path=TRIGGERS_CACHE):
     GITHUB_LABEL_ADDED_EVENT: "Trigger"
     GITHUB_PULL_REQUEST_EVENT: "Trigger"
     GITHUB_STAR_ADDED_EVENT: "Trigger"
-    GMAIL_BETA_NEW_GMAIL_MESSAGE: "Trigger"
     GMAIL_NEW_GMAIL_MESSAGE: "Trigger"
     GOOGLEDRIVE_GOOGLE_DRIVE_CHANGES: "Trigger"
-    GOOGLE_DRIVE_BETA_GOOGLE_DRIVE_CHANGES: "Trigger"
     LINEAR_COMMENT_EVENT_TRIGGER: "Trigger"
     LINEAR_ISSUE_CREATED_TRIGGER: "Trigger"
     LINEAR_ISSUE_UPDATED_TRIGGER: "Trigger"
@@ -45,9 +51,6 @@ class Trigger(_AnnotatedEnum[TriggerData], path=TRIGGERS_CACHE):
     SLACK_REACTION_REMOVED: "Trigger"
     SLACK_RECEIVE_MESSAGE: "Trigger"
     SLACK_RECEIVE_THREAD_REPLY: "Trigger"
-    SPOTIFY_NEW_DEVICE_TRIGGER: "Trigger"
-    SPOTIFY_PLAYLIST_ITEM_TRIGGER: "Trigger"
-    SPOTIFY_PLAYLIST_TRIGGER: "Trigger"
     TRELLO_TRELLO_ARCHIVED_CARD_TRIGGER: "Trigger"
     TRELLO_TRELLO_NEW_BOARD_TRIGGER: "Trigger"
     TRELLO_TRELLO_NEW_CARD_TRIGGER: "Trigger"
@@ -58,13 +61,3 @@ class Trigger(_AnnotatedEnum[TriggerData], path=TRIGGERS_CACHE):
     YOUTUBE_NEW_SUBSCRIPTION_TRIGGER: "Trigger"
     ZENDESK_NEW_USER_TRIGGER: "Trigger"
     ZENDESK_NEW_ZENDESK_TICKET_TRIGGER: "Trigger"
-
-    @property
-    def name(self) -> str:
-        """Name of the trigger."""
-        return self.load().name
-
-    @property
-    def app(self) -> str:
-        """Name of the app where this trigger belongs to."""
-        return self.load().app

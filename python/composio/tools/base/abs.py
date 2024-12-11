@@ -13,6 +13,7 @@ import pydantic
 from pydantic import BaseModel, Field
 
 from composio.client.enums import Action as ActionEnum
+from composio.client.enums.base import DEPRECATED_MARKER
 from composio.exceptions import ComposioSDKError
 from composio.utils.logging import WithLogger
 from composio.utils.pydantic import parse_pydantic_error
@@ -25,13 +26,12 @@ ActionRequest = t.TypeVar("ActionRequest")
 Loadable = t.TypeVar("Loadable")
 ToolRegistry = t.Dict[GroupID, t.Dict[str, "Tool"]]
 ActionsRegistry = t.Dict[GroupID, t.Dict[str, "Action"]]
+# TODO: create a Trigger type for this
 TriggersRegistry = t.Dict[GroupID, t.Dict[str, t.Any]]
 
 tool_registry: ToolRegistry = {"runtime": {}, "local": {}, "api": {}}
 action_registry: ActionsRegistry = {"runtime": {}, "local": {}, "api": {}}
 trigger_registry: TriggersRegistry = {"runtime": {}, "local": {}, "api": {}}
-
-DEPRECATED_MARKER = "<<DEPRECATED use "
 
 
 def remove_json_ref(data: t.Dict) -> t.Dict:
