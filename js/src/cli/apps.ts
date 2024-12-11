@@ -35,7 +35,7 @@ export default class AppsCommand {
     enabled: boolean;
   }): Promise<void> {
     getOpenAPIClient();
-    const onlyShowEnabledApps = options.enabled;
+    const onlyShowEnabledApps = options?.enabled;
     try {
       const { data } = await client.apps.getApps({});
       console.log("Here are the apps you have access to:");

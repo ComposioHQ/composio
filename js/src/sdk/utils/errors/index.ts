@@ -22,7 +22,7 @@ export async function logError(payload: ErrorPayload) {
   }
   try {
     const isBrowser = typeof window !== "undefined";
-    const reportingPayload = await generateReportingPayload(payload);
+    const reportingPayload = generateReportingPayload(payload);
     const reqPayload = {
       data: reportingPayload,
       url: `${TELEMETRY_URL}/api/sdk_metrics/error`,
@@ -43,7 +43,7 @@ export async function logError(payload: ErrorPayload) {
   }
 }
 
-async function generateReportingPayload(payload: ErrorPayload) {
+function generateReportingPayload(payload: ErrorPayload) {
   const { apiKey, baseURL, composioVersion, frameworkRuntime, source } =
     ComposioSDKContext;
   const {
