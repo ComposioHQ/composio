@@ -8,10 +8,37 @@ import { BackendClient } from "./backendClient";
 import { Triggers } from "./triggers";
 import { CEG } from "../utils/error";
 import logger from "../../utils/logger";
+import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
+import { z } from "zod";
 
 const LABELS = {
   PRIMARY: "primary",
 };
+
+const ZExecuteActionParams = z.object({
+  actionName: z.string(),
+  params: z.record(z.any()).optional(),
+  text: z.string().optional(),
+  connectedAccountId: z.string().optional(),
+});
+
+type TExecuteActionParams = z.infer<typeof ZExecuteActionParams>;
+
+const ZInitiateConnectionParams = z.object({
+  appName: z.string(),
+  authConfig: z.record(z.any()).optional(),
+  integrationId: z.string().optional(),
+  authMode: z.string().optional(),
+  connectionData: z.record(z.any()).optional(),
+  config: z
+    .object({
+      labels: z.array(z.string()).optional(),
+      redirectUrl: z.string().optional(),
+    })
+    .optional(),
+});
+
+type TInitiateConnectionParams = z.infer<typeof ZInitiateConnectionParams>;
 
 export class Entity {
   id: string;
@@ -34,13 +61,19 @@ export class Entity {
     this.activeTriggers = new ActiveTriggers(this.backendClient);
   }
 
-  async execute(
-    actionName: string,
-    params?: Record<string, any> | undefined,
-    text?: string | undefined,
-    connectedAccountId?: string
-  ) {
+  async execute({
+    actionName,
+    params,
+    text,
+    connectedAccountId,
+  }: TExecuteActionParams) {
     try {
+      ZExecuteActionParams.parse({
+        actionName,
+        params,
+        text,
+        connectedAccountId,
+      });
       const action = await this.actionsModel.get({
         actionName: actionName,
       });
@@ -59,33 +92,19 @@ export class Entity {
           },
         });
       }
-      let connectedAccount = null;
-      if (connectedAccountId) {
-        connectedAccount = await this.connectedAccounts.get({
-          connectedAccountId: connectedAccountId,
-        });
-      } else {
-        const connectedAccounts = await this.connectedAccounts.list({
-          //@ts-ignore
-          user_uuid: this.id,
-          appNames: action.appKey,
-          status: "ACTIVE",
-        });
-        // @ts-ignore
-        if (connectedAccounts?.items!.length === 0) {
-          throw new Error("No connected account found");
-        }
+      const connectedAccount = await this.getConnection({
+        app: action.appKey,
+        connectedAccountId,
+      });
 
-        for (const account of connectedAccounts.items!) {
-          if (account?.labels && account?.labels.includes(LABELS.PRIMARY)) {
-            connectedAccount = account;
-            break;
+      if (!connectedAccount) {
+        throw CEG.getCustomError(
+          SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
+          {
+            message: `Could not find a connection with app='${action.appKey}' and entity='${this.id}'`,
+            description: `Could not find a connection with app='${action.appKey}' and entity='${this.id}'`,
           }
-        }
-
-        if (!connectedAccount) {
-          connectedAccount = connectedAccounts.items![0];
-        }
+        );
       }
       return this.actionsModel.execute({
         actionName: actionName,
@@ -98,14 +117,17 @@ export class Entity {
         },
       });
     } catch (error) {
-      throw CEG.handleError(error);
+      throw CEG.handleAllError(error);
     }
   }
 
-  async getConnection(
-    app?: string,
-    connectedAccountId?: string
-  ): Promise<any | null> {
+  async getConnection({
+    app,
+    connectedAccountId,
+  }: {
+    app?: string;
+    connectedAccountId?: string;
+  }): Promise<any | null> {
     try {
       if (connectedAccountId) {
         return await this.connectedAccounts.get({
@@ -156,7 +178,7 @@ export class Entity {
         connectedAccountId: latestAccount.id!,
       });
     } catch (error) {
-      throw CEG.handleError(error);
+      throw CEG.handleAllError(error);
     }
   }
 
@@ -166,29 +188,32 @@ export class Entity {
     config: { [key: string]: any }
   ) {
     try {
-      const connectedAccount = await this.getConnection(app);
+      const connectedAccount = await this.getConnection({ app });
       if (!connectedAccount) {
-        throw new Error(
-          `Could not find a connection with app='${app}' and entity='${this.id}'`
+        throw CEG.getCustomError(
+          SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
+          {
+            description: `Could not find a connection with app='${app}' and entity='${this.id}'`,
+          }
         );
       }
-      const trigger = await this.triggerModel.setup(
-        connectedAccount.id!,
+      const trigger = await this.triggerModel.setup({
+        connectedAccountId: connectedAccount.id!,
         triggerName,
-        config
-      );
+        config,
+      });
       return trigger;
     } catch (error) {
-      throw CEG.handleError(error);
+      throw CEG.handleAllError(error);
     }
   }
 
-  async disableTrigger(triggerId: string): Promise<any> {
+  async disableTrigger(triggerId: string) {
     try {
       await this.activeTriggers.disable({ triggerId: triggerId });
       return { status: "success" };
     } catch (error) {
-      throw CEG.handleError(error);
+      throw CEG.handleAllError(error);
     }
   }
 
@@ -203,7 +228,7 @@ export class Entity {
       });
       return connectedAccounts.items!;
     } catch (error) {
-      throw CEG.handleError(error);
+      throw CEG.handleAllError(error);
     }
   }
 
@@ -221,20 +246,18 @@ export class Entity {
       });
       return activeTriggers;
     } catch (error) {
-      throw CEG.handleError(error);
+      throw CEG.handleAllError(error);
     }
   }
 
   async initiateConnection(
-    appName: string,
-    authMode?: any,
-    authConfig?: { [key: string]: any },
-    redirectUrl?: string,
-    integrationId?: string,
-    connectionData?: Record<string, any>,
-    labels: string[] = []
+    data: TInitiateConnectionParams
   ): Promise<ConnectionRequest> {
     try {
+      const { appName, authMode, authConfig, integrationId, connectionData } =
+        ZInitiateConnectionParams.parse(data);
+      const { redirectUrl, labels } = data.config || {};
+
       // Get the app details from the client
       const app = await this.apps.get({ appKey: appName });
 
@@ -297,7 +320,7 @@ export class Entity {
         labels: labels,
       });
     } catch (error) {
-      throw CEG.handleError(error);
+      throw CEG.handleAllError(error);
     }
   }
 }

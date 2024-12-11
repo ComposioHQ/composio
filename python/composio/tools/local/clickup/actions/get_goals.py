@@ -13,7 +13,7 @@ class GetGoalsRequest(BaseModel):
         alias="team_id",
         description="Team ID (Workspace)",
     )
-    include_completed: bool = Field(
+    include_completed: t.Optional[bool] = Field(
         default=None,
         alias="include_completed",
         description="",

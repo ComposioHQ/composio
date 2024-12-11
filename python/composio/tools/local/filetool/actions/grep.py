@@ -14,7 +14,7 @@ class SearchWordRequest(BaseFileRequest):
     """Request to search for a word in files."""
 
     word: str = Field(..., description="The term to search for")
-    pattern: str = Field(
+    pattern: t.Optional[str] = Field(
         default=None,
         description="""The file, directory, or glob pattern to search in.
         If not provided, searches in the current working directory.
@@ -31,7 +31,7 @@ class SearchWordRequest(BaseFileRequest):
     case_insensitive: bool = Field(
         default=True, description="If True, perform case-insensitive search"
     )
-    exclude: t.List[str] = Field(
+    exclude: t.Optional[t.List[str]] = Field(
         default=None,
         description="List of directories to exclude from the search",
     )

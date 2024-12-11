@@ -386,6 +386,7 @@ class TriggerConfigPropertyModel(BaseModel):
 
     description: str
     title: str
+    default: t.Any = None
 
     type: t.Optional[str] = None
 
@@ -1095,7 +1096,20 @@ class Actions(Collection[ActionModel]):
                         app
         :return: List of actions
         """
-        actions = t.cast(t.List[Action], [Action(action) for action in actions or []])
+
+        def is_action(obj):
+            try:
+                return hasattr(obj, "app")
+            except AttributeError:
+                return False
+
+        actions = t.cast(
+            t.List[Action],
+            [
+                action if is_action(action) else Action(action)
+                for action in actions or []
+            ],
+        )
         apps = t.cast(t.List[App], [App(app) for app in apps or []])
         tags = t.cast(t.List[Tag], [Tag(tag) for tag in tags or []])
 
@@ -1131,10 +1145,8 @@ class Actions(Collection[ActionModel]):
 
         if len(apps) > 0 and len(tags) == 0 and not allow_all:
             warnings.warn(
-                "Using all the actions of an app is not recommended. "
-                "Please use tags to filter actions or provide specific actions. "
-                "We just pass the important actions to the agent, but this is not meant "
-                "to be used in production. Check out https://docs.composio.dev/sdk/python/actions for more information.",
+                "Using all actions of an app is not recommended for production."
+                "Learn more: https://docs.composio.dev/patterns/tools/use-tools/use-specific-actions",
                 UserWarning,
             )
             tags = ["important"]

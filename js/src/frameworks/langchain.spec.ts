@@ -48,28 +48,26 @@ describe("Apps class tests", () => {
       callback: async (inputParams, authCredentials, executeRequest) => {
         try {
           const res = await executeRequest({
-              endpoint: `/user/starred/${inputParams.owner}/${inputParams.repo}`,
-              method: "PUT",
-              parameters: [],
+            endpoint: `/user/starred/${inputParams.owner}/${inputParams.repo}`,
+            method: "PUT",
+            parameters: [],
           });
           return res;
         } catch (e) {
-          console.error(e);
           return {};
         }
       },
     });
 
-    const actionOuput = await langchainToolSet.executeAction(
-      "starRepositoryPlxityCustom12345",
-      {
+    const actionOuput = await langchainToolSet.executeAction({
+      action: "starRepositoryPlxityCustom12345",
+      params: {
         owner: "plxity",
         repo: "achievementsof.life",
       },
-      "default",
-      "",
-      "db3c8d95-73e9-474e-8ae8-edfbdaab98b1"
-    );
+      entityId: "default",
+      connectedAccountId: "9442cab3-d54f-4903-976c-ee67ef506c9b",
+    });
 
     expect(actionOuput).toHaveProperty("successfull", true);
   });
