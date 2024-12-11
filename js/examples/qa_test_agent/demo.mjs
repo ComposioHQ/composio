@@ -32,7 +32,7 @@ async function executeAgent(entityName) {
   await setupUserConnectionIfNotExists(entity.id);
 
   // Retrieve tools for the specified app
-  const tools = await toolset.getTools({ apps: ['CODEANALYSISTOOL',appName] }, entity.id);
+  const tools = await toolset.getTools({ apps: [appName] }, entity.id);
   const task = "Your job is to be a QA test engineer.";
   const code = `
 class Calculator:
