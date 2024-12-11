@@ -3,7 +3,6 @@ Enum helper base.
 """
 
 import difflib
-import os
 import typing as t
 
 from composio.constants import LOCAL_CACHE_DIRECTORY
