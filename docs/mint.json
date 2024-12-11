@@ -68,6 +68,10 @@
       "url": "api-reference"
     },
     {
+      "name": "All Tools",
+      "url": "https://composio.dev/tools"
+    },
+    {
       "name": "Chat with Repo",
       "url": "https://dub.composio.dev/composio-chat-with-repo"
     }
@@ -77,57 +81,10 @@
       "group": "Introduction",
       "pages": [
         "introduction/intro/overview",
+        "introduction/intro/basic",
         "introduction/intro/quickstart",
         "introduction/intro/quickstart_2",
         "introduction/intro/quickstart_3"
-      ]
-    },
-    {
-      "group": "Concepts",
-      "pages": [
-        {
-          "group":"Basics",
-          "icon": "star",
-          "pages":[
-            "introduction/foundations/basic",
-            "introduction/foundations/components/entity/entity-guide",
-            "introduction/foundations/components/triggers/trigger-guide",
-            "introduction/foundations/components/integrations/integration-guide",
-            "introduction/foundations/components/workspace",
-            "introduction/foundations/components/list_local_tools"
-          ]
-        },
-        {
-          "group":"Authentication",
-          "icon":"unlock",
-          "pages":[
-            "patterns/Auth/connected_account",
-            "patterns/Auth/multiple-users",
-            "patterns/Auth/Integrations",
-            "patterns/Auth/examples/gmail_example",
-            "patterns/Auth/examples/shopify_example"
-          ]
-        },
-        {
-          "group": "Triggers",
-          "icon":"bolt",
-          "pages": [
-            "patterns/functions/triggers"
-          ]
-        },
-        {
-          "group":"Common Questions",
-          "icon":"question",
-          "pages":[
-            "faq/api_key/api_key",
-            "faq/api_key/cli",
-            "faq/integrations_and_connections/integrations",
-            "faq/integrations_and_connections/connections",
-            "faq/integrations_and_connections/list_of_tools",
-            "faq/supported_llms/supported_llm"
-          ]
-
-        }
       ]
     },
     {
@@ -150,8 +107,8 @@
               "group": "Build Tools",
               "icon": "hammer",
               "pages": [
-                "patterns/tools/build-tools/custom-action-for-new-tool",
-                "patterns/tools/build-tools/custom-action-for-existing-tool"
+                "patterns/tools/build-tools/custom-action-without-auth",
+                "patterns/tools/build-tools/custom-action-with-auth"
               ]
             },
             "patterns/tools/custom-integration",
@@ -159,30 +116,48 @@
       ]
     },
     {
-      "group":"Supported Frameworks",
-      "pages":[
-        "framework/llamaindex",
+      "group": "Authentication",
+      "icon": "unlock",
+      "pages": [
+        "patterns/Auth/connected_account",
+        "patterns/Auth/using-connections",
+        "patterns/Auth/Integrations",
+        "patterns/Auth/examples/gmail_example",
+        "patterns/Auth/examples/shopify_example"
+      ]
+    },
+    {
+      "group": "Triggers & Webhooks",
+      "icon": "webhook",
+      "pages": [
+        "patterns/triggers/triggers",
+        "patterns/triggers/webhooks"
+      ]
+    },
+    {
+      "group": "Supported Frameworks",
+      "pages": [
+        "framework/autogen",
         "framework/crewai",
-        "framework/letta",
         "framework/langchain",
+        "framework/langgraph",
+        "framework/letta",
+        "framework/litellm",
+        "framework/llamaindex",
+        "framework/openai",
         {
           "group": "Other Frameworks",
           "pages": [
-            "framework/groq",
-            "framework/openai",
-            "framework/autogen",
-            "framework/langgraph",
-            "framework/phidata",
             "framework/camelai",
             "javascript/cloudflare",
-            "javascript/vercel",
-            "javascript/openai",
-            "javascript/langchain",
-            "framework/google",
-            "framework/lyzr",
-            "framework/praisonai",
+            "framework/griptape",
+            "framework/groq",
             "framework/julep",
-            "framework/griptape"
+            "framework/lyzr",
+            "framework/phidata",
+            "framework/praisonai",
+            "javascript/vercel",
+            "framework/google"
           ]
         }
       ]
@@ -196,80 +171,95 @@
         "swekit/benchmarks",
         "swekit-examples/introduction"
       ]
-    },   
+    },
+    {
+      "group": "Others",
+      "pages": [
+        "introduction/foundations/components/workspace",
+        "faq/api_key/api_key",
+        "faq/api_key/cli",
+        "faq/integrations_and_connections/list_of_tools",
+        "faq/supported_llms/supported_llm"
+      ]
+    },
     {
       "group": "Examples",
       "pages": [
         {
-            "group": "Python Examples",
-            "pages": [
-                "examples/combined/rag-agent-python",
-                "examples/combined/code-execution-agent-python",
-                "examples/combined/calendar-agent-python",
-                "examples/combined/newsletter-summarizer-python",
-                "examples/combined/research-agent-python",
-                "examples/combined/sql-agent-python"
-                
-            ]
+          "group": "Python Examples",
+          "pages": [
+            "examples/combined/rag-agent-python",
+            "examples/combined/code-execution-agent-python",
+            "examples/combined/calendar-agent-python",
+            "examples/combined/newsletter-summarizer-python",
+            "examples/combined/research-agent-python",
+            "examples/combined/sql-agent-python"
+          ]
         },
         {
-            "group": "JavaScript Examples",
-            "pages": [
-              "examples/combined/rag-agent-javascript",
-              "examples/combined/code-execution-agent-javascript",
-              "examples/combined/calendar-agent-javascript",
-              "examples/combined/newsletter-summarizer-javascript",
-              "examples/combined/research-agent-javascript",
-              "examples/combined/sql-agent-javascript"
-            ]
+          "group": "JavaScript Examples",
+          "pages": [
+            "examples/combined/rag-agent-javascript",
+            "examples/combined/code-execution-agent-javascript",
+            "examples/combined/calendar-agent-javascript",
+            "examples/combined/newsletter-summarizer-javascript",
+            "examples/combined/research-agent-javascript",
+            "examples/combined/sql-agent-javascript"
+          ]
         }
       ]
-      
     },
     {
       "group": "Endpoints",
       "icon": "robot",
       "pages": [
-  {
-    "group": "Apps",
-    "pages": [
-      "api-reference/apps/get-apps",
-      "api-reference/apps/get-app"
-    ]
-  },
-  {
-    "group": "Connections",
-    "pages": [
-      "api-reference/connections/get-connections",
-      "api-reference/connections/initiate-connection",
-      "api-reference/connections/get-connection"
-    ]
-  },
-  {
-    "group": "Actions",
-    "pages": [
-      "api-reference/actions/list-actions-minimal",
-      "api-reference/actions/get-action",
-      "api-reference/actions-controller-v-2/execute-action",
-      "api-reference/actions/execute-action-proxy",
-      "api-reference/actions/get-action-inputs"
-    ]
-  },
-  {
-    "group": "Triggers",
-    "pages": [
-      "api-reference/triggers/list-triggers",
-
-      "api-reference/triggers/enable-trigger"
-    ]
-  },
-    {
-    "group": "Logs",
-    "pages": [
-      "api-reference/logs/get-logs"
-    ]
-  }
-]
+        {
+          "group": "Apps",
+          "pages": [
+            "api-reference/apps/get-apps",
+            "api-reference/apps/get-app"
+          ]
+        },
+        {
+          "group": "Integrations(App Connectors)",
+          "pages": [
+            "api-reference/app-connector/create-connector",
+            "api-reference/app-connector/list-global-connectors",
+            "api-reference/app-connector/get-connector-info"
+          ]
+        },
+        {
+          "group": "Connections",
+          "pages": [
+            "api-reference/connections/get-connections",
+            "api-reference/connections/initiate-connection",
+            "api-reference/connections/get-connection"
+          ]
+        },
+        {
+          "group": "Actions",
+          "pages": [
+            "api-reference/actions/list-actions-minimal",
+            "api-reference/actions/get-action",
+            "api-reference/actions/execute-action",
+            "api-reference/actions/execute-action-proxy",
+            "api-reference/actions/get-action-inputs"
+          ]
+        },
+        {
+          "group": "Triggers",
+          "pages": [
+            "api-reference/triggers/list-triggers",
+            "api-reference/triggers/enable-trigger"
+          ]
+        },
+        {
+          "group": "Logs",
+          "pages": [
+            "api-reference/logs/get-logs"
+          ]
+        }
+      ]
     }
   ],
   "integrations": {
@@ -288,7 +278,7 @@
       "apiKey": "phc_Gz8DBv1ZMbOwt3hE8sJZwKGsDl5FtMSkvBNSR0HC07c"
     },
     "plausible": {
-        "domain": "composio.dev"
+      "domain": "composio.dev"
     }
   },
   "api": {
@@ -298,12 +288,12 @@
   },
   "redirects": [
     {
-      "source":"/apps/gitlab",
-      "destination":"https://app.composio.dev/apps"
+      "source": "/apps/gitlab",
+      "destination": "https://app.composio.dev/apps"
     },
     {
-      "source":"/apps/bitbucket",
-      "destination":"https://app.composio.dev/apps"
+      "source": "/apps/bitbucket",
+      "destination": "https://app.composio.dev/apps"
     },
     {
       "source": "/introduction/foundations/howtos/get_api_key",

@@ -35,7 +35,7 @@ Composio is a cutting-edge toolset for AI Agents and LLMs, designed to streamlin
 - 🔐 **Managed Auth**: Built-in auth management for less developer overhead
 - 📈 **30% increase in reliability**: Simplified JSON structures, improved variable names, and enhanced error handling
 - 🤖 **Powerful RPA tools**: Spin up MacOS/Ubuntu instances on-the-fly for agent control and remote code execution
-- 🔒 **SOC Type 2**: 100% compliant with maximum data security
+- 🔒 **SOC 2 Type 2**: 100% compliant with maximum data security
 - 🏠 **Self Hosting**: One-click installation across all platforms
 
 ## 🎉 Hacktoberfest 2024 Participation

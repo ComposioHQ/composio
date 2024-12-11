@@ -1,8 +1,9 @@
+/* eslint-disable no-console */
 import chalk from "chalk";
 import { Command } from "commander";
 
 import client from "../sdk/client/client";
-import { getAPISDK } from "../sdk/utils/config";
+import { getOpenAPIClient } from "../sdk/utils/config";
 import { parseDate } from "./src/util";
 
 export default class ConnectionsCommand {
@@ -20,7 +21,7 @@ export default class ConnectionsCommand {
   }
 
   private async handleAction(options: { active: boolean }): Promise<void> {
-    getAPISDK();
+    getOpenAPIClient();
     const { data, error } = await client.appConnector.listAllConnectors({
       query: options.active ? { status: "ACTIVE" } : {},
       throwOnError: false,
@@ -35,12 +36,12 @@ export default class ConnectionsCommand {
       const typedIntegration = integration as Record<string, any>;
       console.log(chalk.cyan(`• ${chalk.bold("Id")}: ${typedIntegration.id}`));
       console.log(
-        chalk.magenta(`  ${chalk.bold("App")}: ${typedIntegration.appName}`),
+        chalk.magenta(`  ${chalk.bold("App")}: ${typedIntegration.appName}`)
       );
       console.log(
         chalk.magenta(
-          `  ${chalk.bold("Created At")}: ${parseDate(typedIntegration.createdAt)}`,
-        ),
+          `  ${chalk.bold("Created At")}: ${parseDate(typedIntegration.createdAt)}`
+        )
       );
       console.log(""); // Add an empty line for better readability between connections
     }

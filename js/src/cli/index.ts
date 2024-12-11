@@ -1,14 +1,21 @@
-import whoami from "./whoami";
-import login from "./login";
-import logout from "./logout";
+/* eslint-disable no-console */
+// Node Imports
+import { Command } from "commander";
+import chalk from "chalk";
+
+// CLI Imports
+import add from "./add";
 import apps from "./apps";
 import connections from "./connections";
 import integrations from "./integrations";
+import login from "./login";
+import logout from "./logout";
 import triggers from "./triggers";
-import add from "./add";
+import whoami from "./whoami";
 
-import { Command } from "commander";
-import chalk from "chalk";
+// SDK Imports
+import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
+import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 
 const program = new Command().name("composio").description("Composio CLI");
 
@@ -33,19 +40,23 @@ program.addHelpText("before", (options) => {
     formatLine(""),
     formatLine(`  ${chalk.bold("📚 Commands:")}\n`),
     ...options.command.commands.map((cmd) =>
-      formatLine(`    ${chalk.cyanBright(cmd.name())} - ${cmd.description()}`),
+      formatLine(`    ${chalk.cyanBright(cmd.name())} - ${cmd.description()}`)
     ),
     formatLine(`    ${chalk.cyan("help")}   - Display help for command`),
     formatLine(""),
     formatLine(`  ${chalk.bold("⚙️ Options:")}\n`),
     formatLine(
-      `    ${chalk.magenta("-h, --help")}    ℹ️ Display help for command`,
+      `    ${chalk.magenta("-h, --help")}    ℹ️ Display help for command`
     ),
     formatLine(""),
   ].join("\n");
 
   console.log(helpText);
   process.exit(0);
+});
+
+program.hook("preAction", () => {
+  TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.CLI_INVOKED, {});
 });
 
 program.parse();

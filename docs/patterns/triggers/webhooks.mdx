@@ -1,0 +1,160 @@
+---
+title: "Getting Started with Webhooks"
+sidebarTitle: "Webhooks"
+icon: "bell"
+description: "Learn how to configure and receive real-time notifications about activities in your Composio account through webhooks"
+---
+Webhooks provide a way to receive real-time notifications when specific events occur in your Composio account. Instead of continuously polling for changes, webhooks push data to your application as events happen, making them ideal for building responsive integrations.
+
+## Configuring Your Webhook
+
+<Tabs>
+<Tab title="Python">
+<Steps>
+<Step title="Set Up Your Webhook URL in Composio">
+
+1. Navigate to your Composio [Dashboard](https://app.composio.dev/)
+2. Access the [Settings](https://app.composio.dev/settings) section
+3. Locate and click on [Events and Triggers](https://app.composio.dev/events_and_triggers)
+4. For App triggers enter your webhook url in **Trigger Webhook** and for admin triggers  add your webhook url in **Admin Event Webhook**
+5. Confirm by clicking the **Update** button
+
+</Step>
+<Step title="Install Required Packages">
+
+```bash
+pip install flask
+```
+
+</Step>
+
+<Step title="Implement the Webhook Receiver">
+
+```python
+import json
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    if request.method == 'POST':
+        payload = request.json
+        print(json.dumps(payload, indent=2))
+        return jsonify(success=True), 200
+    return jsonify(success=False), 405
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
+```
+
+</Step>
+</Steps>
+</Tab>
+
+<Tab title="JavaScript">
+<Steps>
+<Step title="Set Up Your Webhook URL in Composio">
+
+1. Navigate to your Composio [Dashboard](https://app.composio.dev/)
+2. Access the [Settings](https://app.composio.dev/settings) section
+3. Locate and click on [Events and Triggers](https://app.composio.dev/events_and_triggers)
+4. For App triggers enter your webhook url in **Trigger Webhook** and for admin triggers  add your webhook url in **Admin Event Webhook**
+5. Confirm by clicking the **Update** button
+
+</Step>
+<Step title="Install Required Packages">
+
+```bash
+npm install express body-parser
+```
+
+</Step>
+
+<Step title="Implement the Webhook Receiver">
+
+```javascript
+const express = require('express');
+const bodyParser = require('body-parser');
+const app = express();
+app.use(bodyParser.json());
+
+app.post('/webhook', (req, res) => {
+    const payload = req.body;
+    console.log(JSON.stringify(payload, null, 2));
+    res.status(200).json({ success: true });
+});
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+```
+</Step>
+</Steps>
+</Tab>
+</Tabs>
+## Understanding the Webhook Payload
+<Tabs>
+<Tab title="App Triggers">  
+Below is the payload for an app trigger for **Slack's `SLACK_RECEIVE_MESSAGE` trigger**.
+```json
+{
+  "trigger_name": "SLACK_RECEIVE_MESSAGE",
+  "connection_id": "7baac1d4-e3be-41ae-9550-5ce9829579c9",
+  "trigger_id": "fb36f8db-caf0-4d2c-9cd6-0cb575a5689e",
+  "payload": {
+    "channel": "C07JB863EBW",
+    "user": "U07JMDFMR7B",
+    "text": "hey",
+    "ts": "1733236813.895519",
+    "team_id": "T07J24QFB62",
+    "bot_id": null,
+    "channel_type": "channel"
+  }
+}
+```
+</Tab>
+<Tab title="Admin Triggers">
+Below is the payload for an admin event trigger for **Slack Connection Initiation**.
+```json
+{
+  "event": {
+    "method": "POST",
+    "path": "/",
+    "query": {},
+    "client_ip": "3.238.0.124",
+    "url": "https://example-webhook-url.com/webhook",
+    "headers": {
+      "host": "example-webhook-url.com",
+      "content-type": "application/json",
+      "user-agent": "Composio-Webhook/1.0"
+    },
+    "body": {
+      "type": "connected_account.add.start",
+      "timestamp": "2024-10-17T09:10:15.989Z",
+      "data": {
+        "app_name": "slack",
+        "integration_name": "slack_worthy_cyan",
+        "integration_id": "dummy-integration-id-12345",
+        "body": {},
+        "connected_account_id": "dummy-connected-account-id-67890"
+      }
+    }
+  }
+}
+```
+### Key Insights from the Payload
+1. **Event Type**: The `body.type` field is crucial, indicating the specific activity occurring. In this example, `"connected_account.add.start"` signifies the initiation of a new connection.
+2. **Application Details**: The `body.data.app_name` field reveals which application the user is connecting to, in this case, "slack".
+3. **Integration Information**: `body.data.integration_name` provides the name you've assigned to this particular integration within your Composio setup.
+### Event Lifecycle
+It's important to note that the webhook system provides updates throughout the connection process. While this example shows a `connected_account.add.start` event, you'll receive a subsequent event with the type `connected_account.add.completed` once the connection is successfully established. This allows you to track the full lifecycle of user connections and respond accordingly at each stage.
+## Leveraging Admin Webhooks
+With this real-time data at your fingertips, you can:
+1. **Monitor User Onboarding**: Track when and how users are connecting to your integration.
+2. **Enhance User Experience**: Provide immediate feedback or assistance to users as they interact with your integration.
+3. **Troubleshoot Issues**: Quickly identify and respond to any connection problems or anomalies.
+</Tab>
+</Tabs>

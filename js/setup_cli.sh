@@ -1,12 +1,12 @@
-cp src/constants.js lib/src/constants.js
-
+# cp src/constants.js dist/cli/constants.js
+cp src/constants.js dist/constants.js
 # mv lib/src/cli/index.js lib/src/cli/index
 cat <<EOF > temp_file
 #!/usr/bin/env node
-$(cat lib/src/cli/index.js)
+$(cat dist/cli/index.js)
 EOF
-mv temp_file lib/src/cli/index
+mv temp_file dist/cli/index
 
-rm lib/src/cli/index.js
+rm dist/cli/index.js
 
 
