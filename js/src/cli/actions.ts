@@ -42,7 +42,10 @@ export default class ActionCommand {
   }): Promise<void> {
     getOpenAPIClient();
     const { apps = [], tags = [], useCase, limit, enabled } = options;
-    if (apps) {
+    if(apps.length === 0) {
+        console.log(chalk.red("Please provide at least one app name"));
+        return;
+    }
       const data: ListActionsV2Data = {
         query: {},
       };
@@ -77,6 +80,5 @@ export default class ActionCommand {
         console.log(chalk.red(error?.message));
         return;
       }
-    }
   }
 }
