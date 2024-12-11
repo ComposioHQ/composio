@@ -5,8 +5,6 @@ Composio SDK tools.
 import base64
 import binascii
 import hashlib
-import importlib
-import inspect
 import itertools
 import json
 import os
@@ -45,6 +43,7 @@ from composio.client.collections import (
 from composio.client.enums import TriggerType
 from composio.client.enums.base import EnumStringNotFound
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
+from composio.client.utils import check_cache_refresh
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
@@ -78,6 +77,9 @@ _CallableType = t.Callable[[t.Dict], t.Dict]
 MetadataType = t.Dict[_KeyType, t.Dict]
 ParamType = t.TypeVar("ParamType")
 ProcessorType = te.Literal["pre", "post", "schema"]
+
+
+NO_CACHE_REFRESH = os.environ.get("COMPOSIO_NO_CACHE_REFRESH", "false") == "true"
 
 
 class IntegrationParams(te.TypedDict):
@@ -120,30 +122,6 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
         return func(self, *args, **kwargs)  # type: ignore
 
     return wrapper  # type: ignore
-
-
-def load_action(
-    client: Composio, value, warn=True
-) -> Action:  # pylint: disable=used-prior-global-declaration
-    global Action
-    try:
-        return Action(value=value, warn=warn)
-    except EnumStringNotFound as e:
-        # run update apps, and reload actions
-        from composio.cli.apps import (  # pylint: disable=import-outside-toplevel
-            update_actions,
-            update_apps,
-        )
-
-        apps = update_apps(client)
-        update_actions(client, apps)
-        action_enum_module = inspect.getmodule(Action)
-        if action_enum_module is None:
-            raise RuntimeError("Error reloading `Action` enum class") from e
-        reloaded_action_module = importlib.reload(action_enum_module)
-        Action = reloaded_action_module.Action  # type: ignore
-
-    return Action(value=value, warn=warn)
 
 
 class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
@@ -389,6 +367,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 base_url=self._base_url,
                 runtime=self._runtime,
             )
+            if not NO_CACHE_REFRESH:
+                check_cache_refresh(self._remote_client)
+
         self._remote_client.local = self._local_client
         return self._remote_client
 
@@ -437,7 +418,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
-        action = load_action(self.client, action)
+        action = Action(action)
         if action.no_auth or action.is_runtime:
             return
 
@@ -451,7 +432,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             )
 
         if action.app not in [
-            connection.appUniqueId for connection in self._connected_accounts
+            # Normalize app names/ids coming from API
+            connection.appUniqueId.upper()
+            for connection in self._connected_accounts
         ]:
             raise ComposioSDKError(
                 f"No connected account found for app `{action.app}`; "
@@ -744,7 +727,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         :param connected_account_id: Connection ID for executing the remote action
         :return: Output object from the function call
         """
-        action = load_action(self.client, action)
+        action = Action(action)
         params = self._serialize_execute_params(param=params)
         if processors is not None:
             self._merge_processors(processors)
@@ -863,8 +846,6 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         # NOTE: This an experimental, can convert to decorator for more convinience
         if not apps and not actions and not tags:
             return
-        if actions:
-            actions = [load_action(self.client, action) for action in actions]
         self.workspace.check_for_missing_dependencies(
             apps=apps,
             actions=actions,
@@ -886,7 +867,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         actions = t.cast(
             t.List[Action],
             [
-                load_action(self.client, action)
+                Action(action)
                 for action in actions or []
                 if action not in runtime_actions
             ],

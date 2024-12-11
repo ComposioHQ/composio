@@ -33,6 +33,9 @@ const toolset = new OpenAIToolSet();
 </CodeGroup>
 </Step>
 <Step title="Creating a custom action">
+Below are examples of creating a custom action called `my_custom_action` (Python) & `myCustomAction` (JavaScript) to make cowsay say whatever you want it to say.
+
+You need to add the action, input parameters & return content description, this is what the LLM will use to understand the action.
 <CodeGroup>
 ```python Python
 @action(toolname="cow", requires=["cowsay"])
@@ -64,7 +67,7 @@ await toolset.createAction({
 </CodeGroup>
 </Step>
 <Step title="Executing the Custom Action">
-Executing the custom action using LLM
+Executing the custom action using LLM. Learn how to execute the custom action without LLM [here](/patterns/tools/use-tools/action-guide-without-agents#how-to-execute-custom-actions-directly).
 <CodeGroup>
 ```python Python
 tools = toolset.get_tools(actions=[my_custom_action])
