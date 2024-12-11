@@ -16,7 +16,12 @@ from composio.cli.context import Context, pass_context
 from composio.cli.utils.decorators import handle_exceptions
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import Composio
-from composio.client.enums.base import ACTIONS_CACHE, APPS_CACHE, TRIGGERS_CACHE
+from composio.client.enums.base import (
+    ACTIONS_CACHE,
+    APPS_CACHE,
+    TAGS_CACHE,
+    TRIGGERS_CACHE,
+)
 from composio.client.utils import update_actions, update_apps, update_triggers
 from composio.core.cls.did_you_mean import DYMGroup
 from composio.exceptions import ComposioSDKError
@@ -144,10 +149,12 @@ def generate_type_stubs(client: Composio) -> None:
     apps_enum = os.path.join(enums_folder, "app.py")
     actions_enum = os.path.join(enums_folder, "action.py")
     triggers_enum = os.path.join(enums_folder, "trigger.py")
+    tags_enum = os.path.join(enums_folder, "tag.py")
 
     for enum_file, cache_folder_path in [
         (apps_enum, APPS_CACHE),
         (actions_enum, ACTIONS_CACHE),
         (triggers_enum, TRIGGERS_CACHE),
+        (tags_enum, TAGS_CACHE),
     ]:
         generate_type_stub(enum_file, cache_folder_path)
