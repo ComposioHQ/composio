@@ -1,8 +1,9 @@
+/* eslint-disable no-console */
 import chalk from "chalk";
 import { Command } from "commander";
 
 import client from "../sdk/client/client";
-import { getAPISDK } from "../sdk/utils/config";
+import { getOpenAPIClient } from "../sdk/utils/config";
 
 export default class ConnectionsCommand {
   private program: Command;
@@ -21,7 +22,7 @@ export default class ConnectionsCommand {
   }
 
   private async handleAction(options: { active: boolean }): Promise<void> {
-    getAPISDK();
+    getOpenAPIClient();
     const { data, error } = await client.connections.getConnections({
       query: options.active ? { status: "ACTIVE" } : {},
       throwOnError: false,
@@ -35,10 +36,10 @@ export default class ConnectionsCommand {
     for (const connection of data?.items || []) {
       console.log(chalk.cyan(`• ${chalk.bold("Id")}: ${connection.id}`));
       console.log(
-        chalk.magenta(`  ${chalk.bold("App")}: ${connection.appName}`),
+        chalk.magenta(`  ${chalk.bold("App")}: ${connection.appName}`)
       );
       console.log(
-        chalk.yellow(`  ${chalk.bold("Status")}: ${connection.status}`),
+        chalk.yellow(`  ${chalk.bold("Status")}: ${connection.status}`)
       );
       console.log(""); // Add an empty line for better readability between connections
     }
@@ -58,7 +59,7 @@ export class ConnectionsGetCommand {
   }
 
   private async handleAction(id: string): Promise<void> {
-    getAPISDK();
+    getOpenAPIClient();
     const { data, error } = await client.connections.getConnection({
       path: { connectedAccountId: id },
       throwOnError: false,
@@ -71,7 +72,7 @@ export class ConnectionsGetCommand {
 
     for (const [key, value] of Object.entries(data as Record<string, any>)) {
       console.log(
-        `- ${chalk.cyan.bold(key)}: ${JSON.stringify(value, null, 2)}`,
+        `- ${chalk.cyan.bold(key)}: ${JSON.stringify(value, null, 2)}`
       );
     }
   }

@@ -18,7 +18,7 @@ class AddGuestToTaskRequest(BaseModel):
         alias="guest_id",
         description="",
     )
-    include_shared: bool = Field(
+    include_shared: t.Optional[bool] = Field(
         default=None,
         alias="include_shared",
         description=(
@@ -26,7 +26,7 @@ class AddGuestToTaskRequest(BaseModel):
             "to `false`. By default this parameter is set to `true`. "
         ),
     )
-    custom_task_ids: bool = Field(
+    custom_task_ids: t.Optional[bool] = Field(
         default=None,
         alias="custom_task_ids",
         description=(
@@ -34,7 +34,7 @@ class AddGuestToTaskRequest(BaseModel):
             "be `true`. "
         ),
     )
-    team_id: int = Field(
+    team_id: t.Optional[int] = Field(
         default=None,
         alias="team_id",
         description=(

@@ -3,7 +3,11 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'python/**'
   pull_request:
+    paths:
+      - 'python/**'
 
 jobs:
   lock_check:
@@ -17,9 +21,12 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.10"]
     timeout-minutes: 10
+    concurrency:
+      group: 'test:lock-check:${{ github.ref }}'
+      cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@master
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Pipenv install requirements and check it can be locked
@@ -42,9 +49,12 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.10"]
     timeout-minutes: 30
+    concurrency:
+      group: 'test:linter_checks:${{ github.ref }}'
+      cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@master
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
@@ -77,12 +87,15 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.9", "3.10", "3.11"]
     timeout-minutes: 20
+    concurrency:
+      group: 'test:common:${{ matrix.python-version }}:${{ github.ref }}'
+      cancel-in-progress: true
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
-      - uses: actions/setup-python@master
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Dependencies
@@ -120,7 +133,7 @@ jobs:
         python-version: ["3.10"]
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
@@ -136,7 +149,7 @@ jobs:
           sudo systemctl start docker
           sudo systemctl enable docker
 
-      - uses: actions/setup-python@master
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install Dependencies

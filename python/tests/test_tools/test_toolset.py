@@ -52,13 +52,11 @@ def test_uninitialize_app() -> None:
     with pytest.raises(
         ComposioSDKError,
         match=(
-            "No connected account found for app `linear`; "
-            "Run `composio add linear` to fix this"
+            "No connected account found for app `attio`; "
+            "Run `composio add attio` to fix this"
         ),
     ):
-        ComposioToolSet().get_action_schemas(
-            actions=[Action.LINEAR_CREATE_LINEAR_ISSUE]
-        )
+        ComposioToolSet().get_action_schemas(actions=[Action.ATTIO_UPDATE_A_LIST])
 
 
 class TestValidateTools:
@@ -143,7 +141,7 @@ class TestConnectedAccountProvider:
                 lambda *_: "",
             )
             toolset.execute_action(
-                action=Action.GITHUB_META_ROOT,
+                action=Action.GITHUB_GITHUB_API_ROOT,
                 params={},
             )
 

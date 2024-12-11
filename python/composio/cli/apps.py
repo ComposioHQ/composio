@@ -18,6 +18,7 @@ from composio.cli.utils.helpfulcmd import HelpfulCmdBase
 from composio.client import Composio, enums
 from composio.client.collections import ActionModel, AppModel, TriggerModel
 from composio.core.cls.did_you_mean import DYMGroup
+from composio.tools.base.abs import DEPRECATED_MARKER
 from composio.tools.local import load_local_tools
 from composio.utils import get_enum_key
 
@@ -70,12 +71,13 @@ class UpdateExamples(HelpfulCmdBase, click.Command):
 @click.option(
     "--beta",
     is_flag=True,
-    help="Include beta apps.",
+    default=True,
+    help="Include beta apps. [DEPRECATED]",
 )
 @click.help_option("--help", "-h", "-help")
 @handle_exceptions()
 @pass_context
-def _update(context: Context, beta: bool = False) -> None:
+def _update(context: Context, beta: bool = True) -> None:
     """Updates local Apps database."""
     apps = update_apps(client=context.client, beta=beta)
     update_actions(client=context.client, apps=apps, beta=beta)
@@ -187,9 +189,9 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
 
             if (
                 action.description is not None
-                and "<<DEPRECATED use " in action.description
+                and DEPRECATED_MARKER in action.description
             ):
-                _, newact = action.description.split("<<DEPRECATED use ", maxsplit=1)
+                _, newact = action.description.split(DEPRECATED_MARKER, maxsplit=1)
                 deprecated[get_enum_key(name=action.name)] = (
                     action.appName.lower() + "_" + newact.replace(">>", "")
                 ).upper()

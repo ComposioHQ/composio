@@ -11,10 +11,12 @@ from pathlib import Path
 import requests
 
 from composio.client.collections import (
+    AUTH_SCHEMES,
     Actions,
     ActiveTriggerModel,
     ActiveTriggers,
     Apps,
+    AuthSchemeType,
     ConnectedAccountModel,
     ConnectedAccounts,
     ConnectionRequestModel,
@@ -44,6 +46,8 @@ from composio.constants import (
 )
 from composio.exceptions import ApiKeyNotProvidedError
 from composio.storage.user import UserData
+from composio.utils.decorators import deprecated
+from composio.utils.shared import generate_request_id
 from composio.utils.url import get_api_url_base
 
 
@@ -144,6 +148,7 @@ class Composio:
             url=base_url + str(v1 / "client" / "auth" / "client_info"),
             headers={
                 "x-api-key": key,
+                "x-request-id": generate_request_id(),
             },
             timeout=60,
         )
@@ -224,6 +229,7 @@ class Entity:
         self.client = client
         self.id = id
 
+    @deprecated(version="0.5.52", replacement="execute_action")
     def execute(
         self,
         action: Action,
@@ -406,6 +412,11 @@ class Entity:
         app = self.client.apps.get(name=app_name)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         if integration is None and auth_mode is not None:
+            if auth_mode not in AUTH_SCHEMES:
+                raise ComposioClientError(
+                    f"'auth_mode' should be one of {AUTH_SCHEMES}"
+                )
+            auth_mode = t.cast(AuthSchemeType, auth_mode)
             if "OAUTH" not in auth_mode:
                 use_composio_auth = False
             integration = self.client.integrations.create(

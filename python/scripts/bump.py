@@ -23,16 +23,16 @@ class BumpType(Enum):
 
 def _get_bumped_version(current: VersionInfo, btype: BumpType) -> VersionInfo:
     if btype == BumpType.MAJOR:
-        return current.bump_major()
+        return current.next_version("major")
 
     if btype == BumpType.MINOR:
-        return current.bump_minor()
+        return current.next_version("minor")
 
     if btype == BumpType.PATCH:
-        return current.bump_patch()
+        return current.next_version("patch")
 
     if btype == BumpType.PRE:
-        return current.bump_prerelease()
+        return current.next_version("prerelease")
 
     return current.bump_build(token="post")
 

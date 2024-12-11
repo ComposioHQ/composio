@@ -7,6 +7,7 @@ import pytest
 from pydantic import BaseModel
 
 from composio.tools.base.abs import (
+    DEPRECATED_MARKER,
     Action,
     InvalidClassDefinition,
     Tool,
@@ -59,6 +60,25 @@ class TestActionBuilder:
         assert SomeAction.display_name == "Some action"
         assert SomeAction.description == "Some Action"
         assert str(SomeAction.file) == __file__
+
+    def test_deprecated_marker(self) -> None:
+
+        class Request(BaseModel):
+            pass
+
+        class Response(BaseModel):
+            pass
+
+        class SomeAction(Action[Request, Response]):
+            """Some action <<DEPRECATED use some_other_action>>"""
+
+            def execute(self, request: Request, metadata: Dict) -> Response:
+                return Response()
+
+        assert (
+            SomeAction.description == "Some Action <<DEPRECATED use some_other_action>>"
+        )
+        assert DEPRECATED_MARKER in SomeAction.description
 
 
 class TestToolBuilder:

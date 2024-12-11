@@ -1,0 +1,175 @@
+---
+title: "Build Tools with Auth"
+sidebarTitle: "Build Tools with Auth"
+icon: "toolbox"
+description: "Create custom actions that leverage existing tool authentication to extend functionality."
+---
+
+<Tip>
+Custom Actions are powerful building blocks that enable you to create custom functionality while leveraging existing tool authentication.
+</Tip>
+
+## Creating a Custom Action with Authentication
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/tVfm90v5_sM?si=4nk5sOBwhUdx_HtT"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen
+></iframe>
+
+
+<Steps>
+<Step title="Install Dependencies">
+<CodeGroup>
+```bash Python
+pip install composio_openai openai
+```
+
+```bash JavaScript
+npm install composio-core openai
+```
+</CodeGroup>
+</Step>
+<Step title="Import necessary modules & initialize them">
+
+<CodeGroup>
+```python Python
+import typing as t
+from composio_openai import ComposioToolSet, action, Action
+from openai import OpenAI
+
+openai_client = OpenAI()
+toolset = ComposioToolSet()
+```
+```javascript JavaScript
+import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core";
+import { z } from "zod";
+
+const openai_client = new OpenAI();
+const openAIToolset = new OpenAIToolSet();
+```
+</CodeGroup>
+</Step>
+
+<Step title="Creating a custom action">
+Below are examples of creating a custom action called `list_repositories` (Python) & `star_repo` (JavaScript) that integrates with the `github` tool.
+
+You need to add the action, input parameters & return content description, this is what the LLM will use to understand the action.
+
+The `execute_request/executeRequest` method is used to make API calls, it accepts the following arguments:
+- `endpoint`: Endpoint URL. The base URL of the API will be prepended to this. You can find it in your connection's **Connection Info** section
+- `method`: HTTP method to use
+- `body`: Request body to pass to the API
+- `parameters`: Custom Authentication Parameters
+- `connection_id`: ID of the connected account
+
+<Note>
+Since `github` is a registered tool in Composio, the authentication credentials are automatically injected into your custom action!
+</Note>
+<CodeGroup>
+```python Python
+@action(toolname="github")
+def list_repositories(
+    owner: str,
+    execute_request: t.Callable,
+) -> list[str]:
+    """
+    List repositories for a user.
+
+    :param owner: Name of the owner.
+    :return repositories: List of repositories for given user.
+    """
+    return [
+        repo["name"]
+        for repo in execute_request(f"/users/{owner}/repos", "get", None, None).get(
+            "data", []
+        )
+    ]
+```
+
+```javascript JavaScript
+const action = await openAIToolset.createAction({
+    actionName: "star_repo",
+    toolName: "github",
+    description: "Stars a repository on GitHub",
+    inputParams: z.object({
+        owner: z.string().describe("The owner of the repository"),
+        repo: z.string().describe("The name of the repository"),
+    }),
+    callback: async (inputParams, authCredentials, executeRequest) => {
+        try {
+            const res = await executeRequest({
+                endpoint: `/user/starred/${inputParams.owner}/${inputParams.repo}`,
+                method: "PUT",
+                parameters: [],
+                body: {}
+            });
+            return res;
+        } catch (e) {
+            console.error(e);
+            return {};
+        }
+    },
+})
+```
+</CodeGroup>
+
+</Step>
+<Step title="Executing the Custom Action">
+Executing the custom action using LLM. Learn how to execute the custom action without LLM [here](/patterns/tools/use-tools/action-guide-without-agents#how-to-execute-custom-actions-directly).
+<CodeGroup>
+```python Python
+tools = toolset.get_tools(actions=[list_repositories])
+
+task = "List all the repositories for the organization composiohq"
+
+response = openai_client.chat.completions.create(
+model="gpt-4o-mini",
+tools=tools,
+messages=
+    [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": task},
+    ],
+)
+
+result = toolset.handle_tool_calls(response)
+print(result)
+```
+
+```javascript JavaScript
+const tools = await openAIToolset.getTools({
+    actions: ["star_repo"]
+});
+
+const task = "Star the repository composioHQ/composio";
+
+const response = await openai_client.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+        { "role": "system", "content": "You are a helpful assistant." },
+        { "role": "user", "content": task },
+    ],
+    tools: tools,
+    tool_choice: "auto",
+});
+
+const result = await openAIToolset.handleToolCall(response, "default");
+console.log(result);
+```
+</CodeGroup>
+</Step>
+</Steps>
+
+### Why Use Custom Actions?
+
+Custom Actions provide several advantages:
+
+- **Data privacy:** Execution happens on the user’s machine, ensuring sensitive data doesn’t leave the local environment.
+- **Flexibility:** Users can create and customize as many tools and actions as needed.
+- **Compatibility:** Custom actions can be integrated seamlessly across various Composio-supported platforms.
