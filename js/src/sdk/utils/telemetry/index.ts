@@ -6,8 +6,8 @@ import { getEnvVariable } from "../../../utils/shared";
 
 export class TELEMETRY_LOGGER {
   private static batchProcessor = new BatchProcessor(
-    1000,
     100,
+    10,
     async (data) => {
       await TELEMETRY_LOGGER.sendTelemetry(data as Record<string, unknown>[]);
     }
@@ -18,7 +18,14 @@ export class TELEMETRY_LOGGER {
       const payload = {
         eventName: method.name,
         data: { className, args },
-        sdk_meta: ComposioSDKContext,
+        sdk_meta: {
+          apiKey: ComposioSDKContext.apiKey,
+          baseURL: ComposioSDKContext.baseURL,
+          composioVersion: ComposioSDKContext.composioVersion,
+          frameworkRuntime: ComposioSDKContext.frameworkRuntime,
+          source: ComposioSDKContext.source,
+          isBrowser: typeof window !== "undefined",
+        },
       };
 
       TELEMETRY_LOGGER.batchProcessor.pushItem(payload);
@@ -61,7 +68,14 @@ export class TELEMETRY_LOGGER {
     const payload = {
       eventName,
       data,
-      sdk_meta: ComposioSDKContext,
+      sdk_meta: {
+        apiKey: ComposioSDKContext.apiKey,
+        baseURL: ComposioSDKContext.baseURL,
+        composioVersion: ComposioSDKContext.composioVersion,
+        frameworkRuntime: ComposioSDKContext.frameworkRuntime,
+        source: ComposioSDKContext.source,
+        isBrowser: typeof window !== "undefined",
+      },
     };
     TELEMETRY_LOGGER.batchProcessor.pushItem(payload);
   }
