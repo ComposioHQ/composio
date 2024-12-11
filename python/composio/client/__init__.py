@@ -251,6 +251,17 @@ class Entity:
         :param session_id: ID of the current workspace session
         :return: Dictionary containing execution result
         """
+        self._execute(action, params, connected_account_id, session_id, text, auth)
+
+    def _execute(
+        self,
+        action: Action,
+        params: t.Dict,
+        connected_account_id: t.Optional[str] = None,
+        session_id: t.Optional[str] = None,
+        text: t.Optional[str] = None,
+        auth: t.Optional[CustomAuthObject] = None,
+    ) -> t.Dict:
         if action.no_auth:
             return self.client.actions.execute(
                 action=action,
