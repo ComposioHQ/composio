@@ -24,7 +24,7 @@ export default class ActionCommand {
         (value, previous: string[]) => previous.concat([value]),
         []
       )
-      .option("--use-case", "Search for actions based on the given use case")
+      .option("--use-case <useCase>", "Search for actions based on the given use case")
       .option("--limit <limit>", "Limit the number of actions to display")
       .option("--enabled", "Only show enabled actions")
       .action(this.handleAction.bind(this));
@@ -36,7 +36,6 @@ export default class ActionCommand {
     useCase?: string;
     limit?: number;
     enabled?: boolean;
-    copy?: boolean;
   }): Promise<void> {
     getOpenAPIClient();
     const { apps = [], tags = [], useCase, limit, enabled } = options;
