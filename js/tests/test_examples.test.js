@@ -44,12 +44,10 @@ describe("E2E Tests for plugin demos and examples", () => {
         env: { ...process.env },
         cwd: example.cwd || process.cwd(),
       };
-
-      const { stdout, stderr } = await execFileAsync(
-        "node",
-        [example.file],
-        options
-      );
+      const { stdout, stderr } = await execFileAsync("node", [example.file], {
+        ...options,
+        maxBuffer: 10 * 1024 * 1024,
+      });
       const output = example.match.type === "stdout" ? stdout : stderr;
       for (const match of example.match.values) {
         expect(output).toContain(match);
