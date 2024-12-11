@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from composio import action
 from composio.client.enums import Action, App, Tag, Trigger
+from composio.client.enums.enum import EnumStringNotFound
 from composio.tools.base.local import LocalAction, LocalTool
 
 
@@ -144,6 +145,16 @@ def test_get_actions() -> None:
     for act in App.GITHUB.get_actions():
         assert act.app == "GITHUB"
 
-    for act in App.GITHUB.get_actions(tags=["repo"]):
+    tag = "repos"
+    assert len(list(App.GITHUB.get_actions(tags=[tag]))) > 0
+    for act in App.GITHUB.get_actions(tags=[tag]):
         assert act.app == "GITHUB"
-        assert "repo" in act.tags
+        assert tag in act.tags
+
+
+def test_invalid_enum():
+    with pytest.raises(EnumStringNotFound):
+        App("some_bs")
+
+    with pytest.raises(EnumStringNotFound):
+        App.SOME_BS
