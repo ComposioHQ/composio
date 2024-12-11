@@ -143,9 +143,9 @@ def generate_type_stubs(client: Composio) -> None:
     actions_enum = os.path.join(enums_folder, "action.py")
     triggers_enum = os.path.join(enums_folder, "trigger.py")
 
-    for enum_file, cache_folder in [
+    for enum_file, cache_folder_path in [
         (apps_enum, APPS_CACHE),
         (actions_enum, ACTIONS_CACHE),
         (triggers_enum, TRIGGERS_CACHE),
     ]:
-        generate_type_stub(enum_file, cache_folder)
+        generate_type_stub(enum_file, cache_folder_path)
