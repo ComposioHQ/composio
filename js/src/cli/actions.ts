@@ -3,7 +3,6 @@ import { Command } from "commander";
 import client from "../sdk/client/client";
 import { getOpenAPIClient } from "../sdk/utils/config";
 import { ListActionsV2Data } from "../sdk/client";
-import { AxiosError } from "axios";
 
 export default class ActionCommand {
   private program: Command;
