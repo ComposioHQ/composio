@@ -42,43 +42,43 @@ export default class ActionCommand {
   }): Promise<void> {
     getOpenAPIClient();
     const { apps = [], tags = [], useCase, limit, enabled } = options;
-    if(apps.length === 0) {
-        console.log(chalk.red("Please provide at least one app name"));
-        return;
+    if (apps.length === 0) {
+      console.log(chalk.red("Please provide at least one app name"));
+      return;
     }
-      const data: ListActionsV2Data = {
-        query: {},
-      };
-      if (data?.query) {
-        if (tags) {
-          data.query.tags = tags.join(",");
-        }
-        if (limit) {
-          data.query.limit = limit;
-        }
-        if (enabled) {
-          data.query.showEnabledOnly = enabled;
-        }
-        if (useCase) {
-          data.query.useCase = useCase;
-        }
-        data.query.apps = apps.join(",");
+    const data: ListActionsV2Data = {
+      query: {},
+    };
+    if (data?.query) {
+      if (tags) {
+        data.query.tags = tags.join(",");
       }
+      if (limit) {
+        data.query.limit = limit;
+      }
+      if (enabled) {
+        data.query.showEnabledOnly = enabled;
+      }
+      if (useCase) {
+        data.query.useCase = useCase;
+      }
+      data.query.apps = apps.join(",");
+    }
 
-      try {
-        const response = await client.actionsV2.listActionsV2(data);
-        if (response.data?.items.length === 0) {
-          console.log(chalk.yellow("No actions found"));
-          return;
-        }
-        console.log(chalk.green("Here are the actions for the app:"));
-        console.log("");
-        // render list
-        const actions = response.data?.items || [];
-        actions.forEach((action) => console.log(action.name));
-      } catch (error: any) {
-        console.log(chalk.red(error?.message));
+    try {
+      const response = await client.actionsV2.listActionsV2(data);
+      if (response.data?.items.length === 0) {
+        console.log(chalk.yellow("No actions found"));
         return;
       }
+      console.log(chalk.green("Here are the actions for the app:"));
+      console.log("");
+      // render list
+      const actions = response.data?.items || [];
+      actions.forEach((action) => console.log(action.name));
+    } catch (error: any) {
+      console.log(chalk.red(error?.message));
+      return;
+    }
   }
 }
