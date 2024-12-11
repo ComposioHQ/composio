@@ -24,7 +24,7 @@ setup(
     python_requires=">=3.9,<4",
     install_requires=[
         "composio_core>=0.5.50,<=0.6.0-rc.1",
-        "composio_openai>=0.5.0,<=0.6.0-rc.1",
+        "composio_openai>=0.5.50,<=0.6.0-rc.1",
         "phidata",
     ],
     include_package_data=True,

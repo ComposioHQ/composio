@@ -23,7 +23,7 @@ setup(
     ],
     python_requires=">=3.9,<4",
     install_requires=[
-        "composio_langchain>=0.5.0,<=0.6.0-rc.1",
+        "composio_langchain>=0.5.50,<=0.6.0-rc.1",
         "crewai>=0.51.0",
     ],
     include_package_data=True,

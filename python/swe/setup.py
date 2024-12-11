@@ -75,7 +75,7 @@ setup(
         "langgraph": [
             "langchain-aws==0.1.17",
             "langgraph>=0.2.16",
-            "composio_langgraph>=0.5.0,<=0.6.0-rc.1",
+            "composio_langgraph>=0.5.50,<=0.6.0-rc.1",
             "python-dotenv==1.0.1",
         ]
     },
