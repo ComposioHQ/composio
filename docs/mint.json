@@ -140,6 +140,7 @@
         "framework/autogen",
         "framework/crewai",
         "framework/langchain",
+        "framework/langflow",
         "framework/langgraph",
         "framework/letta",
         "framework/litellm",
