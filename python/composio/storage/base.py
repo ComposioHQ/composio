@@ -63,7 +63,7 @@ class LocalStorage(BaseModel):
         if "path" in data:
             del data["path"]
 
-        logger.debug(f"Storing {self.__class__.__name__} to {self.path}")
+        logger.debug("Storing %s to %s", self.__class__.__name__, self.path)
         self.path.write_text(
             json.dumps(
                 data,

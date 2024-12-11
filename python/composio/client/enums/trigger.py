@@ -14,7 +14,9 @@ class Trigger(Enum[TriggerData], metaclass=EnumGenerator):
     storage = TriggerData
 
     def load_from_runtime(self) -> t.Optional[TriggerData]:
-        from composio.tools.base.abs import trigger_registry
+        from composio.tools.base.abs import (  # pylint: disable=import-outside-toplevel
+            trigger_registry,
+        )
 
         for triggers in trigger_registry.values():
             if self.slug in triggers:

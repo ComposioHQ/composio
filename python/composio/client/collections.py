@@ -532,6 +532,7 @@ class TriggerSubscription(logging.WithLogger):
         self._chunks: t.Dict[str, t.Dict[int, str]] = {}
         self._callbacks: t.List[t.Tuple[TriggerCallback, _TriggerEventFilters]] = []
 
+    # pylint: disable=too-many-statements
     def validate_filters(self, filters: _TriggerEventFilters):
         docs_link_msg = "\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
         if not isinstance(filters, dict):

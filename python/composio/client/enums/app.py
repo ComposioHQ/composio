@@ -16,8 +16,12 @@ class App(Enum[AppData], metaclass=EnumGenerator):
 
     def load_from_runtime(self) -> t.Optional[AppData]:
         # re-load local tools, and check if it's a runtime app
-        from composio.tools.base.abs import tool_registry
-        from composio.tools.local import load_local_tools
+        from composio.tools.base.abs import (  # pylint: disable=import-outside-toplevel
+            tool_registry,
+        )
+        from composio.tools.local import (  # pylint: disable=import-outside-toplevel
+            load_local_tools,
+        )
 
         load_local_tools()
 

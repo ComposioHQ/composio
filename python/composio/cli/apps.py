@@ -91,7 +91,7 @@ def generate_type_stub(enum_file: str, cache_folder: os.PathLike) -> None:
     enum_names = sorted(os.listdir(cache_folder))
 
     # Get the enum class
-    with open(enum_file, "r") as f:
+    with open(enum_file, encoding="utf-8") as f:
         tree = ast.parse(f.read())
 
     enum_classes = [
@@ -125,7 +125,7 @@ def generate_type_stub(enum_file: str, cache_folder: os.PathLike) -> None:
         )
 
     # Write the type stub
-    with open(enum_file + "i", "w") as f:
+    with open(enum_file + "i", "w", encoding="utf-8") as f:
         f.write(ast.unparse(tree))
 
 

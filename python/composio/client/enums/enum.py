@@ -91,8 +91,7 @@ class Enum(t.Generic[DataT]):
         if not path.exists():
             return
 
-        for file in os.listdir(path):
-            yield file
+        yield from os.listdir(path)
 
     @classmethod
     def all(cls) -> t.Iterator[te.Self]:
@@ -115,8 +114,8 @@ class Enum(t.Generic[DataT]):
             if hasattr(data, "replaced_by"):
                 self._data = data
                 return self._data
-            else:
-                self.storage_path.unlink()
+
+            self.storage_path.unlink()
 
         # Try to fetch from runtime
         runtime_data = self.load_from_runtime()

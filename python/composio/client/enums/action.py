@@ -24,7 +24,9 @@ class Action(Enum[ActionData], metaclass=EnumGenerator):
 
     def load_from_runtime(self) -> t.Optional[ActionData]:
         """Try to see if the action is a runtime action."""
-        from composio.tools.base.abs import action_registry
+        from composio.tools.base.abs import (  # pylint: disable=import-outside-toplevel
+            action_registry,
+        )
 
         for gid, actions in action_registry.items():
             if self.slug in actions:
