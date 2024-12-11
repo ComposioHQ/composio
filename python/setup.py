@@ -77,7 +77,7 @@ tools_requirements = [
     "networkx",
     "ruff",
     "flake8",
-    "transformers",
+    "transformers>=4.46.3,<4.47",
 ]
 
 all_requirements = (
