@@ -68,44 +68,47 @@ class TestBase:
         assert enum.is_runtime
         assert enum.is_local
 
+    @pytest.mark.flaky(retries=3, delay=1)
     def test_load_remote_app(self, caplog: pytest.LogCaptureFixture) -> None:
-        caplog.set_level(logging.DEBUG)
-        if App.ATTIO.storage_path.exists():
-            App.ATTIO.storage_path.unlink()
+        with caplog.at_level(logging.DEBUG):
+            if App.ATTIO.storage_path.exists():
+                App.ATTIO.storage_path.unlink()
 
-        enum = App(value=App.ATTIO.slug)
-        assert enum.slug == App.ATTIO.slug
-        assert not enum.is_local  # This load()s the app from api
-        print(caplog.messages)
+            enum = App(value=App.ATTIO.slug)
+            assert enum.slug == App.ATTIO.slug
+            assert not enum.is_local  # This load()s the app from api
         assert any(
             "Storing AppData to" in message and ".composio/apps/ATTIO" in message
             for message in caplog.messages
         )
 
+    @pytest.mark.flaky(retries=3, delay=1)
     def test_load_remote_action(self, caplog: pytest.LogCaptureFixture) -> None:
-        caplog.set_level(logging.DEBUG)
-        if Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION.storage_path.exists():
-            Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION.storage_path.unlink()
+        with caplog.at_level(logging.DEBUG):
+            if Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION.storage_path.exists():
+                Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION.storage_path.unlink()
 
-        enum = Action(value=Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION.slug)
-        assert enum.slug == Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION.slug
-        assert not enum.is_local  # This load()s the action from api
-        print(caplog.messages)
+            enum = Action(value=Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION.slug)
+            assert enum.slug == Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION.slug
+            assert not enum.is_local  # This load()s the action from api
+
         assert (
             "Storing ActionData to" in message
             and ".composio/actions/GITHUB_ACCEPT_A_REPOSITORY_INVITATION" in message
             for message in caplog.messages
         )
 
+    @pytest.mark.flaky(retries=3, delay=1)
     def test_load_remote_trigger(self, caplog: pytest.LogCaptureFixture) -> None:
-        caplog.set_level(logging.DEBUG)
-        if Trigger.GITHUB_COMMIT_EVENT.storage_path.exists():
-            Trigger.GITHUB_COMMIT_EVENT.storage_path.unlink()
+        with caplog.at_level(logging.DEBUG):
+            if Trigger.GITHUB_COMMIT_EVENT.storage_path.exists():
+                Trigger.GITHUB_COMMIT_EVENT.storage_path.unlink()
 
-        enum = Trigger(value=Trigger.GITHUB_COMMIT_EVENT.slug)
-        assert enum.slug == Trigger.GITHUB_COMMIT_EVENT.slug
-        assert enum.name == "GITHUB_COMMIT_EVENT"  # This load()s the trigger from api
-        print(caplog.messages)
+            enum = Trigger(value=Trigger.GITHUB_COMMIT_EVENT.slug)
+            assert enum.slug == Trigger.GITHUB_COMMIT_EVENT.slug
+            # This load()s the trigger from api
+            assert enum.name == "GITHUB_COMMIT_EVENT"
+
         assert (
             "Storing TriggerData to" in message
             and ".composio/triggers/GITHUB_COMMIT_EVENT" in message
