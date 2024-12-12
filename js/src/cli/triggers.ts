@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import chalk from "chalk";
 import { Command } from "commander";
+import client from "../sdk/client/client";
 
 import { getOpenAPIClient } from "../sdk/utils/config";
 import { Composio } from "../sdk";
@@ -38,6 +39,8 @@ export default class ConnectionsCommand {
     new TriggerAdd(command);
     new TriggerDisable(command);
     new ActiveTriggers(command);
+    new TriggerEnable(command);
+    new TriggerCallback(command);
   }
 
   private async handleAction(options: {
@@ -176,6 +179,29 @@ export class TriggerDisable {
   }
 }
 
+export class TriggerEnable {
+  private program: Command;
+  constructor(program: Command) {
+    this.program = program;
+
+    this.program
+      .command("enable")
+      .description("Enable an existing trigger")
+      .argument("<triggerid>", "The trigger id")
+      .action(this.handleAction.bind(this));
+  }
+
+  async handleAction(triggerId: string): Promise<void> {
+    const composioClient = new Composio();
+    try {
+      await composioClient.triggers.enable({ triggerId });
+      console.log(chalk.green(`Trigger ${triggerId} enabled`));
+    } catch (error) {
+      console.log(chalk.red(`Error enabling trigger ${triggerId}: ${error}`));
+    }
+  }
+}
+
 export class ActiveTriggers {
   private program: Command;
   constructor(program: Command, register: boolean = true) {
@@ -200,6 +226,58 @@ export class ActiveTriggers {
       );
       console.log(`Connection ID: ${chalk.yellow(trigger.connectionId)}`);
       console.log(""); // Add an empty line for better readability between triggers
+    }
+  }
+}
+
+export class TriggerCallback {
+  private program: Command;
+  constructor(program: Command) {
+    this.program = program;
+
+    const callbackCommand = this.program
+      .command("callback")
+      .description("Manage trigger callback URLs");
+
+    callbackCommand
+      .command("set")
+      .description("Set a callback URL for a trigger")
+      .argument("<callbackURL>", "Callback URL that needs to be set")
+      .action(this.handleSetAction.bind(this));
+
+    callbackCommand
+      .command("get")
+      .description("Get the current callback URL for a trigger")
+      .action(this.handleGetAction.bind(this));
+  }
+
+  async handleSetAction(callbackURL: string): Promise<void> {
+    getOpenAPIClient()
+    try {
+      const res = await client.triggers.setCallbackUrl({
+        body: {
+          callbackURL: callbackURL,
+        },
+      });
+      console.log(chalk.green(`Callback URL set to ${callbackURL}`));
+    } catch (error) {
+      console.log(
+        chalk.red(
+          `Error setting callback URL to ${callbackURL}: ${(error as any).message}`
+        )
+      );
+    }
+  }
+
+  async handleGetAction(): Promise<void> {
+    getOpenAPIClient()
+    try {
+      const res = await client.triggers.getWebhookUrl();
+      console.log(chalk.green(`Current callback URL is ${res?.data?.callbackURL}`));
+    } catch (error) {
+      console.log(
+        chalk.red(`Error getting callback URL: ${(error as any).message}`)
+      );
     }
   }
 }
