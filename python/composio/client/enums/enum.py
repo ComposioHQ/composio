@@ -77,6 +77,9 @@ class Enum(t.Generic[DataT]):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}.{self.slug}"
 
+    def __str__(self) -> str:
+        return self.slug
+
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Enum):
             return self.slug == other.slug
