@@ -50,12 +50,13 @@ Coming Soon
 </CodeGroup>
 </Step>
 <Step title="Define a Custom Function to Modify Schema">
-This function will be used to modify the schema of the `LINEAR_CREATE_LINEAR_ISSUE` action, here we are modifying the description for the parameters `project_id` & `team_id` to not required, later in the program we will pass these values as inputs to the action. The technical term for this is **Action-level Schema Processing**.
+This function will be used to modify the schema of the `LINEAR_CREATE_LINEAR_ISSUE` action, we get rid of the parameters `project_id` and `team_id`, later in the program we will pass these values as inputs to the action manually. The technical term for this is **Action-level Schema Processing**.
 <CodeGroup>
 ```python Python
 def linear_schema_processor(schema: dict) -> dict:
-    schema['project_id']['description'] = schema['project_id']['description'].replace('is required', 'not required')
-    schema['team_id']['description'] = schema['team_id']['description'].replace('is required', 'not required')
+    # This way the agent doesn't expect a project and team ID to run the action
+    del schema['project_id']
+    del schema['team_id']
     return schema
 ```
 ```javascript JavaScript
@@ -82,8 +83,8 @@ This function will be used to modify the output data for the `LINEAR_CREATE_LINE
 ```python Python
 def linear_post_processor(output_data: dict) -> dict:
     output_data = {
-        'success': output_data['successful'],
-        'issue_id': output_data['data']['id']
+        'success': output_data['successfull'],
+        'issue_id': output_data['id'],
     }
     return output_data
 ```

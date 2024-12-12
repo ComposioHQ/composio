@@ -1,0 +1,57 @@
+---
+title: "Using Composio With LangFlow"
+sidebarTitle: "LangFlow"
+icon: "network-wired"
+description: "Use Composio with LangFlow to create LLM agents that can interact with external apps"
+---
+
+## Star A Repository on Github
+In this example, we will use LangFlow to star a repository on Github using Composio Tools
+
+<Steps>
+<Step title="Add Composio Component">
+Head over to the [LangFlow](https://astra.datastax.com/langflow) website, create a new project, look for Composio component in the component list and add it to your project
+<img src="media/langflow/1.jpg" />
+<img src="media/langflow/2.jpg" />
+</Step>
+<Step title="Configure Composio Component">
+Go to your [Composio Dashboard](https://app.composio.dev/) and copy your API key, paste it in the API Key field in the Composio component and then search for Github in apps list and select it
+<img src="media/langflow/3.jpg" />
+<img src="media/langflow/4.jpg" />
+</Step>
+<Step title="Authenticate with Github">
+Click on refresh button, a link to authenticate with Github will be generated (if you don't have connected Github account), click on it and authenticate
+<Info>
+Most recent connected Github account with entity Id `default` will be considered for executing the action
+</Info>
+<img src="media/langflow/5.jpg" />
+<img src="media/langflow/6.jpg" />
+</Step>
+<Step title="Verify Connection Status">
+After authenticating, click on the refresh button to verify connection status
+<img src="media/langflow/7.jpg" />
+</Step>
+<Step title="Select the Action">
+Select the action `GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER` and you're done configuring the Composio component
+<img src="media/langflow/8.jpg" />
+</Step>
+<Step title="Add Agent">
+Look for agent in Components list, add it to your project, connect Composio component as tools to the agent then configure the agent (model provider, model name, api key, etc.).
+<img src="media/langflow/9.jpg" />
+<img src="media/langflow/10.jpg" />
+Lastly modify the agent input to **Star the repo composiohq/composio**
+<img src="media/langflow/11.jpg" />
+</Step>
+<Step title="Add Chat Output">
+Look for chat output in Components list, add it to your project, connect agent's response to the chat output component. We will use this component to monitor the agent's response
+<img src="media/langflow/12.jpg" />
+</Step>
+<Step title="Run the Agent">
+Click on the run button on chat output to run the agent, and open playground to monitor the agent's response
+<img src="media/langflow/13.jpg" />
+</Step>
+<Step title="Agent's Response">
+Hurray! You have successfully starred the repository composiohq/composio
+<img src="media/langflow/14.jpg" />
+</Step>
+</Steps>

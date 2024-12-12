@@ -104,7 +104,9 @@ class Composio:
                 UserData.load(path=user_data_path) if user_data_path.exists() else None
             )
             env_api_key = (
-                user_data.api_key if user_data else os.environ.get(ENV_COMPOSIO_API_KEY)
+                user_data.api_key
+                if user_data is not None and user_data.api_key is not None
+                else os.environ.get(ENV_COMPOSIO_API_KEY)
             )
             if env_api_key:
                 self._api_key = env_api_key
@@ -249,6 +251,19 @@ class Entity:
         :param session_id: ID of the current workspace session
         :return: Dictionary containing execution result
         """
+        return self._execute(
+            action, params, connected_account_id, session_id, text, auth
+        )
+
+    def _execute(
+        self,
+        action: Action,
+        params: t.Dict,
+        connected_account_id: t.Optional[str] = None,
+        session_id: t.Optional[str] = None,
+        text: t.Optional[str] = None,
+        auth: t.Optional[CustomAuthObject] = None,
+    ) -> t.Dict:
         if action.no_auth:
             return self.client.actions.execute(
                 action=action,
@@ -386,6 +401,7 @@ class Entity:
 
     def initiate_connection(
         self,
+        # TODO: Rename this parameter to 'app'
         app_name: t.Union[str, App],
         auth_mode: t.Optional[str] = None,
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
@@ -407,9 +423,11 @@ class Entity:
         :return: A ConnectionRequestModel instance representing the initiated connection.
         """
         if isinstance(app_name, App):
-            app_name = app_name.slug
+            app_name_str = app_name.slug
+        else:
+            app_name_str = app_name
 
-        app = self.client.apps.get(name=app_name)
+        app = self.client.apps.get(name=app_name_str)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         if integration is None and auth_mode is not None:
             if auth_mode not in AUTH_SCHEMES:

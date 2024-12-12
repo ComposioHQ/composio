@@ -10,8 +10,14 @@ You can enable a trigger by specifying the trigger enum, available on the [dashb
 <Tabs>
 <Tab title="CLI">
 <Steps>
+<Step title="Get Config Parameters">
+View the required configuration parameters for enabling a trigger by using the show command. For example, this will display what parameters are needed for Github's new star event trigger:
+```Bash
+composio triggers show GITHUB_STAR_ADDED_EVENT
+```
+</Step>
 <Step title="Enable Trigger">
-You need to pass the trigger enum to enable a trigger.
+You need to pass the trigger enum to enable a trigger & you'll be prompted to enter the required parameters.
 ```Bash
 composio triggers enable GITHUB_STAR_ADDED_EVENT
 ``` 
@@ -38,6 +44,24 @@ toolset = ComposioToolSet()
 
 trigger_schema = toolset.get_trigger("GITHUB_STAR_ADDED_EVENT")
 print(trigger_schema.config)
+```
+
+Response:
+```json
+properties={
+  'owner': TriggerConfigPropertyModel(description='Owner of the repository',
+  title='Owner',
+  type='string'),
+  'repo': TriggerConfigPropertyModel(description='Repository name',
+  title='Repo',
+  type='string')
+}
+title='WebhookConfigSchema'
+type='object'
+required=[
+  'owner',
+  'repo'
+]
 ```
 </Step>
 <Step title="Enable Trigger">
@@ -157,4 +181,16 @@ toolset.triggers.subscribe(
 ```
 </Tab>
 </Tabs>
+Trigger event payload when the repository composio is starred:
+```json
+payload={
+  'action': 'created',
+  'starred_at': '2024-12-11T15:31:26Z',
+  'repository_id': 861033276,
+  'repository_name': 'composio',
+  'repository_url': 'https://github.com/composioHQ/composio/',
+  'starred_by': 'abhishekpatil4',
+  'triggerName': 'GITHUB_STAR_ADDED_EVENT'
+}
+```
 <Tip>To learn how to configure and use your own webhooks for listening to triggers, visit our [Webhooks Guide](/patterns/triggers/webhooks).</Tip>
