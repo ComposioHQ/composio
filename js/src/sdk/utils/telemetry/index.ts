@@ -30,14 +30,17 @@ export class TELEMETRY_LOGGER {
   }
 
   private static async sendTelemetry(payload: Record<string, unknown>[]) {
-    const isTelementryDisabled =
+    const isTelemetryDisabled =
       getEnvVariable("TELEMETRY_DISABLED", "false") === "true";
-    if (isTelementryDisabled) {
+
+    if (isTelemetryDisabled) {
       return;
     }
+
     const url = `${TELEMETRY_URL}/api/sdk_metrics/telemetry`;
+
     const reqPayload = {
-      data: { events: payload },
+      data: payload,
       url,
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -49,15 +52,6 @@ export class TELEMETRY_LOGGER {
     } else {
       await sendProcessReq(reqPayload);
     }
-  }
-
-  static wrapClassMethodsForTelemetry(classInstance: any, methods: string[]) {
-    methods.forEach((method) => {
-      classInstance[method] = TELEMETRY_LOGGER.createTelemetryWrapper(
-        classInstance[method],
-        classInstance.constructor.name
-      );
-    });
   }
 
   static manualTelemetry(eventName: string, data: Record<string, unknown>) {

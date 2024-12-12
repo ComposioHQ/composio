@@ -13,6 +13,8 @@ import { Integrations } from "./integrations";
 import { Apps } from "./apps";
 import { CEG } from "../utils/error";
 import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
+import { TELEMETRY_LOGGER } from "../utils/telemetry";
+import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 
 type ConnectedAccountsListData = GetConnectionsData["query"] & {
   appNames?: string;
@@ -33,6 +35,7 @@ export class ConnectedAccounts {
   backendClient: BackendClient;
   integrations: Integrations;
   apps: Apps;
+  fileName: string = "js/src/sdk/models/connectedAccounts.ts";
 
   constructor(backendClient: BackendClient) {
     this.backendClient = backendClient;
@@ -43,6 +46,11 @@ export class ConnectedAccounts {
   async list(
     data: ConnectedAccountsListData
   ): Promise<GetConnectionsResponseDto> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "list",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       const res = await apiClient.connections.getConnections({ query: data });
       return res.data!;
@@ -52,6 +60,11 @@ export class ConnectedAccounts {
   }
 
   async create(data: InitiateConnectionPayloadDto) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "create",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       const { data: res } = (await apiClient.connections.initiateConnection({
         body: data,
@@ -68,6 +81,11 @@ export class ConnectedAccounts {
   }
 
   async get(data: { connectedAccountId: string }) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "get",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       const res = await apiClient.connections.getConnection({ path: data });
       return res.data;
@@ -77,6 +95,11 @@ export class ConnectedAccounts {
   }
 
   async delete(data: { connectedAccountId: string }) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "delete",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       const res = await apiClient.connections.deleteConnection({ path: data });
       return res.data;
@@ -86,6 +109,11 @@ export class ConnectedAccounts {
   }
 
   async getAuthParams(data: { connectedAccountId: string }) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getAuthParams",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       const res = await apiClient.connections.getConnection({
         path: { connectedAccountId: data.connectedAccountId },
@@ -99,6 +127,11 @@ export class ConnectedAccounts {
   async initiate(
     payload: InitiateConnectionDataReq
   ): Promise<ConnectionRequest> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "initiate",
+      file: this.fileName,
+      params: { payload },
+    });
     try {
       let {
         integrationId,

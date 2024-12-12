@@ -7,7 +7,8 @@ import {
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
-import { ActionsListResponseDTO } from "../sdk/client";
+import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
+import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 
 // Type definitions
 type Optional<T> = T | null;
@@ -21,6 +22,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
   // Class constants
   static FRAMEWORK_NAME = "cloudflare";
   static DEFAULT_ENTITY_ID = "default";
+  fileName: string = "js/src/frameworks/cloudflare.ts";
 
   /**
    * Initialize a new CloudflareToolSet instance
@@ -58,6 +60,11 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     usecaseLimit?: Optional<number>;
     filterByAvailableApps?: Optional<boolean>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getTools",
+      file: this.fileName,
+      params: filters,
+    });
     const actions = await this.getToolsSchema(filters);
     return (
       actions.map((action) => {
@@ -99,6 +106,11 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     },
     entityId: Optional<string> = null
   ): Promise<string> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "executeToolCall",
+      file: this.fileName,
+      params: { tool, entityId },
+    });
     return JSON.stringify(
       await this.executeAction({
         action: tool.name,
@@ -122,6 +134,11 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     result: AiTextGenerationOutput,
     entityId: Optional<string> = null
   ): Promise<Sequence<string>> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "handleToolCall",
+      file: this.fileName,
+      params: { result, entityId },
+    });
     const outputs = [];
     if ("tool_calls" in result && Array.isArray(result.tool_calls)) {
       for (const tool_call of result.tool_calls) {

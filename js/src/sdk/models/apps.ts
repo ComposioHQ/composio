@@ -1,6 +1,8 @@
 import { AppListResDTO, SingleAppInfoResDTO } from "../client";
 import apiClient from "../client/client";
 import { CEG } from "../utils/error";
+import { TELEMETRY_LOGGER } from "../utils/telemetry";
+import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 
 import { BackendClient } from "./backendClient";
 
@@ -25,6 +27,7 @@ export type RequiredParamsFullResponse = {
 
 export class Apps {
   backendClient: BackendClient;
+  fileName: string = "js/src/sdk/models/apps.ts";
   constructor(backendClient: BackendClient) {
     this.backendClient = backendClient;
   }
@@ -38,6 +41,11 @@ export class Apps {
    * @throws {ApiError} If the request fails.
    */
   async list() {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "list",
+      file: this.fileName,
+      params: {},
+    });
     try {
       const { data } = await apiClient.apps.getApps();
       return data?.items || [];
@@ -56,6 +64,11 @@ export class Apps {
    * @throws {ApiError} If the request fails.
    */
   async get(data: GetAppData) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "get",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       const { data: response } = await apiClient.apps.getApp({
         path: {
@@ -70,6 +83,11 @@ export class Apps {
   }
 
   async getRequiredParams(appId: string): Promise<RequiredParamsFullResponse> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getRequiredParams",
+      file: this.fileName,
+      params: { appId },
+    });
     try {
       const appData = await this.get({ appKey: appId });
       if (!appData) throw new Error("App not found");
@@ -128,6 +146,11 @@ export class Apps {
     appId: string;
     authScheme: string;
   }): Promise<RequiredParamsResponse> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getRequiredParamsForAuthScheme",
+      file: this.fileName,
+      params: { appId, authScheme },
+    });
     try {
       const params = await this.getRequiredParams(appId);
       return params.authSchemes[authScheme];
