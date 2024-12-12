@@ -75,8 +75,6 @@ jobs:
       run:
         working-directory: ./python
     continue-on-error: False
-    needs:
-      - lock_check
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -116,8 +114,6 @@ jobs:
       run:
         working-directory: ./python
     continue-on-error: False
-    needs:
-      - lock_check
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -157,8 +153,6 @@ jobs:
       run:
         working-directory: ./python
     continue-on-error: False
-    needs:
-      - lock_check
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
