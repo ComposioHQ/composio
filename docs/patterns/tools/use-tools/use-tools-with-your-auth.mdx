@@ -5,13 +5,13 @@ icon: "lock"
 description: "Guide to using existing authentication with tools and actions"
 ---
 
-### Using Tools and Actions with Custom Auth
+### Using Tools and Actions with Existing Authentication
 
-Composio allows you to [execute actions directly](action-guide-without-agents) using custom authentication, in this guide we'll see how to star a repo on GitHub using `GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER` action and passing the **Bearer token** in the headers. You can get the connection paramateters of a connected account like the access token using SDK, learn more [here](../..//Auth/using-connections#fetch-the-connection-parameters)
+Composio allows you to [execute actions directly](action-guide-without-agents) using existing authentication, in this guide we'll see how to star a repo on GitHub using `GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER` action and passing the **Bearer token** in the headers. You can get the connection paramateters of a connected account like the access token using SDK, learn more [here](../..//Auth/using-connections#fetch-the-connection-parameters)
 
 <Tabs>
 <Tab title="Python">
-Use the `add_auth` method to add the custom authentication to the toolset for the app you want to use. `in_` is where you want to add the auth, `name` is the name of the header you want to add and `value` is the value of the header.
+Use the `add_auth` method to add the existing authentication to the toolset for the app you want to use. `in_` is where you want to add the auth, `name` is the name of the header you want to add and `value` is the value of the header.
 ```python {7-13}
 from composio import ComposioToolSet, App
 
