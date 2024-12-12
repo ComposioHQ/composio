@@ -85,10 +85,6 @@ jobs:
           COMPOSIO_BASE_URL: ${{ inputs.base_url || secrets.COMPOSIO_BASE_URL || 'https://backend.composio.dev/api' }}
           # TODO(@kaavee): Add Anthropic API key
         run: |
-          sudo apt-get update --fix-missing
-          sudo apt-get autoremove
-          sudo apt-get autoclean
-
           python -m pip install --upgrade pip pipenv pytest
           python -m pip install plugins/${{matrix.package}}
           python -m pip install '.[all]'
