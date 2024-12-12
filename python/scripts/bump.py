@@ -83,10 +83,12 @@ def _bump_dockerfile(file: Path, bump_type: BumpType) -> None:
     content = file.read_text(encoding="utf-8")
     try:
         (version_str,) = re.findall(
-            pattern=r"composio-core\[all\]==(\d+.\d+.\d+) ", string=content
+            pattern=r"composio-core\[all\]==(\d+\.\d+\.\d+.*?) ", string=content
         )
     except ValueError as error:
         print(f"{error=}")
+        global failed
+        failed = True
         return
     version = VersionInfo.parse(version=version_str)
     print(f"Current version {version}")
@@ -103,7 +105,9 @@ def _bump_dockerfile(file: Path, bump_type: BumpType) -> None:
 
 def _bump_dockerfiles(bump_type: BumpType) -> None:
     cwd = Path.cwd()
-    for setup in (cwd / "dockerfiles").glob("**/Dockerfile*"):
+    for setup in (cwd / "dockerfiles").glob("**/Dockerfile"):
+        if setup.suffix == ".ci":
+            continue
         _bump_dockerfile(file=setup, bump_type=bump_type)
 
 
@@ -128,6 +132,9 @@ def bump(bump_type: BumpType) -> None:
 
 
 if __name__ == "__main__":
+    failed = False
     bump(
         bump_type=BumpType(sys.argv[1].replace("--", "")),
     )
+    if failed:
+        sys.exit(1)
