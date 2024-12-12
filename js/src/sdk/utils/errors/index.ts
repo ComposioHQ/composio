@@ -15,9 +15,9 @@ type ErrorPayload = {
 };
 
 export async function logError(payload: ErrorPayload) {
-  const isTelementryDisabled =
+  const isTelemetryDisabled =
     getEnvVariable("TELEMETRY_DISABLED", "false") === "true";
-  if (isTelementryDisabled) {
+  if (isTelemetryDisabled) {
     return;
   }
   try {
