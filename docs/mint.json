@@ -90,7 +90,6 @@
     {
       "group": "Tools",
       "pages": [
-            "patterns/tools/what-are-tools",
             {
               "group": "Use Tools",
               "icon": "shuttle-space",
