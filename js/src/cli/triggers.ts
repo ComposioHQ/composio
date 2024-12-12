@@ -254,7 +254,7 @@ export class TriggerCallback {
   async handleSetAction(callbackURL: string): Promise<void> {
     getOpenAPIClient();
     try {
-      const res = await client.triggers.setCallbackUrl({
+      await client.triggers.setCallbackUrl({
         body: {
           callbackURL: callbackURL,
         },
@@ -263,7 +263,7 @@ export class TriggerCallback {
     } catch (error) {
       console.log(
         chalk.red(
-          `Error setting callback URL to ${callbackURL}: ${(error as any).message}`
+          `Error setting callback URL to ${callbackURL}: ${(error as Error).message}`
         )
       );
     }
@@ -278,7 +278,7 @@ export class TriggerCallback {
       );
     } catch (error) {
       console.log(
-        chalk.red(`Error getting callback URL: ${(error as any).message}`)
+        chalk.red(`Error getting callback URL: ${(error as Error).message}`)
       );
     }
   }
