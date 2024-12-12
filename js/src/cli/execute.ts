@@ -35,7 +35,6 @@ export default class ExecuteCommand {
         )
       );
     } catch (error) {
-      console.log(error);
       console.log(
         chalk.red(`Error executing action: ${(error as Error).message}`)
       );
