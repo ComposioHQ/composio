@@ -48,11 +48,11 @@ export default class ActionCommand {
     }
     const data: ListActionsV2Data = {
       query: {
-      apps: apps.join(","),
-      ...(tags.length && { tags: tags.join(",") }),
-      ...(limit && { limit }),
-      ...(enabled && { showEnabledOnly: enabled }),
-      ...(useCase && { useCase }),
+        apps: apps.join(","),
+        ...(tags.length && { tags: tags.join(",") }),
+        ...(limit && { limit }),
+        ...(enabled && { showEnabledOnly: enabled }),
+        ...(useCase && { useCase }),
       },
     };
     try {
@@ -66,7 +66,7 @@ export default class ActionCommand {
       // render list
       const actions = response.data?.items || [];
       actions.forEach((action) => console.log(action.name));
-    } catch (error ) {
+    } catch (error) {
       console.log(chalk.red((error as Error)?.message));
       return;
     }
