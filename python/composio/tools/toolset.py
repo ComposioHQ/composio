@@ -489,7 +489,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if auth is None:
             self.check_connected_account(action=action)
 
-        output = self.client.get_entity(id=entity_id).execute(
+        entity = self.client.get_entity(id=entity_id)
+        output = entity._execute(  # pylint: disable=protected-access
             action=action,
             params=params,
             connected_account_id=connected_account_id,

@@ -100,7 +100,8 @@
                 "patterns/tools/use-tools/get-action-inputs",
                 "patterns/tools/use-tools/processing-actions",
                 "patterns/tools/use-tools/configure-tools",
-                "patterns/tools/use-tools/action-guide-without-agents"
+                "patterns/tools/use-tools/action-guide-without-agents",
+                "patterns/tools/use-tools/use-tools-with-your-auth"
               ]
             },
             {
@@ -140,6 +141,7 @@
         "framework/autogen",
         "framework/crewai",
         "framework/langchain",
+        "framework/langflow",
         "framework/langgraph",
         "framework/letta",
         "framework/litellm",
