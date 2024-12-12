@@ -70,10 +70,6 @@
     {
       "name": "All Tools",
       "url": "https://composio.dev/tools"
-    },
-    {
-      "name": "Chat with Repo",
-      "url": "https://dub.composio.dev/composio-chat-with-repo"
     }
   ],
   "navigation": [

@@ -13,6 +13,7 @@ import logout from "./logout";
 import triggers from "./triggers";
 import whoami from "./whoami";
 import actions from "./actions";
+import execute from "./execute";
 
 // SDK Imports
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
@@ -30,6 +31,7 @@ new integrations(program);
 new triggers(program);
 new add(program);
 new actions(program);
+new execute(program);
 
 function formatLine(content: string): string {
   return `${content}`;
