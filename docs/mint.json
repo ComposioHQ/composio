@@ -101,7 +101,7 @@
                 "patterns/tools/use-tools/processing-actions",
                 "patterns/tools/use-tools/configure-tools",
                 "patterns/tools/use-tools/action-guide-without-agents",
-                "patterns/tools/use-tools/use-actions-with-custom-auth"
+                "patterns/tools/use-tools/use-tools-with-your-auth"
               ]
             },
             {
