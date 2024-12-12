@@ -59,10 +59,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          sudo apt-get update --fix-missing
-          sudo apt-get autoremove
-          sudo apt-get autoclean
-          pip install --user --upgrade setuptools
           pip install 'tox>=4.21,<5' tox-uv
       - name: Code style check
         run: |
@@ -100,10 +96,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install Dependencies
         run: |
-          sudo apt-get update --fix-missing
-          sudo apt-get autoremove
-          sudo apt-get autoclean
-          pip install --user --upgrade setuptools
           pip install 'tox>=4.21,<5' tox-uv
       - name: Unittests
         run: |
@@ -154,10 +146,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install Dependencies
         run: |
-          sudo apt-get update --fix-missing
-          sudo apt-get autoremove
-          sudo apt-get autoclean
-          pip install --user --upgrade setuptools
           pip install 'tox>=4.21,<5' tox-uv
       - name: Build docker images
         run: |
