@@ -83,8 +83,8 @@ This function will be used to modify the output data for the `LINEAR_CREATE_LINE
 ```python Python
 def linear_post_processor(output_data: dict) -> dict:
     output_data = {
-        'success': output_data['successful'],
-        'issue_id': output_data['data']['id']
+        'success': output_data['successfull'],
+        'issue_id': output_data['id'],
     }
     return output_data
 ```
