@@ -252,7 +252,7 @@ export class TriggerCallback {
   }
 
   async handleSetAction(callbackURL: string): Promise<void> {
-    getOpenAPIClient()
+    getOpenAPIClient();
     try {
       const res = await client.triggers.setCallbackUrl({
         body: {
@@ -270,10 +270,12 @@ export class TriggerCallback {
   }
 
   async handleGetAction(): Promise<void> {
-    getOpenAPIClient()
+    getOpenAPIClient();
     try {
       const res = await client.triggers.getWebhookUrl();
-      console.log(chalk.green(`Current callback URL is ${res?.data?.callbackURL}`));
+      console.log(
+        chalk.green(`Current callback URL is ${res?.data?.callbackURL}`)
+      );
     } catch (error) {
       console.log(
         chalk.red(`Error getting callback URL: ${(error as any).message}`)
