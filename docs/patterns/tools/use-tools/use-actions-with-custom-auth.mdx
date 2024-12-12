@@ -1,0 +1,65 @@
+---
+title: "🛠️ How Can I Use Tools and Actions With Custom Authentication?"
+sidebarTitle: "Use Custom Auth"
+icon: "lock"
+description: "Guide to use Custom Authentication With Tools And Actions"
+---
+
+### Using Tools and Actions with Custom Auth
+
+Composio allows you to [execute actions directly](action-guide-without-agents) using custom authentication, in this guide we'll see how to star a repo on GitHub using `GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER` action and passing the **Bearer token** in the headers. You can get the connection paramateters of a connected account like the access token using SDK, learn more [here](../..//Auth/using-connections#fetch-the-connection-parameters)
+
+<Tabs>
+<Tab title="Python">
+Use the `add_auth` method to add the custom authentication to the toolset for the app you want to use. `in_` is where you want to add the auth, `name` is the name of the header you want to add and `value` is the value of the header.
+```python {7-13}
+from composio import ComposioToolSet, App
+
+toolset = ComposioToolSet()
+
+toolset.add_auth(
+    app=App.GITHUB,
+    parameters=[
+        dict(
+            name="Authorization",
+            in_="header",
+            value="Bearer gho_XL9IXXXXXX",
+        )
+    ],
+)
+
+toolset.execute_action(
+    action="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
+    params={"owner": "composiohq", "repo": "composio"},
+)
+```
+</Tab>
+<Tab title="JavaScript">
+Here you need to pass the authentication parameters inside the `authConfig`. `in_` is where you want to add the auth, `name` is the name of the header you want to add and `value` is the value of the header.
+```javascript {10-14}
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet();
+
+const response = await toolset.client.actions.execute({
+    actionName: "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
+    requestBody: {
+        appName: "github",
+        authConfig: {
+            parameters: [{
+                name: "Authorization",
+                in: "header",
+                value: `Bearer gho_XL9IXXXXXX`
+            }]
+        },
+        input: {
+            "owner": "composiohq",
+            "repo": "composio"
+        }
+    }
+});
+
+console.log(response)
+```
+</Tab>
+</Tabs>

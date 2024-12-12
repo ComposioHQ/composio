@@ -117,6 +117,7 @@ def test_tag_enum() -> None:
 def test_app_enum() -> None:
     """Test `App` enum."""
     assert App.GITHUB == "GITHUB"
+    assert str(App.GITHUB) == "GITHUB"
     assert not App.GITHUB.is_local
     assert App("OUTLOOK") == App.OUTLOOK
     assert App("gmail") == App.GMAIL
