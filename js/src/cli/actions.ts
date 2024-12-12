@@ -47,24 +47,14 @@ export default class ActionCommand {
       return;
     }
     const data: ListActionsV2Data = {
-      query: {},
+      query: {
+      apps: apps.join(","),
+      ...(tags.length && { tags: tags.join(",") }),
+      ...(limit && { limit }),
+      ...(enabled && { showEnabledOnly: enabled }),
+      ...(useCase && { useCase }),
+      },
     };
-    if (data?.query) {
-      if (tags) {
-        data.query.tags = tags.join(",");
-      }
-      if (limit) {
-        data.query.limit = limit;
-      }
-      if (enabled) {
-        data.query.showEnabledOnly = enabled;
-      }
-      if (useCase) {
-        data.query.useCase = useCase;
-      }
-      data.query.apps = apps.join(",");
-    }
-
     try {
       const response = await client.actionsV2.listActionsV2(data);
       if (response.data?.items.length === 0) {
@@ -76,8 +66,8 @@ export default class ActionCommand {
       // render list
       const actions = response.data?.items || [];
       actions.forEach((action) => console.log(action.name));
-    } catch (error: any) {
-      console.log(chalk.red(error?.message));
+    } catch (error ) {
+      console.log(chalk.red((error as Error)?.message));
       return;
     }
   }
