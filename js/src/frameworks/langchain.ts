@@ -5,6 +5,8 @@ import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import type { Optional, Dict, Sequence } from "../sdk/types";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
+import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
+import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 
 export class LangchainToolSet extends BaseComposioToolSet {
   /**
@@ -13,6 +15,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
    */
   static FRAMEWORK_NAME = "langchain";
   static DEFAULT_ENTITY_ID = "default";
+  fileName: string = "js/src/frameworks/langchain.ts";
 
   constructor(
     config: {
@@ -72,6 +75,12 @@ export class LangchainToolSet extends BaseComposioToolSet {
     },
     entityId: Optional<string> = null
   ): Promise<Sequence<DynamicStructuredTool>> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getTools",
+      file: this.fileName,
+      params: { filters, entityId },
+    });
+
     const tools = await this.getToolsSchema(filters, entityId);
     return tools.map((tool) => this._wrapTool(tool, entityId || this.entityId));
   }

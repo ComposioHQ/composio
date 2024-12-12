@@ -7,6 +7,8 @@ import { Workspace } from "../env";
 import logger from "../utils/logger";
 import { ActionsListResponseDTO } from "../sdk/client";
 import { Stream } from "openai/streaming";
+import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
+import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
@@ -14,6 +16,8 @@ type Sequence<T> = Array<T>;
 export class OpenAIToolSet extends BaseComposioToolSet {
   static FRAMEWORK_NAME = "openai";
   static DEFAULT_ENTITY_ID = "default";
+
+  fileName: string = "js/src/frameworks/openai.ts";
 
   /**
    * Composio toolset for OpenAI framework.
@@ -51,6 +55,12 @@ export class OpenAIToolSet extends BaseComposioToolSet {
     },
     entityId?: Optional<string>
   ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getTools",
+      file: this.fileName,
+      params: filters,
+    });
+
     const mainActions = await this.getToolsSchema(filters, entityId);
     return (
       mainActions.map(
@@ -74,6 +84,11 @@ export class OpenAIToolSet extends BaseComposioToolSet {
     tool: OpenAI.ChatCompletionMessageToolCall,
     entityId: Optional<string> = null
   ): Promise<string> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "executeToolCall",
+      file: this.fileName,
+      params: { tool, entityId },
+    });
     return JSON.stringify(
       await this.executeAction({
         action: tool.function.name,
@@ -87,6 +102,11 @@ export class OpenAIToolSet extends BaseComposioToolSet {
     chatCompletion: OpenAI.ChatCompletion,
     entityId: Optional<string> = null
   ): Promise<Sequence<string>> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "handleToolCall",
+      file: this.fileName,
+      params: { chatCompletion, entityId },
+    });
     const outputs = [];
     for (const message of chatCompletion.choices) {
       if (message.message.tool_calls) {
@@ -104,6 +124,11 @@ export class OpenAIToolSet extends BaseComposioToolSet {
   ): Promise<
     Array<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput>
   > {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "handleAssistantMessage",
+      file: this.fileName,
+      params: { run, entityId },
+    });
     const tool_calls =
       run.required_action?.submit_tool_outputs?.tool_calls || [];
     const tool_outputs: Array<OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput> =
@@ -134,6 +159,12 @@ export class OpenAIToolSet extends BaseComposioToolSet {
     thread: OpenAI.Beta.Threads.Thread,
     entityId: string | null = null
   ): AsyncGenerator<any, void, unknown> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "waitAndHandleAssistantStreamToolCalls",
+      file: this.fileName,
+      params: { client, runStream, thread, entityId },
+    });
+
     let runId = null;
 
     // Start processing the runStream events
@@ -213,6 +244,12 @@ export class OpenAIToolSet extends BaseComposioToolSet {
     thread: OpenAI.Beta.Threads.Thread,
     entityId: Optional<string> = null
   ): Promise<OpenAI.Beta.Threads.Run> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "waitAndHandleAssistantToolCalls",
+      file: this.fileName,
+      params: { client, run, thread, entityId },
+    });
+
     while (["queued", "in_progress", "requires_action"].includes(run.status)) {
       logger.debug(`Current run status: ${run.status}`);
       const tool_outputs = await this.handleAssistantMessage(
