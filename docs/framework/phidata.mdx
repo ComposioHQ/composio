@@ -1,97 +1,42 @@
 ---
-title: "Using Composio With phidata"
+title: "Using Composio With Phidata"
 sidebarTitle: "Phidata"
-icon: "robot"
-description: "Integrate Composio with phidata agents to let them seamlessly interact with external apps"
+icon: "link"
+description: "Integrate Composio with Phidata agents to let them seamlessly interact with external apps"
 ---
 
-**Composio enables** your **phidata assistants** to **connect** with many **tools**!
-
-### Install Packages & Connect a Tool
-
-<Tip>
-  Goal: Star a repository on GitHub with natural language & phidata Assistant
-</Tip>
-
-These commands prepare your environment for seamless interaction between PhiData and Github.
-
-<CodeGroup>
-  ```bash Run Command 
-pip install composio-phidata
-
-#Connect your Github so agents can use it
-composio add github
-
-#Check all supported apps
-composio apps
-  ```
-</CodeGroup>
+## Star A Repository on Github
+In this example, we will use Phidata Agent to star a repository on Github using Composio Tools
 
 <Steps>
-
-<Step title="Import Base Packages">
-<CodeGroup>
-  ```python Default Imports & Configuration
-from composio_phidata import Action, ComposioToolSet
-  ```
-</CodeGroup>
+<Step title="Install Packages">
+```bash Python
+pip install composio-phidata
+```
 </Step>
-<Step title="Fetch all Github PhiData Tools via Composio">
-<CodeGroup>
-  ```python Tools For Github
-toolset = ComposioToolSet()
-composio_tools = toolset.get_tools(
-    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
-)
-  ```
-</CodeGroup>
-</Step>
-<Step title="Setup the Assistant and Execute the Task">
-<CodeGroup>
-  ```python PhiData Agent executes the task
+<Step title="Import Libraries & Initialize ComposioToolSet & LLM">
+```python Python
 from phi.assistant import Assistant
+from composio_phidata import Action, ComposioToolSet
 
-assistant = Assistant(tools=composio_tools, show_tool_calls=True)
-
-assistant.print_response("Can you star composiohq/composio repo?")
-  ```
-
-</CodeGroup>
+toolset = ComposioToolSet()
+```
 </Step>
-<Step title="Check Response">
-<CodeGroup>
-  ```bash Executing Agents
 
-- Running: github_star_a_repository_for_the_authenticated_user(owner=composiohq, repo=composio)
-  I have successfully starred the repository `composiohq/composio` for you. 
-  ```
-
-</CodeGroup>
-
+<Step title="Get All Github Tools">
+You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
+```python Python
+composio_tools = toolset.get_tools(apps=[App.GITHUB])
+```
+</Step>
+<Step title="Define the Assistant">
+```python Python
+assistant = Assistant(tools=composio_tools, show_tool_calls=True)
+```
+</Step>
+<Step title="Execute the Agent">
+```python Python
+assistant.print_response("Can you star composiohq/composio repo?")
+```
 </Step>
 </Steps>
-### Use Specific Actions
-<CodeGroup>
-  ```bash Filter Specific Action
-# To restrict agents from using all the actions, filter specific actions 
-composio_toolset.get_tools(actions=[Action.GITHUB_CREATE_ISSUE])
-  ```
-</CodeGroup>
-
-### Use Specific Apps
-
-<CodeGroup>
-  ```bash Filter Specific App 
-# To restrict agents from using all tools, filter specific tools 
-composio_toolset.get_tools(apps=[App.ASANA, App.GITHUB])
-  ```
-</CodeGroup>
-
-### Filter apps actions by tags
-
-<CodeGroup>
-  ```bash Filter Actions by Tags 
-# To restrict agents from using all actions, filter the actions by tags 
-composio_toolset.get_tools(apps=[App.ASANA], tags=[Tag.ASANA_TASKS]) 
-  ```
-</CodeGroup>

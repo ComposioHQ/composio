@@ -24,6 +24,7 @@ def mock_load_dataset():
         yield mock
 
 
+@pytest.mark.swe
 class TestIntegration:
     image_name = "composio/swe:testing"
 
@@ -32,9 +33,7 @@ class TestIntegration:
         client = docker.from_env()
         dockerfile_path = os.path.join(os.path.dirname(__file__), "test_docker")
         logger.info(f"Building Docker image from path: {dockerfile_path}")
-        image, build_logs = client.images.build(
-            path=dockerfile_path, tag=cls.image_name, rm=True
-        )
+        client.images.build(path=dockerfile_path, tag=cls.image_name, rm=True)
         logger.info("Docker image built successfully.")
 
     def test_setup_workspace(self):

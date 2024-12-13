@@ -11,7 +11,7 @@ composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_tools(
     actions=[
         Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
-        Action.GITHUB_USERS_GET_AUTHENTICATED,
+        Action.GITHUB_GET_THE_AUTHENTICATED_USER,
     ]
 )
 tool_node = ToolNode(tools)

@@ -18,7 +18,7 @@ class RemoveCustomFieldValueRequest(BaseModel):
         alias="field_id",
         description="b8a8-48d8-a0c6-b4200788a683 (uuid)",
     )
-    custom_task_ids: bool = Field(
+    custom_task_ids: t.Optional[bool] = Field(
         default=None,
         alias="custom_task_ids",
         description=(
@@ -26,7 +26,7 @@ class RemoveCustomFieldValueRequest(BaseModel):
             "be `true`. "
         ),
     )
-    team_id: int = Field(
+    team_id: t.Optional[int] = Field(
         default=None,
         alias="team_id",
         description=(

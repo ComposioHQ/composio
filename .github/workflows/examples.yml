@@ -70,8 +70,8 @@ jobs:
           ]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@master
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Run Tests
@@ -85,17 +85,12 @@ jobs:
           COMPOSIO_BASE_URL: ${{ inputs.base_url || secrets.COMPOSIO_BASE_URL || 'https://backend.composio.dev/api' }}
           # TODO(@kaavee): Add Anthropic API key
         run: |
-          sudo apt-get update --fix-missing
-          sudo apt-get autoremove
-          sudo apt-get autoclean
-
           python -m pip install --upgrade pip pipenv pytest
           python -m pip install plugins/${{matrix.package}}
           python -m pip install '.[all]'
           python -m pip install 'numpy<2' python-dotenv
           python -m pip install unstructured
 
-          COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' composio apps update
           COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' PLUGIN_TO_TEST=${{matrix.package}} CI=false pytest -vv tests/test_example.py
           COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' PLUGIN_TO_TEST=${{matrix.package}} CI=false pytest -vv tests/test_load_tools.py
       - name: Slack Notification on Failure

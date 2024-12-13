@@ -13,6 +13,7 @@ import pydantic
 from pydantic import BaseModel, Field
 
 from composio.client.enums import Action as ActionEnum
+from composio.client.enums.base import DEPRECATED_MARKER
 from composio.exceptions import ComposioSDKError
 from composio.utils.logging import WithLogger
 from composio.utils.pydantic import parse_pydantic_error
@@ -25,6 +26,7 @@ ActionRequest = t.TypeVar("ActionRequest")
 Loadable = t.TypeVar("Loadable")
 ToolRegistry = t.Dict[GroupID, t.Dict[str, "Tool"]]
 ActionsRegistry = t.Dict[GroupID, t.Dict[str, "Action"]]
+# TODO: create a Trigger type for this
 TriggersRegistry = t.Dict[GroupID, t.Dict[str, t.Any]]
 
 tool_registry: ToolRegistry = {"runtime": {}, "local": {}, "api": {}}
@@ -38,6 +40,7 @@ def remove_json_ref(data: t.Dict) -> t.Dict:
             jsonref.replace_refs(
                 obj=data,
                 lazy_load=False,
+                merge_props=True,
             ),
             indent=2,
         )
@@ -252,7 +255,7 @@ class ActionBuilder:
             "description",
             cls._get_description(obj),
         )
-        description, *_ = obj.description.split("<<DEPRECATED", maxsplit=1)
+        description, *_ = obj.description.split(DEPRECATED_MARKER, maxsplit=1)
         if len(description) > 1024:
             raise InvalidClassDefinition(
                 f"Description for action `{obj.__name__}` contains more than 1024 characters"
@@ -260,11 +263,16 @@ class ActionBuilder:
 
     @staticmethod
     def _get_description(obj) -> str:
-        return inflection.titleize(
-            (obj.__doc__ if obj.__doc__ else obj.display_name)
-            .replace("\n    ", " ")
-            .strip()
+        description = t.cast(
+            str,
+            (
+                (obj.__doc__ if obj.__doc__ else obj.display_name)
+                .replace("\n    ", " ")
+                .strip()
+            ),
         )
+        description, separator, enum = description.partition(DEPRECATED_MARKER)
+        return inflection.titleize(description) + separator + enum
 
 
 class ActionMeta(type):

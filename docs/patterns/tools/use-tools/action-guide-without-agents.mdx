@@ -1,0 +1,93 @@
+---
+title: "🛠️ How can I use Tools directly?"
+sidebarTitle: "Use Tools Directly"
+icon: "fax"
+description: "Guide to use Tools directly as function calls"
+---
+
+### Using Tools Directly
+
+Composio allows you to execute tools directly as function calls. When calling a tool directly, you'll need to provide the input parameters. Checkout [Get Action Schema](/patterns/tools/use-tools/get-action-inputs) to learn how to get the input parameters for an action.
+
+<CodeGroup>
+ ```python Python
+from composio import ComposioToolSet, Action
+
+tool_set = ComposioToolSet(entity_id="Jessica")
+
+tool_set.execute_action(
+    action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
+    params={"owner": "composiohq", "repo": "composio"},
+    entity_id="Jessica",
+)
+```
+
+```javascript JavaScript
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet();
+const entity = toolset.client.getEntity("Jessica");
+
+const result = await entity.execute(
+    "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
+    {
+        "owner": "composiohq",
+        "repo": "composio"
+    }
+);
+console.log(result);
+  ```
+</CodeGroup>
+
+### Execute Tools or Actions with Natural Language
+You can also execute Tools or Actions by passing in natural language prompts without specific parameters
+<CodeGroup>
+```python Python
+tool_set.execute_action(
+    action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
+    params={},
+    # Natural language prompt
+    text="Star the repo composiohq/composio",
+    entity_id="Jessica",
+)
+```
+
+```javascript JavaScript
+const result = await toolset.client.getEntity("Jessica").execute(
+    'github_star_a_repository_for_the_authenticated_user',
+    {},
+    // Natural language prompt
+    "Star the repo composiohq/composio"
+)
+console.log(result);
+```
+</CodeGroup>
+
+### How to execute custom actions directly?
+You can execute custom actions directly by specifying the action name as shown below. Here `create_draft` is the custom action name. Learn more about custom actions [here](/patterns/tools/build-tools/custom-action-with-auth).
+<CodeGroup>
+```python Python {2}
+toolset.execute_action(
+    action=create_draft,
+    params={
+        "thread_id": "",
+        "message_body": "",
+    },
+    entity_id="Jessica",
+)
+```
+```javascript JavaScript {2}
+const result = await langchainToolset.executeAction({
+    action: "create_draft",
+    params:{
+        thread_id: "",
+        message_body: ""
+    },
+    entityId: "Jessica",
+})
+
+console.log(result);
+```
+</CodeGroup>
+
+

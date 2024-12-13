@@ -1,8 +1,9 @@
+/* eslint-disable no-console */
 import chalk from "chalk";
 import { Command } from "commander";
 
 import client from "../sdk/client/client";
-import { getAPISDK } from "../sdk/utils/config";
+import { getOpenAPIClient } from "../sdk/utils/config";
 import { parseDate } from "./src/util";
 
 export default class ConnectionsCommand {
@@ -16,11 +17,15 @@ export default class ConnectionsCommand {
     command
       .description("List all integrations you have created or connected")
       .option("-a, --active", "Show only active integrations")
+      .option("-r, --remove <id>", "Remove an integration with the given id")
       .action(this.handleAction.bind(this));
   }
 
-  private async handleAction(options: { active: boolean }): Promise<void> {
-    getAPISDK();
+  private async handleAction(options: {
+    active: boolean;
+    remove: string;
+  }): Promise<void> {
+    getOpenAPIClient();
     const { data, error } = await client.appConnector.listAllConnectors({
       query: options.active ? { status: "ACTIVE" } : {},
       throwOnError: false,
@@ -30,17 +35,42 @@ export default class ConnectionsCommand {
       console.log(chalk.red((error as any).message));
       return;
     }
+    const removeIntegrationId = options.remove || "";
+
+    if (removeIntegrationId) {
+      console.log(
+        chalk.yellow(`Removing integration with id ${removeIntegrationId}`)
+      );
+
+      const { error } = await client.appConnector.deleteConnector({
+        path: {
+          integrationId: removeIntegrationId,
+        },
+      });
+
+      if (error) {
+        console.log(chalk.red((error as any).message));
+        return;
+      }
+
+      console.log(
+        chalk.green(
+          `Integration with id ${removeIntegrationId} removed successfully!`
+        )
+      );
+      return;
+    }
 
     for (const integration of data?.items || []) {
       const typedIntegration = integration as Record<string, any>;
       console.log(chalk.cyan(`• ${chalk.bold("Id")}: ${typedIntegration.id}`));
       console.log(
-        chalk.magenta(`  ${chalk.bold("App")}: ${typedIntegration.appName}`),
+        chalk.magenta(`  ${chalk.bold("App")}: ${typedIntegration.appName}`)
       );
       console.log(
         chalk.magenta(
-          `  ${chalk.bold("Created At")}: ${parseDate(typedIntegration.createdAt)}`,
-        ),
+          `  ${chalk.bold("Created At")}: ${parseDate(typedIntegration.createdAt)}`
+        )
       );
       console.log(""); // Add an empty line for better readability between connections
     }

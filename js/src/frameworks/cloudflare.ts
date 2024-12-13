@@ -7,7 +7,8 @@ import {
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
-import { ActionsListResponseDTO } from "../sdk/client";
+import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
+import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 
 // Type definitions
 type Optional<T> = T | null;
@@ -21,18 +22,21 @@ export class CloudflareToolSet extends BaseComposioToolSet {
   // Class constants
   static FRAMEWORK_NAME = "cloudflare";
   static DEFAULT_ENTITY_ID = "default";
+  fileName: string = "js/src/frameworks/cloudflare.ts";
 
   /**
    * Initialize a new CloudflareToolSet instance
-   * 
+   *
    * @param config Configuration options including API key, base URL, entity ID and workspace config
    */
-  constructor(config: {
-    apiKey?: Optional<string>;
-    baseUrl?: Optional<string>;
-    entityId?: string;
-    workspaceConfig?: WorkspaceConfig
-  }={}) {
+  constructor(
+    config: {
+      apiKey?: Optional<string>;
+      baseUrl?: Optional<string>;
+      entityId?: string;
+      workspaceConfig?: WorkspaceConfig;
+    } = {}
+  ) {
     super(
       config.apiKey || null,
       config.baseUrl || COMPOSIO_BASE_URL,
@@ -44,7 +48,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
 
   /**
    * Retrieve available tools based on provided filters
-   * 
+   *
    * @param filters Optional filters for actions, apps, tags and use cases
    * @returns Promise resolving to array of AI text generation tools
    */
@@ -56,8 +60,14 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     usecaseLimit?: Optional<number>;
     filterByAvailableApps?: Optional<boolean>;
   }): Promise<Sequence<AiTextGenerationToolInput>> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getTools",
+      file: this.fileName,
+      params: filters,
+    });
     const actions = await this.getToolsSchema(filters);
-    return actions.map((action) => {
+    return (
+      actions.map((action) => {
         // Format the action schema for Cloudflare Workers AI
         const formattedSchema: AiTextGenerationToolInput["function"] = {
           name: action.name!,
@@ -78,12 +88,13 @@ export class CloudflareToolSet extends BaseComposioToolSet {
           function: formattedSchema,
         };
         return tool;
-      }) || [];
+      }) || []
+    );
   }
 
   /**
    * Execute a single tool call
-   * 
+   *
    * @param tool The tool to execute with name and arguments
    * @param entityId Optional entity ID to execute the tool for
    * @returns Promise resolving to stringified tool execution result
@@ -95,18 +106,26 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     },
     entityId: Optional<string> = null
   ): Promise<string> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "executeToolCall",
+      file: this.fileName,
+      params: { tool, entityId },
+    });
     return JSON.stringify(
-      await this.execute_action(
-        tool.name,
-        typeof tool.arguments === "string" ? JSON.parse(tool.arguments) : tool.arguments,
-        entityId || this.entityId
-      )
+      await this.executeAction({
+        action: tool.name,
+        params:
+          typeof tool.arguments === "string"
+            ? JSON.parse(tool.arguments)
+            : tool.arguments,
+        entityId: entityId || this.entityId,
+      })
     );
   }
 
   /**
    * Handle tool calls from AI text generation output
-   * 
+   *
    * @param result The AI text generation output containing tool calls
    * @param entityId Optional entity ID to execute the tools for
    * @returns Promise resolving to array of tool execution results
@@ -115,6 +134,11 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     result: AiTextGenerationOutput,
     entityId: Optional<string> = null
   ): Promise<Sequence<string>> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "handleToolCall",
+      file: this.fileName,
+      params: { result, entityId },
+    });
     const outputs = [];
     if ("tool_calls" in result && Array.isArray(result.tool_calls)) {
       for (const tool_call of result.tool_calls) {
@@ -125,5 +149,4 @@ export class CloudflareToolSet extends BaseComposioToolSet {
     }
     return outputs;
   }
-
 }

@@ -171,7 +171,17 @@ class HostWorkspace(Workspace):
                 missing[app.slug].add(dependency)
 
         actions = actions or []
-        for action in map(Action, actions):
+
+        def is_action(obj):
+            try:
+                return hasattr(obj, "app")
+            except AttributeError:
+                return False
+
+        actions = t.cast(
+            t.List[Action], [Action(a) if not is_action(a) else a for a in actions]
+        )
+        for action in actions:
             if not action.is_local or action.is_runtime:
                 continue
 
@@ -242,9 +252,9 @@ class HostWorkspace(Workspace):
 
         registry = load_local_tools()
         tool = (
-            registry["runtime"][action.app.upper()]
+            registry["runtime"][action.app]
             if action.is_runtime
-            else registry["local"][action.app.upper()]
+            else registry["local"][action.app]
         )
         return tool.execute(
             action=action.slug,

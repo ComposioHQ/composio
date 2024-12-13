@@ -1,89 +1,49 @@
 ---
-title: "Using Composio JS SDK with Vercel AI SDK"
-sidebarTitle: "Vercel AI SDK"
-icon: "code"
-description: "Use Composio JS SDK with Vercel AI SDK"
+title: "Using Composio With Vercel AI SDK"
+sidebarTitle: "Vercel AI"
+icon: "link"
+description: "Integrate Composio with Vercel AI SDK to let them seamlessly interact with external apps"
 ---
 
+## Star A Repository on Github
+In this example, we will use Vercel AI SDK to star a repository on Github using Composio Tools
+
 <Steps>
-<Step title="Import Dependencies">
- <CodeGroup>
-      ```javascript Import Vercel AI and Vercel AIToolSet
+<Step title="Install Packages">
+```bash JavaScript
+npm install @ai-sdk/openai composio-core ai
+```
+</Step>
+<Step title="Import Libraries & Initialize ComposioToolSet & LLM">
+```javascript JavaScript
 import { openai } from "@ai-sdk/openai";
 import { VercelAIToolSet } from "composio-core";
-import dotenv from "dotenv";
 import { generateText } from "ai";
-dotenv.config();
-      ```
-    </CodeGroup>
+
+const toolset = new VercelAIToolSet();
+```
 </Step>
-<Step title="Define method to let user connect their Google account">
 
- <CodeGroup>
-      ```typescript Define method to let user connect their Google account
-dotenv.config();
-
-const toolset = new VercelAIToolSet({
-        apiKey: process.env.COMPOSIO_API_KEY,
+<Step title="Get All Github Tools">
+You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
+```javascript JavaScript
+const tools = await toolset.getTools({ apps: ["github"] });
+```
+</Step>
+<Step title="Define the Agent">
+```javascript JavaScript
+const output = await generateText({
+    model: openai("gpt-4o-mini"),
+    streamText: false,
+    tools,
+    prompt: 'Star the repository "composiohq/composio"',
+    maxToolRoundtrips: 5,
 });
-
-const appName = "googlesheets";
-
-async function setupUserConnectionIfNotExists(entityId) {
-        const entity = await toolset.client.getEntity(entityId);
-        const connection = await entity.getConnection(appName);
-
-        if (!connection) {
-            const newConnection = await entity.initiateConnection(appName);
-            console.log("Log in via: ", newConnection.redirectUrl);
-            return newConnection.waitUntilActive(60);
-        }
-
-        return connection;
-}
-      ```
-    </CodeGroup>
-
-Learn more about entities [here](introduction/foundations/components/entity/entity-guide)
-
+```
 </Step>
-
-<Step title="Setup Agent with Vercel AI">
-
-<CodeGroup>
-      ```typescript Define your Agent
-async function executeAgent(entityName) {
-        const entity = await toolset.client.getEntity(entityName);
-        await setupUserConnectionIfNotExists(entity.id);
-
-        const tools = await toolset.get_tools({ apps: ["googlesheets"] }, entity.id);
-        const output = await generateText({
-            model: openai("gpt-4-turbo"),
-            streamText: false,
-            tools,
-            prompt: 'Create a google sheet titled "Leads" and populate it with 5 random entries containing first name, last name, and email.', 
-            maxToolRoundtrips: 5,
-        });
-
-        console.log("🎉Output from agent: ", output.text);
-}
-      ```
-    </CodeGroup>
-
-</Step>
-
-<Step title="Invoke Your Agent">
-
-<CodeGroup>
-      ```typescript  Invoke the Agent
-      executeAgent("default_user")
-      ```
-    </CodeGroup>
-
-Tada 🎉! It was this simple to create a powerful Agent with Composio and Vercel AI.
-</Step>
-
-<Step title="Complete code snippet">
-View the complete code snippet [here](https://github.com/ComposioHQ/composio/blob/master/js/examples/vercel/demo.mjs)
+<Step title="Execute the Agent">
+```javascript JavaScript
+console.log(output.text);
+```
 </Step>
 </Steps>

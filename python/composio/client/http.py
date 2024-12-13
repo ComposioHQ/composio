@@ -9,6 +9,7 @@ from requests import Session as SyncSession
 
 from composio.__version__ import __version__
 from composio.utils import logging
+from composio.utils.shared import generate_request_id
 
 
 DEFAULT_RUNTIME = "composio"
@@ -40,6 +41,7 @@ class HttpClient(SyncSession, logging.WithLogger):
         self.headers.update(
             {
                 "x-api-key": api_key,
+                "x-request-id": generate_request_id(),
                 "x-source": SOURCE_HEADER,
                 "x-runtime": runtime or DEFAULT_RUNTIME,
                 "x-composio-version": __version__,

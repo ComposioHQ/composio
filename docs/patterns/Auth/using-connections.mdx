@@ -1,0 +1,156 @@
+---
+title: "How to use Connections?"
+sidebarTitle: "Using Connections"
+icon: "file-user"
+description: "Learn how to use connections"
+---
+
+### Get all connected accounts for an entity
+    <CodeGroup>
+    ```python Python
+    from composio import ComposioToolSet, App
+    toolset = ComposioToolSet()
+
+    # Filter based on entity id
+    entity = toolset.get_entity(id="Jessica")
+    try:
+        # Lists all connections of the entity
+        connected_accounts  = entity.get_connections() 
+        print(connected_accounts)
+    except NoItemsFound as e:
+        print("No connected account found")
+    ```
+    ```javascript JavaScript
+    import { OpenAIToolSet } from "composio-core";
+    const toolset = new OpenAIToolSet();
+
+    // Filter based on entity id
+    const entity = await toolset.client.getEntity("Jessica")
+
+    // lists all connections of the entity
+    const connected_accounts = await entity.getConnections()
+
+    if (connected_accounts.length > 0) {
+        console.log(connected_accounts)
+    }else{
+        console.log("No connected account found")
+    }
+    ```
+    </CodeGroup>
+
+### Check if an entity has a connected account for a particular app
+    <CodeGroup>
+    ```python Python
+    from composio import ComposioToolSet, App
+    from composio.client.exceptions import NoItemsFound
+
+    toolset = ComposioToolSet()
+
+    # Filter based on entity id
+    entity = toolset.get_entity(id="Jessica") 
+
+    try:
+        # Filters based on app name
+        connection_details = entity.get_connection(app=App.GITHUB) 
+        # Filters based on connected account id for an entity
+        connection_details = entity.get_connection(connected_account_id="<connected_account_id>") 
+        print(connection_details)
+    except NoItemsFound as e:
+        print("No connected account found")
+    ```
+    ```javascript JavaScript
+    import { OpenAIToolSet } from "composio-core";
+    const toolset = new OpenAIToolSet();
+
+    // Filter based on entity id
+    const entity = await toolset.client.getEntity("Jessica")
+
+    // Filters based on app name
+    const connectionDetails = await entity.getConnection("github")
+
+    if(connectionDetails){
+        console.log(connectionDetails)
+    }else{
+        console.log("No connection details found")
+    }
+    ```
+    </CodeGroup>
+
+### Fetch the Connection Parameters
+You can use connection parameters locally to build custom actions. The following parameters are typically available:
+
+- `status`: Current state of the connection (`initiated`, `active`, or `failed`)
+- `refresh_token`: Token used to obtain new access tokens
+- `expires_in`: Token expiration time in seconds
+- `token_type`: Type of token (usually "Bearer")
+- `base_url`: Base URL for API requests
+- Additional parameters specific to the connected service
+
+<CodeGroup>
+```python Python
+connected_account = toolset.get_connected_account(connection_request.connectedAccountId)
+
+# Get the parameters for your local usage
+print(toolset.get_auth_params(connection_id=connected_account.id))
+
+#print(connected_account.connectionParams) # use this for raw/advanced cases
+```
+
+```javascript JavaScript
+const connectedAccount = await toolset.client.connectedAccounts.get({
+    connectedAccountId: connectionRequest.connectedAccountId
+})
+
+const connectedAccountAuthParams = await toolset.getAuthParams({
+    connectedAccountId: connectedAccount.connectedAccountId
+})
+
+console.log("Connected account auth params", connectedAccountAuthParams)
+
+//console.log("Connected account raw auth params", connectedAccount.connectionParams)
+
+```
+</CodeGroup>
+
+Example of how connection params would look like 
+
+<CodeGroup>
+``` JSON Auth Params Output
+{
+	"base_url": "", // This is the base URL for the API Ex. https://api.linear.app
+	"params": [{ // This is the list of all the params
+		"name": "x-api-key", 
+		"in": "header", // `in` value could be of type `header`, `query` 
+		"value": "<api-key>"
+	}],
+	"body": {}
+}
+```
+``` Javascript Raw Auth Params Output
+Connected account raw auth params {
+  scope: '********',
+  scopes: '********',
+  id_token: '********',
+  client_id: '********',
+  expires_in: '********',
+  token_type: '********',
+  redirectUrl: 'https://accounts.google.com/o/oauth2/v2/auth?client_id=96-8p515bt7ijf94c2bf4a5lev5jr6r7oc1.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fbackend.composio.dev%2Fapi%2Fv1%2Fauth-apps%2Fadd&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fgmail.modify&response_type=code&access_type=offline&prompt=consent&state=staging_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.30.W9PV-ncrbbPhnjfcgBCN8ZNn9A8V2lzCbXQR2fOXht4&code_challenge=YpyY74p3BJU_-a_mIq4GZyka2FlpnH4APVIfQ&code_challenge_method=S256',
+  callback_url: '********',
+  client_secret: '********',
+  code_verifier: '********',
+  refresh_token: '********',
+  headers: {
+    Authorization: 'Bearer ya29.-BhZtwh0ZLk-',
+  },
+  queryParams: {},
+  base_url: 'https://www.googleapis.com'
+}
+```
+
+</CodeGroup>
+
+
+
+<Note>
+You can fetch connection details after user is redirected back to your app (If redirect was needed) and `connectionStatus` & `connectedAccountId` will be available in the query params.
+</Note>

@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Dict
+import typing as t
 
 import requests
 from pydantic import BaseModel, Field
@@ -23,7 +23,7 @@ class CodeQueryRequest(BaseModel):
         ...,
         description="The question to ask the mentor",
     )
-    sessionId: str = Field(
+    sessionId: t.Optional[str] = Field(
         default=None,
         description="The session id of the conversation, if you want to continue the conversation with the same mentor. defaults to None",
         examples=["1234567890"],
@@ -43,7 +43,7 @@ class CodeQueryRequest(BaseModel):
         description="The timeout for the Greptile API request. Default is 20 seconds",
         examples=[60, 120, 180],
     )
-    branch: str = Field(
+    branch: t.Optional[str] = Field(
         default=None,
         description="The branch to ask the question about. Default is master, if not specified. Example: main, master",
         examples=["master", "main"],
@@ -67,7 +67,7 @@ class CodeQuery(LocalAction[CodeQueryRequest, CodeQueryResponse]):
 
     _tags = ["code_query"]
 
-    def execute(self, request: CodeQueryRequest, metadata: Dict) -> CodeQueryResponse:
+    def execute(self, request: CodeQueryRequest, metadata: t.Dict) -> CodeQueryResponse:
         token = metadata.get("greptile_token", os.getenv("GREPTILE_TOKEN"))
         if token is None:
             self.logger.error("GREPTILE_TOKEN is not set")

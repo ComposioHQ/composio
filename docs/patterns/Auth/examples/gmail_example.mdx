@@ -64,7 +64,7 @@ As stated in the output, you don't need to fetch any parameters from the user. S
 <CodeGroup>
 ```python Python Initiate connection 
 # This is the URL that the user will be redirected to after completing the authentication process
-redirect_url = "https://yourwebsite.com/connection/callback"
+redirect_url = "https://yourwebsite.com/connection/success"
 # this is only useful for oauth based flows involving redirect based authentication. 
 
 entity_id = "Jessica"  # This is the unique identifier for the user
@@ -92,17 +92,16 @@ else:
 
 ```javascript Javascript Initiate connection 
 
-const redirectUrl = "https://yourwebsite.com/connection/callback"
+const redirectUrl = "https://yourwebsite.com/connection/success"
 
 const entityId = "Jessica" // This is the unique identifier for the user
 
 const connectionRequest = await toolset.client.connectedAccounts.initiate({
-    data: {
-        ...collectedParams // send collected params
-    },
     entityId: entityId,
     integrationId: expectedInputFields.integrationId, 
-    redirectUri: redirectUrl
+    redirectUri: redirectUrl,
+    authMode: "OAUTH2",
+    authConfig: {},
 });
 
 if (connectionRequest.connectionStatus === "INITIATED") {
