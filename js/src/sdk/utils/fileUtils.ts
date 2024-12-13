@@ -21,7 +21,7 @@ export const getComposioFilesDir = () => {
 
 export const saveFile = (file: string, content: string) => {
   const composioFilesDir = getComposioFilesDir();
-  const filePath = `${composioFilesDir}/${file}`;
+  const filePath = path.join(composioFilesDir, path.basename(file));
   fs.writeFileSync(filePath, content);
 
   return filePath;

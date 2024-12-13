@@ -23,7 +23,7 @@ declare module "axios" {
 
 // File path helpers
 export const userDataPath = () =>
-  path.join(os.homedir(), LOCAL_CACHE_DIRECTORY_NAME, USER_DATA_FILE_NAME);
+  path.join(os.homedir(), LOCAL_CACHE_DIRECTORY_NAME, 'files', USER_DATA_FILE_NAME);
 export const getUserDataJson = () => {
   try {
     const data = fs.readFileSync(userDataPath(), "utf8");
