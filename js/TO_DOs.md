@@ -5,3 +5,5 @@ List of things to do for Composio JS SDK
 - [ ] Move away from class based to functional based code
 - [ ] Add react code library
 - [ ] Add support via browserify
+- [ ] Add more edge cases
+- [ ] Sign JS SDK CLIs
