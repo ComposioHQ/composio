@@ -46,9 +46,6 @@ jobs:
     - name: pnpm build
       run: pnpm build
 
-    - name: pnpm build cli
-      run: pnpm build:cli
-
     - name: pnpm publish
       working-directory: js/dist
       run: |
