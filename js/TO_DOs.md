@@ -1,0 +1,4 @@
+- [ ] Decrease bundle size more to less than 500 kb.
+- [ ] Move away from axios
+- [ ] Optimise code from openapi spec
+- [ ] Move away from class based to functional based code
