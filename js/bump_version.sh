@@ -15,13 +15,13 @@ else
 fi
 
 # Update version in package.dist.json
-sed -i '' "s/\"version\": \"$current_version\"/\"version\": \"$new_version\"/" package.dist.json
+sed -i.bak "s/\"version\": \"$current_version\"/\"version\": \"$new_version\"/" package.dist.json && rm package.dist.json.bak
 
-# Update version in package.json
-sed -i '' "s/\"version\": \"$current_version_pkg\"/\"version\": \"$new_version\"/" package.json
+# Update version in package.json  
+sed -i.bak "s/\"version\": \"$current_version_pkg\"/\"version\": \"$new_version\"/" package.json && rm package.json.bak
 
 # Update version in src/constants.js
-sed -i '' "s/COMPOSIO_VERSION = \`$current_version\`/COMPOSIO_VERSION = \`$new_version\`/" src/constants.js
+sed -i.bak "s/COMPOSIO_VERSION = \`$current_version\`/COMPOSIO_VERSION = \`$new_version\`/" src/constants.js && rm src/constants.js.bak
 
 echo "Version updated from $current_version to $new_version in package.dist.json"
 echo "Version updated from $current_version_pkg to $new_version in package.json"
