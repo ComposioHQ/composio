@@ -1,6 +1,7 @@
 // Constants
-export const LOCAL_CACHE_DIRECTORY_NAME = ".composio";
+export const COMPOSIO_DIR = ".composio";
 export const USER_DATA_FILE_NAME = "user_data.json";
+export const TEMP_FILES_DIRECTORY_NAME = "files";
 export const DEFAULT_BASE_URL = "https://backend.composio.dev";
 
 export const TELEMETRY_URL = "https://app.composio.dev";

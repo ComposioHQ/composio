@@ -62,7 +62,7 @@ const fileProcessor = ({
   const fileData = toolResponse.data.response_data.file;
   const { name, content } = fileData as { name: string; content: string };
   const file_name_prefix = `${action}_${Date.now()}`;
-  const filePath = saveFile(file_name_prefix, content);
+  const filePath = saveFile(file_name_prefix, content, true);
 
   // @ts-ignore
   delete toolResponse.data.response_data.file;

@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import {
-  LOCAL_CACHE_DIRECTORY_NAME,
+  COMPOSIO_DIR,
   USER_DATA_FILE_NAME,
   DEFAULT_BASE_URL,
 } from "./constants";
@@ -23,7 +23,8 @@ declare module "axios" {
 
 // File path helpers
 export const userDataPath = () =>
-  path.join(os.homedir(), LOCAL_CACHE_DIRECTORY_NAME, USER_DATA_FILE_NAME);
+  path.join(os.homedir(), COMPOSIO_DIR, USER_DATA_FILE_NAME);
+
 export const getUserDataJson = () => {
   try {
     const data = fs.readFileSync(userDataPath(), "utf8");
