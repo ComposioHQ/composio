@@ -9,7 +9,7 @@ import { COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME } from "./constants";
  * @param createDirIfNotExists - Whether to create the directory if it doesn't exist.
  * @returns The path to the Composio directory.
  */
-export const getComposioDir = (createDirIfNotExists: boolean = true) => {
+export const getComposioDir = (createDirIfNotExists: boolean = false) => {
   const composioDir = path.join(os.homedir(), COMPOSIO_DIR);
   if (createDirIfNotExists && !fs.existsSync(composioDir)) {
     fs.mkdirSync(composioDir, { recursive: true });
@@ -23,7 +23,7 @@ export const getComposioDir = (createDirIfNotExists: boolean = true) => {
  * @returns The path to the Composio temporary files directory.
  */
 export const getComposioTempFilesDir = (
-  createDirIfNotExists: boolean = true
+  createDirIfNotExists: boolean = false
 ) => {
   const composioFilesDir = path.join(
     os.homedir(),
