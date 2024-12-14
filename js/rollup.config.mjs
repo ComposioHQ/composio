@@ -66,11 +66,5 @@ export default [
       // List any external dependencies here
     ]
   },
-  ...generateBundleAndTypeBundles('index'),
-  ...generateBundleAndTypeBundles('frameworks/cloudflare'),
-  ...generateBundleAndTypeBundles('frameworks/langchain'),
-  ...generateBundleAndTypeBundles('frameworks/openai'),
-  ...generateBundleAndTypeBundles('frameworks/langgraph'),
-  ...generateBundleAndTypeBundles('frameworks/vercel'),
-  ...generateBundleAndTypeBundles('sdk/index'),
+  ...generateBundleAndTypeBundles('index')
 ];
