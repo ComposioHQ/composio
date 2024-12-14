@@ -5,6 +5,7 @@ import type Docker from "dockerode";
 import type CliProgress from "cli-progress";
 import { IWorkspaceConfig, WorkspaceConfig } from "../config";
 import logger from "../../utils/logger";
+import { getComposioDir } from "../../sdk/utils/fileUtils";
 
 const ENV_COMPOSIO_DEV_MODE = "COMPOSIO_DEV_MODE";
 const ENV_COMPOSIO_SWE_AGENT = "COMPOSIO_SWE_AGENT";
@@ -96,7 +97,7 @@ export class DockerWorkspace extends RemoteWorkspace {
       const os = require("node:os");
 
       const COMPOSIO_PATH = path.resolve(__dirname, "../../../../python/");
-      const COMPOSIO_CACHE = path.join(os.homedir(), ".composio");
+      const COMPOSIO_CACHE = getComposioDir(false);
 
       volumeBindings.push(
         ...[
