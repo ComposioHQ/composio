@@ -139,7 +139,7 @@ class Composio:
     @http.setter
     def http(self, value: HttpClient) -> None:
         self._http = value
-        
+
     @property
     def long_timeout_http(self) -> HttpClient:
         if not self._long_timeout_http:
@@ -150,7 +150,7 @@ class Composio:
                 timeout=180.0,
             )
         return self._long_timeout_http
-    
+
     @long_timeout_http.setter
     def long_timeout_http(self, value: HttpClient) -> None:
         self._long_timeout_http = value
