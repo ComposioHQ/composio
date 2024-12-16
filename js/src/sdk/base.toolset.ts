@@ -13,7 +13,7 @@ import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 import { getUserDataJson } from "./utils/config";
 import { z } from "zod";
 
-export type ActionData = { 
+export type ActionData = {
   name: string;
   display_name: string;
   description: string;
@@ -35,12 +35,10 @@ export type ActionData = {
     actionName: string;
     toolName: string;
   };
-  
 };
 type GetListActionsResponse = {
   items: ActionData[];
 };
-
 
 const ZExecuteActionParams = z.object({
   action: z.string(),
@@ -341,7 +339,7 @@ export class ComposioToolSet {
     });
   }
 
-  modifyActionForLocalExecution(toolSchema:ActionData) {
+  modifyActionForLocalExecution(toolSchema: ActionData) {
     const properties = convertReqParams(toolSchema.parameters.properties);
     toolSchema.parameters.properties = properties;
     const response = toolSchema.response.properties as Record<string, unknown>;

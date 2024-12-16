@@ -126,7 +126,11 @@ export class CEG {
       : SDK_ERROR_CODES.BACKEND.UNKNOWN;
     const predefinedError = BASE_ERROR_CODE_INFO[errorCode];
 
-    const errorDetails = getAPIErrorDetails(errorCode, error as AxiosError<ErrorResponseData>, predefinedError);
+    const errorDetails = getAPIErrorDetails(
+      errorCode,
+      error as AxiosError<ErrorResponseData>,
+      predefinedError
+    );
 
     const metadata = generateMetadataFromAxiosError(error);
     throw new ComposioError(

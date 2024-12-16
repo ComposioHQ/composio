@@ -45,9 +45,7 @@ export class ActionRegistry {
     this.customActions = new Map();
   }
 
-  async createAction(
-    options: CreateActionOptions
-  ): Promise<ActionData> {
+  async createAction(options: CreateActionOptions): Promise<ActionData> {
     const { callback } = options;
     if (typeof callback !== "function") {
       throw new Error("Callback must be a function");
@@ -104,7 +102,9 @@ export class ActionRegistry {
   }
 
   async getAllActions(): Promise<Array<ActionData>> {
-    return Array.from(this.customActions.values()).map((action) => action.schema as ActionData);
+    return Array.from(this.customActions.values()).map(
+      (action) => action.schema as ActionData
+    );
   }
 
   async executeAction(
@@ -135,13 +135,13 @@ export class ActionRegistry {
           `Connection with app name ${toolName} and entityId ${metadata.entityId} not found`
         );
       }
-      const connectionParams = (connection as unknown as Record<string, unknown>).connectionParams as Record<string, unknown>;
+      const connectionParams = (
+        connection as unknown as Record<string, unknown>
+      ).connectionParams as Record<string, unknown>;
       authCredentials = {
         headers: connectionParams?.headers,
         queryParams: connectionParams?.queryParams,
-        baseUrl:
-          connectionParams?.baseUrl ||
-          connectionParams?.base_url,
+        baseUrl: connectionParams?.baseUrl || connectionParams?.base_url,
       };
     }
     if (typeof callback !== "function") {
