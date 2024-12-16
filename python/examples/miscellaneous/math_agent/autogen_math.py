@@ -15,7 +15,15 @@ chatbot = AssistantAgent(
     system_message="Reply TERMINATE when the task is done or when user's content is empty",
     llm_config={
         "config_list": [
-            {"model": "gpt-4o", "api_key": os.environ["OPENAI_API_KEY"]},
+            {
+                "model": "gpt-4o",
+                "api_key": os.environ["OPENAI_API_KEY"],
+                "base_url": "https://oai.helicone.ai/v1",
+                "default_headers": {
+                    "Helicone-Auth": f"Bearer {os.environ['HELICONE_API_KEY']}",
+                    "Helicone-Cache-Enabled": "true",
+                },
+            },
         ]
     },
 )
