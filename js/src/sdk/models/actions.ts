@@ -280,7 +280,7 @@ export class Actions {
           limit: data.limit || undefined,
         },
         body: {
-          useCase: data.useCase
+          useCase: data.useCase,
         },
       });
       return res!.items.map((item) => item.actions).flat() || [];
