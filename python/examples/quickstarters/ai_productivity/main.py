@@ -11,7 +11,15 @@ logger = get_logger(__name__)
 dotenv.load_dotenv()
 
 # Initialize tools.
-openai_client = OpenAI()
+import os
+
+openai_client = OpenAI(
+    base_url="https://oai.helicone.ai/v1",
+    default_headers={
+        "Helicone-Auth": f"Bearer {os.environ['HELICONE_API_KEY']}",
+        "Helicone-Cache-Enabled": "true",
+    },
+)
 composio_toolset = ComposioToolSet()
 
 # Retrieve actions

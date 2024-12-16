@@ -20,7 +20,13 @@ logging.basicConfig(level=logging.INFO)
 load_dotenv()
 
 # Initialize clients
-openai_client = OpenAI()
+openai_client = OpenAI(
+    base_url="https://oai.helicone.ai/v1",
+    default_headers={
+        "Helicone-Auth": f"Bearer {os.environ['HELICONE_API_KEY']}",
+        "Helicone-Cache-Enabled": "true",
+    },
+)
 composio_toolset = ComposioToolSet()
 
 # Audio settings
@@ -32,6 +38,7 @@ CHUNK = 1024  # Frames per buffer
 REALTIME_API_URL = (
     "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01"
 )
+
 
 class RealtimeAgent:
     def __init__(self):
@@ -468,26 +475,37 @@ def handle_gmail_message(event: TriggerEventData):
     context = f"New email from {sender} with subject: {subject}"
     asyncio.run(agent.handle_event(context))
 
+
 def get_slack_channel_name(channel_id):
-    response = composio_toolset.execute_action(action=Action.SLACK_LIST_ALL_SLACK_TEAM_CHANNELS_WITH_VARIOUS_FILTERS, params={"limit": 1000})
-    if response.get('data', {}).get('ok'):
-        channels = response['data'].get('channels', [])
+    response = composio_toolset.execute_action(
+        action=Action.SLACK_LIST_ALL_SLACK_TEAM_CHANNELS_WITH_VARIOUS_FILTERS,
+        params={"limit": 1000},
+    )
+    if response.get("data", {}).get("ok"):
+        channels = response["data"].get("channels", [])
         for channel in channels:
-            if channel.get('id') == channel_id:
-                return channel.get('name')
+            if channel.get("id") == channel_id:
+                return channel.get("name")
     return channel_id
 
+
 def get_slack_user_name(user_id):
-    response = composio_toolset.execute_action(action=Action.SLACK_RETRIEVE_DETAILED_USER_INFORMATION, params={"user": user_id})
-    if response.get('data', {}).get('ok'):
-        return response['data'].get('user', {}).get('real_name')
+    response = composio_toolset.execute_action(
+        action=Action.SLACK_RETRIEVE_DETAILED_USER_INFORMATION, params={"user": user_id}
+    )
+    if response.get("data", {}).get("ok"):
+        return response["data"].get("user", {}).get("real_name")
     return user_id
 
+
 def get_current_user_info():
-    response = composio_toolset.execute_action(action=Action.SLACK_RETRIEVE_A_USER_S_IDENTITY_DETAILS, params={})
-    if response.get('data', {}).get('ok'):
-        return response['data'].get('user', {}).get('id')
+    response = composio_toolset.execute_action(
+        action=Action.SLACK_RETRIEVE_A_USER_S_IDENTITY_DETAILS, params={}
+    )
+    if response.get("data", {}).get("ok"):
+        return response["data"].get("user", {}).get("id")
     return None
+
 
 @listener.callback(filters={"trigger_name": "slack_receive_message"})
 def handle_slack_message(event: TriggerEventData):

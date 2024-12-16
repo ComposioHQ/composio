@@ -9,7 +9,13 @@ channel_id = os.getenv("CHANNEL_ID", "")
 if channel_id == "":
     channel_id = input("Enter Channel id:")
 
-openai_client = OpenAI()
+openai_client = OpenAI(
+    base_url="https://oai.helicone.ai/v1",
+    default_headers={
+        "Helicone-Auth": f"Bearer {os.environ['HELICONE_API_KEY']}",
+        "Helicone-Cache-Enabled": "true",
+    },
+)
 
 code_review_assistant_prompt = (
     """
