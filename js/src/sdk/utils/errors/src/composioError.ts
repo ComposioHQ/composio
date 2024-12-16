@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from "uuid";
+import { getUUID } from "../../../../utils/getUUID";
 import { getLogLevel } from "../../../../utils/logger";
 import { logError } from "..";
 
@@ -47,7 +47,7 @@ export class ComposioError extends Error {
     this.possibleFix = possibleFix;
     this.timestamp = new Date().toISOString();
     this.metadata = metadata;
-    this.errorId = uuidv4();
+    this.errorId = getUUID();
 
     let originalErrorString: string = "";
 
