@@ -226,9 +226,9 @@ export class Actions {
           showEnabledOnly: data.showEnabledOnly,
           usecaseLimit: data.usecaseLimit || undefined,
         },
-        body:{
+        body: {
           useCase: data.useCase as string,
-        }
+        },
       });
       return response.data!;
     } catch (error) {
