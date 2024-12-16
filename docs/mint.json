@@ -220,8 +220,7 @@
       "api-reference/actions/list-actions",
       "api-reference/actions/get-action-inputs",
       "api-reference/actions/get-single-action",
-      "api-reference/actions/execute-an-action",
-      "api-reference/actions/execute-with-http-client"
+      "api-reference/actions/execute-an-action"
     ]
   },
   {
