@@ -1,4 +1,3 @@
-import os
 import time
 import logging
 from google.oauth2 import service_account
@@ -7,37 +6,26 @@ from openai import OpenAI
 from composio_openai import ComposioToolSet, App, Action
 
 # Set up logging configuration
-logging.basicConfig(
-    filename="sheet_monitor.log",
-    level=logging.INFO,
-    format="%(asctime)s:%(levelname)s:%(message)s",
-)
-
+logging.basicConfig(filename='sheet_monitor.log', level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
 
 def get_all_sheets(spreadsheet_id, credentials):
-    logging.info(f"Fetching all sheets for spreadsheet: {spreadsheet_id}")
+    logging.info(f'Fetching all sheets for spreadsheet: {spreadsheet_id}')
     service = build("sheets", "v4", credentials=credentials)
     sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
-    sheets = sheet_metadata.get("sheets", "")
-    logging.info(f"Found sheets: {sheets}")
+    sheets = sheet_metadata.get('sheets', '')
+    logging.info(f'Found sheets: {sheets}')
     return sheets
 
-
 def get_sheet_data(service, spreadsheet_id, sheet_name):
-    logging.info(f"Getting data for sheet: {sheet_name}")
+    logging.info(f'Getting data for sheet: {sheet_name}')
     range_name = f"{sheet_name}!A:Z"  # Adjust the range as needed
-    result = (
-        service.spreadsheets()
-        .values()
-        .get(spreadsheetId=spreadsheet_id, range=range_name)
-        .execute()
-    )
+    result = service.spreadsheets().values().get(
+        spreadsheetId=spreadsheet_id, range=range_name).execute()
     logging.info(f'Data retrieved for sheet {sheet_name}: {result.get("values", [])}')
-    return result.get("values", [])
-
+    return result.get('values', [])
 
 def compare_data(previous, current):
-    logging.info("Comparing previous and current data...")
+    logging.info('Comparing previous and current data...')
     changes = []
 
     # Check for deletions and updates
@@ -56,18 +44,10 @@ def compare_data(previous, current):
 
     return changes
 
-
 def execute_openai_composio(changes):
-    logging.info("Executing changes on company database...")
+    logging.info('Executing changes on company database...')
 
-    openai_client = OpenAI(
-        base_url="https://oai.helicone.ai/v1",
-        default_headers={
-            "Helicone-Auth": f"Bearer {os.environ['HELICONE_API_KEY']}",
-            "Helicone-Cache-Enabled": "true",
-            "Helicone-User-Id": "GitHub-CI-Example-Tests",
-        },
-    )
+    openai_client = OpenAI()
     composio_toolset = ComposioToolSet()
     actions = composio_toolset.get_tools(apps=[App.SQLTOOL])
 
@@ -86,11 +66,14 @@ def execute_openai_composio(changes):
 
     thread = openai_client.beta.threads.create()
     message = openai_client.beta.threads.messages.create(
-        thread_id=thread.id, role="user", content=my_task
+        thread_id=thread.id,
+        role="user",
+        content=my_task
     )
 
     run = openai_client.beta.threads.runs.create(
-        thread_id=thread.id, assistant_id=assistant.id
+        thread_id=thread.id,
+        assistant_id=assistant.id
     )
 
     response_after_tool_calls = composio_toolset.wait_and_handle_assistant_tool_calls(
@@ -99,105 +82,76 @@ def execute_openai_composio(changes):
         thread=thread,
     )
 
-    logging.info("Database changes executed.")
+    logging.info('Database changes executed.')
     logging.info(response_after_tool_calls)
-    print("Database changes executed:")
+    print('Database changes executed:')
     print(response_after_tool_calls)
     return response_after_tool_calls
 
 
 def create_spreadsheet(service, title):
-    spreadsheet = {"properties": {"title": title}}
-    spreadsheet = (
-        service.spreadsheets()
-        .create(body=spreadsheet, fields="spreadsheetId")
-        .execute()
-    )
+    spreadsheet = {
+        'properties': {
+            'title': title
+        }
+    }
+    spreadsheet = service.spreadsheets().create(body=spreadsheet, fields='spreadsheetId').execute()
     logging.info(f"Created spreadsheet with ID: {spreadsheet.get('spreadsheetId')}")
-    return spreadsheet.get("spreadsheetId")
-
+    return spreadsheet.get('spreadsheetId')
 
 def read_values(service, spreadsheet_id, range_name):
-    result = (
-        service.spreadsheets()
-        .values()
-        .get(spreadsheetId=spreadsheet_id, range=range_name)
-        .execute()
-    )
-    values = result.get("values", [])
+    result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
+    values = result.get('values', [])
     logging.info(f"Read values from {range_name}: {values}")
     return values
 
-
 def update_values(service, spreadsheet_id, range_name, values):
-    body = {"values": values}
-    result = (
-        service.spreadsheets()
-        .values()
-        .update(
-            spreadsheetId=spreadsheet_id,
-            range=range_name,
-            valueInputOption="USER_ENTERED",
-            body=body,
-        )
-        .execute()
-    )
+    body = {
+        'values': values
+    }
+    result = service.spreadsheets().values().update(
+        spreadsheetId=spreadsheet_id, range=range_name,
+        valueInputOption='USER_ENTERED', body=body).execute()
     logging.info(f"Updated {result.get('updatedCells')} cells")
 
-
 def add_values(service, spreadsheet_id, range_name, values):
-    body = {"values": values}
-    result = (
-        service.spreadsheets()
-        .values()
-        .append(
-            spreadsheetId=spreadsheet_id,
-            range=range_name,
-            valueInputOption="USER_ENTERED",
-            body=body,
-        )
-        .execute()
-    )
+    body = {
+        'values': values
+    }
+    result = service.spreadsheets().values().append(
+        spreadsheetId=spreadsheet_id, range=range_name,
+        valueInputOption='USER_ENTERED', body=body).execute()
     logging.info(f"Added {result.get('updates').get('updatedRows')} rows")
 
 
 def perform_user_operation(service, spreadsheet_id):
-    operation = input(
-        "What operation do you want to perform? (create/read/update/add): "
-    ).lower()
+    operation = input("What operation do you want to perform? (create/read/update/add): ").lower()
 
-    if operation == "create":
+    if operation == 'create':
         title = input("Enter the title for the new spreadsheet: ")
         new_spreadsheet_id = create_spreadsheet(service, title)
         print(f"New spreadsheet created with ID: {new_spreadsheet_id}")
-    elif operation == "read":
+    elif operation == 'read':
         range_name = input("Enter the range to read (e.g., Sheet1!A1:B10): ")
         values = read_values(service, spreadsheet_id, range_name)
         print(f"Values read: {values}")
-    elif operation == "update":
+    elif operation == 'update':
         range_name = input("Enter the range to update (e.g., Sheet1!A1:B2): ")
-        values = eval(
-            input(
-                "Enter the values as a list of lists (e.g., [['A1', 'B1'], ['A2', 'B2']]): "
-            )
-        )
+        values = eval(input("Enter the values as a list of lists (e.g., [['A1', 'B1'], ['A2', 'B2']]): "))
         update_values(service, spreadsheet_id, range_name, values)
-    elif operation == "add":
+    elif operation == 'add':
         range_name = input("Enter the range to append to (e.g., Sheet1!A:B): ")
-        values = eval(
-            input(
-                "Enter the values as a list of lists (e.g., [['New A1', 'New B1'], ['New A2', 'New B2']]): "
-            )
-        )
+        values = eval(input("Enter the values as a list of lists (e.g., [['New A1', 'New B1'], ['New A2', 'New B2']]): "))
         add_values(service, spreadsheet_id, range_name, values)
     else:
         print("Invalid operation. Please choose create, read, update, or add.")
 
 
 def monitor_all_sheets(spreadsheet_id, interval=10):
-    logging.info(f"Starting to monitor spreadsheet: {spreadsheet_id}")
+    logging.info(f'Starting to monitor spreadsheet: {spreadsheet_id}')
     credentials = service_account.Credentials.from_service_account_file(
-        "key.json", scopes=["https://www.googleapis.com/auth/spreadsheets"]
+        "key.json",
+        scopes=["https://www.googleapis.com/auth/spreadsheets"]
     )
     service = build("sheets", "v4", credentials=credentials)
 
@@ -209,13 +163,10 @@ def monitor_all_sheets(spreadsheet_id, interval=10):
     initial_changes = []
 
     for sheet in all_sheets:
-        sheet_name = sheet["properties"]["title"]
+        sheet_name = sheet['properties']['title']
         sheet_data = get_sheet_data(service, spreadsheet_id, sheet_name)
         previous_data[sheet_name] = sheet_data
-        initial_changes.extend(
-            [f"Initial data for sheet '{sheet_name}':"]
-            + [f"Row {i+1} added: {row}" for i, row in enumerate(sheet_data)]
-        )
+        initial_changes.extend([f"Initial data for sheet '{sheet_name}':"] + [f"Row {i+1} added: {row}" for i, row in enumerate(sheet_data)])
 
     # Execute OpenAI and Composio code for initial sync
     execute_openai_composio(initial_changes)
@@ -224,17 +175,13 @@ def monitor_all_sheets(spreadsheet_id, interval=10):
     print("Initial sync complete.")
 
     while True:
-        continue_monitoring = input(
-            "Do you want to perform manual operations? (Yes/No): "
-        ).lower()
+        continue_monitoring = input("Do you want to perform manual operations? (Yes/No): ").lower()
 
-        if continue_monitoring == "yes":
+        if continue_monitoring == 'yes':
             while True:
                 perform_user_operation(service, spreadsheet_id)
-                continue_operations = input(
-                    "Do you want to perform another operation? (Yes/No): "
-                ).lower()
-                if continue_operations != "yes":
+                continue_operations = input("Do you want to perform another operation? (Yes/No): ").lower()
+                if continue_operations != 'yes':
                     break
 
         logging.info("Monitoring for changes...")
@@ -248,7 +195,7 @@ def monitor_all_sheets(spreadsheet_id, interval=10):
             all_changes = []
 
             for sheet in all_sheets:
-                sheet_name = sheet["properties"]["title"]
+                sheet_name = sheet['properties']['title']
                 current_data = get_sheet_data(service, spreadsheet_id, sheet_name)
 
                 if current_data != previous_data[sheet_name]:
@@ -273,7 +220,6 @@ def monitor_all_sheets(spreadsheet_id, interval=10):
             # Check if it's time to ask about manual operations again
             if time.time() - monitoring_start_time >= 300:  # 5 minutes
                 break
-
 
 # Usage
 spreadsheet_id = "1i8OwCM_o2E4tmpZ18-2Jgu8G42ntPWoUgGhfbcyxnoo"

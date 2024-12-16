@@ -26,14 +26,7 @@ RESPOND_ONLY_IF_TAGGED = (
 
 # Step 2: Initialize clients and toolsets
 # Initialize OpenAI client
-openai_client = OpenAI(
-    base_url="https://oai.helicone.ai/v1",
-    default_headers={
-        "Helicone-Auth": f"Bearer {os.environ['HELICONE_API_KEY']}",
-        "Helicone-Cache-Enabled": "true",
-        "Helicone-User-Id": "GitHub-CI-Example-Tests",
-    },
-)
+openai_client = OpenAI()
 
 # Initialize Composio OpenAI toolset
 # This toolset provides integration between Composio and OpenAI Assistant Framework

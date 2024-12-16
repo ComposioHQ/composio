@@ -2,7 +2,6 @@
 from json import tool
 import os
 import dotenv  # For loading environment variables from a .env file
-
 # Import modules from Composio and LlamaIndex
 import re
 from datetime import datetime
@@ -11,7 +10,6 @@ from crewai import Agent, Task, Crew, Process
 from langchain_openai import ChatOpenAI
 from composio.client.collections import TriggerEventData
 import json
-
 # Load environment variables from a .env file
 dotenv.load_dotenv()
 
@@ -22,26 +20,22 @@ RESPOND_ONLY_IF_TAGGED = (
     True  # Set to True to have the bot respond only when tagged in a message
 )
 import agentops
-
 agentops.init(os.environ["AGENTOPS_API_KEY"])
 
-# from langchain_cerebras import ChatCerebras
+#from langchain_cerebras import ChatCerebras
 
-# llm = ChatCerebras(model="llama3.1-70b")
+#llm = ChatCerebras(model="llama3.1-70b")
 llm = ChatOpenAI(model="gpt-4o")
 
 composio_toolset = ComposioToolSet()
 composio_tools = composio_toolset.get_tools(
-    actions=[
-        Action.LINEAR_CREATE_LINEAR_ISSUE,
-        Action.LINEAR_LIST_LINEAR_PROJECTS,
-        Action.LINEAR_LIST_LINEAR_TEAMS,
-        Action.GMAIL_SEND_EMAIL,
-    ]
+    actions=[Action.LINEAR_CREATE_LINEAR_ISSUE,
+             Action.LINEAR_LIST_LINEAR_PROJECTS,
+             Action.LINEAR_LIST_LINEAR_TEAMS,
+             Action.GMAIL_SEND_EMAIL]
 )
 slack_listener = composio_toolset.create_trigger_listener()
 gmail_listener = composio_toolset.create_trigger_listener()
-
 
 def proc(mail_message, sender_mail):
     print("listener")
@@ -53,6 +47,7 @@ def proc(mail_message, sender_mail):
         },
     )
     slack_listener.listen()
+
 
 
 issue_creator_agent = Agent(
@@ -88,6 +83,7 @@ def callback_new_message(event: TriggerEventData) -> None:
     channel_id = payload.get("channel", "")
     ts = payload.get("ts", "")
 
+    
     issue_task = Task(
         description=(
             f"""
@@ -102,14 +98,14 @@ def callback_new_message(event: TriggerEventData) -> None:
         ),
         expected_output="issue was created",
         agent=issue_creator_agent,
-        tools=composio_tools,
+        tools=composio_tools
     )
-
+    
     crew = Crew(
         agents=[issue_creator_agent],
         tasks=[issue_task],
         process=Process.sequential,
-        tools=composio_tools,
+        tools = composio_tools
     )
 
     result = crew.kickoff()
@@ -121,7 +117,7 @@ def callback_new_message(event: TriggerEventData) -> None:
             "text": result.raw,
         },
     )
-
+        
 
 @gmail_listener.callback(filters={"trigger_name": "gmail_new_gmail_message"})
 def callback_new_message(event: TriggerEventData) -> None:
@@ -140,8 +136,10 @@ def callback_new_message(event: TriggerEventData) -> None:
     print(sender_mail)
     print("WAITING FOR SLACK CONFIRMATION")
     composio_toolset_1 = ComposioToolSet(
-        processors={
-            "pre": {Action.LINEAR_CREATE_LINEAR_ISSUE: proc(mail_message, sender_mail)},
+    processors={
+        "pre": {
+            Action.LINEAR_CREATE_LINEAR_ISSUE: proc(mail_message, sender_mail)
+            },
         }
     )
 
@@ -149,3 +147,5 @@ def callback_new_message(event: TriggerEventData) -> None:
 print("GMAIL LISTENING")
 
 gmail_listener.listen()
+
+

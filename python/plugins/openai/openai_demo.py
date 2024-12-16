@@ -2,7 +2,6 @@
 OpenAI demo.
 """
 
-import os
 import dotenv
 from openai import OpenAI
 
@@ -13,13 +12,7 @@ from composio_openai import App, ComposioToolSet
 dotenv.load_dotenv()
 
 # Initialize tools.
-openai_client = OpenAI(
-    base_url="https://oai.helicone.ai/v1",
-    default_headers={
-        "Helicone-Auth": f"Bearer {os.environ['HELICONE_API_KEY']}",
-        "Helicone-Cache-Enabled": "true",
-    },
-)
+openai_client = OpenAI()
 composio_toolset = ComposioToolSet()
 
 # Define task.
