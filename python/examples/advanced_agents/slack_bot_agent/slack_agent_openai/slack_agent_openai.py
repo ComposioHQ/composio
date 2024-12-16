@@ -31,6 +31,7 @@ openai_client = OpenAI(
     default_headers={
         "Helicone-Auth": f"Bearer {os.environ['HELICONE_API_KEY']}",
         "Helicone-Cache-Enabled": "true",
+        "Helicone-User-Id": "GitHub-CI-Example-Tests",
     },
 )
 
