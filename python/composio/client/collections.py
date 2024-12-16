@@ -1253,7 +1253,12 @@ class Actions(Collection[ActionModel]):
         action_req_schema = action_model.parameters.properties
         modified_params: t.Dict[str, t.Union[str, t.Dict[str, str]]] = {}
         for param, value in params.items():
-            request_param_schema = action_req_schema[param]
+            request_param_schema = action_req_schema.get(param)
+            if request_param_schema is None:
+                # User has sent a parameter that is not used by this action,
+                # so we can ignore it.
+                continue
+
             file_readable = request_param_schema.get("file_readable", False)
             file_uploadable = _check_file_uploadable(request_param_schema)
 
