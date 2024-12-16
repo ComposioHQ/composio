@@ -123,8 +123,8 @@ class Enum(t.Generic[DataT]):
                 if hasattr(data, "replaced_by"):
                     self._data = data
                     return self._data
-                else:
-                    self.storage_path.unlink()
+
+                self.storage_path.unlink()
 
             self._data = data
             return self._data
