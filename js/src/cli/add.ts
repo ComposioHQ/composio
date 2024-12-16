@@ -1,9 +1,36 @@
+/* eslint-disable no-console */
 import chalk from "chalk";
 import { Command } from "commander";
 import { Composio } from "../sdk";
 import inquirer from "inquirer";
 import open from "open";
 import { GetConnectorInfoResDTO, GetConnectorListResDTO } from "../sdk/client";
+
+type TInputField = {
+  name: string;
+  displayName?: string;
+  display_name?: string;
+  expected_from_customer?: boolean;
+  required?: boolean;
+  message_name?: string;
+  type?: string;
+};
+
+type THandleActionOptions = {
+  force?: boolean;
+  skipDefaultConnector?: boolean;
+  noBrowser?: boolean;
+  integrationId?: string;
+  authMode?: string;
+  scope?: string[];
+  label?: string[];
+  
+};
+
+type TAuthScheme = {
+  auth_mode: string;
+  fields: TInputField[];
+};
 
 export default class AddCommand {
   private program: Command;
@@ -42,15 +69,7 @@ export default class AddCommand {
 
   private async handleAction(
     appName: string,
-    options: {
-      force?: boolean;
-      skipDefaultConnector?: boolean;
-      noBrowser?: boolean;
-      integrationId?: string;
-      authMode?: string;
-      scope?: string[];
-      label?: string[];
-    }
+    options: THandleActionOptions
   ): Promise<void> {
     const composioClient = new Composio();
     let integration:
@@ -158,25 +177,25 @@ export default class AddCommand {
 
   private async setupConnections(
     integrationId: string,
-    options: any
+    options: Record<string, unknown>
   ): Promise<void> {
     const composioClient = new Composio();
     const data = await composioClient.integrations.get({ integrationId });
     const { expectedInputFields } = data!;
 
     const config = await this.collectInputFields(
-      expectedInputFields as any,
+      expectedInputFields as unknown as TInputField[],
       true
     );
 
     if (options.scope) {
-      config.scopes = options.scope.join(",");
+      config.scopes = (options.scope as string[]).join(",");
     }
 
     const connectionData = await composioClient.connectedAccounts.create({
       integrationId,
       data: config,
-      labels: options.label,
+      labels: options.label as string[],
     });
 
     if (connectionData.connectionStatus === "ACTIVE") {
@@ -216,7 +235,7 @@ export default class AddCommand {
     appName: string,
     skipDefaultConnectorAuth: boolean = false,
     userAuthMode?: string,
-    options?: any
+    options?: THandleActionOptions
   ) {
     const composioClient = new Composio();
     const app = await composioClient.apps.get({
@@ -234,7 +253,7 @@ export default class AddCommand {
 
     const testConnectors = app.testConnectors || [];
 
-    const config: Record<string, any> = {};
+    const config: Record<string, unknown> = {};
     let useComposioAuth = true;
     const authSchemeExpectOauth = ["bearer_token", "api_key", "basic"];
     if (
@@ -273,8 +292,8 @@ export default class AddCommand {
         (app.auth_schemes[0]?.auth_mode as string | undefined));
 
     const authModes = (app.auth_schemes || []).reduce(
-      (acc: Record<string, any>, scheme: any) => {
-        acc[scheme.auth_mode] = scheme;
+      (acc, scheme: Record<string, unknown>) => {
+        acc[scheme.auth_mode as string] = scheme;
         return acc;
       },
       {}
@@ -300,7 +319,7 @@ export default class AddCommand {
       return this.handleBasicAuth(
         app,
         selectedAuthMode,
-        selectedAuthScheme,
+        selectedAuthScheme as TAuthScheme,
         config,
         integrationName
       );
@@ -309,27 +328,27 @@ export default class AddCommand {
     return this.handleOAuth(
       app,
       selectedAuthMode,
-      selectedAuthScheme,
+      selectedAuthScheme as TAuthScheme,
       config,
       integrationName,
-      options.noBrowser,
-      options.scope,
+      options?.noBrowser ?? false,
+      options?.scope ?? [],
       useComposioAuth
     );
   }
 
   private async handleBasicAuth(
-    app: any,
+    app: Record<string, unknown>,
     authMode: string,
-    authScheme: any,
-    config: Record<string, any>,
+    authScheme: TAuthScheme,
+    config: Record<string, unknown>,
     integrationName: string
   ) {
     const composioClient = new Composio();
-    const authConfig = await this.collectInputFields(authScheme.fields);
+    const authConfig = await this.collectInputFields(authScheme.fields as TInputField[]);
 
     const integration = await composioClient.integrations.create({
-      appId: app.appId,
+      appId: app.appId as string,
       authScheme: authMode,
       useComposioAuth: false,
       name: integrationName,
@@ -340,10 +359,10 @@ export default class AddCommand {
   }
 
   private async handleOAuth(
-    app: any,
+    app: Record<string, unknown>,
     authMode: string,
-    authScheme: any,
-    config: Record<string, any>,
+    authScheme: TAuthScheme,
+    config: Record<string, unknown>,
     integrationName: string,
     noBrowser: boolean,
     scopes: string[],
@@ -359,7 +378,7 @@ export default class AddCommand {
       );
     }
 
-    const authConfig = await this.collectInputFields(authScheme.fields);
+    const authConfig = await this.collectInputFields(authScheme.fields as TInputField[]);
 
     if (scopes) {
       authConfig.scopes = scopes.join(",");
@@ -375,17 +394,10 @@ export default class AddCommand {
   }
 
   async collectInputFields(
-    fields: {
-      name: string;
-      displayName: string;
-      display_name: string;
-      expected_from_customer: boolean;
-      required: boolean;
-      type: string;
-    }[],
+    fields: TInputField[],
     isConnection = false
-  ): Promise<Record<string, any>> {
-    const config: Record<string, any> = {};
+  ): Promise<Record<string, unknown>> {
+    const config: Record<string, unknown> = {};
 
     for (const field of fields) {
       if (field.expected_from_customer && !isConnection) {
@@ -395,7 +407,7 @@ export default class AddCommand {
       const { [field.name]: value } = await inquirer.prompt({
         type: "input",
         name: field.name,
-        message: field.displayName || field.display_name,
+        message: (field.displayName || field.display_name) as string,
       });
 
       if (value) {
@@ -408,9 +420,9 @@ export default class AddCommand {
 
   async setupIntegration(
     app: any,
-    authMode: any,
+    authMode: string,
     useComposioAuth: boolean,
-    config: Record<string, any>,
+    config: Record<string, unknown>,
     name: string
   ) {
     const composioClient = new Composio();

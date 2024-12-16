@@ -38,6 +38,7 @@ export async function logError(payload: ErrorPayload) {
       await sendProcessReq(reqPayload);
     }
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error("Error sending error to telemetry", error);
     // DO NOTHING
   }

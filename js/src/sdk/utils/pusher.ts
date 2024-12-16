@@ -3,19 +3,20 @@ import logger from "../../utils/logger";
 const PUSHER_KEY = process.env.CLIENT_PUSHER_KEY || "ff9f18c208855d77a152";
 const PUSHER_CLUSTER = "mt1";
 
+ 
 type PusherClient = any;
 
 export interface TriggerData {
   appName: string;
   clientId: number;
   payload: {};
-  originalPayload: Record<string, any>;
+  originalPayload: Record<string, unknown>;
   metadata: {
     id: string;
     connectionId: string;
     triggerName: string;
     triggerData: string;
-    triggerConfig: Record<string, any>;
+    triggerConfig: Record<string, unknown>;
     connection: {
       id: string;
       integrationId: string;
@@ -48,13 +49,13 @@ export class PusherUtils {
    * Subscribes to a Pusher channel and binds an event to a callback function.
    * @param {string} channelName - The name of the channel to subscribe to.
    * @param {string} event - The event to bind to the channel.
-   * @param {(data: any) => void} fn - The callback function to execute when the event is triggered.
+   * @param {(data: Record<string, unknown>) => void} fn - The callback function to execute when the event is triggered.
    * @returns {PusherClient} The Pusher client instance.
    */
   static async subscribe(
     channelName: string,
     event: string,
-    fn: (data: any) => void
+    fn: (data: Record<string, unknown>) => void
   ): Promise<void> {
     try {
       await PusherUtils.pusherClient.subscribe(channelName).bind(event, fn);
@@ -78,12 +79,12 @@ export class PusherUtils {
    * Binds an event to a channel with support for chunked messages.
    * @param {PusherClient} channel - The Pusher channel to bind the event to.
    * @param {string} event - The event to bind to the channel.
-   * @param {(data: any) => void} callback - The callback function to execute when the event is triggered.
+   * @param {(data: unknown) => void} callback - The callback function to execute when the event is triggered.
    */
   private static bindWithChunking(
     channel: PusherClient,
     event: string,
-    callback: (data: any) => void
+    callback: (data: Record<string, unknown>) => void
   ): void {
     channel.bind(event, callback); // Allow normal unchunked events.
 
@@ -114,7 +115,7 @@ export class PusherUtils {
   /**
    * Subscribes to a trigger channel for a client and handles chunked data.
    * @param {string} clientId - The unique identifier for the client subscribing to the events.
-   * @param {(data: any) => void} fn - The callback function to execute when trigger data is received.
+   * @param {(data: Record<string, unknown>) => void} fn - The callback function to execute when trigger data is received.
    */
   static triggerSubscribe(
     clientId: string,

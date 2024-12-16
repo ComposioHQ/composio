@@ -67,9 +67,11 @@ export class ComposioError extends Error {
       }
     }
 
+    // eslint-disable-next-line no-console
     console.log(
       `🚀 [Info] Give Feedback / Get Help: https://dub.composio.dev/discord `
     );
+    // eslint-disable-next-line no-console
     console.log(
       `🐛 [Info] Create a new issue: https://github.com/ComposioHQ/composio/issues `
     );

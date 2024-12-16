@@ -1,9 +1,7 @@
 import {
   z,
-  ZodType,
   ZodObject,
   ZodString,
-  AnyZodObject,
   ZodOptional,
 } from "zod";
 import { zodToJsonSchema, JsonSchema7Type } from "zod-to-json-schema";

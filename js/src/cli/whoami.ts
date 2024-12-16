@@ -14,7 +14,7 @@ export default class WhoamiCommand {
       .action(this.handleAction.bind(this));
   }
 
-  private handleAction(options: Record<string, any>): void {
+  private handleAction(): void {
     const { apiKey, baseURL } = getSDKConfig();
 
     if (!apiKey) {

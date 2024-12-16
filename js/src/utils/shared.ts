@@ -1,8 +1,7 @@
 import z from "zod";
-import logger from "./logger";
 
 type SchemaTypeToTsType = {
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 const PYDANTIC_TYPE_TO_TS_TYPE: SchemaTypeToTsType = {
@@ -13,7 +12,7 @@ const PYDANTIC_TYPE_TO_TS_TYPE: SchemaTypeToTsType = {
   null: null,
 };
 
-export function jsonSchemaToTsType(jsonSchema: Record<string, any>): any {
+export function jsonSchemaToTsType(jsonSchema: Record<string, unknown>): unknown {
   if (!jsonSchema.type) {
     jsonSchema.type = "string";
   }
@@ -47,9 +46,9 @@ export function jsonSchemaToTsType(jsonSchema: Record<string, any>): any {
 
 export function jsonSchemaToTsField(
   name: string,
-  jsonSchema: Record<string, any>,
+  jsonSchema: Record<string, unknown>,
   required: string[]
-): [any, any] {
+): [unknown, Record<string, unknown>] {
   const description = jsonSchema.description;
   const examples = jsonSchema.examples || [];
   return [
@@ -63,7 +62,12 @@ export function jsonSchemaToTsField(
   ];
 }
 
-function jsonSchemaPropertiesToTSTypes(value: any): z.ZodTypeAny {
+function jsonSchemaPropertiesToTSTypes(value: {
+  type: string;
+  description?: string;
+  examples?: string[];
+  items?: Record<string, unknown>;
+}): z.ZodTypeAny {
   if (!value.type) {
     return z.object({});
   }
@@ -203,11 +207,13 @@ export const getEnvVariable = (
 export const nodeExternalRequire = (name: string) => {
   try {
     if (typeof process !== "undefined") {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       return require(name);
     } else {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       return require(`external:${name}`);
     }
-  } catch (err) {
+  } catch (_err) {
     return null;
   }
 };

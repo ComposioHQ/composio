@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { Command } from "commander";
 import client from "../sdk/client/client";
 import chalk from "chalk";

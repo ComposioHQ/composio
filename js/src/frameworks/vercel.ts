@@ -2,8 +2,6 @@ import { tool } from "ai";
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { jsonSchemaToModel } from "../utils/shared";
 import { z } from "zod";
-import { CEG } from "../sdk/utils/error";
-import { SDK_ERROR_CODES } from "../sdk/utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 type Optional<T> = T | null;

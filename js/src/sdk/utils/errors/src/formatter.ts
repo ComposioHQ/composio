@@ -1,10 +1,6 @@
-import { ComposioError } from "./composioError";
 import {
   SDK_ERROR_CODES,
-  BASE_ERROR_CODE_INFO,
-  BE_STATUS_CODE_TO_SDK_ERROR_CODES,
 } from "./constants";
-import { AxiosError } from "axios";
 
 interface ErrorResponse {
   errorKey: string;

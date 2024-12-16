@@ -166,10 +166,10 @@ export class Workspace {
   }
 
   executeAction(
-    action: any,
-    request_data: any,
+    action: string,
+    request_data: Record<string, unknown>,
     metadata: IExecuteActionMetadata = {}
-  ): Promise<Record<string, any>> {
+  ): Promise<Record<string, unknown>> {
     throw new Error("Method 'execute_action()' must be implemented.");
   }
 
@@ -191,7 +191,7 @@ export class RemoteWorkspace extends Workspace {
   async _request(
     endpoint: string,
     method: string,
-    json: any = null,
+    json: Record<string, unknown> | null = null,
     timeout: number = 60000.0
   ): Promise<AxiosResponse> {
     return axios({
@@ -209,7 +209,7 @@ export class RemoteWorkspace extends Workspace {
     throw new Error("Creating shells for remote workspaces is not allowed.");
   }
 
-  _upload(action: any): void {
+  _upload(): void {
     throw new Error("Method '_upload()' must be implemented.");
   }
 

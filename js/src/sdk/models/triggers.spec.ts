@@ -11,8 +11,6 @@ describe("Apps class tests", () => {
   let triggers: Triggers;
   let connectedAccounts: ConnectedAccounts;
   let entity: Entity;
-
-  let triggerId: string;
   let actions: Actions;
 
   beforeAll(() => {
