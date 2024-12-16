@@ -109,7 +109,7 @@ describe("ComposioToolSet class tests", () => {
     // @ts-ignore
     expect(executionResult).toHaveProperty("successfull", true);
     expect(executionResult.data).toBeDefined();
-    
+
     const executionResultData = executionResult.data as Record<string, unknown>;
     expect(executionResultData.title).toBe("Test issue2");
     expect(executionResultData.isPostProcessed).toBe(true);
@@ -117,11 +117,11 @@ describe("ComposioToolSet class tests", () => {
     // Remove pre processor and post processor
     toolset.removePreProcessor();
 
-    const executionResultAfterRemove = await toolset.executeAction({
+    const executionResultAfterRemove = (await toolset.executeAction({
       action: actionName,
       params: requestBody,
       entityId: "default",
-    }) as ActionExecutionResDto;
+    })) as ActionExecutionResDto;
 
     expect(executionResultAfterRemove).toBeDefined();
     // @ts-ignore

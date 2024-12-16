@@ -37,7 +37,7 @@ describe("Apps class tests", () => {
   });
 
   it("Should create custom action to star a repository", async () => {
-     await langchainToolSet.createAction({
+    await langchainToolSet.createAction({
       actionName: "starRepositoryPlxityCustom12345",
       toolName: "github",
       description: "This action stars a repository",

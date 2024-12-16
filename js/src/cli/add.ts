@@ -24,7 +24,6 @@ type THandleActionOptions = {
   authMode?: string;
   scope?: string[];
   label?: string[];
-  
 };
 
 type TAuthScheme = {
@@ -345,7 +344,9 @@ export default class AddCommand {
     integrationName: string
   ) {
     const composioClient = new Composio();
-    const authConfig = await this.collectInputFields(authScheme.fields as TInputField[]);
+    const authConfig = await this.collectInputFields(
+      authScheme.fields as TInputField[]
+    );
 
     const integration = await composioClient.integrations.create({
       appId: app.appId as string,
@@ -380,7 +381,9 @@ export default class AddCommand {
       );
     }
 
-    const authConfig = await this.collectInputFields(authScheme.fields as TInputField[]);
+    const authConfig = await this.collectInputFields(
+      authScheme.fields as TInputField[]
+    );
 
     if (scopes) {
       authConfig.scopes = scopes.join(",");

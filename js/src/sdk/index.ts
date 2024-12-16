@@ -51,7 +51,7 @@ export class Composio {
     ComposioSDKContext.apiKey = apiKeyParsed;
     ComposioSDKContext.baseURL = baseURLParsed;
     ComposioSDKContext.frameworkRuntime = runtime;
-     
+
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     ComposioSDKContext.composioVersion = require(
       getPackageJsonDir() + "/package.json"
@@ -98,7 +98,7 @@ export class Composio {
     try {
       const packageName = "composio-core";
       const packageJsonDir = getPackageJsonDir();
-       
+
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const currentVersionFromPackageJson = require(
         packageJsonDir + "/package.json"
@@ -181,7 +181,7 @@ export class Composio {
             (integration) => integration.authScheme === params.authScheme
           );
         }
-        integrationId = (integrations?.items[0])?.id as string;
+        integrationId = integrations?.items[0]?.id as string;
       } catch (_) {
         // do nothing
       }
@@ -240,13 +240,14 @@ export class Composio {
     const authSchemeFields = appInfo.auth_schemes?.find(
       (_authScheme) => _authScheme.mode === schema
     )?.fields;
-    const requiredCustomerFields = (authSchemeFields as {
-      expected_from_customer: boolean;
-    }[])?.filter(
-      (field) => !field.expected_from_customer
-    )?.length ?? 0;
+    const requiredCustomerFields =
+      (
+        authSchemeFields as {
+          expected_from_customer: boolean;
+        }[]
+      )?.filter((field) => !field.expected_from_customer)?.length ?? 0;
 
-    const areNoFieldsRequiredForIntegration = 
+    const areNoFieldsRequiredForIntegration =
       hasTestConnectors || requiredCustomerFields === 0;
 
     if (!areNoFieldsRequiredForIntegration) {

@@ -1,5 +1,8 @@
 import { tool } from "ai";
-import { ActionData, ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
+import {
+  ActionData,
+  ComposioToolSet as BaseComposioToolSet,
+} from "../sdk/base.toolset";
 import { jsonSchemaToModel } from "../utils/shared";
 import { z } from "zod";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
@@ -89,7 +92,9 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     const tools = {};
     actionsList.items?.forEach((actionSchema) => {
       // @ts-ignore
-      tools[actionSchema.name!] = this.generateVercelTool(actionSchema as ActionData);
+      tools[actionSchema.name!] = this.generateVercelTool(
+        actionSchema as ActionData
+      );
     });
 
     return tools;

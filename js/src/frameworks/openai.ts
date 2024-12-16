@@ -1,4 +1,7 @@
-import { ActionData, ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
+import {
+  ActionData,
+  ComposioToolSet as BaseComposioToolSet,
+} from "../sdk/base.toolset";
 import { OpenAI } from "openai";
 
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
@@ -62,20 +65,18 @@ export class OpenAIToolSet extends BaseComposioToolSet {
 
     const mainActions = await this.getToolsSchema(filters, entityId);
     return (
-      mainActions.map(
-        (action: ActionData) => {
-          const formattedSchema: OpenAI.FunctionDefinition = {
-            name: action.name!,
-            description: action.description!,
-            parameters: action.parameters!,
-          };
-          const tool: OpenAI.ChatCompletionTool = {
-            type: "function",
-            function: formattedSchema,
-          };
-          return tool;
-        }
-      ) || []
+      mainActions.map((action: ActionData) => {
+        const formattedSchema: OpenAI.FunctionDefinition = {
+          name: action.name!,
+          description: action.description!,
+          parameters: action.parameters!,
+        };
+        const tool: OpenAI.ChatCompletionTool = {
+          type: "function",
+          function: formattedSchema,
+        };
+        return tool;
+      }) || []
     );
   }
 

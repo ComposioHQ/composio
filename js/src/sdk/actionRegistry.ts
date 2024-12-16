@@ -1,9 +1,4 @@
-import {
-  z,
-  ZodObject,
-  ZodString,
-  ZodOptional,
-} from "zod";
+import { z, ZodObject, ZodString, ZodOptional } from "zod";
 import { zodToJsonSchema, JsonSchema7Type } from "zod-to-json-schema";
 import { ActionProxyRequestConfigDTO } from "./client";
 import { Composio } from ".";
@@ -39,7 +34,10 @@ interface ExecuteMetadata {
 
 export class ActionRegistry {
   client: Composio;
-  customActions: Map<string, { metadata: CreateActionOptions; schema: Record<string, unknown> }>;
+  customActions: Map<
+    string,
+    { metadata: CreateActionOptions; schema: Record<string, unknown> }
+  >;
 
   constructor(client: Composio) {
     this.client = client;

@@ -3,22 +3,21 @@ import logger from "../../utils/logger";
 const PUSHER_KEY = process.env.CLIENT_PUSHER_KEY || "ff9f18c208855d77a152";
 const PUSHER_CLUSTER = "mt1";
 
-
 type Channel = {
   subscribe: (channelName: string) => unknown;
   unsubscribe: (channelName: string) => unknown;
   bind: (
     event: string,
-    callback: (data: Record<string, unknown> ) => void
+    callback: (data: Record<string, unknown>) => void
   ) => unknown;
-}
+};
 
 type PusherClient = {
   subscribe: (channelName: string) => Channel;
   unsubscribe: (channelName: string) => unknown;
   bind: (
     event: string,
-    callback: (data: Record<string, unknown> ) => void
+    callback: (data: Record<string, unknown>) => void
   ) => unknown;
 };
 
@@ -118,25 +117,22 @@ export class PusherUtils {
     const events: {
       [key: string]: { chunks: string[]; receivedFinal: boolean };
     } = {};
-    channel.bind(
-      "chunked-" + event,
-      (data) => {
-        const typedData = data as TChunkedTriggerData;
-        if (!events.hasOwnProperty(typedData.id)) {
-          events[typedData.id] = { chunks: [], receivedFinal: false };
-        }
-        const ev = events[typedData.id];
-        ev.chunks[typedData.index] = typedData.chunk;
-        if (typedData.final) ev.receivedFinal = true;
-        if (
-          ev.receivedFinal &&
-          ev.chunks.length === Object.keys(ev.chunks).length
-        ) {
-          callback(JSON.parse(ev.chunks.join("")));
-          delete events[typedData.id];
-        }
+    channel.bind("chunked-" + event, (data) => {
+      const typedData = data as TChunkedTriggerData;
+      if (!events.hasOwnProperty(typedData.id)) {
+        events[typedData.id] = { chunks: [], receivedFinal: false };
       }
-    );
+      const ev = events[typedData.id];
+      ev.chunks[typedData.index] = typedData.chunk;
+      if (typedData.final) ev.receivedFinal = true;
+      if (
+        ev.receivedFinal &&
+        ev.chunks.length === Object.keys(ev.chunks).length
+      ) {
+        callback(JSON.parse(ev.chunks.join("")));
+        delete events[typedData.id];
+      }
+    });
   }
 
   /**
@@ -151,7 +147,11 @@ export class PusherUtils {
     const channel = PusherUtils.pusherClient.subscribe(
       `private-${clientId}_triggers`
     );
-    PusherUtils.bindWithChunking(channel as PusherClient, "trigger_to_client", fn);
+    PusherUtils.bindWithChunking(
+      channel as PusherClient,
+      "trigger_to_client",
+      fn
+    );
 
     logger.info(
       `Subscribed to triggers. You should start receiving events now.`

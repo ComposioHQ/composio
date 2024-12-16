@@ -76,7 +76,7 @@ describe("Basic SDK spec suite", () => {
 
     try {
       await client.apps.list();
-    } catch (e) { 
+    } catch (e) {
       const error = e as ComposioError;
       const errorCode = SDK_ERROR_CODES.BACKEND.SERVER_ERROR;
       const errorInfo = BASE_ERROR_CODE_INFO[errorCode];
@@ -91,7 +91,7 @@ describe("Basic SDK spec suite", () => {
     mock.onGet("/api/v1/apps").reply(502, { detail: "Bad Gateway" });
 
     try {
-       await client.apps.list();
+      await client.apps.list();
     } catch (e) {
       const error = e as ComposioError;
       const errorCode = SDK_ERROR_CODES.BACKEND.SERVER_UNAVAILABLE;
@@ -115,7 +115,7 @@ describe("Basic SDK spec suite", () => {
     try {
       await client.apps.list();
     } catch (e) {
-      const error = e as ComposioError; 
+      const error = e as ComposioError;
       const errorCode = SDK_ERROR_CODES.COMMON.REQUEST_TIMEOUT;
       const errorInfo = BASE_ERROR_CODE_INFO[errorCode];
       expect(error.errCode).toBe(errorCode);

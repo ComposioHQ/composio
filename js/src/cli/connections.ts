@@ -70,7 +70,9 @@ export class ConnectionsGetCommand {
       return;
     }
 
-    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+    for (const [key, value] of Object.entries(
+      data as Record<string, unknown>
+    )) {
       console.log(
         `- ${chalk.cyan.bold(key)}: ${JSON.stringify(value, null, 2)}`
       );

@@ -130,7 +130,6 @@ export class TriggerAdd {
       return;
     }
 
-
     const dataConfig = data.config!;
     const properties = dataConfig.properties!;
     const requiredProperties = dataConfig.required! as string[];

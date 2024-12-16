@@ -147,37 +147,41 @@ export class DockerWorkspace extends RemoteWorkspace {
         status: `Image ${this.image} not found locally. Pulling from Docker Hub...`,
       });
       await new Promise((resolve, reject) => {
-        this.docker.pull(this.image, (err: Error, stream: NodeJS.ReadableStream) => {
-          if (err) {
-            bar.stop();
-            logger.error("Failed to pull Docker image.");
-            return reject(err);
-          }
-          this.docker.modem.followProgress(stream, onFinished, onProgress);
-
-          function onFinished(err: Error | null, output: unknown) {
+        this.docker.pull(
+          this.image,
+          (err: Error, stream: NodeJS.ReadableStream) => {
             if (err) {
               bar.stop();
               logger.error("Failed to pull Docker image.");
               return reject(err);
             }
-            bar.update(100, { status: "Docker image pulled successfully." });
-            bar.stop();
-            resolve(output);
-          }
+            this.docker.modem.followProgress(stream, onFinished, onProgress);
 
-          function onProgress(event: { status: string }) {
-            bar.update({ status: event.status });
+            function onFinished(err: Error | null, output: unknown) {
+              if (err) {
+                bar.stop();
+                logger.error("Failed to pull Docker image.");
+                return reject(err);
+              }
+              bar.update(100, { status: "Docker image pulled successfully." });
+              bar.stop();
+              resolve(output);
+            }
+
+            function onProgress(event: { status: string }) {
+              bar.update({ status: event.status });
+            }
           }
-        });
+        );
       });
     } else {
       logger.debug(`Image ${this.image} found locally.`);
     }
 
     const containers = await this.docker.listContainers({ all: true });
-    const existingContainer = containers.find((container: Docker.ContainerInfo) =>
-      container.Names.find((name: string) => name.startsWith(`/composio-`))
+    const existingContainer = containers.find(
+      (container: Docker.ContainerInfo) =>
+        container.Names.find((name: string) => name.startsWith(`/composio-`))
     );
 
     if (existingContainer) {

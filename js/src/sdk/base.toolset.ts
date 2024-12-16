@@ -13,7 +13,7 @@ import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 import { getUserDataJson } from "./utils/config";
 import { z } from "zod";
 
-export type ActionData = { 
+export type ActionData = {
   name: string;
   display_name: string;
   description: string;
@@ -25,11 +25,10 @@ export type ActionData = {
   appName: string;
   enabled: boolean;
   logo: string;
-}
+};
 type GetListActionsResponse = {
   items: ActionData[];
 };
-
 
 const ZExecuteActionParams = z.object({
   action: z.string(),
@@ -169,9 +168,9 @@ export class ComposioToolSet {
     await this.workspace.new();
 
     if (!this.localActions && this.workspaceEnv !== ExecEnv.HOST) {
-      this.localActions = await (
+      this.localActions = (await (
         this.workspace.workspace as RemoteWorkspace
-      ).getLocalActionsSchema()! as ActionData[];
+      ).getLocalActionsSchema()!) as ActionData[];
     }
   }
 
@@ -186,12 +185,11 @@ export class ComposioToolSet {
         showAll: true,
       })
     ).items;
-    const localActionsMap = new Map<
-      string,
-      ActionData
-    >();
+    const localActionsMap = new Map<string, ActionData>();
     filters.actions?.forEach((action: string) => {
-      const actionData = this.localActions?.find((a: ActionData) => a.name === action);
+      const actionData = this.localActions?.find(
+        (a: ActionData) => a.name === action
+      );
       if (actionData) {
         localActionsMap.set(actionData.name!, actionData as ActionData);
       }

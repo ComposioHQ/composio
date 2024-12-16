@@ -88,6 +88,8 @@ export class LangchainToolSet extends BaseComposioToolSet {
     });
 
     const tools = await this.getToolsSchema(filters, entityId);
-    return tools.map((tool) => this._wrapTool(tool as ToolSchema, entityId || this.entityId));
+    return tools.map((tool) =>
+      this._wrapTool(tool as ToolSchema, entityId || this.entityId)
+    );
   }
 }

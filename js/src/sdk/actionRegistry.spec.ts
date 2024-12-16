@@ -61,9 +61,9 @@ describe("ActionRegistry", () => {
       callback: "notAFunction",
     };
 
-    await expect(actionRegistry.createAction(options as unknown as CreateActionOptions)).rejects.toThrow(
-      "Callback must be a function"
-    );
+    await expect(
+      actionRegistry.createAction(options as unknown as CreateActionOptions)
+    ).rejects.toThrow("Callback must be a function");
   });
 
   it("should throw an error if callback is an anonymous function and noActionName is specified", async () => {

@@ -1,6 +1,4 @@
-import {
-  DeleteConnectorData,
-} from "../client";
+import { DeleteConnectorData } from "../client";
 import apiClient from "../client/client";
 import { BackendClient } from "./backendClient";
 import { CEG } from "../utils/error";
