@@ -18,7 +18,16 @@ dotenv.load_dotenv()
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
 # Initialize tools.
-openai_client = ChatOpenAI(model="gpt-4-turbo")
+import os
+
+openai_client = ChatOpenAI(
+    model="gpt-4-turbo",
+    base_url="https://oai.helicone.ai/v1",
+    default_headers={
+        "Helicone-Auth": f"Bearer {os.environ['HELICONE_API_KEY']}",
+        "Helicone-Cache-Enabled": "true",
+    },
+)
 
 
 def main():

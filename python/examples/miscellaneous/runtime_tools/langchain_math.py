@@ -6,6 +6,7 @@ from langchain import hub
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
 
+
 @action(toolname="math", requires=["smtplib"])
 def multiply(a: int, b: int, c: int) -> int:
     """
@@ -19,7 +20,16 @@ def multiply(a: int, b: int, c: int) -> int:
     return a * b * c
 
 
-llm = ChatOpenAI(model="gpt-4-turbo")
+import os
+
+llm = ChatOpenAI(
+    model="gpt-4-turbo",
+    base_url="https://oai.helicone.ai/v1",
+    default_headers={
+        "Helicone-Auth": f"Bearer {os.environ['HELICONE_API_KEY']}",
+        "Helicone-Cache-Enabled": "true",
+    },
+)
 
 prompt = hub.pull("hwchase17/openai-functions-agent")
 

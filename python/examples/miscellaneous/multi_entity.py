@@ -9,12 +9,22 @@ import typing as t
 from langchain_core.tools import StructuredTool
 
 # Initialize tools.
-openai_client = ChatOpenAI(model="gpt-4-turbo")
+openai_client = ChatOpenAI(
+    model="gpt-4-turbo",
+    base_url="https://oai.helicone.ai/v1",
+    default_headers={
+        "Helicone-Auth": f"Bearer {os.environ['HELICONE_API_KEY']}",
+        "Helicone-Cache-Enabled": "true",
+    },
+)
 
 # Pull relevant agent model.
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
-def initialize_listennotes(entity_id: str, toolset: ComposioToolSet, listennotes_api_key: str) -> t.Optional[t.Sequence[StructuredTool]]:
+
+def initialize_listennotes(
+    entity_id: str, toolset: ComposioToolSet, listennotes_api_key: str
+) -> t.Optional[t.Sequence[StructuredTool]]:
     try:
         entity = toolset.get_entity(id=entity_id)
         try:
@@ -39,7 +49,9 @@ def initialize_listennotes(entity_id: str, toolset: ComposioToolSet, listennotes
                 return None
 
         listennotes_tool = toolset.get_tools(
-            actions=[Action.LISTENNOTES_FETCH_A_LIST_OF_SUPPORTED_LANGUAGES_FOR_PODCASTS],
+            actions=[
+                Action.LISTENNOTES_FETCH_A_LIST_OF_SUPPORTED_LANGUAGES_FOR_PODCASTS
+            ],
             entity_id=entity_id,
         )
         return listennotes_tool
@@ -52,29 +64,41 @@ def initialize_listennotes(entity_id: str, toolset: ComposioToolSet, listennotes
             status = error_data.get("status")
             message = error_data.get("message")
 
-            print(f"Error initializing ListenNotes tool\n\nStatus: {status}\n\nMessage: {message}")
-            raise ValueError(f"Error initializing ListenNotes tool\n\nStatus: {status}\n\nMessage: {message}")
+            print(
+                f"Error initializing ListenNotes tool\n\nStatus: {status}\n\nMessage: {message}"
+            )
+            raise ValueError(
+                f"Error initializing ListenNotes tool\n\nStatus: {status}\n\nMessage: {message}"
+            )
         except json.JSONDecodeError:
             print(f"Error initializing ListenNotes tool\n\n{e}")
             raise ValueError(f"Error initializing ListenNotes tool\n\n{e}")
-        
+
+
 if __name__ == "__main__":
     toolset = ComposioToolSet()
     listennotes_api_key = os.environ.get("LISTENNOTES_API_KEY")
     if not listennotes_api_key:
         raise ValueError("LISTENNOTES_API_KEY is not set")
-    
+
     # Generate a timestamp-based entity ID
     timestamp_entity_id = f"entity_{int(time.time())}"
-    
-    listennotes_tools = initialize_listennotes(entity_id=timestamp_entity_id, toolset=toolset, listennotes_api_key=listennotes_api_key)
+
+    listennotes_tools = initialize_listennotes(
+        entity_id=timestamp_entity_id,
+        toolset=toolset,
+        listennotes_api_key=listennotes_api_key,
+    )
     # Define task
     task = "Fetch a list of supported languages for podcasts"
 
     # Define agent
-    agent = create_openai_functions_agent(openai_client, listennotes_tools or [], prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=listennotes_tools or [], verbose=True)
+    agent = create_openai_functions_agent(
+        openai_client, listennotes_tools or [], prompt
+    )
+    agent_executor = AgentExecutor(
+        agent=agent, tools=listennotes_tools or [], verbose=True
+    )
 
     # Execute using agent_executor
     agent_executor.invoke({"input": task})
-    
