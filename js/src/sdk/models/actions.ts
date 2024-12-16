@@ -276,7 +276,6 @@ export class Actions {
       const { data: res } = await apiClient.actionsV2.advancedUseCaseSearch({
         query: {
           apps: data.apps.join(","),
-          useCase: "",
           limit: data.limit || undefined,
         },
         body: {

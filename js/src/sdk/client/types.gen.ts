@@ -2884,7 +2884,7 @@ export type AdvancedUseCaseSearchData = {
     limit?: number;
     maxActionsPerTask?: number;
     minActionsPerTask?: number;
-    useCase: string;
+    useCase?: string;
   };
 };
 
