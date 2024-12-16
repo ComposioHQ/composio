@@ -1,10 +1,10 @@
-import { v4 as uuidv4 } from "uuid";
 import { RemoteWorkspace } from "../base";
 import { getEnvVariable, nodeExternalRequire } from "../../utils/shared";
 import type Docker from "dockerode";
 import type CliProgress from "cli-progress";
 import { IWorkspaceConfig, WorkspaceConfig } from "../config";
 import logger from "../../utils/logger";
+import { getUUID } from "../../utils/getUUID";
 import { getComposioDir } from "../../sdk/utils/fileUtils";
 
 const ENV_COMPOSIO_DEV_MODE = "COMPOSIO_DEV_MODE";
@@ -53,7 +53,7 @@ export class DockerWorkspace extends RemoteWorkspace {
 
   constructor(configRepo: WorkspaceConfig<IDockerConfig>) {
     super(configRepo);
-    this.id = `composio-${uuidv4()}`;
+    this.id = `composio-${getUUID()}`;
     this.image = getEnvVariable(ENV_COMPOSIO_SWE_AGENT, DEFAULT_IMAGE)!;
     this.docker = nodeExternalRequire("dockerode")();
     this._ports = configRepo.config.ports;

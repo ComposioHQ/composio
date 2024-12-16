@@ -1204,12 +1204,21 @@ export type ActionsMinimalListResponseDTO = {
   totalPages: number;
 };
 
+export type AdvancedUseCaseSearchBodyDTO = {
+  useCase?: string;
+};
+
 export type AdvancedUseCaseSearchQueryDTO = {
+  /**
+   * Use case is deprecated. Please provide this in the body instead to avoid max-uri-length error.
+   * @deprecated
+   */
   useCase: string;
   limit?: number;
   maxActionsPerTask?: number;
   minActionsPerTask?: number;
   apps?: string;
+  filterByAvailableApps?: boolean;
 };
 
 export type AdvancedUseCaseSearchTask = {
@@ -2309,6 +2318,7 @@ export type WebhookSecretResDTO = {
 
 export type CreateCheckoutSessionReqDto = {
   plan: "HOBBY" | "STARTER" | "GROWTH" | "ENTERPRISE" | "STARTUP";
+  applyCoupon?: boolean;
 };
 
 export type plan = "HOBBY" | "STARTER" | "GROWTH" | "ENTERPRISE" | "STARTUP";
@@ -2864,12 +2874,17 @@ export type ExecuteActionProxyV2Response = ActionExecutionResDto;
 export type ExecuteActionProxyV2Error = unknown;
 
 export type AdvancedUseCaseSearchData = {
+  /**
+   * AdvancedUseCaseSearchBodyDTO
+   */
+  body?: AdvancedUseCaseSearchBodyDTO;
   query: {
     apps?: string;
+    filterByAvailableApps?: boolean;
     limit?: number;
     maxActionsPerTask?: number;
     minActionsPerTask?: number;
-    useCase: string;
+    useCase?: string;
   };
 };
 

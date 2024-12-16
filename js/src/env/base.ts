@@ -1,8 +1,8 @@
-import { v4 as uuidv4 } from "uuid";
 import axios, { AxiosResponse } from "axios";
 import { IPythonActionDetails } from "../sdk/types";
 import { getEnvVariable } from "../utils/shared";
 import { IWorkspaceConfig, WorkspaceConfig } from "./config";
+import { getUUID } from "../utils/getUUID";
 
 const ENV_GITHUB_ACCESS_TOKEN = "GITHUB_ACCESS_TOKEN";
 const ENV_ACCESS_TOKEN = "ACCESS_TOKEN";
@@ -21,7 +21,7 @@ class Shell {
   private _id: string;
 
   constructor() {
-    this._id = uuidv4();
+    this._id = getUUID();
   }
 
   sanitizeCommand(cmd: string): string {
@@ -124,8 +124,8 @@ export class Workspace {
   private _shell_factory: ShellFactory | undefined;
 
   constructor(configRepo: WorkspaceConfig<IWorkspaceConfig>) {
-    this.id = uuidv4();
-    this.accessToken = uuidv4().replace(/-/g, "");
+    this.id = getUUID();
+    this.accessToken = getUUID().replace(/-/g, "");
     this.composioAPIKey = _readEnvVar(
       ENV_COMPOSIO_API_KEY,
       configRepo.config.composioAPIKey!
