@@ -8,7 +8,7 @@ from composio.constants import LOCAL_CACHE_DIRECTORY
 from composio.exceptions import ComposioSDKError
 from composio.storage.base import LocalStorage
 
-from .base import EnumStringNotFound, SentinalObject
+from .base import ActionData, EnumStringNotFound, SentinalObject
 
 
 DataT = t.TypeVar("DataT", bound=LocalStorage)
@@ -119,11 +119,15 @@ class Enum(t.Generic[DataT]):
             data = self.storage.load(self.storage_path)
             # HACK: if 'replaced_by' field is not present, delete this cached file
             # as it is outdated.
-            if hasattr(data, "replaced_by"):
-                self._data = data
-                return self._data
+            if isinstance(data, ActionData):
+                if hasattr(data, "replaced_by"):
+                    self._data = data  # type: ignore
+                    return self._data  # type: ignore
 
-            self.storage_path.unlink()
+                self.storage_path.unlink()
+
+            self._data = data
+            return self._data
 
         # Try to fetch from runtime
         runtime_data = self.load_from_runtime()
