@@ -121,8 +121,8 @@ class Enum(t.Generic[DataT]):
             # as it is outdated.
             if isinstance(data, ActionData):
                 if hasattr(data, "replaced_by"):
-                    self._data = data
-                    return self._data
+                    self._data = data  # type: ignore
+                    return self._data  # type: ignore
 
                 self.storage_path.unlink()
 
