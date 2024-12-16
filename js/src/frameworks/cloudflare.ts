@@ -1,15 +1,17 @@
 // Import core dependencies
-import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
+import {
+  ComposioToolSet as BaseComposioToolSet,
+  ZToolSchemaFilter,
+} from "../sdk/base.toolset";
 import {
   AiTextGenerationOutput,
   AiTextGenerationToolInput,
 } from "@cloudflare/workers-types";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { WorkspaceConfig } from "../env/config";
-import { Workspace } from "../env";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
-
+import { z } from "zod";
 // Type definitions
 type Optional<T> = T | null;
 type Sequence<T> = Array<T>;
@@ -41,8 +43,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
       config.apiKey || null,
       config.baseUrl || COMPOSIO_BASE_URL,
       CloudflareToolSet.FRAMEWORK_NAME,
-      config.entityId || CloudflareToolSet.DEFAULT_ENTITY_ID,
-      config.workspaceConfig || Workspace.Host()
+      config.entityId || CloudflareToolSet.DEFAULT_ENTITY_ID
     );
   }
 
@@ -52,14 +53,9 @@ export class CloudflareToolSet extends BaseComposioToolSet {
    * @param filters Optional filters for actions, apps, tags and use cases
    * @returns Promise resolving to array of AI text generation tools
    */
-  async getTools(filters: {
-    actions?: Optional<Sequence<string>>;
-    apps?: Sequence<string>;
-    tags?: Optional<Array<string>>;
-    useCase?: Optional<string>;
-    usecaseLimit?: Optional<number>;
-    filterByAvailableApps?: Optional<boolean>;
-  }): Promise<Sequence<AiTextGenerationToolInput>> {
+  async getTools(
+    filters: z.infer<typeof ZToolSchemaFilter>
+  ): Promise<Sequence<AiTextGenerationToolInput>> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getTools",
       file: this.fileName,

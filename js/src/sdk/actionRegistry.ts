@@ -4,7 +4,7 @@ import { ActionProxyRequestConfigDTO } from "./client";
 import { Composio } from ".";
 import apiClient from "../sdk/client/client";
 import { CEG } from "./utils/error";
-import { ActionData } from "./base.toolset";
+import { TRawActionData } from "./common/action";
 
 type ExecuteRequest = Omit<ActionProxyRequestConfigDTO, "connectedAccountId">;
 export interface CreateActionOptions {
@@ -45,7 +45,7 @@ export class ActionRegistry {
     this.customActions = new Map();
   }
 
-  async createAction(options: CreateActionOptions): Promise<ActionData> {
+  async createAction(options: CreateActionOptions): Promise<TRawActionData> {
     const { callback } = options;
     if (typeof callback !== "function") {
       throw new Error("Callback must be a function");
@@ -82,34 +82,34 @@ export class ActionRegistry {
       metadata: options,
       schema: composioSchema,
     });
-    return composioSchema as unknown as ActionData;
+    return composioSchema as unknown as TRawActionData;
   }
 
   async getActions({
     actions,
   }: {
     actions: Array<string>;
-  }): Promise<Array<ActionData>> {
-    const actionsArr: Array<ActionData> = [];
+  }): Promise<Array<TRawActionData>> {
+    const actionsArr: Array<TRawActionData> = [];
     for (const name of actions) {
       const lowerCaseName = name.toLowerCase();
       if (this.customActions.has(lowerCaseName)) {
         const action = this.customActions.get(lowerCaseName);
-        actionsArr.push(action!.schema as ActionData);
+        actionsArr.push(action!.schema as TRawActionData);
       }
     }
     return actionsArr;
   }
 
-  async getAllActions(): Promise<Array<ActionData>> {
+  async getAllActions(): Promise<Array<TRawActionData>> {
     return Array.from(this.customActions.values()).map(
-      (action) => action.schema as ActionData
+      (action) => action.schema as TRawActionData
     );
   }
 
   async executeAction(
     name: string,
-    inputParams: Record<string, string>,
+    inputParams: Record<string, unknown>,
     metadata: ExecuteMetadata
   ): Promise<Record<string, unknown>> {
     const lowerCaseName = name.toLocaleLowerCase();
@@ -163,7 +163,7 @@ export class ActionRegistry {
     };
 
     return await callback(
-      inputParams,
+      inputParams as Record<string, string>,
       authCredentials,
       (data: ExecuteRequest) => executeRequest(data)
     );

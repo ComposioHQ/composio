@@ -1,4 +1,7 @@
-import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
+import {
+  ComposioToolSet as BaseComposioToolSet,
+  ZToolSchemaFilter,
+} from "../sdk/base.toolset";
 import { jsonSchemaToModel } from "../utils/shared";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
@@ -7,7 +10,7 @@ import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
-
+import { z } from "zod";
 type ToolSchema = {
   name: string;
   description: string;
@@ -36,8 +39,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
       config.apiKey || null,
       config.baseUrl || COMPOSIO_BASE_URL,
       config?.runtime || LangchainToolSet.FRAMEWORK_NAME,
-      config.entityId || LangchainToolSet.DEFAULT_ENTITY_ID,
-      config.workspaceConfig || Workspace.Host()
+      config.entityId || LangchainToolSet.DEFAULT_ENTITY_ID
     );
   }
 
@@ -71,14 +73,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
   }
 
   async getTools(
-    filters: {
-      actions?: Optional<Array<string>>;
-      apps?: Sequence<string>;
-      tags?: Optional<Array<string>>;
-      useCase?: Optional<string>;
-      usecaseLimit?: Optional<number>;
-      filterByAvailableApps?: Optional<boolean>;
-    },
+    filters: z.infer<typeof ZToolSchemaFilter>,
     entityId: Optional<string> = null
   ): Promise<Sequence<DynamicStructuredTool>> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {

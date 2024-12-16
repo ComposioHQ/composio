@@ -1,12 +1,10 @@
 import { tool } from "ai";
-import {
-  ActionData,
-  ComposioToolSet as BaseComposioToolSet,
-} from "../sdk/base.toolset";
+import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { jsonSchemaToModel } from "../utils/shared";
 import { z } from "zod";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
+import { TRawActionData } from "../sdk/common/action";
 type Optional<T> = T | null;
 
 const zExecuteToolCallParams = z.object({
@@ -39,7 +37,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     );
   }
 
-  private generateVercelTool(schema: ActionData) {
+  private generateVercelTool(schema: TRawActionData) {
     const parameters = jsonSchemaToModel(schema.parameters);
     return tool({
       description: schema.description,
@@ -64,7 +62,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     useCase?: Optional<string>;
     usecaseLimit?: Optional<number>;
     filterByAvailableApps?: Optional<boolean>;
-  }): Promise<{ [key: string]: ActionData }> {
+  }): Promise<{ [key: string]: TRawActionData }> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getTools",
       file: this.fileName,

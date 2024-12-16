@@ -225,6 +225,7 @@ export class Actions {
           filterImportantActions: data.filterImportantActions,
           showEnabledOnly: data.showEnabledOnly,
           usecaseLimit: data.usecaseLimit || undefined,
+          useCase: data.useCase as string,
         },
         body: {
           useCase: data.useCase as string,

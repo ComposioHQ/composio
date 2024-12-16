@@ -2,6 +2,8 @@ import { describe, it, expect, beforeAll } from "@jest/globals";
 import { ComposioToolSet } from "./base.toolset";
 import { getTestConfig } from "../../config/getTestConfig";
 import { ActionExecutionResDto } from "./client";
+import { TPostProcessor } from "./common/action";
+import { TPreProcessor } from "./common/action";
 
 describe("ComposioToolSet class tests", () => {
   let toolset: ComposioToolSet;
@@ -68,12 +70,14 @@ describe("ComposioToolSet class tests", () => {
     };
 
     const preProcessor = ({
-      toolRequest,
+      params,
     }: {
-      toolRequest: Record<string, unknown>;
+      params: Record<string, unknown>;
+      actionName: string;
+      appName: string;
     }) => {
       return {
-        ...toolRequest,
+        ...params,
         owner: "utkarsh-dixit",
         repo: "speedy",
         title: "Test issue2",
@@ -82,8 +86,11 @@ describe("ComposioToolSet class tests", () => {
 
     const postProcessor = ({
       toolResponse,
+      actionName,
+      appName,
     }: {
-      action: string;
+      actionName: string;
+      appName: string;
       toolResponse: ActionExecutionResDto;
     }) => {
       return {

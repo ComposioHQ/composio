@@ -3,7 +3,6 @@ import { z } from "zod";
 import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 import { Composio } from ".";
 import { getTestConfig } from "../../config/getTestConfig";
-import { ActionData } from "./base.toolset";
 
 describe("ActionRegistry", () => {
   let actionRegistry: ActionRegistry;
