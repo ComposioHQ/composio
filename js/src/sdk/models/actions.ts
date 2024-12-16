@@ -276,8 +276,11 @@ export class Actions {
       const { data: res } = await apiClient.actionsV2.advancedUseCaseSearch({
         query: {
           apps: data.apps.join(","),
-          useCase: data.useCase,
+          useCase: "",
           limit: data.limit || undefined,
+        },
+        body: {
+          useCase: data.useCase
         },
       });
       return res!.items.map((item) => item.actions).flat() || [];
