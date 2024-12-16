@@ -15,7 +15,14 @@ from composio_crewai import App, ComposioToolSet
 dotenv.load_dotenv()
 
 # Initialize tools.
-openai_client = ChatOpenAI(api_key=os.environ["OPENAI_API_KEY"])
+openai_client = ChatOpenAI(
+    api_key=os.environ["OPENAI_API_KEY"],
+    base_url="https://oai.helicone.ai/v1",
+    default_headers={
+        "Helicone-Auth": f"Bearer {os.environ['HELICONE_API_KEY']}",
+        "Helicone-Cache-Enabled": "true",
+    },
+)
 composio_toolset = ComposioToolSet()
 
 # Get All the tools

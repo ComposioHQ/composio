@@ -9,16 +9,26 @@ from langchain_openai import ChatOpenAI
 from composio import Action, App
 
 
-
-llm = ChatOpenAI(model="gpt-4-turbo")
+llm = ChatOpenAI(
+    model="gpt-4-turbo",
+    base_url="https://oai.helicone.ai/v1",
+    default_headers={
+        "Helicone-Auth": f"Bearer {os.environ['HELICONE_API_KEY']}",
+        "Helicone-Cache-Enabled": "true",
+    },
+)
 
 while True:
     main_task = input("Enter the task you want to perform (or type 'exit' to quit): ")
     if main_task.lower() == "exit":
         break
 
-    code_interpreter_tools = ComposioToolSet(output_dir=Path.home() / "composio_output").get_tools(apps=[App.CODEINTERPRETER])
-    sql_tools = ComposioToolSet(output_dir=Path.home() / "composio_output").get_tools(apps=[App.SQLTOOL])
+    code_interpreter_tools = ComposioToolSet(
+        output_dir=Path.home() / "composio_output"
+    ).get_tools(apps=[App.CODEINTERPRETER])
+    sql_tools = ComposioToolSet(output_dir=Path.home() / "composio_output").get_tools(
+        apps=[App.SQLTOOL]
+    )
 
     code_interpreter_agent = Agent(
         role="Python Code Interpreter Agent",
