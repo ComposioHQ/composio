@@ -78,6 +78,7 @@ jobs:
         env:
           DOCKER_USER: ${{secrets.DOCKER_USER}}
           OPENAI_API_KEY: ${{secrets.OPENAI_API_KEY}}
+          HELICONE_API_KEY: ${{secrets.HELICONE_API_KEY}}
           JULEP_API_KEY: ${{secrets.JULEP_API_KEY}}
           JULEP_API_URL: ${{secrets.JULEP_API_URL}}
           LISTENNOTES_API_KEY: ${{secrets.LISTENNOTES_API_KEY}}
