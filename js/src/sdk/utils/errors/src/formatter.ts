@@ -1,7 +1,7 @@
 import { AxiosError } from "axios";
 import { SDK_ERROR_CODES } from "./constants";
 
-interface ErrorResponseData {
+export interface ErrorResponseData {
   message: string;
   error: string;
   errors?: Record<string, unknown>[];

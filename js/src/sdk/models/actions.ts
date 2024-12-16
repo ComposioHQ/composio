@@ -222,11 +222,13 @@ export class Actions {
           apps: apps,
           showAll: data.showAll,
           tags: data.tags,
-          useCase: data.useCase as string,
           filterImportantActions: data.filterImportantActions,
           showEnabledOnly: data.showEnabledOnly,
           usecaseLimit: data.usecaseLimit || undefined,
         },
+        body:{
+          useCase: data.useCase as string,
+        }
       });
       return response.data!;
     } catch (error) {

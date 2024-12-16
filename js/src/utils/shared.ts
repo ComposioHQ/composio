@@ -170,7 +170,7 @@ export function jsonSchemaToModel(
           )
       );
       zodType = z
-        .union(anyOfTypes)
+        .union(anyOfTypes as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]])
         .describe(
           ((value.description as string) || "") +
             (value.examples

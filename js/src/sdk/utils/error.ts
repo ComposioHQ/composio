@@ -5,12 +5,12 @@ import {
 } from "./errors/src/constants";
 import { ComposioError } from "./errors/src/composioError";
 import {
+  ErrorResponseData,
   generateMetadataFromAxiosError,
   getAPIErrorDetails,
 } from "./errors/src/formatter";
 import { AxiosError } from "axios";
 import { ZodError } from "zod";
-import { ErrorResponseData } from "./errors/src/constants";
 
 export class CEG {
   static handleAllError(error: unknown, shouldThrow: boolean = false) {
