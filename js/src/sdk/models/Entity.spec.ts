@@ -38,7 +38,7 @@ describe("Entity class tests", () => {
   it("get connection for github", async () => {
     const app = "github";
     const connection = await entity.getConnection({ app });
-    expect(connection.appUniqueId).toBe(app);
+    expect(connection?.appUniqueId).toBe(app);
   });
 
   it("execute action", async () => {
@@ -52,7 +52,7 @@ describe("Entity class tests", () => {
     const executionResult = await entity.execute({
       actionName,
       params: requestBody,
-      connectedAccountId: connectedAccount.id,
+      connectedAccountId: connectedAccount?.id,
     });
     expect(executionResult).toBeDefined();
     expect(executionResult).toHaveProperty("successfull", true);

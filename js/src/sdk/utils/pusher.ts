@@ -150,7 +150,7 @@ export class PusherUtils {
     PusherUtils.bindWithChunking(
       channel as PusherClient,
       "trigger_to_client",
-      fn
+      fn as (data: unknown) => void
     );
 
     logger.info(

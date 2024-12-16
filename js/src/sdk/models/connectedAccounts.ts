@@ -133,7 +133,6 @@ export class ConnectedAccounts {
     });
     try {
       const {
-        integrationId,
         entityId = "default",
         labels,
         data = {},
@@ -142,6 +141,8 @@ export class ConnectedAccounts {
         authConfig,
         appName,
       } = payload;
+      let integrationId: string | undefined;
+      integrationId = payload.integrationId;
 
       if (!integrationId && authMode) {
         const timestamp = new Date().toISOString().replace(/[-:.]/g, "");

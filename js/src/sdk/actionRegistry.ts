@@ -4,6 +4,7 @@ import { ActionProxyRequestConfigDTO } from "./client";
 import { Composio } from ".";
 import apiClient from "../sdk/client/client";
 import { CEG } from "./utils/error";
+import { ActionData } from "./base.toolset";
 
 type ExecuteRequest = Omit<ActionProxyRequestConfigDTO, "connectedAccountId">;
 export interface CreateActionOptions {
@@ -46,7 +47,7 @@ export class ActionRegistry {
 
   async createAction(
     options: CreateActionOptions
-  ): Promise<Record<string, unknown>> {
+  ): Promise<ActionData> {
     const { callback } = options;
     if (typeof callback !== "function") {
       throw new Error("Callback must be a function");
@@ -83,27 +84,27 @@ export class ActionRegistry {
       metadata: options,
       schema: composioSchema,
     });
-    return composioSchema;
+    return composioSchema as unknown as ActionData;
   }
 
   async getActions({
     actions,
   }: {
     actions: Array<string>;
-  }): Promise<Array<Record<string, unknown>>> {
-    const actionsArr: Array<Record<string, unknown>> = [];
+  }): Promise<Array<ActionData>> {
+    const actionsArr: Array<ActionData> = [];
     for (const name of actions) {
       const lowerCaseName = name.toLowerCase();
       if (this.customActions.has(lowerCaseName)) {
         const action = this.customActions.get(lowerCaseName);
-        actionsArr.push(action!.schema);
+        actionsArr.push(action!.schema as ActionData);
       }
     }
     return actionsArr;
   }
 
-  async getAllActions(): Promise<Array<Record<string, unknown>>> {
-    return Array.from(this.customActions.values()).map((action) => action);
+  async getAllActions(): Promise<Array<ActionData>> {
+    return Array.from(this.customActions.values()).map((action) => action.schema as ActionData);
   }
 
   async executeAction(
@@ -134,12 +135,13 @@ export class ActionRegistry {
           `Connection with app name ${toolName} and entityId ${metadata.entityId} not found`
         );
       }
+      const connectionParams = (connection as unknown as Record<string, unknown>).connectionParams as Record<string, unknown>;
       authCredentials = {
-        headers: connection.connectionParams?.headers,
-        queryParams: connection.connectionParams?.queryParams,
+        headers: connectionParams?.headers,
+        queryParams: connectionParams?.queryParams,
         baseUrl:
-          connection.connectionParams?.baseUrl ||
-          connection.connectionParams?.base_url,
+          connectionParams?.baseUrl ||
+          connectionParams?.base_url,
       };
     }
     if (typeof callback !== "function") {

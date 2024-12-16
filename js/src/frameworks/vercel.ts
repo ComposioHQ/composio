@@ -93,6 +93,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     actionsList.items?.forEach((actionSchema) => {
       // @ts-ignore
       tools[actionSchema.name!] = this.generateVercelTool(
+        // @ts-ignore
         actionSchema as ActionData
       );
     });

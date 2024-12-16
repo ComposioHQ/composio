@@ -13,11 +13,17 @@ import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 import { getUserDataJson } from "./utils/config";
 import { z } from "zod";
 
-export type ActionData = {
+export type ActionData = { 
   name: string;
   display_name: string;
   description: string;
-  parameters: Record<string, unknown>;
+  parameters: {
+    type: string;
+    title: string;
+    description: string;
+    required: string[];
+    properties: Record<string, unknown>;
+  };
   response: Record<string, unknown>;
   appKey: string;
   appId: string;
@@ -25,10 +31,16 @@ export type ActionData = {
   appName: string;
   enabled: boolean;
   logo: string;
+  metadata: {
+    actionName: string;
+    toolName: string;
+  };
+  
 };
 type GetListActionsResponse = {
   items: ActionData[];
 };
+
 
 const ZExecuteActionParams = z.object({
   action: z.string(),
@@ -217,7 +229,7 @@ export class ComposioToolSet {
     ];
 
     return toolsActions.map((action) => {
-      return this.modifyActionForLocalExecution(action);
+      return this.modifyActionForLocalExecution(action as ActionData);
     });
   }
 
@@ -314,6 +326,7 @@ export class ComposioToolSet {
         return true;
       })
       .map((action) => {
+        // @ts-expect-error
         return action.schema;
       });
 
@@ -328,10 +341,10 @@ export class ComposioToolSet {
     });
   }
 
-  modifyActionForLocalExecution(toolSchema: Record<string, unknown>) {
+  modifyActionForLocalExecution(toolSchema:ActionData) {
     const properties = convertReqParams(toolSchema.parameters.properties);
     toolSchema.parameters.properties = properties;
-    const response = toolSchema.response.properties;
+    const response = toolSchema.response.properties as Record<string, unknown>;
 
     for (const responseKey of Object.keys(response)) {
       if (responseKey === "file") {
