@@ -124,6 +124,13 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
     return wrapper  # type: ignore
 
 
+class _Retry:
+    """Sentinel value to indicate that the processor should retry the action"""
+
+
+RETRY = _Retry()
+
+
 class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     """Composio toolset."""
 
@@ -168,6 +175,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         output_dir: t.Optional[Path] = None,
         verbosity_level: t.Optional[int] = None,
         connected_account_ids: t.Optional[t.Dict[AppType, str]] = None,
+        *,
+        max_retries: int = 3,
         **kwargs: t.Any,
     ) -> None:
         """
@@ -295,6 +304,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self._connected_account_ids = self._validating_connection_ids(
             connected_account_ids=connected_account_ids or {}
         )
+        self.max_retries = max_retries
 
     def _validating_connection_ids(
         self,
@@ -639,7 +649,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         key: _KeyType,
         data: t.Dict,
         type_: te.Literal["pre", "post", "schema"],
-    ) -> t.Dict:
+    ) -> t.Union[t.Dict, _Retry]:
         processor = self._get_processor(key=key, type_=type_)
         if processor is not None:
             self.logger.info(
@@ -657,37 +667,75 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         return data
 
     def _process_request(self, action: Action, request: t.Dict) -> t.Dict:
-        return self._process(
-            key=action,
-            data=self._process(
-                key=App(action.app),
-                data=request,
-                type_="pre",
-            ),
+        processed = self._process(
+            key=App(action.app),
+            data=request,
             type_="pre",
         )
+        if isinstance(processed, _Retry):
+            raise ComposioSDKError(
+                "Received RETRY from App preprocessor function."
+                " Preprocessors cannot be retried."
+            )
 
-    def _process_respone(self, action: Action, response: t.Dict) -> t.Dict:
-        return self._process(
+        processed = self._process(
+            key=action,
+            data=processed,
+            type_="pre",
+        )
+        if isinstance(processed, _Retry):
+            raise ComposioSDKError(
+                "Received RETRY from Action preprocessor function."
+                " Preprocessors cannot be retried."
+            )
+
+        return processed
+
+    def _process_respone(
+        self, action: Action, response: t.Dict
+    ) -> t.Union[t.Dict, _Retry]:
+        processed = self._process(
             key=App(action.app),
-            data=self._process(
-                key=action,
-                data=response,
-                type_="post",
-            ),
+            data=response,
             type_="post",
         )
+        if isinstance(processed, _Retry):
+            return RETRY
+
+        processed = self._process(
+            key=action,
+            data=processed,
+            type_="post",
+        )
+        if isinstance(processed, _Retry):
+            return RETRY
+
+        return processed
 
     def _process_schema_properties(self, action: Action, properties: t.Dict) -> t.Dict:
-        return self._process(
+        processed = self._process(
             key=App(action.app),
-            data=self._process(
-                key=action,
-                data=properties,
-                type_="schema",
-            ),
+            data=properties,
             type_="schema",
         )
+        if isinstance(processed, _Retry):
+            raise ComposioSDKError(
+                "Received RETRY from App schema processor function."
+                " Schema pprocessors cannot be retried."
+            )
+        assert not isinstance(processed, _Retry)
+
+        processed = self._process(
+            key=action,
+            data=processed,
+            type_="schema",
+        )
+        if isinstance(processed, _Retry):
+            raise ComposioSDKError(
+                "Received RETRY from Action preprocessor function."
+                " Schema processors cannot be retried."
+            )
+        return processed
 
     def _merge_processors(self, processors: ProcessorsType) -> None:
         for processor_type in self._processors.keys():
@@ -743,30 +791,44 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self.logger.info(
             f"Executing `{action.slug}` with {params=} and {metadata=} {connected_account_id=}"
         )
-        response = (
-            self._execute_local(
-                action=action,
-                params=params,
-                metadata=metadata,
-                entity_id=entity_id,
+
+        for _ in range(self.max_retries):
+            response = (
+                self._execute_local(
+                    action=action,
+                    params=params,
+                    metadata=metadata,
+                    entity_id=entity_id,
+                )
+                if action.is_local
+                else self._execute_remote(
+                    action=action,
+                    params=params,
+                    entity_id=entity_id or self.entity_id,
+                    connected_account_id=connected_account_id,
+                    text=text,
+                    session_id=self.workspace.id,
+                )
             )
-            if action.is_local
-            else self._execute_remote(
-                action=action,
-                params=params,
-                entity_id=entity_id or self.entity_id,
-                connected_account_id=connected_account_id,
-                text=text,
-                session_id=self.workspace.id,
+            processed_response = (
+                response
+                if action.is_runtime
+                else self._process_respone(action=action, response=response)
             )
-        )
-        response = (
-            response
-            if action.is_runtime
-            else self._process_respone(action=action, response=response)
-        )
-        self.logger.info(f"Got {response=} from {action=} with {params=}")
-        return response
+            if isinstance(processed_response, _Retry):
+                self.logger.info(
+                    f"Got {processed_response=} from {action=} with {params=}, retrying..."
+                )
+                continue
+
+            response = processed_response
+            self.logger.info(f"Got {response=} from {action=} with {params=}")
+            return response
+
+        else:
+            raise ComposioSDKError(
+                f"Failed to execute {action=} after {self.max_retries} retries"
+            )
 
     @t.overload
     def execute_request(
