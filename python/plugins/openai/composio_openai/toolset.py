@@ -16,7 +16,7 @@ from openai.types.chat.chat_completion_message_tool_call import (
 )
 from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 
-from composio import Action, ActionType, AppType, TagType
+from composio import ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import OpenAISchema, SchemaType
@@ -176,7 +176,7 @@ class ComposioToolSet(
         :return: Object containing output data from the tool call.
         """
         return self.execute_action(
-            action=Action(value=tool_call.function.name),
+            action=tool_call.function.name,
             params=json.loads(tool_call.function.arguments),
             entity_id=entity_id or self.entity_id,
         )

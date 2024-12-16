@@ -17,6 +17,9 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.10"]
     timeout-minutes: 10
+    concurrency:
+      group: 'test:lock-check:${{ github.ref }}'
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -42,6 +45,9 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.10"]
     timeout-minutes: 30
+    concurrency:
+      group: 'test:linter_checks:${{ github.ref }}'
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -49,11 +55,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          sudo apt-get update --fix-missing
-          sudo apt-get autoremove
-          sudo apt-get autoclean
-          pip install --user --upgrade setuptools
-          pip install tox==4.6.3
+          pip install 'tox>=4.21,<5' tox-uv
       - name: Code style check
         run: |
           tox -e black-diff
@@ -69,14 +71,15 @@ jobs:
       run:
         working-directory: ./python
     continue-on-error: False
-    needs:
-      - lock_check
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9", "3.10", "3.11"]
     timeout-minutes: 20
+    concurrency:
+      group: 'test:common:${{ matrix.python-version }}:${{ github.ref }}'
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -87,11 +90,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install Dependencies
         run: |
-          sudo apt-get update --fix-missing
-          sudo apt-get autoremove
-          sudo apt-get autoclean
-          pip install --user --upgrade setuptools
-          pip install tox==4.6.3
+          pip install 'tox>=4.21,<5' tox-uv
       - name: Unittests
         run: |
           export COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY_STAGING }}
@@ -99,9 +98,48 @@ jobs:
           export FLY_API_TOKEN=${{ secrets.FLY_API_TOKEN }}
           export E2B_API_KEY=${{ secrets.E2B_API_KEY_STAGING }}
 
-          tox -e test -- -m 'not e2e'
+          tox -e test -- -m 'not e2e and not swe'
       - if: matrix.python-version == '3.10'
         name: Upload test results to Codecov
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  swe:
+    defaults:
+      run:
+        working-directory: ./python
+    continue-on-error: False
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+    timeout-minutes: 20
+    concurrency:
+      group: 'test:swe:${{ matrix.python-version }}:${{ github.ref }}'
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Dependencies
+        run: |
+          pip install 'tox>=4.21,<5' tox-uv
+      - name: Unittests
+        run: |
+          export COMPOSIO_API_KEY=${{ secrets.COMPOSIO_API_KEY_STAGING }}
+          export COMPOSIO_BASE_URL=${{ secrets.COMPOSIO_BASE_URL_STAGING }}
+          export FLY_API_TOKEN=${{ secrets.FLY_API_TOKEN }}
+          export E2B_API_KEY=${{ secrets.E2B_API_KEY_STAGING }}
+
+          tox -e test -- -m 'swe'
+      - name: Upload test results to Codecov
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -111,8 +149,6 @@ jobs:
       run:
         working-directory: ./python
     continue-on-error: False
-    needs:
-      - lock_check
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -141,11 +177,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install Dependencies
         run: |
-          sudo apt-get update --fix-missing
-          sudo apt-get autoremove
-          sudo apt-get autoclean
-          pip install --user --upgrade setuptools
-          pip install tox==4.6.3
+          pip install 'tox>=4.21,<5' tox-uv
       - name: Build docker images
         run: |
           cd dockerfiles

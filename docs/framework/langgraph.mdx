@@ -14,8 +14,11 @@ In this example, we will use LangGraph Agent to star a repository on Github usin
 ```bash Python
 pip install composio-langgraph
 ```
-```javascript JavaScript
-coming soon
+```bash TypeScript
+npm i @langchain/langgraph
+npm i composio-core 
+npm i @langchain/openai
+npm i @langchain/core
 ```
 </CodeGroup>
 </Step>
@@ -39,8 +42,22 @@ tool_node = ToolNode(tools)
 model = ChatOpenAI(temperature=0, streaming=True)
 model_with_tools = model.bind_tools(tools)
 ```
-```javascript JavaScript
-coming soon
+```typescript TypeScript
+import { LangGraphToolSet } from "composio-core";
+import { ToolNode } from "@langchain/langgraph/prebuilt";
+import { ChatOpenAI } from "@langchain/openai";
+import { StateGraph, END, MessagesAnnotation, START } from "@langchain/langgraph";
+import { HumanMessage } from "@langchain/core/messages";
+
+const composioToolset = new LangGraphToolSet();
+
+const tools = await composioToolset.getTools({
+    apps: ["github"],
+});
+
+const toolNode = new ToolNode(tools);
+
+const model = new ChatOpenAI({ temperature: 0, apiKey:""}).bindTools(tools);
 ```
 </CodeGroup>
 </Step>
@@ -56,8 +73,12 @@ def call_model(state: MessagesState):
     response = model_with_tools.invoke(messages)
     return {"messages": [response]}
 ```
-```javascript JavaScript
-coming soon
+```typescript TypeScript
+async function callModal(state) {
+    const { messages } = state;
+    const response = await model.invoke(messages);
+    return { messages: [response] };
+}
 ```
 </CodeGroup>
 </Step>
@@ -78,8 +99,17 @@ def should_continue(state: MessagesState) -> Literal["tools", "__end__"]:
         return "tools"
     return "__end__"
 ```
-```javascript JavaScript
-coming soon
+```typescript TypeScript
+async function shouldContinue(state) {
+    const { messages } = state;
+    const lastMessage = messages[messages.length - 1];
+
+    if (lastMessage.additional_kwargs.tool_calls) {
+        return "tools";
+    } else {
+        return END;
+    }
+}
 ```
 </CodeGroup>
 </Step>
@@ -100,8 +130,15 @@ workflow.add_edge("tools", "agent")
 
 app = workflow.compile()
 ```
-```javascript JavaScript
-coming soon
+```typescript TypeScript
+const workflow = new StateGraph(MessagesAnnotation)
+    .addNode("agent", callModal)
+    .addEdge(START, "agent")
+    .addNode("tools", toolNode)
+    .addConditionalEdges("agent", shouldContinue)
+    .addEdge("tools", "agent");
+
+const app = workflow.compile();
 ```
 </CodeGroup>
 </Step>
@@ -122,8 +159,14 @@ for chunk in app.stream(
 ):
     chunk["messages"][-1].pretty_print()
 ```
-```javascript JavaScript
-coming soon
+```typescript TypeScript
+const stream = await app.invoke({
+    messages: [
+        new HumanMessage("Star the Github Repository composiohq/composio"),
+    ],
+});
+
+console.log(stream.messages[stream.messages.length - 1].content);
 ```
 </CodeGroup>
 </Step>

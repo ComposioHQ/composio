@@ -80,15 +80,15 @@ class ExecuteActionRequest(BaseModel):
         ...,
         description="Parameters for executing the request.",
     )
-    metadata: t.Dict = Field(
+    metadata: t.Optional[t.Dict] = Field(
         None,
         description="Metadata for executing action.",
     )
-    entity_id: str = Field(
+    entity_id: t.Optional[str] = Field(
         None,
         description="Entity ID associated with the account.",
     )
-    connected_account_id: str = Field(
+    connected_account_id: t.Optional[str] = Field(
         None,
         description="Connection ID to use for executing the action.",
     )
@@ -169,7 +169,7 @@ def create_app() -> FastAPI:
     @with_exception_handling
     def _update_apps() -> bool:
         """Get list of all available apps."""
-        from composio.cli.apps import (  # pylint: disable=import-outside-toplevel
+        from composio.client.utils import (  # pylint: disable=import-outside-toplevel
             update_actions,
             update_apps,
             update_triggers,

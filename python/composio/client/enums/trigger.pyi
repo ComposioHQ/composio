@@ -1,14 +1,22 @@
-"""
-Trigger enums.
-"""
+import typing as t
 
-from composio.client.enums.base import TRIGGERS_CACHE, TriggerData, _AnnotatedEnum, enum
+from composio.client.enums.enum import Enum, EnumGenerator
 
+from .base import TriggerData
 
-@enum
-class Trigger(_AnnotatedEnum[TriggerData], path=TRIGGERS_CACHE):
-    """Trigger object."""
+_TRIGGER_CACHE: t.Dict[str, "Trigger"] = {}
 
+class Trigger(Enum[TriggerData], metaclass=EnumGenerator):
+    cache_folder = "triggers"
+    cache = _TRIGGER_CACHE
+    storage = TriggerData
+
+    def load_from_runtime(self) -> t.Optional[TriggerData]: ...
+    def fetch_and_cache(self) -> t.Optional[TriggerData]: ...
+    @property
+    def name(self) -> str: ...
+    @property
+    def app(self) -> str: ...
     ASANA_TASK_TRIGGER: "Trigger"
     GITHUB_COMMIT_EVENT: "Trigger"
     GITHUB_FOLLOWER_EVENT: "Trigger"
@@ -31,6 +39,8 @@ class Trigger(_AnnotatedEnum[TriggerData], path=TRIGGERS_CACHE):
     PIPEDRIVE_PIPEDRIVE_NEW_DEAL_TRIGGER: "Trigger"
     PIPEDRIVE_PIPEDRIVE_NEW_NOTE_TRIGGER: "Trigger"
     PIPEDRIVE_PIPEDRIVE_NEW_ORGANIZATION_TRIGGER: "Trigger"
+    SALESFORCE_NEW_CONTACT_TRIGGER: "Trigger"
+    SALESFORCE_NEW_LEAD_TRIGGER: "Trigger"
     SLACKBOT_CHANNEL_CREATED: "Trigger"
     SLACKBOT_REACTION_ADDED: "Trigger"
     SLACKBOT_REACTION_REMOVED: "Trigger"
@@ -51,13 +61,3 @@ class Trigger(_AnnotatedEnum[TriggerData], path=TRIGGERS_CACHE):
     YOUTUBE_NEW_SUBSCRIPTION_TRIGGER: "Trigger"
     ZENDESK_NEW_USER_TRIGGER: "Trigger"
     ZENDESK_NEW_ZENDESK_TICKET_TRIGGER: "Trigger"
-
-    @property
-    def name(self) -> str:
-        """Name of the trigger."""
-        return self.load().name
-
-    @property
-    def app(self) -> str:
-        """Name of the app where this trigger belongs to."""
-        return self.load().app

@@ -1,0 +1,66 @@
+---
+title: "Using Composio With LiteLLM"
+sidebarTitle: "LiteLLM"
+icon: "people-group"
+description: "Integrate Composio with LiteLLM and seamlessly interact with external apps"
+---
+
+## Star A Repository on Github
+In this example, we will use LiteLLM to star a repository on Github using Composio Tools
+
+<Steps>
+<Step title="Install Packages">
+```bash Python
+ pip install composio_openai litellm
+```
+</Step>
+<Step title="Import Libraries, Initialize ComposioToolSet & Create Router">
+```bash Python
+from composio_openai import ComposioToolSet, App
+from litellm.router import Router
+
+toolset = ComposioToolSet()
+
+router = Router(
+    model_list=[
+        {
+            "model_name": "anthropic/claude-3-5",
+            "litellm_params": {
+                "model": "claude-3-opus-20240229",
+                "api_key": "<your-anthropic-api-key>",
+            },
+        }
+    ]
+)
+```
+</Step>
+
+<Step title="Get All Github Tools">
+You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
+<CodeGroup>
+```python Python
+tools = toolset.get_tools(apps=[App.GITHUB])
+```
+</CodeGroup>
+
+</Step>
+<Step title="Configure Router">
+```python Python
+response = router.completion(
+    model="anthropic/claude-3-5",
+    messages=[
+        {"role": "user", "content": "Star the repository composiohq/composio on github"},
+    ],
+    tools=tools,
+    tool_choice="auto",
+)
+```
+</Step>
+
+<Step title="Execute Tool Calls">
+```python Python
+result = toolset.handle_tool_calls(response=response)
+print(result)
+```
+</Step>
+</Steps>

@@ -24,6 +24,7 @@ def mock_load_dataset():
         yield mock
 
 
+@pytest.mark.swe
 class TestIntegration:
     image_name = "composio/swe:testing"
 

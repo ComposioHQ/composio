@@ -133,7 +133,7 @@ def json_schema_to_pydantic_field(
                 json_schema=json_schema,
             ),
         ),
-        Field(
+        Field(  # type: ignore
             description=description,
             examples=examples,
             default=(

@@ -49,16 +49,19 @@ def test_find_actions_by_tags() -> None:
 
 def test_uninitialize_app() -> None:
     """Test if the usage of an app without connected account raises error or not."""
+    # Ensure the app is cached
+    # TODO: remove this once App.iter() uses a dedicated endpoint
+    # for fetching latest enums
+    App.ATTIO.load()
+
     with pytest.raises(
         ComposioSDKError,
         match=(
-            "No connected account found for app `linear`; "
-            "Run `composio add linear` to fix this"
+            "No connected account found for app `ATTIO`; "
+            "Run `composio add attio` to fix this"
         ),
     ):
-        ComposioToolSet().get_action_schemas(
-            actions=[Action.LINEAR_CREATE_LINEAR_ISSUE]
-        )
+        ComposioToolSet().get_action_schemas(actions=[Action.ATTIO_UPDATE_A_LIST])
 
 
 class TestValidateTools:

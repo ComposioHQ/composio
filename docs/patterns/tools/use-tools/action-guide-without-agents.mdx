@@ -10,14 +10,11 @@ description: "Guide to use Tools directly as function calls"
 Composio allows you to execute tools directly as function calls. When calling a tool directly, you'll need to provide the input parameters. Checkout [Get Action Schema](/patterns/tools/use-tools/get-action-inputs) to learn how to get the input parameters for an action.
 
 <CodeGroup>
- ```python Python Star a repo
+ ```python Python
 from composio import ComposioToolSet, Action
 
 tool_set = ComposioToolSet(entity_id="Jessica")
-#If you did not run 'composio login' in the CLI, you can use API Key like this:
-#tool_set = ComposioToolSet(api_key, entity_id="Jessica")
 
-#You can change the repo you want to star by modifying the parameters
 tool_set.execute_action(
     action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
     params={"owner": "composiohq", "repo": "composio"},
@@ -25,27 +22,20 @@ tool_set.execute_action(
 )
 ```
 
-```javascript JavaScript Get Hypermedia links in GitHub
+```javascript JavaScript
 import { OpenAIToolSet } from "composio-core";
 
 const toolset = new OpenAIToolSet();
+const entity = toolset.client.getEntity("Jessica");
 
-const customAuthAction = await toolset.client.actions.execute({
-    actionName: "GITHUB_GITHUB_API_ROOT",
-    requestBody: {
-        appName: "github",
-        authConfig: {
-            parameters: [{
-                name: "Authorization",
-                in: "header",
-                value: `Bearer YOUR_API_KEY`
-            }]
-        },
-        input: {}
+const result = await entity.execute(
+    "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
+    {
+        "owner": "composiohq",
+        "repo": "composio"
     }
-});
-
-console.log("Custom auth action response", customAuthAction)
+);
+console.log(result);
   ```
 </CodeGroup>
 
@@ -53,58 +43,51 @@ console.log("Custom auth action response", customAuthAction)
 You can also execute Tools or Actions by passing in natural language prompts without specific parameters
 <CodeGroup>
 ```python Python
-  tool_set.execute_action(
-      action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
-      params={},
-      # Natural language prompt
-      text="Star the repo composiohq/composio",
-      entity_id="Jessica",
-  )
+tool_set.execute_action(
+    action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
+    params={},
+    # Natural language prompt
+    text="Star the repo composiohq/composio",
+    entity_id="Jessica",
+)
 ```
 
 ```javascript JavaScript
-  await toolset.getEntity("Jessica").execute(
+const result = await toolset.client.getEntity("Jessica").execute(
     'github_star_a_repository_for_the_authenticated_user',
     {},
     // Natural language prompt
     "Star the repo composiohq/composio"
-  );
-```
-</CodeGroup>
-
-### How can I use Tools for a specific user?
-You can use the entity object of a specific user and execute action on behalf of that user. Learn more about Entities [here](/patterns/Auth/connected_account#entities).
-
-<CodeGroup>
-
-```python Python {4}
-from composio import ComposioToolSet
-
-toolset = ComposioToolSet()
-entity = toolset.get_entity(id='Jessica')
-
-res = entity.execute(
-    action=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
-    params={
-        "owner": "composiohq",
-        "repo": "composio"
-    },
 )
-print(res)
-```
-
-```javascript JavaScript {4}
-import { OpenAIToolSet } from "composio-core";
-
-const toolset = new OpenAIToolSet();
-const entity = toolset.client.getEntity(id='Jessica');
-const result =  entity.execute(
-    action="GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
-    params={
-        "owner": "composiohq",
-        "repo": "composio"
-    },
-)       
 console.log(result);
 ```
 </CodeGroup>
+
+### How to execute custom actions directly?
+You can execute custom actions directly by specifying the action name as shown below. Here `create_draft` is the custom action name. Learn more about custom actions [here](/patterns/tools/build-tools/custom-action-with-auth).
+<CodeGroup>
+```python Python {2}
+toolset.execute_action(
+    action=create_draft,
+    params={
+        "thread_id": "",
+        "message_body": "",
+    },
+    entity_id="Jessica",
+)
+```
+```javascript JavaScript {2}
+const result = await langchainToolset.executeAction({
+    action: "create_draft",
+    params:{
+        thread_id: "",
+        message_body: ""
+    },
+    entityId: "Jessica",
+})
+
+console.log(result);
+```
+</CodeGroup>
+
+

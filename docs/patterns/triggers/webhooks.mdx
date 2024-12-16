@@ -1,9 +1,10 @@
 ---
-title: "Monitoring Connected Accounts via Webhooks"
-sidebarTitle: "Admin Webhooks"
+title: "Getting Started with Webhooks"
+sidebarTitle: "Webhooks"
 icon: "bell"
-description: "Learn how to configure and utilize Admin Webhooks for real-time notifications about connected account activities in your integration."
+description: "Learn how to configure and receive real-time notifications about activities in your Composio account through webhooks"
 ---
+Webhooks provide a way to receive real-time notifications when specific events occur in your Composio account. Instead of continuously polling for changes, webhooks push data to your application as events happen, making them ideal for building responsive integrations.
 
 ## Configuring Your Webhook
 
@@ -12,11 +13,11 @@ description: "Learn how to configure and utilize Admin Webhooks for real-time no
 <Steps>
 <Step title="Set Up Your Webhook URL in Composio">
 
-1. Navigate to your Composio dashboard
-2. Access the "Settings" section
-3. Locate and click on "Events and Triggers"
-4. In the "Admin Event Webhook URL" field, input your designated URL
-5. Confirm by clicking the "Update" button
+1. Navigate to your Composio [Dashboard](https://app.composio.dev/)
+2. Access the [Settings](https://app.composio.dev/settings) section
+3. Locate and click on [Events and Triggers](https://app.composio.dev/events_and_triggers)
+4. For App triggers enter your webhook url in **Trigger Webhook** and for admin triggers  add your webhook url in **Admin Event Webhook**
+5. Confirm by clicking the **Update** button
 
 </Step>
 <Step title="Install Required Packages">
@@ -55,11 +56,11 @@ if __name__ == '__main__':
 <Steps>
 <Step title="Set Up Your Webhook URL in Composio">
 
-1. Navigate to your Composio dashboard
-2. Access the "Settings" section
-3. Locate and click on "Events and Triggers"
-4. In the "Admin Event Webhook URL" field, input your designated URL
-5. Confirm by clicking the "Update" button
+1. Navigate to your Composio [Dashboard](https://app.composio.dev/)
+2. Access the [Settings](https://app.composio.dev/settings) section
+3. Locate and click on [Events and Triggers](https://app.composio.dev/events_and_triggers)
+4. For App triggers enter your webhook url in **Trigger Webhook** and for admin triggers  add your webhook url in **Admin Event Webhook**
+5. Confirm by clicking the **Update** button
 
 </Step>
 <Step title="Install Required Packages">
@@ -95,8 +96,28 @@ app.listen(PORT, () => {
 </Tab>
 </Tabs>
 ## Understanding the Webhook Payload
-The Admin Webhook delivers a rich JSON payload containing vital information about connected account activities. Let's explore a sample payload to understand its structure and the data it provides.
-### Sample Payload: Slack Connection Initiation
+<Tabs>
+<Tab title="App Triggers">  
+Below is the payload for an app trigger for **Slack's `SLACK_RECEIVE_MESSAGE` trigger**.
+```json
+{
+  "trigger_name": "SLACK_RECEIVE_MESSAGE",
+  "connection_id": "7baac1d4-e3be-41ae-9550-5ce9829579c9",
+  "trigger_id": "fb36f8db-caf0-4d2c-9cd6-0cb575a5689e",
+  "payload": {
+    "channel": "C07JB863EBW",
+    "user": "U07JMDFMR7B",
+    "text": "hey",
+    "ts": "1733236813.895519",
+    "team_id": "T07J24QFB62",
+    "bot_id": null,
+    "channel_type": "channel"
+  }
+}
+```
+</Tab>
+<Tab title="Admin Triggers">
+Below is the payload for an admin event trigger for **Slack Connection Initiation**.
 ```json
 {
   "event": {
@@ -135,3 +156,5 @@ With this real-time data at your fingertips, you can:
 1. **Monitor User Onboarding**: Track when and how users are connecting to your integration.
 2. **Enhance User Experience**: Provide immediate feedback or assistance to users as they interact with your integration.
 3. **Troubleshoot Issues**: Quickly identify and respond to any connection problems or anomalies.
+</Tab>
+</Tabs>

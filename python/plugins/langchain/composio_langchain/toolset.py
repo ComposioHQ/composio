@@ -7,7 +7,7 @@ import pydantic.error_wrappers
 import typing_extensions as te
 from langchain_core.tools import StructuredTool as BaseStructuredTool
 
-from composio import Action, ActionType, AppType, TagType
+from composio import ActionType, AppType, TagType
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.toolset import ProcessorsType
 from composio.utils.pydantic import parse_pydantic_error
@@ -82,7 +82,7 @@ class ComposioToolSet(
             """Wrapper function for composio action."""
             self.logger.debug(f"Executing action: {action} with params: {kwargs}")
             return self.execute_action(
-                action=Action(value=action),
+                action=action,
                 params=kwargs,
                 entity_id=entity_id or self.entity_id,
             )

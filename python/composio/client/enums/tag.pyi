@@ -1,14 +1,22 @@
-"""
-Tag enums.
-"""
+import typing as t
 
-from composio.client.enums.base import TAGS_CACHE, TagData, _AnnotatedEnum, enum
+from composio.client.enums.enum import Enum, EnumGenerator
 
+from .base import TagData
 
-@enum
-class Tag(_AnnotatedEnum[TagData], path=TAGS_CACHE):
-    """Tag object."""
+_TAG_CACHE: t.Dict[str, "Tag"] = {}
 
+class Tag(Enum[TagData], metaclass=EnumGenerator):
+    cache_folder = "tags"
+    cache = _TAG_CACHE
+    storage = TagData
+
+    def fetch_and_cache(self) -> t.Optional[TagData]: ...
+    def load_from_runtime(self) -> t.Optional[TagData]: ...
+    @property
+    def value(self) -> str: ...
+    @property
+    def app(self) -> str: ...
     AFFINITY_AUTH: "Tag"
     AFFINITY_COMPANIES: "Tag"
     AFFINITY_IMPORTANT: "Tag"
@@ -31,6 +39,19 @@ class Tag(_AnnotatedEnum[TagData], path=TAGS_CACHE):
     AGENCYZOOM_THREAD: "Tag"
     AGENCYZOOM_USER_MANAGEMENT: "Tag"
     AGENCYZOOM_V4SSO_AUTHENTICATION: "Tag"
+    AHREFS_BACKLINKS_PROFILE: "Tag"
+    AHREFS_BATCH_ANALYSIS: "Tag"
+    AHREFS_CRAWLER: "Tag"
+    AHREFS_IMPORTANT: "Tag"
+    AHREFS_KEYWORD_IDEAS: "Tag"
+    AHREFS_LIMITS_AND_USAGE: "Tag"
+    AHREFS_ORGANIC_SEARCH: "Tag"
+    AHREFS_OUTGOING_LINKS: "Tag"
+    AHREFS_OVERVIEW: "Tag"
+    AHREFS_PAGES: "Tag"
+    AHREFS_PAID_SEARCH: "Tag"
+    AHREFS_PROJECTS: "Tag"
+    AHREFS_SERP_OVERVIEW: "Tag"
     AIRTABLE_IMPORTANT: "Tag"
     ASANA_ALLOCATIONS: "Tag"
     ASANA_ATTACHMENTS: "Tag"
@@ -218,18 +239,23 @@ class Tag(_AnnotatedEnum[TagData], path=TAGS_CACHE):
     CALENDLY_WEBHOOKS: "Tag"
     CANVAS_ACCOUNTS: "Tag"
     CANVAS_ANALYTICS: "Tag"
+    CANVAS_APPOINTMENTGROUPS: "Tag"
     CANVAS_ASSIGNMENTS: "Tag"
     CANVAS_CALENDAR: "Tag"
     CANVAS_COMMUNICATIONCHANNELS: "Tag"
     CANVAS_CONTENTEXPORTS: "Tag"
     CANVAS_CONTENTSHARES: "Tag"
+    CANVAS_CONVERSATIONS: "Tag"
     CANVAS_COURSES: "Tag"
     CANVAS_ENROLLMENTS: "Tag"
     CANVAS_ENROLLMENTTERMS: "Tag"
     CANVAS_FILES: "Tag"
+    CANVAS_FOLDERS: "Tag"
     CANVAS_GRADEBOOK_HISTORY: "Tag"
     CANVAS_IMPORTANT: "Tag"
+    CANVAS_NOTIFICATIONS: "Tag"
     CANVAS_PAGES: "Tag"
+    CANVAS_QUIZZES: "Tag"
     CANVAS_REPORTS: "Tag"
     CANVAS_SUBMISSIONS: "Tag"
     CANVAS_USERS: "Tag"
@@ -272,7 +298,6 @@ class Tag(_AnnotatedEnum[TagData], path=TAGS_CACHE):
     CLICKUP_USERS: "Tag"
     CLICKUP_VIEWS: "Tag"
     CLICKUP_WEBHOOKS: "Tag"
-    DEFAULT: "Tag"
     DISCORDBOT_IMPORTANT: "Tag"
     DISCORD_IMPORTANT: "Tag"
     DOCUSIGN_ACCOUNTBRANDS: "Tag"
@@ -385,10 +410,10 @@ class Tag(_AnnotatedEnum[TagData], path=TAGS_CACHE):
     FIGMA_USERS: "Tag"
     FIGMA_VARIABLES: "Tag"
     FIGMA_WEBHOOKS: "Tag"
-    FIRECRAWLV1_CRAWLING: "Tag"
-    FIRECRAWLV1_IMPORTANT: "Tag"
-    FIRECRAWLV1_MAPPING: "Tag"
-    FIRECRAWLV1_SCRAPING: "Tag"
+    FIRECRAWL_CRAWLING: "Tag"
+    FIRECRAWL_IMPORTANT: "Tag"
+    FIRECRAWL_MAPPING: "Tag"
+    FIRECRAWL_SCRAPING: "Tag"
     GITHUB_ACTIONS: "Tag"
     GITHUB_ACTIVITY: "Tag"
     GITHUB_APPS: "Tag"
@@ -933,6 +958,16 @@ class Tag(_AnnotatedEnum[TagData], path=TAGS_CACHE):
     TWITTER_TWEETS: "Tag"
     TWITTER_USAGE: "Tag"
     TWITTER_USERS: "Tag"
+    WRIKE_ACCOUNTS: "Tag"
+    WRIKE_CONTACTS: "Tag"
+    WRIKE_CUSTOM_FIELDS: "Tag"
+    WRIKE_FOLDER_PROJECTS: "Tag"
+    WRIKE_GROUPS: "Tag"
+    WRIKE_IMPORTANT: "Tag"
+    WRIKE_INVITATIONS: "Tag"
+    WRIKE_TASKS: "Tag"
+    WRIKE_USERS: "Tag"
+    WRIKE_WORKFLOWS: "Tag"
     ZOOM_ARCHIVING: "Tag"
     ZOOM_CLOUD_RECORDING: "Tag"
     ZOOM_DEVICES: "Tag"
@@ -945,13 +980,3 @@ class Tag(_AnnotatedEnum[TagData], path=TAGS_CACHE):
     ZOOM_TRACKING_FIELD: "Tag"
     ZOOM_TSP: "Tag"
     ZOOM_WEBINARS: "Tag"
-
-    @property
-    def app(self) -> str:
-        """App name for this tag."""
-        return self.load().app
-
-    @property
-    def value(self) -> str:
-        """Tag string."""
-        return self.load().value

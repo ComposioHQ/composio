@@ -1,27 +1,24 @@
-import express from 'express';
 import { ChatOpenAI } from "@langchain/openai";
 import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
 import { pull } from "langchain/hub";
-import dotenv from 'dotenv';
+// import dotenv from 'dotenv';
 import { LangchainToolSet } from "composio-core";
 
-dotenv.config()
-const app = express();
-const PORT = process.env.PORT || 2001;
+// dotenv.config()
 
-app.use(express.json());
 
 (async () => {
     try {
         const llm = new ChatOpenAI({
             model: "gpt-4-turbo",
+            apiKey: process.env.OPENAI_API_KEY,
         });
 
         const toolset = new LangchainToolSet({
             apiKey: process.env.COMPOSIO_API_KEY,
         });
 
-        const tools = await toolset.get_actions({
+        const tools = await toolset.getTools({
             actions: ["EXA_SEARCH", "GMAIL_CREATE_EMAIL_DRAFT"]
         });
 
@@ -61,7 +58,8 @@ app.use(express.json());
             My details: ${my_details}
             `
         });
-
+        console.log('🎉Output from agent: ', result.output);
+        return result.output
     } catch (error) {
         console.error(error);
     }

@@ -1,5 +1,4 @@
 import { openai } from "@ai-sdk/openai";
-import { groq } from '@ai-sdk/groq';
 import { VercelAIToolSet } from "composio-core";
 import dotenv from "dotenv";
 import { generateText } from "ai";
@@ -36,7 +35,7 @@ async function executeAgent(entityName) {
   // Generate text using the model and tools
   const info = `I am a software engineer with 5 years of experience in the field. I have worked on multiple projects like a chatbot and a web app. I have a strong understanding of software development. I am currently looking for a new job and am open to opportunities in the San Francisco Bay Area.`;
   const output = await generateText({
-    model: openai("gpt-4o"),//groq("llama3-8b-8192"),
+    model: openai("gpt-4o"),
     streamText: false,
     tools: tools,
     prompt: `Based on my info: ${info} and generate the reactjs code for a portfolio website, also give the folder directory and steps to set it up. Then put all of it in a google doc`,
@@ -46,4 +45,4 @@ async function executeAgent(entityName) {
   console.log("🎉Output from agent: ", output.text);
 }
 
-executeAgent("default_user");
+executeAgent("default");

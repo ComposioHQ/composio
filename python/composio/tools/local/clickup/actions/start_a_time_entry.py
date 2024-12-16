@@ -13,7 +13,7 @@ class StartATimeEntryRequest(BaseModel):
         alias="team_Id",
         description="Team ID (Workspace)",
     )
-    custom_task_ids: bool = Field(
+    custom_task_ids: t.Optional[bool] = Field(
         default=None,
         alias="custom_task_ids",
         description=(
@@ -21,7 +21,7 @@ class StartATimeEntryRequest(BaseModel):
             "be `true`. "
         ),
     )
-    team_id: int = Field(
+    team_id: t.Optional[int] = Field(
         default=None,
         alias="team_id",
         description=(
@@ -29,22 +29,22 @@ class StartATimeEntryRequest(BaseModel):
             "`custom_task_ids=true&team_id=123`. "
         ),
     )
-    tags: t.List[dict] = Field(
+    tags: t.Optional[t.List[dict]] = Field(
         default=None,
         alias="tags",
         description="Users on the Business Plan and above can include a time tracking label.",
     )
-    description: str = Field(
+    description: t.Optional[str] = Field(
         default=None,
         alias="description",
         description="Description",
     )
-    tid: str = Field(
+    tid: t.Optional[str] = Field(
         default=None,
         alias="tid",
         description="Tid",
     )
-    billable: bool = Field(
+    billable: t.Optional[bool] = Field(
         default=None,
         alias="billable",
         description="Billable",
