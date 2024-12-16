@@ -266,6 +266,7 @@ export class Actions {
     apps: Array<string>;
     useCase: string;
     limit?: number;
+    filterByAvailableApps?: boolean;
   }): Promise<Array<string>> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "findActionEnumsByUseCase",
@@ -277,6 +278,7 @@ export class Actions {
         query: {
           apps: data.apps.join(","),
           limit: data.limit || undefined,
+          filterByAvailableApps: data.filterByAvailableApps,
         },
         body: {
           useCase: data.useCase,
