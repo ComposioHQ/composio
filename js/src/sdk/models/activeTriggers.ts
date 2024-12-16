@@ -5,19 +5,6 @@ import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 
-type TActiveTrigger = {
-  id: string;
-  connectionId: string;
-  triggerName: string;
-  triggerData: string;
-  triggerConfig: Record<string, any>;
-  state: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
-  disabledAt: string | null;
-  disabledReason: string | null;
-};
-
 export class ActiveTriggers {
   backendClient: BackendClient;
   fileName: string = "js/src/sdk/models/activeTriggers.ts";

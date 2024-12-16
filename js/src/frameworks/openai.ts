@@ -1,11 +1,10 @@
-import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
+import { ActionData, ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { OpenAI } from "openai";
 
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import logger from "../utils/logger";
-import { ActionsListResponseDTO } from "../sdk/client";
 import { Stream } from "openai/streaming";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
@@ -64,7 +63,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
     const mainActions = await this.getToolsSchema(filters, entityId);
     return (
       mainActions.map(
-        (action: NonNullable<ActionsListResponseDTO["items"]>[0]) => {
+        (action: ActionData) => {
           const formattedSchema: OpenAI.FunctionDefinition = {
             name: action.name!,
             description: action.description!,
@@ -158,7 +157,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
     runStream: Stream<OpenAI.Beta.Assistants.AssistantStreamEvent>,
     thread: OpenAI.Beta.Threads.Thread,
     entityId: string | null = null
-  ): AsyncGenerator<any, void, unknown> {
+  ): AsyncGenerator<unknown, void, unknown> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "waitAndHandleAssistantStreamToolCalls",
       file: this.fileName,

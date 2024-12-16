@@ -2,7 +2,7 @@ import { Composio } from "../sdk";
 import { ExecEnv, WorkspaceFactory } from "../env/factory";
 import { COMPOSIO_BASE_URL } from "./client/core/OpenAPI";
 import { RemoteWorkspace } from "../env/base";
-import type { IPythonActionDetails, Optional, Sequence } from "./types";
+import type { Optional, Sequence } from "./types";
 import { getEnvVariable } from "../utils/shared";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
@@ -12,9 +12,24 @@ import { convertReqParams, converReqParamForActionExecution } from "./utils";
 import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 import { getUserDataJson } from "./utils/config";
 import { z } from "zod";
+
+export type ActionData = { 
+  name: string;
+  display_name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+  response: Record<string, unknown>;
+  appKey: string;
+  appId: string;
+  tags: string[];
+  appName: string;
+  enabled: boolean;
+  logo: string;
+}
 type GetListActionsResponse = {
-  items: any[];
+  items: ActionData[];
 };
+
 
 const ZExecuteActionParams = z.object({
   action: z.string(),
@@ -60,7 +75,7 @@ const fileProcessor = ({
 
   // @ts-expect-error
   const fileData = toolResponse.data.response_data.file;
-  const { name, content } = fileData as { name: string; content: string };
+  const { content } = fileData as { name: string; content: string };
   const file_name_prefix = `${action}_${Date.now()}`;
   const filePath = saveFile(file_name_prefix, content, true);
 
@@ -85,7 +100,7 @@ export class ComposioToolSet {
   workspace: WorkspaceFactory;
   workspaceEnv: ExecEnv;
 
-  localActions: IPythonActionDetails["data"] | undefined;
+  localActions: ActionData[] = [];
   customActionRegistry: ActionRegistry;
 
   private processors: {
@@ -97,7 +112,7 @@ export class ComposioToolSet {
     apiKey: string | null,
     baseUrl: string | null = COMPOSIO_BASE_URL,
     runtime: string | null = null,
-    entityId: string = "default",
+    _entityId: string = "default",
     workspaceConfig: WorkspaceConfig = Workspace.Host()
   ) {
     const clientApiKey: string | undefined =
@@ -112,7 +127,7 @@ export class ComposioToolSet {
     );
     this.customActionRegistry = new ActionRegistry(this.client);
     this.runtime = runtime;
-    this.entityId = entityId;
+    this.entityId = _entityId;
 
     if (!workspaceConfig.config.composioBaseURL) {
       workspaceConfig.config.composioBaseURL = baseUrl;
@@ -156,13 +171,13 @@ export class ComposioToolSet {
     if (!this.localActions && this.workspaceEnv !== ExecEnv.HOST) {
       this.localActions = await (
         this.workspace.workspace as RemoteWorkspace
-      ).getLocalActionsSchema();
+      ).getLocalActionsSchema()! as ActionData[];
     }
   }
 
   async getActionsSchema(
     filters: { actions?: Optional<Sequence<string>> } = {},
-    entityId?: Optional<string>
+    _entityId?: Optional<string>
   ): Promise<Sequence<NonNullable<GetListActionsResponse["items"]>[0]>> {
     await this.setup();
     const actions = (
@@ -173,12 +188,12 @@ export class ComposioToolSet {
     ).items;
     const localActionsMap = new Map<
       string,
-      NonNullable<GetListActionsResponse["items"]>[0]
+      ActionData
     >();
     filters.actions?.forEach((action: string) => {
-      const actionData = this.localActions?.find((a: any) => a.name === action);
+      const actionData = this.localActions?.find((a: ActionData) => a.name === action);
       if (actionData) {
-        localActionsMap.set(actionData.name!, actionData);
+        localActionsMap.set(actionData.name!, actionData as ActionData);
       }
     });
     const uniqueLocalActions = Array.from(localActionsMap.values());
@@ -218,12 +233,12 @@ export class ComposioToolSet {
   }
 
   async getTools(
-    filters: {
+    _filters: {
       apps: Sequence<string>;
       tags?: Optional<Array<string>>;
       useCase?: Optional<string>;
     },
-    entityId?: Optional<string>
+    _entityId?: Optional<string>
   ): Promise<unknown> {
     throw new Error("Not implemented. Please define in extended toolset");
   }
@@ -237,7 +252,7 @@ export class ComposioToolSet {
       useCaseLimit?: Optional<number>;
       filterByAvailableApps?: Optional<boolean>;
     },
-    entityId?: Optional<string>
+    _entityId?: Optional<string>
   ): Promise<Sequence<NonNullable<GetListActionsResponse["items"]>[0]>> {
     await this.setup();
 
@@ -315,7 +330,7 @@ export class ComposioToolSet {
     });
   }
 
-  modifyActionForLocalExecution(toolSchema: any) {
+  modifyActionForLocalExecution(toolSchema: Record<string, unknown>) {
     const properties = convertReqParams(toolSchema.parameters.properties);
     toolSchema.parameters.properties = properties;
     const response = toolSchema.response.properties;

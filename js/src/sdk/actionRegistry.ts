@@ -17,10 +17,10 @@ export interface CreateActionOptions {
   description?: string;
   inputParams: ZodObject<{ [key: string]: ZodString | ZodOptional<ZodString> }>;
   callback: (
-    inputParams: Record<string, any>,
-    authCredentials: Record<string, any> | undefined,
-    executeRequest: (data: ExecuteRequest) => Promise<any>
-  ) => Promise<Record<string, any>>;
+    inputParams: Record<string, string>,
+    authCredentials: Record<string, string> | undefined,
+    executeRequest: (data: ExecuteRequest) => Promise<Record<string, unknown>>
+  ) => Promise<Record<string, unknown>>;
 }
 
 interface ParamsSchema {
@@ -39,7 +39,7 @@ interface ExecuteMetadata {
 
 export class ActionRegistry {
   client: Composio;
-  customActions: Map<string, { metadata: CreateActionOptions; schema: any }>;
+  customActions: Map<string, { metadata: CreateActionOptions; schema: Record<string, unknown> }>;
 
   constructor(client: Composio) {
     this.client = client;
@@ -48,7 +48,7 @@ export class ActionRegistry {
 
   async createAction(
     options: CreateActionOptions
-  ): Promise<Record<string, any>> {
+  ): Promise<Record<string, unknown>> {
     const { callback } = options;
     if (typeof callback !== "function") {
       throw new Error("Callback must be a function");
@@ -92,8 +92,8 @@ export class ActionRegistry {
     actions,
   }: {
     actions: Array<string>;
-  }): Promise<Array<any>> {
-    const actionsArr: Array<any> = [];
+  }): Promise<Array<Record<string, unknown>>> {
+    const actionsArr: Array<Record<string, unknown>> = [];
     for (const name of actions) {
       const lowerCaseName = name.toLowerCase();
       if (this.customActions.has(lowerCaseName)) {
@@ -104,15 +104,15 @@ export class ActionRegistry {
     return actionsArr;
   }
 
-  async getAllActions(): Promise<Array<any>> {
-    return Array.from(this.customActions.values()).map((action: any) => action);
+  async getAllActions(): Promise<Array<Record<string, unknown>>> {
+    return Array.from(this.customActions.values()).map((action) => action);
   }
 
   async executeAction(
     name: string,
-    inputParams: Record<string, any>,
+    inputParams: Record<string, string>,
     metadata: ExecuteMetadata
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     const lowerCaseName = name.toLocaleLowerCase();
     if (!this.customActions.has(lowerCaseName)) {
       throw new Error(`Action with name ${name} does not exist`);

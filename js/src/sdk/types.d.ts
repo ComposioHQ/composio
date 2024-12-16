@@ -7,8 +7,8 @@ export type IPythonActionDetails = {
     name: string;
     display_name: string;
     description: string;
-    parameters: any;
-    response: any;
+    parameters: unknown;
+    response: unknown;
     appKey: string;
     appId: string;
     tags: string[];
@@ -16,6 +16,6 @@ export type IPythonActionDetails = {
     enabled: boolean;
     logo: string;
   }[];
-  error: any | null;
-  traceback: any | null;
+  error: unknown | null;
+  traceback: unknown | null;
 };

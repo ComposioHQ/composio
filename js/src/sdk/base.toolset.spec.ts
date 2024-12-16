@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from "@jest/globals";
 import { ComposioToolSet } from "./base.toolset";
 import { getTestConfig } from "../../config/getTestConfig";
-import { ActionExecutionResDto, ExecuteActionResDTO } from "./client";
+import { ActionExecutionResDto } from "./client";
 
 describe("ComposioToolSet class tests", () => {
   let toolset: ComposioToolSet;
@@ -68,11 +68,9 @@ describe("ComposioToolSet class tests", () => {
     };
 
     const preProcessor = ({
-      action,
       toolRequest,
     }: {
-      action: string;
-      toolRequest: Record<string, any>;
+      toolRequest: Record<string, unknown>;
     }) => {
       return {
         ...toolRequest,
@@ -83,7 +81,6 @@ describe("ComposioToolSet class tests", () => {
     };
 
     const postProcessor = ({
-      action,
       toolResponse,
     }: {
       action: string;
@@ -112,8 +109,10 @@ describe("ComposioToolSet class tests", () => {
     // @ts-ignore
     expect(executionResult).toHaveProperty("successfull", true);
     expect(executionResult.data).toBeDefined();
-    expect(executionResult.data.title).toBe("Test issue2");
-    expect(executionResult.data.isPostProcessed).toBe(true);
+    
+    const executionResultData = executionResult.data as Record<string, unknown>;
+    expect(executionResultData.title).toBe("Test issue2");
+    expect(executionResultData.isPostProcessed).toBe(true);
 
     // Remove pre processor and post processor
     toolset.removePreProcessor();
@@ -122,7 +121,7 @@ describe("ComposioToolSet class tests", () => {
       action: actionName,
       params: requestBody,
       entityId: "default",
-    });
+    }) as ActionExecutionResDto;
 
     expect(executionResultAfterRemove).toBeDefined();
     // @ts-ignore
@@ -137,7 +136,7 @@ describe("ComposioToolSet class tests", () => {
 
     // Check if exist
     expect(
-      actions[0].parameters.properties["attachment_file_uri_path"]
+      actions[0]!.parameters.properties["attachment_file_uri_path"]
     ).toBeDefined();
 
     const requestBody = {

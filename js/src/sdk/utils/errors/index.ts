@@ -8,7 +8,7 @@ type ErrorPayload = {
   error_code: string;
   original_error: string;
   description: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   message: string;
   possible_fix: string;
   current_stack: string[];

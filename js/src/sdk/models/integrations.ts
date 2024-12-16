@@ -1,8 +1,5 @@
 import {
   DeleteConnectorData,
-  GetConnectorInfoData,
-  GetConnectorInfoResDTO,
-  GetConnectorListResDTO,
 } from "../client";
 import apiClient from "../client/client";
 import { BackendClient } from "./backendClient";
@@ -190,7 +187,7 @@ export class Integrations {
         body: {
           name: data?.name!,
           appId: data?.appId!,
-          authConfig: data?.authConfig! as any,
+          authConfig: data?.authConfig! as Record<string, unknown>,
           authScheme: data?.authScheme,
           useComposioAuth: data?.useComposioAuth!,
           forceNewIntegration: true,

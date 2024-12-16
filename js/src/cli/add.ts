@@ -370,7 +370,9 @@ export default class AddCommand {
   ) {
     if (useComposioAuth) {
       return this.setupIntegration(
-        app,
+        app as {
+          appId: string;
+        },
         authMode,
         useComposioAuth,
         {},
@@ -385,7 +387,9 @@ export default class AddCommand {
     }
 
     return this.setupIntegration(
-      app,
+      app as {
+        appId: string;
+      },
       authMode,
       useComposioAuth,
       authConfig,
@@ -419,7 +423,9 @@ export default class AddCommand {
   }
 
   async setupIntegration(
-    app: any,
+    app: {
+      appId: string;
+    },
     authMode: string,
     useComposioAuth: boolean,
     config: Record<string, unknown>,

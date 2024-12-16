@@ -11,7 +11,7 @@ import { getPackageJsonDir } from "./utils/projectUtils";
 import { isNewerVersion } from "./utils/other";
 import { CEG } from "./utils/error";
 import { GetConnectorInfoResDTO } from "./client";
-import logger, { getLogLevel } from "../utils/logger";
+import logger from "../utils/logger";
 import { SDK_ERROR_CODES } from "./utils/errors/src/constants";
 import { getSDKConfig } from "./utils/config";
 import ComposioSDKContext from "./utils/composioContext";
@@ -51,6 +51,8 @@ export class Composio {
     ComposioSDKContext.apiKey = apiKeyParsed;
     ComposioSDKContext.baseURL = baseURLParsed;
     ComposioSDKContext.frameworkRuntime = runtime;
+     
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     ComposioSDKContext.composioVersion = require(
       getPackageJsonDir() + "/package.json"
     ).version;
@@ -96,6 +98,8 @@ export class Composio {
     try {
       const packageName = "composio-core";
       const packageJsonDir = getPackageJsonDir();
+       
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const currentVersionFromPackageJson = require(
         packageJsonDir + "/package.json"
       ).version;
@@ -106,11 +110,12 @@ export class Composio {
       const latestVersion = response.data.version;
 
       if (isNewerVersion(latestVersion, currentVersionFromPackageJson)) {
+        // eslint-disable-next-line no-console
         console.warn(
           `🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`
         );
       }
-    } catch (error) {
+    } catch (_error) {
       // Ignore and do nothing
     }
   }
@@ -173,10 +178,10 @@ export class Composio {
         });
         if (params.authScheme && integrations) {
           integrations.items = integrations.items.filter(
-            (integration: any) => integration.authScheme === params.authScheme
+            (integration) => integration.authScheme === params.authScheme
           );
         }
-        integrationId = (integrations?.items[0] as any)?.id;
+        integrationId = (integrations?.items[0])?.id as string;
       } catch (_) {
         // do nothing
       }
@@ -222,7 +227,7 @@ export class Composio {
       for (const scheme of preferredAuthScheme) {
         if (
           appInfo.auth_schemes
-            ?.map((_authScheme: any) => _authScheme.mode)
+            ?.map((_authScheme) => _authScheme.mode)
             .includes(scheme)
         ) {
           schema = scheme;
@@ -231,14 +236,18 @@ export class Composio {
       }
     }
 
-    const areNoFieldsRequiredForIntegration =
-      (appInfo.testConnectors?.length ?? 0) > 0 ||
-      ((
-        appInfo.auth_schemes?.find(
-          (_authScheme: any) => _authScheme.mode === schema
-        ) as any
-      )?.fields?.filter((field: any) => !field.expected_from_customer)
-        ?.length ?? 0) == 0;
+    const hasTestConnectors = (appInfo.testConnectors?.length ?? 0) > 0;
+    const authSchemeFields = appInfo.auth_schemes?.find(
+      (_authScheme) => _authScheme.mode === schema
+    )?.fields;
+    const requiredCustomerFields = (authSchemeFields as {
+      expected_from_customer: boolean;
+    }[])?.filter(
+      (field) => !field.expected_from_customer
+    )?.length ?? 0;
+
+    const areNoFieldsRequiredForIntegration = 
+      hasTestConnectors || requiredCustomerFields === 0;
 
     if (!areNoFieldsRequiredForIntegration) {
       throw new Error(
@@ -249,7 +258,7 @@ export class Composio {
     const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
     const hasRelevantTestConnectors = params.authScheme
       ? appInfo.testConnectors?.filter(
-          (connector: any) => connector.authScheme === params.authScheme
+          (connector) => connector.authScheme === params.authScheme
         )?.length! > 0
       : appInfo.testConnectors?.length! > 0;
     if (hasRelevantTestConnectors) {

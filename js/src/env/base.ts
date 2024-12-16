@@ -40,7 +40,7 @@ class Shell {
     throw new Error("Method 'setup()' must be implemented.");
   }
 
-  exec(cmd: string): void {
+  exec(): void {
     throw new Error("Method 'exec()' must be implemented.");
   }
 
@@ -88,8 +88,8 @@ export class ShellFactory {
     return shell;
   }
 
-  exec(cmd: string, id: string | null = null): void {
-    return this.get(id).exec(cmd);
+  exec(id: string | null = null): void {
+    return this.get(id).exec();
   }
 
   stop(id: string): void {
@@ -166,9 +166,9 @@ export class Workspace {
   }
 
   executeAction(
-    action: string,
-    request_data: Record<string, unknown>,
-    metadata: IExecuteActionMetadata = {}
+    _action: string,
+    _request_data: Record<string, unknown>,
+    _metadata: IExecuteActionMetadata = {}
   ): Promise<Record<string, unknown>> {
     throw new Error("Method 'execute_action()' must be implemented.");
   }
@@ -220,9 +220,9 @@ export class RemoteWorkspace extends Workspace {
 
   async executeAction(
     action: string,
-    request_data: any,
+    request_data: Record<string, unknown>,
     metadata: IExecuteActionMetadata = {}
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     if (!metadata.entityId) {
       metadata.entityId = "default";
     }

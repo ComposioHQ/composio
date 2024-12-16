@@ -48,7 +48,7 @@ export default class LoginCommand {
       const authCode = await this.promptForAuthCode();
       await this.verifyAndSetupCli(cliKey, authCode, baseURL);
     } catch (error) {
-      console.log(chalk.red((error as any).message));
+      console.log(chalk.red((error as Error).message));
       return;
     }
   }
@@ -73,7 +73,7 @@ export default class LoginCommand {
   private async verifyAndSetupCli(
     cliKey: string,
     authCode: string,
-    baseURL: string
+    _baseURL: string
   ): Promise<void> {
     const { data, error } = await client.cli.verifyCliCode({
       query: { key: cliKey, code: authCode },
@@ -81,7 +81,7 @@ export default class LoginCommand {
     });
 
     if (error) {
-      throw new Error((error as any).message);
+      throw new Error((error as Error).message);
     }
 
     const apiKeyFromServer = data?.apiKey;

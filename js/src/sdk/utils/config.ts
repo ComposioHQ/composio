@@ -29,7 +29,7 @@ export const getUserDataJson = () => {
   try {
     const data = fs.readFileSync(userDataPath(), "utf8");
     return JSON.parse(data);
-  } catch (error: any) {
+  } catch (_error) {
     return {};
   }
 };

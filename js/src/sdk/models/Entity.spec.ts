@@ -9,12 +9,12 @@ describe("Entity class tests", () => {
   let entity: Entity;
   let triggerId: string;
   let connectedAccounts: ConnectedAccounts;
-  let integrations: Integrations;
+  let _integrations: Integrations;
 
   beforeAll(() => {
     entity = new Entity(backendClient, "default");
     connectedAccounts = new ConnectedAccounts(backendClient);
-    integrations = new Integrations(backendClient);
+    _integrations = new Integrations(backendClient);
   });
 
   it("should create an Entity instance with 'default' id", () => {

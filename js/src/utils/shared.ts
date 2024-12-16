@@ -21,7 +21,7 @@ export function jsonSchemaToTsType(jsonSchema: Record<string, unknown>): unknown
   if (type === "array") {
     const itemsSchema = jsonSchema.items;
     if (itemsSchema) {
-      const ItemType = jsonSchemaToTsType(itemsSchema);
+      const ItemType = jsonSchemaToTsType(itemsSchema as Record<string, unknown>);
       return ItemType;
     }
     return Array;
@@ -109,7 +109,12 @@ function jsonSchemaPropertiesToTSTypes(value: {
       break;
     case "array":
       zodType = z
-        .array(jsonSchemaPropertiesToTSTypes(value.items))
+        .array(jsonSchemaPropertiesToTSTypes(value.items as {
+          type: string;
+          description?: string;
+          examples?: string[];
+          items?: Record<string, unknown>;
+        }))
         .describe(
           (value.description || "") +
             (value.examples ? `\nExamples: ${value.examples.join(", ")}` : "")
@@ -132,31 +137,41 @@ function jsonSchemaPropertiesToTSTypes(value: {
 }
 
 export function jsonSchemaToModel(
-  jsonSchema: Record<string, any>
-): z.ZodObject<any> {
-  const properties = jsonSchema.properties;
-  const requiredFields = jsonSchema.required || [];
+  jsonSchema: Record<string, unknown>
+): z.ZodObject<Record<string, z.ZodTypeAny>> {
+  const properties = jsonSchema.properties as Record<string, unknown>;
+  const requiredFields = (jsonSchema.required as string[]) || [];
   if (!properties) {
     return z.object({});
   }
 
-  const zodSchema: Record<string, any> = {};
+  const zodSchema: Record<string, z.ZodTypeAny> = {};
   for (const [key, _] of Object.entries(properties)) {
-    const value = _ as any;
+    const value = _ as Record<string, unknown>;
     let zodType;
     if (value.anyOf) {
-      const anyOfTypes = value.anyOf.map((schema: any) =>
-        jsonSchemaPropertiesToTSTypes(schema)
+      const anyOfTypes = (value.anyOf as Record<string, unknown>[]).map((schema) =>
+        jsonSchemaPropertiesToTSTypes(schema as {
+          type: string;
+          description?: string;
+          examples?: string[];
+          items?: Record<string, unknown>;
+        })
       );
       zodType = z
         .union(anyOfTypes)
         .describe(
-          (value.description || "") +
-            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : "")
+          (value.description as string || "") +
+            (value.examples ? `\nExamples: ${(value.examples as string[]).join(", ")}` : "")
         );
     } else if (value.allOf) {
-      const allOfTypes = value.allOf.map((schema: any) =>
-        jsonSchemaPropertiesToTSTypes(schema)
+      const allOfTypes = (value.allOf as Record<string, unknown>[]).map((schema) =>
+        jsonSchemaPropertiesToTSTypes(schema as {
+          type: string;
+          description?: string;
+          examples?: string[];
+          items?: Record<string, unknown>;
+        })
       );
       zodType = z
         .intersection(
@@ -169,18 +184,23 @@ export function jsonSchemaToModel(
             )
         )
         .describe(
-          (value.description || "") +
-            (value.examples ? `\nExamples: ${value.examples.join(", ")}` : "")
+          (value.description as string || "") +
+            (value.examples ? `\nExamples: ${(value.examples as string[]).join(", ")}` : "")
         );
     } else {
       if (!value.type) {
         value.type = "string";
       }
-      zodType = jsonSchemaPropertiesToTSTypes(value);
+      zodType = jsonSchemaPropertiesToTSTypes(value as {
+        type: string;
+        description?: string;
+        examples?: string[];
+        items?: Record<string, unknown>;
+      });
     }
 
     if (value.description) {
-      zodType = zodType.describe(value.description);
+      zodType = zodType.describe(value.description as string);
     }
 
     if (requiredFields.includes(key)) {

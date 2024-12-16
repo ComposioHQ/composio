@@ -92,7 +92,7 @@ export class Entity {
       const app = await this.apps.get({
         appKey: action.appKey!,
       });
-      if ((app.yaml as any).no_auth) {
+      if ((app.yaml as Record<string, unknown>).no_auth) {
         return this.actionsModel.execute({
           actionName: actionName,
           requestBody: {
@@ -136,7 +136,7 @@ export class Entity {
   }: {
     app?: string;
     connectedAccountId?: string;
-  }): Promise<any | null> {
+  }) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getConnection",
       file: this.fileName,
@@ -199,7 +199,7 @@ export class Entity {
   async setupTrigger(
     app: string,
     triggerName: string,
-    config: { [key: string]: any }
+    config: Record<string, unknown>
   ) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "setupTrigger",
@@ -275,7 +275,7 @@ export class Entity {
       const activeTriggers = await this.activeTriggers.list({
         // @ts-ignore
         connectedAccountIds: connectedAccounts!
-          .map((account: any) => account.id!)
+          .map((account) => account.id!)
           .join(","),
       });
       return activeTriggers;

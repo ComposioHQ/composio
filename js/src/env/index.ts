@@ -1,7 +1,7 @@
 import { ExecEnv } from "./factory";
 import { IDockerConfig } from "./docker/workspace";
 import { IE2BConfig } from "./e2b/workspace";
-import { IWorkspaceConfig, WorkspaceConfig } from "./config";
+import { WorkspaceConfig } from "./config";
 
 export class Workspace {
   static Docker(config: IDockerConfig = {}) {

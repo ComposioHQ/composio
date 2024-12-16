@@ -1,5 +1,5 @@
 import { tool } from "ai";
-import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
+import { ActionData, ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { jsonSchemaToModel } from "../utils/shared";
 import { z } from "zod";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
@@ -36,7 +36,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     );
   }
 
-  private generateVercelTool(schema: Record<string, any>) {
+  private generateVercelTool(schema: ActionData) {
     const parameters = jsonSchemaToModel(schema.parameters);
     return tool({
       description: schema.description,
@@ -61,7 +61,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     useCase?: Optional<string>;
     usecaseLimit?: Optional<number>;
     filterByAvailableApps?: Optional<boolean>;
-  }): Promise<{ [key: string]: any }> {
+  }): Promise<{ [key: string]: ActionData }> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getTools",
       file: this.fileName,
@@ -89,7 +89,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     const tools = {};
     actionsList.items?.forEach((actionSchema) => {
       // @ts-ignore
-      tools[actionSchema.name!] = this.generateVercelTool(actionSchema);
+      tools[actionSchema.name!] = this.generateVercelTool(actionSchema as ActionData);
     });
 
     return tools;

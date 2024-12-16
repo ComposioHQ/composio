@@ -26,7 +26,7 @@ type InitiateConnectionDataReq = InitiateConnectionPayloadDto & {
   integrationId?: string;
   redirectUri?: string;
   authMode?: string;
-  authConfig?: { [key: string]: any };
+  authConfig?: Record<string, unknown>;
   appName?: string;
 };
 
@@ -132,7 +132,7 @@ export class ConnectedAccounts {
       params: { payload },
     });
     try {
-      let {
+      const {
         integrationId,
         entityId = "default",
         labels,

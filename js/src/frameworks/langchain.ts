@@ -2,11 +2,17 @@ import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { jsonSchemaToModel } from "../utils/shared";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
-import type { Optional, Dict, Sequence } from "../sdk/types";
+import type { Optional, Sequence } from "../sdk/types";
 import { WorkspaceConfig } from "../env/config";
 import { Workspace } from "../env";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
+
+type ToolSchema = {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+};
 
 export class LangchainToolSet extends BaseComposioToolSet {
   /**
@@ -36,17 +42,17 @@ export class LangchainToolSet extends BaseComposioToolSet {
   }
 
   private _wrapTool(
-    schema: Dict<any>,
+    schema: ToolSchema,
     entityId: Optional<string> = null
   ): DynamicStructuredTool {
     const action = schema["name"];
     const description = schema["description"];
 
-    const func = async (...kwargs: any[]): Promise<any> => {
+    const func = async (...kwargs: unknown[]): Promise<unknown> => {
       return JSON.stringify(
         await this.executeAction({
           action,
-          params: kwargs[0],
+          params: kwargs[0] as Record<string, unknown>,
           entityId: entityId || this.entityId,
         })
       );
@@ -82,6 +88,6 @@ export class LangchainToolSet extends BaseComposioToolSet {
     });
 
     const tools = await this.getToolsSchema(filters, entityId);
-    return tools.map((tool) => this._wrapTool(tool, entityId || this.entityId));
+    return tools.map((tool) => this._wrapTool(tool as ToolSchema, entityId || this.entityId));
   }
 }

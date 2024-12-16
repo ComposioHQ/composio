@@ -3,13 +3,36 @@ import logger from "../../utils/logger";
 const PUSHER_KEY = process.env.CLIENT_PUSHER_KEY || "ff9f18c208855d77a152";
 const PUSHER_CLUSTER = "mt1";
 
- 
-type PusherClient = any;
+
+type Channel = {
+  subscribe: (channelName: string) => unknown;
+  unsubscribe: (channelName: string) => unknown;
+  bind: (
+    event: string,
+    callback: (data: Record<string, unknown> ) => void
+  ) => unknown;
+}
+
+type PusherClient = {
+  subscribe: (channelName: string) => Channel;
+  unsubscribe: (channelName: string) => unknown;
+  bind: (
+    event: string,
+    callback: (data: Record<string, unknown> ) => void
+  ) => unknown;
+};
+
+type TChunkedTriggerData = {
+  id: string;
+  index: number;
+  chunk: string;
+  final: boolean;
+};
 
 export interface TriggerData {
   appName: string;
   clientId: number;
-  payload: {};
+  payload: Record<string, unknown>;
   originalPayload: Record<string, unknown>;
   metadata: {
     id: string;
@@ -31,6 +54,9 @@ export class PusherUtils {
 
   static getPusherClient(baseURL: string, apiKey: string): PusherClient {
     if (!PusherUtils.pusherClient) {
+      // Dynamic import not available, using require for now
+      // TODO: Update to use dynamic import when available
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const PusherClient = require("pusher-js");
       PusherUtils.pusherClient = new PusherClient(PUSHER_KEY, {
         cluster: PUSHER_CLUSTER,
@@ -94,19 +120,20 @@ export class PusherUtils {
     } = {};
     channel.bind(
       "chunked-" + event,
-      (data: { id: string; index: number; chunk: string; final: boolean }) => {
-        if (!events.hasOwnProperty(data.id)) {
-          events[data.id] = { chunks: [], receivedFinal: false };
+      (data) => {
+        const typedData = data as TChunkedTriggerData;
+        if (!events.hasOwnProperty(typedData.id)) {
+          events[typedData.id] = { chunks: [], receivedFinal: false };
         }
-        const ev = events[data.id];
-        ev.chunks[data.index] = data.chunk;
-        if (data.final) ev.receivedFinal = true;
+        const ev = events[typedData.id];
+        ev.chunks[typedData.index] = typedData.chunk;
+        if (typedData.final) ev.receivedFinal = true;
         if (
           ev.receivedFinal &&
           ev.chunks.length === Object.keys(ev.chunks).length
         ) {
           callback(JSON.parse(ev.chunks.join("")));
-          delete events[data.id];
+          delete events[typedData.id];
         }
       }
     );
@@ -115,7 +142,7 @@ export class PusherUtils {
   /**
    * Subscribes to a trigger channel for a client and handles chunked data.
    * @param {string} clientId - The unique identifier for the client subscribing to the events.
-   * @param {(data: Record<string, unknown>) => void} fn - The callback function to execute when trigger data is received.
+   * @param {(data: TriggerData) => void} fn - The callback function to execute when trigger data is received.
    */
   static triggerSubscribe(
     clientId: string,
@@ -124,7 +151,7 @@ export class PusherUtils {
     const channel = PusherUtils.pusherClient.subscribe(
       `private-${clientId}_triggers`
     );
-    PusherUtils.bindWithChunking(channel, "trigger_to_client", fn);
+    PusherUtils.bindWithChunking(channel as PusherClient, "trigger_to_client", fn);
 
     logger.info(
       `Subscribed to triggers. You should start receiving events now.`

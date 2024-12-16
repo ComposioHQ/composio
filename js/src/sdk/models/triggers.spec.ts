@@ -9,17 +9,17 @@ import { Actions } from "./actions";
 describe("Apps class tests", () => {
   let backendClient;
   let triggers: Triggers;
-  let connectedAccounts: ConnectedAccounts;
-  let entity: Entity;
-  let actions: Actions;
+  let _connectedAccounts: ConnectedAccounts;
+  let _entity: Entity;
+  let _actions: Actions;
 
   beforeAll(() => {
     backendClient = getBackendClient();
     triggers = new Triggers(backendClient);
-    connectedAccounts = new ConnectedAccounts(backendClient);
-    entity = new Entity(backendClient, "default");
-    connectedAccounts = new ConnectedAccounts(backendClient);
-    actions = new Actions(backendClient);
+    _connectedAccounts = new ConnectedAccounts(backendClient);
+    _entity = new Entity(backendClient, "default");
+    _connectedAccounts = new ConnectedAccounts(backendClient);
+    _actions = new Actions(backendClient);
   });
 
   it("should create an Apps instance and retrieve apps list", async () => {
@@ -41,8 +41,8 @@ describe("Apps class tests subscribe", () => {
   let backendClient;
   let triggers: Triggers;
   let connectedAccounts: ConnectedAccounts;
-  let actions: Actions;
-  let entity: Entity;
+  let _actions: Actions;
+  let _entity: Entity;
 
   let triggerId: string;
 
@@ -50,8 +50,8 @@ describe("Apps class tests subscribe", () => {
     backendClient = getBackendClient();
     triggers = new Triggers(backendClient);
     connectedAccounts = new ConnectedAccounts(backendClient);
-    entity = new Entity(backendClient, "default");
-    actions = new Actions(backendClient);
+    _entity = new Entity(backendClient, "default");
+    _actions = new Actions(backendClient);
   });
 
   it("should create a new trigger for gmail", async () => {

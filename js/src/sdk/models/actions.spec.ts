@@ -53,7 +53,7 @@ describe("Apps class tests", () => {
     });
 
     expect(executionResult).toHaveProperty("successfull", true);
-    expect((executionResult as any).data).toHaveProperty("authorizations_url");
+    expect((executionResult).data).toHaveProperty("authorizations_url");
   });
 
   it("should execute an action of noauth app", async () => {
@@ -69,11 +69,10 @@ describe("Apps class tests", () => {
     });
 
     expect(executionResult).toHaveProperty("successfull", true);
-    //@ts-ignore
-    expect((executionResult as any).data).toHaveProperty(
+    expect((executionResult).data).toHaveProperty(
       "stdout",
       "Hello World\n"
     );
-    expect((executionResult as any).data).toHaveProperty("stderr", "");
+    expect((executionResult).data).toHaveProperty("stderr", "");
   });
 });

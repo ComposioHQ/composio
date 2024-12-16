@@ -174,7 +174,7 @@ export class CEG {
       description?: string;
       possibleFix?: string;
       originalError?: unknown;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, unknown>;
     }
   ): never {
     const finalErrorCode = !!messageCode ? messageCode : `${type}::${subtype}`;

@@ -7,33 +7,33 @@ import { logError } from "..";
  */
 export class ComposioError extends Error {
   // time at which the error occurred
-  public readonly timestamp: string;
+  readonly timestamp: string;
 
   // unique identifier for the error
-  private readonly errorId: string;
+  readonly errorId: string;
 
   // error code
-  private readonly errCode: string;
+  readonly errCode: string;
 
   // additional metadata about the error
-  private readonly metadata?: Record<string, any> = {};
+  readonly metadata?: Record<string, unknown> = {};
 
   // description of the error
-  private readonly description?: string;
+  readonly description?: string;
 
   // possible fix for the error
-  private readonly possibleFix?: string;
+  readonly possibleFix?: string;
 
   // original error object
-  private readonly _originalError?: any;
+  readonly _originalError?: unknown;
 
   constructor(
     errCode: string,
     message: string,
     description?: string,
     possibleFix?: string,
-    metadata?: Record<string, any>,
-    originalError?: any
+    metadata?: Record<string, unknown>,
+    originalError?: unknown
   ) {
     // Ensure message is never empty
     super(message || "An unknown error occurred");
@@ -58,7 +58,7 @@ export class ComposioError extends Error {
           typeof originalError === "object"
             ? JSON.parse(JSON.stringify(originalError))
             : originalError;
-      } catch (e) {
+      } catch (_e) {
         originalErrorString = String(originalError);
       }
 
@@ -76,6 +76,7 @@ export class ComposioError extends Error {
       `🐛 [Info] Create a new issue: https://github.com/ComposioHQ/composio/issues `
     );
     if (getLogLevel() !== "debug") {
+      // eslint-disable-next-line no-console
       console.log(
         `⛔ [Info] If you need to debug this error, set env variable COMPOSIO_LOGGING_LEVEL=debug`
       );
@@ -96,7 +97,7 @@ export class ComposioError extends Error {
     Error.captureStackTrace(this, this.constructor);
   }
 
-  get originalError(): any {
+  get originalError() {
     return this._originalError;
   }
 
@@ -104,7 +105,7 @@ export class ComposioError extends Error {
    * Returns a complete object representation for logging/serialization
    * Includes all error details and metadata
    */
-  toJSON(): Record<string, any> {
+  toJSON(): Record<string, unknown> {
     const errorObj = {
       name: this.name,
       errorId: this.errorId,
@@ -114,7 +115,7 @@ export class ComposioError extends Error {
       possibleFix: this.possibleFix,
       timestamp: this.timestamp,
       stack: this.stack?.split("\n"),
-      originalStack: this.originalError?.stack?.split("\n"),
+      originalStack: (this.originalError as Error)?.stack?.split("\n"),
     };
 
     // Remove undefined/null properties
@@ -125,7 +126,7 @@ export class ComposioError extends Error {
         }
         return acc;
       },
-      {} as Record<string, any>
+      {} as Record<string, unknown>
     );
   }
 }

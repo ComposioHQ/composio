@@ -14,6 +14,7 @@ const DEFAULT_PORT = 54321;
 
 function getFreePort(): Promise<number> {
   return new Promise((resolve, reject) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const server = require("node:net").createServer();
     server.unref();
     server.on("error", reject);
@@ -33,15 +34,15 @@ export interface IDockerConfig extends IWorkspaceConfig {
    *
    * Note: port 8000 is reserved for the tooling server inside the container
    */
-  ports?: { [key: number]: any };
+  ports?: { [key: number]: Record<string, unknown> };
 
   /** Volumes to bind inside the container */
-  volumes?: { [key: string]: any };
+  volumes?: { [key: string]: Record<string, unknown> };
 }
 
 export class DockerWorkspace extends RemoteWorkspace {
   public docker: Docker;
-  public container: any | null = null;
+  public container: Docker.Container | null = null;
   public id: string;
   public port: number = DEFAULT_PORT;
   public image: string;
@@ -62,7 +63,7 @@ export class DockerWorkspace extends RemoteWorkspace {
   private getBaseDockerConfig() {
     const IS_DEV_MODE = getEnvVariable(ENV_COMPOSIO_DEV_MODE, "0");
 
-    const exposedPorts: { [key: string]: {} } = {
+    const exposedPorts: { [key: string]: Record<string, unknown> } = {
       "8000/tcp": {},
     };
     const portBindings: { [key: string]: Array<{ HostPort: string }> } = {
@@ -93,8 +94,8 @@ export class DockerWorkspace extends RemoteWorkspace {
     }
 
     if (IS_DEV_MODE === "1") {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const path = require("node:path");
-      const os = require("node:os");
 
       const COMPOSIO_PATH = path.resolve(__dirname, "../../../../python/");
       const COMPOSIO_CACHE = getComposioDir(false);
@@ -124,9 +125,9 @@ export class DockerWorkspace extends RemoteWorkspace {
 
     const images = await this.docker.listImages();
     const imageExists = images.some(
-      (image: any) =>
+      (image: Docker.ImageInfo) =>
         image.RepoTags &&
-        image.RepoTags.find((tag: any) => tag.startsWith(this.image))
+        image.RepoTags.find((tag: string) => tag.startsWith(this.image))
     );
 
     if (!imageExists) {
@@ -146,7 +147,7 @@ export class DockerWorkspace extends RemoteWorkspace {
         status: `Image ${this.image} not found locally. Pulling from Docker Hub...`,
       });
       await new Promise((resolve, reject) => {
-        this.docker.pull(this.image, (err: any, stream: any) => {
+        this.docker.pull(this.image, (err: Error, stream: NodeJS.ReadableStream) => {
           if (err) {
             bar.stop();
             logger.error("Failed to pull Docker image.");
@@ -154,7 +155,7 @@ export class DockerWorkspace extends RemoteWorkspace {
           }
           this.docker.modem.followProgress(stream, onFinished, onProgress);
 
-          function onFinished(err: any, output: any) {
+          function onFinished(err: Error | null, output: unknown) {
             if (err) {
               bar.stop();
               logger.error("Failed to pull Docker image.");
@@ -165,7 +166,7 @@ export class DockerWorkspace extends RemoteWorkspace {
             resolve(output);
           }
 
-          function onProgress(event: any) {
+          function onProgress(event: { status: string }) {
             bar.update({ status: event.status });
           }
         });
@@ -175,8 +176,8 @@ export class DockerWorkspace extends RemoteWorkspace {
     }
 
     const containers = await this.docker.listContainers({ all: true });
-    const existingContainer = containers.find((container: any) =>
-      container.Names.find((name: any) => name.startsWith(`/composio-`))
+    const existingContainer = containers.find((container: Docker.ContainerInfo) =>
+      container.Names.find((name: string) => name.startsWith(`/composio-`))
     );
 
     if (existingContainer) {
@@ -184,7 +185,7 @@ export class DockerWorkspace extends RemoteWorkspace {
       this.container = this.docker.getContainer(existingContainer.Id);
       await this.container.restart();
       this.port = existingContainer.Ports.find(
-        (port: any) => port.PrivatePort === 8000
+        (port: Docker.Port) => port.PrivatePort === 8000
       )?.PublicPort!;
       this.url = `http://localhost:${this.port}/api`;
     } else {
@@ -227,7 +228,7 @@ export class DockerWorkspace extends RemoteWorkspace {
         if (response.ok) {
           return;
         }
-      } catch (error) {
+      } catch (_error) {
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
     }
@@ -239,8 +240,8 @@ export class DockerWorkspace extends RemoteWorkspace {
       try {
         await this.container.kill();
         await this.container.remove();
-      } catch (error) {
-        logger.debug("Failed to stop and remove container:", error);
+      } catch (_error) {
+        logger.debug("Failed to stop and remove container:", _error);
       }
     }
   }

@@ -58,7 +58,7 @@ export class WorkspaceFactory {
     }
   }
 
-  async get(id: string | null = null): Promise<Workspace> {
+  async get(): Promise<Workspace> {
     return this.workspace!;
   }
 

@@ -29,7 +29,7 @@ export default class ConnectionsCommand {
     });
 
     if (error) {
-      console.log(chalk.red((error as any).message));
+      console.log(chalk.red((error as Error).message));
       return;
     }
 
@@ -66,11 +66,11 @@ export class ConnectionsGetCommand {
     });
 
     if (error) {
-      console.log(chalk.red((error as any).message));
+      console.log(chalk.red((error as Error).message));
       return;
     }
 
-    for (const [key, value] of Object.entries(data as Record<string, any>)) {
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
       console.log(
         `- ${chalk.cyan.bold(key)}: ${JSON.stringify(value, null, 2)}`
       );

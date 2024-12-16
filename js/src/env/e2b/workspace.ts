@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { RemoteWorkspace } from "../base";
-import { getEnvVariable, nodeExternalRequire } from "../../utils/shared";
+import { getEnvVariable } from "../../utils/shared";
 import { Sandbox } from "e2b";
 import { IWorkspaceConfig, WorkspaceConfig } from "../config";
 import logger from "../../utils/logger";
@@ -87,7 +87,7 @@ export class E2BWorkspace extends RemoteWorkspace {
 
       try {
         status = (await this._request("", "get")).status;
-      } catch (error) {}
+      } catch (_error) {}
 
       if (status !== 200) {
         await new Promise((resolve) => setTimeout(resolve, 1000));

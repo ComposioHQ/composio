@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach } from "@jest/globals";
 import { z } from "zod";
-import { ActionRegistry } from "./actionRegistry";
+import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 import { Composio } from ".";
 import { getTestConfig } from "../../config/getTestConfig";
 
@@ -26,7 +26,7 @@ describe("ActionRegistry", () => {
       param2: z.string().optional(),
     });
 
-    const callback = async (params: Record<string, any>) => {
+    const callback = async (_params: Record<string, unknown>) => {
       return { success: true };
     };
 
@@ -61,7 +61,7 @@ describe("ActionRegistry", () => {
       callback: "notAFunction",
     };
 
-    await expect(actionRegistry.createAction(options as any)).rejects.toThrow(
+    await expect(actionRegistry.createAction(options as unknown as CreateActionOptions)).rejects.toThrow(
       "Callback must be a function"
     );
   });
@@ -90,7 +90,7 @@ describe("ActionRegistry", () => {
       param1: z.string(),
     });
 
-    const callback = async (params: Record<string, any>) => {
+    const callback = async (_params: Record<string, unknown>) => {
       return { success: true };
     };
 
@@ -123,7 +123,7 @@ describe("ActionRegistry", () => {
       param1: z.string(),
     });
 
-    const callback = async (params: Record<string, any>) => {
+    const callback = async (_params: Record<string, unknown>) => {
       return { success: true };
     };
 

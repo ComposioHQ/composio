@@ -6,6 +6,7 @@ import { VercelAIToolSet } from "./frameworks/vercel";
 import { LangGraphToolSet } from "./frameworks/langgraph";
 import { Workspace } from "./env/index";
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { APPS, ACTIONS } = require("./constants");
 
 export {
