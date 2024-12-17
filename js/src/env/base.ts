@@ -110,7 +110,7 @@ export class ShellFactory {
   }
 }
 
-export interface IExecuteActionMetadata {
+export type IExecuteActionMetadata = {
   entityId?: string | null;
 }
 

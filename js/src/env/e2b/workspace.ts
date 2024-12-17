@@ -11,7 +11,7 @@ const TOOLSERVER_URL = "https://{host}/api";
 
 const ENV_E2B_TEMPLATE = "E2B_TEMPLATE";
 
-export interface IE2BConfig extends IWorkspaceConfig {
+export type IE2BConfig = IWorkspaceConfig & {
   template?: string;
   apiKey?: string;
   port?: number;

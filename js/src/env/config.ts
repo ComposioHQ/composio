@@ -1,6 +1,6 @@
 import { ExecEnv } from "./factory";
 
-export interface IWorkspaceConfig {
+export type IWorkspaceConfig = {
   composioAPIKey?: string | null;
   composioBaseURL?: string | null;
   githubAccessToken?: string | null;

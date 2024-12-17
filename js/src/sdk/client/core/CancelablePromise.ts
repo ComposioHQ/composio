@@ -11,7 +11,7 @@ export class CancelError extends Error {
   }
 }
 
-export interface OnCancel {
+export type OnCancel = {
   readonly isResolved: boolean;
   readonly isRejected: boolean;
   readonly isCancelled: boolean;

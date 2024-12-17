@@ -28,6 +28,9 @@
   "keywords": [],
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",
   "license": "ISC",
+  "dependencies": {
+    "pusher-js": "8.4.0-rc2"  
+  },
   "devDependencies": {
     "@ai-sdk/openai": "^0.0.36",
     "@cloudflare/workers-types": "^4.20240718.0",
@@ -75,7 +78,6 @@
     "open": "^8.4.0",
     "openai": "^4.50.0",
     "prettier": "^3.4.2",
-    "pusher-js": "8.4.0-rc2",
     "regenerator-runtime": "^0.14.1",
     "resolve-package-path": "^4.0.3",
     "rollup": "^4.9.1",

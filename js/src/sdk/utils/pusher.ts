@@ -5,7 +5,7 @@ const PUSHER_CLUSTER = "mt1";
 
 type PusherClient = any;
 
-export interface TriggerData {
+export type TriggerData = {
   appName: string;
   clientId: number;
   payload: {};

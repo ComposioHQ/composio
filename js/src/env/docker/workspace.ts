@@ -24,7 +24,7 @@ function getFreePort(): Promise<number> {
   });
 }
 
-export interface IDockerConfig extends IWorkspaceConfig {
+export type IDockerConfig = IWorkspaceConfig & {
   /** Name of the docker image. */
   image?: string;
 
