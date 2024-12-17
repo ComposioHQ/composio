@@ -12,7 +12,7 @@ import { client as axiosClient } from "../client/services.gen";
 import apiClient from "../client/client";
 import { AxiosInstance } from "axios";
 import logger from "../../utils/logger";
-import { getUUID } from "../../utils/getUUID";
+import { getUUID } from "../../utils/common";
 declare module "axios" {
   export interface InternalAxiosRequestConfig {
     metadata?: {

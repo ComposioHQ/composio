@@ -11,7 +11,6 @@
     "openapispec:generate": "npx @hey-api/openapi-ts",
     "run:cli": "ts-node src/cli/index.ts",
     "run:sample": "ts-node sample.ts",
-
     "prettier": "prettier --write 'src/**/*.{ts,js,cjs}'",
     "prettier:check": "prettier --check 'src/**/*.{ts,js,mjs,cjs}'",
     "build": "rollup -c rollup.config.mjs && ./setup_cli.sh",
@@ -96,5 +95,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "prettier-plugin-organize-imports": "^4.1.0"
   }
 }

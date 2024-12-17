@@ -1,4 +1,4 @@
-import { getUUID } from "../../../../utils/getUUID";
+import { getUUID } from "../../../../utils/common";
 import { getLogLevel } from "../../../../utils/logger";
 import { logError } from "..";
 
