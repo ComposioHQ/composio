@@ -161,13 +161,26 @@
       ]
     },
     {
-      "group": "SWE Kit",
+      "group": "Kits",
       "pages": [
-        "swekit-tools/introduction",
-        "swekit-js/introduction",
-        "swekit/introduction",
-        "swekit/benchmarks",
-        "swekit-examples/introduction"
+        {
+          "group": "Swekit",
+          "pages": [
+            "swekit-tools/introduction",
+            "swekit-js/introduction",
+            "swekit/introduction",
+            "swekit/benchmarks",
+            "swekit-examples/introduction"
+          ]
+        },
+        {
+          "group":"AI SDR Kit",
+          "pages": [
+            "sdrkit/tools",
+            "sdrkit/ai-lead-generator",
+            "sdrkit/ai-outreach-agent"
+          ]
+        }
       ]
     },
     {

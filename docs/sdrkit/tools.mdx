@@ -1,0 +1,2235 @@
+---
+title: "Tools For AI SDR Kit"
+sidebarTitle: "Tools"
+icon: "hammer"
+description: "List of tools you can use for your AI SDR Development, compatible with agentic frameworks like CrewAI, LangChain, and LlamaIndex etc. These utilities enable file system operations, command execution, and other core development tasks"
+---
+
+## Contact Data
+<AccordionGroup>
+<Accordion title="Cognism">
+      Opens a file in the editor based on the provided file path, If line_number is provided, the window will be move to include that line
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.COGNISM])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["COGNISM"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Apollo.io">
+      Renames a file based on the provided file path
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['APOLLO'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["APOLLO"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Zoominfo">
+      Use this tools to edit a file on specific line numbers
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['ZOOMINFO'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["ZOOMINFO"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="RocketReach">
+Creates a new file or directory within a shell session
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['ROCKET_REACH'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["ROCKET_REACH"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Uplead">
+Scrolls the view of the opened file up or down by 100 lines
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['UPLEAD'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["UPLEAD"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="G2">
+Scrolls the view of the opened file up or down by 100 lines
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['G2'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["G2"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+## Sales Engagement
+<AccordionGroup>
+<Accordion title="Salesloft">
+      Use this to create a code map for a repository by indexing and analyzing its contents
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['SALESLOFT'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ actions: ["CODE_ANALYSIS_TOOL_CREATE_CODE_MAP"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Outreach">
+      This tool retrieves and formats detailed information about a specified class in a given repository
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['OUTREACH'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "npf6zezgodpzr3r19bdu9" });
+              const tools = await toolset.getTools({ apps: ["OUTREACH"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Gong">
+      This tool retrieves the body of a specified method from a given repository
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['GONG'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["GONG"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Close">
+      This tool retrieves the signature of a specified method from a given repository.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['CLOSE'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["CLOSE"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+## Intent Data
+<AccordionGroup>
+<Accordion title="Clearbit">
+      Run any command directly on shell
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['CLEARBIT'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["CLEARBIT"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="6 Sense">
+      Use this tool to create a new shell session
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['SIX_SENSE'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["SIX_SENSE"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="RB2B">
+Spawn a process
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['RB_TWOB'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["RB_TWOB"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+
+## Email Warmup
+<AccordionGroup>
+<Accordion title="Instantly">
+      Tool for adding content to the knowledge base
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['INSTANTLY'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["INSTANTLY"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Lemwarm">
+      Tool for querying a knowledge base
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['LEMWARM'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["LEMWARM"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Mailreach">
+      Tool for querying a knowledge base
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['MAILREACH'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["MAILREACH"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Lemlist">
+      Tool for querying a knowledge base
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['LEMLIST'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["LEMLIST"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Warmly">
+      Tool for querying a knowledge base
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['WARMLY'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["WARMLY"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+## Research and Personalization
+<AccordionGroup>
+<Accordion title="Regie AI">
+      Creates Vector Store for all image files in the specified folder
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['REGIE_AI'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["REGIE_AI"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Jasper">
+      Query Vector Store for images
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['JASPER'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["JASPER"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Clay">
+      Query Vector Store for images
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['CLAY'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["CLAY"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Aomni">
+      Query Vector Store for images
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['AOMNI'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["AOMNI"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="CrunchBase">
+      Query Vector Store for images
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['CRUNCHBASE'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["CRUNCHBASE"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="CBInsights">
+      Query Vector Store for images
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['CB_INSIGHTS'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["CB_INSIGHTS"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+## Enrichment 
+<AccordionGroup>
+<Accordion title="Seamless AI">
+      Executes a SQL Query and returns the results
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['SEAMLESS'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["SEAMLESS"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Clay">
+      Performs an advanced search across a codebase using regex patterns & optimized for large-scale software projects
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['CLAY'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["CLAY"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Lusha">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['LUSHA'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["LUSHA"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+## Meetings
+<AccordionGroup>
+<Accordion title="Calendly">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['CALENDLY'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["CALENDLY"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Cal.com">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['CAL'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["CAL"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+## Caller
+<AccordionGroup>
+<Accordion title="Just Call">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['JUST_CALL'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["JUST_CALL"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Nooks">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['NOOKS'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["NOOKS"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Just Call">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['DIALPAD'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["DIALPAD"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Twilio">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['TWILIO'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["TWILIO"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Orum">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['ORUM'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["ORUM"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+## Linkedin Automation
+<AccordionGroup>
+<Accordion title="Octopus">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['OCTOPUS'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["OCTOPUS"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Expand io">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['EXPAND'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["EXPAND"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="PhantomBuster">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['PHANTOM_BUSTER'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["PHANTOM_BUSTER"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Dripify">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['DRIPIFY'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["DRIPIFY"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+## CRM Tools 
+<AccordionGroup>
+<Accordion title="HubSpot">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['HUBSPOT'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["HUBSPOT"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Pipedrive">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['PIPEDRIVE'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["PIPEDRIVE"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Salesforce">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['SALESFORCE'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["SALESFORCE"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Highlevel">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['HIGHLEVEL'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["HIGHLEVEL"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Attio">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['ATTIO'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["ATTIO"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+## Email Deliverability
+<AccordionGroup>
+<Accordion title="Gmail">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['GMAIL'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["GMAIL"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="MailChimp">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['MAILCHIMP'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["MAILCHIMP"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Brevo">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['BREVO'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["BREVO"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Selzy">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['SELZY'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["SELZY"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Klaviyo">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['KLAVIYO'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["KLAVIYO"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="CleverTap">
+      Performs code formatting and linting using ruff, addressing style issues and checking for errors
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet(api_key="")
+              tools = composio_toolset.get_tools(apps=['CLEVERTAP'])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "" });
+              const tools = await toolset.getTools({ apps: ["CLEVERTAP"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+
+
+</AccordionGroup>
