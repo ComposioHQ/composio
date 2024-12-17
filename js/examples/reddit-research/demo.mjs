@@ -39,14 +39,14 @@ async function executeAgent(entityName) {
   const subreddit = "r/developersIndia/";
   // Generate text using the model and tools
   const output = await generateText({
-    model: openai("gpt-4o"),//groq("llama3-8b-8192"),
+    model: openai("gpt-4o"), //groq("llama3-8b-8192"),
     streamText: false,
     tools: tools,
-    prompt: `Research the subreddit ${subreddit} and provide a summary of the top posts.`, 
+    prompt: `Research the subreddit ${subreddit} and provide a summary of the top posts.`,
     maxToolRoundtrips: 5,
   });
 
   console.log("🎉Output from agent: ", output.text);
 }
 
-executeAgent("default");
+executeAgent("default_user");
