@@ -10,7 +10,10 @@ describe("ActionRegistry", () => {
   const testConfig = getTestConfig();
 
   beforeAll(() => {
-    client = new Composio({apiKey: testConfig.COMPOSIO_API_KEY!, baseUrl: testConfig.BACKEND_HERMES_URL!});
+    client = new Composio({
+      apiKey: testConfig.COMPOSIO_API_KEY!,
+      baseUrl: testConfig.BACKEND_HERMES_URL!,
+    });
   });
 
   beforeEach(() => {
