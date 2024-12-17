@@ -105,11 +105,7 @@ export class ComposioToolSet {
       getEnvVariable("COMPOSIO_API_KEY") ||
       (getUserDataJson().api_key as string);
     this.apiKey = clientApiKey;
-    this.client = new Composio(
-      this.apiKey,
-      baseUrl || undefined,
-      runtime as string
-    );
+    this.client = new Composio({apiKey: this.apiKey, baseUrl: baseUrl as string, runtime: runtime as string});
     this.customActionRegistry = new ActionRegistry(this.client);
     this.runtime = runtime;
     this.entityId = entityId;
