@@ -164,7 +164,7 @@
       "group": "Kits",
       "pages": [
         {
-          "group": "Swekit",
+          "group": "SWE kit",
           "pages": [
             "swekit-tools/introduction",
             "swekit-js/introduction",
@@ -178,7 +178,9 @@
           "pages": [
             "sdrkit/tools",
             "sdrkit/ai-lead-generator",
-            "sdrkit/ai-outreach-agent"
+            "sdrkit/ai-outreach-agent",
+            "sdrkit/ai-market-research-agent",
+            "sdrkit/ai-scheduling-agent"  
           ]
         }
       ]
