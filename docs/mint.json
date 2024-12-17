@@ -262,22 +262,6 @@
     ]
   },
   {
-    "group": "Custom Apps",
-    "pages": [
-      "api-reference/custom-apps/get-open-api-spec-status",
-      "api-reference/custom-apps/get-open-api-specs",
-      "api-reference/custom-apps/add-open-api-spec",
-      "api-reference/custom-apps/delete-open-api-spec-tool",
-      "api-reference/custom-apps/send-email-to-client"
-    ]
-  },
-  {
-    "group": "Event Logs",
-    "pages": [
-      "api-reference/event-logs/update-webhook"
-    ]
-  },
-  {
     "group": "Integrations",
     "pages": [
       "api-reference/integrations/list-all-connectors",
@@ -298,9 +282,7 @@
     "group": "Team",
     "pages": [
       "api-reference/team/list-members",
-      "api-reference/team/update-member",
-      "api-reference/team/invite-member",
-      "api-reference/team/remove-member"
+      "api-reference/team/invite-member"
     ]
   },
   {
@@ -311,6 +293,7 @@
       "api-reference/triggers/get-logs",
       "api-reference/triggers/get-trigger-info",
       "api-reference/triggers/get-webhook-url",
+      "api-reference/triggers/update-new-webhook",
       "api-reference/triggers/delete-trigger",
       "api-reference/triggers/disable-trigger",
       "api-reference/triggers/enable-trigger",
