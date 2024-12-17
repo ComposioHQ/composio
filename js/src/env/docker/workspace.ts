@@ -37,7 +37,7 @@ export type IDockerConfig = IWorkspaceConfig & {
 
   /** Volumes to bind inside the container */
   volumes?: { [key: string]: any };
-}
+};
 
 export class DockerWorkspace extends RemoteWorkspace {
   public docker: Docker;

@@ -15,7 +15,7 @@ export type IE2BConfig = IWorkspaceConfig & {
   template?: string;
   apiKey?: string;
   port?: number;
-}
+};
 
 export class E2BWorkspace extends RemoteWorkspace {
   sandbox: Sandbox | undefined;

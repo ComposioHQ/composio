@@ -5,7 +5,7 @@ export type IWorkspaceConfig = {
   composioBaseURL?: string | null;
   githubAccessToken?: string | null;
   environment?: { [key: string]: string };
-}
+};
 
 export class WorkspaceConfig<
   TConfig extends IWorkspaceConfig = IWorkspaceConfig,

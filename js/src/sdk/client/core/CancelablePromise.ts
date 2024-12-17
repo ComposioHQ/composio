@@ -17,7 +17,7 @@ export type OnCancel = {
   readonly isCancelled: boolean;
 
   (cancelHandler: () => void): void;
-}
+};
 
 export class CancelablePromise<T> implements Promise<T> {
   private _isResolved: boolean;

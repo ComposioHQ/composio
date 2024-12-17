@@ -23,7 +23,7 @@ export type TriggerData = {
       status: string;
     };
   };
-}
+};
 
 export class PusherUtils {
   static pusherClient: PusherClient;

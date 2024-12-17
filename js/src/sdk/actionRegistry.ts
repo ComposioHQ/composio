@@ -23,7 +23,7 @@ export type CreateActionOptions = {
     authCredentials: Record<string, any> | undefined,
     executeRequest: (data: ExecuteRequest) => Promise<any>
   ) => Promise<Record<string, any>>;
-}
+};
 
 interface ParamsSchema {
   definitions: {

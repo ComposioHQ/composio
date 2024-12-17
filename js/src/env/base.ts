@@ -112,7 +112,7 @@ export class ShellFactory {
 
 export type IExecuteActionMetadata = {
   entityId?: string | null;
-}
+};
 
 export class Workspace {
   id: string;
