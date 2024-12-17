@@ -131,7 +131,7 @@ export default class AddCommand {
     connectedAccountId: string,
     timeout: number = 30000
   ): Promise<void> {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
     const startTime = Date.now();
     const pollInterval = 3000; // 3 seconds
 
@@ -160,7 +160,7 @@ export default class AddCommand {
     integrationId: string,
     options: any
   ): Promise<void> {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
     const data = await composioClient.integrations.get({ integrationId });
     const { expectedInputFields } = data!;
 
@@ -218,7 +218,7 @@ export default class AddCommand {
     userAuthMode?: string,
     options?: any
   ) {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
     const app = await composioClient.apps.get({
       appKey: appName.toLowerCase(),
     });
@@ -325,7 +325,7 @@ export default class AddCommand {
     config: Record<string, any>,
     integrationName: string
   ) {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
     const authConfig = await this.collectInputFields(authScheme.fields);
 
     const integration = await composioClient.integrations.create({
@@ -413,7 +413,7 @@ export default class AddCommand {
     config: Record<string, any>,
     name: string
   ) {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
     const integration = await composioClient.integrations.create({
       appId: app.appId,
       authScheme: authMode,
