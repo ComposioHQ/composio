@@ -37,25 +37,27 @@ export class Composio {
   /**
    * Initializes a new instance of the Composio class.
    *
-   * @param {string} [apiKey] - The API key for authenticating with the Composio backend. Can also be set locally in an environment variable.
-   * @param {string} [baseUrl] - The base URL for the Composio backend. By default, it is set to the production URL.
-   * @param {string} [runtime] - The runtime environment for the SDK.
+   * @param {Object} config - Configuration object for the Composio SDK
+   * @param {string} [config.apiKey] - The API key for authenticating with the Composio backend. Can also be set locally in an environment variable.
+   * @param {string} [config.baseUrl] - The base URL for the Composio backend. By default, it is set to the production URL.
+   * @param {string} [config.runtime] - The runtime environment for the SDK.
    */
-  constructor(apiKey?: string, baseUrl?: string, runtime?: string) {
-    // // Parse the base URL and API key, falling back to environment variables or defaults if not provided.
+  constructor(config: { apiKey?: string; baseUrl?: string; runtime?: string }) {
+    // Parse the base URL and API key, falling back to environment variables or defaults if not provided
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
-      baseUrl,
-      apiKey
+      config?.baseUrl,
+      config?.apiKey
     );
 
     ComposioSDKContext.apiKey = apiKeyParsed;
     ComposioSDKContext.baseURL = baseURLParsed;
-    ComposioSDKContext.frameworkRuntime = runtime;
+    ComposioSDKContext.frameworkRuntime = config?.runtime;
     ComposioSDKContext.composioVersion = require(
       getPackageJsonDir() + "/package.json"
     ).version;
 
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_INITIALIZED, {});
+
     if (!apiKeyParsed) {
       throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.API_KEY_UNAVAILABLE, {
         message: "🔑 API Key is not provided",
@@ -74,7 +76,7 @@ export class Composio {
     this.backendClient = new BackendClient(
       apiKeyParsed,
       baseURLParsed,
-      runtime
+      config?.runtime
     );
 
     // Instantiate models with dependencies as needed.
@@ -110,7 +112,7 @@ export class Composio {
           `🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`
         );
       }
-    } catch (error) {
+    } catch (_error) {
       // Ignore and do nothing
     }
   }
