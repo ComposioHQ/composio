@@ -19,7 +19,7 @@ const EXAMPLES = {
       values: ["🎉Output from agent: "],
     },
   },
-  lead_generator_agent: {
+  reddit_research: {
     file: path.join(EXAMPLES_PATH, "reddit-research", "demo.mjs"),
     match: {
       type: "stdout",
