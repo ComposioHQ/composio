@@ -48,4 +48,4 @@ async function executeAgent(entityName) {
   console.log("🎉Output from agent: ", output.text);
 }
 
-executeAgent("default_user");
+executeAgent("default");
