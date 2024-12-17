@@ -303,6 +303,14 @@ export class Entity {
         ? await this.integrations.get({ integrationId: integrationId })
         : null;
 
+      if (!integrationId && !appName) {
+        throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED, {
+          message: "Please pass appName or integrationId",
+          description:
+            "We need atleast one of the params to initiate a connection",
+        });
+      }
+
       if (!integration && authMode) {
         const app = await this.apps.get({ appKey: appName! });
 
