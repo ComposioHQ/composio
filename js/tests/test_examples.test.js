@@ -48,6 +48,7 @@ describe("E2E Tests for plugin demos and examples", () => {
         ...options,
         maxBuffer: 10 * 1024 * 1024,
       });
+      
       const output = example.match.type === "stdout" ? stdout : stderr;
       for (const match of example.match.values) {
         expect(output).toContain(match);

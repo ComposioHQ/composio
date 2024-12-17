@@ -12,7 +12,7 @@ import { client as axiosClient } from "../client/services.gen";
 import apiClient from "../client/client";
 import { AxiosInstance } from "axios";
 import logger from "../../utils/logger";
-import { v4 as uuidv4 } from "uuid";
+import { getUUID } from "../../utils/getUUID";
 declare module "axios" {
   export interface InternalAxiosRequestConfig {
     metadata?: {
@@ -39,7 +39,7 @@ export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
   axiosClientInstance.interceptors.request.use((request) => {
     const body = request.data ? JSON.stringify(request.data) : "";
     // set x-request-id header
-    request.headers["x-request-id"] = uuidv4();
+    request.headers["x-request-id"] = getUUID();
     logger.debug(
       `API Req [${request.method?.toUpperCase()}] ${request.url}, x-request-id: ${request.headers["x-request-id"]}`,
       {

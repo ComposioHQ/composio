@@ -26,7 +26,7 @@ import { LangchainToolSet } from "composio-core";
 
         // Debugging logs
         //console.log("LLM:", llm);
-        console.log("Tools:", tools);
+        //console.log("Tools:", tools);
         //console.log("Prompt:", prompt);
 
         const additional = `
@@ -46,7 +46,7 @@ import { LangchainToolSet } from "composio-core";
         const agentExecutor = new AgentExecutor({
             agent,
             tools,
-            verbose: true,
+            verbose: false, // Change it to true for debugging
         });
         const my_details = "I am Karan Vaidya, the founder of Composio"
         const lead_details = "John Doe, a marketing manager at Acme Corp, interested in our SaaS solutions.";

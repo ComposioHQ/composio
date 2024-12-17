@@ -2104,10 +2104,22 @@ export const $ActionsMinimalListResponseDTO = {
   required: ["items", "page", "totalPages"],
 } as const;
 
+export const $AdvancedUseCaseSearchBodyDTO = {
+  properties: {
+    useCase: {
+      type: "string",
+    },
+  },
+  type: "object",
+} as const;
+
 export const $AdvancedUseCaseSearchQueryDTO = {
   properties: {
     useCase: {
       type: "string",
+      deprecated: true,
+      description:
+        "Use case is deprecated. Please provide this in the body instead to avoid max-uri-length error.",
     },
     limit: {
       type: "number",
@@ -2120,6 +2132,9 @@ export const $AdvancedUseCaseSearchQueryDTO = {
     },
     apps: {
       type: "string",
+    },
+    filterByAvailableApps: {
+      type: "boolean",
     },
   },
   type: "object",
@@ -3646,6 +3661,9 @@ export const $CreateCheckoutSessionReqDto = {
     plan: {
       enum: ["HOBBY", "STARTER", "GROWTH", "ENTERPRISE", "STARTUP"],
       type: "string",
+    },
+    applyCoupon: {
+      type: "boolean",
     },
   },
   type: "object",

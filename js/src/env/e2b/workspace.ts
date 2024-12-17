@@ -1,6 +1,6 @@
-import { v4 as uuidv4 } from "uuid";
 import { RemoteWorkspace } from "../base";
-import { getEnvVariable } from "../../utils/shared";
+import { getUUID } from "../../utils/getUUID";
+import { getEnvVariable, nodeExternalRequire } from "../../utils/shared";
 import { Sandbox } from "e2b";
 import { IWorkspaceConfig, WorkspaceConfig } from "../config";
 import logger from "../../utils/logger";
@@ -52,8 +52,8 @@ export class E2BWorkspace extends RemoteWorkspace {
 
     await process.wait();
 
-    const _ssh_username = uuidv4().replace(/-/g, "");
-    const _ssh_password = uuidv4().replace(/-/g, "");
+    const _ssh_username = getUUID().replace(/-/g, "");
+    const _ssh_password = getUUID().replace(/-/g, "");
 
     await this.sandbox!.process.start({
       cmd: `sudo useradd -rm -d /home/${_ssh_username} -s /bin/bash -g root -G sudo ${_ssh_username}`,
