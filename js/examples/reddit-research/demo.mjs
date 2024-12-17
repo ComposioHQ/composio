@@ -17,7 +17,9 @@ async function setupUserConnectionIfNotExists(entityId) {
 
   if (!connection) {
     // Initiate a new connection if it doesn't exist
-    const newConnection = await entity.initiateConnection(appName);
+    const newConnection = await entity.initiateConnection({
+      appName: appName,
+    });
     console.log("Log in via: ", newConnection.redirectUrl);
     return newConnection.waitUntilActive(60);
   }
