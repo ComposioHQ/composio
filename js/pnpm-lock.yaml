@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      pusher-js:
+        specifier: 8.4.0-rc2
+        version: 8.4.0-rc2
     devDependencies:
       '@ai-sdk/openai':
         specifier: ^0.0.36
@@ -146,9 +150,6 @@ importers:
       prettier:
         specifier: ^3.4.2
         version: 3.4.2
-      pusher-js:
-        specifier: 8.4.0-rc2
-        version: 8.4.0-rc2
       regenerator-runtime:
         specifier: ^0.14.1
         version: 0.14.1
