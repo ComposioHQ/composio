@@ -52,7 +52,7 @@ export default class AddCommand {
       label?: string[];
     }
   ): Promise<void> {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
     let integration:
       | GetConnectorInfoResDTO
       | GetConnectorListResDTO
