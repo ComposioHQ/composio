@@ -95,19 +95,7 @@ describe("Entity class tests", () => {
   });
 
   it("initiate connection", async () => {
-    const connection = await entity.initiateConnection({
-      appName: "github",
-      authMode: "OAUTH2",
-      authConfig: {},
-      integrationId: "dc1d27de-46af-4fc2-9759-e28ea2d1402f",
-      // connectionData:{
-      //   "shop_name": "test"
-      // },
-      config: {
-        labels: ["PRIMARY"],
-        redirectUrl: "https://example.com",
-      },
-    });
+    const connection = await entity.initiateConnection({ appName: "github" });
     expect(connection.connectionStatus).toBe("INITIATED");
   });
 });
