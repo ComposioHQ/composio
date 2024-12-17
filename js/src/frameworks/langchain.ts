@@ -6,8 +6,6 @@ import { jsonSchemaToModel } from "../utils/shared";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import type { Optional, Sequence } from "../sdk/types";
-import { WorkspaceConfig } from "../env/config";
-import { Workspace } from "../env";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { z } from "zod";
@@ -31,7 +29,6 @@ export class LangchainToolSet extends BaseComposioToolSet {
       apiKey?: Optional<string>;
       baseUrl?: Optional<string>;
       entityId?: string;
-      workspaceConfig?: WorkspaceConfig;
       runtime?: string;
     } = {}
   ) {

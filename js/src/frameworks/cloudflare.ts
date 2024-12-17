@@ -8,7 +8,6 @@ import {
   AiTextGenerationToolInput,
 } from "@cloudflare/workers-types";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
-import { WorkspaceConfig } from "../env/config";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 import { z } from "zod";
@@ -36,7 +35,6 @@ export class CloudflareToolSet extends BaseComposioToolSet {
       apiKey?: Optional<string>;
       baseUrl?: Optional<string>;
       entityId?: string;
-      workspaceConfig?: WorkspaceConfig;
     } = {}
   ) {
     super(

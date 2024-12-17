@@ -4,7 +4,6 @@ import { OpenAIToolSet } from "./frameworks/openai";
 import { CloudflareToolSet } from "./frameworks/cloudflare";
 import { VercelAIToolSet } from "./frameworks/vercel";
 import { LangGraphToolSet } from "./frameworks/langgraph";
-import { Workspace } from "./env/index";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { APPS, ACTIONS } = require("./constants");
@@ -15,7 +14,6 @@ export {
   OpenAIToolSet,
   CloudflareToolSet,
   VercelAIToolSet,
-  Workspace,
   APPS,
   ACTIONS,
   LangGraphToolSet,

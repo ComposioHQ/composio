@@ -2,7 +2,6 @@ import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { OpenAI } from "openai";
 
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
-import { WorkspaceConfig } from "../env/config";
 import logger from "../utils/logger";
 import { Stream } from "openai/streaming";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
@@ -32,7 +31,6 @@ export class OpenAIToolSet extends BaseComposioToolSet {
       apiKey?: Optional<string>;
       baseUrl?: Optional<string>;
       entityId?: string;
-      workspaceConfig?: WorkspaceConfig;
     } = {}
   ) {
     super(
