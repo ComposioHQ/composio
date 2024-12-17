@@ -27,7 +27,7 @@ const ZExecuteActionParams = z.object({
 type TExecuteActionParams = z.infer<typeof ZExecuteActionParams>;
 
 const ZInitiateConnectionParams = z.object({
-  appName: z.string(),
+  appName: z.string().optional(),
   authConfig: z.record(z.any()).optional(),
   integrationId: z.string().optional(),
   authMode: z.string().optional(),
@@ -297,21 +297,36 @@ export class Entity {
         ZInitiateConnectionParams.parse(data);
       const { redirectUrl, labels } = data.config || {};
 
-      // Get the app details from the client
-      const app = await this.apps.get({ appKey: appName });
+      const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
 
-      const isTestConnectorAvailable =
-        app.testConnectors && app.testConnectors.length > 0;
+      let integration = integrationId
+        ? await this.integrations.get({ integrationId: integrationId })
+        : null;
 
-      if (!isTestConnectorAvailable && app.no_auth === false) {
-        if (!authMode) {
-          // @ts-ignore
+      if (!integration && authMode) {
+        const app = await this.apps.get({ appKey: appName! });
+
+        integration = await this.integrations.create({
+          appId: app.appId!,
+          name: `integration_${timestamp}`,
+          authScheme: authMode,
+          authConfig: authConfig,
+          useComposioAuth: false,
+        });
+      }
+
+      if (!integration && !authMode) {
+        const app = await this.apps.get({ appKey: appName! });
+
+        const isTestConnectorAvailable =
+          app.testConnectors && app.testConnectors.length > 0;
+
+        if (!isTestConnectorAvailable && app.no_auth === false) {
           logger.debug(
             "Auth schemes not provided, available auth schemes and authConfig"
           );
           // @ts-ignore
           for (const authScheme of app.auth_schemes) {
-            // @ts-ignore
             logger.debug(
               "autheScheme:",
               authScheme.name,
@@ -323,25 +338,6 @@ export class Entity {
 
           throw new Error(`Please pass authMode and authConfig.`);
         }
-      }
-
-      const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
-
-      let integration = integrationId
-        ? await this.integrations.get({ integrationId: integrationId })
-        : null;
-      // Create a new integration if not provided
-      if (!integration && authMode) {
-        integration = await this.integrations.create({
-          appId: app.appId!,
-          name: `integration_${timestamp}`,
-          authScheme: authMode,
-          authConfig: authConfig,
-          useComposioAuth: false,
-        });
-      }
-
-      if (!integration && !authMode) {
         integration = await this.integrations.create({
           appId: app.appId!,
           name: `integration_${timestamp}`,

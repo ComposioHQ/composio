@@ -12,7 +12,6 @@ import { BackendClient } from "./backendClient";
 import { Integrations } from "./integrations";
 import { Apps } from "./apps";
 import { CEG } from "../utils/error";
-import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 

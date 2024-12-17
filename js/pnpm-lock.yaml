@@ -57,8 +57,8 @@ importers:
         specifier: ^6.0.1
         version: 6.0.1(rollup@4.28.1)
       '@rollup/plugin-typescript':
-        specifier: ^11.1.6
-        version: 11.1.6(rollup@4.28.1)(tslib@2.6.3)(typescript@5.4.5)
+        specifier: ^12
+        version: 12.1.2(rollup@4.28.1)(tslib@2.6.3)(typescript@5.4.5)
       '@swc/core':
         specifier: ^1.7.10
         version: 1.7.10(@swc/helpers@0.5.12)
@@ -161,6 +161,9 @@ importers:
       rollup-plugin-dts:
         specifier: ^6.1.0
         version: 6.1.1(rollup@4.28.1)(typescript@5.4.5)
+      rollup-plugin-ignore:
+        specifier: ^1.0.10
+        version: 1.0.10
       rollup-plugin-terser:
         specifier: ^7.0.2
         version: 7.0.2(rollup@4.28.1)
@@ -964,8 +967,8 @@ packages:
       rollup:
         optional: true
 
-  '@rollup/plugin-typescript@11.1.6':
-    resolution: {integrity: sha512-R92yOmIACgYdJ7dJ97p4K69I8gg6IEHt8M7dUBxN3W6nrO8uUxX5ixl0yU/N3aZTi8WhPuICvOHXQvF6FaykAA==}
+  '@rollup/plugin-typescript@12.1.2':
+    resolution: {integrity: sha512-cdtSp154H5sv637uMr1a8OTWB0L1SWDSm1rDGiyfcGcvQ6cuTs4MDk2BVEBGysUWago4OJN4EQZqOTl/QY3Jgg==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
       rollup: ^2.14.0||^3.0.0||^4.0.0
@@ -3295,6 +3298,9 @@ packages:
       rollup: ^3.29.4 || ^4
       typescript: ^4.5 || ^5.0
 
+  rollup-plugin-ignore@1.0.10:
+    resolution: {integrity: sha512-VsbnfwwaTv2Dxl2onubetX/3RnSnplNnjdix0hvF8y2YpqdzlZrjIq6zkcuVJ08XysS8zqW3gt3ORBndFDgsrg==}
+
   rollup-plugin-inject@3.0.2:
     resolution: {integrity: sha512-ptg9PQwzs3orn4jkgXJ74bfs5vYz1NCZlSQMBUA0wKcGp5i5pA1AO3fOUEte8enhGUC+iapTCzEWw2jEFFUO/w==}
     deprecated: This package has been deprecated and is no longer maintained. Please use @rollup/plugin-inject.
@@ -4792,7 +4798,7 @@ snapshots:
     optionalDependencies:
       rollup: 4.28.1
 
-  '@rollup/plugin-typescript@11.1.6(rollup@4.28.1)(tslib@2.6.3)(typescript@5.4.5)':
+  '@rollup/plugin-typescript@12.1.2(rollup@4.28.1)(tslib@2.6.3)(typescript@5.4.5)':
     dependencies:
       '@rollup/pluginutils': 5.1.3(rollup@4.28.1)
       resolve: 1.22.8
@@ -7193,6 +7199,8 @@ snapshots:
       typescript: 5.4.5
     optionalDependencies:
       '@babel/code-frame': 7.24.7
+
+  rollup-plugin-ignore@1.0.10: {}
 
   rollup-plugin-inject@3.0.2:
     dependencies:
