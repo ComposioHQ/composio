@@ -64,7 +64,7 @@ export class Composio {
         description:
           "You need to provide it in the constructor or as an environment variable COMPOSIO_API_KEY",
         possibleFix:
-          "Please provide a valid API Key. You can get it from https://app.composio.dev/settings",
+          "Please provide a valid API Key. You can get it from https://app.composio.dev/settings OR Check if you are passing it as an object in the constructor like - { apiKey: 'your-api-key' }",
       });
     }
 
