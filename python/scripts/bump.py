@@ -12,6 +12,8 @@ from pathlib import Path
 
 from semver import VersionInfo
 
+print("This is a TEST PR")
+
 
 class BumpType(Enum):
     MAJOR = "major"
