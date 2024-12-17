@@ -18,7 +18,6 @@ def git_reset_cmd(commit_id: str) -> str:
         "git remote get-url origin",
         f"git fetch --depth 1 origin {commit_id}",
         f"git reset --hard {commit_id}",
-        "git clean -fdx",
         "git status",
     ]
     return " && ".join(reset_commands)
