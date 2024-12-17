@@ -13,7 +13,9 @@ const appName = "reddit";
 
 async function setupUserConnectionIfNotExists(entityId) {
   const entity = await toolset.client.getEntity(entityId);
-  const connection = await entity.getConnection(appName);
+  const connection = await entity.getConnection({
+    app: appName,
+  });
 
   if (!connection) {
     // Initiate a new connection if it doesn't exist
