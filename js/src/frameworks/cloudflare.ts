@@ -11,9 +11,7 @@ import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 import { z } from "zod";
-// Type definitions
-type Optional<T> = T | null;
-type Sequence<T> = Array<T>;
+import { Optional, Sequence } from "../types/base";
 
 /**
  * CloudflareToolSet provides integration with Cloudflare Workers AI

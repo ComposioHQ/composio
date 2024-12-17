@@ -1,6 +1,6 @@
 import { Composio } from "../sdk";
 import { COMPOSIO_BASE_URL } from "./client/core/OpenAPI";
-import type { Optional, Sequence } from "./types";
+import type { Optional, Sequence } from "../types/base";
 import { getEnvVariable } from "../utils/shared";
 import { ActionExecutionResDto } from "./client/types.gen";
 import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
@@ -11,22 +11,14 @@ import {
   TRawActionData,
   TSchemaProcessor,
   ZExecuteActionParams,
-} from "./common/action";
+  ZToolSchemaFilter,
+} from "../types/base_toolset";
 import { z } from "zod";
 import {
   fileInputProcessor,
   fileResponseProcessor,
   fileSchemaProcessor,
 } from "./utils/processor/file";
-
-export const ZToolSchemaFilter = z.object({
-  actions: z.array(z.string()).optional(),
-  apps: z.array(z.string()).optional(),
-  tags: z.array(z.string()).optional(),
-  useCase: z.string().optional(),
-  useCaseLimit: z.number().optional(),
-  filterByAvailableApps: z.boolean().optional(),
-});
 
 export class ComposioToolSet {
   client: Composio;

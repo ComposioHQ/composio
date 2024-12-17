@@ -1,6 +1,6 @@
 import { LangchainToolSet as BaseComposioToolSet } from "./langchain";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
-import type { Optional } from "../sdk/types";
+import type { Optional } from "../types/base";
 
 export class LangGraphToolSet extends BaseComposioToolSet {
   /**

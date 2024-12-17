@@ -152,8 +152,7 @@ export class Entity {
       let latestAccount = null;
       let latestCreationDate: Date | null = null;
       const connectedAccounts = await this.connectedAccounts.list({
-        // @ts-ignore
-        user_uuid: this.id,
+        user_uuid: this.id!,
       });
 
       if (!connectedAccounts.items || connectedAccounts.items.length === 0) {

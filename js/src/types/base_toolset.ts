@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ActionExecutionResDto } from "../client";
+import { ActionExecutionResDto } from "../sdk/client";
 
 /*
     This is the schema for the raw action to be stored locally
@@ -74,3 +74,14 @@ export type TSchemaProcessor = ({
   appName: string;
   toolSchema: TRawActionData;
 }) => TRawActionData;
+
+export const ZToolSchemaFilter = z.object({
+  actions: z.array(z.string()).optional(),
+  apps: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
+  useCase: z.string().optional(),
+  useCaseLimit: z.number().optional(),
+  filterByAvailableApps: z.boolean().optional(),
+});
+
+export type TToolSchemaFilter = z.infer<typeof ZToolSchemaFilter>;

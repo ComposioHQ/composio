@@ -4,7 +4,7 @@ import { jsonSchemaToModel } from "../utils/shared";
 import { z } from "zod";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
-import { TRawActionData } from "../sdk/common/action";
+import { TRawActionData } from "../types/base_toolset";
 type Optional<T> = T | null;
 
 const zExecuteToolCallParams = z.object({

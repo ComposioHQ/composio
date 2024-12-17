@@ -1,14 +1,12 @@
-import {
-  ComposioToolSet as BaseComposioToolSet,
-  ZToolSchemaFilter,
-} from "../sdk/base.toolset";
+import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { jsonSchemaToModel } from "../utils/shared";
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
-import type { Optional, Sequence } from "../sdk/types";
+import type { Optional, Sequence } from "../types/base";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { z } from "zod";
+import { ZToolSchemaFilter } from "../types/base_toolset";
 type ToolSchema = {
   name: string;
   description: string;

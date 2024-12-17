@@ -1,11 +1,9 @@
-import { ActionExecutionResDto } from "../../client";
 import { saveFile } from "../fileUtils";
 import {
   TPreProcessor,
-  TRawActionData,
   TSchemaProcessor,
   TPostProcessor,
-} from "../../common/action";
+} from "../../../types/base_toolset";
 
 export const fileResponseProcessor: TPostProcessor = ({
   actionName,

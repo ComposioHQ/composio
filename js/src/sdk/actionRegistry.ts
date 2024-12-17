@@ -4,7 +4,7 @@ import { ActionProxyRequestConfigDTO } from "./client";
 import { Composio } from ".";
 import apiClient from "../sdk/client/client";
 import { CEG } from "./utils/error";
-import { TRawActionData } from "./common/action";
+import { TRawActionData } from "../types/base_toolset";
 
 type ExecuteRequest = Omit<ActionProxyRequestConfigDTO, "connectedAccountId">;
 export interface CreateActionOptions {
