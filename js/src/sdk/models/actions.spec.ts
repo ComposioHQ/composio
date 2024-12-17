@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll } from "@jest/globals";
 import { getBackendClient } from "../testUtils/getBackendClient";
 import { Actions } from "./actions";
-import { Entity } from "./Entity";
 import { ConnectedAccounts } from "./connectedAccounts";
 
 describe("Apps class tests", () => {
@@ -77,6 +76,4 @@ describe("Apps class tests", () => {
     );
     expect((executionResult as any).data).toHaveProperty("stderr", "");
   });
-
-  it
 });
