@@ -1,0 +1,222 @@
+---
+title: "AI Lead Generator Agent"
+sidebarTitle: "AI Lead Generator"
+icon: "user-plus"
+description: "This project demonstrates how to use Composio to create a lead generation agent."
+---
+
+## Overview
+
+The AI Lead Generator Agent is a powerful tool built using Composio’s tooling ecosystem and agentic frameworks such as LlamaIndex. This agent streamlines the lead generation process for businesses by identifying potential leads, extracting valuable data, and organizing all lead information into a structured spreadsheet. With a user-friendly setup process and seamless integration capabilities, this agent can significantly enhance your outreach efficiency and sales pipeline management.
+## Getting Started
+
+<Tabs>
+<Tab title="Python">
+<Steps>
+<Step title="Installation">
+```bash install dependencies
+pip install composio-llamaindex python-dotenv
+```
+</Step>
+
+<Step title="Connecting to tools and models">
+```bash connect to required tools
+composio add peopledatalabs
+composio add googlesheets
+
+export OPENAI_API_KEY="<your-openai-api-key>"
+```
+</Step>
+
+<Step title="Importing the required libraries">
+```python import required libraries
+from composio_llamaindex import ComposioToolSet, App, Action
+from llama_index.core.agent import FunctionCallingAgentWorker
+from llama_index.core.llms import ChatMessage
+from llama_index.llms.openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
+```
+</Step>
+
+<Step title="Initializing the Tools and the LLM">
+```python initialize toolset and llm
+toolset = ComposioToolSet(api_key="")
+tools = toolset.get_tools(apps=[App.PEOPLEDATALABS, App.GOOGLESHEETS])
+
+llm = OpenAI(model="gpt-4o")
+```
+</Step>
+
+<Step title="Setting up Function Calling Worker">
+```python setup function calling worker
+spreadsheetid = '14T4e0j1XsWjriQYeFMgkM2ihyvLAplPqB9q8hytytcw'
+prefix_messages = [
+    ChatMessage(
+        role="system",
+        content=(
+            f"""
+            You are a lead research agent. Based on user input, find 10 relevant leads using people data labs.
+            After finding the leads, create a Google Sheet with the details for the lead description, and spreadsheet ID: ${spreadsheetid}.
+            Print the list of people and their details and the link to the google sheet."""
+        ),
+    )
+]
+
+agent = FunctionCallingAgentWorker(
+    tools=tools,
+    llm=llm,
+    prefix_messages=prefix_messages,
+    max_function_calls=10,
+    allow_parallel_tool_calls=False,
+    verbose=True,
+).as_agent()
+```
+</Step>
+
+<Step title="Executing the Agent">
+```python run the agent
+lead_description = 'Senior frontend developers in San Francisco'
+user_input = f"Create a lead list based on the description: {lead_description}"
+response = agent.chat(user_input)
+```
+</Step>
+
+<Step title='Final Code'>
+```python final code
+from composio_llamaindex import ComposioToolSet, App, Action
+from llama_index.core.agent import FunctionCallingAgentWorker
+from llama_index.core.llms import ChatMessage
+from llama_index.llms.openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
+toolset = ComposioToolSet(api_key="")
+tools = toolset.get_tools(apps=[App.PEOPLEDATALABS, App.GOOGLESHEETS])
+
+llm = OpenAI(model="gpt-4o")
+
+spreadsheetid = '14T4e0j1XsWjriQYeFMgkM2ihyvLAplPqB9q8hytytcw'
+prefix_messages = [
+    ChatMessage(
+        role="system",
+        content=(
+            f"""
+            You are a lead research agent. Based on user input, find 10 relevant leads using people data labs.
+            After finding the leads, create a Google Sheet with the details for the lead description, and spreadsheet ID: ${spreadsheetid}.
+            Print the list of people and their details and the link to the google sheet."""
+        ),
+    )
+]
+
+agent = FunctionCallingAgentWorker(
+    tools=tools,
+    llm=llm,
+    prefix_messages=prefix_messages,
+    max_function_calls=10,
+    allow_parallel_tool_calls=False,
+    verbose=True,
+).as_agent()
+
+lead_description = 'Senior frontend developers in San Francisco'
+user_input = f"Create a lead list based on the description: {lead_description}"
+response = agent.chat(user_input)
+```
+</Step>
+</Steps>
+</Tab>
+
+<Tab title="Javascript">
+<Steps>
+<Step title="Installation">
+```bash install dependencies
+npm install composio-core ai @ai-sdk/openai dotenv
+```
+</Step>
+
+<Step title="Connecting to tools and models">
+```bash connect to required tools
+composio add peopledatalabs
+composio add googlesheets
+
+export OPENAI_API_KEY="<your-openai-api-key>"
+export COMPOSIO_API_KEY="<your-composio-api-key>"
+```
+</Step>
+
+<Step title="Importing the required libraries">
+```javascript import required libraries
+import { openai } from "@ai-sdk/openai";
+import { VercelAIToolSet } from "composio-core";
+import dotenv from "dotenv";
+import { generateText } from "ai";
+
+dotenv.config();
+```
+</Step>
+
+<Step title="Initializing the Tools and the LLM">
+```javascript initialize toolset and llm
+const toolset = new VercelAIToolSet({
+  apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+const tools = await toolset.getTools([App.PEOPLEDATALABS, App.GOOGLESHEETS]);
+```
+</Step>
+
+<Step title="Setting up Agent">
+```javascript setup the ai agent
+const leadDescription = 'Senior frontend developers in San Francisco';
+const spreadsheetid='14T4e0j1XsWjriQYeFMgkM2ihyvLAplPqB9q8hytytcw'
+const output = await generateText({
+model: openai("gpt-4o"),
+streamText: false,
+tools: tools,
+prompt: `
+        You are a lead research agent. Based on user input, find 10 relevant leads using people data labs.
+        After finding the leads, create a Google Sheet with the details for the lead description: ${leadDescription}, and spreadsheet ID: ${spreadsheetid}.
+        Print the list of people and their details and the link to the google sheet.
+        `, 
+maxToolRoundtrips: 5,
+});
+```
+</Step>
+
+<Step title='Final Code'>
+```javascript final code
+import { openai } from "@ai-sdk/openai";
+import { VercelAIToolSet } from "composio-core";
+import dotenv from "dotenv";
+import { generateText } from "ai";
+
+dotenv.config();
+
+const toolset = new VercelAIToolSet({
+  apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+const tools = await toolset.getTools([App.PEOPLEDATALABS, App.GOOGLESHEETS]);
+
+const leadDescription = 'Senior frontend developers in San Francisco';
+const spreadsheetid='14T4e0j1XsWjriQYeFMgkM2ihyvLAplPqB9q8hytytcw'
+const output = await generateText({
+model: openai("gpt-4o"),
+streamText: false,
+tools: tools,
+prompt: `
+        You are a lead research agent. Based on user input, find 10 relevant leads using people data labs.
+        After finding the leads, create a Google Sheet with the details for the lead description: ${leadDescription}, and spreadsheet ID: ${spreadsheetid}.
+        Print the list of people and their details and the link to the google sheet.
+        `, 
+maxToolRoundtrips: 5,
+});
+
+console.log("🎉Output from agent: ", output.text);
+
+```
+</Step>
+</Steps>
+</Tab>
+</Tabs>
