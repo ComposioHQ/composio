@@ -52,7 +52,6 @@ llm = OpenAI(model="gpt-4o")
 <Step title="Setting up Function Calling Worker">
 ```python setup function calling worker
 spreadsheetid = '14T4e0j1XsWjriQYeFMgkM2ihyvLAplPqB9q8hytytcw'
-# Set up prefix messages for the agent
 prefix_messages = [
     ChatMessage(
         role="system",
@@ -99,7 +98,6 @@ tools = toolset.get_tools(apps=[App.PEOPLEDATALABS, App.GOOGLESHEETS])
 llm = OpenAI(model="gpt-4o")
 
 spreadsheetid = '14T4e0j1XsWjriQYeFMgkM2ihyvLAplPqB9q8hytytcw'
-# Set up prefix messages for the agent
 prefix_messages = [
     ChatMessage(
         role="system",
@@ -160,12 +158,10 @@ dotenv.config();
 
 <Step title="Initializing the Tools and the LLM">
 ```javascript initialize toolset and llm
-// Setup toolset
 const toolset = new VercelAIToolSet({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-// Setup tools
 const tools = await toolset.getTools([App.PEOPLEDATALABS, App.GOOGLESHEETS]);
 ```
 </Step>
@@ -174,7 +170,6 @@ const tools = await toolset.getTools([App.PEOPLEDATALABS, App.GOOGLESHEETS]);
 ```javascript setup the ai agent
 const leadDescription = 'Senior frontend developers in San Francisco';
 const spreadsheetid='14T4e0j1XsWjriQYeFMgkM2ihyvLAplPqB9q8hytytcw'
-// Generate text using the model and tools
 const output = await generateText({
 model: openai("gpt-4o"),
 streamText: false,
@@ -198,17 +193,14 @@ import { generateText } from "ai";
 
 dotenv.config();
 
-// Setup toolset
 const toolset = new VercelAIToolSet({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-// Setup tools
 const tools = await toolset.getTools([App.PEOPLEDATALABS, App.GOOGLESHEETS]);
 
 const leadDescription = 'Senior frontend developers in San Francisco';
 const spreadsheetid='14T4e0j1XsWjriQYeFMgkM2ihyvLAplPqB9q8hytytcw'
-// Generate text using the model and tools
 const output = await generateText({
 model: openai("gpt-4o"),
 streamText: false,

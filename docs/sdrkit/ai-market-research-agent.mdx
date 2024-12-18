@@ -22,8 +22,8 @@ pip install composio-llamaindex python-dotenv
 
 <Step title="Connecting to tools and models">
 ```bash connect to required tools
-composio add peopledatalabs
-composio add googlesheets
+composio add tavily
+composio add googledocs
 
 export OPENAI_API_KEY="<your-openai-api-key>"
 ```
@@ -44,7 +44,7 @@ load_dotenv()
 <Step title="Initializing the Tools and the LLM">
 ```python initialize toolset and llm
 toolset = ComposioToolSet(api_key="")
-tools = toolset.get_tools(apps=[App.PEOPLEDATALABS, App.GOOGLESHEETS])
+tools = toolset.get_tools(apps=[App.TAVILY, App.GOOGLEDOCS])
 
 llm = OpenAI(model="gpt-4o")
 ```
@@ -52,8 +52,6 @@ llm = OpenAI(model="gpt-4o")
 
 <Step title="Setting up Function Calling Worker">
 ```python setup function calling worker
-spreadsheetid = '14T4e0j1XsWjriQYeFMgkM2ihyvLAplPqB9q8hytytcw'
-# Set up prefix messages for the agent
 prefix_messages = [
     ChatMessage(
         role="system",
@@ -138,23 +136,15 @@ prefix_messages = [
 
 
 agent = FunctionCallingAgentWorker(
-    tools=tools,  # Tools available for the agent to use
-    llm=llm,  # Language model for processing requests
-    prefix_messages=prefix_messages,  # Initial system messages for context
-    max_function_calls=10,  # Maximum number of function calls allowed
-    allow_parallel_tool_calls=False,  # Disallow parallel tool calls
-    verbose=True,  # Enable verbose output
+    tools=tools,  
+    llm=llm,  
+    prefix_messages=prefix_messages,  
+    max_function_calls=10,  
+    allow_parallel_tool_calls=False,  
+    verbose=True,  
 ).as_agent()
 
 
-agent = FunctionCallingAgentWorker(
-    tools=tools,  # Tools available for the agent to use
-    llm=llm,  # Language model for processing requests
-    prefix_messages=prefix_messages,  # Initial system messages for context
-    max_function_calls=10,  # Maximum number of function calls allowed
-    allow_parallel_tool_calls=False,  # Disallow parallel tool calls
-    verbose=True,  # Enable verbose output
-).as_agent()
 a = input('Enter the domain or category you want to research about:')
 task = f"""
 The domain or category you want to research about is {a}. Use all the tools available to you to find and gather more insights on customers and market.
@@ -207,7 +197,7 @@ const toolset = new LangchainToolSet({
 });
 
 const tools = await toolset.getTools({
-    apps: ["tavily"]
+    apps: ["tavily","googledocs"]
 });
 ```
 </Step>
@@ -271,7 +261,7 @@ const toolset = new LangchainToolSet({
 });
 
 const tools = await toolset.getTools({
-    apps: ["tavily"]
+    apps: ["tavily","googledocs"]
 });
 
 const prompt = await pull("hwchase17/openai-functions-agent");
