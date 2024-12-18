@@ -55,18 +55,18 @@ jobs:
         python-version: ["3.10"]
         package:
           [
-            autogen
-            camel
-            claude
-            crew_ai
-            griptape
-            julep
-            langchain
-            llamaindex
-            lyzr
-            openai
-            langgraph
-            phidata
+            autogen,
+            camel,
+            claude,
+            crew_ai,
+            griptape,
+            julep,
+            langchain,
+            llamaindex,
+            lyzr,
+            openai,
+            langgraph,
+            phidata,
           ]
     concurrency:
       group: 'tests:examples:${{ github.ref }}'
@@ -91,13 +91,13 @@ jobs:
         run: |
           python -m pip install uv
           python -m uv pip install --upgrade pip pytest
-          python -m uv pip install plugins/${{ matrix.plugin }}
+          python -m uv pip install plugins/${{ matrix.package }}
           python -m uv pip install '.[all]'
           python -m uv pip install 'numpy<2' python-dotenv
           python -m uv pip install unstructured
 
-          COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' CI=false PLUGIN_TO_TEST=${{ matrix.plugin }} python -m uv run pytest -vv tests/test_example.py
-          COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' CI=false PLUGIN_TO_TEST=${{ matrix.plugin }} python -m uv run pytest -vv tests/test_load_tools.py
+          COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' CI=false PLUGIN_TO_TEST=${{ matrix.package }} python -m uv run pytest -vv tests/test_example.py
+          COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' CI=false PLUGIN_TO_TEST=${{ matrix.package }} python -m uv run pytest -vv tests/test_load_tools.py
       - name: Slack Notification on Failure
         if: ${{ failure() && github.ref == 'refs/heads/master' && !contains(github.event.head_commit.message, 'release') && !contains(github.event.head_commit.message, 'Release') && !inputs.dont_notify }}
         uses: rtCamp/action-slack-notify@v2
