@@ -316,7 +316,7 @@ class HeliconeAdder(ast.NodeTransformer):
 def add_helicone_headers(source: str) -> str:
     tree = ast.parse(source)
     helicone_adder = HeliconeAdder()
-    tree: ast.Module = helicone_adder.visit(tree)
+    tree = helicone_adder.visit(tree)
     assert helicone_adder.openai_patched_successfully
 
     # If the module does not import `os`, then add the import statement
