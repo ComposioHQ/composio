@@ -71,6 +71,8 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
     ) -> CreateCodeMapResponse:
         if "create_fqdn" not in metadata:
             metadata["create_fqdn"] = True
+        if "create_index" not in metadata:
+            metadata["create_index"] = True
         if "is_python" not in metadata:
             metadata["is_python"] = True
 
@@ -123,7 +125,8 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
                     self.load_all_fqdns()
                 status = self._update_status(self.REPO_DIR, Status.LOADING_INDEX)
             if status["status"] == Status.LOADING_INDEX:
-                self.create_index(metadata["is_python"])
+                if metadata["create_index"]:
+                    self.create_index(metadata["is_python"])
                 status = self._update_status(self.REPO_DIR, Status.COMPLETED)
         except Exception as e:
             self._update_status(self.REPO_DIR, Status.FAILED)
