@@ -38,7 +38,7 @@ describe("Apps class tests", () => {
 
   it("Should create custom action to star a repository", async () => {
     await langchainToolSet.createAction({
-      actionName: "starRepositoryPlxityCustom12345",
+      actionName: "starRepositoryCustomAction",
       toolName: "github",
       description: "This action stars a repository",
       inputParams: z.object({
@@ -60,7 +60,7 @@ describe("Apps class tests", () => {
     });
 
     const actionOuput = await langchainToolSet.executeAction({
-      action: "starRepositoryPlxityCustom12345",
+      action: "starRepositoryCustomAction",
       params: {
         owner: "plxity",
         repo: "achievementsof.life",

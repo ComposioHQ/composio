@@ -12,7 +12,7 @@ const { COMPOSIO_API_KEY, BACKEND_HERMES_URL } = getTestConfig();
 
 describe("Basic SDK spec suite", () => {
   it("should create a basic client", () => {
-    const client = new Composio(COMPOSIO_API_KEY);
+    const client = new Composio({ apiKey: COMPOSIO_API_KEY });
     expect(client).toBeInstanceOf(Composio);
   });
 
@@ -21,12 +21,13 @@ describe("Basic SDK spec suite", () => {
 
     // @ts-expect-error
     process.exit = jest.fn();
+    // @ts-expect-error
     expect(() => new Composio()).toThrow("🔑 API Key is not provided");
     process.exit = originalExit;
   });
 
   it("should handle 404 error gracefully", async () => {
-    const client = new Composio(COMPOSIO_API_KEY);
+    const client = new Composio({ apiKey: COMPOSIO_API_KEY });
     const mock = new AxiosMockAdapter(axiosClient.instance);
     mock.onGet("/api/v1/apps").reply(404, { detail: "Not found" });
 
@@ -48,7 +49,7 @@ describe("Basic SDK spec suite", () => {
   });
 
   it("should handle 400 error gracefully", async () => {
-    const client = new Composio(COMPOSIO_API_KEY);
+    const client = new Composio({ apiKey: COMPOSIO_API_KEY });
     const mock = new AxiosMockAdapter(axiosClient.instance);
     mock
       .onGet("/api/v1/apps")
@@ -70,7 +71,7 @@ describe("Basic SDK spec suite", () => {
   });
 
   it("should handle 500 and 502 error gracefully", async () => {
-    const client = new Composio(COMPOSIO_API_KEY);
+    const client = new Composio({ apiKey: COMPOSIO_API_KEY });
     const mock = new AxiosMockAdapter(axiosClient.instance);
     mock.onGet("/api/v1/apps").reply(500, { detail: "Internal Server Error" });
 
@@ -108,7 +109,7 @@ describe("Basic SDK spec suite", () => {
   });
 
   it("should give request timeout error", async () => {
-    const client = new Composio(COMPOSIO_API_KEY);
+    const client = new Composio({ apiKey: COMPOSIO_API_KEY });
     const mock = new AxiosMockAdapter(axiosClient.instance);
     mock.onGet("/api/v1/apps").reply(408, {});
 
@@ -128,12 +129,16 @@ describe("Basic SDK spec suite", () => {
   });
 
   it("syntax error handling", () => {
+    // @ts-expect-error
     expect(() => new Composio()).toThrow("🔑 API Key is not provided");
   });
 
   it("should get an entity and then fetch a connection", async () => {
     const app = "github";
-    const composio = new Composio(COMPOSIO_API_KEY, BACKEND_HERMES_URL);
+    const composio = new Composio({
+      apiKey: COMPOSIO_API_KEY,
+      baseUrl: BACKEND_HERMES_URL,
+    });
     const entity = composio.getEntity("default");
 
     expect(entity.id).toBe("default");

@@ -70,7 +70,7 @@ export default class AddCommand {
     appName: string,
     options: THandleActionOptions
   ): Promise<void> {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
     let integration:
       | GetConnectorInfoResDTO
       | GetConnectorListResDTO
@@ -149,7 +149,7 @@ export default class AddCommand {
     connectedAccountId: string,
     timeout: number = 30000
   ): Promise<void> {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
     const startTime = Date.now();
     const pollInterval = 3000; // 3 seconds
 
@@ -178,7 +178,7 @@ export default class AddCommand {
     integrationId: string,
     options: Record<string, unknown>
   ): Promise<void> {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
     const data = await composioClient.integrations.get({ integrationId });
     const { expectedInputFields } = data!;
 
@@ -236,7 +236,7 @@ export default class AddCommand {
     userAuthMode?: string,
     options?: THandleActionOptions
   ) {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
     const app = await composioClient.apps.get({
       appKey: appName.toLowerCase(),
     });
@@ -343,10 +343,8 @@ export default class AddCommand {
     config: Record<string, unknown>,
     integrationName: string
   ) {
-    const composioClient = new Composio();
-    const authConfig = await this.collectInputFields(
-      authScheme.fields as TInputField[]
-    );
+    const composioClient = new Composio({});
+    const authConfig = await this.collectInputFields(authScheme.fields);
 
     const integration = await composioClient.integrations.create({
       appId: app.appId as string,
@@ -434,7 +432,7 @@ export default class AddCommand {
     config: Record<string, unknown>,
     name: string
   ) {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
     const integration = await composioClient.integrations.create({
       appId: app.appId,
       authScheme: authMode,

@@ -104,7 +104,7 @@ export class TriggerAdd {
   }
 
   async handleAction(triggerName: string): Promise<void> {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
 
     const data = (await composioClient.triggers.list()).find(
       // @ts-ignore
@@ -176,7 +176,7 @@ export class TriggerDisable {
   }
 
   async handleAction(triggerId: string): Promise<void> {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
     try {
       await composioClient.triggers.disable({ triggerId });
       console.log(chalk.green(`Trigger ${triggerId} disabled`));
@@ -199,7 +199,7 @@ export class TriggerEnable {
   }
 
   async handleAction(triggerId: string): Promise<void> {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
     try {
       await composioClient.triggers.enable({ triggerId });
       console.log(chalk.green(`Trigger ${triggerId} enabled`));
@@ -223,7 +223,7 @@ export class ActiveTriggers {
   }
 
   async handleAction(): Promise<void> {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
     const triggers = await composioClient.activeTriggers.list();
     for (const trigger of triggers) {
       console.log(`Id: ${chalk.bold(trigger.id)}`);
