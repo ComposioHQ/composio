@@ -1,6 +1,6 @@
 import { spawn } from "child_process";
-import { IS_DEVELOPMENT_OR_CI } from "../sdk/utils/constants";
 import { serializeValue } from "../sdk/utils/common";
+import { IS_DEVELOPMENT_OR_CI } from "../sdk/utils/constants";
 import logger from "./logger";
 
 type AcceptableJSONValue =

@@ -1,19 +1,18 @@
 import {
-  InitiateConnectionPayloadDto,
-  GetConnectionsResponseDto,
   GetConnectionInfoData,
   GetConnectionInfoResponse,
   GetConnectionsData,
+  GetConnectionsResponseDto,
+  InitiateConnectionPayloadDto,
   InitiateConnectionResponse2,
 } from "../client";
-import client from "../client/client";
-import apiClient from "../client/client";
-import { BackendClient } from "./backendClient";
-import { Integrations } from "./integrations";
-import { Apps } from "./apps";
+import { default as apiClient, default as client } from "../client/client";
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
+import { Apps } from "./apps";
+import { BackendClient } from "./backendClient";
+import { Integrations } from "./integrations";
 
 type ConnectedAccountsListData = GetConnectionsData["query"] & {
   appNames?: string;

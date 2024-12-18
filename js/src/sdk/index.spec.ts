@@ -1,13 +1,13 @@
-import { describe, it, expect } from "@jest/globals";
-import { Composio } from "./index";
+import { describe, expect, it } from "@jest/globals";
+import AxiosMockAdapter from "axios-mock-adapter";
 import { getTestConfig } from "../../config/getTestConfig";
 import { client as axiosClient } from "./client/services.gen";
+import { Composio } from "./index";
+import { ComposioError } from "./utils/errors/src/composioError";
 import {
   BASE_ERROR_CODE_INFO,
   SDK_ERROR_CODES,
 } from "./utils/errors/src/constants";
-import AxiosMockAdapter from "axios-mock-adapter";
-import { ComposioError } from "./utils/errors/src/composioError";
 const { COMPOSIO_API_KEY, BACKEND_HERMES_URL } = getTestConfig();
 
 describe("Basic SDK spec suite", () => {
@@ -21,7 +21,6 @@ describe("Basic SDK spec suite", () => {
 
     // @ts-expect-error
     process.exit = jest.fn();
-    // @ts-expect-error
     expect(() => new Composio()).toThrow("🔑 API Key is not provided");
     process.exit = originalExit;
   });
@@ -129,7 +128,6 @@ describe("Basic SDK spec suite", () => {
   });
 
   it("syntax error handling", () => {
-    // @ts-expect-error
     expect(() => new Composio()).toThrow("🔑 API Key is not provided");
   });
 

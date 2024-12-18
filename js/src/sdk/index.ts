@@ -1,20 +1,20 @@
-import { ConnectedAccounts } from "./models/connectedAccounts";
-import { Apps } from "./models/apps";
-import { Actions } from "./models/actions";
-import { Triggers } from "./models/triggers";
-import { Integrations } from "./models/integrations";
-import { ActiveTriggers } from "./models/activeTriggers";
-import { BackendClient } from "./models/backendClient";
-import { Entity } from "./models/Entity";
 import axios from "axios";
-import { getPackageJsonDir } from "./utils/projectUtils";
-import { isNewerVersion } from "./utils/other";
-import { CEG } from "./utils/error";
-import { GetConnectorInfoResDTO } from "./client";
 import logger from "../utils/logger";
-import { SDK_ERROR_CODES } from "./utils/errors/src/constants";
-import { getSDKConfig } from "./utils/config";
+import { GetConnectorInfoResDTO } from "./client";
+import { Entity } from "./models/Entity";
+import { Actions } from "./models/actions";
+import { ActiveTriggers } from "./models/activeTriggers";
+import { Apps } from "./models/apps";
+import { BackendClient } from "./models/backendClient";
+import { ConnectedAccounts } from "./models/connectedAccounts";
+import { Integrations } from "./models/integrations";
+import { Triggers } from "./models/triggers";
 import ComposioSDKContext from "./utils/composioContext";
+import { getSDKConfig } from "./utils/config";
+import { CEG } from "./utils/error";
+import { SDK_ERROR_CODES } from "./utils/errors/src/constants";
+import { isNewerVersion } from "./utils/other";
+import { getPackageJsonDir } from "./utils/projectUtils";
 import { TELEMETRY_LOGGER } from "./utils/telemetry";
 import { TELEMETRY_EVENTS } from "./utils/telemetry/events";
 
@@ -42,7 +42,9 @@ export class Composio {
    * @param {string} [config.baseUrl] - The base URL for the Composio backend. By default, it is set to the production URL.
    * @param {string} [config.runtime] - The runtime environment for the SDK.
    */
-  constructor(config: { apiKey?: string; baseUrl?: string; runtime?: string }={}) {
+  constructor(
+    config: { apiKey?: string; baseUrl?: string; runtime?: string } = {}
+  ) {
     // Parse the base URL and API key, falling back to environment variables or defaults if not provided
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
       config?.baseUrl,

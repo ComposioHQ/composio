@@ -1,18 +1,18 @@
 import * as fs from "fs";
-import * as path from "path";
 import * as os from "os";
+import * as path from "path";
 import {
   COMPOSIO_DIR,
-  USER_DATA_FILE_NAME,
   DEFAULT_BASE_URL,
+  USER_DATA_FILE_NAME,
 } from "./constants";
 
-import { getEnvVariable } from "../../utils/shared";
-import { client as axiosClient } from "../client/services.gen";
-import apiClient from "../client/client";
 import { AxiosInstance } from "axios";
-import logger from "../../utils/logger";
 import { getUUID } from "../../utils/common";
+import logger from "../../utils/logger";
+import { getEnvVariable } from "../../utils/shared";
+import apiClient from "../client/client";
+import { client as axiosClient } from "../client/services.gen";
 declare module "axios" {
   export interface InternalAxiosRequestConfig {
     metadata?: {

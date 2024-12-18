@@ -74,6 +74,7 @@
     "open": "^8.4.0",
     "openai": "^4.50.0",
     "prettier": "^3.4.2",
+    "prettier-plugin-organize-imports": "^4.1.0",
     "pusher-js": "8.4.0-rc2",
     "regenerator-runtime": "^0.14.1",
     "resolve-package-path": "^4.0.3",
@@ -95,8 +96,5 @@
   },
   "publishConfig": {
     "access": "public"
-  },
-  "dependencies": {
-    "prettier-plugin-organize-imports": "^4.1.0"
   }
 }

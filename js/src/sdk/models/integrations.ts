@@ -1,9 +1,9 @@
 import { DeleteConnectorData } from "../client";
 import apiClient from "../client/client";
-import { BackendClient } from "./backendClient";
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
+import { BackendClient } from "./backendClient";
 
 export type ListAllIntegrationsData = {
   /**

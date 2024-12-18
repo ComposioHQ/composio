@@ -1,16 +1,16 @@
+import { AxiosError } from "axios";
+import { ZodError } from "zod";
+import { ComposioError } from "./errors/src/composioError";
 import {
-  SDK_ERROR_CODES,
   BASE_ERROR_CODE_INFO,
   BE_STATUS_CODE_TO_SDK_ERROR_CODES,
+  SDK_ERROR_CODES,
 } from "./errors/src/constants";
-import { ComposioError } from "./errors/src/composioError";
 import {
   ErrorResponseData,
   generateMetadataFromAxiosError,
   getAPIErrorDetails,
 } from "./errors/src/formatter";
-import { AxiosError } from "axios";
-import { ZodError } from "zod";
 
 export class CEG {
   static handleAllError(error: unknown, shouldThrow: boolean = false) {

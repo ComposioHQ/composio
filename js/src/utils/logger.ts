@@ -1,5 +1,5 @@
-import { getEnvVariable } from "./shared";
 import winston from "winston";
+import { getEnvVariable } from "./shared";
 
 // Define log levels with corresponding priorities
 const LOG_LEVELS = {

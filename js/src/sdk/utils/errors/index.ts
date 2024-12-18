@@ -1,7 +1,7 @@
-import { TELEMETRY_URL } from "../constants";
-import ComposioSDKContext from "../composioContext";
 import { sendBrowserReq, sendProcessReq } from "../../../utils/external";
 import { getEnvVariable } from "../../../utils/shared";
+import ComposioSDKContext from "../composioContext";
+import { TELEMETRY_URL } from "../constants";
 
 type ErrorPayload = {
   error_id: string;

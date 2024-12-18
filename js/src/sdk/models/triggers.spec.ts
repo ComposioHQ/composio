@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeAll } from "@jest/globals";
+import { beforeAll, describe, expect, it } from "@jest/globals";
 import { getBackendClient } from "../testUtils/getBackendClient";
 
-import { Triggers } from "./triggers";
-import { ConnectedAccounts } from "./connectedAccounts";
 import { Entity } from "./Entity";
 import { Actions } from "./actions";
+import { ConnectedAccounts } from "./connectedAccounts";
+import { Triggers } from "./triggers";
 
 describe("Apps class tests", () => {
   let backendClient;

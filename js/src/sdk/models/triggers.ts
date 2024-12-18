@@ -1,11 +1,11 @@
-import { TriggerData, PusherUtils } from "../utils/pusher";
 import logger from "../../utils/logger";
+import { PusherUtils, TriggerData } from "../utils/pusher";
 import { BackendClient } from "./backendClient";
 
 import apiClient from "../client/client";
 
-import { CEG } from "../utils/error";
 import { ListTriggersData } from "../client";
+import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 

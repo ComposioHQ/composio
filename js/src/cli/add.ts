@@ -1,9 +1,9 @@
 /* eslint-disable no-console */
 import chalk from "chalk";
 import { Command } from "commander";
-import { Composio } from "../sdk";
 import inquirer from "inquirer";
 import open from "open";
+import { Composio } from "../sdk";
 import { GetConnectorInfoResDTO, GetConnectorListResDTO } from "../sdk/client";
 
 type TInputField = {

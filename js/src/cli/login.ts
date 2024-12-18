@@ -4,10 +4,10 @@ import { Command } from "commander";
 import inquirer from "inquirer";
 import open from "open";
 
-import { getSDKConfig, getOpenAPIClient } from "../sdk/utils/config";
 import client from "../sdk/client/client";
-import { FRONTEND_BASE_URL } from "./src/constants";
 import { setCliConfig } from "../sdk/utils/cli";
+import { getOpenAPIClient, getSDKConfig } from "../sdk/utils/config";
+import { FRONTEND_BASE_URL } from "./src/constants";
 
 export default class LoginCommand {
   private program: Command;

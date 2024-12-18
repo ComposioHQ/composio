@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeAll, beforeEach } from "@jest/globals";
+import { beforeAll, beforeEach, describe, expect, it } from "@jest/globals";
 import { z } from "zod";
-import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 import { Composio } from ".";
 import { getTestConfig } from "../../config/getTestConfig";
+import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 
 describe("ActionRegistry", () => {
   let actionRegistry: ActionRegistry;

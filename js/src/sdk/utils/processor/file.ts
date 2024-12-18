@@ -1,9 +1,9 @@
-import { saveFile } from "../fileUtils";
 import {
+  TPostProcessor,
   TPreProcessor,
   TSchemaProcessor,
-  TPostProcessor,
 } from "../../../types/base_toolset";
+import { saveFile } from "../fileUtils";
 
 export const fileResponseProcessor: TPostProcessor = ({
   actionName,

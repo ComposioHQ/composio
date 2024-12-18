@@ -1,10 +1,10 @@
+import z from "zod";
 import {
-  jsonSchemaToTsType,
-  jsonSchemaToModel,
   getEnvVariable,
+  jsonSchemaToModel,
+  jsonSchemaToTsType,
   nodeExternalRequire,
 } from "./shared";
-import z from "zod";
 
 describe("shared utilities", () => {
   describe("jsonSchemaToTsType", () => {

@@ -1,10 +1,10 @@
-import { z, ZodObject, ZodString, ZodOptional } from "zod";
-import { zodToJsonSchema, JsonSchema7Type } from "zod-to-json-schema";
-import { ActionProxyRequestConfigDTO } from "./client";
+import { ZodObject, ZodOptional, ZodString, z } from "zod";
+import { JsonSchema7Type, zodToJsonSchema } from "zod-to-json-schema";
 import { Composio } from ".";
 import apiClient from "../sdk/client/client";
-import { CEG } from "./utils/error";
 import { TRawActionData } from "../types/base_toolset";
+import { ActionProxyRequestConfigDTO } from "./client";
+import { CEG } from "./utils/error";
 
 type ExecuteRequest = Omit<ActionProxyRequestConfigDTO, "connectedAccountId">;
 export interface CreateActionOptions {

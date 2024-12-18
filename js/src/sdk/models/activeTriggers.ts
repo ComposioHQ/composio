@@ -1,9 +1,9 @@
-import { GetActiveTriggersData } from "../client/types.gen";
 import apiClient from "../client/client";
-import { BackendClient } from "./backendClient";
+import { GetActiveTriggersData } from "../client/types.gen";
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
+import { BackendClient } from "./backendClient";
 
 export class ActiveTriggers {
   backendClient: BackendClient;

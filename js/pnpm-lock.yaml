@@ -7,10 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      prettier-plugin-organize-imports:
-        specifier: ^4.1.0
-        version: 4.1.0(prettier@3.4.2)(typescript@5.4.5)
     devDependencies:
       '@ai-sdk/openai':
         specifier: ^0.0.36
@@ -150,6 +146,9 @@ importers:
       prettier:
         specifier: ^3.4.2
         version: 3.4.2
+      prettier-plugin-organize-imports:
+        specifier: ^4.1.0
+        version: 4.1.0(prettier@3.4.2)(typescript@5.4.5)
       pusher-js:
         specifier: 8.4.0-rc2
         version: 8.4.0-rc2

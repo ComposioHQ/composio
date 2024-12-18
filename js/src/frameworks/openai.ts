@@ -1,14 +1,15 @@
-import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { OpenAI } from "openai";
+import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 
-import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
-import logger from "../utils/logger";
 import { Stream } from "openai/streaming";
+import { z } from "zod";
+import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
-import { z } from "zod";
-import { ZToolSchemaFilter } from "../sdk/base.toolset";
+import logger from "../utils/logger";
+
 import { Optional, Sequence } from "../types/base";
+import { ZToolSchemaFilter } from "../types/base_toolset";
 
 export class OpenAIToolSet extends BaseComposioToolSet {
   static FRAMEWORK_NAME = "openai";

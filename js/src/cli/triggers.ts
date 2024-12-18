@@ -3,9 +3,9 @@ import chalk from "chalk";
 import { Command } from "commander";
 import client from "../sdk/client/client";
 
-import { getOpenAPIClient } from "../sdk/utils/config";
-import { Composio } from "../sdk";
 import inquirer from "inquirer";
+import { Composio } from "../sdk";
+import { getOpenAPIClient } from "../sdk/utils/config";
 
 export default class ConnectionsCommand {
   private program: Command;

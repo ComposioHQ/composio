@@ -1,6 +1,6 @@
+import { logError } from "..";
 import { getUUID } from "../../../../utils/common";
 import { getLogLevel } from "../../../../utils/logger";
-import { logError } from "..";
 
 /**
  * Custom error class for Composio that provides rich error details, tracking, and improved debugging
