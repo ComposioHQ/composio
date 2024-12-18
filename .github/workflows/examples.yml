@@ -48,12 +48,33 @@ jobs:
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
-    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+        package:
+          [
+            autogen
+            camel
+            claude
+            crew_ai
+            griptape
+            julep
+            langchain
+            llamaindex
+            lyzr
+            openai
+            langgraph
+            phidata
+          ]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: ${{ matrix.python-version }}
       - name: Run Tests
         env:
           DOCKER_USER: ${{secrets.DOCKER_USER}}
@@ -68,13 +89,13 @@ jobs:
         run: |
           python -m pip install uv
           python -m uv pip install --upgrade pip pytest
-          python -m uv pip install plugins/autogen plugins/camel plugins/claude plugins/crew_ai plugins/griptape plugins/julep plugins/langchain plugins/llamaindex plugins/lyzr plugins/openai plugins/langgraph plugins/phidata
+          python -m uv pip install plugins/${{ matrix.plugin }}
           python -m uv pip install '.[all]'
           python -m uv pip install 'numpy<2' python-dotenv
           python -m uv pip install unstructured
 
-          COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' CI=false python -m uv run pytest -vv tests/test_example.py
-          COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' CI=false python -m uv run pytest -vv tests/test_load_tools.py
+          COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' CI=false PLUGIN_TO_TEST=${{ matrix.plugin }} python -m uv run pytest -vv tests/test_example.py
+          COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' CI=false PLUGIN_TO_TEST=${{ matrix.plugin }} python -m uv run pytest -vv tests/test_load_tools.py
       - name: Slack Notification on Failure
         if: ${{ failure() && github.ref == 'refs/heads/master' && !contains(github.event.head_commit.message, 'release') && !contains(github.event.head_commit.message, 'Release') && !inputs.dont_notify }}
         uses: rtCamp/action-slack-notify@v2
