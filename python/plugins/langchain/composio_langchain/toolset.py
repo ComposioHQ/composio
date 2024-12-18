@@ -118,9 +118,7 @@ class ComposioToolSet(
             schema_params=schema_params,
             entity_id=entity_id,
         )
-        parameters = json_schema_to_model(
-            json_schema=schema_params,
-        )
+        parameters = json_schema_to_model(json_schema=schema_params)
         tool = StructuredTool.from_function(
             name=action,
             description=description,
