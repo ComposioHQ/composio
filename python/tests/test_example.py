@@ -200,7 +200,7 @@ EXAMPLES = {
 )
 @pytest.mark.parametrize("example_name, example", EXAMPLES.items())
 def test_example(
-    example_name: str, example: dict, temp_path: Path  # pylint: disable=unused-argument
+    example_name: str, example: dict, tmp_path: Path  # pylint: disable=unused-argument
 ) -> None:
     """Test an example with given environment."""
     plugin_to_test = os.getenv("PLUGIN_TO_TEST")
