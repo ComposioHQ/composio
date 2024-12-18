@@ -215,7 +215,7 @@ def test_example(
     filepath = Path(example["file"])
     code = filepath.read_text(encoding="utf-8")
 
-    if plugin_to_test in ("crew_ai", "autogen", "openai", "langchain", "langgraph"):
+    if plugin_to_test != "lyzr":
         code = add_helicone_headers(code)
         filepath.write_text(code, encoding="utf-8")
 
