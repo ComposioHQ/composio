@@ -212,10 +212,10 @@ def test_example(
             val is not None
         ), f"Please provide value for `{key}` for testing `{example['file']}`"
 
-    temp_path.write_text(add_helicone_headers(example["file"].read_text()))
+    tmp_path.write_text(add_helicone_headers(example["file"].read_text()))
     cwd = example.get("cwd", None)
     proc = subprocess.Popen(  # pylint: disable=consider-using-with
-        args=[sys.executable, temp_path],
+        args=[sys.executable, tmp_path],
         # TODO(@angryblade): Sanitize the env before running the process.
         env={**os.environ, **example["env"]},
         stdout=subprocess.PIPE,
