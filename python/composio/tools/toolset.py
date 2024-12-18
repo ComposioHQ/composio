@@ -587,7 +587,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             return param  # type: ignore
 
         if isinstance(param, BaseModel):
-            return param.model_dump_json(exclude_none=True)  # type: ignore
+            return param.model_dump(exclude_none=True)  # type: ignore
 
         if isinstance(param, list):
             return [self._serialize_execute_params(p) for p in param]  # type: ignore
