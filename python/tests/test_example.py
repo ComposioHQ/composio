@@ -213,7 +213,10 @@ def test_example(
         ), f"Please provide value for `{key}` for testing `{example['file']}`"
 
     filepath = Path(example["file"])
-    modified_code = add_helicone_headers(filepath.read_text(encoding="utf-8"))
+
+    if plugin_to_test in ("crew_ai", "autogen", "openai"):
+        modified_code = add_helicone_headers(filepath.read_text(encoding="utf-8"))
+
     filepath.write_text(modified_code, encoding="utf-8")
     cwd = example.get("cwd", None)
     proc = subprocess.Popen(  # pylint: disable=consider-using-with
