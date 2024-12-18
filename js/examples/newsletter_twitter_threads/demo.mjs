@@ -9,20 +9,17 @@ const toolset = new VercelAIToolSet({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const appName = "reddit";
+const appName = "tavily";
 
 async function setupUserConnectionIfNotExists(entityId) {
   const entity = await toolset.client.getEntity(entityId);
-  const connection = await entity.getConnection({
-    app: appName,
-  });
+  const connection = await entity.getConnection(appName);
+
   if (!connection) {
     // Initiate a new connection if it doesn't exist
-    const newConnection = await entity.initiateConnection({
-      appName: appName,
-    });
+    const newConnection = await entity.initiateConnection(appName);
     console.log("Log in via: ", newConnection.redirectUrl);
-    return newConnection.waitUntilActive(100);
+    return newConnection.waitUntilActive(60);
   }
 
   return connection;
@@ -31,17 +28,25 @@ async function setupUserConnectionIfNotExists(entityId) {
 async function executeAgent(entityName) {
   // Setup entity and ensure connection
   const entity = await toolset.client.getEntity(entityName);
-  await setupUserConnectionIfNotExists(entity.id);
+  //await setupUserConnectionIfNotExists(entity.id);
 
   // Retrieve tools for the specified app
-  const tools = await toolset.getTools({ apps: [appName] }, entity.id);
-  const subreddit = "r/developersIndia/";
+  const tools = await toolset.getTools({ actions: ["TWITTER_CREATION_OF_A_POST","TAVILY_TAVILY_SEARCH"] }, entity.id);
+  
+
   // Generate text using the model and tools
   const output = await generateText({
-    model: openai("gpt-4o"), //groq("llama3-8b-8192"),
+    model: openai("gpt-4o"),
     streamText: false,
     tools: tools,
-    prompt: `Research the subreddit ${subreddit} and provide a summary of the top posts.`,
+    prompt: `
+            You are a twitter thread posting agent. Your job is to follow these steps in order:
+            1. Research on the topic given to you: "12 days of OpenAI"
+            2. Understand the topic and post a tweet about it.
+            3. Get the id of the posted tweet and post another tweet which contains the id of the previous tweet.
+            4. Repeat this process for 5 tweets.
+            5. Once everything is done, print the tweet you've posted and the link to it.
+            `, 
     maxToolRoundtrips: 5,
   });
 
