@@ -12,7 +12,7 @@ const generateBundleAndTypeBundles = (file) => {
       {
         file: `dist/${file}.js`,
         format: 'cjs',
-        sourcemap: true
+        sourcemap: false
       },
     ],
     plugins: [
@@ -48,7 +48,7 @@ export default [
     output: {
       file: 'dist/cli/index.js',
       format: 'cjs',
-      sourcemap: true,
+      sourcemap: false,
     },
     plugins: [
       resolve(), // Resolve node_modules
@@ -66,11 +66,5 @@ export default [
       // List any external dependencies here
     ]
   },
-  ...generateBundleAndTypeBundles('index'),
-  ...generateBundleAndTypeBundles('frameworks/cloudflare'),
-  ...generateBundleAndTypeBundles('frameworks/langchain'),
-  ...generateBundleAndTypeBundles('frameworks/openai'),
-  ...generateBundleAndTypeBundles('frameworks/langgraph'),
-  ...generateBundleAndTypeBundles('frameworks/vercel'),
-  ...generateBundleAndTypeBundles('sdk/index'),
+  ...generateBundleAndTypeBundles('index')
 ];
