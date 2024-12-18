@@ -200,7 +200,7 @@ EXAMPLES = {
 )
 @pytest.mark.parametrize("example_name, example", EXAMPLES.items())
 def test_example(
-    example_name: str, example: dict, tmp_path: Path  # pylint: disable=unused-argument
+    example_name: str, example: dict  # pylint: disable=unused-argument
 ) -> None:
     """Test an example with given environment."""
     plugin_to_test = os.getenv("PLUGIN_TO_TEST")
@@ -212,12 +212,11 @@ def test_example(
             val is not None
         ), f"Please provide value for `{key}` for testing `{example['file']}`"
 
-    filename = os.path.basename(example["file"])
-    copied_filepath = tmp_path / filename
-    copied_filepath.write_text(add_helicone_headers(example["file"].read_text()))
+    filepath = Path(example["file"])
+    filepath.write_text(add_helicone_headers(filepath.read_text()))
     cwd = example.get("cwd", None)
     proc = subprocess.Popen(  # pylint: disable=consider-using-with
-        args=[sys.executable, tmp_path],
+        args=[sys.executable, str(filepath)],
         # TODO(@angryblade): Sanitize the env before running the process.
         env={**os.environ, **example["env"]},
         stdout=subprocess.PIPE,
