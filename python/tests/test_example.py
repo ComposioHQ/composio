@@ -203,6 +203,10 @@ def test_example(
     example_name: str, example: dict  # pylint: disable=unused-argument
 ) -> None:
     """Test an example with given environment."""
+    plugin_to_test = os.getenv("PLUGIN_TO_TEST")
+    if plugin_to_test is not None and plugin_to_test != example["plugin"]:
+        pytest.skip(f"Skipping {example['plugin']}")
+
     for key, val in example["env"].items():
         assert (
             val is not None
