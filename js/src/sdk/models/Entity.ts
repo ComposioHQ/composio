@@ -297,12 +297,6 @@ export class Entity {
         ZInitiateConnectionParams.parse(data);
       const { redirectUrl, labels } = data.config || {};
 
-      const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
-
-      let integration = integrationId
-        ? await this.integrations.get({ integrationId: integrationId })
-        : null;
-
       if (!integrationId && !appName) {
         throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED, {
           message: "Please pass appName or integrationId",
@@ -311,46 +305,61 @@ export class Entity {
         });
       }
 
-      if (!integration && authMode) {
-        const app = await this.apps.get({ appKey: appName! });
+      /* Get the integration */
+      const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
 
-        integration = await this.integrations.create({
-          appId: app.appId!,
-          name: `integration_${timestamp}`,
-          authScheme: authMode,
-          authConfig: authConfig,
-          useComposioAuth: false,
+      const isIntegrationIdPassed = !!integrationId;
+      let integration = isIntegrationIdPassed
+        ? await this.integrations.get({ integrationId: integrationId })
+        : null;
+
+      if (isIntegrationIdPassed && !integration) {
+        throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED, {
+          message: "Integration not found",
+          description: "The integration with the given id does not exist",
         });
       }
 
-      if (!integration && !authMode) {
+      /* If integration is not found, create a new integration */
+      if (!isIntegrationIdPassed) {
         const app = await this.apps.get({ appKey: appName! });
 
-        const isTestConnectorAvailable =
-          app.testConnectors && app.testConnectors.length > 0;
+        if (authMode) {
+          integration = await this.integrations.create({
+            appId: app.appId!,
+            name: `integration_${timestamp}`,
+            authScheme: authMode,
+            authConfig: authConfig,
+            useComposioAuth: false,
+          });
+        } else {
+          const isTestConnectorAvailable =
+            app.testConnectors && app.testConnectors.length > 0;
 
-        if (!isTestConnectorAvailable && app.no_auth === false) {
-          logger.debug(
-            "Auth schemes not provided, available auth schemes and authConfig"
-          );
-          // @ts-ignore
-          for (const authScheme of app.auth_schemes) {
+          if (!isTestConnectorAvailable && app.no_auth === false) {
             logger.debug(
-              "autheScheme:",
-              authScheme.name,
-              "\n",
-              "fields:",
-              authScheme.fields
+              "Auth schemes not provided, available auth schemes and authConfig"
             );
+            // @ts-ignore
+            for (const authScheme of app.auth_schemes) {
+              logger.debug(
+                "authScheme:",
+                authScheme.name,
+                "\n",
+                "fields:",
+                authScheme.fields
+              );
+            }
+
+            throw new Error("Please pass authMode and authConfig.");
           }
 
-          throw new Error(`Please pass authMode and authConfig.`);
+          integration = await this.integrations.create({
+            appId: app.appId!,
+            name: `integration_${timestamp}`,
+            useComposioAuth: true,
+          });
         }
-        integration = await this.integrations.create({
-          appId: app.appId!,
-          name: `integration_${timestamp}`,
-          useComposioAuth: true,
-        });
       }
 
       // Initiate the connection process
