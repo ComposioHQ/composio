@@ -1,6 +1,6 @@
-# Lead Outreach Agent
+# Meeting Agent Guide
 
-This guide provides detailed steps to create a Lead Outreach Agent that leverages Composio, agentic frameworks such as LlamaIndex and ChatGPT to write personalised emails for your leads and send it to them instantly. Ensure you have Python 3.8 or higher installed.
+This guide provides detailed steps to create a Meeting agent that leverages Composio, agentic frameworks such as LlamaIndex, OpenAI and ChatGPT to create market research reports and performs research on trends and behaviours.
 
 ## Steps to Run
 
@@ -24,5 +24,6 @@ Now, fill in the `.env` file with your secrets.
 
 ### 2. Run the Python Script
 ```shell
-python cookbook/python-examples/advanced_agents/lead_outreach_agent/llamaindex/main.py
+python cookbook/python-examples/advanced_agents/sales_kit/meeting_agent/main.py
 ```
+
