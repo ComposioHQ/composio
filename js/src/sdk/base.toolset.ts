@@ -58,7 +58,7 @@ export class ComposioToolSet {
     this.client = new Composio({
       apiKey: this.apiKey,
       baseUrl: baseUrl || undefined,
-      runtime: runtime as string
+      runtime: runtime as string,
     });
     this.userActionRegistry = new ActionRegistry(this.client);
     this.runtime = runtime;

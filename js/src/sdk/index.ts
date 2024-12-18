@@ -42,7 +42,7 @@ export class Composio {
    * @param {string} [config.baseUrl] - The base URL for the Composio backend. By default, it is set to the production URL.
    * @param {string} [config.runtime] - The runtime environment for the SDK.
    */
-  constructor(config: { apiKey?: string; baseUrl?: string; runtime?: string }) {
+  constructor(config: { apiKey?: string; baseUrl?: string; runtime?: string }={}) {
     // Parse the base URL and API key, falling back to environment variables or defaults if not provided
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
       config?.baseUrl,
