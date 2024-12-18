@@ -321,10 +321,14 @@ export const $ClientDTO = {
         plan: {
             type: 'string',
             description: "Client's subscription plan"
+        },
+        isNewWebhook: {
+            type: 'boolean',
+            description: 'Whether to use new webhook format'
         }
     },
     type: 'object',
-    required: ['autoId', 'id', 'name', 'email', 'createdAt', 'updatedAt', 'triggersEnabled', 'plan'],
+    required: ['autoId', 'id', 'name', 'email', 'createdAt', 'updatedAt', 'triggersEnabled', 'plan', 'isNewWebhook'],
     description: 'Client information'
 } as const;
 
@@ -1965,10 +1969,21 @@ export const $ActionsMinimalListResponseDTO = {
     required: ['items', 'page', 'totalPages']
 } as const;
 
-export const $AdvancedUseCaseSearchQueryDTO = {
+export const $AdvancedUseCaseSearchBodyDTO = {
     properties: {
         useCase: {
             type: 'string'
+        }
+    },
+    type: 'object'
+} as const;
+
+export const $AdvancedUseCaseSearchQueryDTO = {
+    properties: {
+        useCase: {
+            type: 'string',
+            deprecated: true,
+            description: 'Use case is deprecated. Please provide this in the body instead to avoid max-uri-length error.'
         },
         limit: {
             type: 'number'
@@ -1981,10 +1996,12 @@ export const $AdvancedUseCaseSearchQueryDTO = {
         },
         apps: {
             type: 'string'
+        },
+        filterByAvailableApps: {
+            type: 'boolean'
         }
     },
-    type: 'object',
-    required: ['useCase']
+    type: 'object'
 } as const;
 
 export const $AdvancedUseCaseSearchTask = {
@@ -2670,6 +2687,21 @@ export const $GetTriggerResponseDTO = {
     },
     type: 'object',
     required: ['status']
+} as const;
+
+export const $WehbookNewFormatDTO = {
+    properties: {
+        id: {
+            type: 'string',
+            description: 'The ID of the project'
+        },
+        isNewWebhook: {
+            type: 'boolean',
+            description: 'The callback URL if found'
+        }
+    },
+    type: 'object',
+    required: ['id', 'isNewWebhook']
 } as const;
 
 export const $GenerateCLISessionReqDTO = {
@@ -3434,6 +3466,9 @@ export const $CreateCheckoutSessionReqDto = {
         plan: {
             enum: ['HOBBY', 'STARTER', 'GROWTH', 'ENTERPRISE', 'STARTUP'],
             type: 'string'
+        },
+        applyCoupon: {
+            type: 'boolean'
         }
     },
     type: 'object',

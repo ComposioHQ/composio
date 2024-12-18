@@ -243,13 +243,17 @@ export class Actions {
         apps: Array<string>,
         useCase: string,
         limit?: number,
+        filterByAvailableApps?: boolean
     }): Promise<Array<string>> {
         try {
             const { data: res } = await apiClient.actionsV2.advancedUseCaseSearch({
                 query: {
                     apps: data.apps.join(","),
+                    limit: data.limit || undefined,
+                    filterByAvailableApps: data.filterByAvailableApps || false
+                },
+                body:{
                     useCase: data.useCase,
-                    limit: data.limit || undefined
                 }
             });
             return res!.items.map((item) => item.actions).flat() || [];

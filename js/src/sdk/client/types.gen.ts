@@ -186,6 +186,10 @@ export type ClientDTO = {
      * Client's subscription plan
      */
     plan: string;
+    /**
+     * Whether to use new webhook format
+     */
+    isNewWebhook: boolean;
 };
 
 export type ClientInfoResDTO = {
@@ -962,6 +966,7 @@ export type Parameter = {
     value: string;
 };
 
+
 export type Data = {
     field1: string;
     field2: string;
@@ -1172,12 +1177,21 @@ export type ActionsMinimalListResponseDTO = {
     totalPages: number;
 };
 
+export type AdvancedUseCaseSearchBodyDTO = {
+    useCase?: string;
+};
+
 export type AdvancedUseCaseSearchQueryDTO = {
-    useCase: string;
+    /**
+     * Use case is deprecated. Please provide this in the body instead to avoid max-uri-length error.
+     * @deprecated
+     */
+    useCase?: string;
     limit?: number;
     maxActionsPerTask?: number;
     minActionsPerTask?: number;
     apps?: string;
+    filterByAvailableApps?: boolean;
 };
 
 export type AdvancedUseCaseSearchTask = {
@@ -1692,6 +1706,17 @@ export type GetTriggerResponseDTO = {
      */
     status: string;
     trigger?: TriggerMetadataDTO;
+};
+
+export type WehbookNewFormatDTO = {
+    /**
+     * The ID of the project
+     */
+    id: string;
+    /**
+     * The callback URL if found
+     */
+    isNewWebhook: boolean;
 };
 
 export type GenerateCLISessionReqDTO = {
@@ -2259,6 +2284,7 @@ export type WebhookSecretResDTO = {
 
 export type CreateCheckoutSessionReqDto = {
     plan: 'HOBBY' | 'STARTER' | 'GROWTH' | 'ENTERPRISE' | 'STARTUP';
+    applyCoupon?: boolean;
 };
 
 export type plan = 'HOBBY' | 'STARTER' | 'GROWTH' | 'ENTERPRISE' | 'STARTUP';
@@ -2549,6 +2575,17 @@ export type ListTriggersResponse = Array<TriggerResDTO>;
 
 export type ListTriggersError = unknown;
 
+export type UpdateNewWebhookData = {
+    /**
+     * WehbookNewFormatDTO
+     */
+    body?: WehbookNewFormatDTO;
+};
+
+export type UpdateNewWebhookResponse = unknown;
+
+export type UpdateNewWebhookError = unknown;
+
 export type EnableTriggerData = {
     /**
      * EnableTriggerBodyDTO
@@ -2814,12 +2851,17 @@ export type ExecuteActionProxyV2Response = ActionExecutionResDto;
 export type ExecuteActionProxyV2Error = unknown;
 
 export type AdvancedUseCaseSearchData = {
-    query: {
+    /**
+     * AdvancedUseCaseSearchBodyDTO
+     */
+    body?: AdvancedUseCaseSearchBodyDTO;
+    query?: {
         apps?: string;
+        filterByAvailableApps?: boolean;
         limit?: number;
         maxActionsPerTask?: number;
         minActionsPerTask?: number;
-        useCase: string;
+        useCase?: string;
     };
 };
 
