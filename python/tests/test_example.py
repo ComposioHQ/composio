@@ -212,7 +212,7 @@ def test_example(
             val is not None
         ), f"Please provide value for `{key}` for testing `{example['file']}`"
 
-    copied_file = tmp_path / example["file"].name
+    copied_file = tmp_path / example["file"]
     copied_file.write_text(add_helicone_headers(example["file"].read_text()))
     cwd = example.get("cwd", None)
     proc = subprocess.Popen(  # pylint: disable=consider-using-with
