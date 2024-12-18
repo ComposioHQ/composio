@@ -48,7 +48,6 @@ jobs:
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
-    
     strategy:
       fail-fast: false
       matrix:
@@ -69,6 +68,9 @@ jobs:
             langgraph
             phidata
           ]
+    concurrency:
+      group: 'tests:examples:${{ github.ref }}'
+      cancel-in-progress: true
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
