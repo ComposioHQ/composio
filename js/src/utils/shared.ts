@@ -239,7 +239,7 @@ export const getEnvVariable = (
 ): string | undefined => {
   try {
     return process.env[name] || defaultValue;
-  } catch (_e) {
+  } catch  {
     return defaultValue;
   }
 };

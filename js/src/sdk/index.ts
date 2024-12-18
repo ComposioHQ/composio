@@ -11,13 +11,13 @@ import { Integrations } from "./models/integrations";
 import { Triggers } from "./models/triggers";
 import ComposioSDKContext from "./utils/composioContext";
 import { getSDKConfig } from "./utils/config";
+import { COMPOSIO_VERSION } from "./utils/constants";
 import { CEG } from "./utils/error";
 import { SDK_ERROR_CODES } from "./utils/errors/src/constants";
 import { isNewerVersion } from "./utils/other";
 import { getPackageJsonDir } from "./utils/projectUtils";
 import { TELEMETRY_LOGGER } from "./utils/telemetry";
 import { TELEMETRY_EVENTS } from "./utils/telemetry/events";
-
 export class Composio {
   /**
    * The Composio class serves as the main entry point for interacting with the Composio SDK.
@@ -54,9 +54,7 @@ export class Composio {
     ComposioSDKContext.apiKey = apiKeyParsed;
     ComposioSDKContext.baseURL = baseURLParsed;
     ComposioSDKContext.frameworkRuntime = config?.runtime;
-    ComposioSDKContext.composioVersion = require(
-      getPackageJsonDir() + "/package.json"
-    ).version;
+    ComposioSDKContext.composioVersion = COMPOSIO_VERSION;
 
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_INITIALIZED, {});
 

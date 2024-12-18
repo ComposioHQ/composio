@@ -14,7 +14,7 @@
     "prettier": "prettier --write 'src/**/*.{ts,js,cjs}'",
     "prettier:check": "prettier --check 'src/**/*.{ts,js,mjs,cjs}'",
     "build": "rollup -c rollup.config.mjs && ./setup_cli.sh",
-    "lint": "eslint 'src/**/*.{ts,js}' --ignore-pattern 'src/sdk/client/**'",
+    "lint": "eslint 'src/**/*.{ts,js}' --ignore-pattern 'src/sdk/client/core/**'",
     "format": "pnpm lint && pnpm prettier"
   },
   "bin": {
