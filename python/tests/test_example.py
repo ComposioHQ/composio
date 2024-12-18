@@ -213,7 +213,8 @@ def test_example(
         ), f"Please provide value for `{key}` for testing `{example['file']}`"
 
     filepath = Path(example["file"])
-    filepath.write_text(add_helicone_headers(filepath.read_text()))
+    modified_code = add_helicone_headers(filepath.read_text(encoding="utf-8"))
+    filepath.write_text(modified_code, encoding="utf-8")
     cwd = example.get("cwd", None)
     proc = subprocess.Popen(  # pylint: disable=consider-using-with
         args=[sys.executable, str(filepath)],
