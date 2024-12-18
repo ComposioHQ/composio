@@ -3,9 +3,9 @@ import chalk from "chalk";
 import { Command } from "commander";
 import client from "../sdk/client/client";
 
-import { getOpenAPIClient } from "../sdk/utils/config";
-import { Composio } from "../sdk";
 import inquirer from "inquirer";
+import { Composio } from "../sdk";
+import { getOpenAPIClient } from "../sdk/utils/config";
 
 export default class ConnectionsCommand {
   private program: Command;
@@ -61,18 +61,24 @@ export default class ConnectionsCommand {
     });
 
     if (error) {
-      console.log(chalk.red((error as any).message));
+      console.log(chalk.red((error as Error).message));
       return;
     }
 
-    for (const trigger of data || []) {
-      const typedTrigger = trigger as any;
+    if (!data) {
+      console.log(chalk.red("No triggers found"));
+      return;
+    }
+
+    for (const trigger of data) {
+      const typedTrigger = trigger;
       console.log(
         chalk.cyan(`  ${chalk.bold("Name")}:`),
         chalk.white(typedTrigger.appName)
       );
       console.log(
         chalk.cyan(`  ${chalk.bold("Enum")}:`),
+        // @ts-ignore - typedTrigger.enum is not defined in the type but exists in the API response
         chalk.white(typedTrigger.enum)
       );
       console.log(
@@ -124,9 +130,10 @@ export class TriggerAdd {
       return;
     }
 
-    const properties = (data.config as any).properties as any;
-    const requiredProperties = (data.config as any).required as string[];
-    const configValue: any = {};
+    const dataConfig = data.config!;
+    const properties = dataConfig.properties!;
+    const requiredProperties = dataConfig.required! as string[];
+    const configValue: Record<string, unknown> = {};
 
     for (const key in properties) {
       if (requiredProperties.includes(key)) {

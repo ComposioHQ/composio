@@ -1,14 +1,14 @@
-import { TELEMETRY_URL } from "../constants";
-import ComposioSDKContext from "../composioContext";
 import { sendBrowserReq, sendProcessReq } from "../../../utils/external";
 import { getEnvVariable } from "../../../utils/shared";
+import ComposioSDKContext from "../composioContext";
+import { TELEMETRY_URL } from "../constants";
 
 type ErrorPayload = {
   error_id: string;
   error_code: string;
   original_error: string;
   description: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   message: string;
   possible_fix: string;
   current_stack: string[];
@@ -38,6 +38,7 @@ export async function logError(payload: ErrorPayload) {
       await sendProcessReq(reqPayload);
     }
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error("Error sending error to telemetry", error);
     // DO NOTHING
   }

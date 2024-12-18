@@ -8,4 +8,4 @@ const ACTIONS = {
   // actions list end here
 };
 
-export { APPS, ACTIONS };
+export { ACTIONS, APPS };

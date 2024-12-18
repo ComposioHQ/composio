@@ -11,11 +11,10 @@
     "openapispec:generate": "npx @hey-api/openapi-ts",
     "run:cli": "ts-node src/cli/index.ts",
     "run:sample": "ts-node sample.ts",
-    "eslint": "eslint 'src/**/*.{ts,js}' --max-warnings=261",
     "prettier": "prettier --write 'src/**/*.{ts,js,cjs}'",
     "prettier:check": "prettier --check 'src/**/*.{ts,js,mjs,cjs}'",
     "build": "rollup -c rollup.config.mjs && ./setup_cli.sh",
-    "lint": "eslint 'src/**/*.ts'",
+    "lint": "eslint 'src/**/*.{ts,js}' --ignore-pattern 'src/sdk/client/**'",
     "format": "pnpm lint && pnpm prettier"
   },
   "bin": {
@@ -75,6 +74,7 @@
     "open": "^8.4.0",
     "openai": "^4.50.0",
     "prettier": "^3.4.2",
+    "prettier-plugin-organize-imports": "^4.1.0",
     "pusher-js": "8.4.0-rc2",
     "regenerator-runtime": "^0.14.1",
     "resolve-package-path": "^4.0.3",
