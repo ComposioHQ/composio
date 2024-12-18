@@ -1,66 +1,53 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
 import { pull } from "langchain/hub";
-// import dotenv from 'dotenv';
+import dotenv from 'dotenv';
 import { LangchainToolSet } from "composio-core";
 
-// dotenv.config()
+dotenv.config();
 
 
-(async () => {
-    try {
-        const llm = new ChatOpenAI({
-            model: "gpt-4-turbo",
-            apiKey: process.env.OPENAI_API_KEY,
-        });
 
-        const toolset = new LangchainToolSet({
-            apiKey: process.env.COMPOSIO_API_KEY,
-        });
+const llm = new ChatOpenAI({
+    model: "gpt-4-turbo",
+    apiKey: process.env.OPENAI_API_KEY,
+});
 
-        const tools = await toolset.getTools({
-            actions: ["EXA_SEARCH", "GMAIL_CREATE_EMAIL_DRAFT"]
-        });
+const toolset = new LangchainToolSet({
+    apiKey: process.env.COMPOSIO_API_KEY,
+});
 
-        const prompt = await pull("hwchase17/openai-functions-agent");
+const tools = await toolset.getTools({
+    actions: ["HUBSPOT_LIST_CONTACTS_PAGE", "GMAIL_CREATE_EMAIL_DRAFT"]
+});
 
-        // Debugging logs
-        //console.log("LLM:", llm);
-        //console.log("Tools:", tools);
-        //console.log("Prompt:", prompt);
+const prompt = await pull("hwchase17/openai-functions-agent");
 
-        const additional = `
-            "You are a Lead Outreach Agent that is equipped with great tools for research "
-            "and is an expert writer. Your job is to first research some info about the lead "
-            "given to you and then draft a perfect ideal email for whatever input task is given to you. "
-            "Always write the subject, content of the email and nothing else."`;
+// Debugging logs
+//console.log("LLM:", llm);
+//console.log("Tools:", tools);
+//console.log("Prompt:", prompt);
 
-        // Check combined_prompt
+const additional = `
+    "You are a Lead Outreach Agent that is has access to the CRM through HubSpot."
+    "and is an expert writer. Your job is to first research some info about the lead "
+    "given to you and then draft a perfect ideal email template for whatever input task is given to you. "
+    `;
 
-        const agent = await createOpenAIFunctionsAgent({
-            llm,
-            tools,
-            prompt,
-        });
+// Check combined_prompt
 
-        const agentExecutor = new AgentExecutor({
-            agent,
-            tools,
-            verbose: false, // Change it to true for debugging
-        });
-        const my_details = "I am Karan Vaidya, the founder of Composio"
-        const lead_details = "John Doe, a marketing manager at Acme Corp, interested in our SaaS solutions.";
-        const purpose = "to introduce our new product features and schedule a demo.";
-        const result = await agentExecutor.invoke({
-            input: `${additional}
-            These are the lead details that we know ${lead_details}. This is the purpose to write the email:${purpose}. Write a well written email for the purpose to the lead.
-            Create a draft in gmail. research on the lead
-            My details: ${my_details}
-            `
-        });
-        console.log('🎉Output from agent: ', result.output);
-        return result.output
-    } catch (error) {
-        console.error(error);
-    }
-})();
+const agent = await createOpenAIFunctionsAgent({
+    llm,
+    tools,
+    prompt,
+});
+
+const agentExecutor = new AgentExecutor({
+    agent,
+    tools,
+    verbose: false, // Change it to true for debugging
+});
+const result = await agentExecutor.invoke({
+    input: `Draft an email for each lead in my Hubspot contacts page introducing yourself and asking them if they're interested in integrating AI Agents in their workflow.`
+});
+console.log('🎉Output from agent: ', result.output);
