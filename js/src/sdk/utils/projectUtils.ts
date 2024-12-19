@@ -1,5 +1,5 @@
-import * as path from "path";
 import * as fs from "fs";
+import * as path from "path";
 
 /**
  * Finds the directory containing the package.json file by traversing up the directory tree.

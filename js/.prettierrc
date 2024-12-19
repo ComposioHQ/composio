@@ -20,5 +20,6 @@
     "useTabs": false,
     "embeddedLanguageFormatting": "auto",
     "vueIndentScriptAndStyle": false,
-    "experimentalTernaries": false
-  }
+    "experimentalTernaries": false,
+    "plugins": ["prettier-plugin-organize-imports"]
+}

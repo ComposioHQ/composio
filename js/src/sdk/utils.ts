@@ -1,7 +1,7 @@
 import axios from "axios";
 import fs from "fs";
 
-export const convertReqParams = (properties: Record<string, any>) => {
+export const convertReqParams = (properties: Record<string, unknown>) => {
   const clonedProperties = JSON.parse(JSON.stringify(properties));
   for (const propertyKey of Object.keys(clonedProperties)) {
     const object = clonedProperties[propertyKey];
@@ -27,7 +27,7 @@ export const convertReqParams = (properties: Record<string, any>) => {
 };
 
 export const converReqParamForActionExecution = async (
-  params: Record<string, any>
+  params: Record<string, unknown>
 ) => {
   const clonedParams = JSON.parse(JSON.stringify(params));
   for (const key of Object.keys(clonedParams)) {

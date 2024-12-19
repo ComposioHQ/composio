@@ -1,4 +1,4 @@
-import { describe, it, expect } from "@jest/globals";
+import { describe, expect, it } from "@jest/globals";
 import { getBackendClient } from "../testUtils/getBackendClient";
 import { Entity } from "./Entity";
 import { ConnectedAccounts } from "./connectedAccounts";
@@ -9,12 +9,12 @@ describe("Entity class tests", () => {
   let entity: Entity;
   let triggerId: string;
   let connectedAccounts: ConnectedAccounts;
-  let integrations: Integrations;
+  let _integrations: Integrations;
 
   beforeAll(() => {
     entity = new Entity(backendClient, "default");
     connectedAccounts = new ConnectedAccounts(backendClient);
-    integrations = new Integrations(backendClient);
+    _integrations = new Integrations(backendClient);
   });
 
   it("should create an Entity instance with 'default' id", () => {
@@ -38,7 +38,7 @@ describe("Entity class tests", () => {
   it("get connection for github", async () => {
     const app = "github";
     const connection = await entity.getConnection({ app });
-    expect(connection.appUniqueId).toBe(app);
+    expect(connection?.appUniqueId).toBe(app);
   });
 
   it("execute action", async () => {
@@ -52,7 +52,7 @@ describe("Entity class tests", () => {
     const executionResult = await entity.execute({
       actionName,
       params: requestBody,
-      connectedAccountId: connectedAccount.id,
+      connectedAccountId: connectedAccount?.id,
     });
     expect(executionResult).toBeDefined();
     expect(executionResult).toHaveProperty("successfull", true);

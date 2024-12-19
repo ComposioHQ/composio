@@ -1,6 +1,6 @@
-import { spawn, spawnSync } from "child_process";
-import { IS_DEVELOPMENT_OR_CI, TELEMETRY_URL } from "../sdk/utils/constants";
+import { spawn } from "child_process";
 import { serializeValue } from "../sdk/utils/common";
+import { IS_DEVELOPMENT_OR_CI } from "../sdk/utils/constants";
 import logger from "./logger";
 
 type AcceptableJSONValue =
@@ -24,6 +24,7 @@ export function sendProcessReq(info: {
   data: AcceptableJSONValue;
 }) {
   if (IS_DEVELOPMENT_OR_CI) {
+    // eslint-disable-next-line no-console
     console.log(
       `Hitting ${info.url}[${info.method}] with ${serializeValue(info.data)}`
     );

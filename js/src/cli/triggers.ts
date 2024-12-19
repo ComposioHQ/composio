@@ -3,9 +3,9 @@ import chalk from "chalk";
 import { Command } from "commander";
 import client from "../sdk/client/client";
 
-import { getOpenAPIClient } from "../sdk/utils/config";
-import { Composio } from "../sdk";
 import inquirer from "inquirer";
+import { Composio } from "../sdk";
+import { getOpenAPIClient } from "../sdk/utils/config";
 
 export default class ConnectionsCommand {
   private program: Command;
@@ -61,18 +61,24 @@ export default class ConnectionsCommand {
     });
 
     if (error) {
-      console.log(chalk.red((error as any).message));
+      console.log(chalk.red((error as Error).message));
       return;
     }
 
-    for (const trigger of data || []) {
-      const typedTrigger = trigger as any;
+    if (!data) {
+      console.log(chalk.red("No triggers found"));
+      return;
+    }
+
+    for (const trigger of data) {
+      const typedTrigger = trigger;
       console.log(
         chalk.cyan(`  ${chalk.bold("Name")}:`),
         chalk.white(typedTrigger.appName)
       );
       console.log(
         chalk.cyan(`  ${chalk.bold("Enum")}:`),
+        // @ts-ignore - typedTrigger.enum is not defined in the type but exists in the API response
         chalk.white(typedTrigger.enum)
       );
       console.log(
@@ -98,7 +104,7 @@ export class TriggerAdd {
   }
 
   async handleAction(triggerName: string): Promise<void> {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
 
     const data = (await composioClient.triggers.list()).find(
       // @ts-ignore
@@ -124,9 +130,10 @@ export class TriggerAdd {
       return;
     }
 
-    const properties = (data.config as any).properties as any;
-    const requiredProperties = (data.config as any).required as string[];
-    const configValue: any = {};
+    const dataConfig = data.config!;
+    const properties = dataConfig.properties!;
+    const requiredProperties = dataConfig.required! as string[];
+    const configValue: Record<string, unknown> = {};
 
     for (const key in properties) {
       if (requiredProperties.includes(key)) {
@@ -169,7 +176,7 @@ export class TriggerDisable {
   }
 
   async handleAction(triggerId: string): Promise<void> {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
     try {
       await composioClient.triggers.disable({ triggerId });
       console.log(chalk.green(`Trigger ${triggerId} disabled`));
@@ -192,7 +199,7 @@ export class TriggerEnable {
   }
 
   async handleAction(triggerId: string): Promise<void> {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
     try {
       await composioClient.triggers.enable({ triggerId });
       console.log(chalk.green(`Trigger ${triggerId} enabled`));
@@ -216,7 +223,7 @@ export class ActiveTriggers {
   }
 
   async handleAction(): Promise<void> {
-    const composioClient = new Composio();
+    const composioClient = new Composio({});
     const triggers = await composioClient.activeTriggers.list();
     for (const trigger of triggers) {
       console.log(`Id: ${chalk.bold(trigger.id)}`);
