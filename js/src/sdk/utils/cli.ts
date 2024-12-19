@@ -13,5 +13,5 @@ export function setCliConfig(apiKey: string, baseUrl: string) {
     userData.base_url = baseUrl;
   }
 
-  saveFile(userDataPath(), userData);
+  saveFile(userDataPath(), JSON.stringify(userData));
 }

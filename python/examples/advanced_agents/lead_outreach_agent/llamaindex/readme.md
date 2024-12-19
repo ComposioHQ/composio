@@ -24,5 +24,5 @@ Now, fill in the `.env` file with your secrets.
 
 ### 2. Run the Python Script
 ```shell
-python cookbook/examples/lead_outreach_agent/main.py
+python cookbook/python-examples/advanced_agents/lead_outreach_agent/llamaindex/main.py
 ```

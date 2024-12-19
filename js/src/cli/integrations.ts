@@ -32,7 +32,7 @@ export default class ConnectionsCommand {
     });
 
     if (error) {
-      console.log(chalk.red((error as any).message));
+      console.log(chalk.red((error as Error).message));
       return;
     }
     const removeIntegrationId = options.remove || "";
@@ -49,7 +49,7 @@ export default class ConnectionsCommand {
       });
 
       if (error) {
-        console.log(chalk.red((error as any).message));
+        console.log(chalk.red((error as Error).message));
         return;
       }
 
@@ -61,18 +61,21 @@ export default class ConnectionsCommand {
       return;
     }
 
-    for (const integration of data?.items || []) {
-      const typedIntegration = integration as Record<string, any>;
+    if (!data?.items) {
+      console.log(chalk.red("No integrations found"));
+      return;
+    }
+    for (const integration of data.items) {
+      const typedIntegration = integration;
       console.log(chalk.cyan(`• ${chalk.bold("Id")}: ${typedIntegration.id}`));
       console.log(
         chalk.magenta(`  ${chalk.bold("App")}: ${typedIntegration.appName}`)
       );
       console.log(
         chalk.magenta(
-          `  ${chalk.bold("Created At")}: ${parseDate(typedIntegration.createdAt)}`
+          `  ${chalk.bold("Created At")}: ${parseDate(typedIntegration.createdAt as string)}`
         )
       );
-      console.log(""); // Add an empty line for better readability between connections
     }
   }
 }

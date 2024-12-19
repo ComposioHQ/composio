@@ -1,4 +1,4 @@
-# Lead Outreach Agent
+# Lead Generator Agent
 
 This guide offers comprehensive instructions for creating a Lead Generator Agent that utilizes Composio and agentic frameworks like LlamaIndex and ChatGPT. This agent is designed to effectively generate leads for your business and compile all lead data into a spreadsheet.
 
@@ -24,5 +24,5 @@ Now, fill in the `.env` file with your secrets.
 
 ### 2. Run the Python Script
 ```shell
-python cookbook/examples/lead_outreach_agent/main.py
+python cookbook/python-examples/advanced_agents/lead_generator_agent/main.py
 ```

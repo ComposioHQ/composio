@@ -1,5 +1,5 @@
-import { BackendClient } from "../models/backendClient";
 import { getTestConfig } from "../../../config/getTestConfig";
+import { BackendClient } from "../models/backendClient";
 
 export const getBackendClient = (): BackendClient => {
   const testConfig = getTestConfig();

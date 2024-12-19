@@ -222,10 +222,13 @@ export class Actions {
           apps: apps,
           showAll: data.showAll,
           tags: data.tags,
-          useCase: data.useCase as string,
           filterImportantActions: data.filterImportantActions,
           showEnabledOnly: data.showEnabledOnly,
           usecaseLimit: data.usecaseLimit || undefined,
+          useCase: data.useCase as string,
+        },
+        body: {
+          useCase: data.useCase as string,
         },
       });
       return response.data!;
@@ -266,6 +269,7 @@ export class Actions {
     apps: Array<string>;
     useCase: string;
     limit?: number;
+    filterByAvailableApps?: boolean;
   }): Promise<Array<string>> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "findActionEnumsByUseCase",
@@ -275,9 +279,12 @@ export class Actions {
     try {
       const { data: res } = await apiClient.actionsV2.advancedUseCaseSearch({
         query: {
-          apps: data.apps.join(","),
-          useCase: data.useCase,
+          apps: data.apps?.join(","),
           limit: data.limit || undefined,
+          filterByAvailableApps: data.filterByAvailableApps,
+        },
+        body: {
+          useCase: data.useCase,
         },
       });
       return res!.items.map((item) => item.actions).flat() || [];
