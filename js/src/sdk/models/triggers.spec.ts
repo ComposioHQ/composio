@@ -30,12 +30,13 @@ describe("Apps class tests", () => {
   });
 
   it("should retrieve a list of triggers for a specific app", async () => {
+    const appName = "github";
     const triggerList = await triggers.list({
-      appNames: ["gmail"],
+      appNames: [appName],
     });
     // this is breaking for now
     expect(triggerList.length).toBeGreaterThan(0);
-    expect(triggerList[0].appName).toBe("gmail");
+    expect(triggerList[0].appName).toBe(appName);
   });
 });
 
