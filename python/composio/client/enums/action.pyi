@@ -201,6 +201,7 @@ class Action(Enum[ActionData], metaclass=EnumGenerator):
     AIRTABLE_LIST_BASES: "Action"
     AIRTABLE_LIST_COMMENTS: "Action"
     AIRTABLE_LIST_RECORDS: "Action"
+    AIRTABLE_UPDATE_MULTIPLE_RECORDS: "Action"
     AIRTABLE_UPDATE_RECORD: "Action"
     ANTHROPIC_BASH_COMMAND: "Action"
     ANTHROPIC_COMPUTER: "Action"
