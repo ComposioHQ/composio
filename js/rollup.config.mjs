@@ -67,10 +67,5 @@ export default [
     ]
   },
   ...generateBundleAndTypeBundles('index'),
-  ...generateBundleAndTypeBundles('frameworks/cloudflare'),
-  ...generateBundleAndTypeBundles('frameworks/langchain'),
-  ...generateBundleAndTypeBundles('frameworks/openai'),
-  ...generateBundleAndTypeBundles('frameworks/langgraph'),
-  ...generateBundleAndTypeBundles('frameworks/vercel'),
   ...generateBundleAndTypeBundles('sdk/index'),
 ];
