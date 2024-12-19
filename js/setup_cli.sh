@@ -8,5 +8,7 @@ mv temp_file dist/cli/index
 
 rm dist/cli/index.js
 
+node scripts/replace-type.js
+
 cp package.dist.json dist/package.json
 cp README.md dist/README.md

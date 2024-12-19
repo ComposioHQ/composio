@@ -7,7 +7,7 @@ import { ActionProxyRequestConfigDTO } from "./client";
 import { CEG } from "./utils/error";
 
 type ExecuteRequest = Omit<ActionProxyRequestConfigDTO, "connectedAccountId">;
-export interface CreateActionOptions {
+export type CreateActionOptions = {
   actionName?: string;
   toolName?: string;
   description?: string;

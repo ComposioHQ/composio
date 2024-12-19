@@ -1,0 +1,352 @@
+---
+title: "AI Scheduling Agent"
+sidebarTitle: "AI Scheduler"
+icon: "calendar"
+description: "This project demonstrates how to use Composio to create a scheduling agent."
+---
+
+## Overview
+The AI Scheduling Agent is an automated assistant that reads your emails, schedules meetings in Google Calendar, and sends confirmation emails - all without manual intervention. It streamlines the meeting scheduling process by handling the back-and-forth communication automatically.
+
+## Getting Started  
+
+<Tabs>
+<Tab title="Python">
+<Steps>
+<Step title="Installation">
+```bash install dependencies
+pip install composio-llamaindex python-dotenv
+```
+</Step>
+
+<Step title="Connecting to tools and models">
+```bash connect to required tools
+composio add gmail
+composio add googlecalendar
+
+export OPENAI_API_KEY="<your-openai-api-key>"
+```
+</Step>
+
+<Step title="Importing the required libraries">
+```python import required libraries
+import os
+import time 
+import dotenv  
+import re
+from datetime import datetime
+from composio_llamaindex import App, ComposioToolSet, Action
+from llama_index.core.agent import FunctionCallingAgentWorker
+from llama_index.core.llms import ChatMessage
+from llama_index.llms.openai import OpenAI
+
+from composio.client.collections import TriggerEventData
+
+dotenv.load_dotenv()
+```
+</Step>
+
+<Step title="Initializing the Tools and the LLM">
+```python initialize toolset and llm
+toolset = ComposioToolSet(api_key="")
+schedule_tool = composio_toolset.get_tools(
+    actions=[
+        Action.GOOGLECALENDAR_FIND_FREE_SLOTS,
+        Action.GOOGLECALENDAR_CREATE_EVENT,
+        Action.GMAIL_CREATE_EMAIL_DRAFT
+    ]
+)
+
+llm = OpenAI(model="gpt-4o")
+
+date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+timezone = datetime.now().astimezone().tzinfo
+```
+</Step>
+
+<Step title="Create callback function">
+```python create callback function
+listener = composio_toolset.create_trigger_listener()
+@listener.callback(filters={"trigger_name": "GMAIL_NEW_GMAIL_MESSAGE"})
+def callback_new_message(event: TriggerEventData) -> None:
+    # Using the information from Trigger, execute the agent
+    print("here in the function")
+    payload = event.payload
+    thread_id = payload.get("threadId")
+    message = payload.get("messageText")
+    sender_mail = payload.get("sender")
+    if sender_mail is None:
+        print("No sender email found")
+        return
+    print(sender_mail)
+
+    prefix_messages = [
+    ChatMessage(
+        role="system",
+        content=(
+            f"""
+                You are an AI assistant specialized in creating calendar events based on email information. 
+                Current DateTime: {date_time} and timezone {timezone}. All the conversations happen in IST timezone.
+                Pass empty config ("config": {{}}) for the function calls, if you get an error about not passing config.
+                Analyze email, and create event on calendar depending on the email content. 
+                You should also draft an email in response to the sender of the previous email  
+            """
+
+        ),
+        )
+    ]
+    agent = FunctionCallingAgentWorker(
+    tools=schedule_tool,  # Tools available for the agent to use
+    llm=llm,  # Language model for processing requests
+    prefix_messages=prefix_messages,  # Initial system messages for context
+    max_function_calls=10,  # Maximum number of function calls allowed
+    allow_parallel_tool_calls=False,  # Disallow parallel tool calls
+    verbose=True,  # Enable verbose output
+    ).as_agent()
+    analyze_email_task = f"""
+        1. Analyze the email content and decide if an event should be created. 
+                a. The email was received from {sender_mail} 
+                b. The content of the email is: {message} 
+                c. The thread id is: {thread_id}.
+        2. If you decide to create an event, try to find a free slot 
+            using Google Calendar Find Free Slots action.
+        3. Once you find a free slot, use Google Calendar Create Event 
+            action to create the event at a free slot and send the invite to {sender_mail}.
+
+        If an event was created, draft a confirmation email for the created event. 
+        The receiver of the mail is: {sender_mail}, the subject should be meeting scheduled and body
+        should describe what the meeting is about
+        """
+    response = agent.chat(analyze_email_task)
+    print(response)
+```
+</Step>
+
+<Step title="Activating the Listener">
+```python run the agent
+print("Listener started!")
+print("Waiting for email")
+listener.listen()
+```
+</Step>
+
+<Step title='Final Code'>
+```python final code
+# Import necessary libraries
+import os
+import time  
+import dotenv  
+import re
+from datetime import datetime
+from composio_llamaindex import App, ComposioToolSet, Action
+from llama_index.core.agent import FunctionCallingAgentWorker
+from llama_index.core.llms import ChatMessage
+from llama_index.llms.openai import OpenAI
+
+from composio.client.collections import TriggerEventData
+
+dotenv.load_dotenv()
+
+composio_toolset = ComposioToolSet()
+
+schedule_tool = composio_toolset.get_tools(
+    actions=[
+        Action.GOOGLECALENDAR_FIND_FREE_SLOTS,
+        Action.GOOGLECALENDAR_CREATE_EVENT,
+        Action.GMAIL_CREATE_EMAIL_DRAFT
+    ]
+)
+
+llm = OpenAI(model="gpt-4o")
+
+date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+timezone = datetime.now().astimezone().tzinfo
+
+listener = composio_toolset.create_trigger_listener()
+@listener.callback(filters={"trigger_name": "GMAIL_NEW_GMAIL_MESSAGE"})
+def callback_new_message(event: TriggerEventData) -> None:
+    # Using the information from Trigger, execute the agent
+    print("here in the function")
+    payload = event.payload
+    thread_id = payload.get("threadId")
+    message = payload.get("messageText")
+    sender_mail = payload.get("sender")
+    if sender_mail is None:
+        print("No sender email found")
+        return
+    print(sender_mail)
+
+    prefix_messages = [
+    ChatMessage(
+        role="system",
+        content=(
+            f"""
+                You are an AI assistant specialized in creating calendar events based on email information. 
+                Current DateTime: {date_time} and timezone {timezone}. All the conversations happen in IST timezone.
+                Pass empty config ("config": {{}}) for the function calls, if you get an error about not passing config.
+                Analyze email, and create event on calendar depending on the email content. 
+                You should also draft an email in response to the sender of the previous email  
+            """
+
+        ),
+        )
+    ]
+    agent = FunctionCallingAgentWorker(
+    tools=schedule_tool,  
+    llm=llm,  
+    prefix_messages=prefix_messages,  
+    max_function_calls=10, 
+    allow_parallel_tool_calls=False,  
+    verbose=True,  
+    ).as_agent()
+    analyze_email_task = f"""
+        1. Analyze the email content and decide if an event should be created. 
+                a. The email was received from {sender_mail} 
+                b. The content of the email is: {message} 
+                c. The thread id is: {thread_id}.
+        2. If you decide to create an event, try to find a free slot 
+            using Google Calendar Find Free Slots action.
+        3. Once you find a free slot, use Google Calendar Create Event 
+            action to create the event at a free slot and send the invite to {sender_mail}.
+
+        If an event was created, draft a confirmation email for the created event. 
+        The receiver of the mail is: {sender_mail}, the subject should be meeting scheduled and body
+        should describe what the meeting is about
+        """
+    response = agent.chat(analyze_email_task)
+    print(response)
+
+print("Listener started!")
+print("Waiting for email")
+listener.listen()
+```
+</Step>
+</Steps>
+</Tab>
+
+<Tab title="Javascript">
+<Steps>
+<Step title="Installation">
+```bash install dependencies
+npm install composio-core openai dotenv @ai-sdk/openai ai dotenv
+```
+</Step>
+
+<Step title="Connecting to tools and models">
+```bash connect to required tools
+composio add googlecalendar gmail
+
+export OPENAI_API_KEY="<your-openai-api-key>"
+export COMPOSIO_API_KEY="<your-composio-api-key>"
+```
+</Step>
+
+<Step title="Importing the required libraries">
+```javascript import required libraries
+import { openai } from "@ai-sdk/openai";
+import { VercelAIToolSet } from "composio-core";
+import dotenv from "dotenv";
+import { generateText } from "ai";
+dotenv.config();
+```
+</Step>
+
+<Step title="Initializing the Toolset">
+```javascript initialize toolset and llm
+const toolset = new VercelAIToolSet({
+  apiKey: process.env.COMPOSIO_API_KEY,
+});
+```
+</Step>
+
+<Step title="Subscribing to the trigger, configuring the agent">
+```javascript setup the ai agent
+await toolset.client.triggers.subscribe(async (data) => {
+    console.log("trigger received", data);
+    const payload = data.payload;
+    const message = payload.messageText;
+    const sender = payload.sender;
+    const threadId = payload.threadId;
+    const entity_id = 'default';
+    
+      // Setup entity and ensure connection
+    const entity = await toolset.client.getEntity(entity_id);
+    
+      // Retrieve tools for the specified app
+      const tools = await toolset.getTools({ apps: ["googlecalendar","gmail"] }, entity.id);
+      
+      // Generate text using the model and tools
+      const output = await generateText({
+        model: openai("gpt-4o"),
+        streamText: false,
+        tools: tools,
+        prompt: `
+                This is a message from ${sender}: ${message}
+                Threadid:${threadId}
+                This is the date: ${new Date().toISOString()}
+                You are a scheduling agent, Read the email received and understand the content.
+                After understanding the content, create a calendar event with the details.
+                Then reply to the email with the calendar event details. If thread id is not provided, create a draft email.
+                `, 
+        maxToolRoundtrips: 5,
+      });
+    
+      console.log("🎉Output from agent: ", output.text);
+
+});
+```
+</Step>
+
+<Step title='Final Code'>
+```javascript final code
+import { openai } from "@ai-sdk/openai";
+import { VercelAIToolSet, Composio, OpenAIToolSet } from "composio-core";
+import dotenv from "dotenv";
+import { generateText } from "ai";
+dotenv.config();
+
+// Setup toolset
+const toolset = new VercelAIToolSet({
+  apiKey: process.env.COMPOSIO_API_KEY,
+});
+
+// Subscribe to triggers and perform actions
+await toolset.client.triggers.subscribe(async (data) => {
+    console.log("trigger received", data);
+    const payload = data.payload;
+    const message = payload.messageText;
+    const sender = payload.sender;
+    const threadId = payload.threadId;
+    const entity_id = 'default';
+    
+      // Setup entity and ensure connection
+    const entity = await toolset.client.getEntity(entity_id);
+    
+      // Retrieve tools for the specified app
+      const tools = await toolset.getTools({ apps: ["googlecalendar","gmail"] }, entity.id);
+      
+      // Generate text using the model and tools
+      const output = await generateText({
+        model: openai("gpt-4o"),
+        streamText: false,
+        tools: tools,
+        prompt: `
+                This is a message from ${sender}: ${message}
+                Threadid:${threadId}
+                This is the date: ${new Date().toISOString()}
+                You are a scheduling agent, Read the email received and understand the content.
+                After understanding the content, create a calendar event with the details.
+                Then reply to the email with the calendar event details. If thread id is not provided, create a draft email.
+                `, 
+        maxToolRoundtrips: 5,
+      });
+    
+      console.log("🎉Output from agent: ", output.text);
+
+});
+
+```
+</Step>
+</Steps>
+</Tab>
+</Tabs>

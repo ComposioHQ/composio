@@ -1,6 +1,6 @@
 {
   "name": "composio-core",
-  "version": "0.5.0-beta-1",
+  "version": "0.5.0-rc",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
@@ -27,6 +27,8 @@
   "keywords": [],
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",
   "license": "ISC",
+  "dependencies": {
+  },
   "devDependencies": {
     "@ai-sdk/openai": "^0.0.36",
     "@cloudflare/workers-types": "^4.20240718.0",
@@ -44,7 +46,7 @@
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-replace": "^6.0.1",
-    "@rollup/plugin-typescript": "^11.1.6",
+    "@rollup/plugin-typescript": "^12",
     "@swc/core": "^1.7.10",
     "@swc/helpers": "^0.5.12",
     "@types/cli-progress": "^3.11.6",
@@ -75,11 +77,11 @@
     "openai": "^4.50.0",
     "prettier": "^3.4.2",
     "prettier-plugin-organize-imports": "^4.1.0",
-    "pusher-js": "8.4.0-rc2",
     "regenerator-runtime": "^0.14.1",
     "resolve-package-path": "^4.0.3",
     "rollup": "^4.9.1",
     "rollup-plugin-dts": "^6.1.0",
+    "rollup-plugin-ignore": "^1.0.10",
     "rollup-plugin-terser": "^7.0.2",
     "ts-jest": "^29.1.2",
     "ts-loader": "^9.5.1",

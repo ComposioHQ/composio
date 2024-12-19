@@ -57,8 +57,8 @@ importers:
         specifier: ^6.0.1
         version: 6.0.1(rollup@4.28.1)
       '@rollup/plugin-typescript':
-        specifier: ^11.1.6
-        version: 11.1.6(rollup@4.28.1)(tslib@2.6.3)(typescript@5.4.5)
+        specifier: ^12
+        version: 12.1.2(rollup@4.28.1)(tslib@2.6.3)(typescript@5.4.5)
       '@swc/core':
         specifier: ^1.7.10
         version: 1.7.10(@swc/helpers@0.5.12)
@@ -149,9 +149,6 @@ importers:
       prettier-plugin-organize-imports:
         specifier: ^4.1.0
         version: 4.1.0(prettier@3.4.2)(typescript@5.4.5)
-      pusher-js:
-        specifier: 8.4.0-rc2
-        version: 8.4.0-rc2
       regenerator-runtime:
         specifier: ^0.14.1
         version: 0.14.1
@@ -164,6 +161,9 @@ importers:
       rollup-plugin-dts:
         specifier: ^6.1.0
         version: 6.1.1(rollup@4.28.1)(typescript@5.4.5)
+      rollup-plugin-ignore:
+        specifier: ^1.0.10
+        version: 1.0.10
       rollup-plugin-terser:
         specifier: ^7.0.2
         version: 7.0.2(rollup@4.28.1)
@@ -967,8 +967,8 @@ packages:
       rollup:
         optional: true
 
-  '@rollup/plugin-typescript@11.1.6':
-    resolution: {integrity: sha512-R92yOmIACgYdJ7dJ97p4K69I8gg6IEHt8M7dUBxN3W6nrO8uUxX5ixl0yU/N3aZTi8WhPuICvOHXQvF6FaykAA==}
+  '@rollup/plugin-typescript@12.1.2':
+    resolution: {integrity: sha512-cdtSp154H5sv637uMr1a8OTWB0L1SWDSm1rDGiyfcGcvQ6cuTs4MDk2BVEBGysUWago4OJN4EQZqOTl/QY3Jgg==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
       rollup: ^2.14.0||^3.0.0||^4.0.0
@@ -3235,9 +3235,6 @@ packages:
   pure-rand@6.1.0:
     resolution: {integrity: sha512-bVWawvoZoBYpp6yIoQtQXHZjmz35RSVHnUOTefl8Vcjr8snTPY1wnpSPMWekcFwbxI6gtmT7rSYPFvz71ldiOA==}
 
-  pusher-js@8.4.0-rc2:
-    resolution: {integrity: sha512-d87GjOEEl9QgO5BWmViSqW0LOzPvybvX6WA9zLUstNdB57jVJuR27zHkRnrav2a3+zAMlHbP2Og8wug+rG8T+g==}
-
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
@@ -3307,6 +3304,9 @@ packages:
     peerDependencies:
       rollup: ^3.29.4 || ^4
       typescript: ^4.5 || ^5.0
+
+  rollup-plugin-ignore@1.0.10:
+    resolution: {integrity: sha512-VsbnfwwaTv2Dxl2onubetX/3RnSnplNnjdix0hvF8y2YpqdzlZrjIq6zkcuVJ08XysS8zqW3gt3ORBndFDgsrg==}
 
   rollup-plugin-inject@3.0.2:
     resolution: {integrity: sha512-ptg9PQwzs3orn4jkgXJ74bfs5vYz1NCZlSQMBUA0wKcGp5i5pA1AO3fOUEte8enhGUC+iapTCzEWw2jEFFUO/w==}
@@ -3644,9 +3644,6 @@ packages:
 
   tweetnacl@0.14.5:
     resolution: {integrity: sha512-KXXFFdAbFXY4geFIwoyNK+f5Z1b7swfXABfL7HXCmoIWMKU3dmS26672A4EeQtDzLKy7SXmfBu51JolvEKwtGA==}
-
-  tweetnacl@1.0.3:
-    resolution: {integrity: sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw==}
 
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
@@ -4805,7 +4802,7 @@ snapshots:
     optionalDependencies:
       rollup: 4.28.1
 
-  '@rollup/plugin-typescript@11.1.6(rollup@4.28.1)(tslib@2.6.3)(typescript@5.4.5)':
+  '@rollup/plugin-typescript@12.1.2(rollup@4.28.1)(tslib@2.6.3)(typescript@5.4.5)':
     dependencies:
       '@rollup/pluginutils': 5.1.3(rollup@4.28.1)
       resolve: 1.22.8
@@ -7145,10 +7142,6 @@ snapshots:
 
   pure-rand@6.1.0: {}
 
-  pusher-js@8.4.0-rc2:
-    dependencies:
-      tweetnacl: 1.0.3
-
   queue-microtask@1.2.3: {}
 
   randombytes@2.1.0:
@@ -7211,6 +7204,8 @@ snapshots:
       typescript: 5.4.5
     optionalDependencies:
       '@babel/code-frame': 7.24.7
+
+  rollup-plugin-ignore@1.0.10: {}
 
   rollup-plugin-inject@3.0.2:
     dependencies:
@@ -7571,8 +7566,6 @@ snapshots:
   tslib@2.6.3: {}
 
   tweetnacl@0.14.5: {}
-
-  tweetnacl@1.0.3: {}
 
   type-check@0.4.0:
     dependencies:

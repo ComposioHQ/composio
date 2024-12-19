@@ -12,6 +12,9 @@
   "keywords": [],
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",
   "license": "ISC",
+  "dependencies": {
+    "pusher-js": "8.4.0-rc2"
+  },
   "devDependencies": {},
   "publishConfig": {
     "access": "public"
