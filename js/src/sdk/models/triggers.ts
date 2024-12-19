@@ -46,15 +46,16 @@ export class Triggers {
       file: this.fileName,
       params: { data },
     });
-    const {
-      appNames,
-      triggerIds,
-      connectedAccountsIds,
-      integrationIds,
-      showEnabledOnly,
-    } = ZTriggerQuery.parse(data);
 
     try {
+      const {
+        appNames,
+        triggerIds,
+        connectedAccountsIds,
+        integrationIds,
+        showEnabledOnly,
+      } = ZTriggerQuery.parse(data);
+
       const { data: response } = await apiClient.triggers.listTriggers({
         query: {
           appNames: appNames?.join(","),
