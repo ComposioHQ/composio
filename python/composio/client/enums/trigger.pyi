@@ -1,5 +1,7 @@
 import typing as t
+
 from composio.client.enums.enum import Enum, EnumGenerator
+
 from .base import TriggerData
 
 _TRIGGER_CACHE: t.Dict[str, "Trigger"] = {}

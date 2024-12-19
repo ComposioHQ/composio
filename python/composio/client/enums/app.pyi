@@ -1,6 +1,8 @@
 import typing as t
+
 from composio.client.enums.action import Action
 from composio.client.enums.enum import Enum, EnumGenerator
+
 from .base import AppData
 
 _APP_CACHE: t.Dict[str, "App"] = {}
