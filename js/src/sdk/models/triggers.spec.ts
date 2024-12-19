@@ -94,7 +94,6 @@ describe("Apps class tests subscribe", () => {
     expect(trigger.status).toBe("success");
   });
 
-
   it("should retrieve a list of triggers for a specific triggerId", async () => {
     const triggerList = await triggers.list({
       triggerIds: ["GMAIL_NEW_GMAIL_MESSAGE"],

@@ -10,7 +10,7 @@ import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 
-  type RequiredQuery = ListTriggersData["query"];
+type RequiredQuery = ListTriggersData["query"];
 
 const ZTriggerQuery = z.object({
   triggerIds: z.array(z.string()).optional(),
@@ -46,11 +46,18 @@ export class Triggers {
       file: this.fileName,
       params: { data },
     });
-    const {appNames, triggerIds, connectedAccountsIds, integrationIds, showEnabledOnly} = ZTriggerQuery.parse(data);
-   
-    if(!appNames && !triggerIds && !connectedAccountsIds && !integrationIds) {
+    const {
+      appNames,
+      triggerIds,
+      connectedAccountsIds,
+      integrationIds,
+      showEnabledOnly,
+    } = ZTriggerQuery.parse(data);
+
+    if (!appNames && !triggerIds && !connectedAccountsIds && !integrationIds) {
       throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED, {
-        message: "At least one of appNames, triggerIds, connectedAccountsIds, integrationIds is required",
+        message:
+          "At least one of appNames, triggerIds, connectedAccountsIds, integrationIds is required",
       });
     }
 
