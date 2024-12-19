@@ -3,13 +3,23 @@ import logger from "../../utils/logger";
 import { BackendClient } from "./backendClient";
 
 import apiClient from "../client/client";
-
+import z from "zod";
 import { CEG } from "../utils/error";
 import { ListTriggersData } from "../client";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 
-type RequiredQuery = ListTriggersData["query"];
+  type RequiredQuery = ListTriggersData["query"];
+
+const ZTriggerQuery = z.object({
+  triggerIds: z.array(z.string()).optional(),
+  appNames: z.array(z.string()).optional(),
+  connectedAccountsIds: z.array(z.string()).optional(),
+  integrationIds: z.array(z.string()).optional(),
+  showEnabledOnly: z.boolean().optional(),
+});
+
+type TTriggerQuery = z.infer<typeof ZTriggerQuery>;
 
 export class Triggers {
   trigger_to_client_event = "trigger_to_client";
@@ -29,18 +39,24 @@ export class Triggers {
    * @returns {CancelablePromise<ListTriggersResponse>} A promise that resolves to the list of all triggers.
    * @throws {ApiError} If the request fails.
    */
-  async list(data: RequiredQuery = {}) {
+  async list(data: TTriggerQuery = {}) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "list",
       file: this.fileName,
       params: { data },
     });
+    const validatedData = ZTriggerQuery.parse(data);
     try {
       const { data: response } = await apiClient.triggers.listTriggers({
         query: {
-          appNames: data?.appNames,
+          appNames: validatedData?.appNames?.join(","),
+          triggerIds: validatedData?.triggerIds?.join(","),
+          connectedAccountIds: validatedData?.connectedAccountsIds?.join(","),
+          integrationIds: validatedData?.integrationIds?.join(","),
+          showEnabledOnly: validatedData?.showEnabledOnly,
         },
       });
+
       return response || [];
     } catch (error) {
       throw CEG.handleAllError(error);
