@@ -67,7 +67,14 @@ class SqlQuery(LocalAction[SqlQueryRequest, SqlQueryResponse]):
 
     def _execute_remote(self, request: SqlQueryRequest) -> SqlQueryResponse:
         """Execute query for remote databases"""
-        engine = sqlalchemy.create_engine(request.connection_string)
+        engine = sqlalchemy.create_engine(
+            request.connection_string,
+            pool_size=5,  # Maximum number of permanent connections
+            max_overflow=10,  # Maximum number of additional connections
+            pool_timeout=30,  # Timeout waiting for a connection from pool (seconds)
+            pool_recycle=3600,  # Recycle connections after 1 hour
+            connect_args={"connect_timeout": 10}  # Connection timeout in seconds
+        )
         with engine.connect() as connection:
             result = connection.execute(sqlalchemy.text(request.query))
             response_data = [list(row) for row in result.fetchall()]
