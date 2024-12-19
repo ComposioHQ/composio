@@ -17,7 +17,7 @@ export type CreateActionOptions = {
     authCredentials: Record<string, string> | undefined,
     executeRequest: (data: ExecuteRequest) => Promise<Record<string, unknown>>
   ) => Promise<Record<string, unknown>>;
-}
+};
 
 interface ParamsSchema {
   definitions: {

@@ -30,6 +30,7 @@
   "dependencies": {
   },
   "devDependencies": {
+    "pusher-js": "8.4.0-rc2",
     "@ai-sdk/openai": "^0.0.36",
     "@cloudflare/workers-types": "^4.20240718.0",
     "@e2b/code-interpreter": "^0.0.8",
