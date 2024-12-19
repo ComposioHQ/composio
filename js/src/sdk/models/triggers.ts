@@ -54,13 +54,6 @@ export class Triggers {
       showEnabledOnly,
     } = ZTriggerQuery.parse(data);
 
-    if (!appNames && !triggerIds && !connectedAccountsIds && !integrationIds) {
-      throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED, {
-        message:
-          "At least one of appNames, triggerIds, connectedAccountsIds, integrationIds is required",
-      });
-    }
-
     try {
       const { data: response } = await apiClient.triggers.listTriggers({
         query: {
