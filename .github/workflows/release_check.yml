@@ -1,4 +1,4 @@
-name: Run JS SDK test
+name: Type stubs check
 
 on:
   push:
