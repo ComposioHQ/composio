@@ -3,7 +3,7 @@ from phi.assistant import Assistant
 
 
 toolset = ComposioToolSet()
-composio_tools = toolset.get_actions(
+composio_tools = toolset.get_tools(
     actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
 )
 
