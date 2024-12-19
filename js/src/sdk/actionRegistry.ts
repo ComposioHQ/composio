@@ -1,15 +1,9 @@
-import {
-  z,
-  ZodType,
-  ZodObject,
-  ZodString,
-  AnyZodObject,
-  ZodOptional,
-} from "zod";
-import { zodToJsonSchema, JsonSchema7Type } from "zod-to-json-schema";
-import { ActionProxyRequestConfigDTO } from "./client";
+import { ZodObject, ZodOptional, ZodString, z } from "zod";
+import { JsonSchema7Type, zodToJsonSchema } from "zod-to-json-schema";
 import { Composio } from ".";
 import apiClient from "../sdk/client/client";
+import { TRawActionData } from "../types/base_toolset";
+import { ActionProxyRequestConfigDTO } from "./client";
 import { CEG } from "./utils/error";
 
 type ExecuteRequest = Omit<ActionProxyRequestConfigDTO, "connectedAccountId">;
@@ -19,10 +13,10 @@ export type CreateActionOptions = {
   description?: string;
   inputParams: ZodObject<{ [key: string]: ZodString | ZodOptional<ZodString> }>;
   callback: (
-    inputParams: Record<string, any>,
-    authCredentials: Record<string, any> | undefined,
-    executeRequest: (data: ExecuteRequest) => Promise<any>
-  ) => Promise<Record<string, any>>;
+    inputParams: Record<string, string>,
+    authCredentials: Record<string, string> | undefined,
+    executeRequest: (data: ExecuteRequest) => Promise<Record<string, unknown>>
+  ) => Promise<Record<string, unknown>>;
 };
 
 interface ParamsSchema {
@@ -41,16 +35,17 @@ interface ExecuteMetadata {
 
 export class ActionRegistry {
   client: Composio;
-  customActions: Map<string, { metadata: CreateActionOptions; schema: any }>;
+  customActions: Map<
+    string,
+    { metadata: CreateActionOptions; schema: Record<string, unknown> }
+  >;
 
   constructor(client: Composio) {
     this.client = client;
     this.customActions = new Map();
   }
 
-  async createAction(
-    options: CreateActionOptions
-  ): Promise<Record<string, any>> {
+  async createAction(options: CreateActionOptions): Promise<TRawActionData> {
     const { callback } = options;
     if (typeof callback !== "function") {
       throw new Error("Callback must be a function");
@@ -87,34 +82,36 @@ export class ActionRegistry {
       metadata: options,
       schema: composioSchema,
     });
-    return composioSchema;
+    return composioSchema as unknown as TRawActionData;
   }
 
   async getActions({
     actions,
   }: {
     actions: Array<string>;
-  }): Promise<Array<any>> {
-    const actionsArr: Array<any> = [];
+  }): Promise<Array<TRawActionData>> {
+    const actionsArr: Array<TRawActionData> = [];
     for (const name of actions) {
       const lowerCaseName = name.toLowerCase();
       if (this.customActions.has(lowerCaseName)) {
         const action = this.customActions.get(lowerCaseName);
-        actionsArr.push(action!.schema);
+        actionsArr.push(action!.schema as TRawActionData);
       }
     }
     return actionsArr;
   }
 
-  async getAllActions(): Promise<Array<any>> {
-    return Array.from(this.customActions.values()).map((action: any) => action);
+  async getAllActions(): Promise<Array<TRawActionData>> {
+    return Array.from(this.customActions.values()).map(
+      (action) => action.schema as TRawActionData
+    );
   }
 
   async executeAction(
     name: string,
-    inputParams: Record<string, any>,
+    inputParams: Record<string, unknown>,
     metadata: ExecuteMetadata
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     const lowerCaseName = name.toLocaleLowerCase();
     if (!this.customActions.has(lowerCaseName)) {
       throw new Error(`Action with name ${name} does not exist`);
@@ -138,12 +135,13 @@ export class ActionRegistry {
           `Connection with app name ${toolName} and entityId ${metadata.entityId} not found`
         );
       }
+      const connectionParams = (
+        connection as unknown as Record<string, unknown>
+      ).connectionParams as Record<string, unknown>;
       authCredentials = {
-        headers: connection.connectionParams?.headers,
-        queryParams: connection.connectionParams?.queryParams,
-        baseUrl:
-          connection.connectionParams?.baseUrl ||
-          connection.connectionParams?.base_url,
+        headers: connectionParams?.headers,
+        queryParams: connectionParams?.queryParams,
+        baseUrl: connectionParams?.baseUrl || connectionParams?.base_url,
       };
     }
     if (typeof callback !== "function") {
@@ -165,7 +163,7 @@ export class ActionRegistry {
     };
 
     return await callback(
-      inputParams,
+      inputParams as Record<string, string>,
       authCredentials,
       (data: ExecuteRequest) => executeRequest(data)
     );

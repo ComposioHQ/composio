@@ -1,12 +1,17 @@
-import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
-import { jsonSchemaToModel } from "../utils/shared";
 import { DynamicStructuredTool } from "@langchain/core/tools";
+import { z } from "zod";
+import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
-import type { Optional, Dict, Sequence } from "../sdk/types";
-import { WorkspaceConfig } from "../env/config";
-import { Workspace } from "../env";
-import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
+import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
+import type { Optional, Sequence } from "../types/base";
+import { ZToolSchemaFilter } from "../types/base_toolset";
+import { jsonSchemaToModel } from "../utils/shared";
+type ToolSchema = {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+};
 
 export class LangchainToolSet extends BaseComposioToolSet {
   /**
@@ -22,7 +27,6 @@ export class LangchainToolSet extends BaseComposioToolSet {
       apiKey?: Optional<string>;
       baseUrl?: Optional<string>;
       entityId?: string;
-      workspaceConfig?: WorkspaceConfig;
       runtime?: string;
     } = {}
   ) {
@@ -30,23 +34,22 @@ export class LangchainToolSet extends BaseComposioToolSet {
       config.apiKey || null,
       config.baseUrl || COMPOSIO_BASE_URL,
       config?.runtime || LangchainToolSet.FRAMEWORK_NAME,
-      config.entityId || LangchainToolSet.DEFAULT_ENTITY_ID,
-      config.workspaceConfig || Workspace.Host()
+      config.entityId || LangchainToolSet.DEFAULT_ENTITY_ID
     );
   }
 
   private _wrapTool(
-    schema: Dict<any>,
+    schema: ToolSchema,
     entityId: Optional<string> = null
   ): DynamicStructuredTool {
     const action = schema["name"];
     const description = schema["description"];
 
-    const func = async (...kwargs: any[]): Promise<any> => {
+    const func = async (...kwargs: unknown[]): Promise<unknown> => {
       return JSON.stringify(
         await this.executeAction({
           action,
-          params: kwargs[0],
+          params: kwargs[0] as Record<string, unknown>,
           entityId: entityId || this.entityId,
         })
       );
@@ -65,14 +68,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
   }
 
   async getTools(
-    filters: {
-      actions?: Optional<Array<string>>;
-      apps?: Sequence<string>;
-      tags?: Optional<Array<string>>;
-      useCase?: Optional<string>;
-      usecaseLimit?: Optional<number>;
-      filterByAvailableApps?: Optional<boolean>;
-    },
+    filters: z.infer<typeof ZToolSchemaFilter>,
     entityId: Optional<string> = null
   ): Promise<Sequence<DynamicStructuredTool>> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
@@ -82,6 +78,8 @@ export class LangchainToolSet extends BaseComposioToolSet {
     });
 
     const tools = await this.getToolsSchema(filters, entityId);
-    return tools.map((tool) => this._wrapTool(tool, entityId || this.entityId));
+    return tools.map((tool) =>
+      this._wrapTool(tool as ToolSchema, entityId || this.entityId)
+    );
   }
 }

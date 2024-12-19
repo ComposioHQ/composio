@@ -1,15 +1,16 @@
-import {
-  SDK_ERROR_CODES,
-  BASE_ERROR_CODE_INFO,
-  BE_STATUS_CODE_TO_SDK_ERROR_CODES,
-} from "./errors/src/constants";
+import { AxiosError } from "axios";
+import { ZodError } from "zod";
 import { ComposioError } from "./errors/src/composioError";
 import {
+  BASE_ERROR_CODE_INFO,
+  BE_STATUS_CODE_TO_SDK_ERROR_CODES,
+  SDK_ERROR_CODES,
+} from "./errors/src/constants";
+import {
+  ErrorResponseData,
   generateMetadataFromAxiosError,
   getAPIErrorDetails,
 } from "./errors/src/formatter";
-import { AxiosError } from "axios";
-import { ZodError } from "zod";
 
 export class CEG {
   static handleAllError(error: unknown, shouldThrow: boolean = false) {
@@ -125,7 +126,11 @@ export class CEG {
       : SDK_ERROR_CODES.BACKEND.UNKNOWN;
     const predefinedError = BASE_ERROR_CODE_INFO[errorCode];
 
-    const errorDetails = getAPIErrorDetails(errorCode, error, predefinedError);
+    const errorDetails = getAPIErrorDetails(
+      errorCode,
+      error as AxiosError<ErrorResponseData>,
+      predefinedError
+    );
 
     const metadata = generateMetadataFromAxiosError(error);
     throw new ComposioError(
@@ -174,7 +179,7 @@ export class CEG {
       description?: string;
       possibleFix?: string;
       originalError?: unknown;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, unknown>;
     }
   ): never {
     const finalErrorCode = !!messageCode ? messageCode : `${type}::${subtype}`;

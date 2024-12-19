@@ -1,6 +1,7 @@
+/* eslint-disable no-console */
+import chalk from "chalk";
 import { Command } from "commander";
 import client from "../sdk/client/client";
-import chalk from "chalk";
 import { getOpenAPIClient } from "../sdk/utils/config";
 
 export default class ExecuteCommand {

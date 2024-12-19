@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "@jest/globals";
+import { beforeAll, describe, expect, it } from "@jest/globals";
 import { getTestConfig } from "../../config/getTestConfig";
 import { VercelAIToolSet } from "./vercel";
 
