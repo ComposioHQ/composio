@@ -2,13 +2,13 @@ import logger from "../../utils/logger";
 import { PusherUtils, TriggerData } from "../utils/pusher";
 import { BackendClient } from "./backendClient";
 
-import apiClient from "../client/client";
 import z from "zod";
-import { CEG } from "../utils/error";
 import { ListTriggersData } from "../client";
+import apiClient from "../client/client";
+import { CEG } from "../utils/error";
+import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
-import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 
 type RequiredQuery = ListTriggersData["query"];
 
