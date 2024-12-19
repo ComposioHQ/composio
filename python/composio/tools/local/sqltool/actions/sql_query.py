@@ -34,10 +34,10 @@ class SqlQuery(LocalAction[SqlQueryRequest, SqlQueryResponse]):
     def _is_sqlite_connection(self, connection_string: str) -> bool:
         """Determine if the connection string is for a SQLite database"""
         return (
-            connection_string.endswith('.db') 
-            or connection_string.endswith('.sqlite') 
-            or connection_string.endswith('.sqlite3')
-            or connection_string.startswith('sqlite:///')
+            connection_string.endswith(".db")
+            or connection_string.endswith(".sqlite")
+            or connection_string.endswith(".sqlite3")
+            or connection_string.startswith("sqlite:///")
         )
 
     def execute(self, request: SqlQueryRequest, metadata: Dict) -> SqlQueryResponse:
@@ -47,22 +47,19 @@ class SqlQuery(LocalAction[SqlQueryRequest, SqlQueryResponse]):
                 return self._execute_sqlite(request)
             else:
                 return self._execute_remote(request)
-
         except Exception as e:
             raise ValueError(f"Database error: {str(e)}") from e
 
     def _execute_sqlite(self, request: SqlQueryRequest) -> SqlQueryResponse:
         """Execute query for SQLite database"""
-        db_path = request.connection_string.replace('sqlite:///', '')
+        db_path = request.connection_string.replace("sqlite:///", "")
         if not Path(db_path).exists():
             raise ValueError(f"Error: Database file '{db_path}' does not exist.")
-
         with sqlite3.connect(db_path) as connection:
             cursor = connection.cursor()
             cursor.execute(request.query)
             response_data = [list(row) for row in cursor.fetchall()]
             connection.commit()
-
         return SqlQueryResponse(
             execution_details={"executed": True, "type": "sqlite"},
             response_data=response_data,
@@ -74,7 +71,6 @@ class SqlQuery(LocalAction[SqlQueryRequest, SqlQueryResponse]):
         with engine.connect() as connection:
             result = connection.execute(sqlalchemy.text(request.query))
             response_data = [list(row) for row in result.fetchall()]
-
         return SqlQueryResponse(
             execution_details={"executed": True, "type": "remote"},
             response_data=response_data,
