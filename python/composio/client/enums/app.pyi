@@ -131,6 +131,7 @@ class App(Enum[AppData], metaclass=EnumGenerator):
     GOOGLESHEETS: "App"
     GOOGLETASKS: "App"
     GOOGLE_ANALYTICS: "App"
+    GOOGLE_PHOTOS: "App"
     GORGIAS: "App"
     GO_TO_WEBINAR: "App"
     GREPTILE: "App"
