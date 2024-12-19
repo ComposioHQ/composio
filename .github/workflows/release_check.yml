@@ -15,18 +15,20 @@ env:
   COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_PROD }}
 
 jobs:
-  generate_types:
+  generate-types:
     defaults:
       run:
         working-directory: ./python
-    - name: Run `composio apps generate-types`
-      run: |
-          python -m pip install uv
-          python -m uv pip install .
-          python -m uv pip install black
-          python -m uv run composio apps generate-types
-          # Run black over the files before checking if they changed
-          python -m uv run black composio/client/enums
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run `composio apps generate-types`
+        run: |
+            python -m pip install uv
+            python -m uv pip install .
+            python -m uv pip install black
+            python -m uv run composio apps generate-types
+            # Run black over the files before checking if they changed
+            python -m uv run black composio/client/enums
 
-    - name: Check if type stubs changed, and fail if they did
-      run: git diff --exit-code
+      - name: Check if type stubs changed, and fail if they did
+        run: git diff --exit-code
