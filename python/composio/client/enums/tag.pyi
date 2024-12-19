@@ -1,7 +1,5 @@
 import typing as t
-
 from composio.client.enums.enum import Enum, EnumGenerator
-
 from .base import TagData
 
 _TAG_CACHE: t.Dict[str, "Tag"] = {}
@@ -410,10 +408,7 @@ class Tag(Enum[TagData], metaclass=EnumGenerator):
     FIGMA_USERS: "Tag"
     FIGMA_VARIABLES: "Tag"
     FIGMA_WEBHOOKS: "Tag"
-    FIRECRAWL_CRAWLING: "Tag"
     FIRECRAWL_IMPORTANT: "Tag"
-    FIRECRAWL_MAPPING: "Tag"
-    FIRECRAWL_SCRAPING: "Tag"
     GITHUB_ACTIONS: "Tag"
     GITHUB_ACTIVITY: "Tag"
     GITHUB_APPS: "Tag"
@@ -482,6 +477,16 @@ class Tag(Enum[TagData], metaclass=EnumGenerator):
     HUBSPOT_TEMPLATES: "Tag"
     HUBSPOT_TOKENS: "Tag"
     HUBSPOT_TYPES: "Tag"
+    INTERCOM_ADMINS: "Tag"
+    INTERCOM_ARTICLES: "Tag"
+    INTERCOM_COMPANIES: "Tag"
+    INTERCOM_CONTACTS: "Tag"
+    INTERCOM_HELP_CENTER: "Tag"
+    INTERCOM_IMPORTANT: "Tag"
+    INTERCOM_NOTES: "Tag"
+    INTERCOM_SEGMENTS: "Tag"
+    INTERCOM_SUBSCRIPTION_TYPES: "Tag"
+    INTERCOM_TAGS: "Tag"
     JIRA_ANNOUNCEMENT_BANNER: "Tag"
     JIRA_APPLICATION_ROLES: "Tag"
     JIRA_APP_DATA_POLICIES__EAP_: "Tag"
@@ -643,6 +648,7 @@ class Tag(Enum[TagData], metaclass=EnumGenerator):
     NOTION_IMPORTANT: "Tag"
     OUTLOOK_EMAIL: "Tag"
     OUTLOOK_IMPORTANT: "Tag"
+    PEOPLEDATALABS_IMPORTANT: "Tag"
     PIPEDRIVE_ACTIVITIES: "Tag"
     PIPEDRIVE_ACTIVITYFIELDS: "Tag"
     PIPEDRIVE_ACTIVITYTYPES: "Tag"
@@ -968,6 +974,15 @@ class Tag(Enum[TagData], metaclass=EnumGenerator):
     WRIKE_TASKS: "Tag"
     WRIKE_USERS: "Tag"
     WRIKE_WORKFLOWS: "Tag"
+    ZOHO_CONVERT: "Tag"
+    ZOHO_CREATE: "Tag"
+    ZOHO_FETCH: "Tag"
+    ZOHO_LEADS: "Tag"
+    ZOHO_RECORDS: "Tag"
+    ZOHO_RELATEDRECORDS: "Tag"
+    ZOHO_TAGS: "Tag"
+    ZOHO_UPDATE: "Tag"
+    ZOHO_ZOHOCRM: "Tag"
     ZOOM_ARCHIVING: "Tag"
     ZOOM_CLOUD_RECORDING: "Tag"
     ZOOM_DEVICES: "Tag"
