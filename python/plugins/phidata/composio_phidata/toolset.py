@@ -9,10 +9,10 @@ import typing_extensions as te
 from phi.tools.toolkit import Toolkit
 from pydantic import validate_call
 
-from composio import Action, ActionType, AppType, TagType
-from composio.tools.toolset import ProcessorsType
-
+from composio import Action, ActionType, AppType
 from composio import ComposioToolSet as BaseComposioToolSet
+from composio import TagType
+from composio.tools.toolset import ProcessorsType
 
 
 class ComposioToolSet(
@@ -35,17 +35,17 @@ class ComposioToolSet(
         name = schema["name"]
         description = schema["description"]
         parameters = schema["parameters"]
-        
+
         # Create a new Toolkit instance
         toolkit = Toolkit(name=name)
-        
+
         @validate_call
         def function(**kwargs: t.Any) -> str:
             """Composio tool wrapped as Phidata `Function`.
-            
+
             Args:
                 **kwargs: Function parameters based on the schema
-            
+
             Returns:
                 str: JSON string containing the function execution result
             """
@@ -56,7 +56,7 @@ class ComposioToolSet(
                     entity_id=entity_id or self.entity_id,
                 )
             )
-        
+
         # Set function docstring from schema
         param_docs = []
         if "properties" in parameters:
@@ -64,12 +64,12 @@ class ComposioToolSet(
                 param_desc = param_info.get("description", "No description available")
                 param_type = param_info.get("type", "any")
                 param_docs.append(f":param {param_name}: {param_desc} ({param_type})")
-        
+
         function.__doc__ = f"{description}\n\n" + "\n".join(param_docs)
-        
+
         # Register the function with the toolkit
         toolkit.register(function)
-        
+
         return toolkit
 
     @te.deprecated("Use `ComposioToolSet.get_tools` instead")
@@ -79,7 +79,7 @@ class ComposioToolSet(
 
         Args:
             actions: List of actions to wrap
-            
+
         Returns:
             List[Toolkit]: Composio tools wrapped as `Toolkit` objects
         """
@@ -103,7 +103,7 @@ class ComposioToolSet(
             tags: Filter the apps by given tags
             processors: Optional processors to apply
             check_connected_accounts: Whether to check for connected accounts
-            
+
         Returns:
             List[Toolkit]: Composio tools wrapped as `Toolkit` objects
         """
