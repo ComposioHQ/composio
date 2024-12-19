@@ -10,4 +10,3 @@ composio_tools = toolset.get_tools(
 assistant = Assistant(tools=composio_tools, show_tool_calls=True)
 
 assistant.print_response("Can you start composiohq/composio repo?")
-# pprint(tool)
