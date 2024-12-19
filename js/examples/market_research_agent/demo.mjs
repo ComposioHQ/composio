@@ -29,10 +29,18 @@ dotenv.config();
         console.log("Tools:", tools);
         //console.log("Prompt:", prompt);
 
-        const additional = `You are a market research agent that finds niche ideas that can be built and marketed. 
+        const additional = `
+        You are a market research agent that finds niche ideas that can be built and marketed. 
         Your users are primarily indie hackers who want to build something new and are looking for ideas. The input will 
         be a domain or a category and your job is to research extensively and find ideas that can be marketed.
-        Also write the content to market a tool built with this idea. It should be very very specific and not too long.`;
+        Write this content in a google doc, create a google doc before writing in it.
+        I want you to show the following content:
+        - Data Collection and Aggregation - Show data supporting a trend
+        - Sentiment Analysis - Show customer sentiment on the topic
+        - Trend Forecasting
+        - Competitor Analysis
+        - Competitor Benchmarking
+        - Idea Validation`;
 
         // Check combined_prompt
 

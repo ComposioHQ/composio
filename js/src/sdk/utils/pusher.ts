@@ -28,7 +28,7 @@ type TChunkedTriggerData = {
   final: boolean;
 };
 
-export interface TriggerData {
+export type TriggerData = {
   appName: string;
   clientId: number;
   payload: Record<string, unknown>;
@@ -46,7 +46,7 @@ export interface TriggerData {
       status: string;
     };
   };
-}
+};
 
 export class PusherUtils {
   static pusherClient: PusherClient;

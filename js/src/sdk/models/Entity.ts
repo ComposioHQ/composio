@@ -26,7 +26,7 @@ const ZExecuteActionParams = z.object({
 type TExecuteActionParams = z.infer<typeof ZExecuteActionParams>;
 
 const ZInitiateConnectionParams = z.object({
-  appName: z.string(),
+  appName: z.string().optional(),
   authConfig: z.record(z.any()).optional(),
   integrationId: z.string().optional(),
   authMode: z.string().optional(),
@@ -295,56 +295,69 @@ export class Entity {
         ZInitiateConnectionParams.parse(data);
       const { redirectUrl, labels } = data.config || {};
 
-      // Get the app details from the client
-      const app = await this.apps.get({ appKey: appName });
-
-      const isTestConnectorAvailable =
-        app.testConnectors && app.testConnectors.length > 0;
-
-      if (!isTestConnectorAvailable && app.no_auth === false) {
-        if (!authMode) {
-          // @ts-ignore
-          logger.debug(
-            "Auth schemes not provided, available auth schemes and authConfig"
-          );
-          // @ts-ignore
-          for (const authScheme of app.auth_schemes) {
-            // @ts-ignore
-            logger.debug(
-              "autheScheme:",
-              authScheme.name,
-              "\n",
-              "fields:",
-              authScheme.fields
-            );
-          }
-
-          throw new Error(`Please pass authMode and authConfig.`);
-        }
+      if (!integrationId && !appName) {
+        throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED, {
+          message: "Please pass appName or integrationId",
+          description:
+            "We need atleast one of the params to initiate a connection",
+        });
       }
 
+      /* Get the integration */
       const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
 
-      let integration = integrationId
+      const isIntegrationIdPassed = !!integrationId;
+      let integration = isIntegrationIdPassed
         ? await this.integrations.get({ integrationId: integrationId })
         : null;
-      // Create a new integration if not provided
-      if (!integration && authMode) {
-        integration = await this.integrations.create({
-          appId: app.appId!,
-          name: `integration_${timestamp}`,
-          authScheme: authMode,
-          authConfig: authConfig,
-          useComposioAuth: false,
+
+      if (isIntegrationIdPassed && !integration) {
+        throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED, {
+          message: "Integration not found",
+          description: "The integration with the given id does not exist",
         });
       }
 
-      if (!integration && !authMode) {
-        integration = await this.integrations.create({
-          appId: app.appId!,
-          name: `integration_${timestamp}`,
-          useComposioAuth: true,
-        });
+      /* If integration is not found, create a new integration */
+      if (!isIntegrationIdPassed) {
+        const app = await this.apps.get({ appKey: appName! });
+
+        if (authMode) {
+          integration = await this.integrations.create({
+            appId: app.appId!,
+            name: `integration_${timestamp}`,
+            authScheme: authMode,
+            authConfig: authConfig,
+            useComposioAuth: false,
+          });
+        } else {
+          const isTestConnectorAvailable =
+            app.testConnectors && app.testConnectors.length > 0;
+
+          if (!isTestConnectorAvailable && app.no_auth === false) {
+            logger.debug(
+              "Auth schemes not provided, available auth schemes and authConfig"
+            );
+            // @ts-ignore
+            for (const authScheme of app.auth_schemes) {
+              logger.debug(
+                "authScheme:",
+                authScheme.name,
+                "\n",
+                "fields:",
+                authScheme.fields
+              );
+            }
+
+            throw new Error("Please pass authMode and authConfig.");
+          }
+
+          integration = await this.integrations.create({
+            appId: app.appId!,
+            name: `integration_${timestamp}`,
+            useComposioAuth: true,
+          });
+        }
       }
 
       // Initiate the connection process

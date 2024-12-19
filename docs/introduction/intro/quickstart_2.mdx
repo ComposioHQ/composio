@@ -159,7 +159,7 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
                 ```javascript Authenticate Jessica's Google Calendar Account
                 import { Composio } from "composio-core";
 
-                const client = new Composio(process.env.COMPOSIO_API_KEY);
+                const client = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 
                 const entity = await client.getEntity("Jessica");
                 const connection = await entity.initiateConnection('googlecalendar');

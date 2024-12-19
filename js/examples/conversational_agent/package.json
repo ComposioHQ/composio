@@ -1,0 +1,25 @@
+{
+  "name": "elevenlabs-conversational-ai-demo",
+  "version": "1.0.0",
+  "description": "Simple demo of ElevenLabs Conversational AI SDK",
+  "scripts": {
+    "start:backend": "node backend/server.js",
+    "build": "webpack --mode production",
+    "dev": "concurrently \"npm run start:backend\" \"webpack serve --mode development\"",
+    "start": "npm run build && npm run start:backend",
+    "start:python": "npm run build && uvicorn backend.server:app --reload --port 3000"
+  },
+  "dependencies": {
+    "@11labs/client": "latest",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "webpack": "^5.88.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1",
+    "concurrently": "^8.0.1",
+    "copy-webpack-plugin": "^11.0.0"
+  }
+}
