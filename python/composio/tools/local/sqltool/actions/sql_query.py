@@ -47,8 +47,12 @@ class SqlQuery(LocalAction[SqlQueryRequest, SqlQueryResponse]):
                 return self._execute_sqlite(request)
             else:
                 return self._execute_remote(request)
+        except sqlite3.Error as e:
+            raise ValueError(f"SQLite database error: {str(e)}") from e
+        except sqlalchemy.exc.SQLAlchemyError as e:
+            raise ValueError(f"Database connection error: {str(e)}") from e
         except Exception as e:
-            raise ValueError(f"Database error: {str(e)}") from e
+            raise ValueError(f"Unexpected error: {str(e)}") from e
 
     def _execute_sqlite(self, request: SqlQueryRequest) -> SqlQueryResponse:
         """Execute query for SQLite database"""
@@ -57,7 +61,7 @@ class SqlQuery(LocalAction[SqlQueryRequest, SqlQueryResponse]):
             raise ValueError(f"Error: Database file '{db_path}' does not exist.")
         with sqlite3.connect(db_path) as connection:
             cursor = connection.cursor()
-            cursor.execute(request.query)
+            cursor.execute(request.query, {})
             response_data = [list(row) for row in cursor.fetchall()]
             connection.commit()
         return SqlQueryResponse(
@@ -69,14 +73,14 @@ class SqlQuery(LocalAction[SqlQueryRequest, SqlQueryResponse]):
         """Execute query for remote databases"""
         engine = sqlalchemy.create_engine(
             request.connection_string,
-            pool_size=5,  # Maximum number of permanent connections
-            max_overflow=10,  # Maximum number of additional connections
-            pool_timeout=30,  # Timeout waiting for a connection from pool (seconds)
-            pool_recycle=3600,  # Recycle connections after 1 hour
-            connect_args={"connect_timeout": 10}  # Connection timeout in seconds
+            pool_size=5,
+            max_overflow=10,
+            pool_timeout=30,
+            pool_recycle=3600,
+            connect_args={"connect_timeout": 10},
         )
         with engine.connect() as connection:
-            result = connection.execute(sqlalchemy.text(request.query))
+            result = connection.execute(sqlalchemy.text(request.query), {})
             response_data = [list(row) for row in result.fetchall()]
         return SqlQueryResponse(
             execution_details={"executed": True, "type": "remote"},
