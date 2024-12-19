@@ -13,7 +13,7 @@ import apiClient from "../sdk/client/client";
 import { CEG } from "./utils/error";
 
 type ExecuteRequest = Omit<ActionProxyRequestConfigDTO, "connectedAccountId">;
-export interface CreateActionOptions {
+export type CreateActionOptions = {
   actionName?: string;
   toolName?: string;
   description?: string;
@@ -23,7 +23,7 @@ export interface CreateActionOptions {
     authCredentials: Record<string, any> | undefined,
     executeRequest: (data: ExecuteRequest) => Promise<any>
   ) => Promise<Record<string, any>>;
-}
+};
 
 interface ParamsSchema {
   definitions: {
