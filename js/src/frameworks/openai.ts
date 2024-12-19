@@ -1,17 +1,15 @@
-import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { OpenAI } from "openai";
+import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 
-import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
-import { WorkspaceConfig } from "../env/config";
-import { Workspace } from "../env";
-import logger from "../utils/logger";
-import { ActionsListResponseDTO } from "../sdk/client";
 import { Stream } from "openai/streaming";
+import { z } from "zod";
+import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
+import logger from "../utils/logger";
 
-type Optional<T> = T | null;
-type Sequence<T> = Array<T>;
+import { Optional, Sequence } from "../types/base";
+import { ZToolSchemaFilter } from "../types/base_toolset";
 
 export class OpenAIToolSet extends BaseComposioToolSet {
   static FRAMEWORK_NAME = "openai";
@@ -32,27 +30,18 @@ export class OpenAIToolSet extends BaseComposioToolSet {
       apiKey?: Optional<string>;
       baseUrl?: Optional<string>;
       entityId?: string;
-      workspaceConfig?: WorkspaceConfig;
     } = {}
   ) {
     super(
       config.apiKey || null,
       config.baseUrl || COMPOSIO_BASE_URL,
       OpenAIToolSet.FRAMEWORK_NAME,
-      config.entityId || OpenAIToolSet.DEFAULT_ENTITY_ID,
-      config.workspaceConfig || Workspace.Host()
+      config.entityId || OpenAIToolSet.DEFAULT_ENTITY_ID
     );
   }
 
   async getTools(
-    filters: {
-      actions?: Sequence<string>;
-      apps?: Sequence<string>;
-      tags?: Optional<Array<string>>;
-      useCase?: Optional<string>;
-      useCaseLimit?: Optional<number>;
-      filterByAvailableApps?: Optional<boolean>;
-    },
+    filters: z.infer<typeof ZToolSchemaFilter>,
     entityId?: Optional<string>
   ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
@@ -63,20 +52,18 @@ export class OpenAIToolSet extends BaseComposioToolSet {
 
     const mainActions = await this.getToolsSchema(filters, entityId);
     return (
-      mainActions.map(
-        (action: NonNullable<ActionsListResponseDTO["items"]>[0]) => {
-          const formattedSchema: OpenAI.FunctionDefinition = {
-            name: action.name!,
-            description: action.description!,
-            parameters: action.parameters!,
-          };
-          const tool: OpenAI.ChatCompletionTool = {
-            type: "function",
-            function: formattedSchema,
-          };
-          return tool;
-        }
-      ) || []
+      mainActions.map((action) => {
+        const formattedSchema: OpenAI.FunctionDefinition = {
+          name: action.name!,
+          description: action.description!,
+          parameters: action.parameters!,
+        };
+        const tool: OpenAI.ChatCompletionTool = {
+          type: "function",
+          function: formattedSchema,
+        };
+        return tool;
+      }) || []
     );
   }
 
@@ -158,7 +145,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
     runStream: Stream<OpenAI.Beta.Assistants.AssistantStreamEvent>,
     thread: OpenAI.Beta.Threads.Thread,
     entityId: string | null = null
-  ): AsyncGenerator<any, void, unknown> {
+  ): AsyncGenerator<unknown, void, unknown> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "waitAndHandleAssistantStreamToolCalls",
       file: this.fileName,

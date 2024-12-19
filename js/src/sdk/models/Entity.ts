@@ -1,17 +1,16 @@
-import { ConnectionRequest } from "./connectedAccounts";
-import { Actions } from "./actions";
-import { Apps } from "./apps";
-import { Integrations } from "./integrations";
-import { ActiveTriggers } from "./activeTriggers";
-import { ConnectedAccounts } from "./connectedAccounts";
-import { BackendClient } from "./backendClient";
-import { Triggers } from "./triggers";
-import { CEG } from "../utils/error";
-import logger from "../../utils/logger";
-import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { z } from "zod";
+import logger from "../../utils/logger";
+import { CEG } from "../utils/error";
+import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
+import { Actions } from "./actions";
+import { ActiveTriggers } from "./activeTriggers";
+import { Apps } from "./apps";
+import { BackendClient } from "./backendClient";
+import { ConnectedAccounts, ConnectionRequest } from "./connectedAccounts";
+import { Integrations } from "./integrations";
+import { Triggers } from "./triggers";
 
 const LABELS = {
   PRIMARY: "primary",
@@ -92,7 +91,7 @@ export class Entity {
       const app = await this.apps.get({
         appKey: action.appKey!,
       });
-      if ((app.yaml as any).no_auth) {
+      if ((app.yaml as Record<string, unknown>).no_auth) {
         return this.actionsModel.execute({
           actionName: actionName,
           requestBody: {
@@ -136,7 +135,7 @@ export class Entity {
   }: {
     app?: string;
     connectedAccountId?: string;
-  }): Promise<any | null> {
+  }) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getConnection",
       file: this.fileName,
@@ -152,8 +151,7 @@ export class Entity {
       let latestAccount = null;
       let latestCreationDate: Date | null = null;
       const connectedAccounts = await this.connectedAccounts.list({
-        // @ts-ignore
-        user_uuid: this.id,
+        user_uuid: this.id!,
       });
 
       if (!connectedAccounts.items || connectedAccounts.items.length === 0) {
@@ -199,7 +197,7 @@ export class Entity {
   async setupTrigger(
     app: string,
     triggerName: string,
-    config: { [key: string]: any }
+    config: Record<string, unknown>
   ) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "setupTrigger",
@@ -275,7 +273,7 @@ export class Entity {
       const activeTriggers = await this.activeTriggers.list({
         // @ts-ignore
         connectedAccountIds: connectedAccounts!
-          .map((account: any) => account.id!)
+          .map((account) => account.id!)
           .join(","),
       });
       return activeTriggers;

@@ -1,10 +1,9 @@
-import { describe, it, expect, beforeAll } from "@jest/globals";
-import { Apps } from "./apps";
+import { beforeAll, describe, expect, it } from "@jest/globals";
 import { BACKEND_CONFIG, getTestConfig } from "../../../config/getTestConfig";
 import { BackendClient } from "./backendClient";
 
 describe("Apps class tests", () => {
-  let backendClient;
+  let _backendClient;
   let testConfig: BACKEND_CONFIG;
 
   beforeAll(() => {
@@ -12,7 +11,7 @@ describe("Apps class tests", () => {
   });
 
   it("should create an Apps instance and retrieve apps list", async () => {
-    backendClient = new BackendClient(
+    _backendClient = new BackendClient(
       testConfig.COMPOSIO_API_KEY,
       testConfig.BACKEND_HERMES_URL
     );

@@ -1,8 +1,9 @@
+/* eslint-disable no-console */
 import chalk from "chalk";
 import { Command } from "commander";
+import { ListActionsV2Data } from "../sdk/client";
 import client from "../sdk/client/client";
 import { getOpenAPIClient } from "../sdk/utils/config";
-import { ListActionsV2Data } from "../sdk/client";
 
 export default class ActionCommand {
   private program: Command;
