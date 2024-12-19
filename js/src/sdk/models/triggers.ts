@@ -187,9 +187,28 @@ export class Triggers {
       params: { filters },
     });
     if (!fn) throw new Error("Function is required for trigger subscription");
-    //@ts-ignore
     const clientId = await this.backendClient.getClientId();
-    //@ts-ignore
+
+    const availableTriggers = await this.list({
+      appNames: filters.appName ? [filters.appName] : undefined,
+      triggerIds: filters.triggerId ? [filters.triggerId] : undefined,
+      connectedAccountsIds: filters.connectionId
+        ? [filters.connectionId]
+        : undefined,
+      integrationIds: filters.integrationId
+        ? [filters.integrationId]
+        : undefined,
+    });
+
+    if (availableTriggers.length === 0) {
+      throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED, {
+        message: "No triggers match the specified filters",
+        description: "The provided filters did not return any triggers.",
+        possibleFix:
+          "Verify the filters and ensure a trigger is set up with the specified criteria.",
+      });
+    }
+
     await PusherUtils.getPusherClient(
       this.backendClient.baseUrl,
       this.backendClient.apiKey

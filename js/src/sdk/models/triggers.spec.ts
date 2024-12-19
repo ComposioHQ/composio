@@ -5,6 +5,7 @@ import { Triggers } from "./triggers";
 import { ConnectedAccounts } from "./connectedAccounts";
 import { Entity } from "./Entity";
 import { Actions } from "./actions";
+import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 
 describe("Apps class tests", () => {
   let backendClient;
@@ -101,6 +102,14 @@ describe("Apps class tests subscribe", () => {
     });
     expect(triggerList.length).toBeGreaterThan(0);
     expect(triggerList[0].name).toBe("GMAIL_NEW_GMAIL_MESSAGE");
+  });
+
+  it("try to subscribe to a trigger that doesn't exist", async () => {
+    await expect(
+      triggers.subscribe(async () => {}, {
+        triggerId: "GMAIL_NEW_GMAIL_MESSAGE_2",
+      })
+    ).rejects.toThrow("No triggers found for the given filters");
   });
 
   // it("should subscribe to a trigger and receive a trigger", async () => {
