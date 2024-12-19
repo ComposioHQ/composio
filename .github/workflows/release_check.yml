@@ -11,6 +11,9 @@ on:
       - '**/setup.py'
   workflow_dispatch:
 
+env:
+  COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_PROD }}
+
 jobs:
   generate-types:
     defaults:
