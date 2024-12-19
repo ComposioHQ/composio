@@ -1,19 +1,18 @@
 import {
-  InitiateConnectionPayloadDto,
-  GetConnectionsResponseDto,
   GetConnectionInfoData,
   GetConnectionInfoResponse,
   GetConnectionsData,
+  GetConnectionsResponseDto,
+  InitiateConnectionPayloadDto,
   InitiateConnectionResponse2,
 } from "../client";
-import client from "../client/client";
-import apiClient from "../client/client";
-import { BackendClient } from "./backendClient";
-import { Integrations } from "./integrations";
-import { Apps } from "./apps";
+import { default as apiClient, default as client } from "../client/client";
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
+import { Apps } from "./apps";
+import { BackendClient } from "./backendClient";
+import { Integrations } from "./integrations";
 
 type ConnectedAccountsListData = GetConnectionsData["query"] & {
   appNames?: string;
@@ -26,7 +25,7 @@ type InitiateConnectionDataReq = InitiateConnectionPayloadDto & {
   integrationId?: string;
   redirectUri?: string;
   authMode?: string;
-  authConfig?: { [key: string]: any };
+  authConfig?: Record<string, unknown>;
   appName?: string;
 };
 
@@ -132,8 +131,7 @@ export class ConnectedAccounts {
       params: { payload },
     });
     try {
-      let {
-        integrationId,
+      const {
         entityId = "default",
         labels,
         data = {},
@@ -142,6 +140,8 @@ export class ConnectedAccounts {
         authConfig,
         appName,
       } = payload;
+      let integrationId: string | undefined;
+      integrationId = payload.integrationId;
 
       if (!integrationId && authMode) {
         const timestamp = new Date().toISOString().replace(/[-:.]/g, "");

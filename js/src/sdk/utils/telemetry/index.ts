@@ -1,8 +1,8 @@
-import { TELEMETRY_URL } from "../constants";
-import { sendProcessReq, sendBrowserReq } from "../../../utils/external";
-import ComposioSDKContext from "../composioContext";
-import { BatchProcessor } from "../base/batchProcessor";
+import { sendBrowserReq, sendProcessReq } from "../../../utils/external";
 import { getEnvVariable } from "../../../utils/shared";
+import { BatchProcessor } from "../base/batchProcessor";
+import ComposioSDKContext from "../composioContext";
+import { TELEMETRY_URL } from "../constants";
 
 export class TELEMETRY_LOGGER {
   private static batchProcessor = new BatchProcessor(100, 10, async (data) => {

@@ -1,5 +1,5 @@
-import { TriggerData, PusherUtils } from "../utils/pusher";
 import logger from "../../utils/logger";
+import { PusherUtils, TriggerData } from "../utils/pusher";
 import { BackendClient } from "./backendClient";
 
 import apiClient from "../client/client";
@@ -86,7 +86,7 @@ export class Triggers {
   }: {
     connectedAccountId: string;
     triggerName: string;
-    config: Record<string, any>;
+    config: Record<string, unknown>;
   }): Promise<{ status: string; triggerId: string }> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "setup",
@@ -116,7 +116,7 @@ export class Triggers {
       params: { data },
     });
     try {
-      const response = await apiClient.triggers.switchTriggerInstanceStatus({
+      await apiClient.triggers.switchTriggerInstanceStatus({
         path: data,
         body: {
           enabled: true,
@@ -137,7 +137,7 @@ export class Triggers {
       params: { data },
     });
     try {
-      const response = await apiClient.triggers.switchTriggerInstanceStatus({
+      await apiClient.triggers.switchTriggerInstanceStatus({
         path: data,
         body: {
           enabled: false,
@@ -158,7 +158,7 @@ export class Triggers {
       params: { data },
     });
     try {
-      const response = await apiClient.triggers.deleteTrigger({
+      await apiClient.triggers.deleteTrigger({
         path: data,
       });
       return {

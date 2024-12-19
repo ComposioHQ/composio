@@ -2,12 +2,12 @@
 import chalk from "chalk";
 import { Command } from "commander";
 
-import { getOpenAPIClient } from "../sdk/utils/config";
 import client from "../sdk/client/client";
+import { getOpenAPIClient } from "../sdk/utils/config";
 
-import resolvePackagePath from "resolve-package-path";
 import fs from "fs";
 import path from "path";
+import resolvePackagePath from "resolve-package-path";
 
 type ErrorWithMessage = {
   message: string;

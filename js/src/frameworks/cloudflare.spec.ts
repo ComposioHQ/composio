@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeAll } from "@jest/globals";
-import { CloudflareToolSet } from "./cloudflare";
-import { get } from "http";
+import { beforeAll, describe, expect, it } from "@jest/globals";
 import { getTestConfig } from "../../config/getTestConfig";
+import { CloudflareToolSet } from "./cloudflare";
 
 describe("Apps class tests", () => {
   let cloudflareToolSet: CloudflareToolSet;

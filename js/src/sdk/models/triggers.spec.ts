@@ -1,28 +1,25 @@
-import { describe, it, expect, beforeAll } from "@jest/globals";
+import { beforeAll, describe, expect, it } from "@jest/globals";
 import { getBackendClient } from "../testUtils/getBackendClient";
 
-import { Triggers } from "./triggers";
-import { ConnectedAccounts } from "./connectedAccounts";
 import { Entity } from "./Entity";
 import { Actions } from "./actions";
-import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
+import { ConnectedAccounts } from "./connectedAccounts";
+import { Triggers } from "./triggers";
 
 describe("Apps class tests", () => {
   let backendClient;
   let triggers: Triggers;
-  let connectedAccounts: ConnectedAccounts;
-  let entity: Entity;
-
-  let triggerId: string;
-  let actions: Actions;
+  let _connectedAccounts: ConnectedAccounts;
+  let _entity: Entity;
+  let _actions: Actions;
 
   beforeAll(() => {
     backendClient = getBackendClient();
     triggers = new Triggers(backendClient);
-    connectedAccounts = new ConnectedAccounts(backendClient);
-    entity = new Entity(backendClient, "default");
-    connectedAccounts = new ConnectedAccounts(backendClient);
-    actions = new Actions(backendClient);
+    _connectedAccounts = new ConnectedAccounts(backendClient);
+    _entity = new Entity(backendClient, "default");
+    _connectedAccounts = new ConnectedAccounts(backendClient);
+    _actions = new Actions(backendClient);
   });
 
   it("should create an Apps instance and retrieve apps list", async () => {
@@ -45,8 +42,8 @@ describe("Apps class tests subscribe", () => {
   let backendClient;
   let triggers: Triggers;
   let connectedAccounts: ConnectedAccounts;
-  let actions: Actions;
-  let entity: Entity;
+  let _actions: Actions;
+  let _entity: Entity;
 
   let triggerId: string;
 
@@ -54,8 +51,8 @@ describe("Apps class tests subscribe", () => {
     backendClient = getBackendClient();
     triggers = new Triggers(backendClient);
     connectedAccounts = new ConnectedAccounts(backendClient);
-    entity = new Entity(backendClient, "default");
-    actions = new Actions(backendClient);
+    _entity = new Entity(backendClient, "default");
+    _actions = new Actions(backendClient);
   });
 
   it("should create a new trigger for gmail", async () => {
