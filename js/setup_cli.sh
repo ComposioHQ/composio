@@ -9,4 +9,4 @@ mv temp_file dist/cli/index
 
 rm dist/cli/index.js
 
-
+node scripts/replace-type.js

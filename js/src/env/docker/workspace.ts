@@ -24,7 +24,7 @@ function getFreePort(): Promise<number> {
   });
 }
 
-export interface IDockerConfig extends IWorkspaceConfig {
+export type IDockerConfig = IWorkspaceConfig & {
   /** Name of the docker image. */
   image?: string;
 
@@ -37,7 +37,7 @@ export interface IDockerConfig extends IWorkspaceConfig {
 
   /** Volumes to bind inside the container */
   volumes?: { [key: string]: any };
-}
+};
 
 export class DockerWorkspace extends RemoteWorkspace {
   public docker: Docker;
