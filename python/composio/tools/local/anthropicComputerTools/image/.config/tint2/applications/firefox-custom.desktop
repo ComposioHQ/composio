@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Firefox Custom
+Comment=Open Firefox with custom URL
+Exec=firefox-esr -new-window
+Icon=firefox-esr
+Terminal=false
+Type=Application
+Categories=Network;WebBrowser;
