@@ -1,7 +1,5 @@
 import typing as t
-
 from composio.client.enums.enum import Enum, EnumGenerator
-
 from .base import TriggerData
 
 _TRIGGER_CACHE: t.Dict[str, "Trigger"] = {}
@@ -34,6 +32,8 @@ class Trigger(Enum[TriggerData], metaclass=EnumGenerator):
     MAILCHIMP_MAILCHIMP_SUBSCRIBE_TRIGGER: "Trigger"
     MAILCHIMP_MAILCHIMP_UNSUBSCRIBE_TRIGGER: "Trigger"
     NOTION_PAGE_ADDED_TO_DATABASE: "Trigger"
+    NOTION_PAGE_ADDED_TRIGGER: "Trigger"
+    NOTION_PAGE_UPDATED_TRIGGER: "Trigger"
     ONE_DRIVE_ONE_DRIVE_ITEM_TRIGGER: "Trigger"
     OUTLOOK_OUTLOOK_MESSAGE_TRIGGER: "Trigger"
     PIPEDRIVE_PIPEDRIVE_NEW_DEAL_TRIGGER: "Trigger"

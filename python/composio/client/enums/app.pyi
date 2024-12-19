@@ -1,8 +1,6 @@
 import typing as t
-
 from composio.client.enums.action import Action
 from composio.client.enums.enum import Enum, EnumGenerator
-
 from .base import AppData
 
 _APP_CACHE: t.Dict[str, "App"] = {}
@@ -131,6 +129,7 @@ class App(Enum[AppData], metaclass=EnumGenerator):
     GOOGLESHEETS: "App"
     GOOGLETASKS: "App"
     GOOGLE_ANALYTICS: "App"
+    GOOGLE_PHOTOS: "App"
     GORGIAS: "App"
     GO_TO_WEBINAR: "App"
     GREPTILE: "App"
