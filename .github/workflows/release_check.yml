@@ -15,7 +15,7 @@ env:
   COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_PROD }}
 
 jobs:
-  generate-types:
+  generate_types:
     defaults:
       run:
         working-directory: ./python
