@@ -2,14 +2,25 @@ import logger from "../../utils/logger";
 import { PusherUtils, TriggerData } from "../utils/pusher";
 import { BackendClient } from "./backendClient";
 
-import apiClient from "../client/client";
-
+import z from "zod";
 import { ListTriggersData } from "../client";
+import apiClient from "../client/client";
 import { CEG } from "../utils/error";
+import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 
 type RequiredQuery = ListTriggersData["query"];
+
+const ZTriggerQuery = z.object({
+  triggerIds: z.array(z.string()).optional(),
+  appNames: z.array(z.string()).optional(),
+  connectedAccountsIds: z.array(z.string()).optional(),
+  integrationIds: z.array(z.string()).optional(),
+  showEnabledOnly: z.boolean().optional(),
+});
+
+type TTriggerQuery = z.infer<typeof ZTriggerQuery>;
 
 export class Triggers {
   trigger_to_client_event = "trigger_to_client";
@@ -29,18 +40,32 @@ export class Triggers {
    * @returns {CancelablePromise<ListTriggersResponse>} A promise that resolves to the list of all triggers.
    * @throws {ApiError} If the request fails.
    */
-  async list(data: RequiredQuery = {}) {
+  async list(data: TTriggerQuery = {}) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "list",
       file: this.fileName,
       params: { data },
     });
+
     try {
+      const {
+        appNames,
+        triggerIds,
+        connectedAccountsIds,
+        integrationIds,
+        showEnabledOnly,
+      } = ZTriggerQuery.parse(data);
+
       const { data: response } = await apiClient.triggers.listTriggers({
         query: {
-          appNames: data?.appNames,
+          appNames: appNames?.join(","),
+          triggerIds: triggerIds?.join(","),
+          connectedAccountIds: connectedAccountsIds?.join(","),
+          integrationIds: integrationIds?.join(","),
+          showEnabledOnly: showEnabledOnly,
         },
       });
+
       return response || [];
     } catch (error) {
       throw CEG.handleAllError(error);
@@ -162,9 +187,28 @@ export class Triggers {
       params: { filters },
     });
     if (!fn) throw new Error("Function is required for trigger subscription");
-    //@ts-ignore
     const clientId = await this.backendClient.getClientId();
-    //@ts-ignore
+
+    const availableTriggers = await this.list({
+      appNames: filters.appName ? [filters.appName] : undefined,
+      triggerIds: filters.triggerId ? [filters.triggerId] : undefined,
+      connectedAccountsIds: filters.connectionId
+        ? [filters.connectionId]
+        : undefined,
+      integrationIds: filters.integrationId
+        ? [filters.integrationId]
+        : undefined,
+    });
+
+    if (availableTriggers.length === 0) {
+      throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED, {
+        message: "No triggers match the specified filters",
+        description: "The provided filters did not return any triggers.",
+        possibleFix:
+          "Verify the filters and ensure a trigger is set up with the specified criteria.",
+      });
+    }
+
     await PusherUtils.getPusherClient(
       this.backendClient.baseUrl,
       this.backendClient.apiKey
