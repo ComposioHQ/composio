@@ -1,6 +1,9 @@
 name: Example Tests
 
 on:
+  # Run a cron job every 12 hours
+  schedule:
+    - cron: '0 */12 * * *'
   workflow_call:
     inputs:
       working-directory:

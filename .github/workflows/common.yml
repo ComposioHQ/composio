@@ -1,5 +1,8 @@
 name: main_workflow
 on:
+  # Run a cron job every 12 hours
+  schedule:
+    - cron: '0 */12 * * *'
   push:
     branches:
       - master
