@@ -7,6 +7,7 @@ import binascii
 import hashlib
 import itertools
 import json
+import math
 import os
 import time
 import typing as t
@@ -516,7 +517,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             return output
 
         return self._save_var_files(
-            file_name_prefix=f"{action.name}_{entity_id}_{time.time()}",
+            file_name_prefix=f"{action.name}_{entity_id}_{math.floor(time.time())}",
             success_response_model=success_response_model,
         )
 
