@@ -1,0 +1,22 @@
+{
+  "name": "composio-core",
+  "version": "0.4.4-beta",
+  "description": "",
+  "main": "index.js",
+  "scripts": {},
+  "bin": {
+    "composio-js": "./cli/index",
+    "composio": "./cli/index"
+  },
+  "lint-staged": {},
+  "keywords": [],
+  "author": "Utkarsh Dixit <utkarsh@composio.dev>",
+  "license": "ISC",
+  "dependencies": {
+    "pusher-js": "8.4.0-rc2"
+  },
+  "devDependencies": {},
+  "publishConfig": {
+    "access": "public"
+  }
+}

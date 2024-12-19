@@ -1,20 +1,20 @@
-import { ConnectedAccounts } from "./models/connectedAccounts";
-import { Apps } from "./models/apps";
-import { Actions } from "./models/actions";
-import { Triggers } from "./models/triggers";
-import { Integrations } from "./models/integrations";
-import { ActiveTriggers } from "./models/activeTriggers";
-import { BackendClient } from "./models/backendClient";
-import { Entity } from "./models/Entity";
 import axios from "axios";
-import { getPackageJsonDir } from "./utils/projectUtils";
-import { isNewerVersion } from "./utils/other";
-import { CEG } from "./utils/error";
+import logger from "../utils/logger";
 import { GetConnectorInfoResDTO } from "./client";
-import logger, { getLogLevel } from "../utils/logger";
-import { SDK_ERROR_CODES } from "./utils/errors/src/constants";
-import { getSDKConfig } from "./utils/config";
+import { Entity } from "./models/Entity";
+import { Actions } from "./models/actions";
+import { ActiveTriggers } from "./models/activeTriggers";
+import { Apps } from "./models/apps";
+import { BackendClient } from "./models/backendClient";
+import { ConnectedAccounts } from "./models/connectedAccounts";
+import { Integrations } from "./models/integrations";
+import { Triggers } from "./models/triggers";
 import ComposioSDKContext from "./utils/composioContext";
+import { getSDKConfig } from "./utils/config";
+import { CEG } from "./utils/error";
+import { SDK_ERROR_CODES } from "./utils/errors/src/constants";
+import { isNewerVersion } from "./utils/other";
+import { getPackageJsonDir } from "./utils/projectUtils";
 import { TELEMETRY_LOGGER } from "./utils/telemetry";
 import { TELEMETRY_EVENTS } from "./utils/telemetry/events";
 
@@ -42,7 +42,9 @@ export class Composio {
    * @param {string} [config.baseUrl] - The base URL for the Composio backend. By default, it is set to the production URL.
    * @param {string} [config.runtime] - The runtime environment for the SDK.
    */
-  constructor(config: { apiKey?: string; baseUrl?: string; runtime?: string }) {
+  constructor(
+    config: { apiKey?: string; baseUrl?: string; runtime?: string } = {}
+  ) {
     // Parse the base URL and API key, falling back to environment variables or defaults if not provided
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
       config?.baseUrl,
@@ -98,6 +100,8 @@ export class Composio {
     try {
       const packageName = "composio-core";
       const packageJsonDir = getPackageJsonDir();
+
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const currentVersionFromPackageJson = require(
         packageJsonDir + "/package.json"
       ).version;
@@ -108,6 +112,7 @@ export class Composio {
       const latestVersion = response.data.version;
 
       if (isNewerVersion(latestVersion, currentVersionFromPackageJson)) {
+        // eslint-disable-next-line no-console
         console.warn(
           `🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`
         );
@@ -175,10 +180,10 @@ export class Composio {
         });
         if (params.authScheme && integrations) {
           integrations.items = integrations.items.filter(
-            (integration: any) => integration.authScheme === params.authScheme
+            (integration) => integration.authScheme === params.authScheme
           );
         }
-        integrationId = (integrations?.items[0] as any)?.id;
+        integrationId = integrations?.items[0]?.id as string;
       } catch (_) {
         // do nothing
       }
@@ -224,7 +229,7 @@ export class Composio {
       for (const scheme of preferredAuthScheme) {
         if (
           appInfo.auth_schemes
-            ?.map((_authScheme: any) => _authScheme.mode)
+            ?.map((_authScheme) => _authScheme.mode)
             .includes(scheme)
         ) {
           schema = scheme;
@@ -233,14 +238,19 @@ export class Composio {
       }
     }
 
+    const hasTestConnectors = (appInfo.testConnectors?.length ?? 0) > 0;
+    const authSchemeFields = appInfo.auth_schemes?.find(
+      (_authScheme) => _authScheme.mode === schema
+    )?.fields;
+    const requiredCustomerFields =
+      (
+        authSchemeFields as {
+          expected_from_customer: boolean;
+        }[]
+      )?.filter((field) => !field.expected_from_customer)?.length ?? 0;
+
     const areNoFieldsRequiredForIntegration =
-      (appInfo.testConnectors?.length ?? 0) > 0 ||
-      ((
-        appInfo.auth_schemes?.find(
-          (_authScheme: any) => _authScheme.mode === schema
-        ) as any
-      )?.fields?.filter((field: any) => !field.expected_from_customer)
-        ?.length ?? 0) == 0;
+      hasTestConnectors || requiredCustomerFields === 0;
 
     if (!areNoFieldsRequiredForIntegration) {
       throw new Error(
@@ -251,7 +261,7 @@ export class Composio {
     const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
     const hasRelevantTestConnectors = params.authScheme
       ? appInfo.testConnectors?.filter(
-          (connector: any) => connector.authScheme === params.authScheme
+          (connector) => connector.authScheme === params.authScheme
         )?.length! > 0
       : appInfo.testConnectors?.length! > 0;
     if (hasRelevantTestConnectors) {

@@ -1,22 +1,9 @@
-import { GetActiveTriggersData } from "../client/types.gen";
 import apiClient from "../client/client";
-import { BackendClient } from "./backendClient";
+import { GetActiveTriggersData } from "../client/types.gen";
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
-
-type TActiveTrigger = {
-  id: string;
-  connectionId: string;
-  triggerName: string;
-  triggerData: string;
-  triggerConfig: Record<string, any>;
-  state: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
-  disabledAt: string | null;
-  disabledReason: string | null;
-};
+import { BackendClient } from "./backendClient";
 
 export class ActiveTriggers {
   backendClient: BackendClient;

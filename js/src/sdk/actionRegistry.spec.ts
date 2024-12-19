@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeAll, beforeEach } from "@jest/globals";
+import { beforeAll, beforeEach, describe, expect, it } from "@jest/globals";
 import { z } from "zod";
-import { ActionRegistry } from "./actionRegistry";
 import { Composio } from ".";
 import { getTestConfig } from "../../config/getTestConfig";
+import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 
 describe("ActionRegistry", () => {
   let actionRegistry: ActionRegistry;
@@ -26,7 +26,7 @@ describe("ActionRegistry", () => {
       param2: z.string().optional(),
     });
 
-    const callback = async (params: Record<string, any>) => {
+    const callback = async (_params: Record<string, unknown>) => {
       return { success: true };
     };
 
@@ -61,9 +61,9 @@ describe("ActionRegistry", () => {
       callback: "notAFunction",
     };
 
-    await expect(actionRegistry.createAction(options as any)).rejects.toThrow(
-      "Callback must be a function"
-    );
+    await expect(
+      actionRegistry.createAction(options as unknown as CreateActionOptions)
+    ).rejects.toThrow("Callback must be a function");
   });
 
   it("should throw an error if callback is an anonymous function and noActionName is specified", async () => {
@@ -90,7 +90,7 @@ describe("ActionRegistry", () => {
       param1: z.string(),
     });
 
-    const callback = async (params: Record<string, any>) => {
+    const callback = async (_params: Record<string, unknown>) => {
       return { success: true };
     };
 
@@ -123,7 +123,7 @@ describe("ActionRegistry", () => {
       param1: z.string(),
     });
 
-    const callback = async (params: Record<string, any>) => {
+    const callback = async (_params: Record<string, unknown>) => {
       return { success: true };
     };
 

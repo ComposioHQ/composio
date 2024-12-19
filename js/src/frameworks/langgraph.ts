@@ -1,8 +1,6 @@
-import { LangchainToolSet as BaseComposioToolSet } from "./langchain";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
-import type { Optional } from "../sdk/types";
-import { WorkspaceConfig } from "../env/config";
-import { Workspace } from "../env";
+import type { Optional } from "../types/base";
+import { LangchainToolSet as BaseComposioToolSet } from "./langchain";
 
 export class LangGraphToolSet extends BaseComposioToolSet {
   /**
@@ -18,14 +16,12 @@ export class LangGraphToolSet extends BaseComposioToolSet {
       apiKey?: Optional<string>;
       baseUrl?: Optional<string>;
       entityId?: string;
-      workspaceConfig?: WorkspaceConfig;
     } = {}
   ) {
     super({
       apiKey: config.apiKey || null,
       baseUrl: config.baseUrl || COMPOSIO_BASE_URL,
       entityId: config.entityId || LangGraphToolSet.DEFAULT_ENTITY_ID,
-      workspaceConfig: config.workspaceConfig || Workspace.Host(),
       runtime: LangGraphToolSet.FRAMEWORK_NAME,
     });
   }

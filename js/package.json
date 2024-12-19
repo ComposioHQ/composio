@@ -1,6 +1,6 @@
 {
   "name": "composio-core",
-  "version": "0.4.7",
+  "version": "0.5.0-rc",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
@@ -11,11 +11,10 @@
     "openapispec:generate": "npx @hey-api/openapi-ts",
     "run:cli": "ts-node src/cli/index.ts",
     "run:sample": "ts-node sample.ts",
-    "eslint": "eslint 'src/**/*.{ts,js}' --max-warnings=261",
     "prettier": "prettier --write 'src/**/*.{ts,js,cjs}'",
     "prettier:check": "prettier --check 'src/**/*.{ts,js,mjs,cjs}'",
     "build": "rollup -c rollup.config.mjs && ./setup_cli.sh",
-    "lint": "eslint 'src/**/*.ts'",
+    "lint": "eslint 'src/**/*.{ts,js}' --ignore-pattern 'src/sdk/client/**'",
     "format": "pnpm lint && pnpm prettier"
   },
   "bin": {
@@ -29,9 +28,9 @@
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",
   "license": "ISC",
   "dependencies": {
-    "pusher-js": "8.4.0-rc2"  
   },
   "devDependencies": {
+    "pusher-js": "8.4.0-rc2",
     "@ai-sdk/openai": "^0.0.36",
     "@cloudflare/workers-types": "^4.20240718.0",
     "@e2b/code-interpreter": "^0.0.8",
@@ -78,6 +77,7 @@
     "open": "^8.4.0",
     "openai": "^4.50.0",
     "prettier": "^3.4.2",
+    "prettier-plugin-organize-imports": "^4.1.0",
     "regenerator-runtime": "^0.14.1",
     "resolve-package-path": "^4.0.3",
     "rollup": "^4.9.1",
