@@ -12,7 +12,7 @@ from pydantic import validate_call
 from composio import Action, ActionType, AppType, TagType
 from composio.tools.toolset import ProcessorsType
 
-from composio_openai import ComposioToolSet as BaseComposioToolSet
+from composio import ComposioToolSet as BaseComposioToolSet
 
 
 class ComposioToolSet(
