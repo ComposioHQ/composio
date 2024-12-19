@@ -8,6 +8,7 @@ import { CEG } from "../utils/error";
 import { ListTriggersData } from "../client";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
+import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 
   type RequiredQuery = ListTriggersData["query"];
 
@@ -45,15 +46,22 @@ export class Triggers {
       file: this.fileName,
       params: { data },
     });
-    const validatedData = ZTriggerQuery.parse(data);
+    const {appNames, triggerIds, connectedAccountsIds, integrationIds, showEnabledOnly} = ZTriggerQuery.parse(data);
+   
+    if(!appNames && !triggerIds && !connectedAccountsIds && !integrationIds) {
+      throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED, {
+        message: "At least one of appNames, triggerIds, connectedAccountsIds, integrationIds is required",
+      });
+    }
+
     try {
       const { data: response } = await apiClient.triggers.listTriggers({
         query: {
-          appNames: validatedData?.appNames?.join(","),
-          triggerIds: validatedData?.triggerIds?.join(","),
-          connectedAccountIds: validatedData?.connectedAccountsIds?.join(","),
-          integrationIds: validatedData?.integrationIds?.join(","),
-          showEnabledOnly: validatedData?.showEnabledOnly,
+          appNames: appNames?.join(","),
+          triggerIds: triggerIds?.join(","),
+          connectedAccountIds: connectedAccountsIds?.join(","),
+          integrationIds: integrationIds?.join(","),
+          showEnabledOnly: showEnabledOnly,
         },
       });
 
