@@ -155,7 +155,7 @@ EXAMPLES = {
         "file": EXAMPLES_PATH / "miscellaneous" / "multi_entity.py",
         "match": {
             "type": "stdout",
-            "values": ["San Francisco"],
+            "values": ["san francisco"],
         },
         "env": {
             "OPENAI_API_KEY": OPENAI_API_KEY,
