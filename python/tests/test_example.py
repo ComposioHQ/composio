@@ -140,16 +140,15 @@ EXAMPLES = {
     },
     "download_file": {
         "plugin": "crew_ai",
-        "file": "run_issue.py",
+        "file": EXAMPLES_PATH
+        / "quickstarters"
+        / "sql_agent"
+        / "sql_agent_plotter_crewai" / "run_issue.py",
         "match": {
             "type": "stdout",
             "values": ["composio_output/CODEINTERPRETER_GET_FILE_CMD_default_", ""],
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
-        "cwd": EXAMPLES_PATH
-        / "quickstarters"
-        / "sql_agent"
-        / "sql_agent_plotter_crewai",
     },
     "multi_entity_api_key": {
         "plugin": "langchain",
@@ -219,14 +218,12 @@ def test_example(
         code = add_helicone_headers(code)
         filepath.write_text(code, encoding="utf-8")
 
-    cwd = example.get("cwd", None)
     proc = subprocess.Popen(  # pylint: disable=consider-using-with
         args=[sys.executable, str(filepath)],
         # TODO(@angryblade): Sanitize the env before running the process.
         env={**os.environ, **example["env"]},
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        cwd=cwd,
     )
 
     # Wait for 2 minutes for example to run
