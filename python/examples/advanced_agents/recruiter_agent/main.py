@@ -3,6 +3,7 @@ from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage
 from llama_index.llms.openai import OpenAI
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
 toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"))
@@ -10,7 +11,7 @@ tools = toolset.get_tools(apps=[App.PEOPLEDATALABS, App.GOOGLESHEETS])
 
 llm = OpenAI(model="gpt-4o")
 
-spreadsheetid = '14T4e0j1XsWjriQYeFMgkM2ihyvLAplPqB9q8hytytcw'
+spreadsheetid = '1xG19J5DZg5TKAHeTrls5VOWm615XHeiZVS-RU0m4eVs'
 # Set up prefix messages for the agent
 prefix_messages = [
     ChatMessage(
@@ -35,5 +36,5 @@ agent = FunctionCallingAgentWorker(
 ).as_agent()
 
 candidate_description = 'Senior Backend developers in San Francisco with prior experience in Python and Django'
-user_input = f"Create a candidate list based on the description: {candidate_description}"
+user_input = f"Create a candidate list based on the description: {candidate_description}. Include all the important details required for the job."
 response = agent.chat(user_input)
