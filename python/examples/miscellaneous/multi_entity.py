@@ -69,7 +69,7 @@ if __name__ == "__main__":
     
     peopledatalabs_tools = initialize_peopledatalabs(entity_id=timestamp_entity_id, toolset=toolset, peopledatalabs_api_key=peopledatalabs_api_key)
     # Define task
-    task = "Clean the location data for the following: SF"
+    task = "Clean the location data for the following: sf"
 
     # Define agent
     agent = create_openai_functions_agent(openai_client, peopledatalabs_tools or [], prompt)
