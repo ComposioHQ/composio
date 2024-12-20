@@ -85,8 +85,8 @@ jobs:
           JULEP_API_KEY: ${{secrets.JULEP_API_KEY}}
           JULEP_API_URL: ${{secrets.JULEP_API_URL}}
           PDL_API_KEY: ${{secrets.PDL_API_KEY}}
-          COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY }}
-          COMPOSIO_BASE_URL: ${{ inputs.base_url || secrets.COMPOSIO_BASE_URL || 'https://staging-backend.composio.dev/api' }}
+          COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY_PROD }}
+          COMPOSIO_BASE_URL: ${{ inputs.base_url || secrets.COMPOSIO_BASE_URL || 'https://backend.composio.dev/api' }}
           # TODO(@kaavee): Add Anthropic API key
         run: |
           python -m pip install uv
