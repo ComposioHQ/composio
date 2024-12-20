@@ -14,7 +14,7 @@ agentops.init(os.getenv("AGENTOPS_API_KEY"))
 toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"))
 tools = toolset.get_tools(apps=[App.PEOPLEDATALABS, App.GOOGLESHEETS])
 
-llm = OpenAI(model="gpt-4-turbo")
+llm = OpenAI(model="gpt-4o") #Groq(model="llama3-groq-70b-8192-tool-use-preview")
 
 spreadsheetid = '14T4e0j1XsWjriQYeFMgkM2ihyvLAplPqB9q8hytytcw'
 # Set up prefix messages for the agent
