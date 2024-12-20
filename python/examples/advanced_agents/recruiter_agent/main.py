@@ -5,7 +5,7 @@ from llama_index.llms.openai import OpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
-toolset = ComposioToolSet(api_key="")
+toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"))
 tools = toolset.get_tools(apps=[App.PEOPLEDATALABS, App.GOOGLESHEETS])
 
 llm = OpenAI(model="gpt-4o")
