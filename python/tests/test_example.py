@@ -20,7 +20,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 COMPOSIO_API_KEY = os.environ.get("COMPOSIO_API_KEY")
 JULEP_API_KEY = os.environ.get("JULEP_API_KEY")
 JULEP_API_URL = os.environ.get("JULEP_API_URL")
-LISTENNOTES_API_KEY = os.environ.get("LISTENNOTES_API_KEY")
+PDL_API_KEY = os.environ.get("PDL_API_KEY")
 
 # Plugin test definitions
 EXAMPLES = {
@@ -160,7 +160,7 @@ EXAMPLES = {
         "env": {
             "OPENAI_API_KEY": OPENAI_API_KEY,
             "COMPOSIO_API_KEY": COMPOSIO_API_KEY,
-            "LISTENNOTES_API_KEY": LISTENNOTES_API_KEY,
+            "PDL_API_KEY": PDL_API_KEY,
         },
     },
     # "praisonai": {
