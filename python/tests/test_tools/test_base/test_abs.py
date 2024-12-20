@@ -153,3 +153,24 @@ class TestToolBuilder:
         assert SomeAction.enum == "SOME_TOOL_SOME_ACTION"
         assert isinstance(tool_registry["local"][SomeTool.enum], SomeTool)
         assert action_registry["local"][SomeAction.enum] is SomeAction
+
+    def test_description_builder(self) -> None:
+
+        class SomeTool(Tool):
+            """
+            Some Tool
+
+            With description.
+            """
+
+            logo = ""
+
+            @classmethod
+            def actions(cls) -> list:
+                return []
+
+        ToolBuilder.validate(obj=SomeTool, name="SomeTool", methods=("actions",))
+        ToolBuilder.set_metadata(obj=SomeTool)
+        ToolBuilder.setup_children(obj=SomeTool)
+
+        assert SomeTool.description == "Some Tool With description."

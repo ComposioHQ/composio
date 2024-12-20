@@ -20,7 +20,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 COMPOSIO_API_KEY = os.environ.get("COMPOSIO_API_KEY")
 JULEP_API_KEY = os.environ.get("JULEP_API_KEY")
 JULEP_API_URL = os.environ.get("JULEP_API_URL")
-LISTENNOTES_API_KEY = os.environ.get("LISTENNOTES_API_KEY")
+PDL_API_KEY = os.environ.get("PDL_API_KEY")
 
 # Plugin test definitions
 EXAMPLES = {
@@ -140,33 +140,27 @@ EXAMPLES = {
     },
     "download_file": {
         "plugin": "crew_ai",
-        "file": "run_issue.py",
-        "match": {
-            "type": "stdout",
-            "values": ["composio_output/CODEINTERPRETER_GET_FILE_CMD_default_", ""],
-        },
-        "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
-        "cwd": EXAMPLES_PATH
+        "file": EXAMPLES_PATH
         / "quickstarters"
         / "sql_agent"
-        / "sql_agent_plotter_crewai",
+        / "sql_agent_plotter_crewai" / "run_issue.py",
+        "match": {
+            "type": "stdout",
+            "values": ["composio_output/CODEINTERPRETER_GET_FILE_CMD_default_"],
+        },
+        "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
     "multi_entity_api_key": {
         "plugin": "langchain",
         "file": EXAMPLES_PATH / "miscellaneous" / "multi_entity.py",
         "match": {
             "type": "stdout",
-            "values": [
-                "Invoking: `LISTENNOTES_FETCH_A_LIST_OF_SUPPORTED_LANGUAGES_FOR_PODCASTS`",
-                "Any language",
-                "Abkhazian",
-                "Arabic",
-            ],
+            "values": ["san francisco"],
         },
         "env": {
             "OPENAI_API_KEY": OPENAI_API_KEY,
             "COMPOSIO_API_KEY": COMPOSIO_API_KEY,
-            "LISTENNOTES_API_KEY": LISTENNOTES_API_KEY,
+            "PDL_API_KEY": PDL_API_KEY,
         },
     },
     # "praisonai": {
@@ -219,14 +213,12 @@ def test_example(
         code = add_helicone_headers(code)
         filepath.write_text(code, encoding="utf-8")
 
-    cwd = example.get("cwd", None)
     proc = subprocess.Popen(  # pylint: disable=consider-using-with
         args=[sys.executable, str(filepath)],
         # TODO(@angryblade): Sanitize the env before running the process.
         env={**os.environ, **example["env"]},
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        cwd=cwd,
     )
 
     # Wait for 2 minutes for example to run
