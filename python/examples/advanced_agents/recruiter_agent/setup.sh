@@ -2,11 +2,11 @@
 
 # Create a virtual environment named sqlagent
 echo "Creating virtual environment..."
-python3 -m venv lead_generator
+python3 -m venv recruiter
 
 # Activate the virtual environment
 echo "Activating virtual environment..."
-source lead_generator/bin/activate
+source recruiter/bin/activate
 
 # Install libraries from requirements.txt 
 echo "Installing libraries from requirements.txt..."
