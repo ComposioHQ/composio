@@ -5,7 +5,12 @@ from llama_index.llms.openai import OpenAI
 from dotenv import load_dotenv
 import os
 
+
 load_dotenv()
+import agentops
+agentops.init(os.getenv("AGENTOPS_API_KEY"))
+
+
 toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"))
 tools = toolset.get_tools(apps=[App.PEOPLEDATALABS, App.GOOGLESHEETS])
 
