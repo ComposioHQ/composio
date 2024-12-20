@@ -146,7 +146,7 @@ EXAMPLES = {
         / "sql_agent_plotter_crewai" / "run_issue.py",
         "match": {
             "type": "stdout",
-            "values": ["composio_output/CODEINTERPRETER_GET_FILE_CMD_default_", ""],
+            "values": ["composio_output/CODEINTERPRETER_GET_FILE_CMD_default_"],
         },
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
@@ -155,12 +155,7 @@ EXAMPLES = {
         "file": EXAMPLES_PATH / "miscellaneous" / "multi_entity.py",
         "match": {
             "type": "stdout",
-            "values": [
-                "Invoking: `LISTENNOTES_FETCH_A_LIST_OF_SUPPORTED_LANGUAGES_FOR_PODCASTS`",
-                "Any language",
-                "Abkhazian",
-                "Arabic",
-            ],
+            "values": ["San Francisco"],
         },
         "env": {
             "OPENAI_API_KEY": OPENAI_API_KEY,
