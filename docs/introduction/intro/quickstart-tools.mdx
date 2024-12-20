@@ -132,45 +132,39 @@ print(result)
             ```
         </CodeGroup>
         <Note>
-            Don't forget to set your `OPENAI_API_KEY` in your environment variables.
+            Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
         </Note>
     </Step>
 
-    <Step title="Fetch GitHub Actions & Interact with LLM">
-        Now, let's star a repository using natural language:
+    <Step title="Fetch GitHub Actions & and pass them to LLM">
+        <CodeGroup>
+            ```javascript Star a repo using LLM
+            const tools = await composio_toolset.getTools({
+            actions: ["github_star_a_repository_for_the_authenticated_user"]
+        });
 
-                <CodeGroup>
-                    ```javascript Star a repo using LLM
-                    const tools = await composio_toolset.getTools({
-                    actions: ["github_star_a_repository_for_the_authenticated_user"]
-                });
+            const instruction = "Star the repo composiohq/composio on GitHub";
 
-                    const instruction = "Star the repo composiohq/composio on GitHub";
-
-                    const response = await openai_client.chat.completions.create({
-                    model: "gpt-4-turbo-preview",
-                    messages: [{ role: "user", content: instruction }],
-                    tools: tools,
-                    tool_choice: "auto",
-                });
-                    ```
-                </CodeGroup>
-                <Tip>
-                    Composio also supports action executions without LLMs or agents. [Learn more](../../patterns/tools/use-tools/action-guide-without-agents).
-                </Tip>
+            const response = await openai_client.chat.completions.create({
+            model: "gpt-4o",
+            messages: [{ role: "user", content: instruction }],
+            tools: tools,
+            tool_choice: "auto",
+        });
+            ```
+        </CodeGroup>
+        <Tip>
+            Composio also supports action executions without LLMs or agents. [Learn more](../../patterns/tools/use-tools/action-guide-without-agents).
+        </Tip>
     </Step>
 
     <Step title="Execute Tool Calls">
-        Finally, let's execute the action determined by the LLM:
-
-                <CodeGroup>
-                    ```javascript Execute Function calls
-                    const result = await composio_toolset.handleToolCall(response);
-                    console.log(result);
-                    ```
-                </CodeGroup>
-
-
+        <CodeGroup>
+            ```javascript Execute Function calls
+            const result = await composio_toolset.handleToolCall(response);
+            console.log(result);
+            ```
+        </CodeGroup>
     </Step>
 
 </Steps>
