@@ -42,7 +42,7 @@ description: "List of tools you can use for your SWE Kit Development, compatible
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["FILETOOL_OPEN_FILE"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -89,7 +89,7 @@ description: "List of tools you can use for your SWE Kit Development, compatible
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["FILETOOL_OPEN_FILE"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -136,7 +136,7 @@ description: "List of tools you can use for your SWE Kit Development, compatible
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["FILETOOL_EDIT_FILE"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -182,7 +182,7 @@ Creates a new file or directory within a shell session
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["FILETOOL_CREATE_FILE"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -228,7 +228,7 @@ Scrolls the view of the opened file up or down by 100 lines
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["FILETOOL_SCROLL"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -274,7 +274,7 @@ Scrolls the view of the opened file up or down by 100 lines
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["FILETOOL_SCROLL"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -320,7 +320,7 @@ Lists files and directories in the current working directory
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["FILETOOL_LIST_FILES"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -366,7 +366,7 @@ Search for a specific word or phrase across multiple files in your workspace by 
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["FILETOOL_SEARCH_WORD"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -412,7 +412,7 @@ Finds files or directories matching the given pattern in the workspace
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["FILETOOL_FIND_FILE"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -458,7 +458,7 @@ Write the given content to a file
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["FILETOOL_WRITE"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -504,7 +504,7 @@ Changes the current working directory of the file manager to the specified path
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["FILETOOL_CHANGE_WORKING_DIRECTORY"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -550,7 +550,7 @@ This action allows you to clone a Git repository to your local directory
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["FILETOOL_GIT_CLONE"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -596,7 +596,7 @@ Creates a tree representation of the Git repository
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["FILETOOL_GIT_REPO_TREE"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -642,7 +642,7 @@ Get the patch from the current working directory
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["FILETOOL_GIT_PATCH"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -689,7 +689,7 @@ Get the patch from the current working directory
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["CODE_ANALYSIS_TOOL_CREATE_CODE_MAP"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -778,7 +778,7 @@ Get the patch from the current working directory
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["CODE_ANALYSIS_TOOL_GET_METHOD_BODY"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -824,7 +824,7 @@ Get the patch from the current working directory
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["CODE_ANALYSIS_TOOL_GET_METHOD_SIGNATURE"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -870,7 +870,7 @@ Get the patch from the current working directory
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["CODE_ANALYSIS_TOOL_GET_RELEVANT_CODE"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -920,7 +920,7 @@ Get the patch from the current working directory
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["SHELLTOOL_EXEC_COMMAND"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -967,7 +967,7 @@ Get the patch from the current working directory
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["SHELLTOOL_CREATE_SHELL"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -1014,7 +1014,7 @@ Spawn a process
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["SHELLTOOL_SPAWN_PROCESS"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -1060,7 +1060,7 @@ Run the command for testing the patch
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["SHELLTOOL_TEST_COMMAND"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -1111,7 +1111,7 @@ Run the command for testing the patch
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["RAGTOOL_ADD_CONTENT_TO_RAG_TOOL"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -1157,7 +1157,7 @@ Run the command for testing the patch
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["RAGTOOL_ADD_CONTENT_TO_RAG_TOOL"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -1206,7 +1206,7 @@ Run the command for testing the patch
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["EMBED_TOOL_CREATE_IMAGE_VECTOR_STORE"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -1252,7 +1252,7 @@ Run the command for testing the patch
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["EMBED_TOOL_QUERY_IMAGE_VECTOR_STORE"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -1302,7 +1302,7 @@ Run the command for testing the patch
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["SQLTOOL_SQL_QUERY"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -1348,7 +1348,7 @@ Run the command for testing the patch
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["CODE_GREP_TOOL_SEARCH_CODEBASE"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -1391,7 +1391,7 @@ Run the command for testing the patch
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["CODE_FORMAT_TOOL_FORMAT_AND_LINT_CODEBASE"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
@@ -1437,7 +1437,7 @@ Run the command for testing the patch
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
               const tools = await toolset.getTools({ actions: ["HISTORY_FETCHER_GET_WORKSPACE_HISTORY"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
