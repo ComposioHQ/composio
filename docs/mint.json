@@ -255,10 +255,9 @@
   {
     "group": "Client",
     "pages": [
-      "api-reference/client/get-projects",
       "api-reference/client/get-user-info",
-      "api-reference/client/add-new-project",
-      "api-reference/client/delete-project"
+      "api-reference/client/get-projects",
+      "api-reference/client/add-new-project"
     ]
   },
   {
