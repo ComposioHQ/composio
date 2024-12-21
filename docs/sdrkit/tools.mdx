@@ -363,7 +363,7 @@ Enables sales teams to manage and optimize multi-channel engagement.
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "npf6zezgodpzr3r19bdu9" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-api-key>" });
               const tools = await toolset.getTools({ apps: ["OUTREACH"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
