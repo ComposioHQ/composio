@@ -1,0 +1,208 @@
+---
+title: "🚀 Quick Start - Tools"
+sidebarTitle: "Quick Start - Tools"
+description: "Learn how to use Tools in less than 5 minutes"
+---
+
+## Composio Quick Start
+In this guide we'll use GitHub tools to star a repo on GitHub.
+
+<Tabs>
+<Tab title="Python">
+<Steps>
+
+<Step title="Install Libraries">
+<CodeGroup>
+```shell CLI
+pip install composio_core composio_openai
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Connect Your GitHub Account">
+We'll use **`Jessica`** as the user id [(entity id)](../../patterns/Auth/connected_account#entities).
+<Info>You need to have an active GitHub Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
+<CodeGroup>
+```shell CLI
+composio login 
+composio add github -e "Jessica"
+```
+```python Python
+from composio_openai import ComposioToolSet, App, Trigger
+toolset = ComposioToolSet(entity_id="Jessica")
+
+request = toolset.initiate_connection(app=App.GITHUB)
+
+print(f"Open this URL to authenticate: {request.redirectUrl}")
+```
+</CodeGroup>
+<Tip>
+Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
+</Tip>
+</Step>
+
+<Step title="Initialize Composio and OpenAI">
+<CodeGroup>
+```python Python
+from composio_openai import ComposioToolSet, App
+from openai import OpenAI
+
+openai_client = OpenAI()
+composio_toolset = ComposioToolSet(entity_id="Jessica")
+```
+</CodeGroup>
+</Step>
+
+<Step title="Fetch Github Actions, and pass them to LLM">
+<CodeGroup>
+```python Python
+tools = composio_toolset.get_tools(apps=[App.GITHUB])
+
+task = "Star the repo composiohq/composio on GitHub"
+
+response = openai_client.chat.completions.create(
+    model="gpt-4o",
+    tools=tools,
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": task},
+    ],
+)
+```
+</CodeGroup>
+<Tip>
+Composio also supports action executions without LLMs or agents. [Learn more](../../patterns/tools/use-tools/action-guide-without-agents).
+</Tip>
+</Step>
+
+<Step title="Execute Tool Calls">
+<CodeGroup>
+```python Python
+result = composio_toolset.handle_tool_calls(response)
+print(result)
+```
+</CodeGroup>
+</Step>
+
+</Steps>
+
+</Tab>
+<Tab title="Javascript">
+<Steps>
+
+    <Step title="Install Libraries">
+    <CodeGroup>
+        ```shell CLI
+        npm install composio-core openai
+        ```
+    </CodeGroup>
+    </Step>
+
+    <Step title="Connect Your GitHub Account">
+        We'll use **`Jessica`** as the user id [(entity id)](../../patterns/Auth/connected_account#entities).
+        <Info>You need to have an active GitHub Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
+        <CodeGroup>
+            ```shell CLI
+            composio login
+            composio add github
+            ```
+            ```javascript JavaScript
+            import { Composio } from "composio-core";
+
+            const client = new Composio({ apiKey: "<your-api-key>" });
+
+            const entity = await client.getEntity("Jessica");
+            const connection = await entity.initiateConnection({appName: 'github'});
+
+            console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
+            ```
+        </CodeGroup>
+    </Step>
+
+    <Step title="Initialize Composio and OpenAI">
+        <CodeGroup>
+            ```javascript JavaScript
+            import { OpenAI } from "openai";
+            import { OpenAIToolSet } from "composio-core";
+
+            const openai_client = new OpenAI();
+            const composio_toolset = new OpenAIToolSet();
+            ```
+        </CodeGroup>
+        <Note>
+            Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
+        </Note>
+    </Step>
+
+    <Step title="Fetch GitHub Actions & and pass them to LLM">
+        <CodeGroup>
+            ```javascript Star a repo using LLM
+            const tools = await composio_toolset.getTools({
+            actions: ["github_star_a_repository_for_the_authenticated_user"]
+        });
+
+            const instruction = "Star the repo composiohq/composio on GitHub";
+
+            const response = await openai_client.chat.completions.create({
+            model: "gpt-4o",
+            messages: [{ role: "user", content: instruction }],
+            tools: tools,
+            tool_choice: "auto",
+        });
+            ```
+        </CodeGroup>
+        <Tip>
+            Composio also supports action executions without LLMs or agents. [Learn more](../../patterns/tools/use-tools/action-guide-without-agents).
+        </Tip>
+    </Step>
+
+    <Step title="Execute Tool Calls">
+        <CodeGroup>
+            ```javascript Execute Function calls
+            const result = await composio_toolset.handleToolCall(response);
+            console.log(result);
+            ```
+        </CodeGroup>
+    </Step>
+
+</Steps>
+
+</Tab>
+</Tabs>
+
+
+## What Just Happened? 🎉
+
+Congratulations! You've just:
+
+1. 🔐 Connected your GitHub account with Composio
+2. 🛠 Fetched GitHub actions 
+3. 🧠 Passed these actions to an AI language model
+4. ⭐ Instructed the AI to star the `composiohq/composio` repository
+5. ✅ Successfully executed the action on GitHub
+
+<br/>
+
+## Next Steps
+Now that you've seen how to use tools, you can explore the following resources:
+<CardGroup cols={2}>
+<Card title="Tools" href="../../patterns/tools/what-are-tools">
+Checkout our toolset of 250+ LLM ready tools to build powerful AI applications
+</Card>
+<Card title="Connections" href="patterns/Auth/connected_account">
+Learn how to create and manage connections for your users
+</Card>
+<Card title="Compatible Agentic Frameworks" href="/framework/autogen">
+Integrate with popular agentic frameworks
+</Card>
+<Card title="Kits" href="../../swekit/introduction">
+Composio SWE Kit ([#4 on SWE bench](https://www.swebench.com)) - Your ultimate coding companion
+</Card>
+<Card title="Triggers" href="/patterns/triggers/triggers">
+Subscribe to triggers to execute actions automatically
+</Card>
+<Card title="Other Concepts" href="../../introduction/foundations/components/workspace">
+Learn about workspace environments, using CLI & other concepts
+</Card>
+</CardGroup>
