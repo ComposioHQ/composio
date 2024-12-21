@@ -1141,6 +1141,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         include_local: bool = True,
     ) -> t.List[AppModel]:
         apps = self.client.apps.get()
+        print(apps)
         if no_auth is not None:
             apps = [a for a in apps if a.no_auth is no_auth]
 
