@@ -61,6 +61,7 @@ class Composio:
     local: t.Any
     _api_key: t.Optional[str] = None
     _http: t.Optional[HttpClient] = None
+    _long_timeout_http: t.Optional[HttpClient] = None
 
     def __init__(
         self,
@@ -138,6 +139,21 @@ class Composio:
     @http.setter
     def http(self, value: HttpClient) -> None:
         self._http = value
+
+    @property
+    def long_timeout_http(self) -> HttpClient:
+        if not self._long_timeout_http:
+            self._long_timeout_http = HttpClient(
+                base_url=self.base_url,
+                api_key=self.api_key,
+                runtime=self.runtime,
+                timeout=180.0,
+            )
+        return self._long_timeout_http
+
+    @long_timeout_http.setter
+    def long_timeout_http(self, value: HttpClient) -> None:
+        self._long_timeout_http = value
 
     @staticmethod
     def validate_api_key(key: str, base_url: t.Optional[str] = None) -> str:

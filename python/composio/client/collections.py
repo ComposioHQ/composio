@@ -1288,7 +1288,7 @@ class Actions(Collection[ActionModel]):
 
         if action.no_auth:
             return self._raise_if_required(
-                self.client.http.post(
+                self.client.long_timeout_http.post(
                     url=str(self.endpoint / action.slug / "execute"),
                     json={
                         "appName": action.app,
@@ -1308,7 +1308,7 @@ class Actions(Collection[ActionModel]):
             )
 
         return self._raise_if_required(
-            self.client.http.post(
+            self.client.long_timeout_http.post(
                 url=str(self.endpoint / action.slug / "execute"),
                 json={
                     "connectedAccountId": connected_account,
