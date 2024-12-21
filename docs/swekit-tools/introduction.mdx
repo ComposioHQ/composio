@@ -731,7 +731,7 @@ Get the patch from the current working directory
 
               const prompt = await pull("hwchase17/openai-functions-agent");
 
-              const toolset = new LangchainToolSet({ apiKey: "npf6zezgodpzr3r19bdu9" });
+              const toolset = new LangchainToolSet({ apiKey: "<your-api-key>" });
               const tools = await toolset.getTools({ actions: ["CODE_ANALYSIS_TOOL_GET_CLASS_INFO"] });
 
               const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
