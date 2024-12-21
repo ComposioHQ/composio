@@ -186,7 +186,7 @@
         "introduction/foundations/components/workspace",
         "faq/api_key/api_key",
         "faq/api_key/cli",
-        "enterprise/intro",
+        "managing-projects/intro",
         "faq/integrations_and_connections/list_of_tools",
         "faq/supported_llms/supported_llm"
       ]

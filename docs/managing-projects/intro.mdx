@@ -17,7 +17,7 @@ Each project within your account is fully isolated, providing:
 - Segregated action execution and trigger logs
 - Team management with separate permissions
 
-## How to Create a New Project?
+## How to Create and Delete a Project?
 
 <Tabs>
 <Tab title="Dashboard">
@@ -33,20 +33,102 @@ Go to [Dashboard](https://app.composio.dev/dashboard) and click on dropdown corr
 Enter the project name and click on **Add and switch**.
 <img height="200" src="media/create-project/3.jpg" />
 </Step>
+<Step title="Delete a project">
+Coming soon
+</Step>
 </Steps>
 </Tab>
 <Tab title="API">
+
+<Steps>
+<Step title="Get your API key">
+Get your API key from [Settings](https://app.composio.dev/settings).
+<img height="200" src="media/create-project/get-api-key.jpg" />
+</Step>
+<Step title="Create project for different users (team/org/etc)">
+Make a POST request to create a new project by passing your API key in the header and the project name in the body. You'll receive a response with name of project, id and project API key.
 ```python Python
-coming soon!
+import requests
+
+# Create a new project
+response = requests.post(
+    'api/v1/client/org/projects/create',
+    headers={
+        'X-ORG-API-KEY': '<your-org-api-key>',
+        'Content-Type': 'application/json'
+    },
+    json={
+        'name': '<new-project-name>'
+    }
+)
+
+# Response: { name, id, projectAPIKey }
 ```
+</Step>
+<Step title="Delete a project">
+Make a DELETE request to delete a project by passing your API key in the header and the project id in the body.
+```python Python
+# Delete a project (irreversible)
+response = requests.delete(
+    'api/v1/org/projects/project-uuid/delete',
+    headers={
+        'X-ORG-API-KEY': 'your-org-api-key'
+    }
+)
+
+# Response: status code (200/401/404) with body and status
+```
+</Step>
+</Steps>
 </Tab>
 </Tabs>
 
+
 ## How to Manage Projects?
 
-#### Switching between projects
-You can switch between projects by clicking on the dropdown corresponding to **Project** in the bottom-left corner of the dashboard.
+#### Listing and Switching between projects
+<Tabs>
+<Tab title="Dashboard">
+Here's how you can list existing projects and switch between projects. Click on the dropdown corresponding to **Project** in the bottom-left corner of the dashboard.
 <img height="200" src="media/manage-projects/1.jpg" />
+</Tab>
+<Tab title="API">
+<Steps>
+<Step title="Get your API key">
+Get your API key from [Settings](https://app.composio.dev/settings).
+<img height="200" src="media/create-project/get-api-key.jpg" />
+</Step>
+<Step title="List all projects">
+Here's how you can list all existing projects. Pass the API key in the header and make a GET request to the endpoint, it returns an array of projects with `name`, `id`, `projectAPIKey` and `createdAt`.
+```python Python
+# List all projects
+response = requests.get(
+    'api/v1/org/projects',
+    headers={
+        'X-ORG-API-KEY': 'your-org-api-key'
+    }
+)
+
+# Response: Array of { name, id, projectAPIKey, createdAt }
+```
+</Step>
+<Step title="Get single project">
+Here's how you can get a single project. Pass the API key in the header and make a GET request to the endpoint.
+```python Python
+# Get single project
+response = requests.get(
+    'api/v1/org/projects/project-uuid',
+    headers={
+        'X-ORG-API-KEY': 'your-org-api-key'
+    }
+)
+
+# Response: { name, id, projectAPIKey, createdAt }
+```
+</Step>
+</Steps>
+</Tab>
+</Tabs>
 
 #### Adding Project Specific API Key
 You can add a project specific API key by clicking on the **API Keys** under **Settings** on the dashboard.
