@@ -88,7 +88,6 @@
             "patterns/tools/what-are-tools",
             {
               "group": "Use Tools",
-              "icon": "shuttle-space",
               "pages": [
                 "patterns/tools/use-tools/action-guide-with-agents",
                 "patterns/tools/use-tools/use-specific-actions",
@@ -101,7 +100,6 @@
             },
             {
               "group": "Build Tools",
-              "icon": "hammer",
               "pages": [
                 "patterns/tools/build-tools/custom-action-without-auth",
                 "patterns/tools/build-tools/custom-action-with-auth"
@@ -113,7 +111,6 @@
     },
     {
       "group": "Authentication",
-      "icon": "unlock",
       "pages": [
         "patterns/Auth/connected_account",
         "patterns/Auth/using-connections",
@@ -124,7 +121,6 @@
     },
     {
       "group": "Triggers & Webhooks",
-      "icon": "webhook",
       "pages": [
         "patterns/triggers/triggers",
         "patterns/triggers/webhooks"
