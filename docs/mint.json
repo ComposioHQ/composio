@@ -281,14 +281,14 @@
     ]
   },
   {
-    "group": "Org",
+    "group": "Projects",
     "pages": [
-      "api-reference/org/get-project",
-      "api-reference/org/get-projects",
-      "api-reference/org/regenerate-project-api-key-ideally-use-when-no-api-key-is-available-as-project-can-have-multiple-api-keys",
-      "api-reference/org/create-new-project",
-      "api-reference/org/delete-project",
-      "api-reference/org/rename-project"
+      "api-reference/projects/list-all-projects",
+      "api-reference/projects/get-project",
+      "api-reference/projects/regenerate-project-api-key",
+      "api-reference/projects/create-new-project",
+      "api-reference/projects/delete-project",
+      "api-reference/projects/rename-project"
     ]
   },
   {
