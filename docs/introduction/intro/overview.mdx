@@ -1,145 +1,49 @@
 ---
 title: "Overview"
 sidebarTitle: "Overview"
-icon: "bolt"
 description: "Empower your AI agents with Composio - a platform for managing and integrating tools with LLMs & AI agents using Function Calling."
 ---
-### Welcome to Composio
-
-<Frame caption="Composio The hub for Seamless Integrations for AI Agents & LLMs">
-    <img src="/media/intro.jpg" alt="Composio platform diagram showing connections between AI agents, various software tools, and agentic frameworks" />
-</Frame>
 
 ## What is Composio?
 
-Composio is your gateway to AI integrations:
+Composio helps you connect AI agents to external tools like Gmail, GitHub, Salesforce, etc. It's like a bridge between your AI and the tools it needs to get work done.
 
-- **Seamless Connections:** Link AI agents to APIs, RPCs, shells, file systems, and web browsers
-- **Secure Authentication:** Manage user-level auth across multiple accounts and tools
+Here's what you can do:
+- **Seamless Connections:** Connect AI Agents to tools like Gmail, GitHub, Salesforce & local tools such as File tool, Shell tool, etc.
+- **Authentication Mechanisms:** Support industry-standard auth protocols (OAuth, API Keys, JWT) with built-in security best practices, automatic token refresh handling, and secure user account connections - all without handling sensitive credentials
 - **Language Agnostic:** Integrate with any programming language through our API-first approach
-- **Optimized Performance:** Improve security and cost-efficiency with tailored execution environments
-- **Comprehensive Logging:** Track and analyze every function call made by your LLMs
-
-Unlock the full potential of your AI agents with Composio's powerful integration capabilities.
+- **Managed Execution Environments:** Run tools in managed execution environments - Docker, E2B, Fly.io, Lambda, etc.
+- **Full Visibility:** Inspect every function called by the LLM, track timestamps for each Execution, and more.
 
 <hr />
-# Get Started with Composio
 
-Dive into Composio with our introduction video and quickstart guide. These resources will help you understand the platform's capabilities and get you up and running in no time.
+## Quick Access
+
+Get started with these resources:
+
 <CardGroup cols={2}>
 <Card
-  title="Introduction Video"
-  color="#7bee0c"
+  title="Watch Demo"
   href="https://www.youtube.com/watch?v=ujxKzS0b5qg"
-  icon="graduation-cap"
-  iconType="duotone"
 >
-  Dive into our Introduction Video and Learn more about Composio!
+  See Composio in action
 </Card>
 <Card
   title="Quickstart"
-  color="#7bee0c"
-  href="/introduction/intro/quickstart"
-  icon="terminal"
-  iconType="solid"
+  href="/introduction/intro/quickstart-tools"
 >
-  Getting started with Composio 
+  Build your first Composio powered AI agent
+</Card>
+<Card title="Tools" href="../../patterns/tools/what-are-tools">
+Checkout our toolset of 250+ LLM ready tools to build powerful AI applications
+</Card>
+<Card title="Connections" href="patterns/Auth/connected_account">
+Learn how to create and manage connections for your users
+</Card>
+<Card title="Kits" href="../../swekit/introduction">
+Composio SWE Kit ([#4 on SWE bench](https://www.swebench.com)) - Your ultimate coding companion
+</Card>
+<Card title="Triggers" href="/patterns/triggers/triggers">
+Subscribe to triggers to execute actions automatically
 </Card>
 </CardGroup>
-
-<CardGroup cols={2}>
-  <Card
-    title="Authentication & Actions"
-    color="#7bee0c"
-    href="/patterns/Auth/connected_account"
-    icon="code"
-    iconType="duotone"
-  >
-    Complete guide to Authentication & Actions
-  </Card>
-  <Card
-    title="Sign in and Get API Key"
-    color="#7bee0c"
-    href="https://app.composio.dev/"
-    icon="key"
-    iconType="duotone"
-  >
-    Sign in and get your API key
-  </Card>
-</CardGroup>
-
-### Composio Flow
-<Frame caption="Composio Flow: Seamlessly connecting AI agents to 150+ external tools">
-    <img src="/media/intro.gif" alt="Composio Flow diagram: User task flowing through Agentic Framework to Composio, connecting to multiple tools" />
-</Frame>
-
-## Features 
-
-### 🔐 Authentication Management
-Composio handles the auth for your users, allowing you to execute **tools on behalf of a specific user.**
-
-### 🚀 Managed Execution Environment
-Composio enables you to:
-
-- **Improve performance**, security, and cost efficiency by **optimising execution environments** at an individual tool level
-- Utilize supported execution environments: **Local, Docker, E2B, Fly.io, Lambda, and more**
-
-### 📊 Tools & Triggers Execution Logs
-Execution logs allow you to:
-
-- **Inspect every function called by the LLM**, including input arguments and return values
-- **Track timestamps for each execution** to understand and optimize latency
-- **Measure Accuracy** of each tool call
-
-### 🛠 Custom Tools
-With Composio, you can:
-
-- Import custom API Definitions (OpenAPI, Postman, Swagger) to automatically add support for your custom tools
-- Leverage support for different Authentication methods: **API Key, OAuth2, Basic Auth, Bearer Token, and more**
-
-### 🌐 Supported Tools
-
-<Tabs>
-  <Tab title="Software Tools">
-    Triggers & Actions for 100+ widely used softwares. - [View Full List of Supported Apps](https://app.composio.dev/apps)
-    <AccordionGroup title="Category of application">
-      <Accordion title="CRM">
-        Manage customer relationships with tools like `Salesforce`, `Zoho`,
-        `HubSpot`, plus many more CRMs.
-      </Accordion>
-      <Accordion title="Devtools">
-        Enhance your development workflow with `GitHub`, `GitLab`, `Bitbucket`,
-        plus many more devtools.
-      </Accordion>
-      <Accordion title="Productivity">
-        Boost productivity using tools like `Slack`, `Trello`, `Asana`, plus
-        many more productivity tools.
-      </Accordion>
-      <Accordion title="Google Apps">
-        Integrate with Google Workspace applications including `Gmail`, `Docs`,
-        `Drive`, plus many more Google apps.
-      </Accordion>
-      <Accordion title="10+ more categories">
-        Explore additional categories such as Marketing, Finance, HR, and more,
-        plus many more categories.
-      </Accordion>
-    </AccordionGroup>
-  </Tab>
-  <Tab title="System Tools">
-    `Filemanager`, `Database`, `Redis`, plus many more system tools.
-  </Tab>
-  <Tab title="Code Interpreter">
-    `Shell Management`, `Package Management`, `Execution Sandbox`, `Code
-    Testing` and full suite of tools to allow you to power your own SWE agents
-  </Tab>
-  <Tab title="RAG Tools">
-    `Add a document`, `delete a document`, `search across all documents`, plus
-    many more RAG operations
-  </Tab>
-  <Tab title="Search Tools">
-    `Perplexity`, `Exa`, `Serp-api` and 10+ more, plus many more search tools.
-  </Tab>
-  <Tab title="RPA Browser/OS">
-    Navigate the web, interact with the OS, take screenshots, move mouse, and more.
-  </Tab>
-</Tabs>

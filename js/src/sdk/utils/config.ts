@@ -1,18 +1,18 @@
 import * as fs from "fs";
-import * as path from "path";
 import * as os from "os";
+import * as path from "path";
 import {
-  LOCAL_CACHE_DIRECTORY_NAME,
-  USER_DATA_FILE_NAME,
+  COMPOSIO_DIR,
   DEFAULT_BASE_URL,
+  USER_DATA_FILE_NAME,
 } from "./constants";
 
-import { getEnvVariable } from "../../utils/shared";
-import { client as axiosClient } from "../client/services.gen";
-import apiClient from "../client/client";
 import { AxiosInstance } from "axios";
+import { getUUID } from "../../utils/common";
 import logger from "../../utils/logger";
-
+import { getEnvVariable } from "../../utils/shared";
+import apiClient from "../client/client";
+import { client as axiosClient } from "../client/services.gen";
 declare module "axios" {
   export interface InternalAxiosRequestConfig {
     metadata?: {
@@ -23,12 +23,13 @@ declare module "axios" {
 
 // File path helpers
 export const userDataPath = () =>
-  path.join(os.homedir(), LOCAL_CACHE_DIRECTORY_NAME, USER_DATA_FILE_NAME);
+  path.join(os.homedir(), COMPOSIO_DIR, USER_DATA_FILE_NAME);
+
 export const getUserDataJson = () => {
   try {
     const data = fs.readFileSync(userDataPath(), "utf8");
     return JSON.parse(data);
-  } catch (error: any) {
+  } catch (_error) {
     return {};
   }
 };
@@ -37,9 +38,14 @@ export const getUserDataJson = () => {
 export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
   axiosClientInstance.interceptors.request.use((request) => {
     const body = request.data ? JSON.stringify(request.data) : "";
-    logger.debug(`API Req [${request.method?.toUpperCase()}] ${request.url}`, {
-      ...(body && { body }),
-    });
+    // set x-request-id header
+    request.headers["x-request-id"] = getUUID();
+    logger.debug(
+      `API Req [${request.method?.toUpperCase()}] ${request.url}, x-request-id: ${request.headers["x-request-id"]}`,
+      {
+        ...(body && { body }),
+      }
+    );
     request.metadata = { startTime: Date.now() };
     return request;
   });
@@ -52,7 +58,6 @@ export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
       );
       const requestStartTime = response.config.metadata?.startTime;
       const responseTime = requestStartTime ? Date.now() - requestStartTime : 0;
-      const responseData = response.data ? JSON.stringify(response.data) : "";
       const status = response.status;
 
       // @ts-expect-error
@@ -61,10 +66,7 @@ export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
         responseSize,
       };
       logger.debug(
-        `API Res [${method}] ${response.config.url} - ${status} - ${responseSize} KB ${responseTime}ms`,
-        {
-          ...(responseData && { response: JSON.parse(responseData) }),
-        }
+        `API Res [${method}] ${response.config.url} - ${status} - ${responseSize} KB ${responseTime}ms`
       );
       return response;
     },

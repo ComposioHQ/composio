@@ -1,12 +1,9 @@
-import {
-  DeleteConnectorData,
-  GetConnectorInfoData,
-  GetConnectorInfoResDTO,
-  GetConnectorListResDTO,
-} from "../client";
+import { DeleteConnectorData } from "../client";
 import apiClient from "../client/client";
-import { BackendClient } from "./backendClient";
 import { CEG } from "../utils/error";
+import { TELEMETRY_LOGGER } from "../utils/telemetry";
+import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
+import { BackendClient } from "./backendClient";
 
 export type ListAllIntegrationsData = {
   /**
@@ -89,6 +86,7 @@ export type CreateIntegrationData = {
 
 export class Integrations {
   backendClient: BackendClient;
+  fileName: string = "js/src/sdk/models/integrations.ts";
 
   constructor(backendClient: BackendClient) {
     this.backendClient = backendClient;
@@ -103,6 +101,11 @@ export class Integrations {
    * @throws {ApiError} If the request fails.
    */
   async list(data: ListAllIntegrationsData = {}) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "list",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       const response = await apiClient.appConnector.listAllConnectors({
         query: data,
@@ -124,6 +127,11 @@ export class Integrations {
    * @throws {ApiError} If the request fails.
    */
   async get(data: GetIntegrationData) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "get",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       const response = await apiClient.appConnector.getConnectorInfo({
         path: data,
@@ -135,6 +143,11 @@ export class Integrations {
   }
 
   async getRequiredParams(integrationId: string) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getRequiredParams",
+      file: this.fileName,
+      params: { integrationId },
+    });
     try {
       const response = await apiClient.appConnector.getConnectorInfo({
         path: {
@@ -158,6 +171,11 @@ export class Integrations {
    * @throws {ApiError} If the request fails.
    */
   async create(data: CreateIntegrationData["requestBody"]) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "create",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       if (!data?.authConfig) {
         data!.authConfig = {};
@@ -167,7 +185,7 @@ export class Integrations {
         body: {
           name: data?.name!,
           appId: data?.appId!,
-          authConfig: data?.authConfig! as any,
+          authConfig: data?.authConfig! as Record<string, unknown>,
           authScheme: data?.authScheme,
           useComposioAuth: data?.useComposioAuth!,
           forceNewIntegration: true,
@@ -181,6 +199,11 @@ export class Integrations {
   }
 
   async delete(data: DeleteConnectorData) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "delete",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       const response = await apiClient.appConnector.deleteConnector(data);
       return response.data;

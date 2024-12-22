@@ -5,6 +5,8 @@ import {
 } from "../client";
 import apiClient from "../client/client";
 import { CEG } from "../utils/error";
+import { TELEMETRY_LOGGER } from "../utils/telemetry";
+import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { BackendClient } from "./backendClient";
 
 /**
@@ -149,6 +151,7 @@ export type ExecuteActionResponse = {
 };
 export class Actions {
   backendClient: BackendClient;
+  fileName: string = "js/src/sdk/models/actions.ts";
 
   constructor(backendClient: BackendClient) {
     this.backendClient = backendClient;
@@ -164,6 +167,11 @@ export class Actions {
    * @throws {ApiError} If the request fails.
    */
   async get(data: { actionName: string }) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "get",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       const actions = await apiClient.actionsV2.getActionV2({
         path: {
@@ -187,6 +195,11 @@ export class Actions {
    * @throws {ApiError} If the request fails.
    */
   async list(data: GetListActionsData = {}): Promise<ActionsListResponseDTO> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "list",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       let apps = data.apps;
 
@@ -209,10 +222,13 @@ export class Actions {
           apps: apps,
           showAll: data.showAll,
           tags: data.tags,
-          useCase: data.useCase as string,
           filterImportantActions: data.filterImportantActions,
           showEnabledOnly: data.showEnabledOnly,
           usecaseLimit: data.usecaseLimit || undefined,
+          useCase: data.useCase as string,
+        },
+        body: {
+          useCase: data.useCase as string,
         },
       });
       return response.data!;
@@ -231,6 +247,11 @@ export class Actions {
    * @throws {ApiError} If the request fails.
    */
   async execute(data: ExecuteActionData) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "execute",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       const { data: res } = await apiClient.actionsV2.executeActionV2({
         body: data.requestBody as unknown as ActionExecutionReqDTO,
@@ -248,13 +269,22 @@ export class Actions {
     apps: Array<string>;
     useCase: string;
     limit?: number;
+    filterByAvailableApps?: boolean;
   }): Promise<Array<string>> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "findActionEnumsByUseCase",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       const { data: res } = await apiClient.actionsV2.advancedUseCaseSearch({
         query: {
-          apps: data.apps.join(","),
-          useCase: data.useCase,
+          apps: data.apps?.join(","),
           limit: data.limit || undefined,
+          filterByAvailableApps: data.filterByAvailableApps,
+        },
+        body: {
+          useCase: data.useCase,
         },
       });
       return res!.items.map((item) => item.actions).flat() || [];
@@ -274,6 +304,11 @@ export class Actions {
    */
 
   async executeRequest(data: ActionProxyRequestConfigDTO) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "executeRequest",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       const { data: res } = await apiClient.actionsV2.executeActionProxyV2({
         body: data as unknown as ActionProxyRequestConfigDTO,

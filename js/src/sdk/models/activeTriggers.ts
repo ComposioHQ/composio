@@ -1,24 +1,13 @@
-import { GetActiveTriggersData } from "../client/types.gen";
 import apiClient from "../client/client";
-import { BackendClient } from "./backendClient";
+import { GetActiveTriggersData } from "../client/types.gen";
 import { CEG } from "../utils/error";
-
-type TActiveTrigger = {
-  id: string;
-  connectionId: string;
-  triggerName: string;
-  triggerData: string;
-  triggerConfig: Record<string, any>;
-  state: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
-  disabledAt: string | null;
-  disabledReason: string | null;
-};
+import { TELEMETRY_LOGGER } from "../utils/telemetry";
+import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
+import { BackendClient } from "./backendClient";
 
 export class ActiveTriggers {
   backendClient: BackendClient;
-
+  fileName: string = "js/src/sdk/models/activeTriggers.ts";
   constructor(backendClient: BackendClient) {
     this.backendClient = backendClient;
   }
@@ -32,6 +21,11 @@ export class ActiveTriggers {
    * @throws {ApiError} If the request fails.
    */
   async get({ triggerId }: { triggerId: string }) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "get",
+      file: this.fileName,
+      params: { triggerId },
+    });
     try {
       const { data } = await apiClient.triggers.getActiveTriggers({
         query: {
@@ -54,6 +48,11 @@ export class ActiveTriggers {
    * @throws {ApiError} If the request fails.
    */
   async list(data: GetActiveTriggersData = {}) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "list",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       const { data: response } = await apiClient.triggers.getActiveTriggers({
         query: data,
@@ -74,6 +73,11 @@ export class ActiveTriggers {
    * @throws {ApiError} If the request fails.
    */
   async enable(data: { triggerId: string }): Promise<boolean> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "enable",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       await apiClient.triggers.switchTriggerInstanceStatus({
         path: data,
@@ -88,6 +92,11 @@ export class ActiveTriggers {
   }
 
   async disable(data: { triggerId: string }) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "disable",
+      file: this.fileName,
+      params: { data },
+    });
     try {
       await apiClient.triggers.switchTriggerInstanceStatus({
         path: data,

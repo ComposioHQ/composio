@@ -8,12 +8,12 @@ from composio.tools.local.clickup.actions.base import OpenAPIAction
 class GetTeamsRequest(BaseModel):
     """Request schema for `GetTeams`"""
 
-    team_id: int = Field(
+    team_id: t.Optional[int] = Field(
         default=None,
         alias="team_id",
         description="Team ID (Workspace)",
     )
-    group_ids: str = Field(
+    group_ids: t.Optional[str] = Field(
         default=None,
         alias="group_ids",
         description=(

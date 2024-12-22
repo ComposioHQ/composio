@@ -13,7 +13,7 @@ class UpdateTaskRequest(BaseModel):
         alias="task_id",
         description="",
     )
-    custom_task_ids: bool = Field(
+    custom_task_ids: t.Optional[bool] = Field(
         default=None,
         alias="custom_task_ids",
         description=(
@@ -21,7 +21,7 @@ class UpdateTaskRequest(BaseModel):
             "be `true`. "
         ),
     )
-    team_id: int = Field(
+    team_id: t.Optional[int] = Field(
         default=None,
         alias="team_id",
         description=(
@@ -29,12 +29,12 @@ class UpdateTaskRequest(BaseModel):
             "`custom_task_ids=true&team_id=123`. "
         ),
     )
-    description: str = Field(
+    description: t.Optional[str] = Field(
         default=None,
         alias="description",
         description='To clear the task description, include `Description` with `" "`.',
     )
-    custom_item_id: int = Field(
+    custom_item_id: t.Optional[int] = Field(
         default=None,
         alias="custom_item_id",
         description=(
@@ -44,32 +44,32 @@ class UpdateTaskRequest(BaseModel):
             "such as `2`. "
         ),
     )
-    name: str = Field(
+    name: t.Optional[str] = Field(
         default=None,
         alias="name",
         description="Name",
     )
-    status: str = Field(
+    status: t.Optional[str] = Field(
         default=None,
         alias="status",
         description="Status",
     )
-    priority: int = Field(
+    priority: t.Optional[int] = Field(
         default=None,
         alias="priority",
         description="Priority",
     )
-    due_date: int = Field(
+    due_date: t.Optional[int] = Field(
         default=None,
         alias="due_date",
         description="Due Date",
     )
-    due_date_time: bool = Field(
+    due_date_time: t.Optional[bool] = Field(
         default=None,
         alias="due_date_time",
         description="Due Date Time",
     )
-    parent: str = Field(
+    parent: t.Optional[str] = Field(
         default=None,
         alias="parent",
         description=(
@@ -78,17 +78,17 @@ class UpdateTaskRequest(BaseModel):
             "to `null`. "
         ),
     )
-    time_estimate: int = Field(
+    time_estimate: t.Optional[int] = Field(
         default=None,
         alias="time_estimate",
         description="Time Estimate",
     )
-    start_date: int = Field(
+    start_date: t.Optional[int] = Field(
         default=None,
         alias="start_date",
         description="Start Date",
     )
-    start_date_time: bool = Field(
+    start_date_time: t.Optional[bool] = Field(
         default=None,
         alias="start_date_time",
         description="Start Date Time",
@@ -103,7 +103,7 @@ class UpdateTaskRequest(BaseModel):
         alias="assignees__rem",
         description="",
     )
-    archived: bool = Field(
+    archived: t.Optional[bool] = Field(
         default=None,
         alias="archived",
         description="Archived",

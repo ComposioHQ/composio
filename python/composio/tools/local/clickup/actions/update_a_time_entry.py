@@ -18,7 +18,7 @@ class UpdateATimeEntryRequest(BaseModel):
         alias="timer_id",
         description="",
     )
-    custom_task_ids: bool = Field(
+    custom_task_ids: t.Optional[bool] = Field(
         default=None,
         alias="custom_task_ids",
         description=(
@@ -31,37 +31,37 @@ class UpdateATimeEntryRequest(BaseModel):
         alias="tags",
         description="Users on the Business Plan and above can include a time tracking label.",
     )
-    description: str = Field(
+    description: t.Optional[str] = Field(
         default=None,
         alias="description",
         description="Description",
     )
-    tag_action: str = Field(
+    tag_action: t.Optional[str] = Field(
         default=None,
         alias="tag_action",
         description="Tag Action",
     )
-    start: int = Field(
+    start: t.Optional[int] = Field(
         default=None,
         alias="start",
         description="When providing `start`, you must also provide `end`.",
     )
-    end: int = Field(
+    end: t.Optional[int] = Field(
         default=None,
         alias="end",
         description="When providing `end`, you must also provide `start`.",
     )
-    tid: str = Field(
+    tid: t.Optional[str] = Field(
         default=None,
         alias="tid",
         description="Tid",
     )
-    billable: bool = Field(
+    billable: t.Optional[bool] = Field(
         default=None,
         alias="billable",
         description="Billable",
     )
-    duration: int = Field(
+    duration: t.Optional[int] = Field(
         default=None,
         alias="duration",
         description="Duration",

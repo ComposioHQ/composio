@@ -1,12 +1,14 @@
 /* eslint-disable no-console */
 // Node Imports
-import { Command } from "commander";
 import chalk from "chalk";
+import { Command } from "commander";
 
 // CLI Imports
+import actions from "./actions";
 import add from "./add";
 import apps from "./apps";
 import connections from "./connections";
+import execute from "./execute";
 import integrations from "./integrations";
 import login from "./login";
 import logout from "./logout";
@@ -14,8 +16,8 @@ import triggers from "./triggers";
 import whoami from "./whoami";
 
 // SDK Imports
-import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
+import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 
 const program = new Command().name("composio").description("Composio CLI");
 
@@ -28,6 +30,8 @@ new connections(program);
 new integrations(program);
 new triggers(program);
 new add(program);
+new actions(program);
+new execute(program);
 
 function formatLine(content: string): string {
   return `${content}`;

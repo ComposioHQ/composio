@@ -7,6 +7,7 @@ import re
 from unittest import mock
 
 import pytest
+from pydantic import BaseModel
 
 from composio import Action, App
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
@@ -49,10 +50,15 @@ def test_find_actions_by_tags() -> None:
 
 def test_uninitialize_app() -> None:
     """Test if the usage of an app without connected account raises error or not."""
+    # Ensure the app is cached
+    # TODO: remove this once App.iter() uses a dedicated endpoint
+    # for fetching latest enums
+    App.ATTIO.load()
+
     with pytest.raises(
         ComposioSDKError,
         match=(
-            "No connected account found for app `attio`; "
+            "No connected account found for app `ATTIO`; "
             "Run `composio add attio` to fix this"
         ),
     ):
@@ -299,3 +305,26 @@ def test_execute_action() -> None:
     toolset = ComposioToolSet()
     response = toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})
     assert response["successfull"]
+
+
+class EmailAddressModel(BaseModel):
+    name: str
+    email: str
+
+
+def test_execute_action_param_serialization() -> None:
+    toolset = LangchainToolSet()
+    with mock.patch.object(toolset, "_execute_remote") as mocked:
+        toolset.execute_action(
+            Action.OUTLOOK_OUTLOOK_CREATE_CONTACT,
+            {"contact": EmailAddressModel(name="John Doe", email="johndoe@gmail.com")},
+        )
+
+    mocked.assert_called_once_with(
+        action=Action.OUTLOOK_OUTLOOK_CREATE_CONTACT,
+        params={"contact": {"name": "John Doe", "email": "johndoe@gmail.com"}},
+        entity_id="default",
+        connected_account_id=None,
+        text=None,
+        session_id=mock.ANY,
+    )

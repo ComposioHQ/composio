@@ -11,13 +11,13 @@ export class CancelError extends Error {
   }
 }
 
-export interface OnCancel {
+export type OnCancel = {
   readonly isResolved: boolean;
   readonly isRejected: boolean;
   readonly isCancelled: boolean;
 
   (cancelHandler: () => void): void;
-}
+};
 
 export class CancelablePromise<T> implements Promise<T> {
   private _isResolved: boolean;

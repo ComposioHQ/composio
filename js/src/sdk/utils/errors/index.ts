@@ -1,28 +1,28 @@
-import { TELEMETRY_URL } from "../constants";
-import ComposioSDKContext from "../composioContext";
 import { sendBrowserReq, sendProcessReq } from "../../../utils/external";
 import { getEnvVariable } from "../../../utils/shared";
+import ComposioSDKContext from "../composioContext";
+import { TELEMETRY_URL } from "../constants";
 
 type ErrorPayload = {
   error_id: string;
   error_code: string;
   original_error: string;
   description: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   message: string;
   possible_fix: string;
   current_stack: string[];
 };
 
 export async function logError(payload: ErrorPayload) {
-  const isTelementryDisabled =
+  const isTelemetryDisabled =
     getEnvVariable("TELEMETRY_DISABLED", "false") === "true";
-  if (isTelementryDisabled) {
+  if (isTelemetryDisabled) {
     return;
   }
   try {
     const isBrowser = typeof window !== "undefined";
-    const reportingPayload = await generateReportingPayload(payload);
+    const reportingPayload = generateReportingPayload(payload);
     const reqPayload = {
       data: reportingPayload,
       url: `${TELEMETRY_URL}/api/sdk_metrics/error`,
@@ -38,12 +38,13 @@ export async function logError(payload: ErrorPayload) {
       await sendProcessReq(reqPayload);
     }
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error("Error sending error to telemetry", error);
     // DO NOTHING
   }
 }
 
-async function generateReportingPayload(payload: ErrorPayload) {
+function generateReportingPayload(payload: ErrorPayload) {
   const { apiKey, baseURL, composioVersion, frameworkRuntime, source } =
     ComposioSDKContext;
   const {

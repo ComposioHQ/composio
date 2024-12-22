@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "@jest/globals";
+import { beforeAll, describe, expect, it } from "@jest/globals";
 import { z } from "zod";
 import { getTestConfig } from "../../config/getTestConfig";
 import { LangchainToolSet } from "./langchain";
@@ -37,8 +37,8 @@ describe("Apps class tests", () => {
   });
 
   it("Should create custom action to star a repository", async () => {
-    const action = await langchainToolSet.createAction({
-      actionName: "starRepositoryPlxityCustom12345",
+    await langchainToolSet.createAction({
+      actionName: "starRepositoryCustomAction",
       toolName: "github",
       description: "This action stars a repository",
       inputParams: z.object({
@@ -53,20 +53,20 @@ describe("Apps class tests", () => {
             parameters: [],
           });
           return res;
-        } catch (e) {
+        } catch (_e) {
           return {};
         }
       },
     });
 
     const actionOuput = await langchainToolSet.executeAction({
-      action: "starRepositoryPlxityCustom12345",
+      action: "starRepositoryCustomAction",
       params: {
         owner: "plxity",
         repo: "achievementsof.life",
       },
       entityId: "default",
-      connectedAccountId: "db3c8d95-73e9-474e-8ae8-edfbdaab98b1",
+      connectedAccountId: "9442cab3-d54f-4903-976c-ee67ef506c9b",
     });
 
     expect(actionOuput).toHaveProperty("successfull", true);

@@ -181,6 +181,7 @@ def _wrap(
     cls.description = f.__doc__  # type: ignore
 
     existing_actions = []
+    # Normalize app name
     toolname = toolname.upper()
     if toolname in tool_registry["runtime"]:
         existing_actions = tool_registry["runtime"][toolname].actions()

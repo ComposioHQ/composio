@@ -1,9 +1,10 @@
 import { tool } from "ai";
-import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
-import { jsonSchemaToModel } from "../utils/shared";
 import { z } from "zod";
-import { CEG } from "../sdk/utils/error";
-import { SDK_ERROR_CODES } from "../sdk/utils/errors/src/constants";
+import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
+import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
+import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
+import { TRawActionData } from "../types/base_toolset";
+import { jsonSchemaToModel } from "../utils/shared";
 type Optional<T> = T | null;
 
 const zExecuteToolCallParams = z.object({
@@ -20,6 +21,7 @@ const zExecuteToolCallParams = z.object({
 });
 
 export class VercelAIToolSet extends BaseComposioToolSet {
+  fileName: string = "js/src/frameworks/vercel.ts";
   constructor(
     config: {
       apiKey?: Optional<string>;
@@ -35,7 +37,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     );
   }
 
-  private generateVercelTool(schema: Record<string, any>) {
+  private generateVercelTool(schema: TRawActionData) {
     const parameters = jsonSchemaToModel(schema.parameters);
     return tool({
       description: schema.description,
@@ -60,7 +62,13 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     useCase?: Optional<string>;
     usecaseLimit?: Optional<number>;
     filterByAvailableApps?: Optional<boolean>;
-  }): Promise<{ [key: string]: any }> {
+  }): Promise<{ [key: string]: TRawActionData }> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getTools",
+      file: this.fileName,
+      params: filters,
+    });
+
     const {
       apps,
       tags,
@@ -82,7 +90,10 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     const tools = {};
     actionsList.items?.forEach((actionSchema) => {
       // @ts-ignore
-      tools[actionSchema.name!] = this.generateVercelTool(actionSchema);
+      tools[actionSchema.name!] = this.generateVercelTool(
+        // @ts-ignore
+        actionSchema as ActionData
+      );
     });
 
     return tools;
@@ -92,6 +103,12 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     tool: { name: string; arguments: unknown },
     entityId: Optional<string> = null
   ): Promise<string> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "executeToolCall",
+      file: this.fileName,
+      params: { tool, entityId },
+    });
+
     return JSON.stringify(
       await this.executeAction({
         action: tool.name,
