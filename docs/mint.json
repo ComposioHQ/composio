@@ -70,6 +70,10 @@
     {
       "name": "All Tools",
       "url": "https://composio.dev/tools"
+    },
+    {
+      "name": "Chat with Repo",
+      "url": "https://dub.composio.dev/composio-chat-with-repo"
     }
   ],
   "navigation": [
@@ -78,8 +82,9 @@
       "pages": [
         "introduction/intro/overview",
         "introduction/intro/basic",
-        "introduction/intro/quickstart-tools",
-        "introduction/intro/quickstart-triggers"
+        "introduction/intro/quickstart",
+        "introduction/intro/quickstart_2",
+        "introduction/intro/quickstart_3"
       ]
     },
     {
@@ -88,18 +93,19 @@
             "patterns/tools/what-are-tools",
             {
               "group": "Use Tools",
+              "icon": "shuttle-space",
               "pages": [
                 "patterns/tools/use-tools/action-guide-with-agents",
                 "patterns/tools/use-tools/use-specific-actions",
                 "patterns/tools/use-tools/get-action-inputs",
                 "patterns/tools/use-tools/processing-actions",
                 "patterns/tools/use-tools/configure-tools",
-                "patterns/tools/use-tools/action-guide-without-agents",
-                "patterns/tools/use-tools/use-tools-with-your-auth"
+                "patterns/tools/use-tools/action-guide-without-agents"
               ]
             },
             {
               "group": "Build Tools",
+              "icon": "hammer",
               "pages": [
                 "patterns/tools/build-tools/custom-action-without-auth",
                 "patterns/tools/build-tools/custom-action-with-auth"
@@ -111,6 +117,7 @@
     },
     {
       "group": "Authentication",
+      "icon": "unlock",
       "pages": [
         "patterns/Auth/connected_account",
         "patterns/Auth/using-connections",
@@ -121,6 +128,7 @@
     },
     {
       "group": "Triggers & Webhooks",
+      "icon": "webhook",
       "pages": [
         "patterns/triggers/triggers",
         "patterns/triggers/webhooks"
@@ -132,7 +140,6 @@
         "framework/autogen",
         "framework/crewai",
         "framework/langchain",
-        "framework/langflow",
         "framework/langgraph",
         "framework/letta",
         "framework/litellm",
@@ -156,28 +163,13 @@
       ]
     },
     {
-      "group": "Kits",
+      "group": "SWE Kit",
       "pages": [
-        {
-          "group": "SWE kit",
-          "pages": [
-            "swekit-tools/introduction",
-            "swekit/introduction",
-            "swekit-js/introduction",
-            "swekit/benchmarks",
-            "swekit-examples/introduction"
-          ]
-        },
-        {
-          "group":"AI SDR Kit",
-          "pages": [
-            "sdrkit/tools",
-            "sdrkit/ai-lead-generator",
-            "sdrkit/ai-outreach-agent",
-            "sdrkit/ai-market-research-agent",
-            "sdrkit/ai-scheduling-agent"  
-          ]
-        }
+        "swekit-tools/introduction",
+        "swekit-js/introduction",
+        "swekit/introduction",
+        "swekit/benchmarks",
+        "swekit-examples/introduction"
       ]
     },
     {
@@ -186,7 +178,6 @@
         "introduction/foundations/components/workspace",
         "faq/api_key/api_key",
         "faq/api_key/cli",
-        "enterprise/intro",
         "faq/integrations_and_connections/list_of_tools",
         "faq/supported_llms/supported_llm"
       ]
@@ -251,9 +242,12 @@
   {
     "group": "Client",
     "pages": [
-      "api-reference/client/get-user-info",
+      "api-reference/client/get-org-api-key",
       "api-reference/client/get-projects",
-      "api-reference/client/add-new-project"
+      "api-reference/client/get-user-info",
+      "api-reference/client/add-new-project",
+      "api-reference/client/regenerate-org-api-key",
+      "api-reference/client/delete-project"
     ]
   },
   {
@@ -284,6 +278,17 @@
     "pages": [
       "api-reference/logs/get-logs",
       "api-reference/logs/post-logs"
+    ]
+  },
+  {
+    "group": "Org",
+    "pages": [
+      "api-reference/org/get-project",
+      "api-reference/org/get-projects",
+      "api-reference/org/regenerate-project-api-key-ideally-use-when-no-api-key-is-available-as-project-can-have-multiple-api-keys",
+      "api-reference/org/create-new-project",
+      "api-reference/org/delete-project",
+      "api-reference/org/rename-project"
     ]
   },
   {
