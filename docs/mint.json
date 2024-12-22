@@ -186,7 +186,6 @@
         "introduction/foundations/components/workspace",
         "faq/api_key/api_key",
         "faq/api_key/cli",
-        "enterprise/intro",
         "faq/integrations_and_connections/list_of_tools",
         "faq/supported_llms/supported_llm"
       ]
@@ -251,9 +250,7 @@
   {
     "group": "Client",
     "pages": [
-      "api-reference/client/get-user-info",
-      "api-reference/client/get-projects",
-      "api-reference/client/add-new-project"
+      "api-reference/client/get-user-info"
     ]
   },
   {
@@ -284,6 +281,17 @@
     "pages": [
       "api-reference/logs/get-logs",
       "api-reference/logs/post-logs"
+    ]
+  },
+  {
+    "group": "Projects",
+    "pages": [
+      "api-reference/projects/list-all-projects",
+      "api-reference/projects/get-project",
+      "api-reference/projects/regenerate-project-api-key",
+      "api-reference/projects/create-new-project",
+      "api-reference/projects/delete-project",
+      "api-reference/projects/rename-project"
     ]
   },
   {
