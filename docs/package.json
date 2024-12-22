@@ -1,7 +1,8 @@
 {
 	"scripts": {
 		"dev": "mintlify dev",
-		"generate:dev": "wget https://staging-backend.composio.dev/openapi.json -O composio_openapi.json && pnpm generate",
+		"openapi:validate": "mintlify openapi-check composio_openapi.json",
+		"generate:docs": "curl -o composio_openapi.json https://backend.composio.dev/openapi.json && pnpm generate",
 		"generate": "rm -rf api-reference || true && npx @mintlify/scraping@latest openapi-file ./composio_openapi.json -o api-reference && node scripts/render_mint_json_template.js"
 	},
 	"dependencies": {
