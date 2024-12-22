@@ -82,9 +82,8 @@
       "pages": [
         "introduction/intro/overview",
         "introduction/intro/basic",
-        "introduction/intro/quickstart",
-        "introduction/intro/quickstart_2",
-        "introduction/intro/quickstart_3"
+        "introduction/intro/quickstart-tools",
+        "introduction/intro/quickstart-triggers"
       ]
     },
     {
@@ -100,7 +99,8 @@
                 "patterns/tools/use-tools/get-action-inputs",
                 "patterns/tools/use-tools/processing-actions",
                 "patterns/tools/use-tools/configure-tools",
-                "patterns/tools/use-tools/action-guide-without-agents"
+                "patterns/tools/use-tools/action-guide-without-agents",
+                "patterns/tools/use-tools/use-tools-with-your-auth"
               ]
             },
             {
@@ -140,6 +140,7 @@
         "framework/autogen",
         "framework/crewai",
         "framework/langchain",
+        "framework/langflow",
         "framework/langgraph",
         "framework/letta",
         "framework/litellm",
@@ -163,13 +164,28 @@
       ]
     },
     {
-      "group": "SWE Kit",
+      "group": "Kits",
       "pages": [
-        "swekit-tools/introduction",
-        "swekit-js/introduction",
-        "swekit/introduction",
-        "swekit/benchmarks",
-        "swekit-examples/introduction"
+        {
+          "group": "SWE kit",
+          "pages": [
+            "swekit-tools/introduction",
+            "swekit/introduction",
+            "swekit-js/introduction",
+            "swekit/benchmarks",
+            "swekit-examples/introduction"
+          ]
+        },
+        {
+          "group":"AI SDR Kit",
+          "pages": [
+            "sdrkit/tools",
+            "sdrkit/ai-lead-generator",
+            "sdrkit/ai-outreach-agent",
+            "sdrkit/ai-market-research-agent",
+            "sdrkit/ai-scheduling-agent"  
+          ]
+        }
       ]
     },
     {
