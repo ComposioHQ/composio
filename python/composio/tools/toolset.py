@@ -10,6 +10,7 @@ import json
 import os
 import time
 import typing as t
+import uuid
 import warnings
 from datetime import datetime
 from functools import wraps
@@ -251,6 +252,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             "use `logging_level` argument or "
             "`COMPOSIO_LOGGING_LEVEL` change this"
         )
+
+        self.session_id = workspace_id or uuid.uuid4().hex
+
         self.entity_id = entity_id
         self.output_in_file = output_in_file
         self.output_dir = (
@@ -757,7 +761,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 entity_id=entity_id or self.entity_id,
                 connected_account_id=connected_account_id,
                 text=text,
-                session_id=self.workspace.id,
+                session_id=self.session_id,
             )
         )
         response = (
