@@ -12,7 +12,7 @@ import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 const ZTriggerQuery = z.object({
   triggerIds: z.array(z.string()).optional(),
   appNames: z.array(z.string()).optional(),
-  connectedAccountsIds: z.array(z.string()).optional(),
+  connectedAccountIds: z.array(z.string()).optional(),
   integrationIds: z.array(z.string()).optional(),
   showEnabledOnly: z.boolean().optional(),
 });
@@ -47,7 +47,7 @@ export class Triggers {
       const {
         appNames,
         triggerIds,
-        connectedAccountsIds,
+        connectedAccountIds,
         integrationIds,
         showEnabledOnly,
       } = ZTriggerQuery.parse(data);
@@ -55,7 +55,7 @@ export class Triggers {
         query: {
           appNames: appNames?.join(","),
           triggerIds: triggerIds?.join(","),
-          connectedAccountIds: connectedAccountsIds?.join(","),
+          connectedAccountIds: connectedAccountIds?.join(","),
           integrationIds: integrationIds?.join(","),
           showEnabledOnly: showEnabledOnly,
         },
