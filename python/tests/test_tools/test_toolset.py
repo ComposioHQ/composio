@@ -4,6 +4,7 @@ Test composio toolset.
 
 import logging
 import re
+import typing as t
 from unittest import mock
 
 import pytest
@@ -328,3 +329,64 @@ def test_execute_action_param_serialization() -> None:
         text=None,
         session_id=mock.ANY,
     )
+
+
+class TestSubclassInit:
+
+    def test_runtime(self):
+
+        class SomeToolsetExtention(ComposioToolSet):
+            pass
+
+        assert (
+            SomeToolsetExtention._runtime  # pylint: disable=protected-access
+            == "composio"
+        )
+
+        class SomeOtherToolsetExtention(ComposioToolSet, runtime="some_toolset"):
+            pass
+
+        assert (
+            SomeOtherToolsetExtention._runtime  # pylint: disable=protected-access
+            == "some_toolset"
+        )
+
+    def test_description_char_limit(self) -> None:
+
+        char_limit = 512
+        (schema,) = ComposioToolSet().get_action_schemas(
+            actions=[
+                Action.FILETOOL_GIT_CLONE,
+            ]
+        )
+        assert len(t.cast(str, schema.description)) > char_limit
+
+        class SomeToolsetExtention(ComposioToolSet, description_char_limit=char_limit):
+            pass
+
+        (schema,) = SomeToolsetExtention().get_action_schemas(
+            actions=[
+                Action.FILETOOL_GIT_CLONE,
+            ]
+        )
+        assert len(t.cast(str, schema.description)) == char_limit
+
+    def test_action_name_char_limit(self) -> None:
+
+        char_limit = 12
+        (schema,) = ComposioToolSet().get_action_schemas(
+            actions=[
+                Action.FILETOOL_GIT_CLONE,
+            ]
+        )
+        assert len(t.cast(str, schema.name)) > char_limit
+
+        class SomeToolsetExtention(ComposioToolSet, action_name_char_limit=char_limit):
+            pass
+
+        (schema,) = SomeToolsetExtention().get_action_schemas(
+            actions=[
+                Action.FILETOOL_GIT_CLONE,
+            ]
+        )
+        assert len(t.cast(str, schema.name)) == char_limit
