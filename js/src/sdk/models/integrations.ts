@@ -1,87 +1,23 @@
-import { DeleteConnectorData } from "../client";
+import { z } from "zod";
 import apiClient from "../client/client";
+import {
+  ZCreateIntegrationParams,
+  ZListIntegrationsParams,
+  ZSingleIntegrationParams,
+} from "../types/integration";
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { BackendClient } from "./backendClient";
 
-export type ListAllIntegrationsData = {
-  /**
-   * Page number to fetch
-   */
-  page?: number;
-  /**
-   * Page Size to assume
-   */
-  pageSize?: number;
-  /**
-   * The name of the app to filter by
-   */
-  appName?: string;
-  /**
-   * Whether to show disabled integrations
-   */
-  showDisabled?: boolean;
-};
-
-export type GetIntegrationData = {
-  /**
-   * The unique identifier of the integration.
-   */
-  integrationId: string;
-};
+// Types generated from zod schemas
+export type ListAllIntegrationsData = z.infer<typeof ZListIntegrationsParams>;
+export type GetIntegrationData = z.infer<typeof ZSingleIntegrationParams>;
+export type SingleIntegrationData = z.infer<typeof ZSingleIntegrationParams>;
+type CreateIntegrationParams = z.infer<typeof ZCreateIntegrationParams>;
 
 export type CreateIntegrationData = {
-  requestBody?: {
-    /**
-     * The name of the connector.
-     */
-    name?: string;
-    /**
-     * The authentication scheme used by the connector (e.g., "OAUTH2", "API_KEY").
-     */
-    authScheme?: string;
-    /**
-     * The unique identifier of the app associated with the connector.
-     */
-    appId?: string;
-    forceNewIntegration?: boolean;
-    /**
-     * An object containing the authentication configuration for the connector.
-     */
-    authConfig?: {
-      /**
-       * The client ID used for authentication with the app - if authScheme is OAUTH2
-       */
-      client_id?: string;
-      /**
-       * The client secret used for authentication with the app - if authScheme is OAUTH2
-       */
-      client_secret?: string;
-      /**
-       * The API key used for authentication with the app - if authScheme is API_KEY
-       */
-      api_key?: string;
-      /**
-       * The Consumer key used for authentication with the app - if authScheme is OAUTH1
-       */
-      consumer_key?: string;
-      /**
-       * The Consumer secret used for authentication with the app - if authScheme is OAUTH1
-       */
-      consumer_secret?: string;
-      /**
-       *  The base URL for making API requests to the app.
-       */
-      base_url?: string;
-
-      [key: string]: unknown;
-    };
-    /**
-     * Use default Composio credentials to proceed. The developer app credentials will be of Composio.
-     */
-    useComposioAuth?: boolean;
-  };
+  requestBody?: CreateIntegrationParams;
 };
 
 export class Integrations {
@@ -142,13 +78,16 @@ export class Integrations {
     }
   }
 
-  async getRequiredParams(integrationId: string) {
+  async getRequiredParams({ integrationId }: SingleIntegrationData) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getRequiredParams",
       file: this.fileName,
       params: { integrationId },
     });
     try {
+      ZSingleIntegrationParams.parse({
+        integrationId,
+      });
       const response = await apiClient.appConnector.getConnectorInfo({
         path: {
           integrationId,
@@ -166,11 +105,11 @@ export class Integrations {
    *
    * This method allows clients to create a new integration by providing the necessary details such as app ID, name, authentication mode, and configuration.
    *
-   * @param {CreateIntegrationData["requestBody"]} data The data for the request.
+   * @param CreateIntegrationParams data The data for the request.
    * @returns {Promise<CreateIntegrationResponse>} A promise that resolves to the created integration model.
    * @throws {ApiError} If the request fails.
    */
-  async create(data: CreateIntegrationData["requestBody"]) {
+  async create(data: CreateIntegrationParams) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "create",
       file: this.fileName,
@@ -180,6 +119,7 @@ export class Integrations {
       if (!data?.authConfig) {
         data!.authConfig = {};
       }
+      ZCreateIntegrationParams.parse(data);
 
       const response = await apiClient.appConnector.createConnector({
         body: {
@@ -198,14 +138,21 @@ export class Integrations {
     }
   }
 
-  async delete(data: DeleteConnectorData) {
+  async delete({ integrationId }: SingleIntegrationData) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "delete",
       file: this.fileName,
-      params: { data },
+      params: { integrationId },
     });
     try {
-      const response = await apiClient.appConnector.deleteConnector(data);
+      ZSingleIntegrationParams.parse({
+        integrationId,
+      });
+      const response = await apiClient.appConnector.deleteConnector({
+        path: {
+          integrationId,
+        },
+      });
       return response.data;
     } catch (error) {
       throw CEG.handleAllError(error);

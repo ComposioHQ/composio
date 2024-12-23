@@ -45,25 +45,6 @@ export const ZExecuteParams = z.object({
   }),
 });
 
-export type ExecuteActionResponse = {
-  /**
-   * An object containing the details of the action execution.
-   */
-  execution_details?: {
-    /**
-     * A boolean indicating whether the action was executed successfully.
-     *
-     */
-    executed?: boolean;
-  };
-  /**
-   * An object containing the response data from the action execution.
-   */
-  response_data?: {
-    [key: string]: unknown;
-  };
-};
-
 export const ZFindActionEnumsByUseCaseParams = z.object({
   apps: z.array(z.string()),
   useCase: z.string(),
