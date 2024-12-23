@@ -29,7 +29,7 @@ describe("Apps class tests", () => {
 
   it("should retrieve a list of triggers for a specific app", async () => {
     const triggerList = await triggers.list({
-      appNames: "github",
+      appNames: ["github"],
     });
     // this is breaking for now
     expect(triggerList.length).toBeGreaterThan(0);
@@ -92,6 +92,13 @@ describe("Apps class tests subscribe", () => {
     expect(trigger.status).toBe("success");
   });
 
+  it("try to subscribe to a trigger that doesn't exist", async () => {
+    await expect(
+      triggers.subscribe(async () => {}, {
+        triggerId: "GMAIL_NEW_GMAIL_MESSAGE_2",
+      })
+    ).rejects.toThrow("No triggers found for the given filters");
+  });
   // it("should subscribe to a trigger and receive a trigger", async () => {
   //     function waitForTriggerReceived() {
   //         return new Promise((resolve) => {
