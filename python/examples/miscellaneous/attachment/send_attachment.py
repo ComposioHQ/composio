@@ -21,7 +21,7 @@ composio_toolset = ComposioToolSet()
 tools = composio_toolset.get_tools(apps=[App.GMAIL])
 
 # Define task
-task = "Send an email to testcomposio@gmail.com with attachment as ./examples/miscellaneous/attachment/send_attachment.py"
+task = "Send an email to testcomposio@gmail.com with 'send_attachment.py' as attachment."
 
 # Get response from the LLM
 response = openai_client.chat.completions.create(
