@@ -17,7 +17,6 @@ from functools import wraps
 from importlib.util import find_spec
 from pathlib import Path
 
-from flask import session
 import typing_extensions as te
 from pydantic import BaseModel
 
