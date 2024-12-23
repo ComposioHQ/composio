@@ -10,11 +10,17 @@ import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 
 const ZTriggerQuery = z.object({
-  triggerIds: z.array(z.string()).optional(),
-  appNames: z.array(z.string()).optional(),
-  connectedAccountIds: z.array(z.string()).optional(),
-  integrationIds: z.array(z.string()).optional(),
-  showEnabledOnly: z.boolean().optional(),
+  triggerIds: z.array(z.string()).optional().describe("Trigger IDs"),
+  appNames: z.array(z.string()).optional().describe("App Names in lowercase"),
+  connectedAccountIds: z
+    .array(z.string())
+    .optional()
+    .describe("Connected Account UUIDs"),
+  integrationIds: z.array(z.string()).optional().describe("Integration IDs"),
+  showEnabledOnly: z
+    .boolean()
+    .optional()
+    .describe("Show Enabled triggers only"),
 });
 
 type TTriggerQuery = z.infer<typeof ZTriggerQuery>;
