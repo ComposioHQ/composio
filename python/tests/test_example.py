@@ -130,7 +130,7 @@ EXAMPLES = {
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
     "upload_file": {
-        "plugin": "crew_ai",
+        "plugin": "openai",
         "file": EXAMPLES_PATH / "miscellaneous" / "attachment" / "send_attachment.py",
         "match": {
             "type": "stdout",
@@ -220,6 +220,7 @@ def test_example(
         env={**os.environ, **example["env"]},
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        cwd=filepath.parent,
     )
 
     # Wait for 2 minutes for example to run
