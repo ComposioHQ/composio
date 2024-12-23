@@ -9,21 +9,18 @@ import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 
-const ZTriggerQuery = z.object({
-  triggerIds: z.array(z.string()).optional().describe("Trigger IDs"),
-  appNames: z.array(z.string()).optional().describe("App Names in lowercase"),
-  connectedAccountIds: z
-    .array(z.string())
-    .optional()
-    .describe("Connected Account UUIDs"),
-  integrationIds: z.array(z.string()).optional().describe("Integration IDs"),
-  showEnabledOnly: z
-    .boolean()
-    .optional()
-    .describe("Show Enabled triggers only"),
-});
+import {
+  ZTriggerInstanceItems,
+  ZTriggerQuery,
+  ZTriggerSetupParam,
+  ZTriggerSubscribeParam,
+} from "../types/trigger";
 
-type TTriggerQuery = z.infer<typeof ZTriggerQuery>;
+// Types inferred from zod schemas
+type TTriggerListParam = z.infer<typeof ZTriggerQuery>;
+type TTriggerSetupParam = z.infer<typeof ZTriggerSetupParam>;
+type TTriggerInstanceItems = z.infer<typeof ZTriggerInstanceItems>;
+type TTriggerSubscribeParam = z.infer<typeof ZTriggerSubscribeParam>;
 
 export class Triggers {
   trigger_to_client_event = "trigger_to_client";
@@ -41,9 +38,9 @@ export class Triggers {
    *
    * @param {ListTriggersData} data The data for the request.
    * @returns {CancelablePromise<ListTriggersResponse>} A promise that resolves to the list of all triggers.
-   * @throws {ApiError} If the request fails.
+   * @throws {ComposioError} If the request fails.
    */
-  async list(data: TTriggerQuery = {}) {
+  async list(data: TTriggerListParam = {}) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "list",
       file: this.fileName,
@@ -77,30 +74,25 @@ export class Triggers {
    *
    * @param {SetupTriggerData} data The data for the request.
    * @returns {CancelablePromise<SetupTriggerResponse>} A promise that resolves to the setup trigger response.
-   * @throws {ApiError} If the request fails.
+   * @throws {ComposioError} If the request fails.
    */
-  async setup({
-    connectedAccountId,
-    triggerName,
-    config,
-  }: {
-    connectedAccountId: string;
-    triggerName: string;
-    config: Record<string, unknown>;
-  }): Promise<{ status: string; triggerId: string }> {
+  async setup(
+    params: TTriggerSetupParam
+  ): Promise<{ status: string; triggerId: string }> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "setup",
       file: this.fileName,
-      params: { connectedAccountId, triggerName, config },
+      params: params,
     });
     try {
+      const parsedData = ZTriggerSetupParam.parse(params);
       const response = await apiClient.triggers.enableTrigger({
         path: {
-          connectedAccountId,
-          triggerName,
+          connectedAccountId: parsedData.connectedAccountId,
+          triggerName: parsedData.triggerName,
         },
         body: {
-          triggerConfig: config,
+          triggerConfig: parsedData.config,
         },
       });
       return response.data as { status: string; triggerId: string };
@@ -109,57 +101,83 @@ export class Triggers {
     }
   }
 
-  async enable(data: { triggerId: string }) {
+  /**
+   * Enables a trigger for a connected account.
+   *
+   * @param {TTriggerInstanceItems} data The data for the request.
+   * @returns {Promise<boolean>} A promise that resolves to the response of the enable request.
+   * @throws {ComposioError} If the request fails.
+   */
+  async enable(data: TTriggerInstanceItems) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "enable",
       file: this.fileName,
       params: { data },
     });
     try {
+      const parsedData = ZTriggerInstanceItems.parse(data);
       await apiClient.triggers.switchTriggerInstanceStatus({
-        path: data,
+        path: {
+          triggerId: parsedData.triggerInstanceId,
+        },
         body: {
           enabled: true,
         },
       });
-      return {
-        status: "success",
-      };
+      return true;
     } catch (error) {
       throw CEG.handleAllError(error);
     }
   }
 
-  async disable(data: { triggerId: string }) {
+  /**
+   * Disables a trigger for a connected account.
+   *
+   * @param {TTriggerInstanceItems} data The data for the request.
+   * @returns {Promise<boolean>} A promise that resolves to the response of the disable request.
+   * @throws {ComposioError} If the request fails.
+   */
+  async disable(data: TTriggerInstanceItems) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "disable",
       file: this.fileName,
       params: { data },
     });
     try {
+      const parsedData = ZTriggerInstanceItems.parse(data);
       await apiClient.triggers.switchTriggerInstanceStatus({
-        path: data,
+        path: {
+          triggerId: parsedData.triggerInstanceId,
+        },
         body: {
           enabled: false,
         },
       });
-      return {
-        status: "success",
-      };
+      return true;
     } catch (error) {
       throw CEG.handleAllError(error);
     }
   }
 
-  async delete(data: { triggerInstanceId: string }) {
+  /**
+   * Deletes a trigger for a connected account.
+   *
+   * @param {TTriggerInstanceItems} data The data for the request.
+   * @returns {Promise<boolean>} A promise that resolves to the response of the delete request.
+   * @throws {ComposioError} If the request fails.
+   */
+  async delete(data: TTriggerInstanceItems) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "delete",
       file: this.fileName,
       params: { data },
     });
     try {
+      const parsedData = ZTriggerInstanceItems.parse(data);
       await apiClient.triggers.deleteTrigger({
-        path: data,
+        path: {
+          triggerInstanceId: parsedData.triggerInstanceId,
+        },
       });
       return {
         status: "success",
@@ -171,15 +189,7 @@ export class Triggers {
 
   async subscribe(
     fn: (data: TriggerData) => void,
-    filters: {
-      appName?: string;
-      triggerId?: string;
-      connectionId?: string;
-      integrationId?: string;
-      triggerName?: string;
-      triggerData?: string;
-      entityId?: string;
-    } = {}
+    filters: TTriggerSubscribeParam = {}
   ) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "subscribe",
@@ -187,9 +197,9 @@ export class Triggers {
       params: { filters },
     });
     if (!fn) throw new Error("Function is required for trigger subscription");
-    //@ts-ignore
+
     const clientId = await this.backendClient.getClientId();
-    //@ts-ignore
+
     await PusherUtils.getPusherClient(
       this.backendClient.baseUrl,
       this.backendClient.apiKey
@@ -229,7 +239,6 @@ export class Triggers {
   }
 
   async unsubscribe() {
-    //@ts-ignore
     const clientId = await this.backendClient.getClientId();
     PusherUtils.triggerUnsubscribe(clientId);
   }

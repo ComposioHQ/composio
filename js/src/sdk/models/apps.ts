@@ -4,26 +4,30 @@ import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 
+import { z } from "zod";
+import {
+  ZGetAppParams,
+  ZGetRequiredParams,
+  ZGetRequiredParamsForAuthScheme,
+  ZRequiredParamsFullResponse,
+  ZRequiredParamsResponse,
+} from "../types/app";
 import { BackendClient } from "./backendClient";
 
-export type GetAppData = {
-  appKey: string;
-};
+// schema types generated from zod
+export type GetRequiredParams = z.infer<typeof ZGetRequiredParams>;
+export type GetRequiredParamsForAuthScheme = z.infer<
+  typeof ZGetRequiredParamsForAuthScheme
+>;
+export type RequiredParamsFullResponse = z.infer<
+  typeof ZRequiredParamsFullResponse
+>;
+export type RequiredParamsResponse = z.infer<typeof ZRequiredParamsResponse>;
+export type GetAppDataParams = z.infer<typeof ZGetAppParams>;
 
+// types generated from backend client
 export type GetAppResponse = SingleAppInfoResDTO;
-
 export type ListAllAppsResponse = AppListResDTO;
-
-export type RequiredParamsResponse = {
-  required_fields: string[];
-  expected_from_user: string[];
-  optional_fields: string[];
-};
-
-export type RequiredParamsFullResponse = {
-  availableAuthSchemes: string[];
-  authSchemes: Record<string, RequiredParamsResponse>;
-};
 
 export class Apps {
   backendClient: BackendClient;
@@ -38,7 +42,7 @@ export class Apps {
    * This method allows clients to explore and discover the supported apps. It returns an array of app objects, each containing essential details such as the app's key, name, description, logo, categories, and unique identifier.
    *
    * @returns {Promise<AppListResDTO>} A promise that resolves to the list of all apps.
-   * @throws {ApiError} If the request fails.
+   * @throws {ComposioError} If the request fails.
    */
   async list() {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
@@ -59,11 +63,11 @@ export class Apps {
    *
    * This method allows clients to fetch detailed information about a specific app by providing its unique key. The response includes the app's name, key, status, description, logo, categories, authentication schemes, and other metadata.
    *
-   * @param {GetAppData} data The data for the request, including the app's unique key.
+   * @param {GetAppDataParams} data The data for the request, including the app's unique key.
    * @returns {CancelablePromise<GetAppResponse>} A promise that resolves to the details of the app.
-   * @throws {ApiError} If the request fails.
+   * @throws {ComposioError} If the request fails.
    */
-  async get(data: GetAppData) {
+  async get(data: GetAppDataParams) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "get",
       file: this.fileName,
@@ -82,13 +86,16 @@ export class Apps {
     }
   }
 
-  async getRequiredParams(appId: string): Promise<RequiredParamsFullResponse> {
+  async getRequiredParams({
+    appId,
+  }: GetRequiredParams): Promise<RequiredParamsFullResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getRequiredParams",
       file: this.fileName,
       params: { appId },
     });
     try {
+      ZGetRequiredParams.parse({ appId });
       const appData = await this.get({ appKey: appId });
       if (!appData) throw new Error("App not found");
       const authSchemes = appData.auth_schemes;
@@ -142,17 +149,15 @@ export class Apps {
   async getRequiredParamsForAuthScheme({
     appId,
     authScheme,
-  }: {
-    appId: string;
-    authScheme: string;
-  }): Promise<RequiredParamsResponse> {
+  }: GetRequiredParamsForAuthScheme): Promise<RequiredParamsResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getRequiredParamsForAuthScheme",
       file: this.fileName,
       params: { appId, authScheme },
     });
     try {
-      const params = await this.getRequiredParams(appId);
+      ZGetRequiredParamsForAuthScheme.parse({ appId, authScheme });
+      const params = await this.getRequiredParams({ appId });
       return params.authSchemes[authScheme];
     } catch (error) {
       throw CEG.handleAllError(error);

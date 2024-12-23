@@ -1,5 +1,11 @@
 import { z } from "zod";
 import logger from "../../utils/logger";
+import {
+  ZConnectionParams,
+  ZExecuteActionParams,
+  ZInitiateConnectionParams,
+  ZTriggerSubscribeParam,
+} from "../types/entity";
 import { CEG } from "../utils/error";
 import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
@@ -11,35 +17,15 @@ import { BackendClient } from "./backendClient";
 import { ConnectedAccounts, ConnectionRequest } from "./connectedAccounts";
 import { Integrations } from "./integrations";
 import { Triggers } from "./triggers";
-
 const LABELS = {
   PRIMARY: "primary",
 };
 
-const ZExecuteActionParams = z.object({
-  actionName: z.string(),
-  params: z.record(z.any()).optional(),
-  text: z.string().optional(),
-  connectedAccountId: z.string().optional(),
-});
-
-type TExecuteActionParams = z.infer<typeof ZExecuteActionParams>;
-
-const ZInitiateConnectionParams = z.object({
-  appName: z.string().optional(),
-  authConfig: z.record(z.any()).optional(),
-  integrationId: z.string().optional(),
-  authMode: z.string().optional(),
-  connectionData: z.record(z.any()).optional(),
-  config: z
-    .object({
-      labels: z.array(z.string()).optional(),
-      redirectUrl: z.string().optional(),
-    })
-    .optional(),
-});
-
+// Types from zod schemas
+type TTriggerSubscribeParam = z.infer<typeof ZTriggerSubscribeParam>;
+type TConnectionParams = z.infer<typeof ZConnectionParams>;
 type TInitiateConnectionParams = z.infer<typeof ZInitiateConnectionParams>;
+type TExecuteActionParams = z.infer<typeof ZExecuteActionParams>;
 
 export class Entity {
   id: string;
@@ -129,19 +115,14 @@ export class Entity {
     }
   }
 
-  async getConnection({
-    app,
-    connectedAccountId,
-  }: {
-    app?: string;
-    connectedAccountId?: string;
-  }) {
+  async getConnection({ app, connectedAccountId }: TConnectionParams) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getConnection",
       file: this.fileName,
       params: { app, connectedAccountId },
     });
     try {
+      ZConnectionParams.parse({ app, connectedAccountId });
       if (connectedAccountId) {
         return await this.connectedAccounts.get({
           connectedAccountId,
@@ -194,17 +175,14 @@ export class Entity {
     }
   }
 
-  async setupTrigger(
-    app: string,
-    triggerName: string,
-    config: Record<string, unknown>
-  ) {
+  async setupTrigger({ app, triggerName, config }: TTriggerSubscribeParam) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "setupTrigger",
       file: this.fileName,
       params: { app, triggerName, config },
     });
     try {
+      ZTriggerSubscribeParam.parse({ app, triggerName, config });
       const connectedAccount = await this.getConnection({ app });
       if (!connectedAccount) {
         throw CEG.getCustomError(
@@ -225,6 +203,9 @@ export class Entity {
     }
   }
 
+  /* 
+  deprecated
+  */
   async disableTrigger(triggerId: string) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "disableTrigger",

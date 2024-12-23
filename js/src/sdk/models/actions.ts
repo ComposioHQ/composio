@@ -1,154 +1,43 @@
+import { z } from "zod";
 import {
+  ActionDetails,
   ActionExecutionReqDTO,
-  ActionProxyRequestConfigDTO,
   ActionsListResponseDTO,
 } from "../client";
 import apiClient from "../client/client";
+import {
+  ZActionGetParams,
+  ZCustomAuthParams,
+  ZExecuteParams,
+  ZExecuteRequestParams,
+  ZFindActionEnumsByUseCaseParams,
+  ZGetListActionsParams,
+  ZParameter,
+} from "../types/action";
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { BackendClient } from "./backendClient";
 
 /**
- * The `Actions` class provides methods to interact with the Composio platform's actions.
- * It allows fetching details of specific actions, listing all actions, and executing actions.
- *
- * - `get` method retrieves details of a specific action.
- * - `list` method retrieves a list of all actions.
- * - `execute` method executes a specific action.
- *
- * Each method returns a `CancelablePromise` which can be canceled. If canceled, the promise
- * will reject with a `Cancellation` object.
- *
- * @typeParam Composio The client configuration object type.
- * @groupDescription Methods
- * The methods in this class are grouped under 'Actions Methods' and provide functionalities
- * to interact with actions in the Composio platform. This includes fetching, listing, and
- * executing actions.
+ * Request types inferred from zod schemas
  */
+export type ActionListParams = z.infer<typeof ZGetListActionsParams>;
+export type HeaderSingleParameters = z.infer<typeof ZParameter>;
+export type CustomAuth = z.infer<typeof ZCustomAuthParams>;
+export type ExecuteActionParam = z.infer<typeof ZExecuteParams>;
+export type GetActionItemParam = z.infer<typeof ZActionGetParams>;
+export type FindActionEnumsByUseCaseParam = z.infer<
+  typeof ZFindActionEnumsByUseCaseParams
+>;
+export type ExecuteReqDTO = z.infer<typeof ZExecuteRequestParams>;
 
-export type GetListActionsData = {
-  /**
-   * Name of the apps like "github", "linear" separated by a comma
-   */
-  apps?: string;
-  /**
-   * Filter by Action names
-   */
-  actions?: string;
-  /**
-   * Filter by Action tags
-   */
-  tags?: string;
-  /**
-   * Filter by use case
-   */
-  useCase?: string | undefined;
-  /**
-   * Limit of use-cases based search
-   */
-  usecaseLimit?: number;
-  /**
-   * Show all actions - i.e disable pagination
-   */
-  showAll?: boolean;
-  /**
-   * Show actions enabled for the API Key
-   */
-  showEnabledOnly?: boolean;
-  /**
-   * Use smart tag filtering
-   */
-  filterImportantActions?: boolean;
-  /**
-   * Should search in available apps only
-   */
-  filterByAvailableApps?: boolean;
-};
+/**
+ * Response types
+ */
+export type GetActionResponse = ActionDetails;
+export type GetListActionsResponse = ActionsListResponseDTO;
 
-export type Parameter = {
-  /**
-   * The name of the parameter.
-   */
-  name: string;
-
-  /**
-   * The location of the parameter (e.g., query, header).
-   */
-  in: string;
-
-  /**
-   * The value of the parameter.
-   */
-  value: string | number;
-};
-
-export type CustomAuthData = {
-  /**
-   * The base URL for the custom authentication.
-   */
-  base_url?: string;
-
-  /**
-   * An array of parameters for the custom authentication.
-   */
-  parameters: Parameter[];
-
-  /**
-   * An optional object containing the body for the custom authentication.
-   */
-  body?: Record<string, unknown>;
-};
-
-export type ExecuteActionData = {
-  /**
-   * The name of the action to execute.
-   */
-  actionName: string;
-  requestBody?: {
-    /**
-     * The unique identifier of the connection to use for executing the action.
-     */
-    connectedAccountId?: string;
-    /**
-     * An object containing the input parameters for the action. If you want to execute
-     * NLP based action (i.e text), you can use text parameter instead of input.
-     */
-    input?: {
-      [key: string]: unknown;
-    };
-    appName?: string;
-    /**
-     * The text to supply to the action which will be automatically converted to
-     * appropriate input parameters.
-     */
-    text?: string;
-
-    /**
-     * The custom authentication configuration for executing the action.
-     */
-    authConfig?: CustomAuthData;
-  };
-};
-
-export type ExecuteActionResponse = {
-  /**
-   * An object containing the details of the action execution.
-   */
-  execution_details?: {
-    /**
-     * A boolean indicating whether the action was executed successfully.
-     *
-     */
-    executed?: boolean;
-  };
-  /**
-   * An object containing the response data from the action execution.
-   */
-  response_data?: {
-    [key: string]: unknown;
-  };
-};
 export class Actions {
   backendClient: BackendClient;
   fileName: string = "js/src/sdk/models/actions.ts";
@@ -164,18 +53,19 @@ export class Actions {
    *
    * @param {GetActionData} data The data for the request.
    * @returns {CancelablePromise<GetActionResponse[0]>} A promise that resolves to the details of the action.
-   * @throws {ApiError} If the request fails.
+   * @throws {ComposioError} If the request fails.
    */
-  async get(data: { actionName: string }) {
+  async get(data: GetActionItemParam): Promise<ActionDetails> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "get",
       file: this.fileName,
       params: { data },
     });
     try {
+      const parsedData = ZActionGetParams.parse(data);
       const actions = await apiClient.actionsV2.getActionV2({
         path: {
-          actionId: data.actionName,
+          actionId: parsedData.actionName,
         },
       });
 
@@ -192,16 +82,17 @@ export class Actions {
    *
    * @param {GetListActionsData} data The data for the request.
    * @returns {Promise<ActionsListResponseDTO>} A promise that resolves to the list of all actions.
-   * @throws {ApiError} If the request fails.
+   * @throws {ComposioError} If the request fails.
    */
-  async list(data: GetListActionsData = {}): Promise<ActionsListResponseDTO> {
+  async list(data: ActionListParams = {}): Promise<ActionsListResponseDTO> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "list",
       file: this.fileName,
       params: { data },
     });
     try {
-      let apps = data.apps;
+      const parsedData = ZGetListActionsParams.parse(data);
+      let apps = parsedData.apps;
 
       // Throw error if user has provided both filterByAvailableApps and apps
       if (data?.filterByAvailableApps && data?.apps) {
@@ -244,19 +135,20 @@ export class Actions {
    *
    * @param {ExecuteActionData} data The data for the request.
    * @returns {Promise<ActionExecutionResDto>} A promise that resolves to the execution status and response data.
-   * @throws {ApiError} If the request fails.
+   * @throws {ComposioError} If the request fails.
    */
-  async execute(data: ExecuteActionData) {
+  async execute(data: ExecuteActionParam) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "execute",
       file: this.fileName,
       params: { data },
     });
     try {
+      const parsedData = ZExecuteParams.parse(data);
       const { data: res } = await apiClient.actionsV2.executeActionV2({
-        body: data.requestBody as unknown as ActionExecutionReqDTO,
+        body: parsedData.requestBody as unknown as ActionExecutionReqDTO,
         path: {
-          actionId: data.actionName,
+          actionId: parsedData.actionName,
         },
       });
       return res!;
@@ -265,26 +157,31 @@ export class Actions {
     }
   }
 
-  async findActionEnumsByUseCase(data: {
-    apps: Array<string>;
-    useCase: string;
-    limit?: number;
-    filterByAvailableApps?: boolean;
-  }): Promise<Array<string>> {
+  /**
+   * Finds all action enums by use case.
+   *
+   * @param {FindActionEnumsByUseCaseParam} data The data for the request.
+   * @returns {Promise<Array<string>>} A promise that resolves to the list of action enums.
+   * @throws {ComposioError} If the request fails.
+   */
+  async findActionEnumsByUseCase(
+    data: FindActionEnumsByUseCaseParam
+  ): Promise<Array<string>> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "findActionEnumsByUseCase",
       file: this.fileName,
       params: { data },
     });
     try {
+      const parsedData = ZFindActionEnumsByUseCaseParams.parse(data);
       const { data: res } = await apiClient.actionsV2.advancedUseCaseSearch({
         query: {
-          apps: data.apps?.join(","),
-          limit: data.limit || undefined,
-          filterByAvailableApps: data.filterByAvailableApps,
+          apps: parsedData.apps?.join(","),
+          limit: parsedData.limit || undefined,
+          filterByAvailableApps: parsedData.filterByAvailableApps,
         },
         body: {
-          useCase: data.useCase,
+          useCase: parsedData.useCase,
         },
       });
       return res!.items.map((item) => item.actions).flat() || [];
@@ -300,18 +197,24 @@ export class Actions {
    *
    * @param {ExecuteActionData} data The data for the request.
    * @returns {Promise<ActionExecutionResDto>} A promise that resolves to the execution status and response data.
-   * @throws {ApiError} If the request fails.
+   * @throws {ComposioError} If the request fails.
    */
-
-  async executeRequest(data: ActionProxyRequestConfigDTO) {
+  async executeRequest(data: ExecuteReqDTO) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "executeRequest",
       file: this.fileName,
       params: { data },
     });
     try {
+      const parsedData = ZExecuteRequestParams.parse(data);
       const { data: res } = await apiClient.actionsV2.executeWithHttpClient({
-        body: data as unknown as ActionProxyRequestConfigDTO,
+        body: {
+          connectedAccountId: parsedData.connectedAccountId,
+          endpoint: parsedData.endpoint,
+          method: parsedData.method,
+          parameters: parsedData.parameters,
+          body: parsedData.body,
+        },
       });
       return res!;
     } catch (error) {
