@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_griptape",
-    version="0.6.5",
+    version="0.6.6",
     author="Sawradip",
     author_email="sawradip@composio.dev",
     description="Use Composio to get an array of tools with your Griptape wokflow.",
