@@ -91,7 +91,7 @@ export class Entity {
       const app = await this.apps.get({
         appKey: action.appKey!,
       });
-      if ((app.yaml as Record<string, unknown>).no_auth) {
+      if (app.no_auth) {
         return this.actionsModel.execute({
           actionName: actionName,
           requestBody: {

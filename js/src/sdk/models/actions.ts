@@ -310,7 +310,7 @@ export class Actions {
       params: { data },
     });
     try {
-      const { data: res } = await apiClient.actionsV2.executeActionProxyV2({
+      const { data: res } = await apiClient.actionsV2.executeWithHttpClient({
         body: data as unknown as ActionProxyRequestConfigDTO,
       });
       return res!;

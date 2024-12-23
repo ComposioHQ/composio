@@ -1,10 +1,10 @@
 import {
   GetConnectionInfoData,
   GetConnectionInfoResponse,
-  GetConnectionsData,
   GetConnectionsResponseDto,
   InitiateConnectionPayloadDto,
   InitiateConnectionResponse2,
+  ListConnectionsData,
 } from "../client";
 import { default as apiClient, default as client } from "../client/client";
 import { CEG } from "../utils/error";
@@ -14,7 +14,7 @@ import { Apps } from "./apps";
 import { BackendClient } from "./backendClient";
 import { Integrations } from "./integrations";
 
-type ConnectedAccountsListData = GetConnectionsData["query"] & {
+type ConnectedAccountsListData = ListConnectionsData["query"] & {
   appNames?: string;
 };
 
@@ -50,7 +50,7 @@ export class ConnectedAccounts {
       params: { data },
     });
     try {
-      const res = await apiClient.connections.getConnections({ query: data });
+      const res = await apiClient.connections.listConnections({ query: data });
       return res.data!;
     } catch (error) {
       throw CEG.handleAllError(error);

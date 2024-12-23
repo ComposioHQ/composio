@@ -150,7 +150,7 @@ export class ActionRegistry {
 
     const executeRequest = async (data: ExecuteRequest) => {
       try {
-        const { data: res } = await apiClient.actionsV2.executeActionProxyV2({
+        const { data: res } = await apiClient.actionsV2.executeWithHttpClient({
           body: {
             ...data,
             connectedAccountId: metadata?.connectionId,
