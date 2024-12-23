@@ -31,7 +31,8 @@
     "pusher-js": "8.4.0-rc2",
     "commander": "^12.1.0",
     "cli-progress": "^3.12.0",
-    "inquirer": "^10.2.2"
+    "inquirer": "^10.2.2",
+    "open": "^8.4.0"
   },
   "devDependencies": {},
   "publishConfig": {
