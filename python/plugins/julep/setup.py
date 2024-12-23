@@ -12,7 +12,7 @@ setup(
     version="0.6.6",
     author="Sawradip",
     author_email="sawradip@composio.dev",
-    description="Use Composio to get an array of tools with your Julep wokflow.",
+    description="Use Composio to get an array of tools with your Julep workflow.",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
     url="https://github.com/ComposioHQ/composio",
