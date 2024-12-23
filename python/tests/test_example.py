@@ -143,7 +143,8 @@ EXAMPLES = {
         "file": EXAMPLES_PATH
         / "quickstarters"
         / "sql_agent"
-        / "sql_agent_plotter_crewai" / "run_issue.py",
+        / "sql_agent_plotter_crewai"
+        / "run_issue.py",
         "match": {
             "type": "stdout",
             "values": ["composio_output/CODEINTERPRETER_GET_FILE_CMD_default_"],
