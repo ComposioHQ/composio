@@ -10,12 +10,14 @@ import json
 import os
 import time
 import typing as t
+import uuid
 import warnings
 from datetime import datetime
 from functools import wraps
 from importlib.util import find_spec
 from pathlib import Path
 
+from flask import session
 import typing_extensions as te
 from pydantic import BaseModel
 
@@ -757,7 +759,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 entity_id=entity_id or self.entity_id,
                 connected_account_id=connected_account_id,
                 text=text,
-                session_id=self.workspace.id,
+                session_id=uuid.uuid4().hex,
             )
         )
         response = (
