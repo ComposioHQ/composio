@@ -5,6 +5,7 @@ import { CloudflareToolSet } from "./frameworks/cloudflare";
 import { VercelAIToolSet } from "./frameworks/vercel";
 import { LangGraphToolSet } from "./frameworks/langgraph";
 import { Workspace } from "./env/index";
+import { ConnectionRequest } from "./sdk/models/connectedAccounts";
 
 const { APPS, ACTIONS } = require("./constants");
 
@@ -18,4 +19,5 @@ export {
   APPS,
   ACTIONS,
   LangGraphToolSet,
+  ConnectionRequest,
 };
