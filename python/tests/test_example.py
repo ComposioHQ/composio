@@ -130,7 +130,7 @@ EXAMPLES = {
         "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     },
     "upload_file": {
-        "plugin": "crew_ai",
+        "plugin": "openai",
         "file": EXAMPLES_PATH / "miscellaneous" / "attachment" / "send_attachment.py",
         "match": {
             "type": "stdout",
