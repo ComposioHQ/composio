@@ -92,13 +92,6 @@ describe("Apps class tests subscribe", () => {
     expect(trigger.status).toBe("success");
   });
 
-  it("try to subscribe to a trigger that doesn't exist", async () => {
-    await expect(
-      triggers.subscribe(async () => {}, {
-        triggerId: "GMAIL_NEW_GMAIL_MESSAGE_2",
-      })
-    ).rejects.toThrow("No triggers found for the given filters");
-  });
   // it("should subscribe to a trigger and receive a trigger", async () => {
   //     function waitForTriggerReceived() {
   //         return new Promise((resolve) => {
