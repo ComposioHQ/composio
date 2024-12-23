@@ -416,7 +416,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             parameters=parameters,
         )
 
-    def check_connected_account(self, action: ActionType) -> None:
+    def check_connected_account(self, action: ActionType, entity_id: str) -> None:
         """Check if connected account is required and if required it exists or not."""
         action = Action(action)
         if action.no_auth or action.is_runtime:
@@ -435,6 +435,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             # Normalize app names/ids coming from API
             connection.appUniqueId.upper()
             for connection in self._connected_accounts
+            if connection.entityId == entity_id
         ]:
             raise ComposioSDKError(
                 f"No connected account found for app `{action.app}`; "
@@ -487,7 +488,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         """Execute a remote action."""
         auth = self._custom_auth.get(App(action.app))
         if auth is None:
-            self.check_connected_account(action=action)
+            self.check_connected_account(action=action, entity_id=entity_id)
 
         entity = self.client.get_entity(id=entity_id)
         output = entity._execute(  # pylint: disable=protected-access
@@ -898,7 +899,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             )
             if check_connected_accounts:
                 for item in remote_items:
-                    self.check_connected_account(action=item.name)
+                    self.check_connected_account(action=item.name, entity_id=self.entity_id)
             else:
                 warnings.warn(
                     "Not verifying connected accounts for apps."
