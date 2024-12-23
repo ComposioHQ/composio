@@ -219,6 +219,7 @@ def test_example(
         env={**os.environ, **example["env"]},
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        cwd=filepath.parent,
     )
 
     # Wait for 2 minutes for example to run
