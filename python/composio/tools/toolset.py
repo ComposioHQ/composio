@@ -136,12 +136,14 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     _runtime: str = "composio"
     _description_char_limit: int = 1024
+    _action_name_char_limit: t.Optional[int] = None
     _log_ingester_client: t.Optional[LogIngester] = None
 
     def __init_subclass__(
         cls,
         runtime: t.Optional[str] = None,
         description_char_limit: t.Optional[int] = None,
+        action_name_char_limit: t.Optional[int] = None,
     ) -> None:
         if runtime is None:
             warnings.warn(
@@ -154,6 +156,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 f"description_char_limit is not set on {cls.__name__}, using 1024 as default"
             )
         cls._description_char_limit = description_char_limit or 1024
+        cls._action_name_char_limit = action_name_char_limit
 
     def __init__(
         self,
@@ -987,6 +990,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             action=Action(action_item.name.upper()),
             properties=action_item.parameters.properties,
         )
+        if self._action_name_char_limit is not None:
+            action_item.name = action_item.name[: self._action_name_char_limit]
         return action_item
 
     def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:
