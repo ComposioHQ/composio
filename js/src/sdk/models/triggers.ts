@@ -4,12 +4,26 @@ import { BackendClient } from "./backendClient";
 
 import apiClient from "../client/client";
 
-import { ListTriggersData } from "../client";
+import { z } from "zod";
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 
-type RequiredQuery = ListTriggersData["query"];
+const ZTriggerQuery = z.object({
+  triggerIds: z.array(z.string()).optional().describe("Trigger IDs"),
+  appNames: z.array(z.string()).optional().describe("App Names in lowercase"),
+  connectedAccountIds: z
+    .array(z.string())
+    .optional()
+    .describe("Connected Account UUIDs"),
+  integrationIds: z.array(z.string()).optional().describe("Integration IDs"),
+  showEnabledOnly: z
+    .boolean()
+    .optional()
+    .describe("Show Enabled triggers only"),
+});
+
+type TTriggerQuery = z.infer<typeof ZTriggerQuery>;
 
 export class Triggers {
   trigger_to_client_event = "trigger_to_client";
@@ -29,16 +43,27 @@ export class Triggers {
    * @returns {CancelablePromise<ListTriggersResponse>} A promise that resolves to the list of all triggers.
    * @throws {ApiError} If the request fails.
    */
-  async list(data: RequiredQuery = {}) {
+  async list(data: TTriggerQuery = {}) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "list",
       file: this.fileName,
       params: { data },
     });
     try {
+      const {
+        appNames,
+        triggerIds,
+        connectedAccountIds,
+        integrationIds,
+        showEnabledOnly,
+      } = ZTriggerQuery.parse(data);
       const { data: response } = await apiClient.triggers.listTriggers({
         query: {
-          appNames: data?.appNames,
+          appNames: appNames?.join(","),
+          triggerIds: triggerIds?.join(","),
+          connectedAccountIds: connectedAccountIds?.join(","),
+          integrationIds: integrationIds?.join(","),
+          showEnabledOnly: showEnabledOnly,
         },
       });
       return response || [];
