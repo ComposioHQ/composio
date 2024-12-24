@@ -1,8 +1,8 @@
 import sqlite3
-import sqlalchemy
 from pathlib import Path
 from typing import Dict
 
+import sqlalchemy
 from pydantic import BaseModel, Field
 
 from composio.tools.base.local import LocalAction
