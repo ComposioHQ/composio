@@ -56,14 +56,14 @@ body:
     attributes:
       label: "Runtime Environment"
       description: You can specify your operating system and version, software version, or any other relevant details.
-      placeholder: ex. Windows 10, Composio v1.2.3
+      placeholder: ex. Windows 10, Composio v0.6.6
 
-  - type: input  # Assuming Composio works with different OS
+  - type: dropdown  # Assuming Composio works with different OS
     id: os
     attributes:
       label: "OS"
       description: Please select the operating system(s) on which you are experiencing the issue.
-      multiple: true
+      multiple: false
       options:
         - Windows
         - Linux
@@ -72,12 +72,14 @@ body:
         - Android
         - Other
 
-  - type: textarea  # Assuming Composio has versions
+  - type: dropdown  # Assuming Composio has versions
     id: version_composio
     attributes:
       label: "Version of Composio"
       description: Please provide the version number of Composio you are using (if applicable).
-      placeholder: ex. 1.2.3
+      multiple: false
+      options:
+        - v0.6.6 #LIST OF VERSIONS
 
   - type: textarea
     id: additional_context
@@ -95,7 +97,7 @@ body:
     id: terms_checklist_bug
     attributes:
       label: "Code of Conduct"
-      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/ComposioHQ/composio/blob/main/CODE_OF_CONDUCT.md) and [Contributing Guidelines](https://github.com/ComposioHQ/composio/blob/main/CONTRIBUTING.md) and [Contributing Guidelines](link_to_your_contributing_guidelines) (if applicable).
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/ComposioHQ/composio/blob/7c89483bf1c8f76687765c37a14fc995eae1b44d/CODE_OF_CONDUCT.md) and [Contributing Guidelines](https://github.com/ComposioHQ/composio/blob/7c89483bf1c8f76687765c37a14fc995eae1b44d/CONTRIBUTING.md) (if applicable).
       options:
         - label: "I have checked the [existing issues](https://github.com/ComposioHQ/composio/issues)."
           required: true
