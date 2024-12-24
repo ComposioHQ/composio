@@ -336,11 +336,6 @@ def _handle_basic_auth(
         force_new_integration=True,
         labels=labels,
     )
-    connection.save_user_access_data(
-        client=client,
-        field_inputs=auth_config,
-        entity_id=entity.id,
-    )
     click.echo(
         f"✔ {app_name} added successfully with ID: {connection.connectedAccountId}"
     )
