@@ -23,13 +23,13 @@ export default class ConnectionsCommand {
 
   private async handleAction(options: { active: boolean }): Promise<void> {
     getOpenAPIClient();
-    const { data, error } = await client.connections.getConnections({
+    const { data, error } = await client.connections.listConnections({
       query: options.active ? { status: "ACTIVE" } : {},
       throwOnError: false,
     });
 
     if (error) {
-      console.log(chalk.red((error as Error).message));
+      console.log(chalk.red(error.message));
       return;
     }
 

@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from "@jest/globals";
 import { z } from "zod";
 import { getTestConfig } from "../../config/getTestConfig";
+import { ActionExecuteResponse } from "../sdk/models/actions";
 import { LangchainToolSet } from "./langchain";
 
 describe("Apps class tests", () => {
@@ -45,17 +46,17 @@ describe("Apps class tests", () => {
         owner: z.string(),
         repo: z.string(),
       }),
-      callback: async (inputParams, authCredentials, executeRequest) => {
-        try {
-          const res = await executeRequest({
-            endpoint: `/user/starred/${inputParams.owner}/${inputParams.repo}`,
-            method: "PUT",
-            parameters: [],
-          });
-          return res;
-        } catch (_e) {
-          return {};
-        }
+      callback: async (
+        inputParams,
+        _authCredentials,
+        executeRequest
+      ): Promise<ActionExecuteResponse> => {
+        const res = await executeRequest({
+          endpoint: `/user/starred/${inputParams.owner}/${inputParams.repo}`,
+          method: "PUT",
+          parameters: [],
+        });
+        return res;
       },
     });
 
@@ -69,6 +70,6 @@ describe("Apps class tests", () => {
       connectedAccountId: "9442cab3-d54f-4903-976c-ee67ef506c9b",
     });
 
-    expect(actionOuput).toHaveProperty("successfull", true);
+    expect(actionOuput).toHaveProperty("successful", true);
   });
 });

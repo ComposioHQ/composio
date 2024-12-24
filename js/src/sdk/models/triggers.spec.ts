@@ -82,13 +82,13 @@ describe("Apps class tests subscribe", () => {
   });
 
   it("should disable, enable, and then disable the created trigger", async () => {
-    let trigger = await triggers.disable({ triggerId });
+    let trigger = await triggers.disable(triggerId);
     expect(trigger.status).toBe("success");
 
-    trigger = await triggers.enable({ triggerId });
+    trigger = await triggers.enable(triggerId);
     expect(trigger.status).toBe("success");
 
-    trigger = await triggers.disable({ triggerId });
+    trigger = await triggers.disable(triggerId);
     expect(trigger.status).toBe("success");
   });
 

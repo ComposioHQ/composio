@@ -3,22 +3,35 @@
 export const $MemberInfoResDTO = {
   properties: {
     id: {
+      format: "uuid",
       type: "string",
+      description: "The ID/UUID of the member.",
     },
-    projectId: {
+    orgId: {
+      format: "uuid",
       type: "string",
+      description:
+        "The ID/UUID of the organization to which the member belongs.",
     },
     email: {
       format: "email",
       type: "string",
+      description: "The email address of the member.",
     },
     name: {
       type: "string",
+      description: "The name of the member.",
     },
     role: {
+      enum: ["admin", "developer"],
       type: "string",
+      description: "The role of the member.",
     },
-    metadata: {},
+    metadata: {
+      type: "object",
+      description:
+        "The metadata of the member. This store some additional information about the member.",
+    },
     createdAt: {
       oneOf: [
         {
@@ -30,6 +43,7 @@ export const $MemberInfoResDTO = {
           type: "string",
         },
       ],
+      description: "The date and time when the member was created.",
     },
     updatedAt: {
       oneOf: [
@@ -42,6 +56,7 @@ export const $MemberInfoResDTO = {
           type: "string",
         },
       ],
+      description: "The date and time when the member was last updated.",
     },
     deletedAt: {
       oneOf: [
@@ -54,19 +69,268 @@ export const $MemberInfoResDTO = {
           type: "string",
         },
       ],
+      description: "The date and time when the member was deleted.",
     },
   },
   type: "object",
-  required: [
-    "id",
-    "projectId",
-    "email",
-    "name",
-    "role",
-    "createdAt",
-    "updatedAt",
-  ],
-  description: "Member information",
+  required: ["id", "orgId", "email", "name", "role", "createdAt", "updatedAt"],
+  description: "Team Member information",
+} as const;
+
+export const $HttpError = {
+  properties: {
+    status: {
+      minLength: 1,
+      type: "number",
+      description: "HTTP status code",
+    },
+    message: {
+      minLength: 1,
+      type: "string",
+      description: "Error message",
+    },
+    requestId: {
+      type: "string",
+      description:
+        "Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.",
+    },
+  },
+  type: "object",
+  required: ["status", "message", "requestId"],
+} as const;
+
+export const $BadRequestError = {
+  properties: {
+    details: {
+      type: "object",
+      description: "Additional arguments that caused the error",
+    },
+    type: {
+      minLength: 1,
+      type: "string",
+      enum: ["BadRequestError"],
+      description: "The type of error",
+    },
+    status: {
+      minLength: 1,
+      type: "number",
+      description: "HTTP status code",
+    },
+    message: {
+      minLength: 1,
+      type: "string",
+      description: "Error message",
+    },
+    requestId: {
+      type: "string",
+      description:
+        "Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.",
+    },
+  },
+  type: "object",
+  required: ["details", "type", "status", "message", "requestId"],
+} as const;
+
+export const $InternalServerError = {
+  properties: {
+    type: {
+      minLength: 1,
+      type: "string",
+      enum: ["InternalServerError"],
+      description: "The type of error",
+    },
+    status: {
+      minLength: 1,
+      type: "number",
+      description: "HTTP status code",
+    },
+    message: {
+      minLength: 1,
+      type: "string",
+      description: "Error message",
+    },
+    requestId: {
+      type: "string",
+      description:
+        "Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.",
+    },
+  },
+  type: "object",
+  required: ["type", "status", "message", "requestId"],
+} as const;
+
+export const $NotFoundError = {
+  properties: {
+    type: {
+      minLength: 1,
+      type: "string",
+      enum: ["NotFoundError"],
+      description: "The name of the operation that caused the error",
+    },
+    status: {
+      minLength: 1,
+      type: "number",
+      description: "HTTP status code",
+    },
+    message: {
+      minLength: 1,
+      type: "string",
+      description: "Error message",
+    },
+    requestId: {
+      type: "string",
+      description:
+        "Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.",
+    },
+  },
+  type: "object",
+  required: ["type", "status", "message", "requestId"],
+} as const;
+
+export const $NotFoundPlusSuggestionsError = {
+  properties: {
+    suggestions: {
+      items: {
+        type: "string",
+      },
+      type: "array",
+      minLength: 1,
+      description: "Suggestions for the user to fix the error",
+    },
+    status: {
+      minLength: 1,
+      type: "number",
+      description: "HTTP status code",
+    },
+    message: {
+      minLength: 1,
+      type: "string",
+      description: "Error message",
+    },
+    requestId: {
+      type: "string",
+      description:
+        "Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.",
+    },
+    type: {
+      minLength: 1,
+      type: "string",
+      enum: ["NotFoundError"],
+      description: "The name of the operation that caused the error",
+    },
+  },
+  type: "object",
+  required: ["suggestions", "status", "message", "requestId", "type"],
+} as const;
+
+export const $AppNotFoundError = {
+  properties: {
+    name: {
+      minLength: 1,
+      type: "string",
+      enum: ["AppNotFoundError"],
+      description: "The error name",
+    },
+    status: {
+      minLength: 1,
+      type: "number",
+      description: "HTTP status code",
+    },
+    message: {
+      minLength: 1,
+      type: "string",
+      description: "Error message",
+    },
+    requestId: {
+      type: "string",
+      description:
+        "Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.",
+    },
+    type: {
+      minLength: 1,
+      type: "string",
+      enum: ["NotFoundError"],
+      description: "The name of the operation that caused the error",
+    },
+  },
+  type: "object",
+  required: ["name", "status", "message", "requestId", "type"],
+} as const;
+
+export const $ProjectAlreadyExistsError = {
+  properties: {
+    name: {
+      minLength: 1,
+      type: "string",
+      enum: ["ProjectAlreadyExistsError"],
+      description: "The error name",
+    },
+    status: {
+      minLength: 1,
+      type: "number",
+      description: "HTTP status code",
+    },
+    message: {
+      minLength: 1,
+      type: "string",
+      description: "Error message",
+    },
+    requestId: {
+      type: "string",
+      description:
+        "Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.",
+    },
+    details: {
+      type: "object",
+      description: "Additional arguments that caused the error",
+    },
+    type: {
+      minLength: 1,
+      type: "string",
+      enum: ["BadRequestError"],
+      description: "The type of error",
+    },
+  },
+  type: "object",
+  required: ["name", "status", "message", "requestId", "details", "type"],
+} as const;
+
+export const $ProjectIdNotFoundError = {
+  properties: {
+    name: {
+      minLength: 1,
+      type: "string",
+      enum: ["ProjectNotFoundError"],
+      description: "The error name",
+    },
+    status: {
+      minLength: 1,
+      type: "number",
+      description: "HTTP status code",
+    },
+    message: {
+      minLength: 1,
+      type: "string",
+      description: "Error message",
+    },
+    requestId: {
+      type: "string",
+      description:
+        "Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.",
+    },
+    details: {
+      type: "object",
+      description: "Additional arguments that caused the error",
+    },
+    type: {
+      minLength: 1,
+      type: "string",
+      enum: ["BadRequestError"],
+      description: "The type of error",
+    },
+  },
+  type: "object",
+  required: ["name", "status", "message", "requestId", "details", "type"],
 } as const;
 
 export const $MagicLinkResDTO = {
@@ -238,6 +502,7 @@ export const $TrackClientResDTO = {
 export const $DeleteRowAPIDTO = {
   properties: {
     status: {
+      enum: ["success", "failed"],
       type: "string",
       description: "Status of the delete operation",
     },
@@ -331,6 +596,10 @@ export const $ClientDTO = {
       type: "string",
       description: "Client's subscription plan",
     },
+    isNewWebhook: {
+      type: "boolean",
+      description: "Whether to use new webhook format",
+    },
   },
   type: "object",
   required: [
@@ -342,8 +611,179 @@ export const $ClientDTO = {
     "updatedAt",
     "triggersEnabled",
     "plan",
+    "isNewWebhook",
   ],
   description: "Client information",
+} as const;
+
+export const $Metadata = {
+  properties: {
+    has_completed_onboarding: {
+      type: "boolean",
+      description: "Indicates if the member has completed onboarding",
+    },
+  },
+  type: "object",
+} as const;
+
+export const $Member = {
+  properties: {
+    id: {
+      type: "string",
+      description: "Unique identifier for the member",
+    },
+    orgId: {
+      type: "string",
+      description: "Organization ID associated with the member",
+    },
+    name: {
+      type: "string",
+      description: "Name of the member",
+    },
+    role: {
+      type: "string",
+      description: "Role of the member",
+    },
+    createdAt: {
+      oneOf: [
+        {
+          format: "date",
+          type: "string",
+        },
+        {
+          format: "date-time",
+          type: "string",
+        },
+      ],
+      description: "Creation timestamp of the member",
+    },
+    updatedAt: {
+      oneOf: [
+        {
+          format: "date",
+          type: "string",
+        },
+        {
+          format: "date-time",
+          type: "string",
+        },
+      ],
+      description: "Last update timestamp of the member",
+    },
+    deletedAt: {
+      oneOf: [
+        {
+          format: "date",
+          type: "string",
+        },
+        {
+          format: "date-time",
+          type: "string",
+        },
+      ],
+      description: "Deletion timestamp of the member, if applicable",
+    },
+  },
+  type: "object",
+  required: ["id", "orgId", "name", "role", "createdAt", "updatedAt"],
+} as const;
+
+export const $ClientInfoAPIKeyResDTO = {
+  properties: {
+    id: {
+      type: "string",
+      description: "Unique identifier for the API key",
+    },
+    name: {
+      type: "string",
+      description: "Name of the API key",
+    },
+    clientId: {
+      type: "string",
+      description: "Client ID associated with the API key",
+    },
+    memberId: {
+      type: "string",
+      description: "Member ID associated with the API key",
+    },
+    createdAt: {
+      oneOf: [
+        {
+          format: "date",
+          type: "string",
+        },
+        {
+          format: "date-time",
+          type: "string",
+        },
+      ],
+      description: "Creation timestamp of the API key",
+    },
+    updatedAt: {
+      oneOf: [
+        {
+          format: "date",
+          type: "string",
+        },
+        {
+          format: "date-time",
+          type: "string",
+        },
+      ],
+      description: "Last update timestamp of the API key",
+    },
+    deletedAt: {
+      oneOf: [
+        {
+          format: "date",
+          type: "string",
+        },
+        {
+          format: "date-time",
+          type: "string",
+        },
+      ],
+      description: "Deletion timestamp of the API key, if applicable",
+    },
+    key: {
+      type: "string",
+      description: "Key value of the API key",
+    },
+    member: {
+      $ref: "#/components/schemas/Member",
+      description: "Member associated with the API key",
+    },
+    lastUsed: {
+      oneOf: [
+        {
+          format: "date",
+          type: "string",
+        },
+        {
+          format: "date-time",
+          type: "string",
+        },
+      ],
+      description: "Last used timestamp of the API key",
+    },
+    apiKey: {
+      type: "string",
+      description: "API key of the client",
+    },
+  },
+  type: "object",
+  required: [
+    "id",
+    "name",
+    "clientId",
+    "memberId",
+    "createdAt",
+    "updatedAt",
+    "key",
+    "member",
+    "lastUsed",
+    "apiKey",
+  ],
 } as const;
 
 export const $ClientInfoResDTO = {
@@ -352,7 +792,7 @@ export const $ClientInfoResDTO = {
       $ref: "#/components/schemas/ClientDTO",
     },
     apiKey: {
-      type: "string",
+      $ref: "#/components/schemas/ClientInfoAPIKeyResDTO",
       description: "API key of the client",
     },
   },
@@ -371,33 +811,75 @@ export const $ProjectReqDTO = {
   required: ["name"],
 } as const;
 
+export const $ProjectDeleteReqDTO = {
+  properties: {
+    projectId: {
+      format: "uuid",
+      type: "string",
+      description: "The ID of the project to delete",
+    },
+  },
+  type: "object",
+  required: ["projectId"],
+} as const;
+
 export const $ProjectResDTO = {
   properties: {
     id: {
       type: "string",
-      description: "The ID of the project",
+      description: "The ID or UUID of the project",
     },
     name: {
       type: "string",
       description: "The name of the project",
     },
+    createdAt: {
+      type: "string",
+    },
+    primaryApiKey: {
+      type: "string",
+    },
   },
   type: "object",
-  required: ["id", "name"],
+  required: ["id", "name", "createdAt", "primaryApiKey"],
+  description: "The list of projects",
 } as const;
 
 export const $ProjectListResDTO = {
   properties: {
     items: {
       items: {
-        type: "object",
+        $ref: "#/components/schemas/ProjectResDTO",
       },
       type: "array",
-      description: "The list of projects",
     },
   },
   type: "object",
   required: ["items"],
+} as const;
+
+export const $OrgApiKeyResDTO = {
+  properties: {
+    apiKey: {
+      type: "string",
+      description:
+        "The api key for organisation operations. Can be passed in the header as 'X-Org-Api-Key'",
+    },
+  },
+  type: "object",
+  required: ["apiKey"],
+} as const;
+
+export const $OrgApiKeyRegenerateResDTO = {
+  properties: {
+    newApiKey: {
+      type: "string",
+      description:
+        "Api key for organisation operations. Can be passed in the header as 'X-Org-Api-Key'",
+    },
+  },
+  type: "object",
+  required: ["newApiKey"],
 } as const;
 
 export const $InviteMemberReqDTO = {
@@ -562,23 +1044,30 @@ export const $SingleAppInfoResDTO = {
   properties: {
     appId: {
       type: "string",
-      description: "The unique identifier for the app",
+      description: "Unique identifier (UUID) for the app",
+      example: "550e8400-e29b-41d4-a716-446655440000",
     },
     key: {
       type: "string",
-      description: "The key of the app",
+      description:
+        "Unique key/slug used to identify the app in URLs and API calls.",
+      example: "salesforce-crm",
     },
     name: {
       type: "string",
-      description: "The name of the app",
+      description: "Human-readable display name of the app",
+      example: "Salesforce CRM",
     },
     description: {
       type: "string",
-      description: "The description of the app",
+      description: "Short description about the app",
+      example:
+        "Enterprise CRM solution for managing customer relationships and sales pipelines",
     },
     logo: {
       type: "string",
-      description: "The logo of the app",
+      description: "URL to the app's logo image, used for UI display",
+      example: "https://example.com/images/app-logo.png",
     },
     categories: {
       items: {
@@ -587,49 +1076,52 @@ export const $SingleAppInfoResDTO = {
       type: "array",
       description: "The categories of the app",
     },
-    path: {
-      type: "string",
-      description: "The path of the app",
-    },
     docs: {
       type: "string",
-      description: "The documentation URL of the app",
+      description:
+        "The documentation URL of the app, if available. Usually it's a link to the doc to setup and configure the app.",
     },
     configuration_docs_text: {
       type: "string",
-      description: "The configuration documentation text of the app",
+      description:
+        "The configuration documentation text of the app. This is deprecated and not used anywhere.",
+      deprecated: true,
     },
     status: {
       type: "string",
-      description: "The status of the app",
+      description:
+        "The status of the app. This is deprecated and not used anymore.",
+      deprecated: true,
     },
     documentation_doc_text: {
       type: "string",
-      description: "The documentation text of the app",
+      description:
+        "The documentation text of the app. This is deprecated and not used anywhere.",
+      deprecated: true,
     },
     testConnectors: {
       items: {
         type: "object",
       },
       type: "array",
-      description: "The test connectors of the app",
+      description:
+        "The test connectors available for the app. If this is not empty, it means composio allows you to setup this app without configuring and setting up your own auth app.",
     },
     no_auth: {
       type: "boolean",
-      description: "Indicates if the app has no authentication",
+      description:
+        "Indicates if the app is of `no_auth` type. If this is true, you can directly use the app without creating any integration.",
     },
     auth_schemes: {
       items: {
         type: "object",
       },
       type: "array",
-      description: "The authentication schemes of the app",
+      description:
+        "The authentication schemes supported by the app. This contains all the fields and details needed to setup and configure auth for this app.",
     },
     meta: {
       description: "The metadata of the app",
-    },
-    yaml: {
-      description: "The yaml of the app",
     },
   },
   type: "object",
@@ -640,15 +1132,27 @@ export const $AddToolsReqDTO = {
   properties: {
     name: {
       type: "string",
-      description: "The name of the tool",
+      description:
+        "The unique identifier name of the tool to be added. Must be URL-friendly and unique across the system",
+      example: "my-custom-tool",
     },
     openApiSpecYaml: {
       type: "string",
-      description: "The OpenAPI specification in YAML format",
+      description:
+        "The complete OpenAPI/Swagger specification in YAML format defining the tool's API endpoints, parameters, and responses",
+      example: `openapi: 3.0.0
+info:
+  title: My API
+  version: 1.0.0`,
     },
     integrationYaml: {
       type: "string",
-      description: "The integration details in YAML format",
+      description:
+        "YAML configuration specifying integration details including authentication, endpoints mapping, and other tool-specific settings",
+      example: `auth:
+  type: oauth2
+endpoints:
+  base_url: https://api.example.com`,
     },
   },
   type: "object",
@@ -659,21 +1163,28 @@ export const $OpenAPISpecListResDTO = {
   properties: {
     id: {
       type: "string",
-      description: "Unique identifier for the OpenAPI spec",
+      description: "Unique identifier (UUID) for the OpenAPI specification",
+      example: "550e8400-e29b-41d4-a716-446655440000",
     },
     name: {
       type: "string",
-      description: "Name of the OpenAPI spec",
+      description:
+        "Human-readable name of the OpenAPI specification. Used for display and reference purposes",
+      example: "Payment Processing API",
     },
     clientId: {
       type: "string",
-      description: "Client identifier",
+      description:
+        "Unique identifier of the client who owns this OpenAPI specification",
+      example: "client_12345",
     },
     lastSyncAt: {
       pattern: "\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d.\\d+Z?",
       type: "string",
-      description: "Last synchronization date and time",
+      description:
+        "ISO 8601 timestamp of when the specification was last synchronized with the source",
       format: "date-time",
+      example: "2024-03-15T14:30:00Z",
     },
     createdAt: {
       pattern: "\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d.\\d+Z?",
@@ -697,7 +1208,9 @@ export const $OpenAPISpecListResDTO = {
         "exited",
       ],
       type: "string",
-      description: "The job status of the app",
+      description:
+        "Current processing status of the OpenAPI specification in the pipeline. Indicates success, failure, or processing state",
+      example: "COMPLETED",
     },
     state: {
       enum: [
@@ -784,15 +1297,23 @@ export const $AppQueryDTO = {
   properties: {
     category: {
       type: "string",
-      description: "Category of the app",
+      description: `Filter apps by category. Used to retrieve apps belonging to a specific group or type.
+            To get a list of available categories, see the [Get App Categories](#operation/getAppCategories) endpoint.`,
+      example: "crm",
     },
     additionalFields: {
       type: "string",
-      description: "Additional fields to include in the response",
+      description:
+        "Comma-separated list of additional fields to include in the response. Allows customizing the response payload for app details. Supported fields: auth_schemes",
+      example: "auth_schemes",
     },
     includeLocal: {
+      enum: ["true", "false"],
       type: "string",
-      description: "Enter 'true' or 'false'",
+      description:
+        "Filter to include locally developed/testing apps in the response. Must be 'true' or 'false'",
+      example: "true",
+      default: "false",
     },
   },
   type: "object",
@@ -802,11 +1323,14 @@ export const $AppInfoResponseDto = {
   properties: {
     appId: {
       type: "string",
-      description: "The ID of the app",
+      description: "Unique identifier (UUID) for the app",
+      example: "550e8400-e29b-41d4-a716-446655440000",
     },
     key: {
       type: "string",
-      description: "The key of the app",
+      description:
+        "Unique key/slug for the app, used in URLs and API references",
+      example: "salesforce-crm",
     },
     name: {
       type: "string",
@@ -845,6 +1369,32 @@ export const $AppInfoResponseDto = {
       type: "boolean",
       description: "Indicates if the app has no authentication",
     },
+    createdAt: {
+      oneOf: [
+        {
+          format: "date",
+          type: "string",
+        },
+        {
+          format: "date-time",
+          type: "string",
+        },
+      ],
+      description: "The creation date of the app",
+    },
+    updatedAt: {
+      oneOf: [
+        {
+          format: "date",
+          type: "string",
+        },
+        {
+          format: "date-time",
+          type: "string",
+        },
+      ],
+      description: "The last update date of the app",
+    },
   },
   type: "object",
   required: [
@@ -855,7 +1405,23 @@ export const $AppInfoResponseDto = {
     "logo",
     "categories",
     "enabled",
+    "createdAt",
+    "updatedAt",
   ],
+} as const;
+
+export const $AppListCategoriesResDTO = {
+  properties: {
+    items: {
+      items: {
+        type: "string",
+      },
+      type: "array",
+      description: "List of app categories",
+    },
+  },
+  type: "object",
+  required: ["items"],
 } as const;
 
 export const $AppListResDTO = {
@@ -880,35 +1446,43 @@ export const $ExpectedInputFieldsDTO = {
   properties: {
     name: {
       type: "string",
-      description: "Name of the field",
+      description:
+        "The unique identifier/key for this input field that will be used when submitting values. Must be URL-safe.",
     },
     type: {
       type: "string",
-      description: "Type of the field",
+      description:
+        "The data type of this field. Common types include 'string', 'number', 'boolean', etc.",
     },
     description: {
       type: "string",
-      description: "Description of the field",
+      description:
+        "Detailed explanation of what this field is used for and any special requirements or formatting needed.",
     },
     display_name: {
       type: "string",
-      description: "Display name of the field",
+      description:
+        "Human-readable label that will be shown to users when they need to input this field.",
     },
     default: {
       type: "object",
-      description: "Default value of the field",
+      description:
+        "Default value for this field if none is provided. Set to null if no default exists.",
     },
     required: {
       type: "boolean",
-      description: "Whether the field is required",
+      description:
+        "Indicates if this field must be provided for the connector to function properly.",
     },
     expected_from_customer: {
       type: "boolean",
-      description: "Whether the field is expected from customer",
+      description:
+        "Indicates if this field needs to be provided by the end user rather than being automatically populated.",
     },
     is_secret: {
       type: "boolean",
-      description: "Whether the field is a secret",
+      description:
+        "If true, this field contains sensitive information and should be handled securely (e.g. passwords, API keys).",
     },
   },
   type: "object",
@@ -928,64 +1502,76 @@ export const $GetConnectorInfoResDTO = {
   properties: {
     id: {
       type: "string",
-      description: "Unique identifier of the connector",
+      description:
+        "Unique identifier for the connector. You can use this ID when calling endpoints like `POST /api/v1/connectedAccounts` to create connections.",
     },
     authScheme: {
       type: "string",
-      description: "Authentication scheme used by the connector",
+      description:
+        "The authentication method used by this connector. Refer to the API documentation for supported authentication schemes.",
     },
     name: {
       type: "string",
-      description: "Name of the connector",
+      description: "The display name of this specific connector configuration.",
     },
     createdAt: {
       pattern: "\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d.\\d+Z?",
       type: "string",
-      description: "Creation date of the connector",
+      description: "ISO 8601 timestamp of when this connector was created.",
     },
     updatedAt: {
       pattern: "\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d.\\d+Z?",
       type: "string",
-      description: "Last update date of the connector",
+      description:
+        "ISO 8601 timestamp of when this connector was last modified.",
     },
     enabled: {
       type: "boolean",
-      description: "Flag to indicate if the connector is currently enabled",
+      description:
+        "Whether this connector is currently active and can be used to create new connections. Can be toggled using the connector management endpoints.",
     },
     deleted: {
       type: "boolean",
-      description: "Flag to indicate if the connector has been deleted",
+      description:
+        "Soft deletion status of the connector. If true, the connector has been marked for deletion but may still exist in the system.",
     },
     appId: {
       type: "string",
-      description: "Application ID associated with the connector",
+      description:
+        "The ID of the application this connector belongs to. You can find available apps using the `GET /api/v1/apps` endpoint.",
     },
     defaultConnectorId: {
       type: "string",
-      description: "Default connector ID if one exists",
+      description:
+        "If this is a custom connector, this field may reference the original template connector it was based on.",
     },
     authConfig: {
       type: "object",
-      description: "Authentication configuration with sensitive data obscured",
+      description:
+        "Configuration object containing authentication settings. Sensitive values will be redacted. The structure varies based on the authScheme.",
     },
     expectedInputFields: {
       items: {
         $ref: "#/components/schemas/ExpectedInputFieldsDTO",
       },
       type: "array",
-      description: "List of required fields expected from the customer",
+      description:
+        "List of fields that need to be collected from users to set up a connection using this connector. These fields should be included when calling `POST /api/v1/connectedAccounts`.",
     },
     logo: {
       type: "string",
-      description: "Logo URL of the application associated with the connector",
+      description:
+        "URL to the application's logo image that can be displayed in the UI.",
     },
     appName: {
       type: "string",
-      description: "Name of the application associated with the connector",
+      description:
+        "The name of the application this connector integrates with.",
     },
     useComposioAuth: {
       type: "boolean",
-      description: "Flag to indicate if Composio authentication is used",
+      description:
+        "When true, indicates that this connector uses Composio's built-in authentication handling rather than custom authentication logic.",
     },
   },
   type: "object",
@@ -1007,34 +1593,43 @@ export const $AuthConfigDTO = {
         type: "string",
       },
       type: "array",
+      description:
+        "List of OAuth scopes to request during the OAuth flow. These scopes determine what permissions the connector will have on the target service.",
     },
     user_scopes: {
       items: {
         type: "string",
       },
       type: "array",
+      description:
+        "List of user-specific OAuth scopes to request during the OAuth flow. Some APIs differentiate between app-level and user-level scopes.",
     },
   },
   type: "object",
-  description: "Authentication configuration",
+  description: "Authentication configuration for the connector",
 } as const;
 
 export const $CreateConnectorPayloadDTO = {
   properties: {
     name: {
       type: "string",
-      description: "Name of the connector",
+      description:
+        "A unique name for your connector. This will be used to identify the connector in the system.",
     },
     authScheme: {
       type: "string",
-      description: "Authentication scheme",
+      description:
+        "The authentication scheme used by the connector. Refer to the `/api/v1/apps` endpoint to see supported authentication schemes for each app.",
     },
     authConfig: {
       $ref: "#/components/schemas/AuthConfigDTO",
+      description:
+        "Configuration options for authentication. Required when using OAuth-based authentication schemes.",
     },
     useComposioAuth: {
       type: "boolean",
-      description: "Flag to indicate if Composio authentication should be used",
+      description:
+        "When set to true, the connector will use Composio's built-in authentication system. Learn more in the Authentication section of the API documentation.",
       anyOf: [
         {
           type: "boolean",
@@ -1044,16 +1639,17 @@ export const $CreateConnectorPayloadDTO = {
     appId: {
       type: "string",
       description:
-        "Composio App UUID to be used for authentication. Either specify this or appName",
+        "UUID of the Composio app to use for authentication. You can get this from the `id` field in the response of the `GET /api/v1/apps` endpoint. Either specify this or appName.",
     },
     appName: {
       type: "string",
       description:
-        "Name of the app to be used for authentication. Either specify this or appId",
+        "Name of the Composio app to use for authentication. You can get this from the `name` field in the response of the `GET /api/v1/apps` endpoint. Either specify this or appId.",
     },
     forceNewIntegration: {
       type: "boolean",
-      description: "Flag to force new integration",
+      description:
+        "When set to true, creates a new integration even if one already exists for the given app. This is useful when you need multiple integrations with the same service.",
     },
   },
   type: "object",
@@ -1064,11 +1660,13 @@ export const $PatchConnectorReqDTO = {
   properties: {
     authConfig: {
       type: "object",
-      description: "Authentication configuration for the connector",
+      description:
+        "Authentication configuration for the connector. This object contains the necessary credentials and settings required to authenticate with the external service. You can get the required configuration fields from the `GET /api/v1/connectors/{connectorId}/config` endpoint.",
     },
     enabled: {
       type: "boolean",
-      description: "Flag to indicate if the connector is enabled",
+      description:
+        "Flag to indicate if the connector is enabled. When set to false, the connector will not process any requests. You can toggle this value to temporarily disable the connector without deleting it. Default value can be found in the `GET /api/v1/connectors/{connectorId}` endpoint response.",
     },
   },
   type: "object",
@@ -1078,7 +1676,8 @@ export const $PatchConnectorResDTO = {
   properties: {
     status: {
       type: "string",
-      description: "Status of the patch operation",
+      description:
+        "Status of the patch operation. Returns 'success' when the connector is successfully updated. For detailed information about possible status values, refer to the API documentation at `PATCH /api/v1/connectors/{connectorId}`.",
     },
   },
   type: "object",
@@ -1089,11 +1688,13 @@ export const $ConnectorListItemDTO = {
   properties: {
     appName: {
       type: "string",
-      description: "Application name associated with the connector",
+      description:
+        "Name of the application associated with this connector. You can find this in the response of the `GET /api/v1/apps` endpoint.",
     },
     _count: {
       type: "object",
-      description: "Count of connections for the connector",
+      description:
+        "Aggregate count of connections associated with this connector. This helps track how many connected accounts are using this connector configuration.",
     },
     connections: {
       items: {
@@ -1101,22 +1702,25 @@ export const $ConnectorListItemDTO = {
       },
       type: "array",
       description:
-        "List of connections with their details and request logs count",
+        "List of connections associated with this connector, including their IDs and request log counts. Each connection represents a unique connected account using this connector configuration.",
     },
     id: {
       type: "string",
-      description: "Unique identifier of the connector",
+      description:
+        "Unique identifier (UUID) of the connector. You can use this ID when calling endpoints like `GET /api/v1/connectors/{id}` or `PUT /api/v1/connectors/{id}`.",
     },
     member: {
       $ref: "#/components/schemas/MemberInfoResDTO",
     },
     name: {
       type: "string",
-      description: "Name of the connector",
+      description:
+        "Display name of the connector. This name is used to identify the connector in the UI and API responses.",
     },
     authScheme: {
       type: "string",
-      description: "Authentication scheme used by the connector",
+      description:
+        "Authentication scheme used by this connector. Determines how authentication is handled for connected accounts. See the Authentication Schemes section in the API documentation for more details.",
     },
     createdAt: {
       oneOf: [
@@ -1129,7 +1733,8 @@ export const $ConnectorListItemDTO = {
           type: "string",
         },
       ],
-      description: "Creation date of the connector",
+      description:
+        "Timestamp when this connector was created. Returned in ISO 8601 format.",
     },
     updatedAt: {
       oneOf: [
@@ -1142,23 +1747,28 @@ export const $ConnectorListItemDTO = {
           type: "string",
         },
       ],
-      description: "Last update date of the connector",
+      description:
+        "Timestamp when this connector was last updated. Returned in ISO 8601 format.",
     },
     enabled: {
       type: "boolean",
-      description: "Flag to indicate if the connector is enabled",
+      description:
+        "Indicates whether the connector is currently enabled. Disabled connectors cannot be used to create new connections.",
     },
     deleted: {
       type: "boolean",
-      description: "Flag to indicate if the connector is deleted",
+      description:
+        "Soft deletion flag for the connector. When true, the connector is marked as deleted but remains in the database. You can filter deleted connectors using the `includeDeleted` query parameter in list endpoints.",
     },
     appId: {
       type: "string",
-      description: "App ID associated with the connector",
+      description:
+        "Unique identifier (UUID) of the app this connector belongs to. You can use this ID to fetch app details via the `GET /api/v1/apps/{id}` endpoint.",
     },
     defaultConnectorId: {
       type: "string",
-      description: "Default connector ID if available",
+      description:
+        "ID of the default connector configuration. When present, this indicates that this connector inherits settings from the specified default connector. You can manage default connectors via the `/api/v1/defaultConnectors` endpoints.",
     },
   },
   type: "object",
@@ -1175,7 +1785,8 @@ export const $ConnectorListItemDTO = {
     "enabled",
     "appId",
   ],
-  description: "List of connectors",
+  description:
+    "List of connectors with their details and associated connections",
 } as const;
 
 export const $GetConnectorListResDTO = {
@@ -1185,14 +1796,18 @@ export const $GetConnectorListResDTO = {
         type: "object",
       },
       type: "array",
+      description:
+        "Array of connector items matching the query parameters. Each item contains detailed information about a connector and its associated connections.",
     },
     totalPages: {
       type: "number",
-      description: "Total number of pages available",
+      description:
+        "Total number of pages available based on the current page size. Use this for implementing pagination controls.",
     },
     page: {
       type: "number",
-      description: "Current page number",
+      description:
+        "Current page number (1-based). You can request different pages using the `page` query parameter in the `GET /api/v1/connectors` endpoint.",
     },
   },
   type: "object",
@@ -1323,19 +1938,38 @@ export const $GetConnectionsResult = {
   required: ["connections", "pageInfo"],
 } as const;
 
+export const $GetConnectionInfoParams = {
+  properties: {
+    connectedAccountId: {
+      minLength: 1,
+      type: "string",
+      description:
+        "UUID of the connected account you want to get auth credentials for. You can get this from the `id` field in the response of the [/api/v1/connectedAccounts](/api-reference/connections/list-connections) endpoint.",
+    },
+  },
+  type: "object",
+  required: ["connectedAccountId"],
+} as const;
+
 export const $ConnectionParams = {
   properties: {
     integrationId: {
       type: "string",
+      description:
+        "The ID of the integration this connection belongs to. You can get this from the [/api/v1/integrations](/api-reference/integrations/list-integrations) endpoint.",
     },
     connectionParams: {
       type: "object",
+      description:
+        "Additional parameters specific to this connection. Structure varies by integration type.",
     },
     isDisabled: {
       type: "boolean",
+      description: "Flag indicating if this connection is currently disabled.",
     },
     invocationCount: {
       type: "number",
+      description: "Number of times this connection has been invoked/used.",
     },
     id: {
       type: "string",
@@ -1423,6 +2057,8 @@ export const $ToggleConnectedAccountResponseDTO = {
   properties: {
     status: {
       type: "string",
+      description:
+        "The status of the toggle operation ('success' or 'failed').",
     },
   },
   type: "object",
@@ -1433,54 +2069,69 @@ export const $ConnectionParamsHeaders = {
   properties: {
     Authorization: {
       type: "string",
+      description: "Authorization header value used for API requests.",
     },
     "x-request-id": {
       type: "string",
+      description: "Request ID header for tracing API calls.",
     },
   },
   type: "object",
+  description: "Headers to be included in API requests.",
 } as const;
 
 export const $ConnectionParamsForAccount = {
   properties: {
     scope: {
       type: "string",
+      description: "OAuth scope for the connection.",
     },
     scopes: {
       type: "string",
+      description: "Space-separated OAuth scopes for the connection.",
     },
     id_token: {
       type: "string",
+      description: "OAuth ID token for authentication.",
     },
     client_id: {
       type: "string",
+      description: "OAuth client ID for the application.",
     },
     expires_in: {
       type: "string",
+      description: "Token expiration time in seconds.",
     },
     token_type: {
       type: "string",
+      description: "Type of OAuth token (e.g. 'Bearer').",
     },
     callback_url: {
       type: "string",
+      description: "OAuth callback URL for the connection.",
     },
     client_secret: {
       type: "string",
+      description: "OAuth client secret for the application.",
     },
     code_verifier: {
       type: "string",
+      description: "PKCE code verifier used in OAuth flow.",
     },
     refresh_token: {
       type: "string",
+      description: "OAuth refresh token for obtaining new access tokens.",
     },
     headers: {
       type: "object",
     },
     queryParams: {
       type: "object",
+      description: "Query parameters to be included in API requests.",
     },
     base_url: {
       type: "string",
+      description: "Base URL for API requests to the connected service.",
     },
   },
   type: "object",
@@ -1490,29 +2141,39 @@ export const $MetaApp = {
   properties: {
     get_current_user_endpoint: {
       type: "string",
+      description:
+        "Endpoint URL to fetch current user information from the connected service.",
     },
   },
   type: "object",
   required: ["get_current_user_endpoint"],
+  description: "Additional information related to the app.",
 } as const;
 
 export const $Meta = {
   properties: {
     app: {
       type: "object",
+      description: "App-specific metadata.",
     },
   },
   type: "object",
   required: ["app"],
+  description: "Additional information related to the connected account.",
 } as const;
 
 export const $ConnectedAccountResponseDTO = {
   properties: {
     integrationId: {
+      format: "uuid",
       type: "string",
+      description:
+        "The ID of the integration to which the connected account belongs. You can get this from the [/api/v1/integrations](/api-reference/integrations/list-integrations) endpoint.",
     },
     appUniqueId: {
       type: "string",
+      description:
+        "The unique ID of the app to which the connected account belongs. To get the full app info, you can use the [/api/v1/apps](/api-reference/apps/get-single-app) endpoint.",
     },
     memberInfo: {
       $ref: "#/components/schemas/MemberInfoResDTO",
@@ -1522,30 +2183,49 @@ export const $ConnectedAccountResponseDTO = {
     },
     isDisabled: {
       type: "boolean",
+      description:
+        "Flag to indicate if the connected account is disabled. If this is true, the connected account will not be able to be used for any actions.",
     },
     id: {
+      format: "uuid",
       type: "string",
+      description: "The unique identifier for this connected account.",
     },
     clientUniqueUserId: {
       type: "string",
+      description:
+        "The entityId to which the connected account belongs. **Deprecated: ** Please use the `entityId` field instead.",
+      deprecated: true,
     },
     appName: {
       type: "string",
+      description:
+        "The name of the app this account is connected to. You can get the list of available apps from the [/api/v1/apps](/api-reference/apps/list-apps) endpoint.",
     },
     entityId: {
       type: "string",
+      description:
+        "The entity ID associated with the connection. Learn more about entities [here](https://docs.composio.dev/patterns/Auth/connected_account#entities).",
     },
     status: {
+      enum: ["INITIATED", "ACTIVE", "FAILED"],
       type: "string",
+      description:
+        "The current status of the connection (e.g. 'active', 'inactive', 'pending').",
     },
     enabled: {
       type: "boolean",
+      description:
+        "Flag to indicate if the connected account is enabled. This will be true if the connected account is active and can be used to perform actions.",
     },
     createdAt: {
       type: "string",
+      description: "The date and time when the connected account was created.",
     },
     updatedAt: {
       type: "string",
+      description:
+        "The date and time when the connected account was last updated.",
     },
   },
   type: "object",
@@ -1569,12 +2249,15 @@ export const $GetConnectionsResponseDto = {
         $ref: "#/components/schemas/ConnectionParams",
       },
       type: "array",
+      description: "Array of connection objects matching the query parameters.",
     },
     totalPages: {
       type: "number",
+      description: "Total number of pages available based on the pageSize.",
     },
     page: {
       type: "number",
+      description: "Current page number in the pagination.",
     },
   },
   type: "object",
@@ -1585,6 +2268,8 @@ export const $GetConnectionInfoResponseDTO = {
   properties: {
     base_url: {
       type: "string",
+      description:
+        "The base URL of the connection. This is the starting part (or base part) of the URL that you need to send requests to. This is especially useful when you are working with apps that have dynamic urls (based on connection params) like Shopify.",
     },
     parameters: {
       items: {
@@ -1594,6 +2279,8 @@ export const $GetConnectionInfoResponseDTO = {
     },
     body: {
       type: "object",
+      description:
+        "The body params to send with the request. Some apps require this to be sent in the body of the request for authentication.",
     },
   },
   type: "object",
@@ -1605,7 +2292,7 @@ export const $Parameter = {
     name: {
       type: "string",
       description:
-        "The name of the parameter. For example, 'x-api-key', 'Content-Type', etc.,",
+        "The name of the parameter. For example, 'x-api-key', 'Content-Type', etc.",
     },
     in: {
       enum: ["query", "header"],
@@ -1615,20 +2302,24 @@ export const $Parameter = {
     value: {
       type: "string",
       description:
-        "The value of the parameter. For example, '1234567890', 'application/json', etc.,",
+        "The value of the parameter. For example, '1234567890', 'application/json', etc.",
     },
   },
   type: "object",
   required: ["name", "in", "value"],
+  description:
+    "The parameters to send with the request. This contains all the headers, query params, etc. that are required to make requests to the third-party service directly.",
 } as const;
 
 export const $Data = {
   properties: {
     field1: {
       type: "string",
+      description: "First field of the data object.",
     },
     field2: {
       type: "string",
+      description: "Second field of the data object.",
     },
   },
   type: "object",
@@ -1639,6 +2330,7 @@ export const $AdditionalInfo = {
   properties: {
     meta: {
       type: "string",
+      description: "Metadata information.",
     },
   },
   type: "object",
@@ -1648,37 +2340,88 @@ export const $AdditionalInfo = {
 export const $GetConnectionsQueryDto = {
   properties: {
     page: {
+      minimum: 1,
       type: "number",
+      description:
+        "The page number for pagination. Defaults to 1 if not specified.",
     },
     pageSize: {
+      minimum: 1,
       type: "number",
+      description:
+        "The number of items per page for pagination. Defaults to 99999999 if not specified - this is a temporary fix to support backward compatibility issues. Please specify this value to avoid fetching all connections at once.",
     },
     appNames: {
       type: "string",
+      description:
+        "Comma-separated list of app names to filter connections by. You can get the app names from the [/api/v1/apps](/api-reference/apps/list-apps) endpoint.",
     },
-    integrationId: {
+    labels: {
       type: "string",
-    },
-    connectionId: {
-      type: "string",
-    },
-    user_uuid: {
-      type: "string",
+      description: "Comma-separated list of labels to filter connections by.",
     },
     showActiveOnly: {
       type: "boolean",
+      description:
+        "Flag to show only active connections. Defaults to false if not specified.",
     },
     status: {
+      enum: ["INITIATED", "ACTIVE", "FAILED"],
       type: "string",
+      description: "The status of the connection to filter by.",
+    },
+    integrationId: {
+      format: "uuid",
+      type: "string",
+      description:
+        "The ID/UUID of the integration to filter connections by. You can get the integration ID from the [/api/v1/integrations](/api-reference/integrations/list-integrations) endpoint.",
+    },
+    connectionId: {
+      format: "uuid",
+      type: "string",
+      description:
+        "UUID of the connected account you want to get auth credentials for. You can get this from the `id` field in the response of the [/api/v1/connectedAccounts](/api-reference/connections/list-connections) endpoint.",
+    },
+    user_uuid: {
+      type: "string",
+      description:
+        "Comma-separated list of entity IDs to filter connections by. This field is deprecated - please use entityId instead.",
+      deprecated: true,
+    },
+    entityId: {
+      type: "string",
+      description:
+        "Comma-separated list of entity ids of the user to filter connections by. Learn more about entities [here](https://docs.composio.dev/patterns/Auth/connected_account#entities).",
     },
     showDisabled: {
       type: "boolean",
+      description:
+        "Flag to include disabled connections in the results. Defaults to false if not specified.",
     },
-    labels: {
-      items: {
-        type: "string",
-      },
-      type: "array",
+  },
+  type: "object",
+} as const;
+
+export const $GetSingleConnectionRequestDTO = {
+  properties: {
+    connectedAccountId: {
+      minLength: 1,
+      type: "string",
+      description:
+        "The ID of the connected account to get details for. You can get this from the `id` field in the response of the [/api/v1/connectedAccounts](/api-reference/connections/list-connections) endpoint.",
+    },
+  },
+  type: "object",
+  required: ["connectedAccountId"],
+} as const;
+
+export const $GetConnectionsHeaderParamsDTO = {
+  properties: {
+    "x-project-id": {
+      format: "uuid",
+      type: "string",
+      description:
+        "The ID of the project to get the connections for. Defaults to the first project in the list of projects. You can get the project ID from the [/api/v1/projects](/api-reference/client/get-projects) endpoint.",
     },
   },
   type: "object",
@@ -1688,25 +2431,36 @@ export const $InitiateConnectionPayloadDto = {
   properties: {
     data: {
       type: "object",
+      description:
+        "The data required to initiate a connection. Structure varies by integration type.",
     },
     integrationId: {
       minLength: 1,
       type: "string",
+      description:
+        "The ID of the integration for which the connection is being initiated. You can get this from the [/api/v1/integrations](/api-reference/integrations/list-integrations) endpoint.",
     },
     redirectUri: {
       type: "string",
+      description:
+        "The URL to redirect to after the connection is successfully initiated.",
     },
     userUuid: {
       type: "string",
+      description: "Deprecated: UUID of the user initiating the connection.",
     },
     entityId: {
       type: "string",
+      description:
+        "The entity ID to associate with the connection. Learn more about entities [here](https://docs.composio.dev/patterns/Auth/connected_account#entities).",
     },
     labels: {
       items: {
         type: "string",
       },
       type: "array",
+      description:
+        "Array of labels to associate with the connection for organization and filtering.",
     },
   },
   type: "object",
@@ -1720,6 +2474,7 @@ export const $UpdateConnectionLabelsPayloadDto = {
         type: "string",
       },
       type: "array",
+      description: "Array of new labels to assign to the connection.",
     },
   },
   type: "object",
@@ -1731,17 +2486,55 @@ export const $InitiateConnectionResponse = {
     connectionStatus: {
       minLength: 1,
       type: "string",
+      description: "The current status of the initiated connection.",
     },
     connectedAccountId: {
       minLength: 1,
       type: "string",
+      description: "The ID of the newly created connected account.",
     },
     redirectUrl: {
       type: "string",
+      description:
+        "URL to redirect to for completing the connection process, if required.",
     },
   },
   type: "object",
   required: ["connectionStatus", "connectedAccountId"],
+} as const;
+
+export const $ConnectedAccountNotFoundError = {
+  properties: {
+    name: {
+      enum: ["ConnectedAccountNotFoundError"],
+      type: "string",
+      description: "The name of the error",
+      example: "ConnectedAccountNotFoundError",
+    },
+    status: {
+      minLength: 1,
+      type: "number",
+      description: "HTTP status code",
+    },
+    message: {
+      minLength: 1,
+      type: "string",
+      description: "Error message",
+    },
+    requestId: {
+      type: "string",
+      description:
+        "Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.",
+    },
+    type: {
+      minLength: 1,
+      type: "string",
+      enum: ["NotFoundError"],
+      description: "The name of the operation that caused the error",
+    },
+  },
+  type: "object",
+  required: ["name", "status", "message", "requestId", "type"],
 } as const;
 
 export const $ToolsExecuteReqDto = {
@@ -1801,22 +2594,35 @@ export const $ActionExecutionResDto = {
   properties: {
     data: {
       type: "object",
+      description: "The response data returned by the action execution.",
     },
     error: {
       type: "string",
+      description:
+        "The error message, if the action failed to execute. If the action is successful, this will be null.",
     },
     successfull: {
-      type: "string",
+      type: "boolean",
+      description:
+        "Whether the action execution was successfully executed or not. If this is false, error field will be populated with the error message.",
+      deprecated: true,
+    },
+    successful: {
+      type: "boolean",
+      description:
+        "Whether the action execution was successfully executed or not. If this is false, error field will be populated with the error message.",
     },
   },
   type: "object",
-  required: ["data"],
+  required: ["data", "successfull", "successful"],
 } as const;
 
 export const $CustomAuthDTO = {
   properties: {
     base_url: {
       type: "string",
+      description:
+        "The base URL (root address) what you should use while making http requests to the connected account. For example, for gmail, it would be 'https://gmail.googleapis.com'",
     },
     parameters: {
       items: {
@@ -1826,10 +2632,14 @@ export const $CustomAuthDTO = {
     },
     body: {
       type: "object",
+      description:
+        "The body to be sent to the endpoint for authentication. This can either be a JSON field or a string. Note: This is very rarely neeed and is only required by very few apps.",
     },
   },
   type: "object",
   required: ["parameters"],
+  description:
+    "Custom authentication credentials to use while executing an action.",
 } as const;
 
 export const $ActionProxyRequestMethodDTO = {
@@ -1847,6 +2657,19 @@ export const $ActionProxyRequestMethodDTO = {
     },
   },
   type: "object",
+} as const;
+
+export const $GetSingleActionReqDTO = {
+  properties: {
+    actionId: {
+      minLength: 1,
+      type: "string",
+      description:
+        "The id of the action to get details for. This can be found in the id field in [/api/v2/actions](/api-reference/actions/list-actions) endpoint.",
+    },
+  },
+  type: "object",
+  required: ["actionId"],
 } as const;
 
 export const $ActionProxyRequestConfigDTO = {
@@ -1891,24 +2714,48 @@ export const $SessionInfoDTO = {
     },
   },
   type: "object",
+  description:
+    "Used internally by our SDK's to keep track of the source of execution, ignore it.",
+} as const;
+
+export const $NLAArgumentsResponseDTO = {
+  properties: {
+    arguments: {
+      type: "object",
+      description:
+        "The arguments for the action needed to execute the given task.",
+    },
+    error: {
+      type: "string",
+      description:
+        "The error message if the arguments were not generated successfully.",
+    },
+  },
+  type: "object",
 } as const;
 
 export const $ActionExecutionReqDTO = {
   properties: {
     connectedAccountId: {
+      format: "uuid",
       type: "string",
+      description:
+        "Connected account uuid for the account you want to run the action on. You can get this from the id field in [/api/v1/connectedAccounts](/api-reference/connections/list-connections) endpoint.",
     },
     appName: {
       type: "string",
+      description:
+        "The name/id of the app that the action belongs to. To get the app name, you can use the [/api/v1/apps](/api-reference/apps/list-apps) endpoint.",
     },
     entityId: {
       type: "string",
-    },
-    endpoint: {
-      type: "string",
+      description:
+        "(Optional) EntityId that represents your users connections - if the required connection is availabe for the user, it'll be auto-picked. If you are passing this, there's no need to pass `connectedAccountId`. To know more about entityId, [click here](https://backend.composio.dev/patterns/Auth/connected_account#entities)",
     },
     input: {
       type: "object",
+      description:
+        "Action inputs or aguments to execute the action. This is a dict/map with key-value structure, depdning on the action schema you can find in [/api/v2/actions/{actionName}](/api-reference/actions/get-single-action) endpoint.",
     },
     sessionInfo: {
       $ref: "#/components/schemas/SessionInfoDTO",
@@ -1918,12 +2765,18 @@ export const $ActionExecutionReqDTO = {
     },
     text: {
       type: "string",
+      description:
+        "The use-case description for the action, this will give context to LLM to generate the correct inputs for the action.",
     },
     customDescription: {
       type: "string",
+      description:
+        "The custom description for the action, use this to provide customised context about the action to the LLM to suit your use-case.",
     },
     systemPrompt: {
       type: "string",
+      description:
+        "The system prompt to be used by LLM, use this to control and guide the behaviour of the LLM.",
     },
   },
   type: "object",
@@ -1932,13 +2785,20 @@ export const $ActionExecutionReqDTO = {
 export const $ActionGetNLAInputsReqDTO = {
   properties: {
     text: {
+      minLength: 1,
       type: "string",
+      description:
+        "The use-case description for the action, this will give context to LLM to generate the correct inputs for the action.",
     },
     customDescription: {
       type: "string",
+      description:
+        "The custom description for the action, use this to provide customised context about the action to the LLM to suit your use-case.",
     },
     systemPrompt: {
       type: "string",
+      description:
+        "The system prompt to be used by LLM, use this to control and guide the behaviour of the LLM.",
     },
   },
   type: "object",
@@ -1958,96 +2818,148 @@ export const $ProxyExecutionReqDTO = {
   required: ["endpoint", "connectedAccountId"],
 } as const;
 
+export const $ActionNotFoundError = {
+  properties: {
+    name: {
+      minLength: 1,
+      type: "string",
+      enum: ["ActionNotFoundError"],
+      description: "The error name",
+    },
+    status: {
+      minLength: 1,
+      type: "number",
+      description: "HTTP status code",
+    },
+    message: {
+      minLength: 1,
+      type: "string",
+      description: "Error message",
+    },
+    requestId: {
+      type: "string",
+      description:
+        "Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.",
+    },
+    type: {
+      minLength: 1,
+      type: "string",
+      enum: ["NotFoundError"],
+      description: "The name of the operation that caused the error",
+    },
+  },
+  type: "object",
+  required: ["name", "status", "message", "requestId", "type"],
+} as const;
+
 export const $ActionDetailsMinimal = {
   properties: {
-    appId: {
-      type: "string",
-    },
-    appKey: {
-      type: "string",
-    },
-    appName: {
-      type: "string",
-    },
     description: {
       type: "string",
+      description:
+        "The description of the action, tailored to improve the LLM accuracy and reasoning. Use this a tool/function description.",
     },
     displayName: {
       type: "string",
-    },
-    enabled: {
-      type: "boolean",
+      description:
+        "The display name of the action, used to identify the action in the UI.",
     },
     logo: {
       type: "string",
+      description: "The logo of the app that the action belongs to.",
     },
     name: {
       type: "string",
+      description:
+        "The name of the action, used to identify the action in the UI.",
     },
     tags: {
       items: {
         type: "string",
       },
       type: "array",
+      description:
+        "The tags of the action, used to categorize the action in the UI.",
     },
     deprecated: {
       type: "boolean",
+      description:
+        "Whether the action is deprecated, if true, avoid using this action.",
     },
   },
   type: "object",
-  required: [
-    "appKey",
-    "appName",
-    "description",
-    "displayName",
-    "enabled",
-    "logo",
-    "name",
-    "tags",
-    "deprecated",
-  ],
+  required: ["description", "displayName", "logo", "name", "tags"],
+} as const;
+
+export const $ActionsTagQueryReqDTO = {
+  properties: {
+    apps: {
+      type: "string",
+      description:
+        "Comma separated list of app names to filter the action tags by.",
+    },
+  },
+  type: "object",
 } as const;
 
 export const $ActionDetails = {
   properties: {
     parameters: {
       type: "object",
+      description:
+        "Required parameters for the action to execute. For example, if the action is GMAIL_SEND_EMAIL, the required parameters for actions execution would be the email address, subject, and body.",
     },
     response: {
       type: "object",
-    },
-    appId: {
-      type: "string",
+      description:
+        "Expected response structure after action execution. You can use this to quickly check what happened with the action execution.",
     },
     appKey: {
       type: "string",
+      description:
+        "The name of the app that the action belongs to. This is same as appId.",
     },
     appName: {
       type: "string",
+      description: "The name of the app that the action belongs to, ",
+    },
+    appId: {
+      type: "string",
+      description:
+        "The id of the app that the action belongs to. This is same as the appKey. Please use appKey instead.",
+      deprecated: true,
     },
     description: {
       type: "string",
+      description:
+        "The description of the action, tailored to improve the LLM accuracy and reasoning. Use this a tool/function description.",
     },
     displayName: {
       type: "string",
-    },
-    enabled: {
-      type: "boolean",
+      description:
+        "The display name of the action, used to identify the action in the UI.",
     },
     logo: {
       type: "string",
+      description: "The logo of the app that the action belongs to.",
     },
     name: {
       type: "string",
+      description:
+        "The name of the action, used to identify the action in the UI.",
     },
     tags: {
       items: {
         type: "string",
       },
       type: "array",
+      description:
+        "The tags of the action, used to categorize the action in the UI.",
     },
     deprecated: {
       type: "boolean",
+      description:
+        "Whether the action is deprecated, if true, avoid using this action.",
     },
   },
   type: "object",
@@ -2056,14 +2968,27 @@ export const $ActionDetails = {
     "response",
     "appKey",
     "appName",
+    "appId",
     "description",
     "displayName",
-    "enabled",
     "logo",
     "name",
     "tags",
-    "deprecated",
   ],
+} as const;
+
+export const $ActionsTagsResponseDTO = {
+  properties: {
+    items: {
+      items: {
+        type: "string",
+      },
+      type: "array",
+      description: "List of all the action tags available in composio",
+    },
+  },
+  type: "object",
+  required: ["items"],
 } as const;
 
 export const $ActionsListResponseDTO = {
@@ -2076,9 +3001,12 @@ export const $ActionsListResponseDTO = {
     },
     page: {
       type: "number",
+      description: "Current page number in the paginated response",
+      example: 1,
     },
     totalPages: {
       type: "number",
+      description: "Total number of pages available",
     },
   },
   type: "object",
@@ -2138,7 +3066,6 @@ export const $AdvancedUseCaseSearchQueryDTO = {
     },
   },
   type: "object",
-  required: ["useCase"],
 } as const;
 
 export const $AdvancedUseCaseSearchTask = {
@@ -2230,9 +3157,6 @@ export const $ActionsQueryDTO = {
     page: {
       type: "number",
     },
-    offset: {
-      type: "number",
-    },
   },
   type: "object",
 } as const;
@@ -2273,23 +3197,29 @@ export const $ListTriggersQueryDTO = {
   properties: {
     appNames: {
       type: "string",
-      description: "Names of the apps",
+      description:
+        "Comma-separated list of app names to filter connections by. You can get the app names from the `name` field in the response of the `GET /api/v1/apps` endpoint.",
     },
     connectedAccountIds: {
       type: "string",
-      description: "IDs of the connected accounts",
+      description:
+        "Comma-separated list of connected account IDs to filter triggers by. Returns all the possible triggers you can setup for these connected accounts. You can get the connected account IDs from the `id` field in the response of the `GET /api/v1/connections` endpoint.",
     },
     triggerIds: {
       type: "string",
-      description: "IDs of the triggers",
+      description:
+        "Comma-separated list of trigger names to filter triggers by. You can get the trigger names from the `name` field in the response of the `GET /api/v1/triggers` endpoint.",
     },
     integrationIds: {
       type: "string",
-      description: "Integration ID",
+      description:
+        "Comma-separated list of integration IDs to filter triggers by. You can get the integration IDs from the `id` field in the response of the `GET /api/v1/integrations` endpoint.",
     },
     showEnabledOnly: {
       type: "boolean",
-      description: "Show enabled only",
+      description:
+        "When set to true, returns only enabled triggers. This field is deprecated and will be removed in future versions.",
+      deprecated: true,
     },
   },
   type: "object",
@@ -2299,31 +3229,36 @@ export const $GetActiveTriggersQueryDTO = {
   properties: {
     connectedAccountIds: {
       type: "string",
-      description: "IDs of the connected accounts",
+      description:
+        "Comma-separated list of connected account IDs to filter triggers by. You can get these IDs from the `id` field in the response of the `GET /api/v1/connections` endpoint.",
     },
     integrationIds: {
       type: "string",
-      description: "IDs of the integrations",
+      description:
+        "Comma-separated list of integration IDs to filter triggers by. You can get these IDs from the `id` field in the response of the `GET /api/v1/integrations` endpoint.",
     },
     triggerIds: {
       type: "string",
-      description: "IDs of the triggers",
+      description:
+        "Comma-separated list of trigger IDs to filter triggers by. You can get these IDs from the `id` field in the response of the `GET /api/v1/triggers` endpoint.",
     },
     triggerNames: {
       type: "string",
-      description: "Names of the triggers",
+      description:
+        "Comma-separated list of trigger names to filter triggers by. You can get these names from the `name` field in the response of the `GET /api/v1/triggers` endpoint.",
     },
     page: {
       type: "number",
-      description: "Page number",
+      description: "Page number for pagination. Starts from 1.",
     },
     limit: {
       type: "number",
-      description: "Limit per page",
+      description: "Number of items to return per page.",
     },
     showDisabled: {
       type: "boolean",
-      description: "Show disabled triggers",
+      description:
+        "When set to true, includes disabled triggers in the response.",
     },
   },
   type: "object",
@@ -2333,19 +3268,21 @@ export const $GetLogsQueryDTO = {
   properties: {
     connectionId: {
       type: "string",
-      description: "ID of the connection",
+      description:
+        "Filter logs by connection ID. You can get this from the `id` field in the response of the `GET /api/v1/connections` endpoint.",
     },
     integrationId: {
       type: "string",
-      description: "ID of the integration",
+      description:
+        "Filter logs by integration ID. You can get this from the `id` field in the response of the `GET /api/v1/integrations` endpoint.",
     },
     page: {
       type: "number",
-      description: "Page number",
+      description: "Page number for pagination. Starts from 1.",
     },
     limit: {
       type: "number",
-      description: "Limit per page",
+      description: "Number of items to return per page.",
     },
   },
   type: "object",
@@ -2355,55 +3292,59 @@ export const $TriggerResDTO = {
   properties: {
     name: {
       type: "string",
-      description: "Trigger name",
+      description:
+        "Unique identifier of the trigger. This is used to reference the trigger in other API calls.",
     },
     display_name: {
       type: "string",
-      description: "Trigger display name",
+      description: "Human-readable name of the trigger shown in the UI.",
     },
     description: {
       type: "string",
-      description: "Trigger description",
+      description: "Detailed description of what the trigger does.",
     },
     enabled: {
       type: "boolean",
-      description: "Is trigger enabled",
+      description: "Indicates whether the trigger is currently enabled.",
     },
     config: {
       type: "object",
-      description: "Trigger configuration",
+      description:
+        "Configuration parameters required for the trigger. Structure varies based on trigger type.",
     },
     payload: {
       type: "object",
-      description: "Trigger payload",
+      description: "Sample payload that will be sent when the trigger fires.",
     },
     logo: {
       type: "string",
-      description: "Trigger logo URL",
+      description: "URL of the trigger's icon or logo.",
     },
     count: {
       type: "number",
-      description: "Trigger count",
+      description: "Number of times this trigger has been activated.",
     },
     appKey: {
       type: "string",
-      description: "App key",
+      description: "Unique key identifying the app this trigger belongs to.",
     },
     appId: {
       type: "string",
-      description: "App ID",
+      description:
+        "Unique identifier of the app this trigger belongs to. You can get this from the `id` field in the response of the `GET /api/v1/apps` endpoint.",
     },
     appName: {
       type: "string",
-      description: "App name",
+      description: "Name of the app this trigger belongs to.",
     },
     instructions: {
       type: "string",
-      description: "Trigger instructions",
+      description:
+        "Step-by-step instructions on how to set up and use this trigger.",
     },
     type: {
       type: "string",
-      description: "Trigger type",
+      description: "Classification or category of the trigger.",
     },
   },
   type: "object",
@@ -2414,39 +3355,44 @@ export const $SingleTriggerResDTO = {
   properties: {
     name: {
       type: "string",
-      description: "Trigger name",
+      description:
+        "Unique identifier of the trigger. Used to reference the trigger in other API calls.",
     },
     displayName: {
       type: "string",
-      description: "Trigger display name",
+      description: "Human-readable name of the trigger shown in the UI.",
     },
     description: {
       type: "string",
-      description: "Trigger description",
+      description:
+        "Detailed description of what the trigger does and when it fires.",
     },
     type: {
       type: "string",
-      description: "Trigger type",
+      description: "Classification or category of the trigger.",
     },
     appId: {
       type: "string",
-      description: "App ID",
+      description:
+        "Unique identifier of the app this trigger belongs to. You can get this from the `id` field in the response of the `GET /api/v1/apps` endpoint.",
     },
     appName: {
       type: "string",
-      description: "App name",
+      description: "Name of the app this trigger belongs to.",
     },
     instructions: {
       type: "string",
-      description: "Trigger instructions",
+      description:
+        "Step-by-step instructions on how to set up and use this trigger.",
     },
     payload: {
       type: "object",
-      description: "Trigger payload",
+      description: "Sample payload that will be sent when the trigger fires.",
     },
     config: {
       type: "object",
-      description: "Trigger config",
+      description:
+        "Configuration parameters required for the trigger. Structure varies based on trigger type.",
     },
   },
   type: "object",
@@ -2466,52 +3412,56 @@ export const $TriggerConfig = {
   properties: {
     repo: {
       type: "string",
-      description: "Repository name",
+      description: "Name of the repository to monitor.",
     },
     owner: {
       type: "string",
-      description: "Repository owner",
+      description: "Owner (user or organization) of the repository.",
     },
   },
   type: "object",
   required: ["repo", "owner"],
-  description: "Trigger configuration",
+  description: "Configuration parameters for a trigger",
 } as const;
 
 export const $ActiveTriggerInstance = {
   properties: {
     id: {
       type: "string",
-      description: "Trigger instance ID",
+      description: "Unique identifier of the trigger instance.",
     },
     connectionId: {
       type: "string",
-      description: "Connected account ID",
+      description:
+        "ID of the connected account this trigger is associated with. You can get this from the `id` field in the response of the `GET /api/v1/connections` endpoint.",
     },
     triggerName: {
       type: "string",
-      description: "Trigger name",
+      description:
+        "Name of the trigger. You can get this from the `name` field in the response of the `GET /api/v1/triggers` endpoint.",
     },
     triggerData: {
       type: "string",
-      description: "Trigger data",
+      description: "Additional data associated with the trigger instance.",
     },
     triggerConfig: {
       $ref: "#/components/schemas/TriggerConfig",
     },
     createdAt: {
       type: "string",
-      description: "Created at timestamp",
+      description: "ISO 8601 timestamp when the trigger instance was created.",
       format: "date-time",
     },
     updatedAt: {
       type: "string",
-      description: "Updated at timestamp",
+      description:
+        "ISO 8601 timestamp when the trigger instance was last updated.",
       format: "date-time",
     },
     disabledAt: {
       type: "string",
-      description: "Disabled at timestamp",
+      description:
+        "ISO 8601 timestamp when the trigger instance was disabled, if applicable.",
       format: "date-time",
       nullable: true,
     },
@@ -2530,12 +3480,15 @@ export const $PageInfoDTO = {
   properties: {
     currentPage: {
       type: "number",
+      description: "Current page number.",
     },
     perPage: {
       type: "number",
+      description: "Number of items per page.",
     },
     totalPages: {
       type: "number",
+      description: "Total number of pages available.",
     },
   },
   type: "object",
@@ -2549,12 +3502,14 @@ export const $ActiveTriggersResDTO = {
         type: "object",
       },
       type: "array",
+      description: "List of active trigger instances.",
     },
     pageInfo: {
       items: {
         $ref: "#/components/schemas/PageInfoDTO",
       },
       type: "array",
+      description: "Pagination information for the response.",
     },
   },
   type: "object",
@@ -2568,9 +3523,11 @@ export const $TriggerLogsResDTO = {
         $ref: "#/components/schemas/TriggerLogItemDTO",
       },
       type: "array",
+      description: "List of trigger log entries.",
     },
     pageInfo: {
       $ref: "#/components/schemas/PageInfoDTO",
+      description: "Pagination information for the response.",
     },
   },
   type: "object",
@@ -2581,48 +3538,50 @@ export const $TriggerLogItemDTO = {
   properties: {
     clientId: {
       type: "string",
-      description: "Client ID",
+      description:
+        "Unique identifier of the client that initiated the trigger.",
     },
     connectionId: {
       type: "string",
-      description: "Connection ID",
+      description:
+        "ID of the connection associated with this log entry. You can get this from the `id` field in the response of the `GET /api/v1/connections` endpoint.",
     },
     errorTrigger: {
       type: "string",
-      description: "Error trigger",
+      description: "Error message if the trigger failed.",
       nullable: true,
     },
     triggerClientError: {
       type: "string",
-      description: "Trigger client error",
+      description: "Client-side error message if any occurred.",
       nullable: true,
     },
     triggerClientPayload: {
       type: "string",
-      description: "Trigger client payload",
+      description: "Payload sent by the client when the trigger was activated.",
       nullable: true,
     },
     triggerProviderPayload: {
       type: "string",
-      description: "Trigger provider payload",
+      description: "Payload received from the provider's API.",
       nullable: true,
     },
     triggerName: {
       type: "string",
-      description: "Trigger name",
+      description: "Name of the trigger that generated this log entry.",
       nullable: true,
     },
     id: {
       type: "string",
-      description: "Log ID",
+      description: "Unique identifier for this log entry.",
     },
     appKey: {
       type: "string",
-      description: "App key",
+      description: "Key identifying the app associated with this log entry.",
     },
     createdAt: {
       type: "string",
-      description: "Created at timestamp",
+      description: "ISO 8601 timestamp when this log entry was created.",
       format: "date-time",
     },
   },
@@ -2634,11 +3593,12 @@ export const $HandleTriggerParamsDTO = {
   properties: {
     appName: {
       type: "string",
-      description: "The name of the app",
+      description:
+        "Name of the app handling the trigger. You can get this from the `name` field in the response of the `GET /api/v1/apps` endpoint.",
     },
     clientId: {
       type: "string",
-      description: "The client ID",
+      description: "Unique identifier of the client initiating the trigger.",
     },
   },
   type: "object",
@@ -2649,7 +3609,7 @@ export const $HandleTriggerBodyDTO = {
   properties: {
     body: {
       type: "object",
-      description: "The trigger payload",
+      description: "Payload data to be processed by the trigger.",
     },
   },
   type: "object",
@@ -2660,11 +3620,13 @@ export const $EnableTriggerParamsDTO = {
   properties: {
     connectedAccountId: {
       type: "string",
-      description: "The connected account ID",
+      description:
+        "ID of the connected account to enable the trigger for. You can get this from the `id` field in the response of the `GET /api/v1/connections` endpoint.",
     },
     triggerName: {
       type: "string",
-      description: "The trigger name",
+      description:
+        "Name of the trigger to enable. You can get this from the `name` field in the response of the `GET /api/v1/triggers` endpoint.",
     },
   },
   type: "object",
@@ -2675,7 +3637,8 @@ export const $GetTriggerParamsDTO = {
   properties: {
     triggerId: {
       type: "string",
-      description: "The connected account ID",
+      description:
+        "Unique identifier of the trigger to retrieve. You can get this from the `id` field in the response of the `GET /api/v1/triggers` endpoint.",
     },
   },
   type: "object",
@@ -2686,11 +3649,12 @@ export const $EnableTriggerBodyDTO = {
   properties: {
     triggerConfig: {
       type: "object",
-      description: "The trigger configuration",
+      description:
+        "Configuration parameters for the trigger. Structure varies based on trigger type.",
     },
     verifyHost: {
       type: "string",
-      description: "The verify host",
+      description: "Host URL for webhook verification, if required.",
     },
   },
   type: "object",
@@ -2701,7 +3665,8 @@ export const $SwitchTriggerStatusParamsDTO = {
   properties: {
     triggerId: {
       type: "string",
-      description: "The trigger instance ID",
+      description:
+        "Unique identifier of the trigger instance to update. You can get this from the `id` field in the response of the `GET /api/v1/triggers/active` endpoint.",
     },
   },
   type: "object",
@@ -2712,7 +3677,7 @@ export const $SwitchTriggerStatusBodyDTO = {
   properties: {
     enabled: {
       type: "boolean",
-      description: "The new enabled status of the trigger",
+      description: "New enabled/disabled state for the trigger.",
     },
   },
   type: "object",
@@ -2723,7 +3688,8 @@ export const $TriggerInstanceParamsDTO = {
   properties: {
     triggerInstanceId: {
       type: "string",
-      description: "The trigger instance ID",
+      description:
+        "Unique identifier of the trigger instance to modify. You can get this from the `id` field in the response of the `GET /api/v1/triggers/active` endpoint.",
     },
   },
   type: "object",
@@ -2734,7 +3700,8 @@ export const $SetCallbackUrlBodyDTO = {
   properties: {
     callbackURL: {
       type: "string",
-      description: "The callback URL",
+      description:
+        "URL where webhook notifications should be sent when the trigger fires.",
     },
   },
   type: "object",
@@ -2745,20 +3712,20 @@ export const $TriggerResponseDTO = {
   properties: {
     status: {
       type: "string",
-      description: "The status of the operation",
+      description: "Status of the operation (success/error).",
     },
     message: {
       type: "string",
-      description: "Optional message",
+      description: "Additional information about the operation result.",
     },
     triggerId: {
       type: "string",
-      description: "Optional trigger ID",
+      description: "Unique identifier of the affected trigger.",
     },
     isNew: {
       type: "boolean",
       description:
-        "Is new trigger. If true, the trigger was created just now or else it was already existing",
+        "Indicates whether a new trigger was created (true) or an existing one was modified (false).",
     },
   },
   type: "object",
@@ -2769,11 +3736,11 @@ export const $WebhookURLResponseDTO = {
   properties: {
     status: {
       type: "string",
-      description: "The status of the operation",
+      description: "Status of the operation (success/error).",
     },
     callbackURL: {
       type: "string",
-      description: "The callback URL if found",
+      description: "The currently configured webhook callback URL.",
     },
   },
   type: "object",
@@ -2784,43 +3751,52 @@ export const $TriggerMetadataDTO = {
   properties: {
     id: {
       type: "string",
-      description: "The unique identifier of the trigger",
+      description: "Unique identifier of the trigger.",
     },
     connectionId: {
       type: "string",
-      description: "The connection identifier associated with the trigger",
+      description:
+        "ID of the connection this trigger is associated with. You can get this from the `id` field in the response of the `GET /api/v1/connections` endpoint.",
     },
     triggerName: {
       type: "string",
-      description: "The name of the trigger",
+      description:
+        "Name of the trigger. You can get this from the `name` field in the response of the `GET /api/v1/triggers` endpoint.",
     },
     triggerData: {
       type: "string",
-      description: "The data associated with the trigger",
+      description: "Additional data associated with the trigger.",
     },
     triggerConfig: {
       type: "object",
-      description: "The configuration of the trigger",
+      description:
+        "Configuration parameters for the trigger. Structure varies based on trigger type.",
     },
     state: {
       type: "object",
-      description: "The state of the trigger",
+      description: "Current state of the trigger.",
     },
     createdAt: {
       type: "string",
-      description: "The creation date of the trigger",
+      description: "ISO 8601 timestamp when the trigger was created.",
+      format: "date-time",
     },
     updatedAt: {
       type: "string",
-      description: "The last update date of the trigger",
+      description: "ISO 8601 timestamp when the trigger was last updated.",
+      format: "date-time",
     },
     disabledAt: {
       type: "string",
-      description: "The date when the trigger was disabled, if applicable",
+      description:
+        "ISO 8601 timestamp when the trigger was disabled, if applicable.",
+      format: "date-time",
+      nullable: true,
     },
     disabledReason: {
       type: "string",
-      description: "The reason why the trigger was disabled, if applicable",
+      description: "Reason why the trigger was disabled, if applicable.",
+      nullable: true,
     },
   },
   type: "object",
@@ -2834,14 +3810,14 @@ export const $TriggerMetadataDTO = {
     "createdAt",
     "updatedAt",
   ],
-  description: "The trigger details if found",
+  description: "Detailed information about a trigger",
 } as const;
 
 export const $GetTriggerResponseDTO = {
   properties: {
     status: {
       type: "string",
-      description: "The status of the operation",
+      description: "Status of the operation (success/error).",
     },
     trigger: {
       $ref: "#/components/schemas/TriggerMetadataDTO",
@@ -2849,6 +3825,32 @@ export const $GetTriggerResponseDTO = {
   },
   type: "object",
   required: ["status"],
+} as const;
+
+export const $WehbookNewFormatDTO = {
+  properties: {
+    id: {
+      type: "string",
+      description: "Unique identifier of the project.",
+    },
+    isNewWebhook: {
+      type: "boolean",
+      description: "Indicates whether this is a newly created webhook.",
+    },
+  },
+  type: "object",
+  required: ["id", "isNewWebhook"],
+} as const;
+
+export const $ReadOnlyQueryReqDTO = {
+  properties: {
+    query: {
+      minLength: 1,
+      type: "string",
+    },
+  },
+  type: "object",
+  required: ["query"],
 } as const;
 
 export const $GenerateCLISessionReqDTO = {
@@ -3363,6 +4365,47 @@ export const $IngestDataResponseDTO = {
   required: ["isIngested"],
 } as const;
 
+export const $ActionsQueryV2DTO = {
+  properties: {
+    apps: {
+      type: "string",
+      description:
+        "Comma separated list of composio apps to filter by. You can get the list of apps by using [/api/v1/apps](/api-reference/apps/list-apps) endpoint.",
+    },
+    actions: {
+      type: "string",
+      description:
+        "Comma separated list of composio actions to filter by. You can get the list of actionIds from this API or you can get it by running `composio actions` command in your terminal.",
+    },
+    tags: {
+      type: "string",
+      description:
+        "Comma separated list of composio action tags to filter by. You can get the list of action tags by using [/api/v2/actions/list/tags](/api-reference/actions/list-action-tags) endpoint.",
+    },
+    useCase: {
+      type: "string",
+      description:
+        "Smart use-case based search for actions needed to be performed as per the use-case. This uses AI to understand the use-case and then finally returns the list of actions. **Note:** If you are using this field, you can not use actions or tags fields.",
+    },
+    page: {
+      type: "number",
+      description: "Page number to be returned, default is 1",
+      minimum: 1,
+    },
+    limit: {
+      type: "number",
+      description: "Limit the number of actions to be returned, default is 30",
+      minimum: 1,
+    },
+    filterImportantActions: {
+      type: "boolean",
+      description:
+        "Filter and return only important actions. This is equivalent to setting tags='important' in the query params mentioned above.",
+    },
+  },
+  type: "object",
+} as const;
+
 export const $TimePeriodReqDTO = {
   properties: {
     lastTimePeriod: {
@@ -3679,4 +4722,33 @@ export const $SDKErrorResDTO = {
   },
   type: "object",
   required: ["status"],
+} as const;
+
+export const $OrgProjectListResDTO = {
+  properties: {
+    projects: {
+      items: {
+        $ref: "#/components/schemas/ProjectResDTO",
+      },
+      type: "array",
+    },
+  },
+  type: "object",
+  required: ["projects"],
+} as const;
+
+export const $UpdateRowAPIDTO = {
+  properties: {
+    status: {
+      enum: ["success", "failed"],
+      type: "string",
+      description: "Status of the update operation",
+    },
+    count: {
+      type: "number",
+      description: "Number of records updated",
+    },
+  },
+  type: "object",
+  required: ["status", "count"],
 } as const;

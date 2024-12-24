@@ -83,9 +83,9 @@ describe("ComposioToolSet class tests", () => {
     };
 
     const postProcessor = ({
+      actionName: _actionName,
+      appName: _appName,
       toolResponse,
-      actionName,
-      appName,
     }: {
       actionName: string;
       appName: string;
@@ -97,6 +97,7 @@ describe("ComposioToolSet class tests", () => {
           isPostProcessed: true,
         },
         error: toolResponse.error,
+        successful: toolResponse.successful,
         successfull: toolResponse.successfull,
       };
     };

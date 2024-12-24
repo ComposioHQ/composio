@@ -63,7 +63,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pnpm install @ai-sdk/openai ai composio-core dotenv zod
+          pnpm install @ai-sdk/openai ai composio-core dotenv zod @langchain/openai @langchain/core langchain
       - name: Run Tests
         env:
           DOCKER_USER: ${{secrets.DOCKER_USER}}

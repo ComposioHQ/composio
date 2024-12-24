@@ -1,14 +1,26 @@
 import { z } from "zod";
 import logger from "../../utils/logger";
+import { GetConnectionsResponseDto } from "../client";
+import {
+  ZConnectionParams,
+  ZExecuteActionParams,
+  ZInitiateConnectionParams,
+  ZTriggerSubscribeParam,
+} from "../types/entity";
+import { ZAuthMode } from "../types/integration";
 import { CEG } from "../utils/error";
-import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
+import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
-import { Actions } from "./actions";
+import { ActionExecuteResponse, Actions } from "./actions";
 import { ActiveTriggers } from "./activeTriggers";
 import { Apps } from "./apps";
 import { BackendClient } from "./backendClient";
-import { ConnectedAccounts, ConnectionRequest } from "./connectedAccounts";
+import {
+  ConnectedAccounts,
+  ConnectionItem,
+  ConnectionRequest,
+} from "./connectedAccounts";
 import { Integrations } from "./integrations";
 import { Triggers } from "./triggers";
 
@@ -16,42 +28,26 @@ const LABELS = {
   PRIMARY: "primary",
 };
 
-const ZExecuteActionParams = z.object({
-  actionName: z.string(),
-  params: z.record(z.any()).optional(),
-  text: z.string().optional(),
-  connectedAccountId: z.string().optional(),
-});
+// Types from zod schemas
+type TriggerSubscribeParam = z.infer<typeof ZTriggerSubscribeParam>;
+type ConnectionParams = z.infer<typeof ZConnectionParams>;
+type InitiateConnectionParams = z.infer<typeof ZInitiateConnectionParams>;
+type ExecuteActionParams = z.infer<typeof ZExecuteActionParams>;
 
-type TExecuteActionParams = z.infer<typeof ZExecuteActionParams>;
-
-const ZInitiateConnectionParams = z.object({
-  appName: z.string().optional(),
-  authConfig: z.record(z.any()).optional(),
-  integrationId: z.string().optional(),
-  authMode: z.string().optional(),
-  connectionData: z.record(z.any()).optional(),
-  config: z
-    .object({
-      labels: z.array(z.string()).optional(),
-      redirectUrl: z.string().optional(),
-    })
-    .optional(),
-});
-
-type TInitiateConnectionParams = z.infer<typeof ZInitiateConnectionParams>;
+// type from API
+export type ConnectedAccountListRes = GetConnectionsResponseDto;
 
 export class Entity {
   id: string;
-  backendClient: BackendClient;
-  triggerModel: Triggers;
-  actionsModel: Actions;
-  apps: Apps;
-  connectedAccounts: ConnectedAccounts;
-  integrations: Integrations;
-  activeTriggers: ActiveTriggers;
+  private backendClient: BackendClient;
+  private triggerModel: Triggers;
+  private actionsModel: Actions;
+  private apps: Apps;
+  private connectedAccounts: ConnectedAccounts;
+  private integrations: Integrations;
+  private activeTriggers: ActiveTriggers;
 
-  fileName: string = "js/src/sdk/models/Entity.ts";
+  private fileName: string = "js/src/sdk/models/Entity.ts";
 
   constructor(backendClient: BackendClient, id: string = "default") {
     this.backendClient = backendClient;
@@ -69,7 +65,7 @@ export class Entity {
     params,
     text,
     connectedAccountId,
-  }: TExecuteActionParams) {
+  }: ExecuteActionParams): Promise<ActionExecuteResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "execute",
       file: this.fileName,
@@ -91,7 +87,7 @@ export class Entity {
       const app = await this.apps.get({
         appKey: action.appKey!,
       });
-      if ((app.yaml as Record<string, unknown>).no_auth) {
+      if (app.no_auth) {
         return this.actionsModel.execute({
           actionName: actionName,
           requestBody: {
@@ -107,7 +103,7 @@ export class Entity {
 
       if (!connectedAccount) {
         throw CEG.getCustomError(
-          SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
+          COMPOSIO_SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
           {
             message: `Could not find a connection with app='${action.appKey}' and entity='${this.id}'`,
             description: `Could not find a connection with app='${action.appKey}' and entity='${this.id}'`,
@@ -129,19 +125,14 @@ export class Entity {
     }
   }
 
-  async getConnection({
-    app,
-    connectedAccountId,
-  }: {
-    app?: string;
-    connectedAccountId?: string;
-  }) {
+  async getConnection({ app, connectedAccountId }: ConnectionParams) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getConnection",
       file: this.fileName,
       params: { app, connectedAccountId },
     });
     try {
+      ZConnectionParams.parse({ app, connectedAccountId });
       if (connectedAccountId) {
         return await this.connectedAccounts.get({
           connectedAccountId,
@@ -194,21 +185,18 @@ export class Entity {
     }
   }
 
-  async setupTrigger(
-    app: string,
-    triggerName: string,
-    config: Record<string, unknown>
-  ) {
+  async setupTrigger({ app, triggerName, config }: TriggerSubscribeParam) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "setupTrigger",
       file: this.fileName,
       params: { app, triggerName, config },
     });
     try {
+      ZTriggerSubscribeParam.parse({ app, triggerName, config });
       const connectedAccount = await this.getConnection({ app });
       if (!connectedAccount) {
         throw CEG.getCustomError(
-          SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
+          COMPOSIO_SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
           {
             description: `Could not find a connection with app='${app}' and entity='${this.id}'`,
           }
@@ -225,6 +213,9 @@ export class Entity {
     }
   }
 
+  /* 
+  deprecated
+  */
   async disableTrigger(triggerId: string) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "disableTrigger",
@@ -239,7 +230,7 @@ export class Entity {
     }
   }
 
-  async getConnections() {
+  async getConnections(): Promise<ConnectionItem[]> {
     /**
      * Get all connections for an entity.
      */
@@ -250,7 +241,6 @@ export class Entity {
     });
     try {
       const connectedAccounts = await this.connectedAccounts.list({
-        // @ts-ignore
         user_uuid: this.id,
       });
       return connectedAccounts.items!;
@@ -283,7 +273,7 @@ export class Entity {
   }
 
   async initiateConnection(
-    data: TInitiateConnectionParams
+    data: InitiateConnectionParams
   ): Promise<ConnectionRequest> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "initiateConnection",
@@ -296,11 +286,14 @@ export class Entity {
       const { redirectUrl, labels } = data.config || {};
 
       if (!integrationId && !appName) {
-        throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED, {
-          message: "Please pass appName or integrationId",
-          description:
-            "We need atleast one of the params to initiate a connection",
-        });
+        throw CEG.getCustomError(
+          COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
+          {
+            message: "Please pass appName or integrationId",
+            description:
+              "We need atleast one of the params to initiate a connection",
+          }
+        );
       }
 
       /* Get the integration */
@@ -312,10 +305,13 @@ export class Entity {
         : null;
 
       if (isIntegrationIdPassed && !integration) {
-        throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED, {
-          message: "Integration not found",
-          description: "The integration with the given id does not exist",
-        });
+        throw CEG.getCustomError(
+          COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
+          {
+            message: "Integration not found",
+            description: "The integration with the given id does not exist",
+          }
+        );
       }
 
       /* If integration is not found, create a new integration */
@@ -326,7 +322,7 @@ export class Entity {
           integration = await this.integrations.create({
             appId: app.appId!,
             name: `integration_${timestamp}`,
-            authScheme: authMode,
+            authScheme: authMode as z.infer<typeof ZAuthMode>,
             authConfig: authConfig,
             useComposioAuth: false,
           });
