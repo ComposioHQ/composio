@@ -27,7 +27,7 @@ describe("ActionRegistry", () => {
     });
 
     const callback = async (_params: Record<string, unknown>) => {
-      return { success: true };
+      return { data: { success: true }, successful: true };
     };
 
     const options = {
@@ -76,7 +76,7 @@ describe("ActionRegistry", () => {
       description: "This is a test action",
       inputParams: params,
       callback: async function () {
-        return { success: true };
+        return { data: { success: true }, successful: true };
       },
     };
 
@@ -91,7 +91,7 @@ describe("ActionRegistry", () => {
     });
 
     const callback = async (_params: Record<string, unknown>) => {
-      return { success: true };
+      return { data: { success: true }, successful: true };
     };
 
     const options = {
@@ -124,7 +124,7 @@ describe("ActionRegistry", () => {
     });
 
     const callback = async (_params: Record<string, unknown>) => {
-      return { success: true };
+      return { data: { success: true }, successful: true };
     };
 
     const options = {

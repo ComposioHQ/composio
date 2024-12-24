@@ -9,7 +9,7 @@ import { CEG } from "./utils/error";
 import { SDK_ERROR_CODES } from "./utils/errors/src/constants";
 
 type RawExecuteRequestParam = {
-  connectedAccountId: string;
+  connectedAccountId?: string;
   endpoint: string;
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   parameters: Array<Parameter>;
@@ -124,7 +124,7 @@ export class ActionRegistry {
     name: string,
     inputParams: Record<string, unknown>,
     metadata: ExecuteMetadata
-  ): Promise<ActionExecuteResponse | Record<string, unknown>> {
+  ): Promise<ActionExecuteResponse> {
     const lowerCaseName = name.toLocaleLowerCase();
     if (!this.customActions.has(lowerCaseName)) {
       throw new Error(`Action with name ${name} does not exist`);

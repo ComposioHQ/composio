@@ -92,6 +92,15 @@ export class Apps {
     }
   }
 
+  /**
+   * Retrieves the required parameters for a specific app in the Composio platform.
+   *
+   * This method allows clients to fetch the necessary parameters for a specific app by providing its unique key. The response includes the app's name, key, status, description, logo, categories, authentication schemes, and other metadata.
+   *
+   * @param {string} appId The unique key of the app.
+   * @returns {Promise<RequiredParamsFullResponse>} A promise that resolves to the required parameters for the app.
+   * @throws {ComposioError} If the request fails.
+   */
   async getRequiredParams(appId: string): Promise<RequiredParamsFullResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getRequiredParams",
@@ -150,6 +159,15 @@ export class Apps {
     }
   }
 
+  /**
+   * Retrieves the required parameters for a specific authentication scheme of an app in the Composio platform.
+   *
+   * This method allows clients to fetch the necessary parameters for a specific authentication scheme of an app by providing its unique key and the authentication scheme.
+   *
+   * @param {GetRequiredParamsForAuthScheme} data The data for the request, including the app's unique key and the authentication scheme.
+   * @returns {Promise<RequiredParamsResponse>} A promise that resolves to the required parameters for the authentication scheme.
+   * @throws {ComposioError} If the request fails.
+   */
   async getRequiredParamsForAuthScheme({
     appId,
     authScheme,
@@ -161,7 +179,7 @@ export class Apps {
     });
     try {
       ZGetRequiredParamsForAuthScheme.parse({ appId, authScheme });
-      const params = await this.getRequiredParams({ appId });
+      const params = await this.getRequiredParams(appId);
       return params.authSchemes[authScheme];
     } catch (error) {
       throw CEG.handleAllError(error);

@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from "@jest/globals";
 import { z } from "zod";
 import { getTestConfig } from "../../config/getTestConfig";
 import { LangchainToolSet } from "./langchain";
+import { ActionExecuteResponse } from "../sdk/models/actions";
 
 describe("Apps class tests", () => {
   let langchainToolSet: LangchainToolSet;
@@ -45,16 +46,11 @@ describe("Apps class tests", () => {
         owner: z.string(),
         repo: z.string(),
       }),
-      callback: async (inputParams, authCredentials, executeRequest) => {
-        try {
-          const res = await executeRequest({
-            endpoint: `/user/starred/${inputParams.owner}/${inputParams.repo}`,
-            method: "PUT",
-            parameters: [],
-          });
-          return res;
-        } catch (_e) {
-          return {};
+      callback: async (inputParams, authCredentials, executeRequest): Promise<ActionExecuteResponse> => {
+        return {
+          data: {},
+          error: "An error occurred while executing the request.",
+          successful: false,
         }
       },
     });

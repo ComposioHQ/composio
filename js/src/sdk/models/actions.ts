@@ -201,7 +201,7 @@ export class Actions {
    * @returns {Promise<ActionExecuteResponse>} A promise that resolves to the execution status and response data.
    * @throws {ComposioError} If the request fails.
    */
-  async executeRequest(data: ExecuteReqDTO): Promise<ActionExecutionResDto> {
+  async executeRequest(data: ExecuteReqDTO): Promise<ActionExecuteResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "executeRequest",
       file: this.fileName,

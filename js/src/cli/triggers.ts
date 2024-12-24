@@ -178,7 +178,7 @@ export class TriggerDisable {
   async handleAction(triggerId: string): Promise<void> {
     const composioClient = new Composio({});
     try {
-      await composioClient.triggers.disable({ triggerId });
+      await composioClient.triggers.disable(triggerId);
       console.log(chalk.green(`Trigger ${triggerId} disabled`));
     } catch (error) {
       console.log(chalk.red(`Error disabling trigger ${triggerId}: ${error}`));
@@ -201,7 +201,7 @@ export class TriggerEnable {
   async handleAction(triggerId: string): Promise<void> {
     const composioClient = new Composio({});
     try {
-      await composioClient.triggers.enable({ triggerId });
+      await composioClient.triggers.enable(triggerId);
       console.log(chalk.green(`Trigger ${triggerId} enabled`));
     } catch (error) {
       console.log(chalk.red(`Error enabling trigger ${triggerId}: ${error}`));
