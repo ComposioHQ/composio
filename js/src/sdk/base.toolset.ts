@@ -47,7 +47,7 @@ export class ComposioToolSet {
   } = {};
 
   constructor(
-    apiKey: string | null,
+    apiKey: string | null = null,
     baseUrl: string | null = COMPOSIO_BASE_URL,
     runtime: string | null = null,
     _entityId: string = "default"
