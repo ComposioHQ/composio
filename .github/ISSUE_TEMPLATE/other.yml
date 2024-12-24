@@ -22,7 +22,7 @@ body:
     id: terms_checklist_discussion
     attributes:
       label: "Code of Conduct"
-      description: "By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/ComposioHQ/composio/blob/main/CODE_OF_CONDUCT.md) and [Contributing Guidelines](https://github.com/ComposioHQ/composio/blob/main/CONTRIBUTING.md)."
+      description: "By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/ComposioHQ/composio/blob/7c89483bf1c8f76687765c37a14fc995eae1b44d/CODE_OF_CONDUCT.md)."
       options:
         - label: "I have checked the [existing issues](https://github.com/ComposioHQ/composio/issues?q=is%3Aissue+)."
           required: true
