@@ -191,7 +191,7 @@ async function main() {
 
   const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
 
-  const response = await agentExecutor.invoke({ input: "Create an issue on linear to update the frontend to with new design and description 'Refer to the design in the attachment', estimate is 5 (L) & return the issue id" });
+  const response = await agentExecutor.invoke({ input: "Create an issue on linear to update the frontend to with new design and description 'to update the frontend with new design', estimate is 5 (L) & return the issue id" });
   console.log(response);
 }
 
