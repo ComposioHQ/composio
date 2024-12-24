@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { ZAuthMode } from "./integration";
 
 export const ZConnectionStatus = z.enum(["INITIATED", "ACTIVE", "FAILED"]);
+
 export const ZListConnectionsData = z.object({
   appNames: z.string().optional(),
   connectionId: z.string().optional(),
@@ -21,7 +23,7 @@ export const ZInitiateConnectionDataReq = z.object({
   labels: z.string().array().optional(),
   integrationId: z.string().optional(),
   redirectUri: z.string().optional(),
-  authMode: z.string().optional(),
+  authMode: ZAuthMode.optional(),
   authConfig: z.record(z.string(), z.unknown()).optional(),
   appName: z.string().optional(),
 });

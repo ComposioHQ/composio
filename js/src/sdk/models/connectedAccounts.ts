@@ -1,5 +1,7 @@
 import { z } from "zod";
 import {
+  ConnectedAccountResponseDTO,
+  DeleteRowAPIDTO,
   GetConnectionInfoResponse,
   GetConnectionsResponseDto,
 } from "../client";
@@ -11,6 +13,7 @@ import {
   ZSaveUserAccessDataParam,
   ZSingleCOnnectionParam,
 } from "../types/connectedAccount";
+import { ZAuthMode } from "../types/integration";
 import { CEG } from "../utils/error";
 import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
@@ -27,6 +30,10 @@ type SaveUserAccessDataParam = z.infer<typeof ZSaveUserAccessDataParam>;
 type InitiateConnectionPayloadDto = z.infer<
   typeof ZInitiateConnectionPayloadDto
 >;
+
+export type ConnectedAccountListResponse = GetConnectionsResponseDto;
+export type SingleConnectedAccountResponse = ConnectedAccountResponseDTO;
+export type SingleDeleteResponse = DeleteRowAPIDTO;
 export class ConnectedAccounts {
   backendClient: BackendClient;
   integrations: Integrations;
@@ -55,7 +62,7 @@ export class ConnectedAccounts {
     }
   }
 
-  async create(data: InitiateConnectionPayloadDto) {
+  async create(data: InitiateConnectionPayloadDto): Promise<ConnectionRequest> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "create",
       file: this.fileName,
@@ -77,7 +84,9 @@ export class ConnectedAccounts {
     }
   }
 
-  async get(data: SingleConnectionParam) {
+  async get(
+    data: SingleConnectionParam
+  ): Promise<SingleConnectedAccountResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "get",
       file: this.fileName,
@@ -85,14 +94,17 @@ export class ConnectedAccounts {
     });
     try {
       ZSingleCOnnectionParam.parse(data);
-      const res = await apiClient.connections.getConnection({ path: data });
+      const res = await apiClient.connections.getConnection({
+        path: data,
+        throwOnError: true,
+      });
       return res.data;
     } catch (error) {
       throw CEG.handleAllError(error);
     }
   }
 
-  async delete(data: SingleConnectionParam) {
+  async delete(data: SingleConnectionParam): Promise<SingleDeleteResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "delete",
       file: this.fileName,
@@ -100,24 +112,11 @@ export class ConnectedAccounts {
     });
     try {
       ZSingleCOnnectionParam.parse(data);
-      const res = await apiClient.connections.deleteConnection({ path: data });
-      return res.data;
-    } catch (error) {
-      throw CEG.handleAllError(error);
-    }
-  }
-
-  async getAuthParams(data: SingleConnectionParam) {
-    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
-      method: "getAuthParams",
-      file: this.fileName,
-      params: { data },
-    });
-    try {
-      const res = await apiClient.connections.getConnection({
-        path: { connectedAccountId: data.connectedAccountId },
+      const res = await apiClient.connections.deleteConnection({
+        path: data,
+        throwOnError: true,
       });
-      return res.data;
+      return res.data!;
     } catch (error) {
       throw CEG.handleAllError(error);
     }
@@ -165,7 +164,7 @@ export class ConnectedAccounts {
         const integration = await this.integrations.create({
           appId: app.appId!,
           name: `integration_${timestamp}`,
-          authScheme: authMode,
+          authScheme: authMode as z.infer<typeof ZAuthMode>,
           authConfig: authConfig,
           useComposioAuth: false,
         });
