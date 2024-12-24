@@ -35,8 +35,8 @@ export type TriggerSetupResponse = {
 export class Triggers {
   trigger_to_client_event = "trigger_to_client";
 
-  backendClient: BackendClient;
-  fileName: string = "js/src/sdk/models/triggers.ts";
+  private backendClient: BackendClient;
+  private fileName: string = "js/src/sdk/models/triggers.ts";
   constructor(backendClient: BackendClient) {
     this.backendClient = backendClient;
   }

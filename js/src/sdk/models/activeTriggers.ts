@@ -15,8 +15,9 @@ export type GetActiveTriggersData = z.infer<typeof ZActiveTriggersQuery>;
 export type TriggerItem = z.infer<typeof ZActiveTriggerItemRes>;
 export type TriggerChangeResponse = { status: string };
 export class ActiveTriggers {
-  backendClient: BackendClient;
-  fileName: string = "js/src/sdk/models/activeTriggers.ts";
+  // Remove this as we might not need it
+  private backendClient: BackendClient;
+  private fileName: string = "js/src/sdk/models/activeTriggers.ts";
   constructor(backendClient: BackendClient) {
     this.backendClient = backendClient;
   }

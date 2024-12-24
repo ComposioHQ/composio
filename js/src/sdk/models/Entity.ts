@@ -39,15 +39,15 @@ export type ConnectedAccountListRes = GetConnectionsResponseDto;
 
 export class Entity {
   id: string;
-  backendClient: BackendClient;
-  triggerModel: Triggers;
-  actionsModel: Actions;
-  apps: Apps;
-  connectedAccounts: ConnectedAccounts;
-  integrations: Integrations;
-  activeTriggers: ActiveTriggers;
+  private backendClient: BackendClient;
+  private triggerModel: Triggers;
+  private actionsModel: Actions;
+  private apps: Apps;
+  private connectedAccounts: ConnectedAccounts;
+  private integrations: Integrations;
+  private activeTriggers: ActiveTriggers;
 
-  fileName: string = "js/src/sdk/models/Entity.ts";
+  private fileName: string = "js/src/sdk/models/Entity.ts";
 
   constructor(backendClient: BackendClient, id: string = "default") {
     this.backendClient = backendClient;

@@ -36,8 +36,8 @@ export type ListAllAppsResponse = AppListResDTO;
 export type AppItemListResponse = AppInfoResponseDto;
 
 export class Apps {
-  backendClient: BackendClient;
-  fileName: string = "js/src/sdk/models/apps.ts";
+  private backendClient: BackendClient;
+  private fileName: string = "js/src/sdk/models/apps.ts";
   constructor(backendClient: BackendClient) {
     this.backendClient = backendClient;
   }

@@ -38,10 +38,10 @@ export type SingleDeleteResponse = DeleteRowAPIDTO;
 export type ConnectionItem = ConnectionParams;
 
 export class ConnectedAccounts {
-  backendClient: BackendClient;
-  integrations: Integrations;
-  apps: Apps;
-  fileName: string = "js/src/sdk/models/connectedAccounts.ts";
+  private backendClient: BackendClient;
+  private integrations: Integrations;
+  private apps: Apps;
+  private fileName: string = "js/src/sdk/models/connectedAccounts.ts";
 
   constructor(backendClient: BackendClient) {
     this.backendClient = backendClient;

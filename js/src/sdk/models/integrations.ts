@@ -32,8 +32,8 @@ export type IntegrationGetResponse = GetConnectorInfoResDTO;
 export type IntegrationRequiredParamsRes = ExpectedInputFieldsDTO[];
 export type IntegrationDeleteResponse = DeleteRowAPIDTO;
 export class Integrations {
-  backendClient: BackendClient;
-  fileName: string = "js/src/sdk/models/integrations.ts";
+  private backendClient: BackendClient;
+  private fileName: string = "js/src/sdk/models/integrations.ts";
 
   constructor(backendClient: BackendClient) {
     this.backendClient = backendClient;

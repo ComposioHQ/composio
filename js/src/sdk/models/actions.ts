@@ -41,7 +41,8 @@ export type GetListActionsResponse = ActionsListResponseDTO;
 export type ActionExecuteResponse = ActionExecutionResDto;
 
 export class Actions {
-  backendClient: BackendClient;
+  // Remove this as we might not need it
+  private backendClient: BackendClient;
   fileName: string = "js/src/sdk/models/actions.ts";
 
   constructor(backendClient: BackendClient) {
