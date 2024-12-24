@@ -65,6 +65,8 @@ export class Composio {
     ComposioSDKContext.apiKey = apiKeyParsed;
     ComposioSDKContext.baseURL = baseURLParsed;
     ComposioSDKContext.frameworkRuntime = config?.runtime;
+
+    //eslint-disable-next-line @typescript-eslint/no-require-imports
     ComposioSDKContext.composioVersion = require(
       getPackageJsonDir() + "/package.json"
     ).version;

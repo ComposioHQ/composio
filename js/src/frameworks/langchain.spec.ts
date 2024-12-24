@@ -46,7 +46,7 @@ describe("Apps class tests", () => {
         owner: z.string(),
         repo: z.string(),
       }),
-      callback: async (inputParams, authCredentials, executeRequest): Promise<ActionExecuteResponse> => {
+      callback: async (_inputParams, _authCredentials, _executeRequest): Promise<ActionExecuteResponse> => {
         return {
           data: {},
           error: "An error occurred while executing the request.",
