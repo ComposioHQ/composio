@@ -99,6 +99,7 @@ class Enum(t.Generic[DataT]):
         if not path.exists():
             # pylint: disable=import-outside-toplevel
             from composio.client import Composio
+
             # pylint: disable=import-outside-toplevel
             from composio.client.utils import check_cache_refresh
 
