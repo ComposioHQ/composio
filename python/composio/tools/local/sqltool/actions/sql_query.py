@@ -1,5 +1,4 @@
 import sqlite3
-import sqlalchemy
 from pathlib import Path
 from typing import Dict
 
@@ -42,11 +41,13 @@ class SqlQuery(LocalAction[SqlQueryRequest, SqlQueryResponse]):
 
     def execute(self, request: SqlQueryRequest, metadata: Dict) -> SqlQueryResponse:
         """Execute SQL query for either SQLite or remote databases"""
+        import sqlalchemy.exc  # pylint: disable=import-outside-toplevel
+
         try:
             if self._is_sqlite_connection(request.connection_string):
                 return self._execute_sqlite(request)
-            else:
-                return self._execute_remote(request)
+
+            return self._execute_remote(request)
         except sqlite3.Error as e:
             raise ValueError(f"SQLite database error: {str(e)}") from e
         except sqlalchemy.exc.SQLAlchemyError as e:
@@ -61,7 +62,7 @@ class SqlQuery(LocalAction[SqlQueryRequest, SqlQueryResponse]):
             raise ValueError(f"Error: Database file '{db_path}' does not exist.")
         with sqlite3.connect(db_path) as connection:
             cursor = connection.cursor()
-            cursor.execute(request.query, {})
+            cursor.execute(request.query)
             response_data = [list(row) for row in cursor.fetchall()]
             connection.commit()
         return SqlQueryResponse(
@@ -71,6 +72,8 @@ class SqlQuery(LocalAction[SqlQueryRequest, SqlQueryResponse]):
 
     def _execute_remote(self, request: SqlQueryRequest) -> SqlQueryResponse:
         """Execute query for remote databases"""
+        import sqlalchemy  # pylint: disable=import-outside-toplevel
+
         engine = sqlalchemy.create_engine(
             request.connection_string,
             pool_size=5,
