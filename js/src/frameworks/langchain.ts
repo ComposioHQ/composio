@@ -4,7 +4,7 @@ import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
-import type { Optional, Sequence } from "../types/base";
+import type { Optional, Sequence } from "../types/util";
 import { ZToolSchemaFilter } from "../types/base_toolset";
 import { jsonSchemaToModel } from "../utils/shared";
 type ToolSchema = {

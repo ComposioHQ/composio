@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { Composio } from "../sdk";
-import type { Optional, Sequence } from "../types/base";
+import type { Optional, Sequence } from "../types/util";
 import {
   RawActionData,
   TPostProcessor,
