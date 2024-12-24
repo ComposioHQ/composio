@@ -12,6 +12,8 @@ class Sqltool(LocalTool, autoload=True):
 
     logo = "https://raw.githubusercontent.com/ComposioHQ/composio/master/python/docs/imgs/logos/sqltool.png"
 
+    requires = ["sqlalchemy>=2.0"]
+
     @classmethod
     def actions(cls) -> list[Type[LocalAction]]:
         return [SqlQuery]
