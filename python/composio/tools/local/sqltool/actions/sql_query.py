@@ -2,7 +2,6 @@ import sqlite3
 from pathlib import Path
 from typing import Dict
 
-import sqlalchemy
 from pydantic import BaseModel, Field
 
 from composio.tools.base.local import LocalAction
@@ -42,6 +41,8 @@ class SqlQuery(LocalAction[SqlQueryRequest, SqlQueryResponse]):
 
     def execute(self, request: SqlQueryRequest, metadata: Dict) -> SqlQueryResponse:
         """Execute SQL query for either SQLite or remote databases"""
+        import sqlalchemy.exc  # pylint: disable=import-outside-toplevel
+
         try:
             if self._is_sqlite_connection(request.connection_string):
                 return self._execute_sqlite(request)
@@ -71,6 +72,8 @@ class SqlQuery(LocalAction[SqlQueryRequest, SqlQueryResponse]):
 
     def _execute_remote(self, request: SqlQueryRequest) -> SqlQueryResponse:
         """Execute query for remote databases"""
+        import sqlalchemy  # pylint: disable=import-outside-toplevel
+
         engine = sqlalchemy.create_engine(
             request.connection_string,
             pool_size=5,

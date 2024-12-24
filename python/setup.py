@@ -43,7 +43,6 @@ core_requirements = [
     "jsonref>=1.1.0",
     "inflection>=0.5.1",
     "semver>=2.13.0",
-    "SQLAlchemy>=2.0.36",
     # CLI dependencies
     "click",
     "rich>=13.7.1,<14",
