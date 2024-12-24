@@ -1,4 +1,5 @@
 import json
+import os
 import typing as t
 
 from composio.client import Composio, enums
@@ -13,6 +14,8 @@ EnumModels = t.Union[AppModel, ActionModel, TriggerModel]
 
 
 logger = get_logger(__name__)
+
+NO_CACHE_REFRESH = os.getenv("COMPOSIO_NO_CACHE_REFRESH", "false") == "true"
 
 
 def filter_non_beta_items(items: t.Sequence[EnumModels]) -> t.List:
@@ -215,6 +218,9 @@ def check_cache_refresh(client: Composio) -> None:
     SDK version, and didn't come from the API. We need to start storing the data
     from the API and invalidate the cache if the data is not already stored.
     """
+    if NO_CACHE_REFRESH:
+        return
+    
     if enums.base.ACTIONS_CACHE.exists():
         first_file = next(enums.base.ACTIONS_CACHE.iterdir(), None)
         if first_file is not None:

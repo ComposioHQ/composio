@@ -97,7 +97,12 @@ class Enum(t.Generic[DataT]):
         # If we try to fetch Actions.iter() with local caching disabled
         # for example, we'd get here.
         if not path.exists():
-            return
+            from composio.client import Composio
+            from composio.client.utils import check_cache_refresh
+
+            check_cache_refresh(Composio.get_latest())
+            if not path.exists():
+                return
 
         yield from os.listdir(path)
 
