@@ -45,8 +45,8 @@ class SqlQuery(LocalAction[SqlQueryRequest, SqlQueryResponse]):
         try:
             if self._is_sqlite_connection(request.connection_string):
                 return self._execute_sqlite(request)
-            else:
-                return self._execute_remote(request)
+
+            return self._execute_remote(request)
         except sqlite3.Error as e:
             raise ValueError(f"SQLite database error: {str(e)}") from e
         except sqlalchemy.exc.SQLAlchemyError as e:

@@ -97,7 +97,9 @@ class Enum(t.Generic[DataT]):
         # If we try to fetch Actions.iter() with local caching disabled
         # for example, we'd get here.
         if not path.exists():
+            # pylint: disable=import-outside-toplevel
             from composio.client import Composio
+            # pylint: disable=import-outside-toplevel
             from composio.client.utils import check_cache_refresh
 
             check_cache_refresh(Composio.get_latest())
