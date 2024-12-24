@@ -70,6 +70,10 @@
     {
       "name": "All Tools",
       "url": "https://composio.dev/tools"
+    },
+    {
+      "name": "Chat with Code",
+      "url": "https://chatgpt.com/g/g-67697db23c808191a1787ea4b86ac1ce-composio"
     }
   ],
   "navigation": [
