@@ -61,7 +61,7 @@ class SqlQuery(LocalAction[SqlQueryRequest, SqlQueryResponse]):
             raise ValueError(f"Error: Database file '{db_path}' does not exist.")
         with sqlite3.connect(db_path) as connection:
             cursor = connection.cursor()
-            cursor.execute(request.query, {})
+            cursor.execute(request.query)
             response_data = [list(row) for row in cursor.fetchall()]
             connection.commit()
         return SqlQueryResponse(
