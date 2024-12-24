@@ -47,15 +47,16 @@ describe("Apps class tests", () => {
         repo: z.string(),
       }),
       callback: async (
-        _inputParams,
+        inputParams,
         _authCredentials,
-        _executeRequest
+        executeRequest
       ): Promise<ActionExecuteResponse> => {
-        return {
-          data: {},
-          error: "An error occurred while executing the request.",
-          successful: false,
-        };
+        const res = await executeRequest({
+          endpoint: `/user/starred/${inputParams.owner}/${inputParams.repo}`,
+          method: "PUT",
+          parameters: [],
+        });
+        return res;
       },
     });
 
@@ -69,6 +70,6 @@ describe("Apps class tests", () => {
       connectedAccountId: "9442cab3-d54f-4903-976c-ee67ef506c9b",
     });
 
-    expect(actionOuput).toHaveProperty("successfull", true);
+    expect(actionOuput).toHaveProperty("successful", true);
   });
 });

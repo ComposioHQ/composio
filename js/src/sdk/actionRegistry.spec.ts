@@ -109,7 +109,7 @@ describe("ActionRegistry", () => {
       {}
     );
 
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ data: { success: true }, successful: true });
   });
 
   it("should throw an error if action does not exist", async () => {
