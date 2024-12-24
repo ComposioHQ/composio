@@ -6,6 +6,7 @@ import { VercelAIToolSet } from "./frameworks/vercel";
 import { Composio } from "./sdk/index";
 import { ConnectionRequest } from "./sdk/models/connectedAccounts";
 import { ComposioError } from "./sdk/utils/errors/src/composioError";
+import { COMPOSIO_SDK_ERROR_CODES } from "./sdk/utils/errors/src/constants";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { APPS, ACTIONS } = require("./constants");
 
@@ -13,6 +14,7 @@ export {
   // Constants
   ACTIONS,
   APPS,
+  COMPOSIO_SDK_ERROR_CODES,
   // Frameworks
   CloudflareToolSet,
   // SDK

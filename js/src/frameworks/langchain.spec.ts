@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, it } from "@jest/globals";
 import { z } from "zod";
 import { getTestConfig } from "../../config/getTestConfig";
-import { LangchainToolSet } from "./langchain";
 import { ActionExecuteResponse } from "../sdk/models/actions";
+import { LangchainToolSet } from "./langchain";
 
 describe("Apps class tests", () => {
   let langchainToolSet: LangchainToolSet;
@@ -46,12 +46,16 @@ describe("Apps class tests", () => {
         owner: z.string(),
         repo: z.string(),
       }),
-      callback: async (_inputParams, _authCredentials, _executeRequest): Promise<ActionExecuteResponse> => {
+      callback: async (
+        _inputParams,
+        _authCredentials,
+        _executeRequest
+      ): Promise<ActionExecuteResponse> => {
         return {
           data: {},
           error: "An error occurred while executing the request.",
           successful: false,
-        }
+        };
       },
     });
 

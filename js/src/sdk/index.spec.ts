@@ -6,7 +6,7 @@ import { Composio } from "./index";
 import { ComposioError } from "./utils/errors/src/composioError";
 import {
   BASE_ERROR_CODE_INFO,
-  SDK_ERROR_CODES,
+  COMPOSIO_SDK_ERROR_CODES,
 } from "./utils/errors/src/constants";
 const { COMPOSIO_API_KEY, BACKEND_HERMES_URL } = getTestConfig();
 
@@ -34,7 +34,7 @@ describe("Basic SDK spec suite", () => {
       await client.apps.list();
     } catch (e) {
       const error = e as ComposioError;
-      const errorCode = SDK_ERROR_CODES.BACKEND.NOT_FOUND;
+      const errorCode = COMPOSIO_SDK_ERROR_CODES.BACKEND.NOT_FOUND;
       const errorInfo = BASE_ERROR_CODE_INFO[errorCode];
       expect(error.errCode).toBe(errorCode);
       expect(error.message).toContain(errorInfo.message);
@@ -58,7 +58,7 @@ describe("Basic SDK spec suite", () => {
       await client.apps.list();
     } catch (e) {
       const error = e as ComposioError;
-      const errorCode = SDK_ERROR_CODES.BACKEND.BAD_REQUEST;
+      const errorCode = COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST;
       expect(error.errCode).toBe(errorCode);
       expect(error.message).toContain(
         "Validation Errors while making request to https://backend.composio.dev/api/v1/apps"
@@ -78,7 +78,7 @@ describe("Basic SDK spec suite", () => {
       await client.apps.list();
     } catch (e) {
       const error = e as ComposioError;
-      const errorCode = SDK_ERROR_CODES.BACKEND.SERVER_ERROR;
+      const errorCode = COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_ERROR;
       const errorInfo = BASE_ERROR_CODE_INFO[errorCode];
       expect(error.errCode).toBe(errorCode);
       expect(error.message).toContain(errorInfo.message);
@@ -94,7 +94,7 @@ describe("Basic SDK spec suite", () => {
       await client.apps.list();
     } catch (e) {
       const error = e as ComposioError;
-      const errorCode = SDK_ERROR_CODES.BACKEND.SERVER_UNAVAILABLE;
+      const errorCode = COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_UNAVAILABLE;
       const errorInfo = BASE_ERROR_CODE_INFO[errorCode];
       expect(error.errCode).toBe(errorCode);
       expect(error.message).toContain(errorInfo.message);
@@ -116,7 +116,7 @@ describe("Basic SDK spec suite", () => {
       await client.apps.list();
     } catch (e) {
       const error = e as ComposioError;
-      const errorCode = SDK_ERROR_CODES.COMMON.REQUEST_TIMEOUT;
+      const errorCode = COMPOSIO_SDK_ERROR_CODES.COMMON.REQUEST_TIMEOUT;
       const errorInfo = BASE_ERROR_CODE_INFO[errorCode];
       expect(error.errCode).toBe(errorCode);
       expect(error.message).toContain(errorInfo.message);

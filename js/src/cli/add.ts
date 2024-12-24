@@ -3,10 +3,10 @@ import chalk from "chalk";
 import { Command } from "commander";
 import inquirer from "inquirer";
 import open from "open";
+import { z } from "zod";
 import { Composio } from "../sdk";
 import { GetConnectorInfoResDTO, GetConnectorListResDTO } from "../sdk/client";
 import { ZAuthMode } from "../sdk/types/integration";
-import { z } from "zod";
 
 type TInputField = {
   name: string;

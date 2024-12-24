@@ -16,7 +16,7 @@ import {
 } from "../types/connectedAccount";
 import { ZAuthMode } from "../types/integration";
 import { CEG } from "../utils/error";
-import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
+import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { Apps } from "./apps";
@@ -175,11 +175,14 @@ export class ConnectedAccounts {
         integrationId = integration?.id!;
 
         if (!integrationId) {
-          throw CEG.getCustomError(SDK_ERROR_CODES.BACKEND.BAD_REQUEST, {
-            message: `Can't create integration for ${appName} with authMode ${authMode}`,
-            possibleFix:
-              "Check if the authMode is supported by the app and validate the authConfig",
-          });
+          throw CEG.getCustomError(
+            COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST,
+            {
+              message: `Can't create integration for ${appName} with authMode ${authMode}`,
+              possibleFix:
+                "Check if the authMode is supported by the app and validate the authConfig",
+            }
+          );
         }
       }
 

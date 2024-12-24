@@ -1,5 +1,5 @@
 import { AxiosError } from "axios";
-import { SDK_ERROR_CODES } from "./constants";
+import { COMPOSIO_SDK_ERROR_CODES } from "./constants";
 
 export interface ErrorResponseData {
   message: string;
@@ -31,11 +31,11 @@ export const getAPIErrorDetails = (
 
   const metadata = generateMetadataFromAxiosError(axiosError);
   switch (errorKey) {
-    case SDK_ERROR_CODES.BACKEND.NOT_FOUND:
-    case SDK_ERROR_CODES.BACKEND.UNAUTHORIZED:
-    case SDK_ERROR_CODES.BACKEND.SERVER_ERROR:
-    case SDK_ERROR_CODES.BACKEND.SERVER_UNAVAILABLE:
-    case SDK_ERROR_CODES.BACKEND.RATE_LIMIT:
+    case COMPOSIO_SDK_ERROR_CODES.BACKEND.NOT_FOUND:
+    case COMPOSIO_SDK_ERROR_CODES.BACKEND.UNAUTHORIZED:
+    case COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_ERROR:
+    case COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_UNAVAILABLE:
+    case COMPOSIO_SDK_ERROR_CODES.BACKEND.RATE_LIMIT:
       return {
         message: `${predefinedError.message || axiosError.message} for ${axiosError.config?.baseURL! + axiosError.config?.url!}`,
         description: (axiosError.response?.data?.message! ||
@@ -45,7 +45,7 @@ export const getAPIErrorDetails = (
         metadata,
       };
 
-    case SDK_ERROR_CODES.BACKEND.BAD_REQUEST:
+    case COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST:
       const validationErrors = axiosError.response?.data?.errors;
       const formattedErrors = Array.isArray(validationErrors)
         ? validationErrors
@@ -63,8 +63,8 @@ export const getAPIErrorDetails = (
         metadata,
       };
 
-    case SDK_ERROR_CODES.BACKEND.UNKNOWN:
-    case SDK_ERROR_CODES.COMMON.UNKNOWN:
+    case COMPOSIO_SDK_ERROR_CODES.BACKEND.UNKNOWN:
+    case COMPOSIO_SDK_ERROR_CODES.COMMON.UNKNOWN:
       return {
         message: `${axiosError.message} for ${axiosError.config?.baseURL! + axiosError.config?.url!}`,
         description: (axiosError.response?.data?.message! ||

@@ -9,7 +9,7 @@ import {
 } from "../types/entity";
 import { ZAuthMode } from "../types/integration";
 import { CEG } from "../utils/error";
-import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
+import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { ActionExecuteResponse, Actions } from "./actions";
@@ -103,7 +103,7 @@ export class Entity {
 
       if (!connectedAccount) {
         throw CEG.getCustomError(
-          SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
+          COMPOSIO_SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
           {
             message: `Could not find a connection with app='${action.appKey}' and entity='${this.id}'`,
             description: `Could not find a connection with app='${action.appKey}' and entity='${this.id}'`,
@@ -196,7 +196,7 @@ export class Entity {
       const connectedAccount = await this.getConnection({ app });
       if (!connectedAccount) {
         throw CEG.getCustomError(
-          SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
+          COMPOSIO_SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
           {
             description: `Could not find a connection with app='${app}' and entity='${this.id}'`,
           }
@@ -286,11 +286,14 @@ export class Entity {
       const { redirectUrl, labels } = data.config || {};
 
       if (!integrationId && !appName) {
-        throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED, {
-          message: "Please pass appName or integrationId",
-          description:
-            "We need atleast one of the params to initiate a connection",
-        });
+        throw CEG.getCustomError(
+          COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
+          {
+            message: "Please pass appName or integrationId",
+            description:
+              "We need atleast one of the params to initiate a connection",
+          }
+        );
       }
 
       /* Get the integration */
@@ -302,10 +305,13 @@ export class Entity {
         : null;
 
       if (isIntegrationIdPassed && !integration) {
-        throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED, {
-          message: "Integration not found",
-          description: "The integration with the given id does not exist",
-        });
+        throw CEG.getCustomError(
+          COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
+          {
+            message: "Integration not found",
+            description: "The integration with the given id does not exist",
+          }
+        );
       }
 
       /* If integration is not found, create a new integration */

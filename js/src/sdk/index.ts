@@ -12,7 +12,7 @@ import { Triggers } from "./models/triggers";
 import ComposioSDKContext from "./utils/composioContext";
 import { getSDKConfig } from "./utils/config";
 import { CEG } from "./utils/error";
-import { SDK_ERROR_CODES } from "./utils/errors/src/constants";
+import { COMPOSIO_SDK_ERROR_CODES } from "./utils/errors/src/constants";
 import { isNewerVersion } from "./utils/other";
 import { getPackageJsonDir } from "./utils/projectUtils";
 import { TELEMETRY_LOGGER } from "./utils/telemetry";
@@ -74,13 +74,16 @@ export class Composio {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_INITIALIZED, {});
 
     if (!apiKeyParsed) {
-      throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.API_KEY_UNAVAILABLE, {
-        message: "🔑 API Key is not provided",
-        description:
-          "You need to provide it in the constructor or as an environment variable COMPOSIO_API_KEY",
-        possibleFix:
-          "Please provide a valid API Key. You can get it from https://app.composio.dev/settings OR Check if you are passing it as an object in the constructor like - { apiKey: 'your-api-key' }",
-      });
+      throw CEG.getCustomError(
+        COMPOSIO_SDK_ERROR_CODES.COMMON.API_KEY_UNAVAILABLE,
+        {
+          message: "🔑 API Key is not provided",
+          description:
+            "You need to provide it in the constructor or as an environment variable COMPOSIO_API_KEY",
+          possibleFix:
+            "Please provide a valid API Key. You can get it from https://app.composio.dev/settings OR Check if you are passing it as an object in the constructor like - { apiKey: 'your-api-key' }",
+        }
+      );
     }
 
     logger.info(

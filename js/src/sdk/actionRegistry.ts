@@ -6,7 +6,7 @@ import { RawActionData } from "../types/base_toolset";
 import { ActionProxyRequestConfigDTO, Parameter } from "./client";
 import { ActionExecuteResponse } from "./models/actions";
 import { CEG } from "./utils/error";
-import { SDK_ERROR_CODES } from "./utils/errors/src/constants";
+import { COMPOSIO_SDK_ERROR_CODES } from "./utils/errors/src/constants";
 
 type RawExecuteRequestParam = {
   connectedAccountId?: string;
@@ -158,9 +158,12 @@ export class ActionRegistry {
       };
     }
     if (typeof callback !== "function") {
-      throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED, {
-        message: "Callback must be a function",
-      });
+      throw CEG.getCustomError(
+        COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
+        {
+          message: "Callback must be a function",
+        }
+      );
     }
 
     const executeRequest = async (data: RawExecuteRequestParam) => {

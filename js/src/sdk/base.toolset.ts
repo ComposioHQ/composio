@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { Composio } from "../sdk";
-import type { Optional, Sequence } from "../types/util";
 import {
   RawActionData,
   TPostProcessor,
@@ -9,6 +8,7 @@ import {
   ZExecuteActionParams,
   ZToolSchemaFilter,
 } from "../types/base_toolset";
+import type { Optional, Sequence } from "../types/util";
 import { getEnvVariable } from "../utils/shared";
 import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 import { COMPOSIO_BASE_URL } from "./client/core/OpenAPI";
