@@ -80,9 +80,6 @@ ParamType = t.TypeVar("ParamType")
 ProcessorType = te.Literal["pre", "post", "schema"]
 
 
-NO_CACHE_REFRESH = os.environ.get("COMPOSIO_NO_CACHE_REFRESH", "false") == "true"
-
-
 class IntegrationParams(te.TypedDict):
 
     integration_id: str
@@ -374,8 +371,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 base_url=self._base_url,
                 runtime=self._runtime,
             )
-            if not NO_CACHE_REFRESH:
-                check_cache_refresh(self._remote_client)
+            check_cache_refresh(self._remote_client)
 
         self._remote_client.local = self._local_client
         return self._remote_client
