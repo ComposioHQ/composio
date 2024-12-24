@@ -1713,7 +1713,7 @@ export type ActionExecutionResDto = {
    * Whether the action execution was successfully executed or not. If this is false, error field will be populated with the error message.
    * @deprecated
    */
-  successfull: boolean;
+  successfull?: boolean;
   /**
    * Whether the action execution was successfully executed or not. If this is false, error field will be populated with the error message.
    */

@@ -1,6 +1,6 @@
 import axios from "axios";
+import { z } from "zod";
 import logger from "../utils/logger";
-import { GetConnectorInfoResDTO } from "./client";
 import { Entity } from "./models/Entity";
 import { Actions } from "./models/actions";
 import { ActiveTriggers } from "./models/activeTriggers";
@@ -17,6 +17,17 @@ import { isNewerVersion } from "./utils/other";
 import { getPackageJsonDir } from "./utils/projectUtils";
 import { TELEMETRY_LOGGER } from "./utils/telemetry";
 import { TELEMETRY_EVENTS } from "./utils/telemetry/events";
+
+import {
+  ZGetExpectedParamsForUserParams,
+  ZGetExpectedParamsRes,
+} from "../types/composio";
+import { ZAuthMode } from "./types/integration";
+
+export type ComposioInputFieldsParams = z.infer<
+  typeof ZGetExpectedParamsForUserParams
+>;
+export type ComposioInputFieldsRes = z.infer<typeof ZGetExpectedParamsRes>;
 
 export class Composio {
   /**
@@ -138,29 +149,8 @@ export class Composio {
   }
 
   async getExpectedParamsForUser(
-    params: {
-      app?: string;
-      integrationId?: string;
-      entityId?: string;
-      authScheme?:
-        | "OAUTH2"
-        | "OAUTH1"
-        | "API_KEY"
-        | "BASIC"
-        | "BEARER_TOKEN"
-        | "BASIC_WITH_JWT";
-    } = {}
-  ): Promise<{
-    expectedInputFields: GetConnectorInfoResDTO["expectedInputFields"];
-    integrationId: string;
-    authScheme:
-      | "OAUTH2"
-      | "OAUTH1"
-      | "API_KEY"
-      | "BASIC"
-      | "BEARER_TOKEN"
-      | "BASIC_WITH_JWT";
-  }> {
+    params: ComposioInputFieldsParams
+  ): Promise<ComposioInputFieldsRes> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getExpectedParamsForUser",
       file: this.fileName,
@@ -199,13 +189,7 @@ export class Composio {
       return {
         expectedInputFields: integration.expectedInputFields,
         integrationId: integration.id!,
-        authScheme: integration.authScheme as
-          | "OAUTH2"
-          | "OAUTH1"
-          | "API_KEY"
-          | "BASIC"
-          | "BEARER_TOKEN"
-          | "BASIC_WITH_JWT",
+        authScheme: integration.authScheme as z.infer<typeof ZAuthMode>,
       };
     }
 
@@ -268,7 +252,7 @@ export class Composio {
       integration = await this.integrations.create({
         appId: appInfo.appId,
         name: `integration_${timestamp}`,
-        authScheme: schema,
+        authScheme: schema as z.infer<typeof ZAuthMode>,
         authConfig: {},
         useComposioAuth: true,
       });
@@ -276,13 +260,7 @@ export class Composio {
       return {
         expectedInputFields: integration?.expectedInputFields!,
         integrationId: integration?.id!,
-        authScheme: integration?.authScheme as
-          | "OAUTH2"
-          | "OAUTH1"
-          | "API_KEY"
-          | "BASIC"
-          | "BEARER_TOKEN"
-          | "BASIC_WITH_JWT",
+        authScheme: integration?.authScheme as z.infer<typeof ZAuthMode>,
       };
     }
 
@@ -297,7 +275,7 @@ export class Composio {
     integration = await this.integrations.create({
       appId: appInfo.appId,
       name: `integration_${timestamp}`,
-      authScheme: schema,
+      authScheme: schema as z.infer<typeof ZAuthMode>,
       authConfig: {},
       useComposioAuth: false,
     });
@@ -310,13 +288,7 @@ export class Composio {
     return {
       expectedInputFields: integration.expectedInputFields,
       integrationId: integration.id!,
-      authScheme: integration.authScheme as
-        | "OAUTH2"
-        | "OAUTH1"
-        | "API_KEY"
-        | "BASIC"
-        | "BEARER_TOKEN"
-        | "BASIC_WITH_JWT",
+      authScheme: integration.authScheme as z.infer<typeof ZAuthMode>,
     };
   }
 }

@@ -92,9 +92,7 @@ export class Apps {
     }
   }
 
-  async getRequiredParams({
-    appId,
-  }: GetRequiredParams): Promise<RequiredParamsFullResponse> {
+  async getRequiredParams(appId: string): Promise<RequiredParamsFullResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getRequiredParams",
       file: this.fileName,

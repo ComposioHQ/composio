@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   ActionDetails,
   ActionExecutionReqDTO,
+  ActionExecutionResDto,
   ActionsListResponseDTO,
 } from "../client";
 import apiClient from "../client/client";
@@ -37,6 +38,7 @@ export type ExecuteReqDTO = z.infer<typeof ZExecuteRequestParams>;
  */
 export type GetActionResponse = ActionDetails;
 export type GetListActionsResponse = ActionsListResponseDTO;
+export type ActionExecuteResponse = ActionExecutionResDto;
 
 export class Actions {
   backendClient: BackendClient;
@@ -134,10 +136,10 @@ export class Actions {
    * This method allows you to trigger the execution of an action by providing its name and the necessary input parameters. The request includes the connected account ID to identify the app connection to use for the action, and the input parameters required by the action. The response provides details about the execution status and the response data returned by the action.
    *
    * @param {ExecuteActionData} data The data for the request.
-   * @returns {Promise<ActionExecutionResDto>} A promise that resolves to the execution status and response data.
+   * @returns {Promise<ActionExecuteResponse>} A promise that resolves to the execution status and response data.
    * @throws {ComposioError} If the request fails.
    */
-  async execute(data: ExecuteActionParam) {
+  async execute(data: ExecuteActionParam): Promise<ActionExecuteResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "execute",
       file: this.fileName,
@@ -196,10 +198,10 @@ export class Actions {
    * This method allows you to trigger the execution of an action by providing its name and the necessary input parameters. The request includes the connected account ID to identify the app connection to use for the action, and the input parameters required by the action. The response provides details about the execution status and the response data returned by the action.
    *
    * @param {ExecuteActionData} data The data for the request.
-   * @returns {Promise<ActionExecutionResDto>} A promise that resolves to the execution status and response data.
+   * @returns {Promise<ActionExecuteResponse>} A promise that resolves to the execution status and response data.
    * @throws {ComposioError} If the request fails.
    */
-  async executeRequest(data: ExecuteReqDTO) {
+  async executeRequest(data: ExecuteReqDTO): Promise<ActionExecutionResDto> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "executeRequest",
       file: this.fileName,

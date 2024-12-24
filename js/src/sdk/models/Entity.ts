@@ -1,6 +1,6 @@
 import { z } from "zod";
 import logger from "../../utils/logger";
-import { ActionExecutionResDto, GetConnectionsResponseDto } from "../client";
+import { GetConnectionsResponseDto } from "../client";
 import {
   ZConnectionParams,
   ZExecuteActionParams,
@@ -12,7 +12,7 @@ import { CEG } from "../utils/error";
 import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
-import { Actions } from "./actions";
+import { ActionExecuteResponse, Actions } from "./actions";
 import { ActiveTriggers } from "./activeTriggers";
 import { Apps } from "./apps";
 import { BackendClient } from "./backendClient";
@@ -35,7 +35,6 @@ type InitiateConnectionParams = z.infer<typeof ZInitiateConnectionParams>;
 type ExecuteActionParams = z.infer<typeof ZExecuteActionParams>;
 
 // type from API
-export type ExecuteActionRes = ActionExecutionResDto;
 export type ConnectedAccountListRes = GetConnectionsResponseDto;
 
 export class Entity {
@@ -66,7 +65,7 @@ export class Entity {
     params,
     text,
     connectedAccountId,
-  }: ExecuteActionParams): Promise<ExecuteActionRes> {
+  }: ExecuteActionParams): Promise<ActionExecuteResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "execute",
       file: this.fileName,
