@@ -220,7 +220,7 @@ def check_cache_refresh(client: Composio) -> None:
     """
     if NO_CACHE_REFRESH:
         return
-    
+
     if enums.base.ACTIONS_CACHE.exists():
         first_file = next(enums.base.ACTIONS_CACHE.iterdir(), None)
         if first_file is not None:
