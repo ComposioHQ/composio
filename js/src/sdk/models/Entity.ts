@@ -1,11 +1,13 @@
 import { z } from "zod";
 import logger from "../../utils/logger";
+import { ActionExecutionResDto, GetConnectionsResponseDto } from "../client";
 import {
   ZConnectionParams,
   ZExecuteActionParams,
   ZInitiateConnectionParams,
   ZTriggerSubscribeParam,
 } from "../types/entity";
+import { ZAuthMode } from "../types/integration";
 import { CEG } from "../utils/error";
 import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
@@ -14,18 +16,27 @@ import { Actions } from "./actions";
 import { ActiveTriggers } from "./activeTriggers";
 import { Apps } from "./apps";
 import { BackendClient } from "./backendClient";
-import { ConnectedAccounts, ConnectionRequest } from "./connectedAccounts";
+import {
+  ConnectedAccounts,
+  ConnectionItem,
+  ConnectionRequest,
+} from "./connectedAccounts";
 import { Integrations } from "./integrations";
 import { Triggers } from "./triggers";
+
 const LABELS = {
   PRIMARY: "primary",
 };
 
 // Types from zod schemas
-type TTriggerSubscribeParam = z.infer<typeof ZTriggerSubscribeParam>;
-type TConnectionParams = z.infer<typeof ZConnectionParams>;
-type TInitiateConnectionParams = z.infer<typeof ZInitiateConnectionParams>;
-type TExecuteActionParams = z.infer<typeof ZExecuteActionParams>;
+type TriggerSubscribeParam = z.infer<typeof ZTriggerSubscribeParam>;
+type ConnectionParams = z.infer<typeof ZConnectionParams>;
+type InitiateConnectionParams = z.infer<typeof ZInitiateConnectionParams>;
+type ExecuteActionParams = z.infer<typeof ZExecuteActionParams>;
+
+// type from API
+export type ExecuteActionRes = ActionExecutionResDto;
+export type ConnectedAccountListRes = GetConnectionsResponseDto;
 
 export class Entity {
   id: string;
@@ -55,7 +66,7 @@ export class Entity {
     params,
     text,
     connectedAccountId,
-  }: TExecuteActionParams) {
+  }: ExecuteActionParams): Promise<ExecuteActionRes> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "execute",
       file: this.fileName,
@@ -115,7 +126,7 @@ export class Entity {
     }
   }
 
-  async getConnection({ app, connectedAccountId }: TConnectionParams) {
+  async getConnection({ app, connectedAccountId }: ConnectionParams) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getConnection",
       file: this.fileName,
@@ -175,7 +186,7 @@ export class Entity {
     }
   }
 
-  async setupTrigger({ app, triggerName, config }: TTriggerSubscribeParam) {
+  async setupTrigger({ app, triggerName, config }: TriggerSubscribeParam) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "setupTrigger",
       file: this.fileName,
@@ -220,7 +231,7 @@ export class Entity {
     }
   }
 
-  async getConnections() {
+  async getConnections(): Promise<ConnectionItem[]> {
     /**
      * Get all connections for an entity.
      */
@@ -231,7 +242,6 @@ export class Entity {
     });
     try {
       const connectedAccounts = await this.connectedAccounts.list({
-        // @ts-ignore
         user_uuid: this.id,
       });
       return connectedAccounts.items!;
@@ -264,7 +274,7 @@ export class Entity {
   }
 
   async initiateConnection(
-    data: TInitiateConnectionParams
+    data: InitiateConnectionParams
   ): Promise<ConnectionRequest> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "initiateConnection",
@@ -307,7 +317,7 @@ export class Entity {
           integration = await this.integrations.create({
             appId: app.appId!,
             name: `integration_${timestamp}`,
-            authScheme: authMode,
+            authScheme: authMode as z.infer<typeof ZAuthMode>,
             authConfig: authConfig,
             useComposioAuth: false,
           });

@@ -14,20 +14,22 @@ export const ZAuthMode = z.enum([
 
 export const ZCreateIntegrationParams = z.object({
   name: z.string(),
-  authScheme: ZAuthMode,
+  authScheme: ZAuthMode.optional(),
   appId: z.string(),
   forceNewIntegration: z.boolean().optional(),
-  authConfig: z.union([
-    z.record(z.unknown()),
-    z.object({
-      client_id: z.string(),
-      client_secret: z.string(),
-      api_key: z.string(),
-      consumer_key: z.string(),
-      consumer_secret: z.string(),
-      base_url: z.string(),
-    }),
-  ]),
+  authConfig: z
+    .union([
+      z.record(z.unknown()),
+      z.object({
+        client_id: z.string(),
+        client_secret: z.string(),
+        api_key: z.string(),
+        consumer_key: z.string(),
+        consumer_secret: z.string(),
+        base_url: z.string(),
+      }),
+    ])
+    .optional(),
   useComposioAuth: z.boolean().optional(),
 });
 

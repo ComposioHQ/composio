@@ -1,4 +1,8 @@
-import { AppListResDTO, SingleAppInfoResDTO } from "../client";
+import {
+  AppInfoResponseDto,
+  AppListResDTO,
+  SingleAppInfoResDTO,
+} from "../client";
 import apiClient from "../client/client";
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
@@ -26,8 +30,10 @@ export type RequiredParamsResponse = z.infer<typeof ZRequiredParamsResponse>;
 export type GetAppDataParams = z.infer<typeof ZGetAppParams>;
 
 // types generated from backend client
-export type GetAppResponse = SingleAppInfoResDTO;
+export type AppItemResponse = SingleAppInfoResDTO;
+export type AppListResponse = AppItemListResponse[];
 export type ListAllAppsResponse = AppListResDTO;
+export type AppItemListResponse = AppInfoResponseDto;
 
 export class Apps {
   backendClient: BackendClient;
@@ -41,10 +47,10 @@ export class Apps {
    *
    * This method allows clients to explore and discover the supported apps. It returns an array of app objects, each containing essential details such as the app's key, name, description, logo, categories, and unique identifier.
    *
-   * @returns {Promise<AppListResDTO>} A promise that resolves to the list of all apps.
+   * @returns {Promise<AppItemListResponse[]>} A promise that resolves to the list of all apps.
    * @throws {ComposioError} If the request fails.
    */
-  async list() {
+  async list(): Promise<AppListResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "list",
       file: this.fileName,
@@ -64,10 +70,10 @@ export class Apps {
    * This method allows clients to fetch detailed information about a specific app by providing its unique key. The response includes the app's name, key, status, description, logo, categories, authentication schemes, and other metadata.
    *
    * @param {GetAppDataParams} data The data for the request, including the app's unique key.
-   * @returns {CancelablePromise<GetAppResponse>} A promise that resolves to the details of the app.
+   * @returns {CancelablePromise<AppItemResponse>} A promise that resolves to the details of the app.
    * @throws {ComposioError} If the request fails.
    */
-  async get(data: GetAppDataParams) {
+  async get(data: GetAppDataParams): Promise<AppItemResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "get",
       file: this.fileName,

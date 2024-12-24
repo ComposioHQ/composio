@@ -9,6 +9,7 @@ import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 
+import { ListTriggersResponse } from "../client";
 import {
   ZTriggerInstanceItems,
   ZTriggerQuery,
@@ -17,10 +18,19 @@ import {
 } from "../types/trigger";
 
 // Types inferred from zod schemas
-type TTriggerListParam = z.infer<typeof ZTriggerQuery>;
-type TTriggerSetupParam = z.infer<typeof ZTriggerSetupParam>;
-type TTriggerInstanceItems = z.infer<typeof ZTriggerInstanceItems>;
-type TTriggerSubscribeParam = z.infer<typeof ZTriggerSubscribeParam>;
+export type TTriggerListParam = z.infer<typeof ZTriggerQuery>;
+export type TTriggerSetupParam = z.infer<typeof ZTriggerSetupParam>;
+export type TTriggerInstanceItems = z.infer<typeof ZTriggerInstanceItems>;
+export type TTriggerSubscribeParam = z.infer<typeof ZTriggerSubscribeParam>;
+
+// API response types
+export type TriggerListResponse = ListTriggersResponse;
+export type TriggerSetupResponse = {
+  status: string;
+  triggerInstanceId: string;
+  /* Deprecated */
+  triggerId: string;
+};
 
 export class Triggers {
   trigger_to_client_event = "trigger_to_client";
@@ -40,7 +50,7 @@ export class Triggers {
    * @returns {CancelablePromise<ListTriggersResponse>} A promise that resolves to the list of all triggers.
    * @throws {ComposioError} If the request fails.
    */
-  async list(data: TTriggerListParam = {}) {
+  async list(data: TTriggerListParam = {}): Promise<TriggerListResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "list",
       file: this.fileName,
@@ -76,9 +86,7 @@ export class Triggers {
    * @returns {CancelablePromise<SetupTriggerResponse>} A promise that resolves to the setup trigger response.
    * @throws {ComposioError} If the request fails.
    */
-  async setup(
-    params: TTriggerSetupParam
-  ): Promise<{ status: string; triggerId: string }> {
+  async setup(params: TTriggerSetupParam): Promise<TriggerSetupResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "setup",
       file: this.fileName,
@@ -94,8 +102,14 @@ export class Triggers {
         body: {
           triggerConfig: parsedData.config,
         },
+        throwOnError: true,
       });
-      return response.data as { status: string; triggerId: string };
+      const { triggerId, status } = response.data;
+      return {
+        triggerId: triggerId!,
+        status,
+        triggerInstanceId: triggerId!,
+      };
     } catch (error) {
       throw CEG.handleAllError(error);
     }
@@ -108,23 +122,24 @@ export class Triggers {
    * @returns {Promise<boolean>} A promise that resolves to the response of the enable request.
    * @throws {ComposioError} If the request fails.
    */
-  async enable(data: TTriggerInstanceItems) {
+  async enable(triggerInstanceId: string) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "enable",
       file: this.fileName,
-      params: { data },
+      params: { triggerInstanceId },
     });
     try {
-      const parsedData = ZTriggerInstanceItems.parse(data);
       await apiClient.triggers.switchTriggerInstanceStatus({
         path: {
-          triggerId: parsedData.triggerInstanceId,
+          triggerId: triggerInstanceId,
         },
         body: {
           enabled: true,
         },
       });
-      return true;
+      return {
+        status: "success",
+      };
     } catch (error) {
       throw CEG.handleAllError(error);
     }
@@ -137,23 +152,24 @@ export class Triggers {
    * @returns {Promise<boolean>} A promise that resolves to the response of the disable request.
    * @throws {ComposioError} If the request fails.
    */
-  async disable(data: TTriggerInstanceItems) {
+  async disable(triggerInstanceId: string) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "disable",
       file: this.fileName,
-      params: { data },
+      params: { triggerInstanceId },
     });
     try {
-      const parsedData = ZTriggerInstanceItems.parse(data);
       await apiClient.triggers.switchTriggerInstanceStatus({
         path: {
-          triggerId: parsedData.triggerInstanceId,
+          triggerId: triggerInstanceId,
         },
         body: {
           enabled: false,
         },
       });
-      return true;
+      return {
+        status: "success",
+      };
     } catch (error) {
       throw CEG.handleAllError(error);
     }

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   ConnectedAccountResponseDTO,
+  ConnectionParams,
   DeleteRowAPIDTO,
   GetConnectionInfoResponse,
   GetConnectionsResponseDto,
@@ -34,6 +35,8 @@ type InitiateConnectionPayloadDto = z.infer<
 export type ConnectedAccountListResponse = GetConnectionsResponseDto;
 export type SingleConnectedAccountResponse = ConnectedAccountResponseDTO;
 export type SingleDeleteResponse = DeleteRowAPIDTO;
+export type ConnectionItem = ConnectionParams;
+
 export class ConnectedAccounts {
   backendClient: BackendClient;
   integrations: Integrations;
@@ -48,7 +51,7 @@ export class ConnectedAccounts {
 
   async list(
     data: ConnectedAccountsListData
-  ): Promise<GetConnectionsResponseDto> {
+  ): Promise<ConnectedAccountListResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "list",
       file: this.fileName,
