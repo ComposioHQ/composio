@@ -7,7 +7,7 @@ import typing as t
 import requests
 
 from composio.client.endpoints import Endpoint
-from composio.client.exceptions import HTTPError, NoItemsFound
+from composio.client.exceptions import HTTPError
 from composio.utils import logging
 
 
@@ -50,12 +50,6 @@ class Collection(t.Generic[ModelType], logging.WithLogger):
                 status_code=response.status_code,
             )
         return response
-
-    def _raise_if_empty(self, collection: CollectionType) -> CollectionType:
-        """Raise if provided collection is empty."""
-        if len(collection) > 0:
-            return collection
-        raise NoItemsFound(message="No items found")
 
     def get(self, queries: t.Optional[t.Dict[str, str]] = None) -> t.List[ModelType]:
         """List available models."""
