@@ -3,7 +3,7 @@ import { ZodError } from "zod";
 import { ComposioError } from "./errors/src/composioError";
 import {
   BASE_ERROR_CODE_INFO,
-  BE_STATUS_CODE_TO_SDK_ERROR_CODES,
+  API_TO_SDK_ERROR_CODE,
   COMPOSIO_SDK_ERROR_CODES,
 } from "./errors/src/constants";
 import {
@@ -124,15 +124,12 @@ export class CEG {
   static throwAPIError(error: AxiosError) {
     const statusCode = error?.response?.status || null;
     const errorCode = statusCode
-      ? BE_STATUS_CODE_TO_SDK_ERROR_CODES[statusCode] ||
+      ? API_TO_SDK_ERROR_CODE[statusCode] ||
         COMPOSIO_SDK_ERROR_CODES.BACKEND.UNKNOWN
       : COMPOSIO_SDK_ERROR_CODES.BACKEND.UNKNOWN;
-    const predefinedError = BASE_ERROR_CODE_INFO[errorCode];
-
+   
     const errorDetails = getAPIErrorDetails(
-      errorCode,
       error as AxiosError<ErrorResponseData>,
-      predefinedError
     );
 
     const metadata = generateMetadataFromAxiosError(error);
