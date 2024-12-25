@@ -59,8 +59,9 @@ class AddIntegrationExamples(HelpfulCmd):
 @click.option(
     "-a",
     "--auth-mode",
-    type=str,
+    type=str.upper,
     help="Specify auth mode for given app.",
+    metavar="MODE",
 )
 @click.option(
     "-s",
