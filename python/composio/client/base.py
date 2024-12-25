@@ -7,7 +7,7 @@ import typing as t
 import requests
 
 from composio.client.endpoints import Endpoint
-from composio.client.exceptions import HTTPError, NoItemsFound
+from composio.client.exceptions import HTTPError
 from composio.utils import logging
 
 
