@@ -10,6 +10,7 @@ import json
 import os
 import time
 import typing as t
+import uuid
 import warnings
 from datetime import datetime
 from functools import wraps
@@ -79,9 +80,6 @@ ParamType = t.TypeVar("ParamType")
 ProcessorType = te.Literal["pre", "post", "schema"]
 
 
-NO_CACHE_REFRESH = os.environ.get("COMPOSIO_NO_CACHE_REFRESH", "false") == "true"
-
-
 class IntegrationParams(te.TypedDict):
 
     integration_id: str
@@ -142,12 +140,14 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     _runtime: str = "composio"
     _description_char_limit: int = 1024
+    _action_name_char_limit: t.Optional[int] = None
     _log_ingester_client: t.Optional[LogIngester] = None
 
     def __init_subclass__(
         cls,
         runtime: t.Optional[str] = None,
         description_char_limit: t.Optional[int] = None,
+        action_name_char_limit: t.Optional[int] = None,
     ) -> None:
         if runtime is None:
             warnings.warn(
@@ -160,6 +160,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 f"description_char_limit is not set on {cls.__name__}, using 1024 as default"
             )
         cls._description_char_limit = description_char_limit or 1024
+        cls._action_name_char_limit = action_name_char_limit
 
     def __init__(
         self,
@@ -260,6 +261,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             "use `logging_level` argument or "
             "`COMPOSIO_LOGGING_LEVEL` change this"
         )
+
+        self.session_id = workspace_id or uuid.uuid4().hex
+
         self.entity_id = entity_id
         self.output_in_file = output_in_file
         self.output_dir = (
@@ -377,8 +381,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 base_url=self._base_url,
                 runtime=self._runtime,
             )
-            if not NO_CACHE_REFRESH:
-                check_cache_refresh(self._remote_client)
+            check_cache_refresh(self._remote_client)
 
         self._remote_client.local = self._local_client
         return self._remote_client
@@ -806,7 +809,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                     entity_id=entity_id or self.entity_id,
                     connected_account_id=connected_account_id,
                     text=text,
-                    session_id=self.workspace.id,
+                    session_id=self.session_id,
                 )
             )
             processed_response = (
@@ -1045,6 +1048,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             action=Action(action_item.name.upper()),
             properties=action_item.parameters.properties,
         )
+        if self._action_name_char_limit is not None:
+            action_item.name = action_item.name[: self._action_name_char_limit]
         return action_item
 
     def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:
@@ -1203,6 +1208,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         include_local: bool = True,
     ) -> t.List[AppModel]:
         apps = self.client.apps.get()
+        print(apps)
         if no_auth is not None:
             apps = [a for a in apps if a.no_auth is no_auth]
 

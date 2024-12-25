@@ -1,0 +1,251 @@
+---
+title: "🚀 Quick Start - Triggers"
+sidebarTitle: "Quick Start - Triggers"
+description: "Learn how to use Triggers in less than 5 minutes"
+---
+
+## Composio Quick Start
+In this guide we'll configure and enable a trigger to listen to new emails in Gmail & configure an agent to add important label to emails that contains details about bank transactions.
+
+<Tabs>
+<Tab title="Python">
+<Steps>
+
+<Step title="Install Libraries">
+```shell CLI
+pip install composio-core composio_openai
+```
+</Step>
+
+<Step title="Connect Your Gmail Account">
+We'll use **`Jessica`** as the user id [(entity id)](../../patterns/Auth/connected_account#entities).
+<Info>You need to have an active Gmail Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
+<CodeGroup>
+```shell CLI
+composio login 
+composio add gmail -e "Jessica"
+```
+```python Python
+from composio_openai import ComposioToolSet, App, Trigger
+toolset = ComposioToolSet(entity_id="Jessica")
+
+request = toolset.initiate_connection(app=App.GMAIL)
+
+print(f"Open this URL to authenticate: {request.redirectUrl}")
+```
+</CodeGroup>
+<Tip>
+Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
+</Tip>
+</Step>
+
+<Step title="Enable Triggers">
+<CodeGroup>
+```shell CLI
+composio triggers enable gmail_new_gmail_message
+```
+```python Python
+entity = toolset.get_entity(id="Jessica")
+
+entity.enable_trigger(
+    app=App.GMAIL,
+    trigger_name="gmail_new_gmail_message",
+    config={"userId": "me", "interval": 1, "labelIds": "INBOX"},
+)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Create an Agent">
+<CodeGroup>
+```python Python
+def agent_function(thread_id: str, message: str, sender_mail: str):
+    tools = toolset.get_tools(apps=[App.GMAIL])
+
+    response = openai_client.chat.completions.create(
+        model="gpt-4o-mini",
+        tools=tools,
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a helpful assistant that can parse the email content, identify bank transactions and add the 'important' label to the email. Otherwise, don't do anything.",
+            },
+            {
+                "role": "user",
+                "content": f"Thread ID: {thread_id}\nMessage: {message}\nSender: {sender_mail}",
+            },
+        ],
+    )
+    result = toolset.handle_tool_calls(response)
+    print(result)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Create a Trigger Listener">
+<CodeGroup>
+```python Python
+listener = toolset.create_trigger_listener()
+
+@listener.callback(filters={"trigger_name": Trigger.GMAIL_NEW_GMAIL_MESSAGE})
+def callback_function(event):
+    payload = event.payload
+    thread_id = payload.get("threadId")
+    message = payload.get("messageText")
+    sender_mail = payload.get("sender")
+    agent_function(thread_id, message, sender_mail)
+
+
+print("Starting listener")
+listener.wait_forever()
+```
+</CodeGroup>
+</Step>
+</Steps>
+</Tab>
+
+<Tab title="JavaScript">
+<Steps>
+<Step title="Install Libraries">
+<CodeGroup>
+```shell CLI
+npm install composio-core openai
+```
+</CodeGroup>
+</Step>
+
+<Step title="Connect Your Gmail Account">
+We'll use **`Jessica`** as the user id [(entity id)](../../patterns/Auth/connected_account#entities).
+<Info>You need to have an active Gmail Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
+
+<CodeGroup>
+```shell CLI
+composio login
+composio add gmail -e "Jessica" 
+```
+```javascript JavaScript
+import { OpenAIToolSet, Composio } from "composio-core";
+import { OpenAI } from "openai";
+
+const toolset = new OpenAIToolSet();
+const openai_client = new OpenAI();
+
+const connectionRequest = await toolset.client.connectedAccounts.initiate({
+    appName: "gmail",
+    entityId: "Jessica",
+    authMode: "OAUTH2",
+    authConfig: {},
+});
+console.log(connectionRequest.redirectUrl);
+```
+</CodeGroup>
+<Tip>
+Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
+</Tip>
+</Step>
+
+<Step title="Enable Triggers">
+<CodeGroup>
+```shell CLI
+composio triggers enable gmail_new_gmail_message
+```
+```javascript JavaScript
+const entity = toolset.client.getEntity("Jessica");
+
+const response = await entity.setupTrigger("gmail", "gmail_new_gmail_message", {
+    userId: "me",
+    interval: 1,
+    labelIds: "INBOX"
+})
+console.log(response)
+```
+</CodeGroup>
+</Step>
+
+<Step title="Create an Agent">
+<CodeGroup>
+```javascript JavaScript
+const agentFunction = async (threadId, subject, senderMail) => {
+    const tools = await toolset.getTools({ apps: ["gmail"] });
+
+    const response = await openai_client.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+            {
+                role: "system",
+                content: "You are a helpful assistant that can parse the email content, identify bank transactions and add the 'important' label to the email. Otherwise, don't do anything"
+            },
+            {
+                role: "user",
+                content: `Thread ID: ${threadId}, Subject: ${subject}, Sender: ${senderMail}`
+            }
+        ],
+        tools: tools,
+        tool_choice: "auto",
+    });
+
+    const result = await toolset.handleToolCall(response);
+    console.log(result);
+}
+```
+</CodeGroup>
+</Step>
+<Step title="Create a Trigger Listener">
+<CodeGroup>
+```javascript JavaScript
+toolset.client.triggers.subscribe(
+    (data) => {
+        const {
+            payload: {
+                threadId,
+                subject,
+                sender
+            }
+        } = data;
+        agentFunction(threadId, subject, sender);
+    },
+    {
+        triggerName: "gmail_new_gmail_message"
+    }
+);
+```
+</CodeGroup>
+</Step>
+
+</Steps>
+</Tab>
+</Tabs>
+
+## What Just Happened? 🎉
+
+Congratulations! You've just:
+
+1. 🔐 Connected your Gmail account with Composio
+2. 🛠 Enabled Triggers
+3. 🧠 Passed these triggers event payloads to an AI language model
+4. ⭐ Executed an action from Gmail tool
+
+<br/>
+
+## Next Steps
+Now that you've seen how to use triggers, you can explore the following resources:
+<CardGroup cols={2}>
+<Card title="Tools" href="../../patterns/tools/what-are-tools">
+Checkout our toolset of 250+ LLM ready tools to build powerful AI applications
+</Card>
+<Card title="Connections" href="patterns/Auth/connected_account">
+Learn how to create and manage connections for your users
+</Card>
+<Card title="Compatible Agentic Frameworks" href="/framework/autogen">
+Integrate with popular agentic frameworks
+</Card>
+<Card title="Kits" href="../../swekit/introduction">
+Composio SWE Kit ([#4 on SWE bench](https://www.swebench.com)) - Your ultimate coding companion
+</Card>
+<Card title="Triggers" href="/patterns/triggers/triggers">
+Subscribe to triggers to execute actions automatically
+</Card>
+<Card title="Other Concepts" href="../../introduction/foundations/components/workspace">
+Learn about workspace environments, using CLI & other concepts
+</Card>
+</CardGroup>

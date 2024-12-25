@@ -1,0 +1,292 @@
+{
+  "name": "Composio",
+  "theme": "venus",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "openapi": [
+    "/composio.yaml"
+  ],
+  "favicon": "/favicon1.png",
+  "colors": {
+    "primary": "#343434",
+    "light": "#fff",
+    "dark": "#343434",
+    "ultraLight": "#9a4dff",
+    "ultraDark": "#9a4dff",
+    "background": {
+      "dark": "#181818",
+      "light": "#fafafa"
+    }
+  },
+  "seo": {
+    "indexHiddenPages": false
+  },
+  "modeToggle": {
+    "default": "dark",
+    "isHidden": false
+  },
+  "feedback": {
+    "suggestEdit": true,
+    "raiseIssue": true,
+    "thumbsRating": true
+  },
+  "search": {
+    "prompt": "Make my agents useful ..."
+  },
+  "metadata": {
+    "og:image": "https://framerusercontent.com/images/YwaNXXQETYRs9LymxFCnTjp83Q.svg",
+    "og:description": "Composio enables your agents to connect with Various Tools and work with them",
+    "og:site_name": "Composio Docs",
+    "twitter:site": "https://twitter.com/KaranVaidya6"
+  },
+  "topbarLinks": [
+    {
+      "name": "Discord",
+      "url": "https://dub.composio.dev/discord"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Get your API Key",
+    "url": "https://app.composio.dev/settings"
+  },
+  "topAnchor": {
+    "name": "Documentation",
+    "icon": "book-open"
+  },
+  "primaryTab": {
+    "name": "Get Started"
+  },
+  "tabs": [
+    {
+      "name": "Examples",
+      "url": "examples"
+    },
+    {
+      "name": "API",
+      "url": "api-reference"
+    },
+    {
+      "name": "All Tools",
+      "url": "https://composio.dev/tools"
+    },
+    {
+      "name": "Chat with Repo",
+      "url": "https://dub.composio.dev/composio-chat-with-repo"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Introduction",
+      "pages": [
+        "introduction/intro/overview",
+        "introduction/intro/basic",
+        "introduction/intro/quickstart",
+        "introduction/intro/quickstart_2",
+        "introduction/intro/quickstart_3"
+      ]
+    },
+    {
+      "group": "Tools",
+      "pages": [
+            "patterns/tools/what-are-tools",
+            {
+              "group": "Use Tools",
+              "icon": "shuttle-space",
+              "pages": [
+                "patterns/tools/use-tools/action-guide-with-agents",
+                "patterns/tools/use-tools/use-specific-actions",
+                "patterns/tools/use-tools/get-action-inputs",
+                "patterns/tools/use-tools/processing-actions",
+                "patterns/tools/use-tools/configure-tools",
+                "patterns/tools/use-tools/action-guide-without-agents"
+              ]
+            },
+            {
+              "group": "Build Tools",
+              "icon": "hammer",
+              "pages": [
+                "patterns/tools/build-tools/custom-action-without-auth",
+                "patterns/tools/build-tools/custom-action-with-auth"
+              ]
+            },
+            "patterns/tools/custom-integration",
+            "patterns/tools/serve-tools"
+      ]
+    },
+    {
+      "group": "Authentication",
+      "icon": "unlock",
+      "pages": [
+        "patterns/Auth/connected_account",
+        "patterns/Auth/using-connections",
+        "patterns/Auth/Integrations",
+        "patterns/Auth/examples/gmail_example",
+        "patterns/Auth/examples/shopify_example"
+      ]
+    },
+    {
+      "group": "Triggers & Webhooks",
+      "icon": "webhook",
+      "pages": [
+        "patterns/triggers/triggers",
+        "patterns/triggers/webhooks"
+      ]
+    },
+    {
+      "group": "Supported Frameworks",
+      "pages": [
+        "framework/autogen",
+        "framework/crewai",
+        "framework/langchain",
+        "framework/langgraph",
+        "framework/letta",
+        "framework/litellm",
+        "framework/llamaindex",
+        "framework/openai",
+        {
+          "group": "Other Frameworks",
+          "pages": [
+            "framework/camelai",
+            "javascript/cloudflare",
+            "framework/griptape",
+            "framework/groq",
+            "framework/julep",
+            "framework/lyzr",
+            "framework/phidata",
+            "framework/praisonai",
+            "javascript/vercel",
+            "framework/google"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "SWE Kit",
+      "pages": [
+        "swekit-tools/introduction",
+        "swekit-js/introduction",
+        "swekit/introduction",
+        "swekit/benchmarks",
+        "swekit-examples/introduction"
+      ]
+    },
+    {
+      "group": "Others",
+      "pages": [
+        "introduction/foundations/components/workspace",
+        "faq/api_key/api_key",
+        "faq/api_key/cli",
+        "faq/integrations_and_connections/list_of_tools",
+        "faq/supported_llms/supported_llm"
+      ]
+    },
+    {
+      "group": "Examples",
+      "pages": [
+        {
+          "group": "Python Examples",
+          "pages": [
+            "examples/combined/rag-agent-python",
+            "examples/combined/code-execution-agent-python",
+            "examples/combined/calendar-agent-python",
+            "examples/combined/newsletter-summarizer-python",
+            "examples/combined/research-agent-python",
+            "examples/combined/sql-agent-python"
+          ]
+        },
+        {
+          "group": "JavaScript Examples",
+          "pages": [
+            "examples/combined/rag-agent-javascript",
+            "examples/combined/code-execution-agent-javascript",
+            "examples/combined/calendar-agent-javascript",
+            "examples/combined/newsletter-summarizer-javascript",
+            "examples/combined/research-agent-javascript",
+            "examples/combined/sql-agent-javascript"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Endpoints",
+      "icon": "robot",
+      "pages": <%- JSON.stringify(apiReferencePages, null, 2) %>
+    }
+  ],
+  "integrations": {
+    "intercom": "dvp1uc7s"
+  },
+  "footerSocials": {
+    "linkedin": "https://www.linkedin.com/company/composio-dev/",
+    "x": "https://twitter.com/composiohq",
+    "github": "https://github.com/composiohq"
+  },
+  "analytics": {
+    "ga4": {
+      "measurementId": "G-3DBLETRPXH"
+    },
+    "posthog": {
+      "apiKey": "phc_Gz8DBv1ZMbOwt3hE8sJZwKGsDl5FtMSkvBNSR0HC07c"
+    },
+    "plausible": {
+      "domain": "composio.dev"
+    }
+  },
+  "api": {
+    "playground": {
+      "mode": "show"
+    }
+  },
+  "redirects": [
+    {
+      "source": "/apps/gitlab",
+      "destination": "https://app.composio.dev/apps"
+    },
+    {
+      "source": "/apps/bitbucket",
+      "destination": "https://app.composio.dev/apps"
+    },
+    {
+      "source": "/introduction/foundations/howtos/get_api_key",
+      "destination": "/patterns/howtos/get_api_key"
+    },
+    {
+      "source": "/sdk/cli/trigger",
+      "destination": "/patterns/cli/trigger"
+    },
+    {
+      "source": "/guides/:slug1*",
+      "destination": "/examples/:slug1*"
+    },
+    {
+      "source": "/apps/usecases/langchain_blogs/:slug2*",
+      "destination": "https://composio.dev/tools/:slug2*"
+    },
+    {
+      "source": "/apps/usecases/crewai/:slug2*",
+      "destination": "https://composio.dev/tools/:slug2*"
+    },
+    {
+      "source": "/apps/usecases/autogen_blogs/:slug2*",
+      "destination": "https://composio.dev/tools/:slug2*"
+    },
+    {
+      "source": "/apps/:slug2*",
+      "destination": "https://composio.dev/tools/:slug2*"
+    },
+    {
+      "source": "/apps",
+      "destination": "https://composio.dev/tools/"
+    },
+    {
+      "source": "/python/local_tools",
+      "destination": "/introduction/foundations/components/custom_actions"
+    },
+    {
+      "source": "/introduction/foundations/components/local_tools",
+      "destination": "/introduction/foundations/components/custom_actions"
+    }
+  ]
+}
