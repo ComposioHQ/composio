@@ -825,10 +825,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             self.logger.info(f"Got {response=} from {action=} with {params=}")
             return response
 
-        else:
-            raise ComposioSDKError(
-                f"Failed to execute {action=} after {self.max_retries} retries"
-            )
+        return SuccessExecuteActionResponseModel(
+            successfull=False,
+            data={},
+            error=f"Execution failed after {self.max_retries} retries.",
+        ).model_dump()
 
     @t.overload
     def execute_request(
