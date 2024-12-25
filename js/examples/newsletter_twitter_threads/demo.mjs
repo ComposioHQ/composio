@@ -1,4 +1,5 @@
 import { openai } from "@ai-sdk/openai";
+import {groq} from '@ai-sdk/groq'
 import { VercelAIToolSet } from "composio-core";
 import dotenv from "dotenv";
 import { generateText } from "ai";
@@ -36,7 +37,7 @@ async function executeAgent(entityName) {
 
   // Generate text using the model and tools
   const output = await generateText({
-    model: openai("gpt-4o"),
+    model: groq("llama-3.3-70b-versatile"),
     streamText: false,
     tools: tools,
     prompt: `
