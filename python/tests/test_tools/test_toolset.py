@@ -46,7 +46,7 @@ def test_find_actions_by_tags() -> None:
         App.SLACK, App.GITHUB, tags=["important"]
     ):
         assert "important" in action.tags
-        assert action.app in ("github", "slack", "slackbot")
+        assert action.app in ("GITHUB", "SLACK", "SLACKBOT")
 
 
 def test_uninitialize_app() -> None:
