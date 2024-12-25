@@ -723,7 +723,6 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 "Received RETRY from App schema processor function."
                 " Schema pprocessors cannot be retried."
             )
-        assert not isinstance(processed, _Retry)
 
         processed = self._process(
             key=action,
