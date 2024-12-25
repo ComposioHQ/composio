@@ -794,6 +794,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             f"Executing `{action.slug}` with {params=} and {metadata=} {connected_account_id=}"
         )
 
+        failed_responses = []
         for _ in range(self.max_retries):
             response = (
                 self._execute_local(
@@ -821,6 +822,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 self.logger.info(
                     f"Got {processed_response=} from {action=} with {params=}, retrying..."
                 )
+                failed_responses.append(response)
                 continue
 
             response = processed_response
@@ -829,7 +831,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
         return SuccessExecuteActionResponseModel(
             successfull=False,
-            data={},
+            data={"failed_responses": failed_responses},
             error=f"Execution failed after {self.max_retries} retries.",
         ).model_dump()
 
