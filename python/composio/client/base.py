@@ -51,12 +51,6 @@ class Collection(t.Generic[ModelType], logging.WithLogger):
             )
         return response
 
-    def _raise_if_empty(self, collection: CollectionType) -> CollectionType:
-        """Raise if provided collection is empty."""
-        if len(collection) > 0:
-            return collection
-        raise NoItemsFound(message="No items found")
-
     def get(self, queries: t.Optional[t.Dict[str, str]] = None) -> t.List[ModelType]:
         """List available models."""
         request = self._raise_if_required(
