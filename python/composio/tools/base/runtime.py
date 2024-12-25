@@ -253,7 +253,9 @@ def _parse_docstring(
     return header, params, returns
 
 
-def _get_connected_account(app: str, entity_id: str) -> t.Optional[ConnectedAccountModel]:
+def _get_connected_account(
+    app: str, entity_id: str
+) -> t.Optional[ConnectedAccountModel]:
     try:
         client = Composio.get_latest()
         connected_account = client.connected_accounts.get(
@@ -262,6 +264,7 @@ def _get_connected_account(app: str, entity_id: str) -> t.Optional[ConnectedAcco
         return connected_account
     except ComposioClientError:
         return None
+
 
 def _get_auth_params(app: str, entity_id: str) -> t.Optional[t.Dict]:
     try:
