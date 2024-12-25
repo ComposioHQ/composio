@@ -246,7 +246,6 @@ def add_integration(
     if auth_mode.lower() in ("basic", "api_key", "bearer_token"):
         return _handle_basic_auth(
             entity=entity,
-            client=context.client,
             app_name=name,
             auth_mode=auth_mode,
             auth_scheme=auth_scheme,
@@ -317,7 +316,6 @@ def _handle_oauth(
 
 def _handle_basic_auth(
     entity: Entity,
-    client: Composio,
     app_name: str,
     auth_mode: str,
     auth_scheme: AppAuthScheme,
