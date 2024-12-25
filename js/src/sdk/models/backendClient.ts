@@ -1,3 +1,4 @@
+import { AxiosInstance } from "axios";
 import apiClient from "../client/client";
 import { client as axiosClient } from "../client/services.gen";
 import { setAxiosClientConfig } from "../utils/config";
@@ -22,6 +23,7 @@ export class BackendClient {
    * The runtime environment where the client is being used.
    */
   public runtime: string;
+  public instance: AxiosInstance;
 
   /**
    * Creates an instance of apiClientDetails.
@@ -34,6 +36,7 @@ export class BackendClient {
     this.runtime = runtime || "";
     this.apiKey = apiKey;
     this.baseUrl = baseUrl;
+    this.instance = axiosClient.instance;
 
     if (!apiKey) {
       throw CEG.getCustomError(
@@ -86,5 +89,6 @@ export class BackendClient {
     });
 
     setAxiosClientConfig(axiosClient.instance);
+    this.instance = axiosClient.instance;
   }
 }

@@ -2,8 +2,8 @@ import { AxiosError } from "axios";
 import { ZodError } from "zod";
 import { ComposioError } from "./errors/src/composioError";
 import {
-  BASE_ERROR_CODE_INFO,
   API_TO_SDK_ERROR_CODE,
+  BASE_ERROR_CODE_INFO,
   COMPOSIO_SDK_ERROR_CODES,
 } from "./errors/src/constants";
 import {
@@ -127,9 +127,9 @@ export class CEG {
       ? API_TO_SDK_ERROR_CODE[statusCode] ||
         COMPOSIO_SDK_ERROR_CODES.BACKEND.UNKNOWN
       : COMPOSIO_SDK_ERROR_CODES.BACKEND.UNKNOWN;
-   
+
     const errorDetails = getAPIErrorDetails(
-      error as AxiosError<ErrorResponseData>,
+      error as AxiosError<ErrorResponseData>
     );
 
     const metadata = generateMetadataFromAxiosError(error);
