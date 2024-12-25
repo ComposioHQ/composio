@@ -27,6 +27,13 @@ class TestComposioAdd(BaseCliTest):
             ),
         )
 
+    def test_add_serpapi(self) -> None:
+        """Test `composio add` with no-auth."""
+        self.run("add", "serpapi", input="y")
+        self.assert_stdout_regex(
+            match=re.compile("Enter API Key"),
+        )
+
     def test_add_auth_mode_auto_uppercase(self) -> None:
         """Test `composio add` with lowercase --auth-mode."""
         self.run("add", "github", "--auth-mode", "oauth2", input="Y")
