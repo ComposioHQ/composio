@@ -125,8 +125,7 @@ export class ComposioToolSet {
       let schema = tool as RawActionData;
       allSchemaProcessor.forEach((processor) => {
         schema = processor({
-          actionName: schema?.metadata?.actionName || "",
-          appName: schema?.metadata?.toolName || "",
+          actionName: schema?.name,
           toolSchema: schema,
         });
       });

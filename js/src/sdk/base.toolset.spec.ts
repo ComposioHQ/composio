@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "@jest/globals";
 import { getTestConfig } from "../../config/getTestConfig";
+import { TSchemaProcessor } from "../types/base_toolset";
 import { ComposioToolSet } from "./base.toolset";
 import { ActionExecutionResDto } from "./client";
 
@@ -34,6 +35,28 @@ describe("ComposioToolSet class tests", () => {
       actions: ["github_issues_create"],
     });
     expect(tools).toBeInstanceOf(Array);
+  });
+
+  it("should have schema processor", async () => {
+    const addSchemaProcessor: TSchemaProcessor = ({
+      actionName,
+      toolSchema,
+    }) => {
+      console.log("actionName", actionName);
+      return {
+        ...toolSchema,
+        parameters: {
+          ...toolSchema.parameters,
+          description: "hello",
+        },
+      };
+    };
+
+    toolset.addSchemaProcessor(addSchemaProcessor);
+    const tools = await toolset.getToolsSchema({
+      actions: ["github_issues_create"],
+    });
+    console.log("tools", tools);
   });
 
   it("should execute an action", async () => {

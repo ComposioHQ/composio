@@ -67,11 +67,9 @@ export type TPostProcessor = ({
 
 export type TSchemaProcessor = ({
   actionName,
-  appName,
   toolSchema,
 }: {
   actionName: string;
-  appName: string;
   toolSchema: RawActionData;
 }) => RawActionData;
 
