@@ -34,6 +34,7 @@ jobs:
             python -m uv run composio apps generate-types
             # Run black over the files before checking if they changed
             python -m uv run black composio/client/enums
+            python -m uv run isort composio/client/enums --profile black
 
       - name: Check if type stubs changed, and fail if they did
         run: git diff --exit-code
