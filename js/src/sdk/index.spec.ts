@@ -40,10 +40,8 @@ describe("Basic SDK spec suite", () => {
 
     try {
       const apps = await client.apps.list();
-      console.log(apps);
     } catch (e) {
       if (e instanceof ComposioError) {
-        console.log(e);
         expect(e.errCode).toBe(COMPOSIO_SDK_ERROR_CODES.BACKEND.NOT_FOUND);
         expect(e.description).toBe("Not found");
         expect(e.errorId).toBeDefined();
@@ -61,15 +59,13 @@ describe("Basic SDK spec suite", () => {
 
   it("should handle 400 error gracefully", async () => {
     const mock = new AxiosMockAdapter(axiosClient.instance);
-    mock
-      .onGet("/api/v1/apps")
-      .reply(400, {
-        error: {
-          type: "BadRequestError",
-          name: "InvalidRequestError",
-          message: "Invalid request for apps",
-        },
-      });
+    mock.onGet("/api/v1/apps").reply(400, {
+      error: {
+        type: "BadRequestError",
+        name: "InvalidRequestError",
+        message: "Invalid request for apps",
+      },
+    });
 
     const client = new Composio({ apiKey: COMPOSIO_API_KEY });
     try {
@@ -122,15 +118,13 @@ describe("Basic SDK spec suite", () => {
 
     mock.reset();
 
-    mock
-      .onGet("/api/v1/apps")
-      .reply(500, {
-        error: {
-          type: "NotFoundError",
-          name: "AppNotFoundError",
-          message: "Not found",
-        },
-      });
+    mock.onGet("/api/v1/apps").reply(500, {
+      error: {
+        type: "NotFoundError",
+        name: "AppNotFoundError",
+        message: "Not found",
+      },
+    });
     try {
       await client.apps.list();
     } catch (e) {

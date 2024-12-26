@@ -42,7 +42,6 @@ describe("ComposioToolSet class tests", () => {
       actionName,
       toolSchema,
     }) => {
-      console.log("actionName", actionName);
       return {
         ...toolSchema,
         parameters: {
@@ -56,7 +55,6 @@ describe("ComposioToolSet class tests", () => {
     const tools = await toolset.getToolsSchema({
       actions: ["github_issues_create"],
     });
-    console.log("tools", tools);
   });
 
   it("should execute an action", async () => {
