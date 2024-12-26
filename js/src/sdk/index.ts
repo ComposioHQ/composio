@@ -22,6 +22,7 @@ import {
   ZGetExpectedParamsForUserParams,
   ZGetExpectedParamsRes,
 } from "../types/composio";
+import { getUUID } from "../utils/common";
 import { ZAuthMode } from "./types/integration";
 
 export type ComposioInputFieldsParams = z.infer<
@@ -63,6 +64,7 @@ export class Composio {
     );
 
     ComposioSDKContext.apiKey = apiKeyParsed;
+    ComposioSDKContext.sessionId = getUUID();
     ComposioSDKContext.baseURL = baseURLParsed;
     ComposioSDKContext.frameworkRuntime = config?.runtime;
 
