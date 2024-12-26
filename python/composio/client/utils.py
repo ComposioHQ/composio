@@ -1,5 +1,6 @@
 import json
 import os
+import time
 import typing as t
 
 from composio.client import Composio, enums
@@ -218,18 +219,32 @@ def check_cache_refresh(client: Composio) -> None:
     SDK version, and didn't come from the API. We need to start storing the data
     from the API and invalidate the cache if the data is not already stored.
     """
+    t0 = time.monotonic()
     if NO_CACHE_REFRESH:
         return
 
+    local_actions = []
     if enums.base.ACTIONS_CACHE.exists():
-        first_file = next(enums.base.ACTIONS_CACHE.iterdir(), None)
-        if first_file is not None:
-            first_action = json.loads(first_file.read_text())
-            if "replaced_by" in first_action:
-                logger.debug("Actions cache is up-to-date")
-                return
+        actions = list(enums.base.ACTIONS_CACHE.iterdir())
+        for action in actions:
+            action_data = json.loads(action.read_text())
+            # The action file could be old. If it doesn't have a
+            # replaced_by field, we want to overwrite it.
+            if "replaced_by" not in action_data:
+                action.unlink()
+                continue
 
-    logger.info("Actions cache is outdated, refreshing cache...")
-    apps = update_apps(client)
-    update_actions(client, apps)
-    update_triggers(client, apps)
+            local_actions.append(action.stem)
+
+    api_actions = client.actions.list_enums()
+    
+    actions_to_update = set(api_actions) - set(local_actions)
+    actions_to_delete = set(local_actions) - set(api_actions)
+    logger.debug("Actions to fetch: %s", actions_to_update)
+    # TODO: stale actions should be deleted from the cache
+    logger.debug("Stale actions: %s", actions_to_delete)
+
+    actions_data = client.actions.get(actions=actions_to_update)
+    breakpoint()
+
+    logger.debug("Time taken to update cache: %.2f seconds", time.monotonic() - t0)

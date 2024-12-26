@@ -90,24 +90,14 @@ class Enum(t.Generic[DataT]):
         return False
 
     @classmethod
-    def iter(cls) -> t.Iterator[str]:
+    def iter(cls) -> t.Iterable[str]:
         """Yield the enum names as strings."""
-        # TODO: fetch trigger names from dedicated endpoint in the future
-        path = LOCAL_CACHE_DIRECTORY / cls.cache_folder
-        # If we try to fetch Actions.iter() with local caching disabled
-        # for example, we'd get here.
-        if not path.exists():
-            # pylint: disable=import-outside-toplevel
-            from composio.client import Composio
+        # pylint: disable=import-outside-toplevel
+        from composio.client import Composio
+        
 
-            # pylint: disable=import-outside-toplevel
-            from composio.client.utils import check_cache_refresh
-
-            check_cache_refresh(Composio.get_latest())
-            if not path.exists():
-                return
-
-        yield from os.listdir(path)
+        client = Composio.get_latest()
+        return client.actions.list_enums()
 
     @classmethod
     def all(cls) -> t.Iterator[te.Self]:
