@@ -1,11 +1,12 @@
 import json
 import os
+from pathlib import Path
 import time
 import typing as t
 
 from composio.client import Composio, enums
 from composio.client.collections import ActionModel, AppModel, TriggerModel
-from composio.client.enums.base import replacement_action_name
+from composio.client.enums.base import create_action
 from composio.tools.local import load_local_tools
 from composio.utils import get_enum_key
 from composio.utils.logging import get_logger
@@ -209,6 +210,9 @@ def _update_triggers(
             ).store()
 
 
+_cache_checked = False
+
+
 def check_cache_refresh(client: Composio) -> None:
     """
     Check if the actions have a 'replaced_by' field and refresh the cache if not.
@@ -219,6 +223,12 @@ def check_cache_refresh(client: Composio) -> None:
     SDK version, and didn't come from the API. We need to start storing the data
     from the API and invalidate the cache if the data is not already stored.
     """
+    global _cache_checked
+    if _cache_checked:
+        return
+
+    _cache_checked = True
+
     t0 = time.monotonic()
     if NO_CACHE_REFRESH:
         return
@@ -237,14 +247,28 @@ def check_cache_refresh(client: Composio) -> None:
             local_actions.append(action.stem)
 
     api_actions = client.actions.list_enums()
-    
+
     actions_to_update = set(api_actions) - set(local_actions)
     actions_to_delete = set(local_actions) - set(api_actions)
     logger.debug("Actions to fetch: %s", actions_to_update)
-    # TODO: stale actions should be deleted from the cache
     logger.debug("Stale actions: %s", actions_to_delete)
 
-    actions_data = client.actions.get(actions=actions_to_update)
-    breakpoint()
+    for action in actions_to_delete:
+        (enums.base.ACTIONS_CACHE / action).unlink()
+
+    if actions_to_update:
+        # TODO: handle page size limit
+        actions_data = client.http.get(
+            str(
+                client.actions.endpoint(
+                    queries={"actions": ",".join(actions_to_update)}
+                )
+            )
+        ).json()
+        for action_data in actions_data["items"]:
+            storage_path = enums.base.ACTIONS_CACHE / action_data["name"]
+            create_action(
+                client, response=action_data, storage_path=storage_path
+            ).store()
 
     logger.debug("Time taken to update cache: %.2f seconds", time.monotonic() - t0)
