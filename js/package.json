@@ -1,6 +1,6 @@
 {
-  "name": "composio-dev-track",
-  "version": "0.5.6",
+  "name": "composio-core",
+  "version": "0.5.0-rc.1",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
