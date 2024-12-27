@@ -105,11 +105,9 @@ describe("ComposioToolSet class tests", () => {
 
     const postProcessor = ({
       actionName: _actionName,
-      appName: _appName,
       toolResponse,
     }: {
       actionName: string;
-      appName: string;
       toolResponse: ActionExecutionResDto;
     }) => {
       return {

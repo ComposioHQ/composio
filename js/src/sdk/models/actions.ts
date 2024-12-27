@@ -55,7 +55,7 @@ export class Actions {
    * The response includes the action's name, display name, description, input parameters, expected response, associated app information, and enabled status.
    *
    * @param {GetActionData} data The data for the request.
-   * @returns {CancelablePromise<GetActionResponse[0]>} A promise that resolves to the details of the action.
+   * @returns {Promise<GetActionResponse[0]>} A promise that resolves to the details of the action.
    * @throws {ComposioError} If the request fails.
    */
   async get(data: GetActionItemParam): Promise<ActionDetails> {

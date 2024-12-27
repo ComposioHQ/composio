@@ -8,7 +8,6 @@ import { saveFile } from "../fileUtils";
 
 export const fileResponseProcessor: TPostProcessor = ({
   actionName,
-  appName: _appName,
   toolResponse,
 }) => {
   const responseData =

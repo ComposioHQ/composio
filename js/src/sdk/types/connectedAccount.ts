@@ -34,7 +34,7 @@ export const ZSaveUserAccessDataParam = z.object({
   entityId: z.string().optional(),
 });
 
-export const ZSingleCOnnectionParam = z.object({
+export const ZSingleConnectionParams = z.object({
   connectedAccountId: z.string(),
 });
 

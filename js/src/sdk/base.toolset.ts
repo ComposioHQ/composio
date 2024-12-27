@@ -222,7 +222,6 @@ export class ComposioToolSet {
     for (const processor of allOutputProcessor) {
       dataToReturn = processor({
         actionName: meta.action,
-        appName: "",
         toolResponse: dataToReturn,
       });
     }

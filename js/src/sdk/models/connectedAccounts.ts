@@ -12,11 +12,10 @@ import {
   ZInitiateConnectionPayloadDto,
   ZListConnectionsData,
   ZSaveUserAccessDataParam,
-  ZSingleCOnnectionParam,
+  ZSingleConnectionParams,
 } from "../types/connectedAccount";
 import { ZAuthMode } from "../types/integration";
 import { CEG } from "../utils/error";
-import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { Apps } from "./apps";
@@ -26,7 +25,7 @@ import { Integrations } from "./integrations";
 // Schema type from conectedAccount.ts
 type ConnectedAccountsListData = z.infer<typeof ZListConnectionsData>;
 type InitiateConnectionDataReq = z.infer<typeof ZInitiateConnectionDataReq>;
-type SingleConnectionParam = z.infer<typeof ZSingleCOnnectionParam>;
+type SingleConnectionParam = z.infer<typeof ZSingleConnectionParams>;
 type SaveUserAccessDataParam = z.infer<typeof ZSaveUserAccessDataParam>;
 type InitiateConnectionPayloadDto = z.infer<
   typeof ZInitiateConnectionPayloadDto
@@ -96,7 +95,7 @@ export class ConnectedAccounts {
       params: { data },
     });
     try {
-      ZSingleCOnnectionParam.parse(data);
+      ZSingleConnectionParams.parse(data);
       const res = await apiClient.connections.getConnection({
         path: data,
         throwOnError: true,
@@ -114,7 +113,7 @@ export class ConnectedAccounts {
       params: { data },
     });
     try {
-      ZSingleCOnnectionParam.parse(data);
+      ZSingleConnectionParams.parse(data);
       const res = await apiClient.connections.deleteConnection({
         path: data,
         throwOnError: true,
@@ -173,17 +172,6 @@ export class ConnectedAccounts {
         });
 
         integrationId = integration?.id!;
-
-        if (!integrationId) {
-          throw CEG.getCustomError(
-            COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST,
-            {
-              message: `Can't create integration for ${appName} with authMode ${authMode}`,
-              possibleFix:
-                "Check if the authMode is supported by the app and validate the authConfig",
-            }
-          );
-        }
       }
 
       const res = await client.connections
@@ -255,7 +243,7 @@ export class ConnectionRequest {
     data: SingleConnectionParam
   ): Promise<GetConnectionInfoResponse> {
     try {
-      ZSingleCOnnectionParam.parse(data);
+      ZSingleConnectionParams.parse(data);
       const res = await client.connections.getConnectionInfo({ path: data });
       return res.data!;
     } catch (error) {

@@ -47,7 +47,7 @@ export class Triggers {
    * This method allows you to fetch a list of all the available triggers. It supports pagination to handle large numbers of triggers. The response includes an array of trigger objects, each containing information such as the trigger's name, description, input parameters, expected response, associated app information, and enabled status.
    *
    * @param {ListTriggersData} data The data for the request.
-   * @returns {CancelablePromise<ListTriggersResponse>} A promise that resolves to the list of all triggers.
+   * @returns {Promise<ListTriggersResponse>} A promise that resolves to the list of all triggers.
    * @throws {ComposioError} If the request fails.
    */
   async list(data: TTriggerListParam = {}): Promise<TriggerListResponse> {
@@ -83,7 +83,7 @@ export class Triggers {
    * Setup a trigger for a connected account.
    *
    * @param {SetupTriggerData} data The data for the request.
-   * @returns {CancelablePromise<SetupTriggerResponse>} A promise that resolves to the setup trigger response.
+   * @returns {Promise<SetupTriggerResponse>} A promise that resolves to the setup trigger response.
    * @throws {ComposioError} If the request fails.
    */
   async setup(params: TTriggerSetupParam): Promise<TriggerSetupResponse> {
@@ -122,16 +122,16 @@ export class Triggers {
    * @returns {Promise<boolean>} A promise that resolves to the response of the enable request.
    * @throws {ComposioError} If the request fails.
    */
-  async enable(triggerInstanceId: string) {
+  async enable({ triggerId }: { triggerId: string }) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "enable",
       file: this.fileName,
-      params: { triggerInstanceId },
+      params: { triggerId },
     });
     try {
       await apiClient.triggers.switchTriggerInstanceStatus({
         path: {
-          triggerId: triggerInstanceId,
+          triggerId: triggerId,
         },
         body: {
           enabled: true,
@@ -152,16 +152,16 @@ export class Triggers {
    * @returns {Promise<boolean>} A promise that resolves to the response of the disable request.
    * @throws {ComposioError} If the request fails.
    */
-  async disable(triggerInstanceId: string) {
+  async disable({ triggerId }: { triggerId: string }) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "disable",
       file: this.fileName,
-      params: { triggerInstanceId },
+      params: { triggerId },
     });
     try {
       await apiClient.triggers.switchTriggerInstanceStatus({
         path: {
-          triggerId: triggerInstanceId,
+          triggerId: triggerId,
         },
         body: {
           enabled: false,

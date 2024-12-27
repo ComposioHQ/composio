@@ -70,7 +70,7 @@ export class Apps {
    * This method allows clients to fetch detailed information about a specific app by providing its unique key. The response includes the app's name, key, status, description, logo, categories, authentication schemes, and other metadata.
    *
    * @param {GetAppDataParams} data The data for the request, including the app's unique key.
-   * @returns {CancelablePromise<AppItemResponse>} A promise that resolves to the details of the app.
+   * @returns {Promise<AppItemResponse>} A promise that resolves to the details of the app.
    * @throws {ComposioError} If the request fails.
    */
   async get(data: GetAppDataParams): Promise<AppItemResponse> {

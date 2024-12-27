@@ -29,7 +29,7 @@ export class ActiveTriggers {
    * The response includes the trigger's name, description, input parameters, expected response, associated app information, and enabled status.
    *
    * @param {TriggerItemParam} data The data for the request.
-   * @returns {CancelablePromise<TriggerItem>} A promise that resolves to the details of the active trigger.
+   * @returns {Promise<TriggerItem>} A promise that resolves to the details of the active trigger.
    * @throws {ComposioError} If the request fails.
    */
   async get({ triggerId }: TriggerItemParam) {
@@ -58,7 +58,7 @@ export class ActiveTriggers {
    * This method allows you to fetch a list of all the available active triggers. It supports pagination to handle large numbers of triggers. The response includes an array of trigger objects, each containing information such as the trigger's name, description, input parameters, expected response, associated app information, and enabled status.
    *
    * @param {GetActiveTriggersData} data The data for the request.
-   * @returns {CancelablePromise<ZActiveTriggerItemRes[]>} A promise that resolves to the list of all active triggers.
+   * @returns {Promise<ZActiveTriggerItemRes[]>} A promise that resolves to the list of all active triggers.
    * @throws {ComposioError} If the request fails.
    */
   async list(data: GetActiveTriggersData = {}): Promise<TriggerItem[]> {
@@ -83,7 +83,7 @@ export class ActiveTriggers {
    * Enables the previously disabled trigger.
    *
    * @param {TriggerItemParam} data The data for the request.
-   * @returns {CancelablePromise<TriggerChangeResponse>} A promise that resolves to the response of the enable request.
+   * @returns {Promise<{status: string}>} A promise that resolves to the response of the enable request.
    * @throws {ComposioError} If the request fails.
    */
   async enable(data: TriggerItemParam): Promise<{ status: string }> {
@@ -112,7 +112,7 @@ export class ActiveTriggers {
    * Disables the previously enabled trigger.
    *
    * @param {TriggerItemParam} data The data for the request.
-   * @returns {CancelablePromise<TriggerChangeResponse>} A promise that resolves to the response of the disable request.
+   * @returns {Promise<{status: string}>} A promise that resolves to the response of the disable request.
    */
   async disable(data: TriggerItemParam): Promise<TriggerChangeResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {

@@ -57,11 +57,9 @@ export type TPreProcessor = ({
 
 export type TPostProcessor = ({
   actionName,
-  appName,
   toolResponse,
 }: {
   actionName: string;
-  appName: string;
   toolResponse: ActionExecutionResDto;
 }) => ActionExecutionResDto;
 
