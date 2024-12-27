@@ -3,11 +3,11 @@ import {
   TPreProcessor,
   TSchemaProcessor,
 } from "../../../types/base_toolset";
+import logger from "../../../utils/logger";
 import { saveFile } from "../fileUtils";
 
 export const fileResponseProcessor: TPostProcessor = ({
   actionName,
-  appName,
   toolResponse,
 }) => {
   const responseData =
@@ -32,21 +32,18 @@ export const fileResponseProcessor: TPostProcessor = ({
   };
 };
 
-export const fileInputProcessor: TPreProcessor = ({
-  params,
-  actionName,
-  appName,
-}) => {
+export const fileInputProcessor: TPreProcessor = ({ params, actionName }) => {
   const requestData = Object.entries(params).reduce(
     (acc, [key, value]) => {
       if (key === "file_uri_path" && typeof value === "string") {
         try {
+          //eslint-disable-next-line @typescript-eslint/no-require-imports
           const fileContent = require("fs").readFileSync(value, "utf-8");
           const fileName =
             value.split("/").pop() || `${actionName}_${Date.now()}`;
           acc["file"] = { name: fileName, content: fileContent };
         } catch (error) {
-          console.error(`Error reading file at ${value}:`, error);
+          logger.error(`Error reading file at ${value}:`, error);
           acc["file"] = { name: value, content: "" }; // Fallback to original value if reading fails
         }
       } else {

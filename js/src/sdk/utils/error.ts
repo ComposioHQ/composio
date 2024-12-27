@@ -2,9 +2,9 @@ import { AxiosError } from "axios";
 import { ZodError } from "zod";
 import { ComposioError } from "./errors/src/composioError";
 import {
+  API_TO_SDK_ERROR_CODE,
   BASE_ERROR_CODE_INFO,
-  BE_STATUS_CODE_TO_SDK_ERROR_CODES,
-  SDK_ERROR_CODES,
+  COMPOSIO_SDK_ERROR_CODES,
 } from "./errors/src/constants";
 import {
   ErrorResponseData,
@@ -40,13 +40,16 @@ export class CEG {
     const isAxiosError = (error as AxiosError).isAxiosError;
 
     if (!isAxiosError) {
-      const customError = this.getCustomError(SDK_ERROR_CODES.COMMON.UNKNOWN, {
-        message: error.message,
-        description: "",
-        possibleFix: "Please check error message and stack trace",
-        originalError: error,
-        metadata: {},
-      });
+      const customError = this.getCustomError(
+        COMPOSIO_SDK_ERROR_CODES.COMMON.UNKNOWN,
+        {
+          message: error.message,
+          description: "",
+          possibleFix: "Please check error message and stack trace",
+          originalError: error,
+          metadata: {},
+        }
+      );
       if (shouldThrow) {
         throw customError;
       }
@@ -76,7 +79,7 @@ export class CEG {
 
     if (error.code === "ECONNREFUSED") {
       throw new ComposioError(
-        SDK_ERROR_CODES.COMMON.BASE_URL_NOT_REACHABLE,
+        COMPOSIO_SDK_ERROR_CODES.COMMON.BASE_URL_NOT_REACHABLE,
         `ECONNREFUSED for ${fullUrl}`,
         "",
         "Make sure:\n1. The base URL is correct and is accessible\n2. Your network connection is stable\n3. There are no firewall rules blocking the connection",
@@ -87,7 +90,7 @@ export class CEG {
 
     if (error.code === "ETIMEDOUT") {
       throw new ComposioError(
-        SDK_ERROR_CODES.COMMON.REQUEST_TIMEOUT,
+        COMPOSIO_SDK_ERROR_CODES.COMMON.REQUEST_TIMEOUT,
         `ECONNABORTED for ${fullUrl}`,
         `Request to ${fullUrl} timed out after the configured timeout period. This could be due to slow network conditions, server performance issues, or the request being too large. Error code: ETIMEDOUT`,
         "Try:\n1. Checking your network speed and stability\n2. Increasing the request timeout setting if needed\n3. Breaking up large requests into smaller chunks\n4. Retrying the request when network conditions improve\n5. Contact tech@composio.dev if the issue persists",
@@ -98,7 +101,7 @@ export class CEG {
 
     if (error.code === "ECONNABORTED") {
       throw new ComposioError(
-        SDK_ERROR_CODES.COMMON.REQUEST_ABORTED,
+        COMPOSIO_SDK_ERROR_CODES.COMMON.REQUEST_ABORTED,
         error.message,
         "The request was aborted due to a timeout or other network-related issues. This could be due to network instability, server issues, or the request being too large. Error code: ECONNABORTED",
         "Try:\n1. Checking your network speed and stability\n2. Increasing the request timeout setting if needed\n3. Breaking up large requests into smaller chunks\n4. Retrying the request when network conditions improve\n5. Contact tech@composio.dev if the issue persists",
@@ -108,7 +111,7 @@ export class CEG {
     }
 
     throw new ComposioError(
-      SDK_ERROR_CODES.BACKEND.SERVER_UNREACHABLE,
+      COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_UNREACHABLE,
       error.message ||
         "Server is unreachable. Please contact tech@composio.dev with the error details.",
       "Server is unreachable. Please contact tech@composio.dev with the error details.",
@@ -121,15 +124,12 @@ export class CEG {
   static throwAPIError(error: AxiosError) {
     const statusCode = error?.response?.status || null;
     const errorCode = statusCode
-      ? BE_STATUS_CODE_TO_SDK_ERROR_CODES[statusCode] ||
-        SDK_ERROR_CODES.BACKEND.UNKNOWN
-      : SDK_ERROR_CODES.BACKEND.UNKNOWN;
-    const predefinedError = BASE_ERROR_CODE_INFO[errorCode];
+      ? API_TO_SDK_ERROR_CODE[statusCode] ||
+        COMPOSIO_SDK_ERROR_CODES.BACKEND.UNKNOWN
+      : COMPOSIO_SDK_ERROR_CODES.BACKEND.UNKNOWN;
 
     const errorDetails = getAPIErrorDetails(
-      errorCode,
-      error as AxiosError<ErrorResponseData>,
-      predefinedError
+      error as AxiosError<ErrorResponseData>
     );
 
     const metadata = generateMetadataFromAxiosError(error);
@@ -144,7 +144,7 @@ export class CEG {
   }
 
   static returnZodError(error: ZodError) {
-    const errorCode = SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED;
+    const errorCode = COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED;
     const errorMessage = error.message;
     const errorDescription = "The parameters passed are invalid";
     const possibleFix = "Please check the metadata.issues for more details";

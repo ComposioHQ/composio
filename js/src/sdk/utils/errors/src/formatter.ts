@@ -1,10 +1,16 @@
 import { AxiosError } from "axios";
-import { SDK_ERROR_CODES } from "./constants";
+import {
+  API_TO_SDK_ERROR_CODE,
+  BASE_ERROR_CODE_INFO,
+  COMPOSIO_SDK_ERROR_CODES,
+} from "./constants";
 
 export interface ErrorResponseData {
-  message: string;
-  error: string;
-  errors?: Record<string, unknown>[];
+  error: {
+    type: string;
+    name: string;
+    message: string;
+  };
 }
 
 interface ErrorDetails {
@@ -15,14 +21,18 @@ interface ErrorDetails {
 }
 
 export const getAPIErrorDetails = (
-  errorKey: string,
-  axiosError: AxiosError<ErrorResponseData>,
-  predefinedError: Record<string, unknown>
+  axiosError: AxiosError<ErrorResponseData>
 ): ErrorDetails => {
+  const statusCode = axiosError.response?.status;
+  const errorCode = statusCode
+    ? API_TO_SDK_ERROR_CODE[statusCode]
+    : COMPOSIO_SDK_ERROR_CODES.BACKEND.UNKNOWN;
+  const predefinedError = BASE_ERROR_CODE_INFO[errorCode];
+
   const defaultErrorDetails = {
     message: axiosError.message,
     description:
-      axiosError.response?.data?.message ||
+      axiosError.response?.data?.error?.message ||
       axiosError.response?.data?.error ||
       axiosError.message,
     possibleFix:
@@ -30,57 +40,44 @@ export const getAPIErrorDetails = (
   };
 
   const metadata = generateMetadataFromAxiosError(axiosError);
-  switch (errorKey) {
-    case SDK_ERROR_CODES.BACKEND.NOT_FOUND:
-    case SDK_ERROR_CODES.BACKEND.UNAUTHORIZED:
-    case SDK_ERROR_CODES.BACKEND.SERVER_ERROR:
-    case SDK_ERROR_CODES.BACKEND.SERVER_UNAVAILABLE:
-    case SDK_ERROR_CODES.BACKEND.RATE_LIMIT:
-      return {
-        message: `${predefinedError.message || axiosError.message} for ${axiosError.config?.baseURL! + axiosError.config?.url!}`,
-        description: (axiosError.response?.data?.message! ||
-          predefinedError.description) as string,
-        possibleFix: (predefinedError.possibleFix! ||
-          defaultErrorDetails.possibleFix) as string,
-        metadata,
-      };
 
-    case SDK_ERROR_CODES.BACKEND.BAD_REQUEST:
-      const validationErrors = axiosError.response?.data?.errors;
-      const formattedErrors = Array.isArray(validationErrors)
-        ? validationErrors
-            .map((err) => JSON.stringify(err as Record<string, unknown>))
-            .join(", ")
-        : JSON.stringify(
-            validationErrors as unknown as Record<string, unknown>
-          );
+  const errorNameFromBE = axiosError.response?.data?.error?.name;
+  const errorTypeFromBE = axiosError.response?.data?.error?.type;
+  const errorMessage = axiosError.response?.data?.error?.message;
 
+  const genericMessage = `${errorNameFromBE || predefinedError.message} ${errorTypeFromBE ? `- ${errorTypeFromBE}` : ""} on ${axiosError.config?.baseURL! + axiosError.config?.url!}`;
+
+  switch (errorCode) {
+    case COMPOSIO_SDK_ERROR_CODES.BACKEND.NOT_FOUND:
+    case COMPOSIO_SDK_ERROR_CODES.BACKEND.UNAUTHORIZED:
+    case COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_ERROR:
+    case COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_UNAVAILABLE:
+    case COMPOSIO_SDK_ERROR_CODES.BACKEND.RATE_LIMIT:
+    case COMPOSIO_SDK_ERROR_CODES.BACKEND.UNKNOWN:
+    case COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST:
       return {
-        message: `Validation Errors while making request to ${axiosError.config?.baseURL! + axiosError.config?.url!}`,
-        description: `Validation Errors: ${formattedErrors}`,
+        message: genericMessage,
+        description: errorMessage || (predefinedError.description as string),
         possibleFix:
-          "Please check the request parameters and ensure they are correct.",
-        metadata,
-      };
-
-    case SDK_ERROR_CODES.BACKEND.UNKNOWN:
-    case SDK_ERROR_CODES.COMMON.UNKNOWN:
-      return {
-        message: `${axiosError.message} for ${axiosError.config?.baseURL! + axiosError.config?.url!}`,
-        description: (axiosError.response?.data?.message! ||
-          axiosError.response?.data?.error! ||
-          axiosError.message) as string,
-        possibleFix: "Please contact tech@composio.dev with the error details.",
+          predefinedError.possibleFix! ||
+          (defaultErrorDetails.possibleFix as string),
         metadata,
       };
 
     default:
+      const message = genericMessage || axiosError.message;
+      const description =
+        errorMessage ||
+        (predefinedError.description as string) ||
+        axiosError.message;
+      const possibleFix =
+        predefinedError.possibleFix! ||
+        (defaultErrorDetails.possibleFix as string) ||
+        "";
       return {
-        message: `${predefinedError.message || axiosError.message} for ${axiosError.config?.baseURL! + axiosError.config?.url!}`,
-        description: (axiosError.response?.data?.message! ||
-          predefinedError.description) as string,
-        possibleFix: (predefinedError.possibleFix! ||
-          defaultErrorDetails.possibleFix) as string,
+        message,
+        description,
+        possibleFix,
         metadata,
       };
   }
