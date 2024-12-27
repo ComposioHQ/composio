@@ -65,12 +65,19 @@ export const getAPIErrorDetails = (
       };
 
     default:
+      const message = genericMessage || axiosError.message;
+      const description =
+        errorMessage ||
+        (predefinedError.description as string) ||
+        axiosError.message;
+      const possibleFix =
+        predefinedError.possibleFix! ||
+        (defaultErrorDetails.possibleFix as string) ||
+        "";
       return {
-        message: genericMessage,
-        description: errorMessage || (predefinedError.description as string),
-        possibleFix:
-          predefinedError.possibleFix! ||
-          (defaultErrorDetails.possibleFix as string),
+        message,
+        description,
+        possibleFix,
         metadata,
       };
   }
