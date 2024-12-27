@@ -52,7 +52,6 @@ export type TPreProcessor = ({
 }: {
   params: Record<string, unknown>;
   actionName: string;
-  appName: string;
 }) => Record<string, unknown>;
 
 export type TPostProcessor = ({

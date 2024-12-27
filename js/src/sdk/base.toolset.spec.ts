@@ -93,7 +93,6 @@ describe("ComposioToolSet class tests", () => {
     }: {
       params: Record<string, unknown>;
       actionName: string;
-      appName: string;
     }) => {
       return {
         ...params,

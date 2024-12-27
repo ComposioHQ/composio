@@ -167,7 +167,6 @@ export class ComposioToolSet {
       params = processor({
         params: params,
         actionName: action,
-        appName: params.app as string,
       });
     }
 

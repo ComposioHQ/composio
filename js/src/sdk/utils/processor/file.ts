@@ -35,7 +35,6 @@ export const fileResponseProcessor: TPostProcessor = ({
 export const fileInputProcessor: TPreProcessor = ({
   params,
   actionName,
-  appName: _appName,
 }) => {
   const requestData = Object.entries(params).reduce(
     (acc, [key, value]) => {
