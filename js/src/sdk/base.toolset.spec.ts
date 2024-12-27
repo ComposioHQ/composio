@@ -39,7 +39,7 @@ describe("ComposioToolSet class tests", () => {
 
   it("should have schema processor", async () => {
     const addSchemaProcessor: TSchemaProcessor = ({
-      actionName,
+      actionName: _actionName,
       toolSchema,
     }) => {
       return {
@@ -52,7 +52,7 @@ describe("ComposioToolSet class tests", () => {
     };
 
     toolset.addSchemaProcessor(addSchemaProcessor);
-    const tools = await toolset.getToolsSchema({
+    await toolset.getToolsSchema({
       actions: ["github_issues_create"],
     });
   });

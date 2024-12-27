@@ -32,10 +32,7 @@ export const fileResponseProcessor: TPostProcessor = ({
   };
 };
 
-export const fileInputProcessor: TPreProcessor = ({
-  params,
-  actionName,
-}) => {
+export const fileInputProcessor: TPreProcessor = ({ params, actionName }) => {
   const requestData = Object.entries(params).reduce(
     (acc, [key, value]) => {
       if (key === "file_uri_path" && typeof value === "string") {

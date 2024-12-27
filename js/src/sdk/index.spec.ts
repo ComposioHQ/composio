@@ -39,7 +39,7 @@ describe("Basic SDK spec suite", () => {
     const client = new Composio({ apiKey: COMPOSIO_API_KEY });
 
     try {
-      const apps = await client.apps.list();
+      await client.apps.list();
     } catch (e) {
       if (e instanceof ComposioError) {
         expect(e.errCode).toBe(COMPOSIO_SDK_ERROR_CODES.BACKEND.NOT_FOUND);
