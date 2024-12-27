@@ -1,3 +1,5 @@
 composio-langgraph
 langgraph
 python-dotenv
+langchain-openai
+langchain-groq
