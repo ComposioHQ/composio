@@ -899,7 +899,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             )
             if check_connected_accounts:
                 for item in remote_items:
-                    self.check_connected_account(action=item.name, entity_id=self.entity_id)
+                    self.check_connected_account(
+                        action=item.name, entity_id=self.entity_id
+                    )
             else:
                 warnings.warn(
                     "Not verifying connected accounts for apps."
