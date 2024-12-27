@@ -11,6 +11,7 @@ class ComposioSDKContext {
   static frameworkRuntime?: string;
   static source?: string = "javascript";
   static composioVersion?: string;
+  static sessionId?: string;
 }
 
 export default ComposioSDKContext;

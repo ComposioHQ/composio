@@ -1,6 +1,6 @@
 {
   "name": "composio-core",
-  "version": "0.5.0-rc",
+  "version": "0.5.0-rc.1",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
@@ -13,7 +13,7 @@
     "run:sample": "ts-node sample.ts",
     "prettier": "prettier --write 'src/**/*.{ts,js,cjs}'",
     "prettier:check": "prettier --check 'src/**/*.{ts,js,mjs,cjs}'",
-    "build": "rollup -c rollup.config.mjs && ./setup_cli.sh",
+    "build": "rollup -c rollup.config.mjs && ./bundle_package.sh",
     "lint": "eslint 'src/**/*.{ts,js}' --ignore-pattern 'src/sdk/client/**'",
     "format": "pnpm lint && pnpm prettier"
   },

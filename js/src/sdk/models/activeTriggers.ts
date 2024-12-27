@@ -1,38 +1,52 @@
+import { z } from "zod";
 import apiClient from "../client/client";
-import { GetActiveTriggersData } from "../client/types.gen";
+import {
+  ZActiveTriggerItemRes,
+  ZActiveTriggersQuery,
+  ZTriggerItemParam,
+} from "../types/activeTrigger";
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { BackendClient } from "./backendClient";
 
+export type TriggerItemParam = z.infer<typeof ZTriggerItemParam>;
+export type GetActiveTriggersData = z.infer<typeof ZActiveTriggersQuery>;
+export type TriggerItem = z.infer<typeof ZActiveTriggerItemRes>;
+export type TriggerChangeResponse = { status: string };
 export class ActiveTriggers {
-  backendClient: BackendClient;
-  fileName: string = "js/src/sdk/models/activeTriggers.ts";
+  // Remove this as we might not need it
+  private backendClient: BackendClient;
+  private fileName: string = "js/src/sdk/models/activeTriggers.ts";
   constructor(backendClient: BackendClient) {
     this.backendClient = backendClient;
   }
+
+  /** Missing type */
   /**
    * Retrieves details of a specific active trigger in the Composio platform by providing its trigger name.
    *
    * The response includes the trigger's name, description, input parameters, expected response, associated app information, and enabled status.
    *
-   * @param {GetActiveTriggerData} data The data for the request.
-   * @returns {CancelablePromise<GetActiveTriggerResponse>} A promise that resolves to the details of the active trigger.
-   * @throws {ApiError} If the request fails.
+   * @param {TriggerItemParam} data The data for the request.
+   * @returns {Promise<TriggerItem>} A promise that resolves to the details of the active trigger.
+   * @throws {ComposioError} If the request fails.
    */
-  async get({ triggerId }: { triggerId: string }) {
+  async get({ triggerId }: TriggerItemParam) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "get",
       file: this.fileName,
       params: { triggerId },
     });
     try {
+      const parsedData = ZTriggerItemParam.parse({ triggerId });
       const { data } = await apiClient.triggers.getActiveTriggers({
         query: {
-          triggerIds: `${triggerId}`,
+          triggerIds: `${parsedData.triggerId}`,
         },
       });
-      return data?.triggers[0];
+
+      return data?.triggers?.[0] as unknown as TriggerItem;
     } catch (error) {
       throw CEG.handleAllError(error);
     }
@@ -43,22 +57,23 @@ export class ActiveTriggers {
    *
    * This method allows you to fetch a list of all the available active triggers. It supports pagination to handle large numbers of triggers. The response includes an array of trigger objects, each containing information such as the trigger's name, description, input parameters, expected response, associated app information, and enabled status.
    *
-   * @param {ListActiveTriggersData} data The data for the request.
-   * @returns {CancelablePromise<ListActiveTriggersResponse>} A promise that resolves to the list of all active triggers.
-   * @throws {ApiError} If the request fails.
+   * @param {GetActiveTriggersData} data The data for the request.
+   * @returns {Promise<ZActiveTriggerItemRes[]>} A promise that resolves to the list of all active triggers.
+   * @throws {ComposioError} If the request fails.
    */
-  async list(data: GetActiveTriggersData = {}) {
+  async list(data: GetActiveTriggersData = {}): Promise<TriggerItem[]> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "list",
       file: this.fileName,
       params: { data },
     });
     try {
+      const parsedData = ZActiveTriggersQuery.parse(data);
       const { data: response } = await apiClient.triggers.getActiveTriggers({
-        query: data,
+        query: parsedData,
       });
 
-      return response?.triggers || [];
+      return response?.triggers as unknown as TriggerItem[];
     } catch (error) {
       throw CEG.handleAllError(error);
     }
@@ -67,44 +82,55 @@ export class ActiveTriggers {
   /**
    * Enables the previously disabled trigger.
    *
-   * @param {Object} data The data for the request.
-   * @param {string} data.triggerId Id of the trigger
-   * @returns {CancelablePromise<Record<string, any>>} A promise that resolves to the response of the enable request.
-   * @throws {ApiError} If the request fails.
+   * @param {TriggerItemParam} data The data for the request.
+   * @returns {Promise<{status: string}>} A promise that resolves to the response of the enable request.
+   * @throws {ComposioError} If the request fails.
    */
-  async enable(data: { triggerId: string }): Promise<boolean> {
+  async enable(data: TriggerItemParam): Promise<{ status: string }> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "enable",
       file: this.fileName,
       params: { data },
     });
     try {
+      const parsedData = ZTriggerItemParam.parse(data);
       await apiClient.triggers.switchTriggerInstanceStatus({
-        path: data,
+        path: { triggerId: parsedData.triggerId },
         body: {
           enabled: true,
         },
       });
-      return true;
+      return {
+        status: "success",
+      };
     } catch (error) {
       throw CEG.handleAllError(error);
     }
   }
 
-  async disable(data: { triggerId: string }) {
+  /**
+   * Disables the previously enabled trigger.
+   *
+   * @param {TriggerItemParam} data The data for the request.
+   * @returns {Promise<{status: string}>} A promise that resolves to the response of the disable request.
+   */
+  async disable(data: TriggerItemParam): Promise<TriggerChangeResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "disable",
       file: this.fileName,
       params: { data },
     });
     try {
+      const parsedData = ZTriggerItemParam.parse(data);
       await apiClient.triggers.switchTriggerInstanceStatus({
-        path: data,
+        path: parsedData,
         body: {
           enabled: false,
         },
       });
-      return true;
+      return {
+        status: "success",
+      };
     } catch (error) {
       throw CEG.handleAllError(error);
     }

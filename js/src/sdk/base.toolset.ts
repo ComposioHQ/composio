@@ -1,18 +1,19 @@
 import { z } from "zod";
 import { Composio } from "../sdk";
-import type { Optional, Sequence } from "../types/base";
 import {
+  RawActionData,
   TPostProcessor,
   TPreProcessor,
-  TRawActionData,
   TSchemaProcessor,
   ZExecuteActionParams,
   ZToolSchemaFilter,
 } from "../types/base_toolset";
+import type { Optional, Sequence } from "../types/util";
 import { getEnvVariable } from "../utils/shared";
 import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 import { COMPOSIO_BASE_URL } from "./client/core/OpenAPI";
 import { ActionExecutionResDto } from "./client/types.gen";
+import { ActionExecuteResponse } from "./models/actions";
 import { getUserDataJson } from "./utils/config";
 import {
   fileInputProcessor,
@@ -20,6 +21,7 @@ import {
   fileSchemaProcessor,
 } from "./utils/processor/file";
 
+export type ExecuteActionParams = z.infer<typeof ZExecuteActionParams>;
 export class ComposioToolSet {
   client: Composio;
   apiKey: string;
@@ -45,7 +47,7 @@ export class ComposioToolSet {
   } = {};
 
   constructor(
-    apiKey: string | null,
+    apiKey: string | null = null,
     baseUrl: string | null = COMPOSIO_BASE_URL,
     runtime: string | null = null,
     _entityId: string = "default"
@@ -80,7 +82,7 @@ export class ComposioToolSet {
   async getToolsSchema(
     filters: z.infer<typeof ZToolSchemaFilter>,
     _entityId?: Optional<string>
-  ): Promise<TRawActionData[]> {
+  ): Promise<RawActionData[]> {
     const parsedFilters = ZToolSchemaFilter.parse(filters);
 
     const apps = await this.client.actions.list({
@@ -120,11 +122,10 @@ export class ComposioToolSet {
     ];
 
     return toolsActions.map((tool) => {
-      let schema = tool as TRawActionData;
+      let schema = tool as RawActionData;
       allSchemaProcessor.forEach((processor) => {
         schema = processor({
-          actionName: schema?.metadata?.actionName || "",
-          appName: schema?.metadata?.toolName || "",
+          actionName: schema?.name,
           toolSchema: schema,
         });
       });
@@ -142,7 +143,9 @@ export class ComposioToolSet {
       .then((actions) => actions.length > 0);
   }
 
-  async executeAction(functionParams: z.infer<typeof ZExecuteActionParams>) {
+  async executeAction(
+    functionParams: ExecuteActionParams
+  ): Promise<ActionExecuteResponse> {
     const {
       action,
       params: inputParams = {},
@@ -164,7 +167,6 @@ export class ComposioToolSet {
       params = processor({
         params: params,
         actionName: action,
-        appName: params.app as string,
       });
     }
 
@@ -189,11 +191,11 @@ export class ComposioToolSet {
       });
     }
 
-    const data = (await this.client.getEntity(entityId).execute({
+    const data = await this.client.getEntity(entityId).execute({
       actionName: action,
       params: params,
       text: nlaText,
-    })) as ActionExecutionResDto;
+    });
 
     return this.processResponse(data, {
       action: action,
@@ -219,7 +221,6 @@ export class ComposioToolSet {
     for (const processor of allOutputProcessor) {
       dataToReturn = processor({
         actionName: meta.action,
-        appName: "",
         toolResponse: dataToReturn,
       });
     }
