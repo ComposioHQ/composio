@@ -1,6 +1,7 @@
 from composio_llamaindex import ComposioToolSet, App, Action
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage
+from llama_index.llms.openai import OpenAI
 from llama_index.llms.groq import Groq
 from dotenv import load_dotenv
 import os
@@ -12,6 +13,7 @@ agentops.init(os.getenv("AGENTOPS_API_KEY"))
 
 
 toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"))
+
 tools = [*toolset.get_tools(apps=[App.GOOGLESHEETS]), *toolset.get_tools(actions=[Action.PEOPLEDATALABS_NATURAL_LANGUAGE_QUERY_ACTION])]
 
 llm = Groq(model="llama3-groq-70b-8192-tool-use-preview")
@@ -38,6 +40,7 @@ agent = FunctionCallingAgentWorker(
     allow_parallel_tool_calls=False,
     verbose=True,
 ).as_agent()
+
 
 candidate_description = '10 Senior Python Developers working in seed to series A startups living in San Francisco'
 user_input = f"Create a candidate list based on the description: {candidate_description}. Include all the important details required for the job. Add all of it the google sheet."

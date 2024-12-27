@@ -59,8 +59,9 @@ class AddIntegrationExamples(HelpfulCmd):
 @click.option(
     "-a",
     "--auth-mode",
-    type=str,
+    type=str.upper,
     help="Specify auth mode for given app.",
+    metavar="MODE",
 )
 @click.option(
     "-s",
@@ -245,7 +246,6 @@ def add_integration(
     if auth_mode.lower() in ("basic", "api_key", "bearer_token"):
         return _handle_basic_auth(
             entity=entity,
-            client=context.client,
             app_name=name,
             auth_mode=auth_mode,
             auth_scheme=auth_scheme,
@@ -316,7 +316,6 @@ def _handle_oauth(
 
 def _handle_basic_auth(
     entity: Entity,
-    client: Composio,
     app_name: str,
     auth_mode: str,
     auth_scheme: AppAuthScheme,
@@ -335,11 +334,6 @@ def _handle_basic_auth(
         use_composio_auth=False,
         force_new_integration=True,
         labels=labels,
-    )
-    connection.save_user_access_data(
-        client=client,
-        field_inputs=auth_config,
-        entity_id=entity.id,
     )
     click.echo(
         f"✔ {app_name} added successfully with ID: {connection.connectedAccountId}"
