@@ -72,17 +72,12 @@ describe("Entity class tests", () => {
     expect(connections.length).toBeGreaterThan(0);
   });
 
-  it("get active triggers", async () => {
-    // const triggers = await entity.getActiveTriggers();
-    // expect(triggers.length).toBeGreaterThan(0);
-  });
-
   it("setup trigger", async () => {
-    const trigger = await entity.setupTrigger(
-      "gmail",
-      "gmail_new_gmail_message",
-      { userId: "me", interval: 60, labelIds: "INBOX" }
-    );
+    const trigger = await entity.setupTrigger({
+      app: "gmail",
+      triggerName: "gmail_new_gmail_message",
+      config: { userId: "me", interval: 60, labelIds: "INBOX" },
+    });
 
     triggerId = trigger.triggerId;
     expect(trigger.status).toBe("success");

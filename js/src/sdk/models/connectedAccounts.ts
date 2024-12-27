@@ -1,12 +1,20 @@
+import { z } from "zod";
 import {
-  GetConnectionInfoData,
+  ConnectedAccountResponseDTO,
+  ConnectionParams,
+  DeleteRowAPIDTO,
   GetConnectionInfoResponse,
-  GetConnectionsData,
   GetConnectionsResponseDto,
-  InitiateConnectionPayloadDto,
-  InitiateConnectionResponse2,
 } from "../client";
 import { default as apiClient, default as client } from "../client/client";
+import {
+  ZInitiateConnectionDataReq,
+  ZInitiateConnectionPayloadDto,
+  ZListConnectionsData,
+  ZSaveUserAccessDataParam,
+  ZSingleConnectionParams,
+} from "../types/connectedAccount";
+import { ZAuthMode } from "../types/integration";
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
@@ -14,26 +22,25 @@ import { Apps } from "./apps";
 import { BackendClient } from "./backendClient";
 import { Integrations } from "./integrations";
 
-type ConnectedAccountsListData = GetConnectionsData["query"] & {
-  appNames?: string;
-};
+// Schema type from conectedAccount.ts
+type ConnectedAccountsListData = z.infer<typeof ZListConnectionsData>;
+type InitiateConnectionDataReq = z.infer<typeof ZInitiateConnectionDataReq>;
+type SingleConnectionParam = z.infer<typeof ZSingleConnectionParams>;
+type SaveUserAccessDataParam = z.infer<typeof ZSaveUserAccessDataParam>;
+type InitiateConnectionPayloadDto = z.infer<
+  typeof ZInitiateConnectionPayloadDto
+>;
 
-type InitiateConnectionDataReq = InitiateConnectionPayloadDto & {
-  data?: Record<string, unknown> | unknown;
-  entityId?: string;
-  labels?: string[];
-  integrationId?: string;
-  redirectUri?: string;
-  authMode?: string;
-  authConfig?: Record<string, unknown>;
-  appName?: string;
-};
+export type ConnectedAccountListResponse = GetConnectionsResponseDto;
+export type SingleConnectedAccountResponse = ConnectedAccountResponseDTO;
+export type SingleDeleteResponse = DeleteRowAPIDTO;
+export type ConnectionItem = ConnectionParams;
 
 export class ConnectedAccounts {
-  backendClient: BackendClient;
-  integrations: Integrations;
-  apps: Apps;
-  fileName: string = "js/src/sdk/models/connectedAccounts.ts";
+  private backendClient: BackendClient;
+  private integrations: Integrations;
+  private apps: Apps;
+  private fileName: string = "js/src/sdk/models/connectedAccounts.ts";
 
   constructor(backendClient: BackendClient) {
     this.backendClient = backendClient;
@@ -43,30 +50,31 @@ export class ConnectedAccounts {
 
   async list(
     data: ConnectedAccountsListData
-  ): Promise<GetConnectionsResponseDto> {
+  ): Promise<ConnectedAccountListResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "list",
       file: this.fileName,
       params: { data },
     });
     try {
-      const res = await apiClient.connections.getConnections({ query: data });
+      const res = await apiClient.connections.listConnections({ query: data });
       return res.data!;
     } catch (error) {
       throw CEG.handleAllError(error);
     }
   }
 
-  async create(data: InitiateConnectionPayloadDto) {
+  async create(data: InitiateConnectionPayloadDto): Promise<ConnectionRequest> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "create",
       file: this.fileName,
       params: { data },
     });
     try {
-      const { data: res } = (await apiClient.connections.initiateConnection({
+      const { data: res } = await apiClient.connections.initiateConnection({
         body: data,
-      })) as { data: InitiateConnectionResponse2 };
+        throwOnError: true,
+      });
 
       return new ConnectionRequest({
         connectionStatus: res.connectionStatus,
@@ -78,43 +86,19 @@ export class ConnectedAccounts {
     }
   }
 
-  async get(data: { connectedAccountId: string }) {
+  async get(
+    data: SingleConnectionParam
+  ): Promise<SingleConnectedAccountResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "get",
       file: this.fileName,
       params: { data },
     });
     try {
-      const res = await apiClient.connections.getConnection({ path: data });
-      return res.data;
-    } catch (error) {
-      throw CEG.handleAllError(error);
-    }
-  }
-
-  async delete(data: { connectedAccountId: string }) {
-    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
-      method: "delete",
-      file: this.fileName,
-      params: { data },
-    });
-    try {
-      const res = await apiClient.connections.deleteConnection({ path: data });
-      return res.data;
-    } catch (error) {
-      throw CEG.handleAllError(error);
-    }
-  }
-
-  async getAuthParams(data: { connectedAccountId: string }) {
-    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
-      method: "getAuthParams",
-      file: this.fileName,
-      params: { data },
-    });
-    try {
+      ZSingleConnectionParams.parse(data);
       const res = await apiClient.connections.getConnection({
-        path: { connectedAccountId: data.connectedAccountId },
+        path: data,
+        throwOnError: true,
       });
       return res.data;
     } catch (error) {
@@ -122,6 +106,25 @@ export class ConnectedAccounts {
     }
   }
 
+  async delete(data: SingleConnectionParam): Promise<SingleDeleteResponse> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "delete",
+      file: this.fileName,
+      params: { data },
+    });
+    try {
+      ZSingleConnectionParams.parse(data);
+      const res = await apiClient.connections.deleteConnection({
+        path: data,
+        throwOnError: true,
+      });
+      return res.data!;
+    } catch (error) {
+      throw CEG.handleAllError(error);
+    }
+  }
+
+  // Should we deprecate this or change the signature?
   async initiate(
     payload: InitiateConnectionDataReq
   ): Promise<ConnectionRequest> {
@@ -163,17 +166,18 @@ export class ConnectedAccounts {
         const integration = await this.integrations.create({
           appId: app.appId!,
           name: `integration_${timestamp}`,
-          authScheme: authMode,
+          authScheme: authMode as z.infer<typeof ZAuthMode>,
           authConfig: authConfig,
           useComposioAuth: false,
         });
+
         integrationId = integration?.id!;
       }
 
       const res = await client.connections
         .initiateConnection({
           body: {
-            integrationId,
+            integrationId: integrationId!,
             entityId,
             labels,
             redirectUri,
@@ -212,12 +216,9 @@ export class ConnectionRequest {
     this.redirectUrl = redirectUri;
   }
 
-  async saveUserAccessData(data: {
-    fieldInputs: Record<string, string>;
-    redirectUrl?: string;
-    entityId?: string;
-  }) {
+  async saveUserAccessData(data: SaveUserAccessDataParam) {
     try {
+      ZSaveUserAccessDataParam.parse(data);
       const { data: connectedAccount } =
         await apiClient.connections.getConnection({
           path: { connectedAccountId: this.connectedAccountId },
@@ -239,9 +240,10 @@ export class ConnectionRequest {
   }
 
   async getAuthInfo(
-    data: GetConnectionInfoData["path"]
+    data: SingleConnectionParam
   ): Promise<GetConnectionInfoResponse> {
     try {
+      ZSingleConnectionParams.parse(data);
       const res = await client.connections.getConnectionInfo({ path: data });
       return res.data!;
     } catch (error) {

@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "@jest/globals";
 import { getTestConfig } from "../../config/getTestConfig";
+import { TSchemaProcessor } from "../types/base_toolset";
 import { ComposioToolSet } from "./base.toolset";
 import { ActionExecutionResDto } from "./client";
 
@@ -34,6 +35,26 @@ describe("ComposioToolSet class tests", () => {
       actions: ["github_issues_create"],
     });
     expect(tools).toBeInstanceOf(Array);
+  });
+
+  it("should have schema processor", async () => {
+    const addSchemaProcessor: TSchemaProcessor = ({
+      actionName: _actionName,
+      toolSchema,
+    }) => {
+      return {
+        ...toolSchema,
+        parameters: {
+          ...toolSchema.parameters,
+          description: "hello",
+        },
+      };
+    };
+
+    toolset.addSchemaProcessor(addSchemaProcessor);
+    await toolset.getToolsSchema({
+      actions: ["github_issues_create"],
+    });
   });
 
   it("should execute an action", async () => {
@@ -72,7 +93,6 @@ describe("ComposioToolSet class tests", () => {
     }: {
       params: Record<string, unknown>;
       actionName: string;
-      appName: string;
     }) => {
       return {
         ...params,
@@ -83,12 +103,10 @@ describe("ComposioToolSet class tests", () => {
     };
 
     const postProcessor = ({
+      actionName: _actionName,
       toolResponse,
-      actionName,
-      appName,
     }: {
       actionName: string;
-      appName: string;
       toolResponse: ActionExecutionResDto;
     }) => {
       return {
@@ -97,6 +115,7 @@ describe("ComposioToolSet class tests", () => {
           isPostProcessed: true,
         },
         error: toolResponse.error,
+        successful: toolResponse.successful,
         successfull: toolResponse.successfull,
       };
     };

@@ -12,15 +12,12 @@ import type {
   AdvancedUseCaseSearchData,
   AdvancedUseCaseSearchError,
   AdvancedUseCaseSearchResponse2,
-  AppControllerSendEmailToClientData,
-  AppControllerSendEmailToClientError,
-  AppControllerSendEmailToClientResponse,
-  ClearCacheData,
-  ClearCacheError,
-  ClearCacheResponse,
   CreateConnectorData,
   CreateConnectorError,
   CreateConnectorResponse,
+  CreateProjectData,
+  CreateProjectError,
+  CreateProjectResponse,
   DeleteApiKeyData,
   DeleteApiKeyError,
   DeleteApiKeyResponse,
@@ -30,9 +27,6 @@ import type {
   DeleteConnectorData,
   DeleteConnectorError,
   DeleteConnectorResponse,
-  DeleteOpenApiSpecToolData,
-  DeleteOpenApiSpecToolError,
-  DeleteOpenApiSpecToolResponse,
   DeleteProjectData,
   DeleteProjectError,
   DeleteProjectResponse,
@@ -51,12 +45,12 @@ import type {
   EnableTriggerData,
   EnableTriggerError,
   EnableTriggerResponse,
-  ExecuteActionProxyV2Data,
-  ExecuteActionProxyV2Error,
-  ExecuteActionProxyV2Response,
   ExecuteActionV2Data,
   ExecuteActionV2Error,
   ExecuteActionV2Response,
+  ExecuteWithHttpClientData,
+  ExecuteWithHttpClientError,
+  ExecuteWithHttpClientResponse,
   GenerateApiKeyData,
   GenerateApiKeyError,
   GenerateApiKeyResponse,
@@ -71,9 +65,6 @@ import type {
   GetActiveTriggersData,
   GetActiveTriggersError,
   GetActiveTriggersResponse,
-  GetAnalyticsData,
-  GetAnalyticsError,
-  GetAnalyticsResponse,
   GetAppData,
   GetAppError,
   GetAppResponse,
@@ -89,27 +80,19 @@ import type {
   GetConnectionInfoError,
   GetConnectionInfoResponse,
   GetConnectionResponse,
-  GetConnectionsData,
-  GetConnectionsError,
-  GetConnectionsResponse,
   GetConnectorInfoData,
   GetConnectorInfoError,
   GetConnectorInfoResponse,
   GetLogsData,
   GetLogsError,
   GetLogsResponse,
-  GetOpenApiSpecStatusData,
-  GetOpenApiSpecStatusError,
-  GetOpenApiSpecStatusResponse,
-  GetOpenApiSpecsError,
-  GetOpenApiSpecsResponse,
+  GetOrgApiKeyError,
+  GetOrgApiKeyResponse,
+  GetProjectData,
+  GetProjectError,
+  GetProjectResponse,
   GetProjectsError,
   GetProjectsResponse,
-  GetSentryDnsError,
-  GetSentryDnsResponse,
-  GetTopEntitiesData,
-  GetTopEntitiesError,
-  GetTopEntitiesResponse,
   GetTriggerInfoV2Data,
   GetTriggerInfoV2Error,
   GetTriggerInfoV2Response,
@@ -120,12 +103,15 @@ import type {
   GetUserInfoResponse,
   GetWebhookUrlError,
   GetWebhookUrlResponse,
-  IdentifyClientData,
-  IdentifyClientError,
-  IdentifyClientResponse,
   InitiateConnectionData,
   InitiateConnectionError,
   InitiateConnectionResponse2,
+  InviteMemberData,
+  InviteMemberError,
+  InviteMemberResponse,
+  ListActionTagsData,
+  ListActionTagsError,
+  ListActionTagsResponse,
   ListActionsMinimalV2Data,
   ListActionsMinimalV2Error,
   ListActionsMinimalV2Response,
@@ -136,6 +122,13 @@ import type {
   ListAllConnectorsResponse,
   ListApiKeysError,
   ListApiKeysResponse,
+  ListAppCategoriesError,
+  ListAppCategoriesResponse,
+  ListConnectionsData,
+  ListConnectionsError,
+  ListConnectionsResponse,
+  ListMembersError,
+  ListMembersResponse,
   ListTriggersData,
   ListTriggersError,
   ListTriggersResponse,
@@ -145,6 +138,14 @@ import type {
   PostLogsData,
   PostLogsError,
   PostLogsResponse,
+  RegenerateOrgApiKeyError,
+  RegenerateOrgApiKeyResponse,
+  RegenerateProjectApiKeyData,
+  RegenerateProjectApiKeyError,
+  RegenerateProjectApiKeyResponse,
+  RenameProjectData,
+  RenameProjectError,
+  RenameProjectResponse,
   SetCallbackUrlData,
   SetCallbackUrlError,
   SetCallbackUrlResponse,
@@ -154,9 +155,9 @@ import type {
   UpdateConnectionDataData,
   UpdateConnectionDataError,
   UpdateConnectionDataResponse,
-  UpdateWebhookData,
-  UpdateWebhookError,
-  UpdateWebhookResponse,
+  UpdateNewWebhookData,
+  UpdateNewWebhookError,
+  UpdateNewWebhookResponse,
   VerifyCliCodeData,
   VerifyCliCodeError,
   VerifyCliCodeResponse,
@@ -164,23 +165,7 @@ import type {
 
 export const client = createClient(createConfig());
 
-export class AuthService {
-  /**
-   * Identify client
-   */
-  public static identifyClient<ThrowOnError extends boolean = false>(
-    options?: Options<IdentifyClientData, ThrowOnError>
-  ) {
-    return (options?.client ?? client).post<
-      IdentifyClientResponse,
-      IdentifyClientError,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v1/client/auth/identify",
-    });
-  }
-
+export class ClientService {
   /**
    * Get user info
    * Get client info
@@ -199,7 +184,8 @@ export class AuthService {
   }
 
   /**
-   * Add project
+   * Add new project
+   * Add a new project to the client's organization
    */
   public static addProject<ThrowOnError extends boolean = false>(
     options?: Options<AddProjectData, ThrowOnError>
@@ -216,6 +202,7 @@ export class AuthService {
 
   /**
    * Delete project
+   * Delete a project from the client's organization
    */
   public static deleteProject<ThrowOnError extends boolean = false>(
     options: Options<DeleteProjectData, ThrowOnError>
@@ -243,6 +230,72 @@ export class AuthService {
     >({
       ...options,
       url: "/api/v1/client/auth/projects",
+    });
+  }
+
+  /**
+   * Get org api key
+   */
+  public static getOrgApiKey<ThrowOnError extends boolean = false>(
+    options?: Options<unknown, ThrowOnError>
+  ) {
+    return (options?.client ?? client).get<
+      GetOrgApiKeyResponse,
+      GetOrgApiKeyError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v1/client/auth/org/api_key",
+    });
+  }
+
+  /**
+   * Regenerate org api key
+   */
+  public static regenerateOrgApiKey<ThrowOnError extends boolean = false>(
+    options?: Options<unknown, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      RegenerateOrgApiKeyResponse,
+      RegenerateOrgApiKeyError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v1/client/auth/org/api_key/regenerate",
+    });
+  }
+}
+
+export class TeamService {
+  /**
+   * Invite member
+   */
+  public static inviteMember<ThrowOnError extends boolean = false>(
+    options?: Options<InviteMemberData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      InviteMemberResponse,
+      InviteMemberError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v1/team/invite",
+    });
+  }
+
+  /**
+   * List members
+   */
+  public static listMembers<ThrowOnError extends boolean = false>(
+    options?: Options<unknown, ThrowOnError>
+  ) {
+    return (options?.client ?? client).get<
+      ListMembersResponse,
+      ListMembersError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v1/team/members",
     });
   }
 }
@@ -299,8 +352,25 @@ export class ApiKeysService {
 
 export class AppsService {
   /**
-   * Get apps
-   * Retrieve a list of all applications based on query parameters.
+   * List app categories
+   * List of available app categories, can be used to filter apps.
+   */
+  public static listAppCategories<ThrowOnError extends boolean = false>(
+    options?: Options<unknown, ThrowOnError>
+  ) {
+    return (options?.client ?? client).get<
+      ListAppCategoriesResponse,
+      ListAppCategoriesError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v1/apps/list/categories",
+    });
+  }
+
+  /**
+   * List apps
+   * List all apps based on the given filters, if any. This will return all available apps if no filters are provided.
    */
   public static getApps<ThrowOnError extends boolean = false>(
     options?: Options<GetAppsData, ThrowOnError>
@@ -316,74 +386,7 @@ export class AppsService {
   }
 
   /**
-   * Get opena api specs
-   * List all openapi spec tools
-   */
-  public static getOpenApiSpecs<ThrowOnError extends boolean = false>(
-    options?: Options<unknown, ThrowOnError>
-  ) {
-    return (options?.client ?? client).get<
-      GetOpenApiSpecsResponse,
-      GetOpenApiSpecsError,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v1/apps/openapi/spec/list",
-    });
-  }
-
-  /**
-   * Delete open api spec tool
-   * Delete an openapi spec tool
-   */
-  public static deleteOpenApiSpecTool<ThrowOnError extends boolean = false>(
-    options: Options<DeleteOpenApiSpecToolData, ThrowOnError>
-  ) {
-    return (options?.client ?? client).delete<
-      DeleteOpenApiSpecToolResponse,
-      DeleteOpenApiSpecToolError,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v1/apps/openapi/spec/delete/{id}",
-    });
-  }
-
-  /**
-   * Send email to client
-   */
-  public static sendEmailToClient<ThrowOnError extends boolean = false>(
-    options?: Options<AppControllerSendEmailToClientData, ThrowOnError>
-  ) {
-    return (options?.client ?? client).post<
-      AppControllerSendEmailToClientResponse,
-      AppControllerSendEmailToClientError,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v1/apps/openapi/send_email_to_client",
-    });
-  }
-
-  /**
-   * Get open api spec status
-   * Get the status of an openapi spec tool
-   */
-  public static getOpenApiSpecStatus<ThrowOnError extends boolean = false>(
-    options: Options<GetOpenApiSpecStatusData, ThrowOnError>
-  ) {
-    return (options?.client ?? client).get<
-      GetOpenApiSpecStatusResponse,
-      GetOpenApiSpecStatusError,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v1/apps/openapi/spec/status/{id}",
-    });
-  }
-
-  /**
-   * Get app
+   * Get single app
    * Get app details
    */
   public static getApp<ThrowOnError extends boolean = false>(
@@ -489,14 +492,15 @@ export class IntegrationsService {
 
 export class ConnectionsService {
   /**
-   * Get connections
+   * List connections
+   * Get all connections in the current project.
    */
-  public static getConnections<ThrowOnError extends boolean = false>(
-    options?: Options<GetConnectionsData, ThrowOnError>
+  public static listConnections<ThrowOnError extends boolean = false>(
+    options?: Options<ListConnectionsData, ThrowOnError>
   ) {
     return (options?.client ?? client).get<
-      GetConnectionsResponse,
-      GetConnectionsError,
+      ListConnectionsResponse,
+      ListConnectionsError,
       ThrowOnError
     >({
       ...options,
@@ -538,7 +542,7 @@ export class ConnectionsService {
   }
 
   /**
-   * Get connection
+   * Get single connection
    */
   public static getConnection<ThrowOnError extends boolean = false>(
     options: Options<GetConnectionData, ThrowOnError>
@@ -571,8 +575,8 @@ export class ConnectionsService {
   }
 
   /**
-   * Get connection info
-   * Get connection info
+   * Get Auth credentials
+   * Get authentication crdentials for the connected account, i.e all the headers, query parameters, etc. that are required to make requests to the third-party service directly.
    */
   public static getConnectionInfo<ThrowOnError extends boolean = false>(
     options: Options<GetConnectionInfoData, ThrowOnError>
@@ -637,6 +641,23 @@ export class TriggersService {
     >({
       ...options,
       url: "/api/v1/triggers",
+    });
+  }
+
+  /**
+   * Update new webhook
+   * Update isNewWebhook
+   */
+  public static updateNewWebhook<ThrowOnError extends boolean = false>(
+    options?: Options<UpdateNewWebhookData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      UpdateNewWebhookResponse,
+      UpdateNewWebhookError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v1/triggers/update_webhook_format",
     });
   }
 
@@ -794,40 +815,6 @@ export class TriggersService {
   }
 }
 
-export class AdminService {
-  /**
-   * Jssentry dns
-   */
-  public static getSentryDns<ThrowOnError extends boolean = false>(
-    options?: Options<unknown, ThrowOnError>
-  ) {
-    return (options?.client ?? client).get<
-      GetSentryDnsResponse,
-      GetSentryDnsError,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v1/cli/js-sentry-dns",
-    });
-  }
-
-  /**
-   * Clear cache
-   */
-  public static clearCache<ThrowOnError extends boolean = false>(
-    options?: Options<ClearCacheData, ThrowOnError>
-  ) {
-    return (options?.client ?? client).post<
-      ClearCacheResponse,
-      ClearCacheError,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v1/clear-cache",
-    });
-  }
-}
-
 export class CliService {
   /**
    * Handle cli code exchange
@@ -916,8 +903,25 @@ export class LogsService {
 
 export class ActionsService {
   /**
-   * List actions
-   * Retrieve a list of all actions based on query parameters.
+   * List action tags
+   * List all the action tags available in composio
+   */
+  public static listActionTags<ThrowOnError extends boolean = false>(
+    options?: Options<ListActionTagsData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).get<
+      ListActionTagsResponse,
+      ListActionTagsError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/actions/list/tags",
+    });
+  }
+
+  /**
+   * List actions with complete details
+   * List and filter all the actions available in composio, with all the details needed for manual action execution or through function-calling.
    */
   public static listActionsV2<ThrowOnError extends boolean = false>(
     options?: Options<ListActionsV2Data, ThrowOnError>
@@ -933,7 +937,7 @@ export class ActionsService {
   }
 
   /**
-   * List actions minimal
+   * List actions
    * Retrieve a list of all actions based on query parameters.
    */
   public static listActionsMinimalV2<ThrowOnError extends boolean = false>(
@@ -950,7 +954,7 @@ export class ActionsService {
   }
 
   /**
-   * Execute action
+   * Execute an action
    * Execute an action. Support both connected account and no auth auth.
    */
   public static executeActionV2<ThrowOnError extends boolean = false>(
@@ -984,8 +988,8 @@ export class ActionsService {
   }
 
   /**
-   * Get action
-   * Get action details
+   * Get single action
+   * Get action details, including the input and response schema. This is very useful for setting upfunction/tool calling with composio actions.
    */
   public static getActionV2<ThrowOnError extends boolean = false>(
     options: Options<GetActionV2Data, ThrowOnError>
@@ -1001,15 +1005,15 @@ export class ActionsService {
   }
 
   /**
-   * Execute action proxy
-   * Execute an action with direct auth.
+   * Execute with HTTP Client
+   * Use composio as a http client to make request to the connected account service on your behalf, without managing authentication on your side.
    */
-  public static executeActionProxyV2<ThrowOnError extends boolean = false>(
-    options?: Options<ExecuteActionProxyV2Data, ThrowOnError>
+  public static executeWithHttpClient<ThrowOnError extends boolean = false>(
+    options?: Options<ExecuteWithHttpClientData, ThrowOnError>
   ) {
     return (options?.client ?? client).post<
-      ExecuteActionProxyV2Response,
-      ExecuteActionProxyV2Error,
+      ExecuteWithHttpClientResponse,
+      ExecuteWithHttpClientError,
       ThrowOnError
     >({
       ...options,
@@ -1022,7 +1026,7 @@ export class ActionsService {
    * Perform use case search.
    */
   public static advancedUseCaseSearch<ThrowOnError extends boolean = false>(
-    options: Options<AdvancedUseCaseSearchData, ThrowOnError>
+    options?: Options<AdvancedUseCaseSearchData, ThrowOnError>
   ) {
     return (options?.client ?? client).get<
       AdvancedUseCaseSearchResponse2,
@@ -1035,54 +1039,102 @@ export class ActionsService {
   }
 }
 
-export class AnalyticsService {
+export class ProjectsService {
   /**
-   * Get analytics
+   * Create new project
+   * Create a new project to the client's organization
    */
-  public static getAnalytics<ThrowOnError extends boolean = false>(
-    options?: Options<GetAnalyticsData, ThrowOnError>
-  ) {
-    return (options?.client ?? client).get<
-      GetAnalyticsResponse,
-      GetAnalyticsError,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v1/analytics/",
-    });
-  }
-
-  /**
-   * Get top entities
-   */
-  public static getTopEntities<ThrowOnError extends boolean = false>(
-    options?: Options<GetTopEntitiesData, ThrowOnError>
-  ) {
-    return (options?.client ?? client).get<
-      GetTopEntitiesResponse,
-      GetTopEntitiesError,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v1/analytics/entities",
-    });
-  }
-}
-
-export class EventLogsService {
-  /**
-   * Update webhook
-   */
-  public static updateWebhook<ThrowOnError extends boolean = false>(
-    options?: Options<UpdateWebhookData, ThrowOnError>
+  public static createProject<ThrowOnError extends boolean = false>(
+    options?: Options<CreateProjectData, ThrowOnError>
   ) {
     return (options?.client ?? client).post<
-      UpdateWebhookResponse,
-      UpdateWebhookError,
+      CreateProjectResponse,
+      CreateProjectError,
       ThrowOnError
     >({
       ...options,
-      url: "/api/v1/event_logs/set/webhook",
+      url: "/api/v1/org/projects/create",
+    });
+  }
+
+  /**
+   * List all projects
+   */
+  public static getProjects<ThrowOnError extends boolean = false>(
+    options?: Options<unknown, ThrowOnError>
+  ) {
+    return (options?.client ?? client).get<
+      GetProjectsResponse,
+      GetProjectsError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v1/org/projects",
+    });
+  }
+
+  /**
+   * Regenerate project api key
+   * Regenerate project API key. Ideally use when no API key is available as project can have multiple API keys
+   */
+  public static regenerateProjectApiKey<ThrowOnError extends boolean = false>(
+    options: Options<RegenerateProjectApiKeyData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      RegenerateProjectApiKeyResponse,
+      RegenerateProjectApiKeyError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v1/org/projects/{projectId}/api-key/regenerate",
+    });
+  }
+
+  /**
+   * Get project
+   */
+  public static getProject<ThrowOnError extends boolean = false>(
+    options: Options<GetProjectData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).get<
+      GetProjectResponse,
+      GetProjectError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v1/org/projects/{projectId}",
+    });
+  }
+
+  /**
+   * Delete project
+   */
+  public static deleteProject<ThrowOnError extends boolean = false>(
+    options: Options<DeleteProjectData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).delete<
+      DeleteProjectResponse,
+      DeleteProjectError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v1/org/projects/{projectId}",
+    });
+  }
+
+  /**
+   * Rename project
+   */
+  public static renameProject<ThrowOnError extends boolean = false>(
+    options: Options<RenameProjectData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      RenameProjectResponse,
+      RenameProjectError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v1/org/projects/{projectId}/rename",
     });
   }
 }

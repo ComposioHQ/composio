@@ -29,7 +29,7 @@ export const ZRawActionSchema = z.object({
   }),
 });
 
-export type TRawActionData = z.infer<typeof ZRawActionSchema>;
+export type RawActionData = z.infer<typeof ZRawActionSchema>;
 
 /*
     This is the schema for the params object in the ExecuteAction function
@@ -52,28 +52,23 @@ export type TPreProcessor = ({
 }: {
   params: Record<string, unknown>;
   actionName: string;
-  appName: string;
 }) => Record<string, unknown>;
 
 export type TPostProcessor = ({
   actionName,
-  appName,
   toolResponse,
 }: {
   actionName: string;
-  appName: string;
   toolResponse: ActionExecutionResDto;
 }) => ActionExecutionResDto;
 
 export type TSchemaProcessor = ({
   actionName,
-  appName,
   toolSchema,
 }: {
   actionName: string;
-  appName: string;
-  toolSchema: TRawActionData;
-}) => TRawActionData;
+  toolSchema: RawActionData;
+}) => RawActionData;
 
 export const ZToolSchemaFilter = z.object({
   actions: z.array(z.string()).optional(),

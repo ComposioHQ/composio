@@ -23,7 +23,6 @@ describe("Integrations class tests", () => {
       appId: "01e22f33-dc3f-46ae-b58d-050e4d2d1909",
       name: "test_integration_220",
       useComposioAuth: true,
-      // @ts-ignore
       forceNewIntegration: true,
     });
     expect(integrationCreation.id).toBeTruthy();
@@ -51,10 +50,6 @@ describe("Integrations class tests", () => {
 
   it("should delete the created integration", async () => {
     if (!createdIntegrationId) return;
-    await integrations.delete({
-      path: {
-        integrationId: createdIntegrationId,
-      },
-    });
+    await integrations.delete(createdIntegrationId);
   });
 });
