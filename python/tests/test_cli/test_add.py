@@ -33,3 +33,12 @@ class TestComposioAdd(BaseCliTest):
         self.assert_stdout_regex(
             match=re.compile("Enter API Key"),
         )
+
+    def test_add_auth_mode_auto_uppercase(self) -> None:
+        """Test `composio add` with lowercase --auth-mode."""
+        self.run("add", "github", "--auth-mode", "oauth2", input="n")
+        self.assert_stdout_regex(
+            match=re.compile(
+                "Do you want to replace the existing connection?|Adding integration..."
+            ),
+        )

@@ -20,7 +20,7 @@ from composio.client.enums import (  # noqa: E402
     Trigger,
     TriggerType,
 )
-from composio.tools import ComposioToolSet  # noqa: E402
+from composio.tools import RETRY, ComposioToolSet  # noqa: E402
 from composio.tools.base.runtime import action  # noqa: E402
 from composio.tools.env.factory import (  # noqa: E402
     WorkspaceConfigType,
@@ -43,6 +43,7 @@ __all__ = (
     "ActionType",
     "TriggerType",
     "ComposioToolSet",
+    "RETRY",
     "CustomAuthObject",
     "WorkspaceType",
     "WorkspaceConfigType",
