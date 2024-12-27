@@ -1,12 +1,11 @@
 import json
 import os
-from pathlib import Path
 import time
 import typing as t
 
 from composio.client import Composio, enums
 from composio.client.collections import ActionModel, AppModel, TriggerModel
-from composio.client.enums.base import create_action
+from composio.client.enums.base import create_action, replacement_action_name
 from composio.tools.local import load_local_tools
 from composio.utils import get_enum_key
 from composio.utils.logging import get_logger
@@ -253,8 +252,8 @@ def check_cache_refresh(client: Composio) -> None:
     logger.debug("Actions to fetch: %s", actions_to_update)
     logger.debug("Stale actions: %s", actions_to_delete)
 
-    for action in actions_to_delete:
-        (enums.base.ACTIONS_CACHE / action).unlink()
+    for action_name in actions_to_delete:
+        (enums.base.ACTIONS_CACHE / action_name).unlink()
 
     if actions_to_update:
         # TODO: handle page size limit

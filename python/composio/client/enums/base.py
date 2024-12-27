@@ -3,8 +3,8 @@ Enum helper base.
 """
 
 import difflib
-from pathlib import Path
 import typing as t
+from pathlib import Path
 
 from composio.constants import LOCAL_CACHE_DIRECTORY
 from composio.exceptions import ComposioSDKError

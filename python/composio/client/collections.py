@@ -1400,6 +1400,7 @@ class Actions(Collection[ActionModel]):
         )
         return response.text.split("\n")
 
+
 class ExpectedFieldInput(BaseModel):
     name: str
     type: str

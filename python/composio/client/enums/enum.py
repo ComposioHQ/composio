@@ -94,7 +94,6 @@ class Enum(t.Generic[DataT]):
         """Yield the enum names as strings."""
         # pylint: disable=import-outside-toplevel
         from composio.client import Composio
-        
 
         client = Composio.get_latest()
         return client.actions.list_enums()
