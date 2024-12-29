@@ -19,6 +19,10 @@ setup_cli:
 bump_version:
 	./bump_version.sh
 
+.PHONY: test
+test:
+	pnpm run test
+
 .PHONY: switch_package
 switch_package:
 	./switch_package.sh
