@@ -7,4 +7,4 @@ List of things to do for Composio JS SDK
 - [ ] Add support via browserify
 - [ ] Add more edge cases
 - [ ] Sign JS SDK CLIs
-- [ ] Add test tests
+- [ ] Add test for connected account execution
