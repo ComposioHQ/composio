@@ -40,14 +40,14 @@ Follow these 5 steps to connect your user to Google Calendar and create an event
 </Step>
 
 <Step title="Authenticate Google Calendar Account">
-We'll use Jessica as our example user. There are multiple ways to authenticate an account:
+We'll use **`default`** as our example user. There are multiple ways to authenticate an account:
 <Tabs>
         <Tab title="Python">
             <CodeGroup>
-                ```python Authenticate Jessica's Google Calendar Account
+                ```python Authenticate Google Calendar Account
                 from composio import ComposioToolSet, App
 
-                toolset = ComposioToolSet(entity_id="Jessica")
+                toolset = ComposioToolSet(entity_id="default")
                 entity = toolset.get_entity()
                 request = entity.initiate_connection(App.GOOGLECALENDAR)
 
@@ -74,7 +74,7 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
                 from openai import OpenAI
 
                 openai_client = OpenAI()
-                composio_toolset = ComposioToolSet(entity_id="Jessica")
+                composio_toolset = ComposioToolSet(entity_id="default")
                 ```
             </CodeGroup>
 
@@ -144,23 +144,23 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
 </Step>
 
 <Step title="Authenticate Google Calendar Account">
-We'll use Jessica as our example user. There are multiple ways to authenticate an account:
+We'll use **`default`** as our example user. There are multiple ways to authenticate an account:
 <Tabs>
     <Tab title="CLI">
             <CodeGroup>
-                ```bash Authenticate Jessica's Google Calendar Account
-                composio add googlecalendar -e "Jessica" # Launches Google Calendar login
+                ```bash Authenticate Google Calendar Account
+                composio add googlecalendar -e "default" # Launches Google Calendar login
                 ```
             </CodeGroup>
     </Tab>
     <Tab title="JavaScript">
             <CodeGroup>
-                ```javascript Authenticate Jessica's Google Calendar Account
+                ```javascript Authenticate Google Calendar Account
                 import { Composio } from "composio-core";
 
                 const client = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 
-                const entity = await client.getEntity("Jessica");
+                const entity = await client.getEntity("default");
                 const connection = await entity.initiateConnection('googlecalendar');
 
                 console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
@@ -191,7 +191,7 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
 
                 const composio_toolset = new OpenAIToolSet({
                     apiKey: process.env.COMPOSIO_API_KEY,
-                    entityId: "Jessica",
+                    entityId: "default",
                 });
                 ```
             </CodeGroup>
@@ -245,10 +245,10 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
 <Tab title="CLI">
 <Steps>
 <Step title="Authenticate Google Calendar Account">
-We'll use Jessica as our example user. There are multiple ways to authenticate an account:
+We'll use **`default`** as our example user. There are multiple ways to authenticate an account:
             <CodeGroup>
-                ```bash Authenticate Jessica's Google Calendar Account
-                composio add googlecalendar -e "Jessica" # Launches Google Calendar login
+                ```bash Authenticate Google Calendar Account
+                composio add googlecalendar -e "default" # Launches Google Calendar login
                 ```
             </CodeGroup>
     <Warning>
@@ -281,7 +281,7 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
                 --header 'X-API-Key: ADD YOUR API KEY HERE' \
                 --data '{
                     "appName": "GOOGLECALENDAR", #add your app name here
-                    "entityId": "Jessica", #add your entity id here
+                    "entityId": "default", #add your entity id here
                     "input": {
                         "start_datetime": "11:15 PM, 1 December 2024",
                         "event_duration": "2h"

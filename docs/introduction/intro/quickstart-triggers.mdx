@@ -23,11 +23,11 @@ We'll use **`Jessica`** as the user id [(entity id)](../../patterns/Auth/connect
 <CodeGroup>
 ```shell CLI
 composio login 
-composio add gmail -e "Jessica"
+composio add gmail -e "default"
 ```
 ```python Python
 from composio_openai import ComposioToolSet, App, Trigger
-toolset = ComposioToolSet(entity_id="Jessica")
+toolset = ComposioToolSet(entity_id="default")
 
 request = toolset.initiate_connection(app=App.GMAIL)
 
@@ -45,7 +45,7 @@ Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environ
 composio triggers enable gmail_new_gmail_message
 ```
 ```python Python
-entity = toolset.get_entity(id="Jessica")
+entity = toolset.get_entity(id="default")
 
 entity.enable_trigger(
     app=App.GMAIL,
@@ -121,7 +121,7 @@ We'll use **`Jessica`** as the user id [(entity id)](../../patterns/Auth/connect
 <CodeGroup>
 ```shell CLI
 composio login
-composio add gmail -e "Jessica" 
+composio add gmail -e "default" 
 ```
 ```javascript JavaScript
 import { OpenAIToolSet, Composio } from "composio-core";
@@ -132,7 +132,7 @@ const openai_client = new OpenAI();
 
 const connectionRequest = await toolset.client.connectedAccounts.initiate({
     appName: "gmail",
-    entityId: "Jessica",
+    entityId: "default",
     authMode: "OAUTH2",
     authConfig: {},
 });
@@ -150,7 +150,7 @@ Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environ
 composio triggers enable gmail_new_gmail_message
 ```
 ```javascript JavaScript
-const entity = toolset.client.getEntity("Jessica");
+const entity = toolset.client.getEntity("default");
 
 const response = await entity.setupTrigger("gmail", "gmail_new_gmail_message", {
     userId: "me",

@@ -25,15 +25,15 @@ tool_set.execute_action(
 import { OpenAIToolSet } from "composio-core";
 
 const toolset = new OpenAIToolSet();
-const entity = toolset.client.getEntity("Jessica");
+const entity = toolset.client.getEntity("default");
 
-const result = await entity.execute(
-    "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
-    {
-        "owner": "composiohq",
-        "repo": "composio"
-    }
-);
+const result = await entity.execute({
+  actionName: "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
+  params: {
+    owner: "composiohq",
+    repo: "composio",
+  },
+});
 console.log(result);
   ```
 </CodeGroup>
@@ -52,9 +52,9 @@ tool_set.execute_action(
 ```
 
 ```javascript JavaScript
-const result = await toolset.client.getEntity("Jessica").execute(
-    'github_star_a_repository_for_the_authenticated_user',
-    {},
+const result = await toolset.client.getEntity("default").execute({
+  actionName: "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
+  params: {},
     // Natural language prompt
     "Star the repo composiohq/composio"
 )
