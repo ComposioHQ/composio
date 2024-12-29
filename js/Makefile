@@ -28,8 +28,8 @@ switch_package:
 	./switch_package.sh
 
 ## add support for publishing to npm
-.PHONY: publish
-publish:
+.PHONY: release
+release:
 	./switch_package.sh
 	./bump_version.sh
 	pnpm run build

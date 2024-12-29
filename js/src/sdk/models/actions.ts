@@ -133,6 +133,7 @@ export class Actions {
 
   /**
    * Executes a specific action in the Composio platform.
+   * This doesn't execute the local action and is wrapper over backend. Try to call this method directly from toolset
    *
    * This method allows you to trigger the execution of an action by providing its name and the necessary input parameters. The request includes the connected account ID to identify the app connection to use for the action, and the input parameters required by the action. The response provides details about the execution status and the response data returned by the action.
    *

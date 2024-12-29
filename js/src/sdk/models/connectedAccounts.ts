@@ -3,7 +3,6 @@ import {
   ConnectedAccountResponseDTO,
   ConnectionParams,
   DeleteRowAPIDTO,
-  GetConnectionInfoResponse,
   GetConnectionsResponseDto,
 } from "../client";
 import { default as apiClient, default as client } from "../client/client";
@@ -99,6 +98,22 @@ export class ConnectedAccounts {
       const res = await apiClient.connections.getConnection({
         path: data,
         throwOnError: true,
+      });
+      return res.data;
+    } catch (error) {
+      throw CEG.handleAllError(error);
+    }
+  }
+
+  async getAuthParams(data: { connectedAccountId: string }) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getAuthParams",
+      file: this.fileName,
+      params: { data },
+    });
+    try {
+      const res = await apiClient.connections.getConnection({
+        path: { connectedAccountId: data.connectedAccountId },
       });
       return res.data;
     } catch (error) {
@@ -234,18 +249,6 @@ export class ConnectionRequest {
           entityId: data.entityId,
         },
       });
-    } catch (error) {
-      throw CEG.handleAllError(error);
-    }
-  }
-
-  async getAuthInfo(
-    data: SingleConnectionParam
-  ): Promise<GetConnectionInfoResponse> {
-    try {
-      ZSingleConnectionParams.parse(data);
-      const res = await client.connections.getConnectionInfo({ path: data });
-      return res.data!;
     } catch (error) {
       throw CEG.handleAllError(error);
     }

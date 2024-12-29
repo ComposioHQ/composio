@@ -27,7 +27,8 @@ export const ZConnectionParams = z.object({
 });
 
 export const ZTriggerSubscribeParam = z.object({
-  app: z.string(),
+  app: z.string().optional(),
+  appName: z.string().optional(),
   triggerName: z.string(),
   config: z.record(z.any()),
 });

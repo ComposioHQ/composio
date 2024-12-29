@@ -1,8 +1,14 @@
 {
   "name": "composio-core",
-  "version": "0.5.0-rc.1",
+  "version": "0.5.0-rc.2",
   "description": "",
   "main": "dist/index.js",
+  "browser": {
+    "fs": false,
+    "os": false,
+    "path": false,
+    "child_process": false
+  },
   "scripts": {
     "test": "jest --testMatch=\"**/*.spec.ts\"",
     "test:watch": "jest --testMatch=\"**/*.spec.ts\" --watch",
@@ -28,26 +34,26 @@
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",
   "license": "ISC",
   "peerDependencies": {
-    "ai": "^3.2.22",
     "@ai-sdk/openai": "^0.0.36",
     "@cloudflare/workers-types": "^4.20240718.0",
     "@langchain/core": "^0.2.18",
     "@langchain/openai": "^0.2.5",
+    "ai": "^3.2.22",
     "langchain": "^0.2.11",
     "openai": "^4.50.0"
   },
   "dependencies": {
-    "chalk": "^4",
-    "winston": "^3.13.1",
-    "zod": "^3.23.8",
-    "uuid": "^10.0.0",
-    "zod-to-json-schema": "^3.23.2",
     "axios": "^1.7.2",
-    "pusher-js": "8.4.0-rc2",
-    "commander": "^12.1.0",
+    "chalk": "^4",
     "cli-progress": "^3.12.0",
+    "commander": "^12.1.0",
     "inquirer": "^10.2.2",
-    "open": "^8.4.0"
+    "open": "^8.4.0",
+    "pusher-js": "8.4.0-rc2",
+    "rollup-plugin-visualizer": "^5.13.1",
+    "uuid": "^10.0.0",
+    "zod": "^3.23.8",
+    "zod-to-json-schema": "^3.23.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.16.0",

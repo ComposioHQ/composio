@@ -6,11 +6,9 @@ import {
 } from "./constants";
 
 export interface ErrorResponseData {
-  error: {
-    type: string;
-    name: string;
-    message: string;
-  };
+  type: string;
+  name: string;
+  message: string;
 }
 
 interface ErrorDetails {
@@ -31,19 +29,15 @@ export const getAPIErrorDetails = (
 
   const defaultErrorDetails = {
     message: axiosError.message,
-    description:
-      axiosError.response?.data?.error?.message ||
-      axiosError.response?.data?.error ||
-      axiosError.message,
-    possibleFix:
-      "Please check the network connection, request parameters, and ensure the API endpoint is correct.",
+    description: axiosError?.response?.data?.message || axiosError.message,
+    possibleFix: "Please check the parameters you are passing to the API",
   };
 
   const metadata = generateMetadataFromAxiosError(axiosError);
 
-  const errorNameFromBE = axiosError.response?.data?.error?.name;
-  const errorTypeFromBE = axiosError.response?.data?.error?.type;
-  const errorMessage = axiosError.response?.data?.error?.message;
+  const errorNameFromBE = axiosError?.response?.data?.name;
+  const errorTypeFromBE = axiosError?.response?.data?.type;
+  const errorMessage = axiosError?.response?.data?.message;
 
   const genericMessage = `${errorNameFromBE || predefinedError.message} ${errorTypeFromBE ? `- ${errorTypeFromBE}` : ""} on ${axiosError.config?.baseURL! + axiosError.config?.url!}`;
 

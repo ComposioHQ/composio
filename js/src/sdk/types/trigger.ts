@@ -21,7 +21,7 @@ export const ZTriggerInstanceItems = z.object({
 export const ZTriggerSetupParam = z.object({
   connectedAccountId: z.string(),
   triggerName: z.string(),
-  config: z.record(z.unknown()),
+  config: z.record(z.unknown()).optional(),
 });
 
 export type TTriggerListParam = z.infer<typeof ZTriggerQuery>;

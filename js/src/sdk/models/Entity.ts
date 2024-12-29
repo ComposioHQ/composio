@@ -30,7 +30,11 @@ const LABELS = {
 
 // Types from zod schemas
 type TriggerSubscribeParam = z.infer<typeof ZTriggerSubscribeParam>;
-type ConnectionParams = z.infer<typeof ZConnectionParams>;
+type ConnectionParams = z.infer<typeof ZConnectionParams> & {
+  // @deprecated
+  app?: string;
+  appName?: string;
+};
 type InitiateConnectionParams = z.infer<typeof ZInitiateConnectionParams>;
 type ExecuteActionParams = z.infer<typeof ZExecuteActionParams>;
 
@@ -60,6 +64,16 @@ export class Entity {
     this.activeTriggers = new ActiveTriggers(this.backendClient);
   }
 
+  /**
+   * Executes an action for an entity.
+   *
+   * @param {string} actionName The name of the action to execute.
+   * @param {Record<string, unknown>} params The parameters for the action.
+   * @param {string} text The text to pass to the action. This can be to perform NLA execution
+   * @param {string} connectedAccountId The ID of the connected account to use for the action.
+   * @returns {Promise<ActionExecuteResponse>} A promise that resolves to the response from the action execution.
+   * @throws {ComposioError} If the request fails.
+   */
   async execute({
     actionName,
     params,
@@ -125,14 +139,34 @@ export class Entity {
     }
   }
 
-  async getConnection({ app, connectedAccountId }: ConnectionParams) {
+  /**
+   * Retrieves the required parameters for a specific authentication scheme of an app in the Composio platform.
+   *
+   * This method allows clients to fetch the necessary parameters for a specific authentication scheme of an app by providing its unique key and the authentication scheme.
+   *
+   * @param {ConnectionParams} data The data for the request, including the app's unique key and the authentication scheme.
+   * @returns {Promise<RequiredParamsResponse>} A promise that resolves to the required parameters for the authentication scheme.
+   * @throws {ComposioError} If the request fails.
+   */
+  async getConnection({ app, appName, connectedAccountId }: ConnectionParams) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getConnection",
       file: this.fileName,
-      params: { app, connectedAccountId },
+      params: { app, appName, connectedAccountId },
     });
     try {
-      ZConnectionParams.parse({ app, connectedAccountId });
+      const finalApp = appName || app;
+      ZConnectionParams.parse({ app: finalApp, connectedAccountId });
+
+      if (!finalApp && !connectedAccountId) {
+        throw CEG.getCustomError(
+          COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
+          {
+            message: "App or connectedAccountId is required",
+            description: "App or connectedAccountId is required",
+          }
+        );
+      }
       if (connectedAccountId) {
         return await this.connectedAccounts.get({
           connectedAccountId,
@@ -174,31 +208,65 @@ export class Entity {
         }
       }
       if (!latestAccount) {
-        return null;
+        throw CEG.getCustomError(
+          COMPOSIO_SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
+          {
+            message: `Could not find a connection with app='${finalApp}' and entity='${this.id}'`,
+            description: `Could not find a connection with app='${finalApp}' and entity='${this.id}'`,
+          }
+        );
       }
 
-      return this.connectedAccounts.get({
+      const connectedAccount = await this.connectedAccounts.get({
         connectedAccountId: latestAccount.id!,
       });
+
+      if (!connectedAccount) {
+        throw CEG.getCustomError(
+          COMPOSIO_SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
+          {
+            message: `Could not find a connection with app='${finalApp}' and entity='${this.id}'`,
+            description: `Could not find a connection with app='${finalApp}' and entity='${this.id}'`,
+          }
+        );
+      }
+
+      return connectedAccount;
     } catch (error) {
       throw CEG.handleAllError(error);
     }
   }
 
-  async setupTrigger({ app, triggerName, config }: TriggerSubscribeParam) {
+  /**
+   * Retrieves the required parameters for a specific authentication scheme of an app in the Composio platform.
+   *
+   * This method allows clients to setup a trigger for an app by providing its unique key and the trigger name.
+   *
+   * @param {TriggerSubscribeParam} data The data for the request, including the app's unique key and the trigger name.
+   * @returns {Promise<RequiredParamsResponse>} A promise that resolves to the required parameters for the authentication scheme.
+   * @throws {ComposioError} If the request fails.
+   */
+  async setupTrigger({
+    app,
+    appName,
+    triggerName,
+    config,
+  }: TriggerSubscribeParam) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "setupTrigger",
       file: this.fileName,
-      params: { app, triggerName, config },
+      params: { app, appName, triggerName, config },
     });
     try {
-      ZTriggerSubscribeParam.parse({ app, triggerName, config });
-      const connectedAccount = await this.getConnection({ app });
+      const finalApp = appName || app;
+      ZTriggerSubscribeParam.parse({ app: finalApp, triggerName, config });
+      const connectedAccount = await this.getConnection({ app: finalApp });
       if (!connectedAccount) {
         throw CEG.getCustomError(
           COMPOSIO_SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
           {
-            description: `Could not find a connection with app='${app}' and entity='${this.id}'`,
+            message: `Could not find a connection with app='${finalApp}' and entity='${this.id}'`,
+            description: `Could not find a connection with app='${finalApp}' and entity='${this.id}'`,
           }
         );
       }
@@ -213,9 +281,15 @@ export class Entity {
     }
   }
 
-  /* 
-  deprecated
-  */
+  /**
+   * Retrieves the required parameters for a specific authentication scheme of an app in the Composio platform.
+   *
+   * This method allows clients to disable a trigger by providing its trigger ID.
+   *
+   * @param {string} triggerId The ID of the trigger to disable.
+   * @returns {Promise<{ status: string }>} A promise that resolves to the status of the trigger disablement.
+   * @throws {ComposioError} If the request fails.
+   */
   async disableTrigger(triggerId: string) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "disableTrigger",
@@ -230,6 +304,12 @@ export class Entity {
     }
   }
 
+  /**
+   * Retrieves all connections for an entity.
+   *
+   * @returns {Promise<ConnectionItem[]>} A promise that resolves to an array of connection items.
+   * @throws {ComposioError} If the request fails.
+   */
   async getConnections(): Promise<ConnectionItem[]> {
     /**
      * Get all connections for an entity.
@@ -249,6 +329,12 @@ export class Entity {
     }
   }
 
+  /**
+   * Retrieves all active triggers for an entity.
+   *
+   * @returns {Promise<ActiveTrigger[]>} A promise that resolves to an array of active triggers.
+   * @throws {ComposioError} If the request fails.
+   */
   async getActiveTriggers() {
     /**
      * Get all active triggers for an entity.
@@ -272,6 +358,12 @@ export class Entity {
     }
   }
 
+  /**
+   * Initiate a connection for an entity.
+   * @param {InitiateConnectionParams} data The data for the request, including the app's unique key and the authentication scheme.
+   * @returns {Promise<ConnectionRequest>} A promise that resolves to the connection request.
+   * @throws {ComposioError} If the request fails.
+   */
   async initiateConnection(
     data: InitiateConnectionParams
   ): Promise<ConnectionRequest> {

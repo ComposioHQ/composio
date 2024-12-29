@@ -22,7 +22,13 @@ import { BackendClient } from "./backendClient";
 export type GetRequiredParams = z.infer<typeof ZGetRequiredParams>;
 export type GetRequiredParamsForAuthScheme = z.infer<
   typeof ZGetRequiredParamsForAuthScheme
->;
+> & {
+  appName?: string;
+  /**
+   * @deprecated use appName instead
+   */
+  appId?: string;
+};
 export type RequiredParamsFullResponse = z.infer<
   typeof ZRequiredParamsFullResponse
 >;
@@ -170,6 +176,7 @@ export class Apps {
    */
   async getRequiredParamsForAuthScheme({
     appId,
+    appName,
     authScheme,
   }: GetRequiredParamsForAuthScheme): Promise<RequiredParamsResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
@@ -178,8 +185,9 @@ export class Apps {
       params: { appId, authScheme },
     });
     try {
-      ZGetRequiredParamsForAuthScheme.parse({ appId, authScheme });
-      const params = await this.getRequiredParams(appId);
+      const finalAppId = appName || appId;
+      ZGetRequiredParamsForAuthScheme.parse({ appId: finalAppId, authScheme });
+      const params = await this.getRequiredParams(finalAppId);
       return params.authSchemes[authScheme];
     } catch (error) {
       throw CEG.handleAllError(error);

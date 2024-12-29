@@ -100,7 +100,7 @@ export class Triggers {
           triggerName: parsedData.triggerName,
         },
         body: {
-          triggerConfig: parsedData.config,
+          triggerConfig: parsedData.config || {},
         },
         throwOnError: true,
       });
