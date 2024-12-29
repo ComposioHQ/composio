@@ -4,7 +4,7 @@ import type { Optional, Sequence } from "../types/base";
 import {
   TPostProcessor,
   TPreProcessor,
-  TRawActionData,
+  RawActionData,
   TSchemaProcessor,
   ZExecuteActionParams,
   ZToolSchemaFilter,
@@ -24,7 +24,7 @@ export class ComposioToolSet {
   client: Composio;
   apiKey: string;
   runtime: string | null;
-  entityId: string;
+  entityId: string = "default";
 
   userActionRegistry: ActionRegistry;
 
@@ -62,7 +62,9 @@ export class ComposioToolSet {
     });
     this.userActionRegistry = new ActionRegistry(this.client);
     this.runtime = runtime;
-    this.entityId = _entityId;
+    if (_entityId) {
+      this.entityId = _entityId;
+    }
   }
 
   async getActionsSchema(
@@ -80,7 +82,7 @@ export class ComposioToolSet {
   async getToolsSchema(
     filters: z.infer<typeof ZToolSchemaFilter>,
     _entityId?: Optional<string>
-  ): Promise<TRawActionData[]> {
+  ): Promise<RawActionData[]> {
     const parsedFilters = ZToolSchemaFilter.parse(filters);
 
     const apps = await this.client.actions.list({
@@ -120,7 +122,7 @@ export class ComposioToolSet {
     ];
 
     return toolsActions.map((tool) => {
-      let schema = tool as TRawActionData;
+      let schema = tool as RawActionData;
       allSchemaProcessor.forEach((processor) => {
         schema = processor({
           actionName: schema?.metadata?.actionName || "",
@@ -146,7 +148,7 @@ export class ComposioToolSet {
     const {
       action,
       params: inputParams = {},
-      entityId = "default",
+      entityId = this.entityId,
       nlaText = "",
       connectedAccountId,
     } = ZExecuteActionParams.parse(functionParams);

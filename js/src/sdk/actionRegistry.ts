@@ -2,7 +2,7 @@ import { ZodObject, ZodOptional, ZodString, z } from "zod";
 import { JsonSchema7Type, zodToJsonSchema } from "zod-to-json-schema";
 import { Composio } from ".";
 import apiClient from "../sdk/client/client";
-import { TRawActionData } from "../types/base_toolset";
+import { RawActionData } from "../types/base_toolset";
 import { ActionProxyRequestConfigDTO } from "./client";
 import { CEG } from "./utils/error";
 
@@ -45,7 +45,7 @@ export class ActionRegistry {
     this.customActions = new Map();
   }
 
-  async createAction(options: CreateActionOptions): Promise<TRawActionData> {
+  async createAction(options: CreateActionOptions): Promise<RawActionData> {
     const { callback } = options;
     if (typeof callback !== "function") {
       throw new Error("Callback must be a function");
@@ -82,28 +82,28 @@ export class ActionRegistry {
       metadata: options,
       schema: composioSchema,
     });
-    return composioSchema as unknown as TRawActionData;
+    return composioSchema as unknown as RawActionData;
   }
 
   async getActions({
     actions,
   }: {
     actions: Array<string>;
-  }): Promise<Array<TRawActionData>> {
-    const actionsArr: Array<TRawActionData> = [];
+  }): Promise<Array<RawActionData>> {
+    const actionsArr: Array<RawActionData> = [];
     for (const name of actions) {
       const lowerCaseName = name.toLowerCase();
       if (this.customActions.has(lowerCaseName)) {
         const action = this.customActions.get(lowerCaseName);
-        actionsArr.push(action!.schema as TRawActionData);
+        actionsArr.push(action!.schema as RawActionData);
       }
     }
     return actionsArr;
   }
 
-  async getAllActions(): Promise<Array<TRawActionData>> {
+  async getAllActions(): Promise<Array<RawActionData>> {
     return Array.from(this.customActions.values()).map(
-      (action) => action.schema as TRawActionData
+      (action) => action.schema as RawActionData
     );
   }
 
