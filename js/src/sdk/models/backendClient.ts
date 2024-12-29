@@ -44,7 +44,8 @@ export class BackendClient {
         {
           message: "API key is not available",
           description:
-            "The API key required for authentication is not provided",
+            "The API key required for authentication is not provided. You can get the API key from the Composio dashboard.",
+          possibleFix: "Please provide the API key in the constructor",
         }
       );
     }
