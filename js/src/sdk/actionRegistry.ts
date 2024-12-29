@@ -3,10 +3,21 @@ import { JsonSchema7Type, zodToJsonSchema } from "zod-to-json-schema";
 import { Composio } from ".";
 import apiClient from "../sdk/client/client";
 import { RawActionData } from "../types/base_toolset";
-import { ActionProxyRequestConfigDTO } from "./client";
+import { ActionProxyRequestConfigDTO, Parameter } from "./client";
+import { ActionExecuteResponse } from "./models/actions";
 import { CEG } from "./utils/error";
+import { COMPOSIO_SDK_ERROR_CODES } from "./utils/errors/src/constants";
 
-type ExecuteRequest = Omit<ActionProxyRequestConfigDTO, "connectedAccountId">;
+type RawExecuteRequestParam = {
+  connectedAccountId?: string;
+  endpoint: string;
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  parameters: Array<Parameter>;
+  body?: {
+    [key: string]: unknown;
+  };
+};
+
 export type CreateActionOptions = {
   actionName?: string;
   toolName?: string;
@@ -15,8 +26,10 @@ export type CreateActionOptions = {
   callback: (
     inputParams: Record<string, string>,
     authCredentials: Record<string, string> | undefined,
-    executeRequest: (data: ExecuteRequest) => Promise<Record<string, unknown>>
-  ) => Promise<Record<string, unknown>>;
+    executeRequest: (
+      data: RawExecuteRequestParam
+    ) => Promise<ActionExecuteResponse>
+  ) => Promise<ActionExecuteResponse>;
 };
 
 interface ParamsSchema {
@@ -111,7 +124,7 @@ export class ActionRegistry {
     name: string,
     inputParams: Record<string, unknown>,
     metadata: ExecuteMetadata
-  ): Promise<Record<string, unknown>> {
+  ): Promise<ActionExecuteResponse> {
     const lowerCaseName = name.toLocaleLowerCase();
     if (!this.customActions.has(lowerCaseName)) {
       throw new Error(`Action with name ${name} does not exist`);
@@ -145,12 +158,17 @@ export class ActionRegistry {
       };
     }
     if (typeof callback !== "function") {
-      throw new Error("Callback must be a function");
+      throw CEG.getCustomError(
+        COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
+        {
+          message: "Callback must be a function",
+        }
+      );
     }
 
-    const executeRequest = async (data: ExecuteRequest) => {
+    const executeRequest = async (data: RawExecuteRequestParam) => {
       try {
-        const { data: res } = await apiClient.actionsV2.executeActionProxyV2({
+        const { data: res } = await apiClient.actionsV2.executeWithHttpClient({
           body: {
             ...data,
             connectedAccountId: metadata?.connectionId,
@@ -165,7 +183,7 @@ export class ActionRegistry {
     return await callback(
       inputParams as Record<string, string>,
       authCredentials,
-      (data: ExecuteRequest) => executeRequest(data)
+      (data: RawExecuteRequestParam) => executeRequest(data)
     );
   }
 }

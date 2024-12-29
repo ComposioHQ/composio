@@ -52,26 +52,21 @@ export type TPreProcessor = ({
 }: {
   params: Record<string, unknown>;
   actionName: string;
-  appName: string;
 }) => Record<string, unknown>;
 
 export type TPostProcessor = ({
   actionName,
-  appName,
   toolResponse,
 }: {
   actionName: string;
-  appName: string;
   toolResponse: ActionExecutionResDto;
 }) => ActionExecutionResDto;
 
 export type TSchemaProcessor = ({
   actionName,
-  appName,
   toolSchema,
 }: {
   actionName: string;
-  appName: string;
   toolSchema: RawActionData;
 }) => RawActionData;
 

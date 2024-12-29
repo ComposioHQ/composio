@@ -983,7 +983,7 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
             queries["integrationIds"] = ",".join(integration_ids)
         if len(trigger_names) > 0:
             queries["triggerNames"] = to_trigger_names(trigger_names)
-        return self._raise_if_empty(super().get(queries=queries))
+        return super().get(queries=queries)
 
 
 def _check_file_uploadable(param_field: dict) -> bool:
