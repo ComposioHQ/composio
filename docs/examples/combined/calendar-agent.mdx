@@ -51,7 +51,7 @@ description: "This project is an example which uses Composio to seamlessly conve
         load_dotenv()
 
         # Initialize the language model
-        llm = ChatOpenAI(model="gpt-4")
+        llm = ChatOpenAI(model="gpt-4o")
 
         # Define tools for the agents
         # We are using Google calendar tool from composio to connect to our calendar account.
@@ -155,7 +155,7 @@ description: "This project is an example which uses Composio to seamlessly conve
     <CodeGroup>
         ```javascript Models and Tools
         // Initialize the language model
-        const llm = new ChatOpenAI({ model: "gpt-4" });
+        const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
 
         // Define tools for the agents
         // We are using Google calendar tool from composio to connect to our calendar account.
@@ -251,7 +251,7 @@ description: "This project is an example which uses Composio to seamlessly conve
     load_dotenv()
 
     # Initialize the language model
-    llm = ChatOpenAI(model="gpt-4")
+    llm = ChatOpenAI(model="gpt-4o")
 
     # Define tools for the agents
     # We are using Google calendar tool from composio to connect to our calendar account.
@@ -314,7 +314,7 @@ description: "This project is an example which uses Composio to seamlessly conve
     dotenv.config();
 
     // Initialize the language model
-    const llm = new ChatOpenAI({ model: "gpt-4" });
+    const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
 
     // Define tools for the agents
     const composioToolset = new LangchainToolSet({
