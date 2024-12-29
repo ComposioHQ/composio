@@ -19,7 +19,12 @@ description: "This project is an example which uses Composio to seamlessly conve
     pip install composio-crewai langchain-openai
     ```
     </CodeGroup>
-    Create a .env file and add your OpenAI API Key.
+    Create a .env file and add your required API keys:
+    ```bash
+    OPENAI_API_KEY=your_openai_api_key
+    COMPOSIO_API_KEY=your_composio_api_key
+    ```
+    Both keys are required for the agent to function properly. The OPENAI_API_KEY is used for the language model, while the COMPOSIO_API_KEY is needed for accessing Composio's tools.
 
     </Step>
 
@@ -46,12 +51,16 @@ description: "This project is an example which uses Composio to seamlessly conve
         load_dotenv()
 
         # Initialize the language model
-        llm = ChatOpenAI(model="gpt-4o")
+        llm = ChatOpenAI(model="gpt-4")
 
         # Define tools for the agents
         # We are using Google calendar tool from composio to connect to our calendar account.
-        composio_toolset = ComposioToolSet()
-        tools = composio_toolset.get_tools(apps=[App.GOOGLECALENDAR])
+        try:
+            composio_toolset = ComposioToolSet()
+            tools = composio_toolset.get_tools(apps=[App.GOOGLECALENDAR])
+        except Exception as e:
+            print(f"Error initializing Composio Toolset: {e}")
+            return
 
         # Retrieve the current date and time
         date = datetime.today().strftime("%Y-%m-%d")
@@ -118,7 +127,12 @@ description: "This project is an example which uses Composio to seamlessly conve
     pnpm add composio-core dotenv langchain @langchain/openai
     ```
     </CodeGroup>
-    Create a .env file and add your OpenAI API Key.
+    Create a .env file and add your required API keys:
+    ```bash
+    OPENAI_API_KEY=your_openai_api_key
+    COMPOSIO_API_KEY=your_composio_api_key
+    ```
+    Both keys are required for the agent to function properly. The OPENAI_API_KEY is used for the language model, while the COMPOSIO_API_KEY is needed for accessing Composio's tools.
     </Step>
 
     <Step title="Import base packages">
@@ -141,16 +155,21 @@ description: "This project is an example which uses Composio to seamlessly conve
     <CodeGroup>
         ```javascript Models and Tools
         // Initialize the language model
-        const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
+        const llm = new ChatOpenAI({ model: "gpt-4" });
 
         // Define tools for the agents
         // We are using Google calendar tool from composio to connect to our calendar account.
-        const composioToolset = new LangchainToolSet({
-            apiKey: process.env.COMPOSIO_API_KEY
-        });
-        const tools = await composioToolset.getTools({
-            actions: ["googlecalendar_create_event", "googlecalendar_list_events"]
-        });
+        try {
+            const composioToolset = new LangchainToolSet({
+                apiKey: process.env.COMPOSIO_API_KEY
+            });
+            const tools = await composioToolset.getTools({
+                actions: ["googlecalendar_create_event", "googlecalendar_list_events"]
+            });
+        } catch (error) {
+            console.error("Error initializing Composio Toolset:", error);
+            return;
+        }
 
         // Retrieve the current date and time
         const getCurrentDate = () => new Date().toISOString().split('T')[0];
@@ -232,12 +251,16 @@ description: "This project is an example which uses Composio to seamlessly conve
     load_dotenv()
 
     # Initialize the language model
-    llm = ChatOpenAI(model="gpt-4o")
+    llm = ChatOpenAI(model="gpt-4")
 
     # Define tools for the agents
     # We are using Google calendar tool from composio to connect to our calendar account.
-    composio_toolset = ComposioToolSet()
-    tools = composio_toolset.get_tools(apps=[App.GOOGLECALENDAR])
+    try:
+        composio_toolset = ComposioToolSet()
+        tools = composio_toolset.get_tools(apps=[App.GOOGLECALENDAR])
+    except Exception as e:
+        print(f"Error initializing Composio Toolset: {e}")
+        return
 
     # Retrieve the current date and time
     date = datetime.today().strftime("%Y-%m-%d")
@@ -252,7 +275,13 @@ description: "This project is an example which uses Composio to seamlessly conve
     """
 
     # Create and Execute Agent.
-    def run_crew():
+    def run_crew() -> str:
+        """
+        Creates and executes a Calendar Agent to schedule events from todo list.
+        
+        Returns:
+            str: The result of the crew's execution
+        """
         calendar_agent = Agent(
             role="Google Calendar Agent",
             goal="""You take action on Google Calendar using Google Calendar APIs""",
@@ -285,7 +314,7 @@ description: "This project is an example which uses Composio to seamlessly conve
     dotenv.config();
 
     // Initialize the language model
-    const llm = new ChatOpenAI({ model: "gpt-4-turbo"});
+    const llm = new ChatOpenAI({ model: "gpt-4" });
 
     // Define tools for the agents
     const composioToolset = new LangchainToolSet({
