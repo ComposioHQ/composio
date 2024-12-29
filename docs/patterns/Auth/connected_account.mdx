@@ -8,9 +8,7 @@ description: "Learn how to securely manage and authenticate multiple user connec
 
 - Each **user** is represented by a **unique entity ID**.
 - If you have two users, **Jessica** and **Melissa**, they will each have **unique entity IDs**.
-<Info>If not specified, `default` will be used as the entity ID.</Info>
-
-You can use an entity object to manage connected accounts and perform actions on behalf of a user (more on this [here](/patterns/tools/use-tools/action-guide-without-agents#how-can-i-use-tools-for-a-specific-user)). Here's how to retrieve an entity object:
+- You can use an entity object to manage connected accounts and perform actions on behalf of a user, learn more [here](/patterns/tools/use-tools/action-guide-without-agents#how-can-i-use-tools-for-a-specific-user). Here's how to retrieve an entity object:
 
 <CodeGroup>
 ```python Python
@@ -27,22 +25,41 @@ const toolset = new OpenAIToolSet();
 const entity = toolset.client.getEntity(id='Jessica');
 ```
 </CodeGroup>
+<Info>If entity ID is not specified, `default` will be used as the entity ID.</Info>
 
 ### Connected Accounts
 - When a user connects their account, a `connected_account` object is created. 
 - **Connected Account** securely stores **authentication data** such as **API keys, access tokens and refresh tokens**.
 
-### How to initiate a new connection for your user
-Follow these steps to initiate a new connection for your user (for both OAuth and non-OAuth based Apps):
-
+### Initiating a new connection for your user
 <Tabs>
 <Tab title="OAuth-Based Apps">
-Initiate a new connection by passing the redirect url, entity id & app.
+<Steps>
+<Step title="Install Libraries">
 <CodeGroup>
-```python Python
+```bash Python
+pip install composio-core
+```
+```bash JavaScript
+npm install composio-core
+```
+</CodeGroup>
+</Step>
+<Step title="Import Libraries & Initialize Toolset">
+<CodeGroup>
+``` python Python
 from composio import ComposioToolSet, App 
 toolset = ComposioToolSet()
-
+```
+``` javascript JavaScript
+import { OpenAIToolSet } from "composio-core";
+const toolset = new OpenAIToolSet();
+```
+</CodeGroup>
+</Step>
+<Step title="Initiate a new connection">
+<CodeGroup>
+```python Python
 # URL that the user will be redirected to after completing the authentication process
 redirect_url = "https://yourwebsite.com/connection/success"
 
@@ -60,9 +77,6 @@ print(connection_request.connectionStatus)
 ```
 
 ```javascript Javascript
-import { OpenAIToolSet } from "composio-core";
-const toolset = new OpenAIToolSet();
-
 // URL that the user will be redirected to after completing the authentication process
 const redirectURL = "https://yourwebsite.com/connection/success"
 
@@ -85,6 +99,8 @@ console.log(connectionRequest.redirectUrl);
 console.log(connectionRequest.connectionStatus);
 ```
 </CodeGroup>
+</Step>
+</Steps>
 <Tip>Each App integration has a unique **integration ID**. You can use this ID instead of the **app name** when creating connections.</Tip>
 </Tab>
 <Tab title="Non OAuth-Based Apps">
