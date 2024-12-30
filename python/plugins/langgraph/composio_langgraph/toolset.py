@@ -5,6 +5,7 @@ class ComposioToolSet(
     BaseComposioToolSet,
     runtime="langgraph",
     description_char_limit=1024,
+    action_name_char_limit=64,
 ):
     """
     Composio toolset for LangGraph framework.
