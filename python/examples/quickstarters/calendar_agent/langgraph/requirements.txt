@@ -1,5 +1,5 @@
-llama-index
-composio-llamaindex
-llama-index-llms-groq
+composio-langgraph
+langchain-openai
 python-dotenv
+langchain-groq
 
