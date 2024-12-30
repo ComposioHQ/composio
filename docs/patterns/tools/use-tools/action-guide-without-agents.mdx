@@ -53,11 +53,11 @@ tool_set.execute_action(
 
 ```javascript JavaScript
 const result = await toolset.client.getEntity("default").execute({
-  actionName: "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
-  params: {},
+    actionName: "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
+    params: {},
     // Natural language prompt
-    "Star the repo composiohq/composio"
-)
+    text: "Star the repo composiohq/composio"
+});
 console.log(result);
 ```
 </CodeGroup>
