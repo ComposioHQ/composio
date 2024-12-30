@@ -809,7 +809,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             and action.app not in self.requested_apps
         ):
             raise ComposioSDKError(
-                f"Action {action.slug} is being called, but was never requested by the toolset."
+                f"Action {action.slug} is being called, but was never requested by the toolset.\n"
                 "This is possible if the Agent is trying to execute an action outside of "
                 "the actions requested from the toolset."
             )
@@ -957,9 +957,6 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             actions = ()
         if tags is None:
             tags = ()
-
-        if self.requested_actions is None:
-            self.requested_actions = []
 
         action_names: t.List[str] = [
             (
