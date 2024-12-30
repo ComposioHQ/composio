@@ -64,6 +64,7 @@ from composio.tools.env.base import (
 from composio.tools.env.factory import HostWorkspaceConfig, WorkspaceFactory
 from composio.tools.local import load_local_tools
 from composio.tools.local.handler import LocalClient
+from composio.utils import help_msg
 from composio.utils.enums import get_enum_key
 from composio.utils.logging import LogIngester, LogLevel, WithLogger
 from composio.utils.url import get_api_url_base
@@ -175,6 +176,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if len(args) > 0 or len(kwargs) > 0:
             error = (
                 f"Composio toolset subclass initializer got extra {args=} and {kwargs=}"
+                + help_msg()
             )
             if _is_ci():
                 raise RuntimeError(error)
@@ -274,12 +276,6 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             logging_level=logging_level,
             verbosity_level=verbosity_level,
         )
-        self.logger.info(
-            f"Logging is set to {self._logging_level}, "
-            "use `logging_level` argument or "
-            "`COMPOSIO_LOGGING_LEVEL` change this"
-        )
-
         self.session_id = workspace_id or uuid.uuid4().hex
 
         self.entity_id = entity_id
@@ -303,7 +299,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if processors is not None:
             warnings.warn(
                 "Setting 'processors' on the ToolSet is deprecated, they should"
-                "be provided to the 'get_tools()' method instead.",
+                "be provided to the 'get_tools()' method instead.\n",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -318,7 +314,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self._custom_auth = {}
 
         if len(kwargs) > 0:
-            self.logger.info(f"Extra kwargs while initializing toolset: {kwargs}")
+            self.logger.warning(
+                f"Unused kwargs while initializing toolset: {kwargs}" + help_msg()
+            )
 
         self.logger.debug("Loading local tools")
         load_local_tools()
@@ -602,7 +600,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         ).hexdigest()
         self._ensure_output_dir_exists()
         outfile = self.output_dir / filename
-        self.logger.info(f"Writing output to: {outfile}")
+        self.logger.debug(f"Writing output to: {outfile}")
         _write_file(outfile, json.dumps(output))
         return {
             "message": f"output written to {outfile.resolve()}",
@@ -673,7 +671,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     ) -> t.Union[t.Dict, _Retry]:
         processor = self._get_processor(key=key, type_=type_)
         if processor is not None:
-            self.logger.info(
+            self.logger.debug(
                 f"Running {'request' if type_ == 'pre' else 'response' if type_ == 'post' else 'schema'}"
                 f" through: {processor.__name__}"
             )
@@ -808,7 +806,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 action=action
             )
 
-        self.logger.info(
+        self.logger.debug(
             f"Executing `{action.slug}` with {params=} and {metadata=} {connected_account_id=}"
         )
 
@@ -837,14 +835,14 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 else self._process_respone(action=action, response=response)
             )
             if isinstance(processed_response, _Retry):
-                self.logger.info(
+                self.logger.debug(
                     f"Got {processed_response=} from {action=} with {params=}, retrying..."
                 )
                 failed_responses.append(response)
                 continue
 
             response = processed_response
-            self.logger.info(f"Got {response=} from {action=} with {params=}")
+            self.logger.debug(f"Got {response=} from {action=} with {params=}")
             return response
 
         return SuccessExecuteActionResponseModel(
@@ -910,7 +908,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 "Please provide connection id or app name to execute a request"
             )
 
-        self.logger.info(
+        self.logger.debug(
             f"Executing request to {endpoint} with method={method}, connection_id={connection_id}"
         )
         response = self.client.actions.request(
@@ -920,7 +918,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             endpoint=endpoint,
             parameters=parameters,
         )
-        self.logger.info(f"Got {response=}")
+        self.logger.debug(f"Got {response=}")
         return response
 
     def validate_tools(

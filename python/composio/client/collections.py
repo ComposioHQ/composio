@@ -34,7 +34,7 @@ from composio.client.enums import (
 )
 from composio.client.exceptions import ComposioClientError, ComposioSDKError
 from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
-from composio.utils import logging
+from composio.utils import logging, help_msg
 from composio.utils.shared import generate_request_id
 
 
@@ -696,7 +696,7 @@ class TriggerSubscription(logging.WithLogger):
             self.logger.error(f"Error parsing trigger payload: {event}")
             return
 
-        self.logger.info(
+        self.logger.debug(
             f"Received trigger event with trigger ID: {data.metadata.id} "
             f"and trigger name: {data.metadata.triggerName}"
         )
@@ -926,7 +926,7 @@ class Triggers(Collection[TriggerModel]):
 
     def subscribe(self, timeout: float = 15.0) -> TriggerSubscription:
         """Subscribe to a trigger and receive trigger events."""
-        self.logger.info("Creating trigger subscription")
+        self.logger.debug("Creating trigger subscription")
         response = self._raise_if_required(
             response=self.client.http.get(
                 url="/v1/client/auth/client_info",
@@ -1150,7 +1150,8 @@ class Actions(Collection[ActionModel]):
         if len(apps) > 0 and len(tags) == 0 and not allow_all:
             warnings.warn(
                 "Using all actions of an app is not recommended for production."
-                "Learn more: https://docs.composio.dev/patterns/tools/use-tools/use-specific-actions",
+                "Learn more: https://docs.composio.dev/patterns/tools/use-tools/use-specific-actions\n\n"
+                + help_msg(),
                 UserWarning,
             )
             tags = ["important"]

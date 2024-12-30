@@ -13,6 +13,7 @@ from composio import Action, ActionType, AppType
 from composio import ComposioToolSet as BaseComposioToolSet
 from composio import TagType
 from composio.tools.toolset import ProcessorsType
+from composio.utils import help_msg
 
 
 class ComposioToolSet(
@@ -73,7 +74,7 @@ class ComposioToolSet(
 
         return toolkit
 
-    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead.\n", category=None)
     def get_actions(self, actions: t.Sequence[ActionType]) -> t.List[Toolkit]:
         """
         Get composio tools wrapped as Phidata `Toolkit` objects.

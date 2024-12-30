@@ -5,6 +5,7 @@ Lyzr tool spec.
 import types
 import typing as t
 from inspect import Signature
+import warnings
 
 import typing_extensions as te
 from lyzr_automata import Tool
@@ -16,6 +17,7 @@ from composio.utils.shared import (
     get_signature_format_from_schema_params,
     json_schema_to_model,
 )
+from composio.utils import help_msg
 
 
 class ComposioToolSet(
@@ -72,7 +74,7 @@ class ComposioToolSet(
             default_params={},
         )
 
-    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead.\n", category=None)
     def get_actions(
         self,
         actions: t.Sequence[ActionType],
@@ -86,6 +88,11 @@ class ComposioToolSet(
 
         :return: Composio tools wrapped as `Tool` objects
         """
+        warnings.warn(
+            "Use `ComposioToolSet.get_tools` instead.\n" + help_msg(),
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.get_tools(actions=actions, entity_id=entity_id)
 
     def get_tools(

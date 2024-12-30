@@ -15,6 +15,7 @@ from composio.utils.shared import (
     get_signature_format_from_schema_params,
     json_schema_to_model,
 )
+from composio.utils import help_msg
 
 
 class StructuredTool(BaseStructuredTool):
@@ -129,7 +130,7 @@ class ComposioToolSet(
         )
         return tool  # type: ignore
 
-    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead.\n", category=None)
     def get_actions(
         self,
         actions: t.Sequence[ActionType],

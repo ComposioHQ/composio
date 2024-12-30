@@ -1,5 +1,6 @@
 import os
 import typing as t
+import warnings
 
 import typing_extensions as te
 
@@ -7,6 +8,7 @@ from composio import Action, ActionType, AppType
 from composio import ComposioToolSet as BaseComposioToolSet
 from composio import TagType
 from composio.tools.toolset import ProcessorsType
+from composio.utils import help_msg
 
 
 _openapi_to_python = {
@@ -168,7 +170,7 @@ class ComposioToolSet(
 
         return "\n".join(tools_section_parts)
 
-    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead.\n", category=None)
     def get_actions(
         self,
         actions: t.Sequence[ActionType],
@@ -181,6 +183,11 @@ class ComposioToolSet(
         :param entity_id: Entity ID to use for executing function calls.
         :return: Name of the tools written
         """
+        warnings.warn(
+            "Use `ComposioToolSet.get_tools` instead.\n" + help_msg(),
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.get_tools(actions=actions, entity_id=entity_id)
 
     def get_tools(

@@ -3,6 +3,7 @@ Google AI Python Gemini tool spec.
 """
 
 import typing as t
+import warnings
 
 import typing_extensions as te
 from proto.marshal.collections.maps import MapComposite
@@ -18,6 +19,7 @@ from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.utils.shared import json_schema_to_model
+from composio.utils import help_msg
 
 
 class ComposioToolset(
@@ -110,7 +112,7 @@ class ComposioToolset(
             parameters=cleaned_parameters,
         )
 
-    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead.\n", category=None)
     def get_actions(
         self,
         actions: t.Sequence[ActionType],
@@ -124,6 +126,11 @@ class ComposioToolset(
 
         :return: Composio tools wrapped as `FunctionDeclaration` objects
         """
+        warnings.warn(
+            "Use `ComposioToolSet.get_tools` instead.\n" + help_msg(),
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.get_tool(actions=actions, entity_id=entity_id)
 
     def get_tool(
