@@ -950,6 +950,14 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if not apps and not actions and not tags:
             return
 
+        # Backwards compatibility
+        if apps is None:
+            apps = ()
+        if actions is None:
+            actions = ()
+        if tags is None:
+            tags = ()
+
         self.requested_actions = [
             action.slug if isinstance(action, Action) else action for action in actions
         ]
