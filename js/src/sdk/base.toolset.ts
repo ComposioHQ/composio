@@ -65,6 +65,14 @@ export class ComposioToolSet {
     schema?: TSchemaProcessor;
   } = {};
 
+  /**
+   * Creates a new instance of ComposioToolSet
+   * @param {Object} config - Configuration object
+   * @param {string|null} config.apiKey - API key for authentication
+   * @param {string|null} config.baseUrl - Base URL for API requests
+   * @param {string|null} config.runtime - Runtime environment
+   * @param {string} config.entityId - Entity ID for operations
+   */
   constructor({
     apiKey,
     baseUrl,
