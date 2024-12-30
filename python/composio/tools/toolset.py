@@ -41,7 +41,7 @@ from composio.client.collections import (
     TriggerModel,
     TriggerSubscription,
 )
-from composio.client.enums import TriggerType
+from composio.client.enums import TriggerType, app
 from composio.client.enums.base import EnumStringNotFound
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.utils import check_cache_refresh
@@ -309,6 +309,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             connected_account_ids=connected_account_ids or {}
         )
         self.max_retries = max_retries
+
+        # To be populated by get_tools(), from within subclasses like
+        # composio_openai's Toolset.
+        self.requested_actions: t.Optional[t.List[str]] = None
+        self.requested_apps: t.Optional[t.List[str]] = None
 
     def _validating_connection_ids(
         self,
@@ -779,6 +784,18 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         :return: Output object from the function call
         """
         action = Action(action)
+        if (
+            self.requested_actions is not None
+            and self.requested_apps is not None
+            and action.slug not in self.requested_actions
+            and action.app not in self.requested_apps
+        ):
+            raise ComposioSDKError(
+                f"Action {action.slug} is being called, but was never requested by the toolset."
+                "This is possible if the Agent is trying to execute an action outside of "
+                "the actions requested from the toolset."
+            )
+
         params = self._serialize_execute_params(param=params)
         if processors is not None:
             self._merge_processors(processors)
@@ -907,13 +924,21 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def validate_tools(
         self,
-        apps: t.Optional[t.Sequence[AppType]] = None,
-        actions: t.Optional[t.Sequence[ActionType]] = None,
-        tags: t.Optional[t.Sequence[TagType]] = None,
+        apps: t.Sequence[AppType] = (),
+        actions: t.Sequence[ActionType] = (),
+        tags: t.Sequence[TagType] = (),
     ) -> None:
         # NOTE: This an experimental, can convert to decorator for more convinience
         if not apps and not actions and not tags:
             return
+
+        self.requested_actions = [
+            action.slug if isinstance(action, Action) else action for action in actions
+        ]
+        self.requested_apps = [
+            app.slug if isinstance(app, App) else app for app in apps
+        ]
+
         self.workspace.check_for_missing_dependencies(
             apps=apps,
             actions=actions,

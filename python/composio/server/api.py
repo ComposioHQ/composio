@@ -234,9 +234,9 @@ def create_app() -> FastAPI:
     @with_exception_handling
     def _validate_tools(request: ValidateToolsRequest) -> t.Dict:
         get_context().toolset.validate_tools(
-            apps=request.apps,
-            actions=request.actions,
-            tags=request.tags,
+            apps=request.apps or [],
+            actions=request.actions or [],
+            tags=request.tags or [],
         )
         return {"message": "validated"}
 

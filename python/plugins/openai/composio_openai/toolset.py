@@ -16,7 +16,7 @@ from openai.types.chat.chat_completion_message_tool_call import (
 )
 from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 
-from composio import ActionType, AppType, TagType
+from composio import Action, ActionType, App, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import OpenAISchema, SchemaType
@@ -99,9 +99,9 @@ class ComposioToolSet(
 
     def get_tools(
         self,
-        actions: t.Optional[t.Sequence[ActionType]] = None,
-        apps: t.Optional[t.Sequence[AppType]] = None,
-        tags: t.Optional[t.List[TagType]] = None,
+        actions: t.Sequence[ActionType] = (),
+        apps: t.Sequence[AppType] = (),
+        tags: t.Sequence[TagType] = (),
         *,
         processors: t.Optional[ProcessorsType] = None,
         check_connected_accounts: bool = True,
@@ -139,9 +139,9 @@ class ComposioToolSet(
 
     def get_realtime_tools(
         self,
-        actions: t.Optional[t.Sequence[ActionType]] = None,
-        apps: t.Optional[t.Sequence[AppType]] = None,
-        tags: t.Optional[t.List[TagType]] = None,
+        actions: t.Sequence[ActionType] = (),
+        apps: t.Sequence[AppType] = (),
+        tags: t.Sequence[TagType] = (),
     ) -> t.List[t.Dict]:
         """
         Get composio tools wrapped as OpenAI `ChatCompletionToolParam` objects.

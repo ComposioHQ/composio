@@ -25,9 +25,9 @@ class ComposioToolSet(
         self,
         caller: ConversableAgent,
         executor: ConversableAgent,
-        apps: t.Optional[t.Sequence[AppType]] = None,
-        actions: t.Optional[t.Sequence[ActionType]] = None,
-        tags: t.Optional[t.List[TagType]] = None,
+        actions: t.Sequence[ActionType] = (),
+        apps: t.Sequence[AppType] = (),
+        tags: t.Sequence[TagType] = (),
         entity_id: t.Optional[str] = None,
     ) -> None:
         """

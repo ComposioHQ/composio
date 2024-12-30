@@ -89,9 +89,9 @@ class ComposioToolSet(
 
     def get_tools(
         self,
-        actions: t.Optional[t.Sequence[ActionType]] = None,
-        apps: t.Optional[t.Sequence[AppType]] = None,
-        tags: t.Optional[t.List[TagType]] = None,
+        actions: t.Sequence[ActionType] = (),
+        apps: t.Sequence[AppType] = (),
+        tags: t.Sequence[TagType] = (),
         entity_id: t.Optional[str] = None,
         *,
         processors: t.Optional[ProcessorsType] = None,
