@@ -86,7 +86,7 @@ const entityId = "Jessica"
 // Initiate new connection (You can use integration_id instead of app)
 const connectionRequest = await toolset.client.connectedAccounts.initiate({
   appName: "gmail",
-  redirect_url: redirectURL,
+  redirectUri: redirectURL,
   entityId: entityId,
   authMode: "OAUTH2",
   authConfig: {},
