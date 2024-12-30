@@ -1,10 +1,12 @@
 import re
 from typing import Any, Dict, List, Tuple, Union
 
-from tree_sitter import Language, Parser
 import tree_sitter_python as tspython
+from tree_sitter import Language, Parser
+
 
 PY_LANGUAGE = Language(tspython.language())
+
 
 class Span:
     """

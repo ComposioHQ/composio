@@ -1,6 +1,5 @@
 import json
 import os
-import shutil
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict
@@ -9,10 +8,7 @@ from pydantic import BaseModel, Field
 
 from composio.tools.base.exceptions import ExecutionFailed
 from composio.tools.base.local import LocalAction
-from composio.tools.local.codeanalysis.constants import (
-    CODE_MAP_CACHE,
-    FQDN_FILE,
-)
+from composio.tools.local.codeanalysis.constants import CODE_MAP_CACHE, FQDN_FILE
 from composio.tools.local.codeanalysis.tool_utils import retry_handler
 from composio.utils.logging import get as get_logger
 

@@ -1,10 +1,12 @@
 import re
 from typing import Dict, List, Tuple
 
-from tree_sitter import Node, Parser, Tree, Language
 import tree_sitter_python as tspython
+from tree_sitter import Language, Node, Parser, Tree
+
 
 PY_LANGUAGE = Language(tspython.language())
+
 
 class SpanRelated:
     """Class containing static methods for span-related operations"""
