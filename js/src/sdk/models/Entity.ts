@@ -192,7 +192,7 @@ export class Entity {
       if (!latestAccount) {
         for (const connectedAccount of connectedAccounts.items!) {
           if (
-            app?.toLocaleLowerCase() ===
+            finalApp?.toLocaleLowerCase() ===
             connectedAccount.appName.toLocaleLowerCase()
           ) {
             const creationDate = new Date(connectedAccount.createdAt!);
