@@ -972,9 +972,12 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if self.requested_actions is None:
             self.requested_actions = []
         self.requested_actions.extend(action_names)
-        self.requested_apps = [
+
+        if self.requested_apps is None:
+            self.requested_apps = []
+        self.requested_apps.extend(
             app.slug if isinstance(app, App) else app for app in apps
-        ]
+        )
 
         self.workspace.check_for_missing_dependencies(
             apps=apps,
