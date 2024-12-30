@@ -69,8 +69,6 @@ flyio_workspace_requirements = [
 ]
 
 tools_requirements = [
-    "tree_sitter_languages",
-    "tree_sitter==0.21.3",
     "pygments",
     "pathspec",
     "diskcache",
