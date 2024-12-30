@@ -172,17 +172,12 @@ export class ConnectedAccounts {
           throw new Error(
             "authMode is required when integrationId is not provided"
           );
-        if (!authConfig)
-          throw new Error(
-            "authConfig is required when integrationId is not provided"
-          );
-
         const app = await this.apps.get({ appKey: appName });
         const integration = await this.integrations.create({
           appId: app.appId!,
           name: `integration_${timestamp}`,
           authScheme: authMode as z.infer<typeof ZAuthMode>,
-          authConfig: authConfig,
+          authConfig: authConfig || {},
           useComposioAuth: false,
         });
 
