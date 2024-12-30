@@ -79,6 +79,8 @@ MetadataType = t.Dict[_KeyType, t.Dict]
 ParamType = t.TypeVar("ParamType")
 ProcessorType = te.Literal["pre", "post", "schema"]
 
+_IS_CI: t.Optional[bool] = None
+
 
 class IntegrationParams(te.TypedDict):
 
@@ -107,6 +109,13 @@ def _check_agentops() -> bool:
     import agentops  # pylint: disable=import-outside-toplevel # type: ignore
 
     return agentops.get_api_key() is not None
+
+
+def _is_ci():
+    global _IS_CI
+    if _IS_CI is None:
+        _IS_CI = os.environ.get("CI") == "true"
+    return _IS_CI
 
 
 def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
@@ -145,9 +154,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def __init_subclass__(
         cls,
+        *args: t.Any,
         runtime: t.Optional[str] = None,
         description_char_limit: t.Optional[int] = None,
         action_name_char_limit: t.Optional[int] = None,
+        **kwargs: t.Any,
     ) -> None:
         if runtime is None:
             warnings.warn(
@@ -161,6 +172,13 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             )
         cls._description_char_limit = description_char_limit or 1024
         cls._action_name_char_limit = action_name_char_limit
+        if len(args) > 0 or len(kwargs) > 0:
+            error = (
+                f"Composio toolset subclass initializer got extra {args=} and {kwargs=}"
+            )
+            if _is_ci():
+                raise RuntimeError(error)
+            warnings.warn(error)
 
     def __init__(
         self,
