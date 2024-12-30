@@ -39,7 +39,7 @@ export const getAPIErrorDetails = (
   const errorTypeFromBE = axiosError?.response?.data?.type;
   const errorMessage = axiosError?.response?.data?.message;
 
-  const genericMessage = `${errorNameFromBE} ${errorTypeFromBE ? `- ${errorTypeFromBE}` : ""} on ${axiosError.config?.baseURL! + axiosError.config?.url!}`;
+  const genericMessage = `${errorNameFromBE || ""} ${errorTypeFromBE ? `- ${errorTypeFromBE}` : ""} on ${axiosError.config?.baseURL! + axiosError.config?.url!}`;
 
   switch (errorCode) {
     case COMPOSIO_SDK_ERROR_CODES.BACKEND.NOT_FOUND:
