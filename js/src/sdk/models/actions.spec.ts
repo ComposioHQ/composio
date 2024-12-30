@@ -3,7 +3,7 @@ import { getBackendClient } from "../testUtils/getBackendClient";
 import { Actions } from "./actions";
 import { ConnectedAccounts } from "./connectedAccounts";
 
-describe("Apps class tests", () => {
+describe("Actions class tests", () => {
   let backendClient;
   let actions: Actions;
   let connectedAccouns: ConnectedAccounts;
