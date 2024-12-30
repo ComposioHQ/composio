@@ -1,12 +1,10 @@
-import os
 import re
-import subprocess
 from typing import Any, Dict, List, Tuple, Union
 
 from tree_sitter import Language, Parser
+import tree_sitter_python as tspython
 
-from composio.tools.local.codeanalysis.constants import TREE_SITTER_FOLDER
-
+PY_LANGUAGE = Language(tspython.language())
 
 class Span:
     """
@@ -224,36 +222,11 @@ class Chunking:
         language (Language): The loaded Python language for tree-sitter parsing.
 
     Methods:
-        _setup_tree_sitter(): Sets up the tree-sitter environment.
-        _load_language(): Loads the Python language for tree-sitter.
         chunk(): Chunks the given file content into smaller pieces.
     """
 
     def __init__(self, repo_dir: str):
-        self._setup_tree_sitter()
-        self.language = self._load_language()
         self.repo_dir = repo_dir
-
-    def _setup_tree_sitter(self):
-        python_repo = f"{TREE_SITTER_FOLDER}/python"
-        if not os.path.exists(python_repo):
-            subprocess.run(
-                [
-                    "git",
-                    "clone",
-                    "https://github.com/tree-sitter/tree-sitter-python",
-                    python_repo,
-                ],
-                check=True,
-            )
-
-        build_path = f"{TREE_SITTER_FOLDER}/build/python.so"
-        if not os.path.exists(build_path):
-            os.makedirs(os.path.dirname(build_path), exist_ok=True)
-            Language.build_library(build_path, [python_repo])
-
-    def _load_language(self) -> Language:
-        return Language(f"{TREE_SITTER_FOLDER}/build/python.so", "python")
 
     def chunk(
         self,
@@ -265,8 +238,7 @@ class Chunking:
         max_chunk_size: int = 512 * 3,
     ) -> Tuple[List[str], List[Dict[str, Any]], List[str]]:
         if is_python:
-            parser = Parser()
-            parser.set_language(self.language)
+            parser = Parser(PY_LANGUAGE)
             tree = parser.parse(file_content.encode("utf-8"))
 
             source_code_bytes = file_content.encode("utf-8")

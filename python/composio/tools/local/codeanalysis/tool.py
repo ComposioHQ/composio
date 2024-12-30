@@ -15,7 +15,7 @@ class CodeAnalysisTool(LocalTool, autoload=True):
     """Code index tool."""
 
     requires = [
-        "tree_sitter==0.21.3",
+        "tree_sitter",
         "deeplake>3.9,<4",
         "sentence-transformers",
         "tree_sitter_languages",
