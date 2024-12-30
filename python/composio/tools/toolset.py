@@ -41,7 +41,7 @@ from composio.client.collections import (
     TriggerModel,
     TriggerSubscription,
 )
-from composio.client.enums import TriggerType, app
+from composio.client.enums import TriggerType
 from composio.client.enums.base import EnumStringNotFound
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.utils import check_cache_refresh
