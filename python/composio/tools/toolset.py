@@ -942,9 +942,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def validate_tools(
         self,
-        apps: t.Sequence[AppType] = (),
-        actions: t.Sequence[ActionType] = (),
-        tags: t.Sequence[TagType] = (),
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        tags: t.Optional[t.List[TagType]] = None,
     ) -> None:
         # NOTE: This an experimental, can convert to decorator for more convinience
         if not apps and not actions and not tags:
