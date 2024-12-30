@@ -958,9 +958,20 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if tags is None:
             tags = ()
 
-        self.requested_actions = [
-            action.slug if isinstance(action, Action) else action for action in actions
+        if self.requested_actions is None:
+            self.requested_actions = []
+
+        action_names: t.List[str] = [
+            (
+                action.enum  # type: ignore
+                if hasattr(action, "sentinel")
+                else action.slug if isinstance(action, Action) else action
+            )
+            for action in actions
         ]
+        if self.requested_actions is None:
+            self.requested_actions = []
+        self.requested_actions.extend(action_names)
         self.requested_apps = [
             app.slug if isinstance(app, App) else app for app in apps
         ]
