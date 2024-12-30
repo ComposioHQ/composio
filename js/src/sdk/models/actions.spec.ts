@@ -72,4 +72,13 @@ describe("Actions class tests", () => {
     expect(executionResult.data).toHaveProperty("stdout", "Hello World\n");
     expect(executionResult.data).toHaveProperty("stderr", "");
   });
+
+  it("should get a list of actions by use case", async () => {
+    const actionsList = await actions.findActionEnumsByUseCase({
+      apps: ["github", "notion"],
+      useCase: "create issue from github repo on notion",
+    });
+    expect(actionsList).toBeInstanceOf(Array);
+    expect(actionsList).not.toHaveLength(0);
+  });
 });
