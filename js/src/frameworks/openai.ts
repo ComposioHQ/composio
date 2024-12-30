@@ -8,8 +8,8 @@ import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 import logger from "../utils/logger";
 
-import { Optional, Sequence } from "../types/base";
 import { ZToolSchemaFilter } from "../types/base_toolset";
+import { Optional, Sequence } from "../types/util";
 
 export class OpenAIToolSet extends BaseComposioToolSet {
   static FRAMEWORK_NAME = "openai";
