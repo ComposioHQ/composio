@@ -1027,7 +1027,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 item.name = "str_replace_editor"
 
         if _populate_requested:
-            self._requested_actions = [item.name for item in items]
+            action_names = [item.name for item in items]
+            if self._requested_actions is None:
+                self._requested_actions = []
+
+            self._requested_actions += action_names
 
         return items
 
