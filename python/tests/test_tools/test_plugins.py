@@ -44,6 +44,7 @@ def test_openai_toolset():
                             "title": "Thread Id",
                             # TODO: this seems wrong, why both type and anyof
                             "type": "string",
+                            "default": None,
                             "anyOf": [
                                 {"type": "string"},
                                 {"type": "null"},

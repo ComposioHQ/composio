@@ -2,7 +2,6 @@ import os
 from typing import Any, Dict, List
 
 from deeplake.core.vectorstore.deeplake_vectorstore import DeepLakeVectorStore
-from sentence_transformers import SentenceTransformer
 
 from composio.tools.local.codeanalysis.constants import (
     CODE_MAP_CACHE,
@@ -49,6 +48,8 @@ def get_vector_store(repo_name: str, overwrite: bool = True) -> DeepLakeVectorSt
 
 class Embedding:
     def __init__(self):
+        from sentence_transformers import SentenceTransformer
+
         self.model = SentenceTransformer(EMBEDDER)
 
     def compute(self, texts: List[str]) -> List[List[float]]:
