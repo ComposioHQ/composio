@@ -255,8 +255,14 @@ def check_cache_refresh(client: Composio) -> None:
     for action_name in actions_to_delete:
         (enums.base.ACTIONS_CACHE / action_name).unlink()
 
+    if len(actions_to_update) > 50:
+        # Major update, refresh everything
+        apps = update_apps(client)
+        update_actions(client, apps)
+        update_triggers(client, apps)
+        return
+
     if actions_to_update:
-        # TODO: handle page size limit
         actions_data = client.http.get(
             str(
                 client.actions.endpoint(
