@@ -4,6 +4,7 @@ PhiData tool spec.
 
 import json
 import typing as t
+import warnings
 
 import typing_extensions as te
 from phi.tools.toolkit import Toolkit
@@ -85,6 +86,11 @@ class ComposioToolSet(
         Returns:
             List[Toolkit]: Composio tools wrapped as `Toolkit` objects
         """
+        warnings.warn(
+            "Use `ComposioToolSet.get_tools` instead.\n" + help_msg(),
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.get_tools(actions=actions)
 
     def get_tools(

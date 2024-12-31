@@ -1,6 +1,7 @@
 import types
 import typing as t
 from inspect import Signature
+import warnings
 
 import pydantic
 import pydantic.error_wrappers
@@ -144,6 +145,11 @@ class ComposioToolSet(
 
         :return: Composio tools wrapped as `StructuredTool` objects
         """
+        warnings.warn(
+            "Use `ComposioToolSet.get_tools` instead.\n" + help_msg(),
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.get_tools(actions=actions, entity_id=entity_id)
 
     def get_tools(
