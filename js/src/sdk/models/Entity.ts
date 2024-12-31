@@ -1,5 +1,4 @@
 import { z } from "zod";
-import logger from "../../utils/logger";
 import { GetConnectionsResponseDto } from "../client";
 import {
   ZConnectionParams,
@@ -7,7 +6,6 @@ import {
   ZInitiateConnectionParams,
   ZTriggerSubscribeParam,
 } from "../types/entity";
-import { ZAuthMode } from "../types/integration";
 import { CEG } from "../utils/error";
 import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
@@ -373,89 +371,26 @@ export class Entity {
       params: { data },
     });
     try {
-      const { appName, authMode, authConfig, integrationId, connectionData } =
-        ZInitiateConnectionParams.parse(data);
-      const { redirectUrl, labels } = data.config || {};
-
-      if (!integrationId && !appName) {
-        throw CEG.getCustomError(
-          COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
-          {
-            message: "Please pass appName or integrationId",
-            description:
-              "We need atleast one of the params to initiate a connection",
-          }
-        );
-      }
-
-      /* Get the integration */
-      const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
-
-      const isIntegrationIdPassed = !!integrationId;
-      let integration = isIntegrationIdPassed
-        ? await this.integrations.get({ integrationId: integrationId })
-        : null;
-
-      if (isIntegrationIdPassed && !integration) {
-        throw CEG.getCustomError(
-          COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
-          {
-            message: "Integration not found",
-            description: "The integration with the given id does not exist",
-          }
-        );
-      }
-
-      /* If integration is not found, create a new integration */
-      if (!isIntegrationIdPassed) {
-        const app = await this.apps.get({ appKey: appName! });
-
-        if (authMode) {
-          integration = await this.integrations.create({
-            appId: app.appId!,
-            name: `integration_${timestamp}`,
-            authScheme: authMode as z.infer<typeof ZAuthMode>,
-            authConfig: authConfig,
-            useComposioAuth: false,
-          });
-        } else {
-          const isTestConnectorAvailable =
-            app.testConnectors && app.testConnectors.length > 0;
-
-          if (!isTestConnectorAvailable && app.no_auth === false) {
-            logger.debug(
-              "Auth schemes not provided, available auth schemes and authConfig"
-            );
-            // @ts-ignore
-            for (const authScheme of app.auth_schemes) {
-              logger.debug(
-                "authScheme:",
-                authScheme.name,
-                "\n",
-                "fields:",
-                authScheme.fields
-              );
-            }
-
-            throw new Error("Please pass authMode and authConfig.");
-          }
-
-          integration = await this.integrations.create({
-            appId: app.appId!,
-            name: `integration_${timestamp}`,
-            useComposioAuth: true,
-          });
-        }
-      }
+      const {
+        appName,
+        authMode,
+        authConfig,
+        integrationId,
+        connectionData,
+        redirectUri,
+        labels,
+      } = ZInitiateConnectionParams.parse(data);
 
       // Initiate the connection process
       return this.connectedAccounts.initiate({
-        integrationId: integration!.id!,
+        authMode: authMode,
+        authConfig: authConfig,
+        integrationId: integrationId,
+        appName: appName,
         entityId: this.id,
-        redirectUri: redirectUrl,
-        //@ts-ignore
+        redirectUri: redirectUri || data.config?.redirectUrl || "",
         data: connectionData,
-        labels: labels,
+        labels: labels || data.config?.labels || [],
       });
     } catch (error) {
       throw CEG.handleAllError(error);

@@ -187,6 +187,10 @@ export class ComposioToolSet {
       .then((actions) => actions.length > 0);
   }
 
+  async getEntity(entityId: string) {
+    return this.client.getEntity(entityId);
+  }
+
   async executeAction(
     functionParams: ExecuteActionParams
   ): Promise<ActionExecuteResponse> {

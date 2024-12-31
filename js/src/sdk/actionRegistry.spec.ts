@@ -91,7 +91,7 @@ describe("ActionRegistry", () => {
     });
 
     const callback = async (_params: Record<string, unknown>) => {
-      return { data: { success: true }, successful: true };
+      return { data: { success: true }, successful: true, successfull: true };
     };
 
     const options = {
@@ -124,7 +124,7 @@ describe("ActionRegistry", () => {
     });
 
     const callback = async (_params: Record<string, unknown>) => {
-      return { data: { success: true }, successful: true };
+      return { data: { success: true }, successful: true, successfull: true };
     };
 
     const options = {

@@ -1,9 +1,11 @@
 import { z } from "zod";
+import logger from "../../utils/logger";
 import {
   ConnectedAccountResponseDTO,
   ConnectionParams,
   DeleteRowAPIDTO,
   GetConnectionsResponseDto,
+  GetConnectorInfoResDTO,
 } from "../client";
 import { default as apiClient, default as client } from "../client/client";
 import {
@@ -15,6 +17,7 @@ import {
 } from "../types/connectedAccount";
 import { ZAuthMode } from "../types/integration";
 import { CEG } from "../utils/error";
+import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { Apps } from "./apps";
@@ -139,6 +142,13 @@ export class ConnectedAccounts {
     }
   }
 
+  async getIntegration(data: { integrationId: string }) {
+    const res = await apiClient.appConnector.getConnectorInfo({
+      path: { integrationId: data.integrationId },
+    });
+    return res.data;
+  }
+
   // Should we deprecate this or change the signature?
   async initiate(
     payload: InitiateConnectionDataReq
@@ -150,48 +160,103 @@ export class ConnectedAccounts {
     });
     try {
       const {
-        entityId = "default",
-        labels,
-        data = {},
-        redirectUri,
         authMode,
-        authConfig,
         appName,
+        entityId,
+        redirectUri,
+        data,
+        labels,
+        authConfig,
+        integrationId,
       } = payload;
-      let integrationId: string | undefined;
-      integrationId = payload.integrationId;
+      if (!integrationId && !appName) {
+        throw CEG.getCustomError(
+          COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
+          {
+            message: "Please pass appName or integrationId",
+            description:
+              "We need atleast one of the params to initiate a connection",
+          }
+        );
+      }
 
-      if (!integrationId && authMode) {
-        const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
+      /* Get the integration */
+      const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
 
-        if (!appName)
-          throw new Error(
-            "appName is required when integrationId is not provided"
-          );
-        if (!authMode)
-          throw new Error(
-            "authMode is required when integrationId is not provided"
-          );
-        const app = await this.apps.get({ appKey: appName });
-        const integration = await this.integrations.create({
-          appId: app.appId!,
-          name: `integration_${timestamp}`,
-          authScheme: authMode as z.infer<typeof ZAuthMode>,
-          authConfig: authConfig || {},
-          useComposioAuth: false,
+      const isIntegrationIdPassed = !!integrationId;
+      let integration = isIntegrationIdPassed
+        ? await this.integrations.get({ integrationId: integrationId })
+        : null;
+
+      if (!integration && !!authMode) {
+        const integrations = await this.integrations.list({
+          appName: appName,
         });
+        integration = integrations.items?.find((integration) => {
+          return integration.authScheme === authMode;
+        }) as GetConnectorInfoResDTO;
+      }
 
-        integrationId = integration?.id!;
+      if (isIntegrationIdPassed && !integration) {
+        throw CEG.getCustomError(
+          COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
+          {
+            message: "Integration not found",
+            description: "The integration with the given id does not exist",
+          }
+        );
+      }
+
+      /* If integration is not found, create a new integration */
+      if (!isIntegrationIdPassed) {
+        const app = await this.apps.get({ appKey: appName! });
+
+        if (!!authMode && !!authConfig) {
+          integration = await this.integrations.create({
+            appId: app.appId!,
+            name: `integration_${timestamp}`,
+            authScheme: authMode as z.infer<typeof ZAuthMode>,
+            authConfig: authConfig,
+            useComposioAuth: false,
+          });
+        } else {
+          const isTestConnectorAvailable =
+            app.testConnectors && app.testConnectors.length > 0;
+
+          if (!isTestConnectorAvailable && app.no_auth === false) {
+            logger.debug(
+              "Auth schemes not provided, available auth schemes and authConfig"
+            );
+            // @ts-ignore
+            for (const authScheme of app.auth_schemes) {
+              logger.debug(
+                "authScheme:",
+                authScheme.name,
+                "\n",
+                "fields:",
+                authScheme.fields
+              );
+            }
+
+            throw new Error("Please pass authMode and authConfig.");
+          }
+
+          integration = await this.integrations.create({
+            appId: app.appId!,
+            name: `integration_${timestamp}`,
+            useComposioAuth: true,
+          });
+        }
       }
 
       const res = await client.connections
         .initiateConnection({
           body: {
-            integrationId: integrationId!,
-            entityId,
-            labels,
-            redirectUri,
-            data,
+            integrationId: integration?.id!,
+            entityId: entityId,
+            labels: labels,
+            redirectUri: redirectUri,
+            data: data || {},
           },
         })
         .then((res) => res.data);

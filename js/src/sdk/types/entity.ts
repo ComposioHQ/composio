@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ZAuthMode } from "./integration";
 
 export const ZExecuteActionParams = z.object({
   actionName: z.string(),
@@ -11,7 +12,7 @@ export const ZInitiateConnectionParams = z.object({
   appName: z.string().optional(),
   authConfig: z.record(z.any()).optional(),
   integrationId: z.string().optional(),
-  authMode: z.string().optional(),
+  authMode: ZAuthMode.optional(),
   connectionData: z.record(z.any()).optional(),
   config: z
     .object({
@@ -19,6 +20,8 @@ export const ZInitiateConnectionParams = z.object({
       redirectUrl: z.string().optional(),
     })
     .optional(),
+  redirectUri: z.string().optional(),
+  labels: z.array(z.string()).optional(),
 });
 
 export const ZConnectionParams = z.object({
