@@ -34,7 +34,7 @@ from composio.client.enums import (
 )
 from composio.client.exceptions import ComposioClientError, ComposioSDKError
 from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
-from composio.utils import logging, help_msg
+from composio.utils import help_msg, logging
 from composio.utils.shared import generate_request_id
 
 

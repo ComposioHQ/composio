@@ -10,12 +10,12 @@ from langchain_core.tools import StructuredTool as BaseStructuredTool
 from composio import ActionType, AppType, TagType
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.toolset import ProcessorsType
+from composio.utils import help_msg
 from composio.utils.pydantic import parse_pydantic_error
 from composio.utils.shared import (
     get_signature_format_from_schema_params,
     json_schema_to_model,
 )
-from composio.utils import help_msg
 
 
 class StructuredTool(BaseStructuredTool):

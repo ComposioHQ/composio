@@ -18,8 +18,8 @@ from vertexai.generative_models import (
 from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
-from composio.utils.shared import json_schema_to_model
 from composio.utils import help_msg
+from composio.utils.shared import json_schema_to_model
 
 
 class ComposioToolset(

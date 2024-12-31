@@ -2,9 +2,9 @@
 Helper utilities.
 """
 
-from .enums import get_enum_key
-
 import sys
+
+from .enums import get_enum_key
 
 
 def blue(message: str) -> str:

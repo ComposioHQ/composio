@@ -10,8 +10,8 @@ from schema import Literal, Schema
 from composio import Action, ActionType, AppType, TagType
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.toolset import ProcessorsType
-from composio.utils.shared import PYDANTIC_TYPE_TO_PYTHON_TYPE
 from composio.utils import help_msg
+from composio.utils.shared import PYDANTIC_TYPE_TO_PYTHON_TYPE
 
 
 logger = logging.getLogger(__name__)
