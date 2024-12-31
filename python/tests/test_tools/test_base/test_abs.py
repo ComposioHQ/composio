@@ -146,11 +146,12 @@ class TestToolBuilder:
 
         ToolBuilder.validate(obj=SomeTool, name="SomeTool", methods=("actions",))
         ToolBuilder.set_metadata(obj=SomeTool)
-        ToolBuilder.setup_children(obj=SomeTool)
+        ToolBuilder.setup_children(obj=SomeTool, no_auth=True)
 
         SomeTool.register()
 
         assert SomeAction.enum == "SOME_TOOL_SOME_ACTION"
+        assert SomeAction.no_auth is True
         assert isinstance(tool_registry["local"][SomeTool.enum], SomeTool)
         assert action_registry["local"][SomeAction.enum] is SomeAction
 
