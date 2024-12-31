@@ -331,7 +331,6 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         # To be populated by get_tools(), from within subclasses like
         # composio_openai's Toolset.
         self.requested_actions: t.Optional[t.List[str]] = None
-        self.requested_apps: t.Optional[t.List[str]] = None
 
     def _validating_connection_ids(
         self,
