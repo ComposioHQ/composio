@@ -486,6 +486,19 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         """Execute a local action."""
         metadata = metadata or {}
         metadata["_toolset"] = self
+        custom_auth = self._custom_auth.get(App(action.app))
+        if custom_auth is not None:
+            invalid_auth = []
+            for param in custom_auth.parameters:
+                if param["in_"] == "metadata":
+                    metadata[param["name"]] = param["value"]
+                    continue
+                invalid_auth.append(param)
+            if len(invalid_auth) > 0:
+                raise ComposioSDKError(
+                    f"Invalid custom auth found for {action.app}: {invalid_auth}"
+                )
+
         response = self.workspace.execute_action(
             action=action,
             request_data=params,
