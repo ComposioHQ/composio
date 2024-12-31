@@ -14,6 +14,7 @@ from composio import Action, App
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.base.runtime import action as custom_action
+from composio.tools.local.filetool.tool import Filetool, FindFile
 from composio.tools.toolset import ComposioToolSet
 from composio.utils.pypi import reset_installed_list
 
@@ -329,6 +330,61 @@ def test_execute_action_param_serialization() -> None:
         text=None,
         session_id=mock.ANY,
     )
+
+
+def test_custom_auth_on_localtool():
+    toolset = ComposioToolSet()
+    toolset.add_auth(
+        app=Filetool.enum,
+        parameters=[
+            {
+                "in_": "metadata",
+                "name": "name",
+                "value": "value",
+            }
+        ],
+    )
+
+    def _execute(cls, request, metadata):  # pylint: disable=unused-argument
+        return mock.MagicMock(
+            model_dump=lambda *_: {
+                "assert": metadata["name"] == "value",
+            },
+        )
+
+    with mock.patch.object(FindFile, "execute", new=_execute):
+        response = toolset.execute_action(
+            action=FindFile.enum,
+            params={
+                "pattern": "*.py",
+            },
+        )
+        assert response["data"]["assert"]
+
+
+def test_bad_custom_auth_on_localtool():
+    toolset = ComposioToolSet()
+    toolset.add_auth(
+        app=Filetool.enum,
+        parameters=[
+            {
+                "in_": "query",
+                "name": "name",
+                "value": "value",
+            }
+        ],
+    )
+
+    with pytest.raises(
+        ComposioSDKError,
+        match="Invalid custom auth found for FILETOOL",
+    ):
+        toolset.execute_action(
+            action=FindFile.enum,
+            params={
+                "pattern": "*.py",
+            },
+        )
 
 
 class TestSubclassInit:
