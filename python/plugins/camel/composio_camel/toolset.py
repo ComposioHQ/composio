@@ -23,6 +23,7 @@ class ComposioToolSet(
     BaseComposioToolSet,
     runtime="camel",
     description_char_limit=1024,
+    action_name_char_limit=64,
 ):
     """
     Composio toolset for OpenAI framework.
@@ -186,5 +187,6 @@ class ComposioToolSet(
                 apps=apps,
                 tags=tags,
                 check_connected_accounts=check_connected_accounts,
+                _populate_requested=True,
             )
         ]
