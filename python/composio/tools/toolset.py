@@ -330,7 +330,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
         # To be populated by get_tools(), from within subclasses like
         # composio_openai's Toolset.
-        self.requested_actions: t.Optional[t.List[str]] = None
+        self._requested_actions: t.Optional[t.List[str]] = None
 
     def _validating_connection_ids(
         self,
@@ -802,13 +802,13 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         """
         action = Action(action)
         if (
-            self.requested_actions is not None
-            and action.slug not in self.requested_actions
+            self._requested_actions is not None
+            and action.slug not in self._requested_actions
         ):
             raise ComposioSDKError(
-                f"Action {action.slug} is being called, but was never requested by the toolset.\n"
-                "This is possible if the Agent is trying to execute an action outside of "
-                "the actions requested from the toolset."
+                f"Action {action.slug} is being called, but was never requested by the toolset. "
+                "Make sure that the actions you are trying to execute are requested in your "
+                "`get_tools()` call."
             )
 
         params = self._serialize_execute_params(param=params)
@@ -1027,7 +1027,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 item.name = "str_replace_editor"
 
         if _populate_requested:
-            self.requested_actions = [item.name for item in items]
+            self._requested_actions = [item.name for item in items]
 
         return items
 
