@@ -804,9 +804,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         action = Action(action)
         if (
             self.requested_actions is not None
-            and self.requested_apps is not None
             and action.slug not in self.requested_actions
-            and action.app not in self.requested_apps
         ):
             raise ComposioSDKError(
                 f"Action {action.slug} is being called, but was never requested by the toolset.\n"
@@ -944,37 +942,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self,
         apps: t.Optional[t.Sequence[AppType]] = None,
         actions: t.Optional[t.Sequence[ActionType]] = None,
-        tags: t.Optional[t.List[TagType]] = None,
+        tags: t.Optional[t.Sequence[TagType]] = None,
     ) -> None:
         # NOTE: This an experimental, can convert to decorator for more convinience
         if not apps and not actions and not tags:
             return
-
-        # Backwards compatibility
-        if apps is None:
-            apps = ()
-        if actions is None:
-            actions = ()
-        if tags is None:
-            tags = ()
-
-        action_names: t.List[str] = [
-            (
-                action.enum  # type: ignore
-                if hasattr(action, "sentinel")
-                else action.slug if isinstance(action, Action) else action
-            )
-            for action in actions
-        ]
-        if self.requested_actions is None:
-            self.requested_actions = []
-        self.requested_actions.extend(action_names)
-
-        if self.requested_apps is None:
-            self.requested_apps = []
-        self.requested_apps.extend(
-            app.slug if isinstance(app, App) else app for app in apps
-        )
 
         self.workspace.check_for_missing_dependencies(
             apps=apps,
@@ -989,6 +961,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         tags: t.Optional[t.Sequence[TagType]] = None,
         *,
         check_connected_accounts: bool = True,
+        _populate_requested: bool = False,
     ) -> t.List[ActionModel]:
         runtime_actions = t.cast(
             t.List[t.Type[LocalAction]],
@@ -1053,6 +1026,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
             if item.name == Action.ANTHROPIC_TEXT_EDITOR.slug:
                 item.name = "str_replace_editor"
+
+        if _populate_requested:
+            self.requested_actions = [item.name for item in items]
 
         return items
 
