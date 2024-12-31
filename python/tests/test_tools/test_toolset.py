@@ -14,6 +14,7 @@ from composio import Action, App
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.base.runtime import action as custom_action
+from composio.tools.local.filetool.tool import Filetool, FindFile
 from composio.tools.toolset import ComposioToolSet
 from composio.utils.pypi import reset_installed_list
 
@@ -331,6 +332,61 @@ def test_execute_action_param_serialization() -> None:
     )
 
 
+def test_custom_auth_on_localtool():
+    toolset = ComposioToolSet()
+    toolset.add_auth(
+        app=Filetool.enum,
+        parameters=[
+            {
+                "in_": "metadata",
+                "name": "name",
+                "value": "value",
+            }
+        ],
+    )
+
+    def _execute(cls, request, metadata):  # pylint: disable=unused-argument
+        return mock.MagicMock(
+            model_dump=lambda *_: {
+                "assert": metadata["name"] == "value",
+            },
+        )
+
+    with mock.patch.object(FindFile, "execute", new=_execute):
+        response = toolset.execute_action(
+            action=FindFile.enum,
+            params={
+                "pattern": "*.py",
+            },
+        )
+        assert response["data"]["assert"]
+
+
+def test_bad_custom_auth_on_localtool():
+    toolset = ComposioToolSet()
+    toolset.add_auth(
+        app=Filetool.enum,
+        parameters=[
+            {
+                "in_": "query",
+                "name": "name",
+                "value": "value",
+            }
+        ],
+    )
+
+    with pytest.raises(
+        ComposioSDKError,
+        match="Invalid custom auth found for FILETOOL",
+    ):
+        toolset.execute_action(
+            action=FindFile.enum,
+            params={
+                "pattern": "*.py",
+            },
+        )
+
+
 class TestSubclassInit:
 
     def test_runtime(self):
@@ -390,3 +446,28 @@ class TestSubclassInit:
             ]
         )
         assert len(t.cast(str, schema.name)) == char_limit
+
+
+def test_invalid_handle_tool_calls() -> None:
+    """Test edge case where the Agent tries to call a tool that wasn't requested from get_tools()."""
+    toolset = LangchainToolSet()
+
+    toolset.get_tools(actions=[Action.GMAIL_FETCH_EMAILS])
+    with pytest.raises(ComposioSDKError) as exc:
+        with mock.patch.object(toolset, "_execute_remote"):
+            toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})
+
+    assert (
+        "Action HACKERNEWS_GET_FRONTPAGE is being called, but was never requested by the toolset."
+        in exc.value.message
+    )
+
+    # Ensure it does NOT fail if a subsequent get_tools added that action
+    toolset.get_tools(actions=[Action.HACKERNEWS_GET_FRONTPAGE])
+    with mock.patch.object(toolset, "_execute_remote"):
+        toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})
+
+    # Ensure it DOES NOT fail if get_tools is never called
+    toolset = LangchainToolSet()
+    with mock.patch.object(toolset, "_execute_remote"):
+        toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})

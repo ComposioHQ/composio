@@ -6,6 +6,7 @@ from langchain import hub
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
 
+
 @action(toolname="math", requires=["smtplib"])
 def multiply(a: int, b: int, c: int) -> int:
     """

@@ -1037,7 +1037,7 @@ class ActionModel(BaseModel):
     description: t.Optional[str] = None
 
 
-ParamPlacement = t.Literal["header", "path", "query", "subdomain"]
+ParamPlacement = t.Literal["header", "path", "query", "subdomain", "metadata"]
 
 
 class CustomAuthParameter(te.TypedDict):
@@ -1358,6 +1358,11 @@ class Actions(Collection[ActionModel]):
             {"in": d["in_"], "name": d["name"], "value": d["value"]}
             for d in data["parameters"]
         ]
+        for param in data["parameters"]:
+            if param["in"] == "metadata":
+                raise ComposioClientError(
+                    f"Param placement cannot be 'metadata' for remote action execution: {param}"
+                )
         return data
 
     def search_for_a_task(

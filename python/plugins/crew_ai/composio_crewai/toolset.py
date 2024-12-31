@@ -183,6 +183,7 @@ else:
                     apps=apps,
                     tags=tags,
                     check_connected_accounts=check_connected_accounts,
+                    _populate_requested=True,
                 )
             ]
 
