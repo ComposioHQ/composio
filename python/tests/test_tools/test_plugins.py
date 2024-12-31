@@ -1,10 +1,4 @@
-from composio import Action, App
-from composio.client.enums.base import ActionData
-from composio.tools.local.base import action
 import composio_openai
-import composio_crewai
-import composio_langchain
-import composio_llamaindex
 
 
 def test_openai_toolset():
@@ -22,6 +16,7 @@ def test_openai_toolset():
         :param message_body: The content of the draft reply
         :return draft: The created draft details
         """
+        _ = message_body, thread_id
         return {}
 
     tools = toolset.get_tools(actions=[create_draft])

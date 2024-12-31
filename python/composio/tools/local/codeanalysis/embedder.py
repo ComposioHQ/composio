@@ -48,6 +48,7 @@ def get_vector_store(repo_name: str, overwrite: bool = True) -> DeepLakeVectorSt
 
 class Embedding:
     def __init__(self):
+        # pylint: disable=import-outside-toplevel
         from sentence_transformers import SentenceTransformer
 
         self.model = SentenceTransformer(EMBEDDER)
