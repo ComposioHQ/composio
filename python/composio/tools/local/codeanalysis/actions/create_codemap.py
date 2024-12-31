@@ -1,6 +1,5 @@
 import json
 import os
-import shutil
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict
@@ -9,11 +8,7 @@ from pydantic import BaseModel, Field
 
 from composio.tools.base.exceptions import ExecutionFailed
 from composio.tools.base.local import LocalAction
-from composio.tools.local.codeanalysis.constants import (
-    CODE_MAP_CACHE,
-    FQDN_FILE,
-    TREE_SITTER_FOLDER,
-)
+from composio.tools.local.codeanalysis.constants import CODE_MAP_CACHE, FQDN_FILE
 from composio.tools.local.codeanalysis.tool_utils import retry_handler
 from composio.utils.logging import get as get_logger
 
@@ -91,7 +86,6 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
         repo_name = os.path.basename(self.REPO_DIR)
         self.save_dir = f"{CODE_MAP_CACHE}/{repo_name}"
         os.makedirs(self.save_dir, exist_ok=True)
-        os.makedirs(TREE_SITTER_FOLDER, exist_ok=True)
         self.fqdn_cache_file = os.path.join(self.save_dir, FQDN_FILE)
 
         self._process(status, metadata)
@@ -172,7 +166,6 @@ class CreateCodeMap(LocalAction[CreateCodeMapRequest, CreateCodeMapResponse]):
 
         embedder.get_vector_store_from_chunks(self.REPO_DIR, documents, ids, metadatas)
         logger.info(f"Successfully created index for {len(python_files)} files.")
-        shutil.rmtree(TREE_SITTER_FOLDER)
 
     def load_all_fqdns(self):
         """
