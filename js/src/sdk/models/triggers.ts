@@ -79,7 +79,15 @@ export class Triggers {
           showEnabledOnly: showEnabledOnly,
         },
       });
-      return response || [];
+
+      if (!response || response.length === 0) {
+        throw CEG.getCustomError(COMPOSIO_SDK_ERROR_CODES.BACKEND.NOT_FOUND, {
+          message: "Trigger not found with the given params",
+          description: "Trigger not found with the given params",
+          possibleFix: "Pass a check if filter params are correct",
+        });
+      }
+      return response;
     } catch (error) {
       throw CEG.handleAllError(error);
     }

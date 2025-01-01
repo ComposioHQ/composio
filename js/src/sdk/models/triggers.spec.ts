@@ -5,6 +5,7 @@ import { Entity } from "./Entity";
 import { Actions } from "./actions";
 import { ConnectedAccounts } from "./connectedAccounts";
 import { Triggers } from "./triggers";
+import { ComposioError } from "../utils/errors/src/composioError";
 
 describe("Apps class tests", () => {
   let backendClient;
@@ -104,6 +105,15 @@ describe("Apps class tests subscribe", () => {
       triggerId: "GMAIL_NEW_GMAIL_MESSAGE",
     });
     expect(res.displayName).toBe("New Gmail Message Received Trigger");
+  });
+
+  it("should throw an error if trigger not found", async () => {
+    try {
+      await triggers.list({ triggerIds: ["INVALID_TRIGGER_ID"] });
+    } catch (e: unknown) {
+      const error = e as ComposioError;
+      expect(error.message).toContain("Trigger not found");
+    }
   });
 
   // it("should subscribe to a trigger and receive a trigger", async () => {
