@@ -94,14 +94,12 @@ const toolset = new ComposioToolSet();
 ```
 </Step>
 <Step title="Get Config Parameters">
-Triggers have a config schema, which can be obtained by calling the `list` method for the app and filtering by trigger enum.
-```javascript {4}
-const triggers = await toolset.triggers.list({ appNames: ["GITHUB"] });
-console.log(
-    triggers.find(
-        trigger => trigger.enum === "GITHUB_STAR_ADDED_EVENT"
-    ).config
-);
+Triggers have a config schema, which can be obtained by calling the `getTriggerConfig` method & passing the trigger id.
+```javascript {2}
+const trigger = await toolset.triggers.getTriggerConfig({
+    triggerId: "GITHUB_STAR_ADDED_EVENT"
+})
+console.log(trigger.config)
 ```
 Response:
 ```bash {3,8}
