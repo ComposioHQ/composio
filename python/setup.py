@@ -69,8 +69,6 @@ flyio_workspace_requirements = [
 ]
 
 tools_requirements = [
-    "tree_sitter_languages",
-    "tree_sitter==0.21.3",
     "pygments",
     "pathspec",
     "diskcache",
@@ -90,7 +88,7 @@ all_requirements = (
 
 setup(
     name="composio_core",
-    version="0.6.8",
+    version="0.6.9",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",
