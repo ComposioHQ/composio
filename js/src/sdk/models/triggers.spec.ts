@@ -92,6 +92,20 @@ describe("Apps class tests subscribe", () => {
     expect(trigger.status).toBe("success");
   });
 
+  it("should get the config of a trigger", async () => {
+    const res = await triggers.getTriggerConfig({
+      triggerId: "GMAIL_NEW_GMAIL_MESSAGE",
+    });
+    expect(res.config.title).toBe("GmailNewMessageConfigSchema");
+  });
+
+  it("should get the payload of a trigger", async () => {
+    const res = await triggers.getTriggerInfo({
+      triggerId: "GMAIL_NEW_GMAIL_MESSAGE",
+    });
+    expect(res.displayName).toBe("New Gmail Message Received Trigger");
+  });
+
   // it("should subscribe to a trigger and receive a trigger", async () => {
   //     function waitForTriggerReceived() {
   //         return new Promise((resolve) => {

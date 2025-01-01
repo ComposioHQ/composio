@@ -36,3 +36,21 @@ export const ZTriggerSubscribeParam = z.object({
   triggerData: z.string().optional(),
   entityId: z.string().optional(),
 });
+
+export const ZSingleTriggerParam = z.object({
+  triggerId: z.string(),
+});
+
+export type ZSingleTriggerParam = z.infer<typeof ZSingleTriggerParam>;
+
+export const ZSingleTriggerRes = z.object({
+  name: z.string(),
+  displayName: z.string(),
+  description: z.string(),
+  type: z.string(),
+  appId: z.string(),
+  appName: z.string(),
+  instructions: z.string().optional(),
+  payload: z.record(z.unknown()),
+  config: z.record(z.unknown()),
+});

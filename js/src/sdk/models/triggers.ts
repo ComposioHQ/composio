@@ -11,17 +11,23 @@ import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 
 import { ListTriggersResponse } from "../client";
 import {
+  ZSingleTriggerParam,
+  ZSingleTriggerRes,
   ZTriggerInstanceItems,
   ZTriggerQuery,
   ZTriggerSetupParam,
   ZTriggerSubscribeParam,
 } from "../types/trigger";
+import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 
 // Types inferred from zod schemas
-export type TTriggerListParam = z.infer<typeof ZTriggerQuery>;
-export type TTriggerSetupParam = z.infer<typeof ZTriggerSetupParam>;
-export type TTriggerInstanceItems = z.infer<typeof ZTriggerInstanceItems>;
-export type TTriggerSubscribeParam = z.infer<typeof ZTriggerSubscribeParam>;
+export type TriggerListParam = z.infer<typeof ZTriggerQuery>;
+export type TriggerSetupParam = z.infer<typeof ZTriggerSetupParam>;
+export type TriggerInstanceItems = z.infer<typeof ZTriggerInstanceItems>;
+export type TriggerSubscribeParam = z.infer<typeof ZTriggerSubscribeParam>;
+export type TriggerListRes = Array<z.infer<typeof ZSingleTriggerRes>>;
+export type SingleTriggerRes = z.infer<typeof ZSingleTriggerRes>;
+export type TriggerSingleConfig = Pick<SingleTriggerRes, "config">;
 
 // API response types
 export type TriggerListResponse = ListTriggersResponse;
@@ -50,7 +56,7 @@ export class Triggers {
    * @returns {Promise<ListTriggersResponse>} A promise that resolves to the list of all triggers.
    * @throws {ComposioError} If the request fails.
    */
-  async list(data: TTriggerListParam = {}): Promise<TriggerListResponse> {
+  async list(data: TriggerListParam = {}): Promise<TriggerListResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "list",
       file: this.fileName,
@@ -80,13 +86,80 @@ export class Triggers {
   }
 
   /**
+   * Retrieves information about a single trigger.
+   *
+   * @param {ZSingleTriggerParam} data The data for the request.
+   * @returns {Promise<SingleTriggerRes>} A promise that resolves to the trigger information.
+   * @throws {ComposioError} If the request fails.
+   */
+  async getTriggerInfo(data: ZSingleTriggerParam): Promise<SingleTriggerRes> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getTriggerInfo",
+      file: this.fileName,
+      params: { data },
+    });
+    try {
+      const parsedData = ZSingleTriggerParam.parse(data);
+      const res = await apiClient.triggers.getTriggerInfoV2({
+        path: { triggerName: parsedData.triggerId },
+      });
+
+      // Bad type inference
+      const trigger = res.data as unknown as SingleTriggerRes;
+      if (!trigger) {
+        throw CEG.getCustomError(COMPOSIO_SDK_ERROR_CODES.BACKEND.NOT_FOUND, {
+          message: "Trigger info not found",
+          description: "Trigger info not found",
+          possibleFix: "Pass a check if trigger exists",
+        });
+      }
+      return trigger;
+    } catch (error) {
+      throw CEG.handleAllError(error);
+    }
+  }
+
+  /**
+   * Retrieves the configuration of a single trigger.
+   *
+   * @param {ZSingleTriggerParam} data The data for the request.
+   * @returns {Promise<TriggerSingleConfig>} A promise that resolves to the trigger configuration.
+   * @throws {ComposioError} If the request fails.
+   */
+  async getTriggerConfig(
+    data: ZSingleTriggerParam
+  ): Promise<TriggerSingleConfig> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getSingleTriggerConfig",
+      file: this.fileName,
+      params: { data },
+    });
+    try {
+      const parsedData = ZSingleTriggerParam.parse(data);
+
+      const triggerInfo = await this.getTriggerInfo(parsedData);
+
+      if (!triggerInfo) {
+        throw CEG.getCustomError(COMPOSIO_SDK_ERROR_CODES.BACKEND.NOT_FOUND, {
+          message: "Trigger info not found",
+          description: "Trigger info not found",
+          possibleFix: "Pass a check if trigger exists",
+        });
+      }
+      return { config: triggerInfo.config } as TriggerSingleConfig;
+    } catch (error) {
+      throw CEG.handleAllError(error);
+    }
+  }
+
+  /**
    * Setup a trigger for a connected account.
    *
    * @param {SetupTriggerData} data The data for the request.
    * @returns {Promise<SetupTriggerResponse>} A promise that resolves to the setup trigger response.
    * @throws {ComposioError} If the request fails.
    */
-  async setup(params: TTriggerSetupParam): Promise<TriggerSetupResponse> {
+  async setup(params: TriggerSetupParam): Promise<TriggerSetupResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "setup",
       file: this.fileName,
@@ -118,20 +191,37 @@ export class Triggers {
   /**
    * Enables a trigger for a connected account.
    *
-   * @param {TTriggerInstanceItems} data The data for the request.
+   * @param {triggerId,triggerInstanceId} data The data for the request.
    * @returns {Promise<boolean>} A promise that resolves to the response of the enable request.
    * @throws {ComposioError} If the request fails.
    */
-  async enable({ triggerId }: { triggerId: string }) {
+  async enable({
+    triggerId,
+    triggerInstanceId,
+  }: {
+    triggerId?: string;
+    triggerInstanceId?: string;
+  }) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "enable",
       file: this.fileName,
       params: { triggerId },
     });
     try {
+      const finalTriggerId = triggerId || triggerInstanceId;
+      if (!finalTriggerId) {
+        throw CEG.getCustomError(
+          COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
+          {
+            message: "Trigger ID is required",
+            description: "Trigger ID is required",
+            possibleFix: "Pass either triggerId or triggerInstanceId",
+          }
+        );
+      }
       await apiClient.triggers.switchTriggerInstanceStatus({
         path: {
-          triggerId: triggerId,
+          triggerId: finalTriggerId!,
         },
         body: {
           enabled: true,
@@ -148,20 +238,37 @@ export class Triggers {
   /**
    * Disables a trigger for a connected account.
    *
-   * @param {TTriggerInstanceItems} data The data for the request.
+   * @param {triggerId,triggerInstanceId} data The data for the request.
    * @returns {Promise<boolean>} A promise that resolves to the response of the disable request.
    * @throws {ComposioError} If the request fails.
    */
-  async disable({ triggerId }: { triggerId: string }) {
+  async disable({
+    triggerId,
+    triggerInstanceId,
+  }: {
+    triggerId?: string;
+    triggerInstanceId?: string;
+  }) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "disable",
       file: this.fileName,
-      params: { triggerId },
+      params: { triggerId, triggerInstanceId },
     });
     try {
+      const finalTriggerId = triggerId || triggerInstanceId;
+      if (!finalTriggerId) {
+        throw CEG.getCustomError(
+          COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
+          {
+            message: "Trigger ID is required",
+            description: "Trigger ID is required",
+            possibleFix: "Pass either triggerId or triggerInstanceId",
+          }
+        );
+      }
       await apiClient.triggers.switchTriggerInstanceStatus({
         path: {
-          triggerId: triggerId,
+          triggerId: finalTriggerId!,
         },
         body: {
           enabled: false,
@@ -178,11 +285,11 @@ export class Triggers {
   /**
    * Deletes a trigger for a connected account.
    *
-   * @param {TTriggerInstanceItems} data The data for the request.
+   * @param {TriggerInstanceItems} data The data for the request.
    * @returns {Promise<boolean>} A promise that resolves to the response of the delete request.
    * @throws {ComposioError} If the request fails.
    */
-  async delete(data: TTriggerInstanceItems) {
+  async delete(data: TriggerInstanceItems) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "delete",
       file: this.fileName,
@@ -205,7 +312,7 @@ export class Triggers {
 
   async subscribe(
     fn: (data: TriggerData) => void,
-    filters: TTriggerSubscribeParam = {}
+    filters: TriggerSubscribeParam = {}
   ) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "subscribe",
