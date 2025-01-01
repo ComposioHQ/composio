@@ -80,7 +80,7 @@ export class Triggers {
           triggerIds: finalTriggerInstanceIds?.join(","),
           connectedAccountIds: connectedAccountIds?.join(","),
           integrationIds: integrationIds?.join(","),
-          showEnabledOnly: showEnabledOnly,
+          showEnabledOnly: showEnabledOnly || false,
         },
       });
 
