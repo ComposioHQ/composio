@@ -1,11 +1,11 @@
 import { beforeAll, describe, expect, it } from "@jest/globals";
 import { getBackendClient } from "../testUtils/getBackendClient";
 
+import { ComposioError } from "../utils/errors/src/composioError";
 import { Entity } from "./Entity";
 import { Actions } from "./actions";
 import { ConnectedAccounts } from "./connectedAccounts";
 import { Triggers } from "./triggers";
-import { ComposioError } from "../utils/errors/src/composioError";
 
 describe("Apps class tests", () => {
   let backendClient;

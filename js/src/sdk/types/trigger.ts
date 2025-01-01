@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 export const ZTriggerQuery = z.object({
-  triggerIds: z.array(z.string()).optional().describe("Trigger IDs"),
+  triggerIds: z.array(z.string()).optional().describe("Trigger Instance IDs"),
+  triggerInstanceIds: z
+    .array(z.string())
+    .optional()
+    .describe("Trigger Instance IDs"),
   appNames: z.array(z.string()).optional().describe("App Names in lowercase"),
   connectedAccountIds: z
     .array(z.string())

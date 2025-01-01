@@ -69,11 +69,15 @@ export class Triggers {
         connectedAccountIds,
         integrationIds,
         showEnabledOnly,
+        triggerInstanceIds,
       } = ZTriggerQuery.parse(data);
+
+      const finalTriggerInstanceIds =
+        triggerIds && triggerIds.length > 0 ? triggerIds : triggerInstanceIds;
       const { data: response } = await apiClient.triggers.listTriggers({
         query: {
           appNames: appNames?.join(","),
-          triggerIds: triggerIds?.join(","),
+          triggerIds: finalTriggerInstanceIds?.join(","),
           connectedAccountIds: connectedAccountIds?.join(","),
           integrationIds: integrationIds?.join(","),
           showEnabledOnly: showEnabledOnly,
