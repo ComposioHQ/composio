@@ -83,7 +83,7 @@ export class ComposioToolSet {
     baseUrl?: string | null;
     runtime?: string | null;
     entityId?: string;
-  }) {
+  } = {}) {
     const clientApiKey: string | undefined =
       apiKey ||
       getEnvVariable("COMPOSIO_API_KEY") ||
