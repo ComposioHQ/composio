@@ -13,7 +13,7 @@ export const ZInitiateConnectionParams = z.object({
   authConfig: z.record(z.any()).optional(),
   integrationId: z.string().optional(),
   authMode: ZAuthMode.optional(),
-  connectionData: z.record(z.any()).optional(),
+  connectionParams: z.record(z.any()).optional(),
   config: z
     .object({
       labels: z.array(z.string()).optional(),

@@ -376,7 +376,7 @@ export class Entity {
         authMode,
         authConfig,
         integrationId,
-        connectionData,
+        connectionParams,
         redirectUri,
         labels,
       } = ZInitiateConnectionParams.parse(data);
@@ -389,7 +389,7 @@ export class Entity {
         appName: appName,
         entityId: this.id,
         redirectUri: redirectUri || data.config?.redirectUrl || "",
-        data: connectionData,
+        data: connectionParams,
         labels: labels || data.config?.labels || [],
       });
     } catch (error) {
