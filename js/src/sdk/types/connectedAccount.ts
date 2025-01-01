@@ -18,7 +18,6 @@ export const ZListConnectionsData = z.object({
 });
 
 export const ZInitiateConnectionDataReq = z.object({
-  data: z.record(z.string(), z.unknown()).optional(),
   connectionParams: z.record(z.string(), z.unknown()).optional(),
   entityId: z.string().optional(),
   labels: z.string().array().optional(),

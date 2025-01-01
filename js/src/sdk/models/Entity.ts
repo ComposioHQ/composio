@@ -389,7 +389,7 @@ export class Entity {
         appName: appName,
         entityId: this.id,
         redirectUri: redirectUri || data.config?.redirectUrl || "",
-        data: connectionParams,
+        connectionParams: connectionParams,
         labels: labels || data.config?.labels || [],
       });
     } catch (error) {

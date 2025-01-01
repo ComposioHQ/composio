@@ -164,7 +164,6 @@ export class ConnectedAccounts {
         appName,
         entityId,
         redirectUri,
-        data,
         labels,
         authConfig,
         integrationId,
@@ -257,7 +256,7 @@ export class ConnectedAccounts {
             entityId: entityId,
             labels: labels,
             redirectUri: redirectUri,
-            data: data || connectionParams || {},
+            data: connectionParams || {},
           },
         })
         .then((res) => res.data);
