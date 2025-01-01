@@ -39,7 +39,18 @@ export const getAPIErrorDetails = (
   const errorTypeFromBE = axiosError?.response?.data?.type;
   const errorMessage = axiosError?.response?.data?.message;
 
-  const genericMessage = `${errorNameFromBE || ""} ${errorTypeFromBE ? `- ${errorTypeFromBE}` : ""} on ${axiosError.config?.baseURL! + axiosError.config?.url!}`;
+  let genericMessage = "";
+
+  const hasNotReceivedResponseFromBE =
+    errorCode === COMPOSIO_SDK_ERROR_CODES.BACKEND.UNAUTHORIZED ||
+    errorCode === COMPOSIO_SDK_ERROR_CODES.BACKEND.RATE_LIMIT ||
+    errorCode === COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_UNAVAILABLE ||
+    errorCode === COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_UNREACHABLE;
+  if (hasNotReceivedResponseFromBE) {
+    genericMessage = predefinedError.message as string;
+  } else if (axiosError.config?.baseURL && axiosError.config?.url) {
+    genericMessage = `${errorNameFromBE || ""} ${errorTypeFromBE ? `- ${errorTypeFromBE}` : ""} on ${axiosError.config?.baseURL! + axiosError.config?.url!}`;
+  }
 
   switch (errorCode) {
     case COMPOSIO_SDK_ERROR_CODES.BACKEND.NOT_FOUND:
