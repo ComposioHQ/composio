@@ -31,6 +31,18 @@ const entity = toolset.client.getEntity(id='Jessica');
 - When a user connects their account, a `connected_account` object is created. 
 - **Connected Account** securely stores **authentication data** such as **API keys, access tokens and refresh tokens**.
 
+### Integrations & Connections
+
+**Integration**
+- An integration is your app's configuration for services like Gmail or GitHub
+- Each integration contains authentication method, API scopes, client credentials and other app settings
+- Developers can create multiple integrations with different configurations, learn more [here](../Auth/Integrations#what-is-an-integration)
+
+**Connection**
+- A connection links a user to an integration
+- Multiple connections can be created for the same integration
+- Learn how to use connections [here](../Auth/using-connections)
+
 ### Initiating a new connection for your user
 <Tabs>
 <Tab title="OAuth-Based Apps">
@@ -58,24 +70,23 @@ const toolset = new OpenAIToolSet();
 </CodeGroup>
 </Step>
 <Step title="Initiate a new connection">
+Below are the accepted parameters for initiating a new connection:
+- `integration_id`: ID of the existing integration, use this to create a connection for an existing integration, If no integration exists for the given app, new one is automatically created
+- `app`: name of the app to create a connection for
+- `labels`: labels to be assigned to the connection, which can later be used to filter connections
+- `entity_id`: ID of the user for whom the connection is being created
+- `redirect_url`: URL to redirect the user to after the connection is created. If not provided, the user will be redirected to Composio's connection success/failer page
+- `connected_account_params`: If auth mode is non-OAuth, this is where parameters need to be passed for creating a connection (API key, shopify store name, etc)
+- `auth_scheme`: Type of authentication to be used for the connection (OAUTH2 or API_KEY, etc), OAUTH2 will be defaulted if not provided
+- `auth_config`: If auth mode is OAuth, this is where the configuration needs to be provided for creating a connection (client_id, client_secret, etc)
 <CodeGroup>
 ```python Python
-# URL that the user will be redirected to after completing the authentication process
+# Store connection parameters
 redirect_url = "https://yourwebsite.com/connection/success"
-
-# Unique identifier for the user for whom the connection is being created
 entity_id = "Jessica" 
 
-# Initiate new connection (You can use integration_id instead of app)
 connection_request = toolset.initiate_connection(redirect_url=redirect_url, entity_id=entity_id, app=App.GMAIL)
-
-# Redirect the user to the URL below
-print(connection_request.redirectUrl)
-
-# Check the status of the connection (it can be initiated, active, or failed)
-print(connection_request.connectionStatus)
 ```
-
 ```javascript Javascript
 // URL that the user will be redirected to after completing the authentication process
 const redirectURL = "https://yourwebsite.com/connection/success"
@@ -99,6 +110,42 @@ console.log(connectionRequest.redirectUrl);
 console.log(connectionRequest.connectionStatus);
 ```
 </CodeGroup>
+</Step>
+<Step title="Connection request output">
+<CodeGroup>
+```bash Python
+connectionStatus='INITIATED'
+connectedAccountId='83f5e791-e6c4-4cd6-8e3a-dada66b0a8f1'
+redirectUrl='https://accounts.google.com...'
+```
+```bash JavaScript
+connectionStatus='INITIATED'
+connectedAccountId='83f5e791-e6c4-4cd6-8e3a-dada66b0a8f1'
+redirectUrl='https://accounts.google.com...'
+```
+</CodeGroup>
+- `connectionStatus`: status of the connection, initially it will be **INITIATED** and will change to **ACTIVE** or **FAILED** after user completes the auth flow
+- `connectedAccountId`: ID of the newly created account, you can use this ID to retrieve the connection object
+- `redirectUrl`: URL to redirect to perform authentication, post the authentication flow user will be redirect to the page specified in the `redirectUrl` parameter
+</Step>
+<Step title="Checking the status of the connection">
+Use the connectedAccountId to get the detailed information about the connection, learn more [here](../Auth/using-connections).
+<CodeGroup>
+```python Python
+connection = toolset.get_connected_account(id="83f5e791-e6c4-4cd6-8e3a-dada66b0a8f1")
+print(connection.status)
+```
+```javascript Javascript
+const connection = await toolset.connectedAccounts.get({
+    connectedAccountId: "83f5e791-e6c4-4cd6-8e3a-dada66b0a8f1"
+});
+console.log(connection.status);
+```
+</CodeGroup>
+Status of the connection can be one of the following:
+- `INITIATED`: Connection is initiated but not yet completed
+- `ACTIVE`: Connection is active and ready to use
+- `FAILED`: Connection failed to be created
 </Step>
 </Steps>
 <Tip>Each App integration has a unique **integration ID**. You can use this ID instead of the **app name** when creating connections.</Tip>

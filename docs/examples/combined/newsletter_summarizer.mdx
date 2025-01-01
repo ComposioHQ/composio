@@ -387,11 +387,11 @@ print(result)
     // Function to set up the GitHub connection for the user if it doesn't exist
     async function setupUserConnectionIfNotExists(toolset, entityId, c) {
         const entity = await toolset.client.getEntity(entityId);
-        const connection = await entity.getConnection('github');
+        const connection = await entity.getConnection({ appName: "GITHUB" });
 
         if (!connection) {
             // If the user hasn't connected their GitHub account
-            const connection = await entity.initiateConnection('github');
+            const connection = await entity.initiateConnection({appName: "github"});
             console.log('Log in via: ', connection.redirectUrl);
             c.json({ redirectUrl: connection.redirectUrl, message: 'Please log in to continue and then call this API again.' });
         }

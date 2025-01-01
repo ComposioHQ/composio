@@ -24,7 +24,7 @@ composio triggers enable GITHUB_STAR_ADDED_EVENT
 <Step title="Disable Trigger">
 You need to pass the trigger id to disable a trigger. You can get the trigger id from logs (when you enable a trigger) or from the dashboard.
 ```Bash
-composio triggers disable 818bd52e-c527-446b-b2b5-7410db9aa607
+composio triggers disable 818bd52e-c5...
 ```
 </Step>
 </Steps>
@@ -46,7 +46,7 @@ print(trigger_schema.config)
 ```
 
 Response:
-```json
+```bash {2,5}
 properties={
   'owner': TriggerConfigPropertyModel(description='Owner of the repository',
   title='Owner',
@@ -62,6 +62,7 @@ required=[
   'repo'
 ]
 ```
+Based on the response, we see that the trigger requires two config parameters: the repository **owner** and **repo** name
 </Step>
 <Step title="Enable Trigger">
 You need to pass the trigger enum and the config parameters to enable a trigger, and **trigger id** will be returned.
@@ -79,7 +80,7 @@ print(response)
 <Step title="Disable Trigger">
 You need to pass the trigger id to disable a trigger. You can get the trigger id from response (when you enable a trigger) or from the dashboard.
 ```python
-entity.disable_trigger("818bd52e-c527-446b-b2b5-7410db9aa607")
+entity.disable_trigger("818bd52e-c5...")
 ```
 </Step>
 </Steps>
@@ -88,38 +89,69 @@ entity.disable_trigger("818bd52e-c527-446b-b2b5-7410db9aa607")
 <Steps>
 <Step title="Import packages & Initialize Toolset">
 ```javascript
-import { OpenAIToolSet } from "composio-core";
-const toolset = new OpenAIToolSet();
+import { ComposioToolSet } from "composio-core";
+const toolset = new ComposioToolSet();
 ```
 </Step>
 <Step title="Get Config Parameters">
-Triggers have a config schema, which can be obtained by calling the `get_trigger` method and passing the trigger enum.
-```javascript
-coming soon
+Triggers have a config schema, which can be obtained by calling the `list` method for the app and filtering by trigger enum.
+```javascript {4}
+const triggers = await toolset.triggers.list({ appNames: ["GITHUB"] });
+console.log(
+    triggers.find(
+        trigger => trigger.enum === "GITHUB_STAR_ADDED_EVENT"
+    ).config
+);
 ```
+Response:
+```bash {3,8}
+{
+  properties: {
+    owner: {
+      description: 'Owner of the repository',
+      title: 'Owner',
+      type: 'string'
+    },
+    repo: { description: 'Repository name', title: 'Repo', type: 'string' }
+  },
+  required: [ 'owner', 'repo' ],
+  title: 'WebhookConfigSchema',
+  type: 'object'
+}
+```
+Based on the response, we see that the trigger requires two config parameters: the repository **owner** and **repo** name
 </Step>
-<Step title="Enable Trigger">
+<Step title="Setup Trigger">
 You need to pass the trigger enum and the config parameters to enable a trigger, and **trigger id** will be returned.
-<Tip>You can pass entity id to enable trigger for a specific entity. Learn more about entities [here](../auth/connected_account#entities)</Tip>
-```javascript {1}
-const entity = toolset.client.getEntity();
-
+You need to pass the connected account ID, the trigger name and the config parameters to setup a trigger.
+```javascript {3-8}
 (async () => {
-  console.log(
-    "res: ",
-        await entity.setupTrigger("github", "GITHUB_STAR_ADDED_EVENT", {
+    console.log(await toolset.triggers.setup({
+        connectedAccountId: "b8bceb9d-2b6...",
+        triggerName: "GITHUB_STAR_ADDED_EVENT",
+        config: {
             owner: "composiohq",
             repo: "composio",
-        })
-  );
+        }
+    }))
+})();
+```
+<Info>Setting up a trigger automatically enables it.</Info>
+</Step>
+<Step title="Enable Trigger">
+You need to pass the trigger id to enable a trigger. You can get the trigger id from response (when you create a trigger) or from the dashboard.
+```javascript {2}
+(async () => {
+    console.log(await toolset.triggers.enable({ triggerId: "<triggerId>" }))
 })();
 ```
 </Step>
 <Step title="Disable Trigger">
-You need to pass the trigger id to disable a trigger. You can get the trigger id from response (when you enable a trigger) or from the dashboard.
-```javascript
-const res = await entity.disableTrigger("f95b3f90-ea09-4ef2-945c-dce50f9c7eeb")
-console.log(res)
+You need to pass the trigger id to disable a trigger. You can get the trigger id from response (when you create a trigger) or from the dashboard.
+```javascript {2}
+(async () => {
+    console.log(await toolset.triggers.disable({ triggerId: "<triggerId>" }))
+})();
 ```
 </Step>
 </Steps>
@@ -166,8 +198,8 @@ listener.wait_forever()
 </Tab>
 <Tab title="Javascript">
 ```javascript
-import { Composio } from "composio-core";
-const toolset = new Composio();
+import { ComposioToolSet } from "composio-core";
+const toolset = new ComposioToolSet();
 
 toolset.triggers.subscribe(
     (data) => {
@@ -180,7 +212,7 @@ toolset.triggers.subscribe(
 ```
 </Tab>
 </Tabs>
-Trigger event payload when the repository composio is starred:
+Trigger event payload for GitHub's **GITHUB_STAR_ADDED_EVENT** trigger:
 ```json
 payload={
   'action': 'created',
@@ -192,4 +224,48 @@ payload={
   'triggerName': 'GITHUB_STAR_ADDED_EVENT'
 }
 ```
-<Tip>To learn how to configure and use your own webhooks for listening to triggers, visit our [Webhooks Guide](/patterns/triggers/webhooks).</Tip>
+<Tip>To learn how to configure and use your own webhooks for listening to triggers, visit [Webhooks Guide](/patterns/triggers/webhooks).</Tip>
+
+## Listing Triggers
+<Tabs>
+<Tab title="Python">
+```python
+coming soon
+```
+</Tab>
+<Tab title="JavaScript">
+Triggers can be listed and filtered by **triggerIds**, **appNames**, **connectedAccountIds**, **integrationIds** and **showEnabledOnly**.
+```javascript
+import { ComposioToolSet } from "composio-core";
+const toolset = new ComposioToolSet();
+
+const triggers = await toolset.triggers.list({
+    triggerIds: ["<triggerId>"], // array of trigger ids
+    appNames: ["<appName>"], // array of app names
+    connectedAccountIds: ["<connectedAccountId>"], // array of connected account ids
+    integrationIds: ["<integrationId>"], // array of integration ids
+    showEnabledOnly: true // boolean
+});
+```
+</Tab>
+</Tabs>
+
+## Deleting Triggers
+<Tabs>
+<Tab title="Python">
+```python
+coming soon
+```
+</Tab>
+<Tab title="JavaScript">
+You need to pass the trigger ID to delete a trigger. You can get the trigger id from response (when you create a trigger) or from the dashboard.
+```javascript
+import { ComposioToolSet } from "composio-core";
+const toolset = new ComposioToolSet();
+
+(async () => {
+    console.log(await toolset.triggers.delete({ triggerInstanceId: "<triggerId>" }));
+})();
+```
+</Tab>
+</Tabs>
