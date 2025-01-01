@@ -31,7 +31,7 @@ async function setupUserConnectionIfNotExists(entityId) {
 async function executeAgent(entityName) {
   // Setup entity and ensure connection
   const entity = await toolset.client.getEntity(entityName);
-  await setupUserConnectionIfNotExists(entity.id);
+  //await setupUserConnectionIfNotExists(entity.id);
 
   // Retrieve tools for the specified app
   const tools = await toolset.getTools({ apps: [appName] }, entity.id);
