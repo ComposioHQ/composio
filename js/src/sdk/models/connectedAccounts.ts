@@ -168,7 +168,7 @@ export class ConnectedAccounts {
         labels,
         authConfig,
         integrationId,
-        connectionParams
+        connectionParams,
       } = payload;
       if (!integrationId && !appName) {
         throw CEG.getCustomError(
