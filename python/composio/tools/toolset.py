@@ -4,11 +4,8 @@ Composio SDK tools.
 
 import base64
 import binascii
-import hashlib
 import itertools
-import json
 import os
-import time
 import typing as t
 import uuid
 import warnings
@@ -35,7 +32,6 @@ from composio.client.collections import (
     CustomAuthObject,
     CustomAuthParameter,
     ExpectedFieldInput,
-    FileType,
     IntegrationModel,
     SuccessExecuteActionResponseModel,
     TriggerModel,
@@ -151,6 +147,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     _description_char_limit: int = 1024
     _action_name_char_limit: t.Optional[int] = None
     _log_ingester_client: t.Optional[LogIngester] = None
+
+    _action_schemas: t.Dict[str, ActionModel]
 
     def __init_subclass__(
         cls,
@@ -284,11 +282,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
         self.entity_id = entity_id
         self.output_in_file = output_in_file
-        self.output_dir = (
-            output_dir or LOCAL_CACHE_DIRECTORY / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
-        )
-        self._ensure_output_dir_exists()
-
+        self.output_dir = output_dir or LOCAL_CACHE_DIRECTORY
+        self.output_dir /= LOCAL_OUTPUT_FILE_DIRECTORY_NAME
         self._base_url = base_url or get_api_url_base()
         try:
             self._api_key = (
@@ -316,6 +311,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self._workspace_config = workspace_config
         self._local_client = LocalClient()
         self._custom_auth = {}
+        self._action_schemas = {}
 
         if len(kwargs) > 0:
             self.logger.info(f"Extra kwargs while initializing toolset: {kwargs}")
@@ -524,90 +520,20 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         output = entity._execute(  # pylint: disable=protected-access
             action=action,
             params=params,
-            connected_account_id=connected_account_id,
-            session_id=session_id,
             text=text,
             auth=auth,
+            session_id=session_id,
+            connected_account_id=connected_account_id,
         )
-
-        if self.output_in_file:
-            return self._write_to_file(
-                action=action,
-                output=output,
-                entity_id=entity_id,
-            )
 
         try:
             self.logger.debug("Trying to validate success response model")
-            success_response_model = SuccessExecuteActionResponseModel.model_validate(
-                output
-            )
+            SuccessExecuteActionResponseModel.model_validate(output)
         except Exception:
             self.logger.debug("Failed to validate success response model")
             return output
 
-        return self._save_var_files(
-            file_name_prefix=f"{action.name}_{entity_id}_{time.time()}",
-            success_response_model=success_response_model,
-        )
-
-    def _ensure_output_dir_exists(self):
-        """Ensure the output directory exists."""
-        if not self.output_dir.exists():
-            self.output_dir.mkdir(parents=True, exist_ok=True)
-
-    def _save_var_files(
-        self,
-        file_name_prefix: str,
-        success_response_model: SuccessExecuteActionResponseModel,
-    ) -> dict:
-        error = success_response_model.error
-        resp_data = success_response_model.data
-        is_invalid_file = False
-        for key, val in resp_data.items():
-            try:
-                file_model = FileType.model_validate(val)
-                self._ensure_output_dir_exists()
-
-                local_filepath = (
-                    self.output_dir
-                    / f"{file_name_prefix}_{file_model.name.replace('/', '_')}"
-                )
-
-                _write_file(
-                    local_filepath, base64.urlsafe_b64decode(file_model.content)
-                )
-
-                resp_data[key] = str(local_filepath)
-            except binascii.Error:
-                is_invalid_file = True
-                resp_data[key] = "Invalid File! Unable to decode."
-            except Exception:
-                pass
-
-        if is_invalid_file is True and error is None:
-            success_response_model.error = "Execution failed"
-        success_response_model.data = resp_data
-        return success_response_model.model_dump()
-
-    def _write_to_file(
-        self,
-        action: Action,
-        output: t.Dict,
-        entity_id: str = DEFAULT_ENTITY_ID,
-    ) -> t.Dict:
-        """Write output to a file."""
-        filename = hashlib.sha256(
-            f"{action.name}-{entity_id}-{time.time()}".encode()
-        ).hexdigest()
-        self._ensure_output_dir_exists()
-        outfile = self.output_dir / filename
-        self.logger.info(f"Writing output to: {outfile}")
-        _write_file(outfile, json.dumps(output))
-        return {
-            "message": f"output written to {outfile.resolve()}",
-            "file": str(outfile.resolve()),
-        }
+        return self._substitute_file_download_data(action=action, response=output)
 
     def _serialize_execute_params(self, param: ParamType) -> ParamType:
         """Returns a serialized version of the parameters object."""
@@ -712,7 +638,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
         return processed
 
-    def _process_respone(
+    def _process_response(
         self, action: Action, response: t.Dict
     ) -> t.Union[t.Dict, _Retry]:
         processed = self._process(
@@ -773,6 +699,118 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
             existing_processors.update(new_processors)
 
+    def _load_file_as_param(self, _path: str) -> t.Dict:
+        path = Path(_path)
+        return {
+            "name": path.name,
+            "content": base64.b64encode(path.read_bytes()).decode("utf-8"),
+        }
+
+    def _substitute_file_upload_data_recursively(
+        self,
+        params: t.Dict,
+        schema: t.Dict,
+    ) -> t.Dict:
+        for key in schema["properties"]:
+            if self._is_file_uploadable(properties=schema["properties"][key]):
+                params[key] = self._load_file_as_param(_path=params[key])
+                continue
+
+            if schema["properties"][key]["type"] == "object":
+                params[key] = self._substitute_file_upload_data_recursively(
+                    params=params[key],
+                    schema=schema["properties"][key],
+                )
+
+        return params
+
+    def _substitute_file_upload_data(self, action: Action, params: t.Dict) -> t.Dict:
+        _schema = self._action_schemas.get(action.slug)
+        if _schema is None:
+            (_schema,) = self.get_action_schemas(actions=[action])
+
+        if _schema.parameters.file_uploadable:
+            return self._load_file_as_param(_path=params["file"])
+
+        return self._substitute_file_upload_data_recursively(
+            params=params,
+            schema=_schema.model_dump().pop("parameters"),
+        )
+
+    def _is_file_downloadable(self, schema: t.Dict) -> bool:
+        if schema.get("title") == "FileDownloadable":
+            return True
+        if "properties" not in schema:
+            return False
+        return "name" in schema["properties"] and "content" in schema["properties"]
+
+    def _store_response_file(self, action: str, response: t.Dict) -> str:
+        outdir = self.output_dir / action
+        outdir.mkdir(parents=True, exist_ok=True)
+        outfile = outdir / response["name"]
+
+        try:
+            outfile.write_bytes(base64.b64decode(response["content"]))
+        except binascii.Error:
+            outfile.write_text(response["content"])
+        return str(outfile)
+
+    def _substitute_file_download_data_recursively(
+        self,
+        schema: t.Dict,
+        response: t.Dict,
+        action: Action,
+    ) -> t.Dict:
+        for key in schema["properties"]:
+            if self._is_file_downloadable(schema=schema["properties"][key]):
+                response[key] = self._store_response_file(
+                    action=action.slug,
+                    response=response[key],
+                )
+                continue
+
+            if "type" not in schema["properties"][key]:
+                continue
+
+            if schema["properties"][key]["type"] == "object":
+                response[key] = self._substitute_file_download_data_recursively(
+                    schema=schema["properties"][key],
+                    response=response[key],
+                    action=action,
+                )
+
+        return response
+
+    def _substitute_file_download_data(
+        self,
+        action: Action,
+        response: t.Dict,
+    ) -> t.Dict:
+        if not response["successfull"]:
+            return response
+
+        _schema = self._action_schemas.get(action.slug)
+        if _schema is None:
+            (_schema,) = self.get_action_schemas(actions=[action])
+
+        if _schema.response.file_downloadable:
+            return {
+                "output_file": self._store_response_file(
+                    action=action.slug,
+                    response=response.pop("data"),
+                ),
+                **response,
+            }
+
+        return {
+            **response,
+            "data": self._substitute_file_download_data_recursively(
+                schema=_schema.response.model_dump(),
+                response=response["data"],
+                action=action,
+            ),
+        }
+
     @_record_action_if_available
     def execute_action(
         self,
@@ -811,6 +849,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self.logger.info(
             f"Executing `{action.slug}` with {params=} and {metadata=} {connected_account_id=}"
         )
+        params = self._substitute_file_upload_data(action=action, params=params)
 
         failed_responses = []
         for _ in range(self.max_retries):
@@ -834,7 +873,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             processed_response = (
                 response
                 if action.is_runtime
-                else self._process_respone(action=action, response=response)
+                else self._process_response(action=action, response=response)
             )
             if isinstance(processed_response, _Retry):
                 self.logger.info(
@@ -932,6 +971,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         # NOTE: This an experimental, can convert to decorator for more convinience
         if not apps and not actions and not tags:
             return
+
         self.workspace.check_for_missing_dependencies(
             apps=apps,
             actions=actions,
@@ -1010,35 +1050,54 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             if item.name == Action.ANTHROPIC_TEXT_EDITOR.slug:
                 item.name = "str_replace_editor"
 
+            self._action_schemas[item.name] = item
         return items
 
+    def _process_file_uploadable(self, properties: t.Dict) -> t.Dict:
+        if "allOf" in properties:
+            properties, *_ = properties["allOf"]
+
+        return {
+            "default": properties.get("default"),
+            "type": "string",
+            "format": "file-path",
+            "description": f"File path to {properties.get('description', '')}",
+            "file_uploadable": True,
+        }
+
+    def _is_file_uploadable(self, properties: t.Dict) -> bool:
+        if "allOf" in properties:
+            properties, *_ = properties["allOf"]
+
+        if properties.get("file_uploadable", False):
+            return True
+
+        if (
+            properties.get("title") == "FileType"
+            and "name" in properties["properties"]
+            and "content" in properties["properties"]
+        ):
+            return True
+
+        return False
+
     def _process_schema(self, action_item: ActionModel) -> ActionModel:
+        if action_item.parameters.file_uploadable:
+            action_item.parameters.properties = {
+                "file": self._process_file_uploadable(
+                    properties=action_item.parameters.properties,
+                )
+            }
+            action_item.parameters.required = ["file"]
+            return action_item
+
         required_params = action_item.parameters.required or []
         for param_name, param_details in action_item.parameters.properties.items():
-            if param_details.get("title") == "FileType" and all(
-                fprop in param_details.get("properties", {})
-                for fprop in ("name", "content")
-            ):
-                action_item.parameters.properties[param_name].pop("properties")
-                action_item.parameters.properties[param_name] = {
-                    "default": param_details.get("default"),
-                    "type": "string",
-                    "format": "file-path",
-                    "description": f"File path to {param_details.get('description', '')}",
-                }
-            elif param_details.get("allOf", [{}])[0].get("title") == "FileType" and all(
-                fprop in param_details.get("allOf", [{}])[0].get("properties", {})
-                for fprop in ("name", "content")
-            ):
-                action_item.parameters.properties[param_name].pop("allOf")
-                action_item.parameters.properties[param_name].update(
-                    {
-                        "default": param_details.get("default"),
-                        "type": "string",
-                        "format": "file-path",
-                        "description": f"File path to {param_details.get('description', '')}",
-                    }
+            if self._is_file_uploadable(properties=param_details):
+                action_item.parameters.properties[param_name] = (
+                    self._process_file_uploadable(properties=param_details)
                 )
+
             elif param_details.get("type") in [
                 "string",
                 "integer",
@@ -1052,24 +1111,26 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 )
 
             if param_name in required_params:
-                description = param_details.get("description", "")
-                if description:
-                    param_details["description"] = (
-                        f"{description.rstrip('.')}. This parameter is required."
-                    )
-                else:
-                    param_details["description"] = "This parameter is required."
+                description = param_details.get("description")
+                param_details["description"] = (
+                    f"{description.rstrip('.')}. This parameter is required."
+                    if description is not None
+                    else "This parameter is required."
+                )
+
+        action_item.parameters.properties = self._process_schema_properties(
+            action=Action(action_item.name.upper()),
+            properties=action_item.parameters.properties,
+        )
 
         if action_item.description is not None:
             action_item.description = action_item.description[
                 : self._description_char_limit
             ]
-        action_item.parameters.properties = self._process_schema_properties(
-            action=Action(action_item.name.upper()),
-            properties=action_item.parameters.properties,
-        )
+
         if self._action_name_char_limit is not None:
             action_item.name = action_item.name[: self._action_name_char_limit]
+
         return action_item
 
     def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:

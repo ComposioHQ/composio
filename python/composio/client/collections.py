@@ -2,10 +2,8 @@
 Composio server object collections
 """
 
-import base64
 import difflib
 import json
-import os
 import time
 import traceback
 import typing as t
@@ -1008,6 +1006,7 @@ class ActionParametersModel(BaseModel):
     title: str
     type: str
 
+    file_uploadable: bool = False
     required: t.Optional[t.List[str]] = None
 
 
@@ -1018,6 +1017,7 @@ class ActionResponseModel(BaseModel):
     title: str
     type: str
 
+    file_downloadable: bool = False
     required: t.Optional[t.List[str]] = None
 
 
@@ -1245,54 +1245,13 @@ class Actions(Collection[ActionModel]):
         if action.is_local:
             return self.client.local.execute_action(action=action, request_data=params)
 
-        actions = self.get(actions=[action])
-        if len(actions) == 0:
-            raise ComposioClientError(f"Action {action} not found")
-
-        (action_model,) = actions
-        action_req_schema = action_model.parameters.properties
-        modified_params: t.Dict[str, t.Union[str, t.Dict[str, str]]] = {}
-        for param, value in params.items():
-            request_param_schema = action_req_schema.get(param)
-            if request_param_schema is None:
-                # User has sent a parameter that is not used by this action,
-                # so we can ignore it.
-                continue
-
-            file_readable = request_param_schema.get("file_readable", False)
-            file_uploadable = _check_file_uploadable(request_param_schema)
-
-            if file_readable and isinstance(value, str) and os.path.isfile(value):
-                with open(value, "rb") as file:
-                    file_content = file.read()
-                    try:
-                        modified_params[param] = file_content.decode("utf-8")
-                    except UnicodeDecodeError:
-                        # If decoding fails, treat as binary and encode in base64
-                        modified_params[param] = base64.b64encode(file_content).decode(
-                            "utf-8"
-                        )
-            elif file_uploadable and isinstance(value, str):
-                if not os.path.isfile(value):
-                    raise ValueError(f"Attachment File with path `{value}` not found.")
-
-                with open(value, "rb") as file:
-                    file_content = file.read()
-
-                modified_params[param] = {
-                    "name": os.path.basename(value),
-                    "content": base64.b64encode(file_content).decode("utf-8"),
-                }
-            else:
-                modified_params[param] = value
-
         if action.no_auth:
             return self._raise_if_required(
                 self.client.long_timeout_http.post(
                     url=str(self.endpoint / action.slug / "execute"),
                     json={
                         "appName": action.app,
-                        "input": modified_params,
+                        "input": params,
                         "text": text,
                         "sessionInfo": {
                             "sessionId": session_id,
@@ -1314,7 +1273,7 @@ class Actions(Collection[ActionModel]):
                     "connectedAccountId": connected_account,
                     "entityId": entity_id,
                     "appName": action.app,
-                    "input": modified_params,
+                    "input": params,
                     "text": text,
                     "authConfig": self._serialize_auth(auth=auth),
                 },
