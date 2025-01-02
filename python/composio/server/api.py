@@ -21,7 +21,7 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from composio import Action, App
+from composio import Action, App, __version__
 from composio.cli.context import get_context
 from composio.client.collections import ActionModel, AppModel
 from composio.client.enums.base import get_runtime_actions
@@ -155,9 +155,7 @@ def create_app() -> FastAPI:
     @with_exception_handling
     def _api() -> GetApiResponse:
         """Composio tooling server API root."""
-        return GetApiResponse(
-            version="0.3.20",
-        )
+        return GetApiResponse(version=__version__)
 
     @app.get("/api/apps", response_model=APIResponse[t.List[AppModel]])
     @with_exception_handling

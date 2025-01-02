@@ -698,6 +698,7 @@ class Tag(Enum[TagData], metaclass=EnumGenerator):
     NOTION_IMPORTANT: "Tag"
     OUTLOOK_EMAIL: "Tag"
     OUTLOOK_IMPORTANT: "Tag"
+    OUTLOOK_SEARCH: "Tag"
     PAGERDUTY_ABILITIES: "Tag"
     PAGERDUTY_ADD_ONS: "Tag"
     PAGERDUTY_ALERT_GROUPING_SETTINGS: "Tag"
