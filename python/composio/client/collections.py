@@ -1539,7 +1539,7 @@ class Logs(Collection[LogRecord]):
     def push(self, record: t.Dict) -> None:
         """Push logs to composio."""
         # TODO: handle this better
-        if self.client._api_key is None:
+        if self.client._api_key is None:  # pylint: disable=protected-access
             return
 
         self.client.http.post(url=str(self.endpoint), json=record)
