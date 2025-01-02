@@ -29,9 +29,7 @@ type ConnectedAccountsListData = z.infer<typeof ZListConnectionsData>;
 type InitiateConnectionDataReq = z.infer<typeof ZInitiateConnectionDataReq>;
 type SingleConnectionParam = z.infer<typeof ZSingleConnectionParams>;
 type SaveUserAccessDataParam = z.infer<typeof ZSaveUserAccessDataParam>;
-type InitiateConnectionPayloadDto = z.infer<
-  typeof ZInitiateConnectionPayloadDto
->;
+type InitiateConnectionPayload = z.infer<typeof ZInitiateConnectionPayloadDto>;
 
 export type ConnectedAccountListResponse = GetConnectionsResponseDto;
 export type SingleConnectedAccountResponse = ConnectedAccountResponseDTO;
@@ -66,7 +64,7 @@ export class ConnectedAccounts {
     }
   }
 
-  async create(data: InitiateConnectionPayloadDto): Promise<ConnectionRequest> {
+  async create(data: InitiateConnectionPayload): Promise<ConnectionRequest> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "create",
       file: this.fileName,

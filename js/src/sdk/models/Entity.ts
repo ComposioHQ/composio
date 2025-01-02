@@ -27,14 +27,16 @@ const LABELS = {
 };
 
 // Types from zod schemas
-type TriggerSubscribeParam = z.infer<typeof ZTriggerSubscribeParam>;
-type ConnectionParams = z.infer<typeof ZConnectionParams> & {
+export type TriggerSubscribeParam = z.infer<typeof ZTriggerSubscribeParam>;
+export type ConnectionParams = z.infer<typeof ZConnectionParams> & {
   // @deprecated
   app?: string;
   appName?: string;
 };
-type InitiateConnectionParams = z.infer<typeof ZInitiateConnectionParams>;
-type ExecuteActionParams = z.infer<typeof ZExecuteActionParams>;
+export type InitiateConnectionParams = z.infer<
+  typeof ZInitiateConnectionParams
+>;
+export type ExecuteActionParams = z.infer<typeof ZExecuteActionParams>;
 
 // type from API
 export type ConnectedAccountListRes = GetConnectionsResponseDto;

@@ -26,19 +26,20 @@ import { BackendClient } from "./backendClient";
 export type ActionListParams = z.infer<typeof ZGetListActionsParams>;
 export type HeaderSingleParameters = z.infer<typeof ZParameter>;
 export type CustomAuth = z.infer<typeof ZCustomAuthParams>;
-export type ExecuteActionParam = z.infer<typeof ZExecuteParams>;
-export type GetActionItemParam = z.infer<typeof ZActionGetParams>;
+export type ActionxEecuteParam = z.infer<typeof ZExecuteParams>;
+export type ActionItemParam = z.infer<typeof ZActionGetParams>;
 export type FindActionEnumsByUseCaseParam = z.infer<
   typeof ZFindActionEnumsByUseCaseParams
 >;
-export type ExecuteReqDTO = z.infer<typeof ZExecuteRequestParams>;
+export type ActionExecuteReqParam = z.infer<typeof ZExecuteRequestParams>;
 
 /**
  * Response types
  */
-export type GetActionResponse = ActionDetails;
-export type GetListActionsResponse = ActionsListResponseDTO;
+export type ActionItemGetRes = ActionDetails;
+export type ActionItemListRes = ActionsListResponseDTO;
 export type ActionExecuteResponse = ActionExecutionResDto;
+export type ActionFindActionEnumsByUseCaseRes = Array<string>;
 
 export class Actions {
   // Remove this as we might not need it
@@ -55,10 +56,10 @@ export class Actions {
    * The response includes the action's name, display name, description, input parameters, expected response, associated app information, and enabled status.
    *
    * @param {GetActionData} data The data for the request.
-   * @returns {Promise<GetActionResponse[0]>} A promise that resolves to the details of the action.
+   * @returns {Promise<ActionItemGetRes[0]>} A promise that resolves to the details of the action.
    * @throws {ComposioError} If the request fails.
    */
-  async get(data: GetActionItemParam): Promise<ActionDetails> {
+  async get(data: ActionItemParam): Promise<ActionDetails> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "get",
       file: this.fileName,
@@ -141,7 +142,7 @@ export class Actions {
    * @returns {Promise<ActionExecuteResponse>} A promise that resolves to the execution status and response data.
    * @throws {ComposioError} If the request fails.
    */
-  async execute(data: ExecuteActionParam): Promise<ActionExecuteResponse> {
+  async execute(data: ActionxEecuteParam): Promise<ActionExecuteResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "execute",
       file: this.fileName,
@@ -165,12 +166,12 @@ export class Actions {
    * Finds all action enums by use case.
    *
    * @param {FindActionEnumsByUseCaseParam} data The data for the request.
-   * @returns {Promise<Array<string>>} A promise that resolves to the list of action enums.
+   * @returns {Promise<ActionFindActionEnumsByUseCaseRes>} A promise that resolves to the list of action enums.
    * @throws {ComposioError} If the request fails.
    */
   async findActionEnumsByUseCase(
     data: FindActionEnumsByUseCaseParam
-  ): Promise<Array<string>> {
+  ): Promise<ActionFindActionEnumsByUseCaseRes> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "findActionEnumsByUseCase",
       file: this.fileName,
@@ -203,7 +204,9 @@ export class Actions {
    * @returns {Promise<ActionExecuteResponse>} A promise that resolves to the execution status and response data.
    * @throws {ComposioError} If the request fails.
    */
-  async executeRequest(data: ExecuteReqDTO): Promise<ActionExecuteResponse> {
+  async executeRequest(
+    data: ActionExecuteReqParam
+  ): Promise<ActionExecuteResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "executeRequest",
       file: this.fileName,
