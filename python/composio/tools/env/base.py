@@ -160,6 +160,10 @@ class Workspace(WithLogger, ABC):
         self.id = generate_id()
         self.access_token = uuid4().hex.replace("-", "")
         self.persistent = config.persistent
+        self.environment = {
+            **(config.environment or {}),
+            ENV_ACCESS_TOKEN: self.access_token,
+        }
 
     def __str__(self) -> str:
         """String representation."""
