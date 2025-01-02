@@ -8,7 +8,7 @@ import typing as t
 from unittest import mock
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from composio import Action, App
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
@@ -385,6 +385,94 @@ def test_bad_custom_auth_on_localtool():
                 "pattern": "*.py",
             },
         )
+
+
+def test_custom_auth_runtime_tool():
+    tool = "tool"
+    expected_data = {
+        "api-key": "api-key",
+        "entity_id": "default",
+        "subdomain": {"workspace": "composio"},
+        "headers": {"Authorization": "Bearer gth_...."},
+        "base_url": "https://api.app.dev",
+        "body_params": {"address": "633"},
+        "path_params": {"name": "user"},
+        "query_params": {"page": "1"},
+    }
+
+    @custom_action(toolname=tool)
+    def action_1(auth: t.Dict) -> int:
+        """
+        Custom action 1
+
+        :return exit_code: int
+        """
+        del auth["_browsers"]
+        del auth["_filemanagers"]
+        del auth["_shells"]
+        del auth["_toolset"]
+        assert auth == expected_data
+        return 0
+
+    class Req(BaseModel):
+        pass
+
+    class Res(BaseModel):
+        data: int = Field(...)
+
+    @custom_action(toolname=tool)
+    def action_2(
+        request: Req,  # pylint: disable=unused-argument
+        metadata: dict,
+    ) -> Res:
+        del metadata["_browsers"]
+        del metadata["_filemanagers"]
+        del metadata["_shells"]
+        del metadata["_toolset"]
+        assert metadata == expected_data
+        return Res(data=0)
+
+    toolset = ComposioToolSet()
+    toolset.add_auth(
+        app=tool,
+        parameters=[
+            {
+                "in_": "header",
+                "name": "Authorization",
+                "value": "Bearer gth_....",
+            },
+            {
+                "in_": "metadata",
+                "name": "api-key",
+                "value": "api-key",
+            },
+            {
+                "in_": "path",
+                "name": "name",
+                "value": "user",
+            },
+            {
+                "in_": "query",
+                "name": "page",
+                "value": "1",
+            },
+            {
+                "in_": "subdomain",
+                "name": "workspace",
+                "value": "composio",
+            },
+        ],
+        base_url="https://api.app.dev",
+        body={
+            "address": "633",
+        },
+    )
+
+    result = toolset.execute_action(action=action_1, params={})
+    assert result["successful"]
+
+    result = toolset.execute_action(action=action_2, params={})
+    assert result["successful"]
 
 
 class TestSubclassInit:
