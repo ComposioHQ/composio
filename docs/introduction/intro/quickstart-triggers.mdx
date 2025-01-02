@@ -193,7 +193,7 @@ const agentFunction = async (threadId, subject, senderMail) => {
 <Step title="Create a Trigger Listener">
 <CodeGroup>
 ```javascript JavaScript
-toolset.client.triggers.subscribe(
+toolset.triggers.subscribe(
     (data) => {
         const {
             payload: {

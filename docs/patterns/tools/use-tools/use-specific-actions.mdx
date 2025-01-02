@@ -120,7 +120,9 @@ console.log(actionsList);
         apps: ["github", "gmail"],
         useCase: "get repo details and send an email to the owner of the repo"
     });
-    console.log(actionsEnums);
+
+    const actions = await toolset.getTools({actions: actionsEnums});
+    console.log(actions);
 })();
 ```
 
