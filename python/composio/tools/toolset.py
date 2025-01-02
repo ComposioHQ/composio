@@ -421,7 +421,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             try:
                 workspace_config.composio_api_key = self.api_key
             except ApiKeyNotProvidedError:
-                pass
+                warnings.warn(
+                    "Running without a Composio API key", UserWarning, stacklevel=2
+                )
 
         if workspace_config.composio_base_url is None:
             workspace_config.composio_base_url = self._base_url

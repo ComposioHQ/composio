@@ -154,6 +154,19 @@ class TestConnectedAccountProvider:
             )
 
 
+def test_api_key_missing() -> None:
+    toolset = ComposioToolSet()
+    toolset._api_key = None  # pylint: disable=protected-access
+    with pytest.raises(
+        ApiKeyNotProvidedError,
+        match=(
+            "API Key not provided, either provide API key or export it as "
+            "`COMPOSIO_API_KEY` or run `composio login`"
+        ),
+    ):
+        _ = toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})
+
+
 def test_processors(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test the `processors` field in `ComposioToolSet` constructor."""
     preprocessor_called = postprocessor_called = False
