@@ -141,15 +141,15 @@ export class ComposioToolSet {
     const toolsWithCustomActions = (
       await this.userActionRegistry.getAllActions()
     ).filter((action) => {
-      const { actionName, toolName } = action.metadata;
+      const { name: actionName, toolName } = action.metadata || {};
       return (
         (!filters.actions ||
           filters.actions.some(
-            (name) => name.toLowerCase() === actionName!.toLowerCase()
+            (name) => name.toLowerCase() === actionName?.toLowerCase()
           )) &&
         (!filters.apps ||
           filters.apps.some(
-            (name) => name.toLowerCase() === toolName!.toLowerCase()
+            (name) => name.toLowerCase() === toolName?.toLowerCase()
           )) &&
         (!filters.tags ||
           filters.tags.some((tag) => tag.toLowerCase() === "custom"))

@@ -69,7 +69,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
   }
 
   async getTools(
-    filters: z.infer<typeof ZToolSchemaFilter>,
+    filters: z.infer<typeof ZToolSchemaFilter> = {},
     entityId: Optional<string> = null
   ): Promise<Sequence<DynamicStructuredTool>> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
