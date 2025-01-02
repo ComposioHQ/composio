@@ -78,4 +78,4 @@ while True:
     # Wait for 1 minute before checking again
     interval = 60
     print(f'Checking again in {interval} seconds')
-    time.sleep(60)
+    time.sleep(interval)
