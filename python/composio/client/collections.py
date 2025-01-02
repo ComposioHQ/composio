@@ -33,7 +33,7 @@ from composio.client.enums import (
     TriggerType,
 )
 from composio.client.exceptions import ComposioClientError, ComposioSDKError
-from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
+from composio.constants import DEFAULT_ENTITY_ID, PUSHER_CLUSTER, PUSHER_KEY
 from composio.utils import logging
 from composio.utils.shared import generate_request_id
 
@@ -91,7 +91,7 @@ class ConnectedAccountModel(BaseModel):
     connectionParams: AuthConnectionParamsModel
 
     clientUniqueUserId: t.Optional[str] = None
-    entityId: t.Optional[str] = None
+    entityId: str = DEFAULT_ENTITY_ID
 
     # Override arbitrary model config.
     model_config: ConfigDict = ConfigDict(  # type: ignore
