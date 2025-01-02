@@ -16,16 +16,12 @@ jobs:
     defaults:
       run:
         working-directory: ./python
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.10"]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.10"
       - name: Build
         env:
           COMPOSIO_BASE_URL: https://backend.composio.dev/api
@@ -43,6 +39,7 @@ jobs:
           pip install twine build
           python -m build
       - name: Publish Core to PyPI
+        if: github.event_name == 'release'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: ${{ secrets.PYPI_USERNAME }}
@@ -51,80 +48,56 @@ jobs:
           packages-dir: python/dist/
 
   publish-plugins:
-    needs: publish-core
     name: Create Plugin Releases
     defaults:
       run:
         working-directory: ./python
-    strategy:
-      max-parallel: 1
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.10"]
-        package:
-          [
-            autogen,
-            camel,
-            claude,
-            crew_ai,
-            griptape,
-            julep,
-            langchain,
-            llamaindex,
-            lyzr,
-            openai,
-            praisonai,
-            langgraph,
-            phidata,
-            google,
-          ]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-      - name: Build ${{ matrix.package }}
+          python-version: "3.10"
+      - name: Build plugins
         run: |
-          pip install twine build
+          pip install build twine
 
-          # Build dist
-          cd plugins/${{ matrix.package }}
-          python -m build
-      - name: Publish ${{ matrix.package }} to PyPI
+          plugins="autogen camel claude crew_ai griptape julep langchain llamaindex lyzr openai praisonai langgraph phidata google"
+          mkdir plugins_dist
+          for plugin in $plugins; do
+            cd plugins/$plugin
+            python -m build
+            mv dist/* ../../plugins_dist/
+            cd ../..
+          done
+      - name: Publish plugins to PyPI
+        if: github.event_name == 'release'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: ${{ secrets.PYPI_USERNAME }}
           password: ${{ secrets.PYPI_PASSWORD }}
           skip-existing: true
-          packages-dir: python/plugins/${{ matrix.package }}/dist/
+          packages-dir: python/plugins_dist/
 
   publish-swe:
-    needs: publish-core
     name: Create SWE Toolkit Release
     defaults:
       run:
         working-directory: ./python/swe
-    strategy:
-      max-parallel: 1
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.10"]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.10"
       - name: Build
         run: |
-          pip install twine build
-
-          # Build dist
+          pip install build twine
           python -m build
       - name: Publish SWE Kit to PyPI
+        if: github.event_name == 'release'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: ${{ secrets.PYPI_USERNAME }}
@@ -134,7 +107,6 @@ jobs:
 
   publish-cli:
     name: Build and upload CLI
-    needs: publish-core
     permissions: write-all
     strategy:
       matrix:
@@ -158,7 +130,7 @@ jobs:
           pyinstaller composio/cli/__main__.py
 
       # Ubuntu Release
-      - if: matrix.os == 'ubuntu-latest'
+      - if: matrix.os == 'ubuntu-latest' && github.event_name == 'release'
         run: |
           cd python/
           mv dist/__main__ dist/bin
@@ -167,14 +139,14 @@ jobs:
           cd dist/
           zip -r composio-linux-amd64.zip bin/*
           rm -rf bin/
-      - if: matrix.os == 'ubuntu-latest'
+      - if: matrix.os == 'ubuntu-latest' && github.event_name == 'release'
         name: Upload artifact
         uses: softprops/action-gh-release@v2
         with:
           files: python/dist/composio-linux-amd64.zip
 
       # Mac Intel Release
-      - if: matrix.os == 'macos-12'
+      - if: matrix.os == 'macos-12' && github.event_name == 'release'
         run: |
           cd python/
           mv dist/__main__ dist/bin
@@ -183,14 +155,14 @@ jobs:
           cd dist/
           zip -r composio-darwin-amd64.zip bin/*
           rm -rf bin/
-      - if: matrix.os == 'macos-12'
+      - if: matrix.os == 'macos-12' && github.event_name == 'release'
         name: Upload artifact
         uses: softprops/action-gh-release@v2
         with:
           files: python/dist/composio-darwin-amd64.zip
 
       # Mac ARM Release
-      - if: matrix.os == 'macos-14'
+      - if: matrix.os == 'macos-14' && github.event_name == 'release'
         run: |
           cd python/
           mv dist/__main__ dist/bin
@@ -199,14 +171,14 @@ jobs:
           cd dist/
           zip -r composio-darwin-arm64.zip bin/*
           rm -rf bin/
-      - if: matrix.os == 'macos-14'
+      - if: matrix.os == 'macos-14' && github.event_name == 'release'
         name: Upload artifact
         uses: softprops/action-gh-release@v2
         with:
           files: python/dist/composio-darwin-arm64.zip
 
       # # Windows release
-      # - if: matrix.os == 'windows-latest'
+      # - if: matrix.os == 'windows-latest' && github.event_name == 'release'
       #   run: |
       #     cd python/
       #     mv dist/__main__ dist/bin
@@ -215,7 +187,7 @@ jobs:
       #     cd dist/
       #     zip -r composio-win.zip bin/*
       #     rm -rf bin/
-      # - if: matrix.os == 'windows-latest'
+      # - if: matrix.os == 'windows-latest' && github.event_name == 'release'
       #   name: Upload artifact
       #   uses: softprops/action-gh-release@v2
       #   with:
@@ -243,6 +215,7 @@ jobs:
         with:
           python-version: "3.10"
       - name: Publishing tool server images
+        if: github.event_name == 'release'
         run: |
           cd python/
           pip3 install .
@@ -261,6 +234,7 @@ jobs:
         run: |
           npm install -g @e2b/cli@latest
       - name: Publishing Template
+        if: github.event_name == 'release'
         env:
           E2B_ACCESS_TOKEN: ${{secrets.E2B_ACCESS_TOKEN}}
         run: |
