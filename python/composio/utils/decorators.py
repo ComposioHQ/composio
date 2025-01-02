@@ -7,6 +7,8 @@ import warnings
 
 import typing_extensions as te
 
+from composio.utils import help_msg
+
 
 T = te.TypeVar("T")
 P = te.ParamSpec("P")
@@ -27,7 +29,7 @@ def deprecated(
         def new_func(*args: P.args, **kwargs: P.kwargs) -> T:
             warnings.warn(
                 f"`{func.__name__}` is deprecated and will be removed on v{version}. "
-                f"Use `{replacement}` method instead.",
+                f"Use `{replacement}` method instead." + help_msg(),
                 UserWarning,
             )
             return func(*args, **kwargs)
