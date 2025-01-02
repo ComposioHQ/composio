@@ -215,8 +215,10 @@ class RemoteWorkspace(Workspace):
             name=ENV_COMPOSIO_BASE_URL,
             default=config.composio_base_url,
         )
-        self.github_access_token = config.github_access_token or os.environ.get(
-            ENV_GITHUB_ACCESS_TOKEN, "NO_VALUE"
+        self.github_access_token = (
+            config.github_access_token
+            if config.github_access_token is not None
+            else os.environ.get(ENV_GITHUB_ACCESS_TOKEN, "NO_VALUE")
         )
         self.environment.update(
             {
