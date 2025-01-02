@@ -23,5 +23,7 @@ sed -i.bak "s/\"version\": \"$current_version_pkg\"/\"version\": \"$new_version\
 # Update version in src/constants.js
 sed -i.bak "s/COMPOSIO_VERSION = \`$current_version\`/COMPOSIO_VERSION = \`$new_version\`/" src/constants.js && rm src/constants.js.bak
 
+sed -i.bak "s/COMPOSIO_VERSION = \`$current_version\`/COMPOSIO_VERSION = \`$new_version\`/" src/constants.ts && rm src/constants.ts.bak
+
 echo "Version updated from $current_version to $new_version in package.dist.json"
 echo "Version updated from $current_version_pkg to $new_version in package.json"

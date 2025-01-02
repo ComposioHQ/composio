@@ -32,12 +32,12 @@ export class OpenAIToolSet extends BaseComposioToolSet {
       entityId?: string;
     } = {}
   ) {
-    super(
-      config.apiKey || null,
-      config.baseUrl || COMPOSIO_BASE_URL,
-      OpenAIToolSet.FRAMEWORK_NAME,
-      config.entityId || OpenAIToolSet.DEFAULT_ENTITY_ID
-    );
+    super({
+      apiKey: config.apiKey || null,
+      baseUrl: config.baseUrl || COMPOSIO_BASE_URL,
+      runtime: OpenAIToolSet.FRAMEWORK_NAME,
+      entityId: config.entityId || OpenAIToolSet.DEFAULT_ENTITY_ID,
+    });
   }
 
   async getTools(

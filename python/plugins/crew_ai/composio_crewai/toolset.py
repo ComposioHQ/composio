@@ -1,5 +1,9 @@
+import warnings
+
 from crewai import __version__
 from semver import Version
+
+from composio.utils import help_msg
 
 
 _BREAKING_VERSION = Version(major=0, minor=79, patch=0)
@@ -12,6 +16,7 @@ if _CURRENT_VERSION < _BREAKING_VERSION:
         Base,
         runtime="crewai",
         description_char_limit=1024,
+        action_name_char_limit=64,
     ):
         pass
 
@@ -33,6 +38,7 @@ else:
         BaseComposioToolSet,
         runtime="crewai",
         description_char_limit=1024,
+        action_name_char_limit=64,
     ):
         """
         Composio toolset for CrewiAI framework.
@@ -120,7 +126,7 @@ else:
                 ),
             )
 
-        @te.deprecated("Use `ComposioToolSet.get_tools` instead")
+        @te.deprecated("Use `ComposioToolSet.get_tools` instead.\n", category=None)
         def get_actions(
             self,
             actions: t.Sequence[ActionType],
@@ -134,6 +140,11 @@ else:
 
             :return: Composio tools wrapped as `StructuredTool` objects
             """
+            warnings.warn(
+                "Use `ComposioToolSet.get_tools` instead.\n" + help_msg(),
+                DeprecationWarning,
+                stacklevel=2,
+            )
             return self.get_tools(actions=actions, entity_id=entity_id)
 
         def get_tools(
@@ -172,6 +183,7 @@ else:
                     apps=apps,
                     tags=tags,
                     check_connected_accounts=check_connected_accounts,
+                    _populate_requested=True,
                 )
             ]
 

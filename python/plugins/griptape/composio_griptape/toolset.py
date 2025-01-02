@@ -1,5 +1,6 @@
 import logging
 import typing as t
+import warnings
 
 import typing_extensions as te
 from griptape.tools import BaseTool
@@ -9,6 +10,7 @@ from schema import Literal, Schema
 from composio import Action, ActionType, AppType, TagType
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.toolset import ProcessorsType
+from composio.utils import help_msg
 from composio.utils.shared import PYDANTIC_TYPE_TO_PYTHON_TYPE
 
 
@@ -19,6 +21,7 @@ class ComposioToolSet(
     BaseComposioToolSet,
     runtime="griptape",
     description_char_limit=1024,
+    action_name_char_limit=64,
 ):
     """
     Composio toolset wrapper for Griptape framework.
@@ -115,7 +118,7 @@ class ComposioToolSet(
         cls = type(name, (GripTapeTool,), {})
         return cls()
 
-    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead.\n", category=None)
     def get_actions(
         self,
         actions: t.Sequence[ActionType],
@@ -128,6 +131,11 @@ class ComposioToolSet(
         :param entity_id: Entity ID to use for executing function calls.
         :return: Composio tools wrapped as `BaseTool` objects
         """
+        warnings.warn(
+            "Use `ComposioToolSet.get_tools` instead.\n" + help_msg(),
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.get_tools(actions=actions, entity_id=entity_id)
 
     def get_tools(
@@ -165,5 +173,6 @@ class ComposioToolSet(
                 apps=apps,
                 tags=tags,
                 check_connected_accounts=check_connected_accounts,
+                _populate_requested=True,
             )
         ]

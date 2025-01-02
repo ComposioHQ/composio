@@ -161,7 +161,7 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
                 const client = new Composio({ apiKey: process.env.COMPOSIO_API_KEY });
 
                 const entity = await client.getEntity("Jessica");
-                const connection = await entity.initiateConnection('googlecalendar');
+                const connection = await entity.initiateConnection({appName: "googlecalendar"});
 
                 console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
                 ```
@@ -181,7 +181,13 @@ We'll use Jessica as our example user. There are multiple ways to authenticate a
     Set up your development environment:
 
             <CodeGroup>
+<<<<<<< HEAD
                 ```javascript Initialize Composio Toolset and OpenAI
+||||||| 0378f58b
+                ```javascript Initialize Composio and OpenAI
+=======
+                ```javascript Initialize Composio's OpenAI Toolset and OpenAI
+>>>>>>> 44f9adb9f45a48b9ce6bd352c62a5a39f9b74a23
                 import { OpenAI } from "openai";
                 import { OpenAIToolSet } from "composio-core";
 

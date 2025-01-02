@@ -16,6 +16,7 @@ class ComposioToolSet(
     BaseComposioToolSet,
     runtime="autogen",
     description_char_limit=1024,
+    action_name_char_limit=64,
 ):
     """
     Composio toolset for autogen framework.
@@ -25,8 +26,8 @@ class ComposioToolSet(
         self,
         caller: ConversableAgent,
         executor: ConversableAgent,
-        apps: t.Optional[t.Sequence[AppType]] = None,
         actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
     ) -> None:

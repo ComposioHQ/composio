@@ -147,7 +147,7 @@ export class CEG {
     const errorCode = COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED;
     const errorMessage = error.message;
     const errorDescription = "The parameters passed are invalid";
-    const possibleFix = "Please check the metadata.issues for more details";
+    const possibleFix = "Please check error message for more details";
     const metadata = {
       issues: error.issues,
     };
@@ -175,8 +175,8 @@ export class CEG {
     }: {
       type?: string;
       subtype?: string;
-      message?: string;
-      description?: string;
+      message: string;
+      description: string;
       possibleFix?: string;
       originalError?: unknown;
       metadata?: Record<string, unknown>;
