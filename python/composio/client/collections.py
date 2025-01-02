@@ -984,21 +984,6 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
         return super().get(queries=queries)
 
 
-def _check_file_uploadable(param_field: dict) -> bool:
-    return (
-        isinstance(param_field, dict)
-        and (param_field.get("title") in ["File", "FileType"])
-        and all(
-            field_name in param_field.get("properties", {})
-            for field_name in ["name", "content"]
-        )
-    )
-
-
-def _check_file_downloadable(param_field: dict) -> bool:
-    return set(param_field.keys()) == {"name", "content"}
-
-
 class ActionParametersModel(BaseModel):
     """Action parameter data models."""
 
@@ -1006,6 +991,7 @@ class ActionParametersModel(BaseModel):
     title: str
     type: str
 
+    accept: t.List[str] = Field(default_factory=lambda: ["*/*"])
     file_uploadable: bool = False
     required: t.Optional[t.List[str]] = None
 

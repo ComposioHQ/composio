@@ -5,6 +5,7 @@ Composio SDK tools.
 import base64
 import binascii
 import itertools
+import mimetypes
 import os
 import typing as t
 import uuid
@@ -97,6 +98,27 @@ class ProcessorsType(te.TypedDict):
 
     schema: te.NotRequired[t.Dict[_KeyType, _CallableType]]
     """Schema processors"""
+
+
+class InvalidFileProvided(ComposioSDKError):
+
+    def __init__(
+        self,
+        file: Path,
+        mimetype: str,
+        allowed: t.List[str],
+        delegate: bool = False,
+    ) -> None:
+        self.file = file
+        self.mimetype = mimetype
+        self.allowed = allowed
+        super().__init__(
+            message=(
+                "File with invalid mimetype provided, the action expects "
+                f"{set(allowed)} mime types but {mimetype!r} was provided"
+            ),
+            delegate=delegate,
+        )
 
 
 def _check_agentops() -> bool:
@@ -763,8 +785,34 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
             existing_processors.update(new_processors)
 
-    def _load_file_as_param(self, _path: str) -> t.Dict:
+    def _check_for_allowed_file_types(
+        self,
+        _path: Path,
+        _accept: t.List[str],
+    ) -> None:
+        if "*/*" in _accept:
+            return None
+
+        mimetype, _ = mimetypes.guess_type(_path.name)
+        if mimetype is None:
+            self.logger.warning(
+                f"Cannot decide mimetype for file {_path}, skipping validation"
+            )
+            return None
+
+        if mimetype not in _accept:
+            raise InvalidFileProvided(
+                file=_path,
+                mimetype=mimetype,
+                allowed=_accept,
+            )
+
+        return None
+
+    def _load_file_as_param(self, _path: str, _accept: t.List[str]) -> t.Dict:
         path = Path(_path)
+        self._check_for_allowed_file_types(path, _accept)
+
         return {
             "name": path.name,
             "content": base64.b64encode(path.read_bytes()).decode("utf-8"),
@@ -777,7 +825,10 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     ) -> t.Dict:
         for key in schema["properties"]:
             if self._is_file_uploadable(properties=schema["properties"][key]):
-                params[key] = self._load_file_as_param(_path=params[key])
+                params[key] = self._load_file_as_param(
+                    _path=params[key],
+                    _accept=schema["properties"][key].get("accept", ["*/*"]),
+                )
                 continue
 
             if schema["properties"][key]["type"] == "object":
@@ -794,7 +845,10 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             (_schema,) = self.get_action_schemas(actions=[action])
 
         if _schema.parameters.file_uploadable:
-            return self._load_file_as_param(_path=params["file"])
+            return self._load_file_as_param(
+                _path=params["file"],
+                _accept=_schema.parameters.accept,
+            )
 
         return self._substitute_file_upload_data_recursively(
             params=params,
@@ -825,6 +879,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         response: t.Dict,
         action: Action,
     ) -> t.Dict:
+        if "properties" not in schema:
+            return response
+
         for key in schema["properties"]:
             if self._is_file_downloadable(schema=schema["properties"][key]):
                 response[key] = self._store_response_file(
@@ -923,7 +980,16 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self.logger.debug(
             f"Executing `{action.slug}` with {params=} and {metadata=} {connected_account_id=}"
         )
-        params = self._substitute_file_upload_data(action=action, params=params)
+        try:
+            params = self._substitute_file_upload_data(action=action, params=params)
+        except InvalidFileProvided as e:
+            return {
+                "successful": False,
+                "error": e.message,
+                "file": e.file,
+                "allowed": e.allowed,
+                "mimetype": e.mimetype,
+            }
 
         failed_responses = []
         for _ in range(self.max_retries):
@@ -1146,6 +1212,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             "format": "file-path",
             "description": f"File path to {properties.get('description', '')}",
             "file_uploadable": True,
+            "accept": properties.get("accept", ["*/*"]),
         }
 
     def _is_file_uploadable(self, properties: t.Dict) -> bool:
