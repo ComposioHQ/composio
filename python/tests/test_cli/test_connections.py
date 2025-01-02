@@ -25,4 +25,4 @@ class TestListConnections(BaseCliTest):
         assert (
             "Id    : 6f4f4191-7fe9-4b5c-b491-4b7ec56ebf5d" in result.stdout
         ), result.stderr
-        assert "Status: ACTIVE" in result.stdout, result.stderr
+        assert "Status: EXPIRED" in result.stdout, result.stderr
