@@ -3,6 +3,7 @@ Test composio toolset.
 """
 
 import logging
+import os
 import re
 import typing as t
 from unittest import mock
@@ -154,9 +155,9 @@ class TestConnectedAccountProvider:
             )
 
 
-def test_api_key_missing() -> None:
+def test_api_key_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("COMPOSIO_API_KEY", "")
     toolset = ComposioToolSet()
-    toolset._api_key = None  # pylint: disable=protected-access
     with pytest.raises(
         ApiKeyNotProvidedError,
         match=(
