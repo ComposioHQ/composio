@@ -8,8 +8,8 @@ import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 import logger from "../utils/logger";
 
-import { Optional, Sequence } from "../types/base";
 import { ZToolSchemaFilter } from "../types/base_toolset";
+import { Optional, Sequence } from "../types/util";
 
 export class OpenAIToolSet extends BaseComposioToolSet {
   static FRAMEWORK_NAME = "openai";
@@ -32,12 +32,12 @@ export class OpenAIToolSet extends BaseComposioToolSet {
       entityId?: string;
     } = {}
   ) {
-    super(
-      config.apiKey || null,
-      config.baseUrl || COMPOSIO_BASE_URL,
-      OpenAIToolSet.FRAMEWORK_NAME,
-      config.entityId || OpenAIToolSet.DEFAULT_ENTITY_ID
-    );
+    super({
+      apiKey: config.apiKey || null,
+      baseUrl: config.baseUrl || COMPOSIO_BASE_URL,
+      runtime: OpenAIToolSet.FRAMEWORK_NAME,
+      entityId: config.entityId || OpenAIToolSet.DEFAULT_ENTITY_ID,
+    });
   }
 
   async getTools(

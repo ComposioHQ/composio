@@ -3,8 +3,10 @@ import chalk from "chalk";
 import { Command } from "commander";
 import inquirer from "inquirer";
 import open from "open";
+import { z } from "zod";
 import { Composio } from "../sdk";
 import { GetConnectorInfoResDTO, GetConnectorListResDTO } from "../sdk/client";
+import { ZAuthMode } from "../sdk/types/integration";
 
 type TInputField = {
   name: string;
@@ -348,7 +350,7 @@ export default class AddCommand {
 
     const integration = await composioClient.integrations.create({
       appId: app.appId as string,
-      authScheme: authMode,
+      authScheme: authMode as unknown as z.infer<typeof ZAuthMode>,
       useComposioAuth: false,
       name: integrationName,
       authConfig,
@@ -435,7 +437,7 @@ export default class AddCommand {
     const composioClient = new Composio({});
     const integration = await composioClient.integrations.create({
       appId: app.appId,
-      authScheme: authMode,
+      authScheme: authMode as unknown as z.infer<typeof ZAuthMode>,
       useComposioAuth,
       name,
       authConfig: config,

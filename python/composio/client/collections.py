@@ -983,7 +983,7 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
             queries["integrationIds"] = ",".join(integration_ids)
         if len(trigger_names) > 0:
             queries["triggerNames"] = to_trigger_names(trigger_names)
-        return self._raise_if_empty(super().get(queries=queries))
+        return super().get(queries=queries)
 
 
 def _check_file_uploadable(param_field: dict) -> bool:
@@ -1037,7 +1037,7 @@ class ActionModel(BaseModel):
     description: t.Optional[str] = None
 
 
-ParamPlacement = t.Literal["header", "path", "query", "subdomain"]
+ParamPlacement = t.Literal["header", "path", "query", "subdomain", "metadata"]
 
 
 class CustomAuthParameter(te.TypedDict):
@@ -1357,6 +1357,11 @@ class Actions(Collection[ActionModel]):
             {"in": d["in_"], "name": d["name"], "value": d["value"]}
             for d in data["parameters"]
         ]
+        for param in data["parameters"]:
+            if param["in"] == "metadata":
+                raise ComposioClientError(
+                    f"Param placement cannot be 'metadata' for remote action execution: {param}"
+                )
         return data
 
     def search_for_a_task(

@@ -9,7 +9,7 @@ import typing_extensions as te
 from pydantic import BaseModel, Field
 
 from composio import Composio
-from composio.client.collections import CustomAuthParameter
+from composio.client.collections import ConnectedAccountModel, CustomAuthParameter
 from composio.client.enums.base import ActionData, SentinalObject, add_runtime_action
 from composio.client.exceptions import ComposioClientError
 from composio.exceptions import ComposioSDKError
@@ -253,19 +253,45 @@ def _parse_docstring(
     return header, params, returns
 
 
-def _get_auth_params(app: str, entity_id: str) -> t.Optional[t.Dict]:
+def _get_connected_account(
+    app: str, entity_id: str
+) -> t.Optional[ConnectedAccountModel]:
     try:
         client = Composio.get_latest()
-        connection_params = client.connected_accounts.get(
+        connected_account = client.connected_accounts.get(
             connection_id=client.get_entity(entity_id).get_connection(app=app).id
-        ).connectionParams
+        )
+        return connected_account
+    except ComposioClientError:
+        return None
+
+
+def _get_auth_params(app: str, metadata: t.Dict) -> t.Dict:
+    try:
+        client = Composio.get_latest()
+        connected_account = client.connected_accounts.get(
+            connection_id=client.get_entity(metadata["entity_id"])
+            .get_connection(app=app)
+            .id
+        )
+        connection_params = connected_account.connectionParams
         return {
+            "entity_id": metadata["entity_id"],
             "headers": connection_params.headers,
             "base_url": connection_params.base_url,
             "query_params": connection_params.queryParams,
         }
     except ComposioClientError:
-        return None
+        return {
+            "entity_id": metadata["entity_id"],
+            "subdomain": metadata.pop("subdomain", {}),
+            "headers": metadata.pop("header", {}),
+            "base_url": metadata.pop("base_url", None),
+            "body_params": metadata.pop("body", {}),
+            "path_params": metadata.pop("path", {}),
+            "query_params": metadata.pop("query", {}),
+            **metadata,
+        }
 
 
 def _build_executable_from_args(  # pylint: disable=too-many-statements
@@ -303,7 +329,8 @@ def _build_executable_from_args(  # pylint: disable=too-many-statements
     }
 
     shell_argument = None
-    auth_params = False
+    auth_param = False
+    connected_account_param = False
     request_executor = False
     if "return" not in argspec.annotations:
         raise InvalidRuntimeAction(
@@ -316,7 +343,11 @@ def _build_executable_from_args(  # pylint: disable=too-many-statements
             continue
 
         if arg == "auth":
-            auth_params = True
+            auth_param = True
+            continue
+
+        if arg == "connected_account":
+            connected_account_param = True
             continue
 
         if arg == "execute_request":
@@ -376,10 +407,12 @@ def _build_executable_from_args(  # pylint: disable=too-many-statements
         if shell_argument is not None:
             kwargs[shell_argument] = metadata["workspace"].shells.recent
 
-        if auth_params > 0:
-            kwargs["auth"] = (
-                _get_auth_params(app=app, entity_id=metadata["entity_id"]) or {}
+        if connected_account_param:
+            kwargs["connected_account"] = (
+                _get_connected_account(app=app, entity_id=metadata["entity_id"]) or {}
             )
+        if auth_param:
+            kwargs["auth"] = _get_auth_params(app=app, metadata=metadata)
 
         if request_executor:
             toolset = t.cast("ComposioToolSet", metadata["_toolset"])
@@ -420,7 +453,7 @@ def _build_executable_from_args(  # pylint: disable=too-many-statements
 def _build_executable_from_request_class(f: t.Callable, app: str) -> t.Callable:
     def execute(request: BaseModel, metadata: t.Dict) -> BaseModel:
         """Wrapper for action callable."""
-        auth_data = _get_auth_params(app=app, entity_id=metadata["entity_id"])
+        auth_data = _get_auth_params(app=app, metadata=metadata)
         if auth_data is not None:
             metadata.update(auth_data)
         return f(request, metadata)

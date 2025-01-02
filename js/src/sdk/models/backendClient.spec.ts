@@ -19,7 +19,7 @@ describe("Apps class tests", () => {
 
   it("should throw an error if api key is not provided", async () => {
     expect(() => new BackendClient("", testConfig.BACKEND_HERMES_URL)).toThrow(
-      "🔑 API Key Missing or Invalid"
+      "API key is not available"
     );
   });
 

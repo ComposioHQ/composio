@@ -1,30 +1,51 @@
 import { z } from "zod";
 import { Composio } from "../sdk";
-import type { Optional, Sequence } from "../types/base";
 import {
+  RawActionData,
   TPostProcessor,
   TPreProcessor,
-  TRawActionData,
   TSchemaProcessor,
   ZExecuteActionParams,
   ZToolSchemaFilter,
 } from "../types/base_toolset";
+import type { Optional, Sequence } from "../types/util";
 import { getEnvVariable } from "../utils/shared";
 import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
-import { COMPOSIO_BASE_URL } from "./client/core/OpenAPI";
 import { ActionExecutionResDto } from "./client/types.gen";
+import { ActionExecuteResponse, Actions } from "./models/actions";
+import { ActiveTriggers } from "./models/activeTriggers";
+import { Apps } from "./models/apps";
+import { BackendClient } from "./models/backendClient";
+import { ConnectedAccounts } from "./models/connectedAccounts";
+import { Integrations } from "./models/integrations";
+import { Triggers } from "./models/triggers";
 import { getUserDataJson } from "./utils/config";
+import { CEG } from "./utils/error";
+import { COMPOSIO_SDK_ERROR_CODES } from "./utils/errors/src/constants";
 import {
   fileInputProcessor,
   fileResponseProcessor,
   fileSchemaProcessor,
 } from "./utils/processor/file";
 
+export type ExecuteActionParams = z.infer<typeof ZExecuteActionParams> & {
+  // @deprecated
+  action?: string;
+  actionName?: string;
+};
 export class ComposioToolSet {
   client: Composio;
   apiKey: string;
   runtime: string | null;
-  entityId: string;
+  entityId: string = "default";
+
+  backendClient: BackendClient;
+  connectedAccounts: ConnectedAccounts;
+  apps: Apps;
+  actions: Actions;
+  triggers: Triggers;
+  integrations: Integrations;
+  activeTriggers: ActiveTriggers;
 
   userActionRegistry: ActionRegistry;
 
@@ -44,12 +65,25 @@ export class ComposioToolSet {
     schema?: TSchemaProcessor;
   } = {};
 
-  constructor(
-    apiKey: string | null,
-    baseUrl: string | null = COMPOSIO_BASE_URL,
-    runtime: string | null = null,
-    _entityId: string = "default"
-  ) {
+  /**
+   * Creates a new instance of ComposioToolSet
+   * @param {Object} config - Configuration object
+   * @param {string|null} config.apiKey - API key for authentication
+   * @param {string|null} config.baseUrl - Base URL for API requests
+   * @param {string|null} config.runtime - Runtime environment
+   * @param {string} config.entityId - Entity ID for operations
+   */
+  constructor({
+    apiKey,
+    baseUrl,
+    runtime,
+    entityId,
+  }: {
+    apiKey?: string | null;
+    baseUrl?: string | null;
+    runtime?: string | null;
+    entityId?: string;
+  } = {}) {
     const clientApiKey: string | undefined =
       apiKey ||
       getEnvVariable("COMPOSIO_API_KEY") ||
@@ -60,9 +94,21 @@ export class ComposioToolSet {
       baseUrl: baseUrl || undefined,
       runtime: runtime as string,
     });
+
+    this.runtime = runtime || null;
+    this.backendClient = this.client.backendClient;
+    this.connectedAccounts = this.client.connectedAccounts;
+    this.apps = this.client.apps;
+    this.actions = this.client.actions;
+    this.triggers = this.client.triggers;
+    this.integrations = this.client.integrations;
+    this.activeTriggers = this.client.activeTriggers;
+
     this.userActionRegistry = new ActionRegistry(this.client);
-    this.runtime = runtime;
-    this.entityId = _entityId;
+
+    if (entityId) {
+      this.entityId = entityId;
+    }
   }
 
   async getActionsSchema(
@@ -80,7 +126,7 @@ export class ComposioToolSet {
   async getToolsSchema(
     filters: z.infer<typeof ZToolSchemaFilter>,
     _entityId?: Optional<string>
-  ): Promise<TRawActionData[]> {
+  ): Promise<RawActionData[]> {
     const parsedFilters = ZToolSchemaFilter.parse(filters);
 
     const apps = await this.client.actions.list({
@@ -120,11 +166,10 @@ export class ComposioToolSet {
     ];
 
     return toolsActions.map((tool) => {
-      let schema = tool as TRawActionData;
+      let schema = tool as RawActionData;
       allSchemaProcessor.forEach((processor) => {
         schema = processor({
-          actionName: schema?.metadata?.actionName || "",
-          appName: schema?.metadata?.toolName || "",
+          actionName: schema?.name,
           toolSchema: schema,
         });
       });
@@ -142,14 +187,36 @@ export class ComposioToolSet {
       .then((actions) => actions.length > 0);
   }
 
-  async executeAction(functionParams: z.infer<typeof ZExecuteActionParams>) {
+  async getEntity(entityId: string) {
+    return this.client.getEntity(entityId);
+  }
+
+  async executeAction(
+    functionParams: ExecuteActionParams
+  ): Promise<ActionExecuteResponse> {
     const {
       action,
       params: inputParams = {},
-      entityId = "default",
+      entityId = this.entityId,
       nlaText = "",
       connectedAccountId,
-    } = ZExecuteActionParams.parse(functionParams);
+    } = ZExecuteActionParams.parse({
+      action: functionParams.actionName || functionParams.action,
+      params: functionParams.params,
+      entityId: functionParams.entityId,
+      nlaText: functionParams.nlaText,
+      connectedAccountId: functionParams.connectedAccountId,
+    });
+
+    if (!entityId && !connectedAccountId) {
+      throw CEG.getCustomError(
+        COMPOSIO_SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
+        {
+          message: `No entityId or connectedAccountId provided`,
+          description: `Please provide either entityId or connectedAccountId`,
+        }
+      );
+    }
 
     let params = (inputParams as Record<string, unknown>) || {};
 
@@ -164,7 +231,6 @@ export class ComposioToolSet {
       params = processor({
         params: params,
         actionName: action,
-        appName: params.app as string,
       });
     }
 
@@ -189,11 +255,12 @@ export class ComposioToolSet {
       });
     }
 
-    const data = (await this.client.getEntity(entityId).execute({
+    const data = await this.client.getEntity(entityId).execute({
       actionName: action,
       params: params,
       text: nlaText,
-    })) as ActionExecutionResDto;
+      connectedAccountId: connectedAccountId,
+    });
 
     return this.processResponse(data, {
       action: action,
@@ -219,7 +286,6 @@ export class ComposioToolSet {
     for (const processor of allOutputProcessor) {
       dataToReturn = processor({
         actionName: meta.action,
-        appName: "",
         toolResponse: dataToReturn,
       });
     }

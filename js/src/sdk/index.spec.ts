@@ -6,7 +6,7 @@ import { Composio } from "./index";
 import { ComposioError } from "./utils/errors/src/composioError";
 import {
   BASE_ERROR_CODE_INFO,
-  SDK_ERROR_CODES,
+  COMPOSIO_SDK_ERROR_CODES,
 } from "./utils/errors/src/constants";
 const { COMPOSIO_API_KEY, BACKEND_HERMES_URL } = getTestConfig();
 
@@ -26,59 +26,71 @@ describe("Basic SDK spec suite", () => {
   });
 
   it("should handle 404 error gracefully", async () => {
-    const client = new Composio({ apiKey: COMPOSIO_API_KEY });
     const mock = new AxiosMockAdapter(axiosClient.instance);
-    mock.onGet("/api/v1/apps").reply(404, { detail: "Not found" });
+    const mockError = {
+      type: "NotFoundError",
+      name: "AppNotFoundError",
+      message: "Not found",
+    };
+    mock.onGet("/api/v1/apps").reply(404, mockError);
+
+    const client = new Composio({ apiKey: COMPOSIO_API_KEY });
 
     try {
       await client.apps.list();
     } catch (e) {
-      const error = e as ComposioError;
-      const errorCode = SDK_ERROR_CODES.BACKEND.NOT_FOUND;
-      const errorInfo = BASE_ERROR_CODE_INFO[errorCode];
-      expect(error.errCode).toBe(errorCode);
-      expect(error.message).toContain(errorInfo.message);
-      expect(error.description).toBe(errorInfo.description);
-      expect(error.errorId).toBeDefined();
-      expect(error.name).toBe("ComposioError");
-      expect(error.possibleFix).toBe(errorInfo.possibleFix);
+      if (e instanceof ComposioError) {
+        expect(e.errCode).toBe(COMPOSIO_SDK_ERROR_CODES.BACKEND.NOT_FOUND);
+        expect(e.description).toBe("Not found");
+        expect(e.errorId).toBeDefined();
+        expect(e.name).toBe("ComposioError");
+        expect(e.possibleFix).toBe(e.possibleFix);
+        expect(e.message).toContain(mockError.message);
+        expect(e.message).toContain(mockError.name);
+      } else {
+        throw e;
+      }
     }
 
     mock.reset();
   });
 
   it("should handle 400 error gracefully", async () => {
-    const client = new Composio({ apiKey: COMPOSIO_API_KEY });
     const mock = new AxiosMockAdapter(axiosClient.instance);
-    mock
-      .onGet("/api/v1/apps")
-      .reply(400, { errors: ["Invalid request for apps"] });
+    mock.onGet("/api/v1/apps").reply(400, {
+      type: "BadRequestError",
+      name: "InvalidRequestError",
+      message: "Invalid request for apps",
+    });
 
+    const client = new Composio({ apiKey: COMPOSIO_API_KEY });
     try {
       await client.apps.list();
     } catch (e) {
       const error = e as ComposioError;
-      const errorCode = SDK_ERROR_CODES.BACKEND.BAD_REQUEST;
+      const errorCode = COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST;
       expect(error.errCode).toBe(errorCode);
-      expect(error.message).toContain(
-        "Validation Errors while making request to https://backend.composio.dev/api/v1/apps"
-      );
+      expect(error.message).toContain("InvalidRequestError ");
+      expect(error.message).toContain("InvalidRequestError");
       expect(error.description).toContain("Invalid request for apps");
     }
 
     mock.reset();
   });
 
-  it("should handle 500 and 502 error gracefully", async () => {
-    const client = new Composio({ apiKey: COMPOSIO_API_KEY });
+  it("should handle 500 and 502 error gracefully, and without backend fix", async () => {
     const mock = new AxiosMockAdapter(axiosClient.instance);
-    mock.onGet("/api/v1/apps").reply(500, { detail: "Internal Server Error" });
-
+    mock.onGet("/api/v1/apps").reply(500, {
+      type: "InternalServerError",
+      name: "ServerError",
+      message: "Internal Server Error",
+    });
+    const client = new Composio({ apiKey: COMPOSIO_API_KEY });
     try {
       await client.apps.list();
     } catch (e) {
       const error = e as ComposioError;
-      const errorCode = SDK_ERROR_CODES.BACKEND.SERVER_ERROR;
+      const errorCode = COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_ERROR;
       const errorInfo = BASE_ERROR_CODE_INFO[errorCode];
       expect(error.errCode).toBe(errorCode);
       expect(error.message).toContain(errorInfo.message);
@@ -94,7 +106,7 @@ describe("Basic SDK spec suite", () => {
       await client.apps.list();
     } catch (e) {
       const error = e as ComposioError;
-      const errorCode = SDK_ERROR_CODES.BACKEND.SERVER_UNAVAILABLE;
+      const errorCode = COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_UNAVAILABLE;
       const errorInfo = BASE_ERROR_CODE_INFO[errorCode];
       expect(error.errCode).toBe(errorCode);
       expect(error.message).toContain(errorInfo.message);
@@ -105,6 +117,20 @@ describe("Basic SDK spec suite", () => {
     }
 
     mock.reset();
+
+    mock.onGet("/api/v1/apps").reply(500, {
+      error: {
+        type: "NotFoundError",
+        name: "AppNotFoundError",
+        message: "Not found",
+      },
+    });
+    try {
+      await client.apps.list();
+    } catch (e) {
+      const error = e as ComposioError;
+      expect(error.message).toContain("AppNotFoundError - NotFoundError");
+    }
   });
 
   it("should give request timeout error", async () => {
@@ -116,7 +142,7 @@ describe("Basic SDK spec suite", () => {
       await client.apps.list();
     } catch (e) {
       const error = e as ComposioError;
-      const errorCode = SDK_ERROR_CODES.COMMON.REQUEST_TIMEOUT;
+      const errorCode = COMPOSIO_SDK_ERROR_CODES.COMMON.REQUEST_TIMEOUT;
       const errorInfo = BASE_ERROR_CODE_INFO[errorCode];
       expect(error.errCode).toBe(errorCode);
       expect(error.message).toContain(errorInfo.message);

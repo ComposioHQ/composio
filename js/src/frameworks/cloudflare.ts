@@ -8,8 +8,8 @@ import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
-import { Optional, Sequence } from "../types/base";
 import { ZToolSchemaFilter } from "../types/base_toolset";
+import { Optional, Sequence } from "../types/util";
 
 /**
  * CloudflareToolSet provides integration with Cloudflare Workers AI
@@ -33,12 +33,12 @@ export class CloudflareToolSet extends BaseComposioToolSet {
       entityId?: string;
     } = {}
   ) {
-    super(
-      config.apiKey || null,
-      config.baseUrl || COMPOSIO_BASE_URL,
-      CloudflareToolSet.FRAMEWORK_NAME,
-      config.entityId || CloudflareToolSet.DEFAULT_ENTITY_ID
-    );
+    super({
+      apiKey: config.apiKey || null,
+      baseUrl: config.baseUrl || COMPOSIO_BASE_URL,
+      runtime: null,
+      entityId: config.entityId || CloudflareToolSet.DEFAULT_ENTITY_ID,
+    });
   }
 
   /**

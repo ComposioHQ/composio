@@ -79,6 +79,7 @@ class LocalToolMeta(type):
         )
         ToolBuilder.setup_children(
             obj=cls,  # type: ignore
+            no_auth=True,
         )
 
         if autoload:

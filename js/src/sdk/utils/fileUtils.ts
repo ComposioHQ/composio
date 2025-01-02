@@ -1,7 +1,3 @@
-import * as os from "os";
-import * as path from "path";
-
-import * as fs from "fs";
 import { COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME } from "./constants";
 
 /**
@@ -10,11 +6,21 @@ import { COMPOSIO_DIR, TEMP_FILES_DIRECTORY_NAME } from "./constants";
  * @returns The path to the Composio directory.
  */
 export const getComposioDir = (createDirIfNotExists: boolean = false) => {
-  const composioDir = path.join(os.homedir(), COMPOSIO_DIR);
-  if (createDirIfNotExists && !fs.existsSync(composioDir)) {
-    fs.mkdirSync(composioDir, { recursive: true });
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const os = require("os");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const path = require("path");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require("fs");
+    const composioDir = path.join(os.homedir(), COMPOSIO_DIR);
+    if (createDirIfNotExists && !fs.existsSync(composioDir)) {
+      fs.mkdirSync(composioDir, { recursive: true });
+    }
+    return composioDir;
+  } catch (_error) {
+    return null;
   }
-  return composioDir;
 };
 
 /**
@@ -25,15 +31,25 @@ export const getComposioDir = (createDirIfNotExists: boolean = false) => {
 export const getComposioTempFilesDir = (
   createDirIfNotExists: boolean = false
 ) => {
-  const composioFilesDir = path.join(
-    os.homedir(),
-    COMPOSIO_DIR,
-    TEMP_FILES_DIRECTORY_NAME
-  );
-  if (createDirIfNotExists && !fs.existsSync(composioFilesDir)) {
-    fs.mkdirSync(composioFilesDir, { recursive: true });
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const os = require("os");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const path = require("path");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require("fs");
+    const composioFilesDir = path.join(
+      os.homedir(),
+      COMPOSIO_DIR,
+      TEMP_FILES_DIRECTORY_NAME
+    );
+    if (createDirIfNotExists && !fs.existsSync(composioFilesDir)) {
+      fs.mkdirSync(composioFilesDir, { recursive: true });
+    }
+    return composioFilesDir;
+  } catch (_error) {
+    return null;
   }
-  return composioFilesDir;
 };
 
 /**
@@ -48,11 +64,19 @@ export const saveFile = (
   content: string,
   isTempFile: boolean = false
 ) => {
-  const composioFilesDir = isTempFile
-    ? getComposioTempFilesDir(true)
-    : getComposioDir(true);
-  const filePath = path.join(composioFilesDir, path.basename(file));
-  fs.writeFileSync(filePath, content);
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const path = require("path");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require("fs");
+    const composioFilesDir = isTempFile
+      ? getComposioTempFilesDir(true)
+      : getComposioDir(true);
+    const filePath = path.join(composioFilesDir, path.basename(file));
+    fs.writeFileSync(filePath, content);
 
-  return filePath;
+    return filePath;
+  } catch (_error) {
+    return null;
+  }
 };

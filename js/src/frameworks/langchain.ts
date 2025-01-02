@@ -4,9 +4,10 @@ import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
-import type { Optional, Sequence } from "../types/base";
 import { ZToolSchemaFilter } from "../types/base_toolset";
+import type { Optional, Sequence } from "../types/util";
 import { jsonSchemaToModel } from "../utils/shared";
+
 type ToolSchema = {
   name: string;
   description: string;
@@ -30,12 +31,12 @@ export class LangchainToolSet extends BaseComposioToolSet {
       runtime?: string;
     } = {}
   ) {
-    super(
-      config.apiKey || null,
-      config.baseUrl || COMPOSIO_BASE_URL,
-      config?.runtime || LangchainToolSet.FRAMEWORK_NAME,
-      config.entityId || LangchainToolSet.DEFAULT_ENTITY_ID
-    );
+    super({
+      apiKey: config.apiKey || null,
+      baseUrl: config.baseUrl || COMPOSIO_BASE_URL,
+      runtime: config?.runtime || null,
+      entityId: config.entityId || LangchainToolSet.DEFAULT_ENTITY_ID,
+    });
   }
 
   private _wrapTool(

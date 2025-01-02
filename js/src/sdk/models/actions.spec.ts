@@ -3,7 +3,7 @@ import { getBackendClient } from "../testUtils/getBackendClient";
 import { Actions } from "./actions";
 import { ConnectedAccounts } from "./connectedAccounts";
 
-describe("Apps class tests", () => {
+describe("Actions class tests", () => {
   let backendClient;
   let actions: Actions;
   let connectedAccouns: ConnectedAccounts;
@@ -71,5 +71,14 @@ describe("Apps class tests", () => {
     expect(executionResult).toHaveProperty("successfull", true);
     expect(executionResult.data).toHaveProperty("stdout", "Hello World\n");
     expect(executionResult.data).toHaveProperty("stderr", "");
+  });
+
+  it("should get a list of actions by use case", async () => {
+    const actionsList = await actions.findActionEnumsByUseCase({
+      apps: ["github", "notion"],
+      useCase: "create issue from github repo on notion",
+    });
+    expect(actionsList).toBeInstanceOf(Array);
+    expect(actionsList).not.toHaveLength(0);
   });
 });
