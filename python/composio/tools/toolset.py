@@ -418,12 +418,20 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
         workspace_config = self._workspace_config or HostWorkspaceConfig()
         if workspace_config.composio_api_key is None:
-            workspace_config.composio_api_key = self.api_key
+            try:
+                workspace_config.composio_api_key = self.api_key
+            except ApiKeyNotProvidedError:
+                warnings.warn(
+                    "Running without a Composio API key", UserWarning, stacklevel=2
+                )
 
         if workspace_config.composio_base_url is None:
             workspace_config.composio_base_url = self._base_url
 
-        if workspace_config.github_access_token is None:
+        if (
+            workspace_config.github_access_token is None
+            and workspace_config.composio_api_key is not None
+        ):
             workspace_config.github_access_token = (
                 self._try_get_github_access_token_for_current_entity()
             )
