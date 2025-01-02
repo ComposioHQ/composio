@@ -135,7 +135,7 @@ export class ActionRegistry {
       throw new Error(`Action with name ${name} could not be retrieved`);
     }
 
-    const { callback, toolName } = action.metadata;
+    const { callback, toolName } = action.metadata || {};
     let authCredentials = {};
     if (toolName) {
       const entity = await this.client.getEntity(metadata.entityId);
