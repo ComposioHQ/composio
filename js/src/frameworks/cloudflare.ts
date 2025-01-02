@@ -33,12 +33,12 @@ export class CloudflareToolSet extends BaseComposioToolSet {
       entityId?: string;
     } = {}
   ) {
-    super(
-      config.apiKey || null,
-      config.baseUrl || COMPOSIO_BASE_URL,
-      CloudflareToolSet.FRAMEWORK_NAME,
-      config.entityId || CloudflareToolSet.DEFAULT_ENTITY_ID
-    );
+    super({
+      apiKey: config.apiKey || null,
+      baseUrl: config.baseUrl || COMPOSIO_BASE_URL,
+      runtime: null,
+      entityId: config.entityId || CloudflareToolSet.DEFAULT_ENTITY_ID,
+    });
   }
 
   /**

@@ -3,6 +3,7 @@ import { LangchainToolSet } from "./frameworks/langchain";
 import { LangGraphToolSet } from "./frameworks/langgraph";
 import { OpenAIToolSet } from "./frameworks/openai";
 import { VercelAIToolSet } from "./frameworks/vercel";
+import { ComposioToolSet } from "./sdk/base.toolset";
 import { Composio } from "./sdk/index";
 import { ConnectionRequest } from "./sdk/models/connectedAccounts";
 import { ComposioError } from "./sdk/utils/errors/src/composioError";
@@ -21,6 +22,7 @@ export {
   Composio,
   // Classes
   ComposioError,
+  ComposioToolSet,
   ConnectionRequest,
   LangGraphToolSet,
   LangchainToolSet,

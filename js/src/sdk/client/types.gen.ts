@@ -3299,6 +3299,10 @@ export type ListAppCategoriesResponse = AppListCategoriesResDTO;
 
 export type ListAppCategoriesError = unknown;
 
+export type ListAppEnumsResponse = unknown;
+
+export type ListAppEnumsError = unknown;
+
 export type GetAppsData = {
   query?: {
     additionalFields?: string;
@@ -3369,6 +3373,128 @@ export type DeleteConnectorData = {
 export type DeleteConnectorResponse = DeleteRowAPIDTO;
 
 export type DeleteConnectorError = unknown;
+
+export type ListActionEnumsResponse = unknown;
+
+export type ListActionEnumsError = unknown;
+
+export type ListActionTagsData = {
+  query?: {
+    apps?: string;
+  };
+};
+
+export type ListActionTagsResponse = ActionsTagsResponseDTO;
+
+export type ListActionTagsError = unknown;
+
+export type ListActionEnums1Response = unknown;
+
+export type ListActionEnums1Error = unknown;
+
+export type ListActionsV2Data = {
+  query?: {
+    actions?: string;
+    appNames?: string;
+    apps?: string;
+    filterImportantActions?: boolean;
+    limit?: number;
+    page?: number;
+    showAll?: boolean;
+    showEnabledOnly?: boolean;
+    tags?: string;
+    useCase?: string;
+    usecaseLimit?: number;
+  };
+};
+
+export type ListActionsV2Response = ActionsListResponseDTO;
+
+export type ListActionsV2Error = unknown;
+
+export type ListActionsMinimalV2Data = {
+  query?: {
+    actions?: string;
+    apps?: string;
+    filterImportantActions?: boolean;
+    limit?: number;
+    page?: number;
+    tags?: string;
+    useCase?: string;
+  };
+};
+
+export type ListActionsMinimalV2Response = ActionsListResponseDTO;
+
+export type ListActionsMinimalV2Error = BadRequestError;
+
+export type ExecuteActionV2Data = {
+  /**
+   * ActionExecutionReqDTO
+   */
+  body?: ActionExecutionReqDTO;
+  path: {
+    actionId: string;
+  };
+};
+
+export type ExecuteActionV2Response = ActionExecutionResDto;
+
+export type ExecuteActionV2Error = BadRequestError;
+
+export type GetActionInputsV2Data = {
+  /**
+   * ActionGetNLAInputsReqDTO
+   */
+  body?: ActionGetNLAInputsReqDTO;
+  path: {
+    actionId: string;
+  };
+};
+
+export type GetActionInputsV2Response = NLAArgumentsResponseDTO;
+
+export type GetActionInputsV2Error = unknown;
+
+export type GetActionV2Data = {
+  path: {
+    actionId: string;
+  };
+};
+
+export type GetActionV2Response = ActionDetails;
+
+export type GetActionV2Error = ActionNotFoundError;
+
+export type ExecuteWithHttpClientData = {
+  /**
+   * ActionProxyRequestConfigDTO
+   */
+  body?: ActionProxyRequestConfigDTO;
+};
+
+export type ExecuteWithHttpClientResponse = ActionExecutionResDto;
+
+export type ExecuteWithHttpClientError = unknown;
+
+export type AdvancedUseCaseSearchData = {
+  /**
+   * AdvancedUseCaseSearchBodyDTO
+   */
+  body?: AdvancedUseCaseSearchBodyDTO;
+  query?: {
+    apps?: string;
+    filterByAvailableApps?: boolean;
+    limit?: number;
+    maxActionsPerTask?: number;
+    minActionsPerTask?: number;
+    useCase?: string;
+  };
+};
+
+export type AdvancedUseCaseSearchResponse2 = AdvancedUseCaseSearchResponse;
+
+export type AdvancedUseCaseSearchError = unknown;
 
 export type ListConnectionsData = {
   query?: {
@@ -3478,6 +3604,10 @@ export type ListTriggersData = {
 export type ListTriggersResponse = Array<TriggerResDTO>;
 
 export type ListTriggersError = unknown;
+
+export type ListTriggerEnumsResponse = unknown;
+
+export type ListTriggerEnumsError = unknown;
 
 export type UpdateNewWebhookData = {
   /**
@@ -3648,120 +3778,6 @@ export type PostLogsData = {
 export type PostLogsResponse = IngestDataResponseDTO;
 
 export type PostLogsError = unknown;
-
-export type ListActionTagsData = {
-  query?: {
-    apps?: string;
-  };
-};
-
-export type ListActionTagsResponse = ActionsTagsResponseDTO;
-
-export type ListActionTagsError = unknown;
-
-export type ListActionsV2Data = {
-  query?: {
-    actions?: string;
-    appNames?: string;
-    apps?: string;
-    filterImportantActions?: boolean;
-    limit?: number;
-    page?: number;
-    showAll?: boolean;
-    showEnabledOnly?: boolean;
-    tags?: string;
-    useCase?: string;
-    usecaseLimit?: number;
-  };
-};
-
-export type ListActionsV2Response = ActionsListResponseDTO;
-
-export type ListActionsV2Error = unknown;
-
-export type ListActionsMinimalV2Data = {
-  query?: {
-    actions?: string;
-    apps?: string;
-    filterImportantActions?: boolean;
-    limit?: number;
-    page?: number;
-    tags?: string;
-    useCase?: string;
-  };
-};
-
-export type ListActionsMinimalV2Response = ActionsListResponseDTO;
-
-export type ListActionsMinimalV2Error = BadRequestError;
-
-export type ExecuteActionV2Data = {
-  /**
-   * ActionExecutionReqDTO
-   */
-  body?: ActionExecutionReqDTO;
-  path: {
-    actionId: string;
-  };
-};
-
-export type ExecuteActionV2Response = ActionExecutionResDto;
-
-export type ExecuteActionV2Error = BadRequestError;
-
-export type GetActionInputsV2Data = {
-  /**
-   * ActionGetNLAInputsReqDTO
-   */
-  body?: ActionGetNLAInputsReqDTO;
-  path: {
-    actionId: string;
-  };
-};
-
-export type GetActionInputsV2Response = NLAArgumentsResponseDTO;
-
-export type GetActionInputsV2Error = unknown;
-
-export type GetActionV2Data = {
-  path: {
-    actionId: string;
-  };
-};
-
-export type GetActionV2Response = ActionDetails;
-
-export type GetActionV2Error = ActionNotFoundError;
-
-export type ExecuteWithHttpClientData = {
-  /**
-   * ActionProxyRequestConfigDTO
-   */
-  body?: ActionProxyRequestConfigDTO;
-};
-
-export type ExecuteWithHttpClientResponse = ActionExecutionResDto;
-
-export type ExecuteWithHttpClientError = unknown;
-
-export type AdvancedUseCaseSearchData = {
-  /**
-   * AdvancedUseCaseSearchBodyDTO
-   */
-  body?: AdvancedUseCaseSearchBodyDTO;
-  query?: {
-    apps?: string;
-    filterByAvailableApps?: boolean;
-    limit?: number;
-    maxActionsPerTask?: number;
-    minActionsPerTask?: number;
-    useCase?: string;
-  };
-};
-
-export type AdvancedUseCaseSearchResponse2 = AdvancedUseCaseSearchResponse;
-
-export type AdvancedUseCaseSearchError = unknown;
 
 export type CreateProjectData = {
   /**
