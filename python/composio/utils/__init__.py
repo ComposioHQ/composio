@@ -41,13 +41,13 @@ def help_msg() -> str:
             + green("set `COMPOSIO_LOGGING_LEVEL=debug`")
             + "."
         )
-    else:
-        return (
-            "Give Feedback / Get Help:\n"
-            "    On GitHub: https://github.com/ComposioHQ/composio/issues/new\n"
-            "    On Discord: https://dub.composio.dev/discord\n"
-            "    On Email: tech@composio.dev\n"
-            "    Talk to us on Intercom: https://composio.dev\n"
-            "    Book a call with us: https://calendly.com/soham-composio/30min\n"
-            "If you need to debug this error, set `COMPOSIO_LOGGING_LEVEL=debug`."
-        )
+
+    return (
+        "Give Feedback / Get Help:\n"
+        "    On GitHub: https://github.com/ComposioHQ/composio/issues/new\n"
+        "    On Discord: https://dub.composio.dev/discord\n"
+        "    On Email: tech@composio.dev\n"
+        "    Talk to us on Intercom: https://composio.dev\n"
+        "    Book a call with us: https://calendly.com/soham-composio/30min\n"
+        "If you need to debug this error, set `COMPOSIO_LOGGING_LEVEL=debug`."
+    )
