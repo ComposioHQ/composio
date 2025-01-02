@@ -26,7 +26,7 @@ import { BackendClient } from "./backendClient";
 export type ActionListParams = z.infer<typeof ZGetListActionsParams>;
 export type HeaderSingleParameters = z.infer<typeof ZParameter>;
 export type CustomAuth = z.infer<typeof ZCustomAuthParams>;
-export type ActionxExecuteParam = z.infer<typeof ZExecuteParams>;
+export type ActionExecuteParam = z.infer<typeof ZExecuteParams>;
 export type ActionItemParam = z.infer<typeof ZActionGetParams>;
 export type FindActionEnumsByUseCaseParam = z.infer<
   typeof ZFindActionEnumsByUseCaseParams
@@ -142,7 +142,7 @@ export class Actions {
    * @returns {Promise<ActionExecuteResponse>} A promise that resolves to the execution status and response data.
    * @throws {ComposioError} If the request fails.
    */
-  async execute(data: ActionxExecuteParam): Promise<ActionExecuteResponse> {
+  async execute(data: ActionExecuteParam): Promise<ActionExecuteResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "execute",
       file: this.fileName,

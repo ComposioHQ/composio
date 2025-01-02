@@ -24,8 +24,8 @@ export const ZRawActionSchema = z.object({
   }),
   response: z.record(z.any()),
   metadata: z.object({
-    actionName: z.string(),
-    toolName: z.string(),
+    name: z.string(),
+    toolName: z.string().optional(),
   }),
 });
 
