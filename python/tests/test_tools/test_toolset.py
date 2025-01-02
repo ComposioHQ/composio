@@ -154,9 +154,9 @@ class TestConnectedAccountProvider:
             )
 
 
-def test_api_key_missing() -> None:
+def test_api_key_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("COMPOSIO_API_KEY", "")
     toolset = ComposioToolSet()
-    toolset._api_key = None  # pylint: disable=protected-access
     with pytest.raises(
         ApiKeyNotProvidedError,
         match=(
@@ -164,7 +164,7 @@ def test_api_key_missing() -> None:
             "`COMPOSIO_API_KEY` or run `composio login`"
         ),
     ):
-        _ = toolset.workspace
+        _ = toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})
 
 
 def test_processors(monkeypatch: pytest.MonkeyPatch) -> None:
