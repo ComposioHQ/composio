@@ -31,7 +31,7 @@ export const ZTriggerSetupParam = z.object({
 export type TriggerListParam = z.infer<typeof ZTriggerQuery>;
 export type TriggerSetupParam = z.infer<typeof ZTriggerSetupParam>;
 
-export const TriggerSubscribeParam = z.object({
+export const ZTriggerSubscribeParam = z.object({
   appName: z.string().optional(),
   triggerId: z.string().optional(),
   connectionId: z.string().optional(),

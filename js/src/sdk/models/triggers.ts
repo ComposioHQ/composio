@@ -12,11 +12,12 @@ import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { ListTriggersResponse } from "../client";
 import {
   TriggerSingleParam,
-  TriggerSubscribeParam,
+  ZSingleTriggerParam,
   ZSingleTriggerRes,
   ZTriggerInstanceItems,
   ZTriggerQuery,
   ZTriggerSetupParam,
+  ZTriggerSubscribeParam,
 } from "../types/trigger";
 import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 
@@ -24,7 +25,7 @@ import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 export type TriggerListParam = z.infer<typeof ZTriggerQuery>;
 export type TriggerSetupParam = z.infer<typeof ZTriggerSetupParam>;
 export type TriggerInstanceItems = z.infer<typeof ZTriggerInstanceItems>;
-export type TriggerSubscribeParam = z.infer<typeof TriggerSubscribeParam>;
+export type TriggerSubscribeParam = z.infer<typeof ZTriggerSubscribeParam>;
 export type TriggerListRes = Array<z.infer<typeof ZSingleTriggerRes>>;
 export type SingleTriggerRes = z.infer<typeof ZSingleTriggerRes>;
 export type TriggerSingleConfig = Pick<SingleTriggerRes, "config">;
