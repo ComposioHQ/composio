@@ -4,16 +4,10 @@ sidebarTitle: "Newsletter Summarizer"
 description: "This project serves as an example of how to use Composio to seamlessly fetch and summarize newsletter emails. It automatically retrieves recent newsletters, summarizes their content, and sends a well-formatted email to the specified recipient."
 ---
 
-
-
-
 <Tabs>
-
     <Tab title="Javascript">
     <Card color="#7bee0c" title="Newsletter Summarizer GitHub Repository" icon="github" href="https://github.com/ComposioHQ/composio/tree/master/js/examples/newsletter_summarizer/newsletter_summarizer_cloudflare">
   Explore the complete source code for the Newsletter Summarizer project. This repository contains all the necessary files and scripts to set up and run the Newsletter Summarizer using Composio and Cloudflare.
-  <CardBody>
-  </CardBody>
 </Card>
     <Steps>
         <Step title="Import base packages">
@@ -47,13 +41,13 @@ description: "This project serves as an example of how to use Composio to seamle
         ```javascript Define Webhook
         app.get('/webhook', async (req, res) => {
             try {
-                const body = `Please research on Arxiv about \`${researchTopic}\`, organize 
-                the top ${nIssues} results as ${nIssues} issues for 
-                a GitHub repository, and finally raise those issues with proper 
-                title, body, implementation guidance, and references in 
-                the ${targetRepo} repo, as well as relevant tags and assignees as 
+                const body = `Please research on Arxiv about \`${researchTopic}\`, organize
+                the top ${nIssues} results as ${nIssues} issues for
+                a GitHub repository, and finally raise those issues with proper
+                title, body, implementation guidance, and references in
+                the ${targetRepo} repo, as well as relevant tags and assignees as
                 the repo owner.`;
-                
+
                 const toolset = new OpenAIToolSet({
                     apiKey: process.env.COMPOSIO_API_KEY,
                 });
@@ -79,7 +73,7 @@ description: "This project serves as an example of how to use Composio to seamle
                     assistant_id: assistant.id,
                 });
                 run = await toolset.wait_and_handle_assistant_tool_calls(client, run, thread);
-                
+
                 // Check if the run is completed
                 if (run.status === "completed") {
                     let messages = await client.beta.threads.messages.list(thread.id);
@@ -110,33 +104,10 @@ description: "This project serves as an example of how to use Composio to seamle
         ```
     </CodeGroup>
     </Step>
+
 </Steps>
 </Tab>
 </Tabs>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ## Putting It All Together
 
@@ -158,7 +129,7 @@ description: "This project serves as an example of how to use Composio to seamle
 
         if (!connection) {
             // If the user hasn't connected their GitHub account
-            const connection = await entity.initiateConnection({appName: "github"});
+            const connection = await entity.initiateConnection({appName: "GITHUB"});
             console.log('Log in via: ', connection.redirectUrl);
             c.json({ redirectUrl: connection.redirectUrl, message: 'Please log in to continue and then call this API again.' });
         }
@@ -231,6 +202,5 @@ description: "This project serves as an example of how to use Composio to seamle
 
     export default app;
     ```
+
 </CodeGroup>
-
-
