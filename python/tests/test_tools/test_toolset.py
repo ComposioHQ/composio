@@ -3,7 +3,6 @@ Test composio toolset.
 """
 
 import logging
-import os
 import re
 import typing as t
 from unittest import mock
