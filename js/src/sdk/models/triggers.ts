@@ -11,12 +11,12 @@ import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 
 import { ListTriggersResponse } from "../client";
 import {
-  ZSingleTriggerParam,
+  TriggerSingleParam,
+  TriggerSubscribeParam,
   ZSingleTriggerRes,
   ZTriggerInstanceItems,
   ZTriggerQuery,
   ZTriggerSetupParam,
-  ZTriggerSubscribeParam,
 } from "../types/trigger";
 import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 
@@ -24,7 +24,7 @@ import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 export type TriggerListParam = z.infer<typeof ZTriggerQuery>;
 export type TriggerSetupParam = z.infer<typeof ZTriggerSetupParam>;
 export type TriggerInstanceItems = z.infer<typeof ZTriggerInstanceItems>;
-export type TriggerSubscribeParam = z.infer<typeof ZTriggerSubscribeParam>;
+export type TriggerSubscribeParam = z.infer<typeof TriggerSubscribeParam>;
 export type TriggerListRes = Array<z.infer<typeof ZSingleTriggerRes>>;
 export type SingleTriggerRes = z.infer<typeof ZSingleTriggerRes>;
 export type TriggerSingleConfig = Pick<SingleTriggerRes, "config">;
@@ -100,11 +100,11 @@ export class Triggers {
   /**
    * Retrieves information about a single trigger.
    *
-   * @param {ZSingleTriggerParam} data The data for the request.
+   * @param {TriggerSingleParam} data The data for the request.
    * @returns {Promise<SingleTriggerRes>} A promise that resolves to the trigger information.
    * @throws {ComposioError} If the request fails.
    */
-  async getTriggerInfo(data: ZSingleTriggerParam): Promise<SingleTriggerRes> {
+  async getTriggerInfo(data: TriggerSingleParam): Promise<SingleTriggerRes> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getTriggerInfo",
       file: this.fileName,
@@ -134,12 +134,12 @@ export class Triggers {
   /**
    * Retrieves the configuration of a single trigger.
    *
-   * @param {ZSingleTriggerParam} data The data for the request.
+   * @param {TriggerSingleParam} data The data for the request.
    * @returns {Promise<TriggerSingleConfig>} A promise that resolves to the trigger configuration.
    * @throws {ComposioError} If the request fails.
    */
   async getTriggerConfig(
-    data: ZSingleTriggerParam
+    data: TriggerSingleParam
   ): Promise<TriggerSingleConfig> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getSingleTriggerConfig",

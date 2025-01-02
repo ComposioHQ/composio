@@ -28,10 +28,10 @@ export const ZTriggerSetupParam = z.object({
   config: z.record(z.unknown()).optional(),
 });
 
-export type TTriggerListParam = z.infer<typeof ZTriggerQuery>;
-export type TTriggerSetupParam = z.infer<typeof ZTriggerSetupParam>;
+export type TriggerListParam = z.infer<typeof ZTriggerQuery>;
+export type TriggerSetupParam = z.infer<typeof ZTriggerSetupParam>;
 
-export const ZTriggerSubscribeParam = z.object({
+export const TriggerSubscribeParam = z.object({
   appName: z.string().optional(),
   triggerId: z.string().optional(),
   connectionId: z.string().optional(),
@@ -45,7 +45,7 @@ export const ZSingleTriggerParam = z.object({
   triggerId: z.string(),
 });
 
-export type ZSingleTriggerParam = z.infer<typeof ZSingleTriggerParam>;
+export type TriggerSingleParam = z.infer<typeof ZSingleTriggerParam>;
 
 export const ZSingleTriggerRes = z.object({
   name: z.string(),
