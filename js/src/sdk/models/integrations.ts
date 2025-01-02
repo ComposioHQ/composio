@@ -17,20 +17,20 @@ import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { BackendClient } from "./backendClient";
 
 // Types generated from zod schemas
-export type ListAllIntegrationsData = z.infer<typeof ZListIntegrationsParams>;
-export type GetIntegrationData = z.infer<typeof ZSingleIntegrationParams>;
-export type SingleIntegrationData = string;
-type CreateIntegrationParams = z.infer<typeof ZCreateIntegrationParams>;
+export type IntegrationListParam = z.infer<typeof ZListIntegrationsParams>;
+export type IntegrationGetParam = z.infer<typeof ZSingleIntegrationParams>;
+export type IntegrationListData = string;
+type IntegrationCreateParams = z.infer<typeof ZCreateIntegrationParams>;
 
 // API response types
-export type CreateIntegrationData = {
-  requestBody?: CreateIntegrationParams;
+export type IntegrationCreateData = {
+  requestBody?: IntegrationCreateParams;
 };
 
-export type IntegrationListResponse = GetConnectorListResDTO;
-export type IntegrationGetResponse = GetConnectorInfoResDTO;
+export type IntegrationListRes = GetConnectorListResDTO;
+export type IntegrationGetRes = GetConnectorInfoResDTO;
 export type IntegrationRequiredParamsRes = ExpectedInputFieldsDTO[];
-export type IntegrationDeleteResponse = DeleteRowAPIDTO;
+export type IntegrationDeleteRes = DeleteRowAPIDTO;
 export class Integrations {
   private backendClient: BackendClient;
   private fileName: string = "js/src/sdk/models/integrations.ts";
@@ -44,12 +44,10 @@ export class Integrations {
    *
    * This method allows clients to explore and discover the supported integrations. It returns an array of integration objects, each containing essential details such as the integration's key, name, description, logo, categories, and unique identifier.
    *
-   * @returns {Promise<IntegrationListResponse>} A promise that resolves to the list of all integrations.
+   * @returns {Promise<IntegrationListRes>} A promise that resolves to the list of all integrations.
    * @throws {ComposioError} If the request fails.
    */
-  async list(
-    data: ListAllIntegrationsData = {}
-  ): Promise<IntegrationListResponse> {
+  async list(data: IntegrationListParam = {}): Promise<IntegrationListRes> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "list",
       file: this.fileName,
@@ -72,11 +70,11 @@ export class Integrations {
    *
    * The response includes the integration's name, display name, description, input parameters, expected response, associated app information, and enabled status.
    *
-   * @param {GetIntegrationData} data The data for the request.
+   * @param {IntegrationGetParam} data The data for the request.
    * @returns {Promise<IntegrationGetResponse>} A promise that resolves to the details of the integration.
    * @throws {ComposioError} If the request fails.
    */
-  async get(data: GetIntegrationData): Promise<IntegrationGetResponse> {
+  async get(data: IntegrationGetParam): Promise<IntegrationGetRes> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "get",
       file: this.fileName,
@@ -98,12 +96,12 @@ export class Integrations {
    *
    * This method is used to get the necessary input fields for a specific integration's authentication scheme.
    *
-   * @param {SingleIntegrationData} data The data for the request.
+   * @param {IntegrationListData} data The data for the request.
    * @returns {Promise<IntegrationRequiredParamsRes>} A promise that resolves to the required parameters for the integration's authentication scheme.
    * @throws {ComposioError} If the request fails.
    */
   async getRequiredParams(
-    integrationId: SingleIntegrationData
+    integrationId: IntegrationListData
   ): Promise<IntegrationRequiredParamsRes> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getRequiredParams",
@@ -131,11 +129,11 @@ export class Integrations {
    *
    * This method allows clients to create a new integration by providing the necessary details such as app ID, name, authentication mode, and configuration.
    *
-   * @param {CreateIntegrationParams} data The data for the request.
+   * @param {IntegrationCreateParams} data The data for the request.
    * @returns {Promise<IntegrationGetResponse>} A promise that resolves to the created integration model.
    * @throws {ComposioError} If the request fails.
    */
-  async create(data: CreateIntegrationParams): Promise<IntegrationGetResponse> {
+  async create(data: IntegrationCreateParams): Promise<IntegrationGetRes> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "create",
       file: this.fileName,
@@ -169,13 +167,13 @@ export class Integrations {
    *
    * This method allows clients to delete an existing integration by providing its integration ID.
    *
-   * @param {SingleIntegrationData} data The data for the request.
+   * @param {IntegrationListData} data The data for the request.
    * @returns {Promise<IntegrationDeleteResponse>} A promise that resolves to the deleted integration model.
    * @throws {ComposioError} If the request fails.
    */
   async delete(
-    integrationId: SingleIntegrationData
-  ): Promise<IntegrationDeleteResponse> {
+    integrationId: IntegrationListData
+  ): Promise<IntegrationDeleteRes> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "delete",
       file: this.fileName,

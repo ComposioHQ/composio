@@ -37,7 +37,7 @@ export type RawActionData = z.infer<typeof ZRawActionSchema>;
 export const ZExecuteActionParams = z.object({
   action: z.string(),
   params: z.record(z.any()).optional(),
-  entityId: z.string(),
+  entityId: z.string().optional(),
   nlaText: z.string().optional(),
   connectedAccountId: z.string().optional(),
   config: z
