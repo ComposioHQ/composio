@@ -1,6 +1,9 @@
 import typing as t
+import warnings
 
 import typing_extensions as te
+
+from composio.utils import help_msg
 
 
 try:
@@ -86,7 +89,7 @@ class ComposioToolSet(
             entity_id = self.entity_id
         return entity_id
 
-    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead.\n", category=None)
     def get_actions(self, actions: t.Sequence[ActionType]) -> t.List[ToolParam]:
         """
         Get composio tools wrapped as `ToolParam` objects.
@@ -94,6 +97,11 @@ class ComposioToolSet(
         :param actions: List of actions to wrap
         :return: Composio tools wrapped as `ToolParam` objects
         """
+        warnings.warn(
+            "Use `ComposioToolSet.get_tools` instead.\n" + help_msg(),
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.get_tools(actions=actions)
 
     def get_tools(
@@ -133,6 +141,7 @@ class ComposioToolSet(
                 apps=apps,
                 tags=tags,
                 check_connected_accounts=check_connected_accounts,
+                _populate_requested=True,
             )
         ]
 

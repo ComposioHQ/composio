@@ -29,12 +29,12 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       entityId?: string;
     } = {}
   ) {
-    super(
-      config.apiKey || null,
-      config.baseUrl || null,
-      "vercel-ai",
-      config.entityId || "default"
-    );
+    super({
+      apiKey: config.apiKey || null,
+      baseUrl: config.baseUrl || null,
+      runtime: "vercel-ai",
+      entityId: config.entityId || "default",
+    });
   }
 
   private generateVercelTool(schema: RawActionData) {

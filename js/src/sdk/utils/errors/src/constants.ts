@@ -28,12 +28,14 @@ export const BASE_ERROR_CODE_INFO = {
   [COMPOSIO_SDK_ERROR_CODES.BACKEND.NOT_FOUND]: {
     message: "🔍 API not found",
     description: "The requested resource is missing",
-    possibleFix: "Verify the URL or resource identifier.",
+    possibleFix:
+      "Ensure the resource id or resource identifier is correct and valid as backend returned 404",
   },
   [COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST]: {
     message: "🚫 Bad Request. The request was malformed or incorrect",
     description: null,
-    possibleFix: "Please check your request format and parameters.",
+    possibleFix:
+      "Check your parameters and request format, as the backend returned a 400 error.",
   },
   [COMPOSIO_SDK_ERROR_CODES.BACKEND.UNAUTHORIZED]: {
     message: "🔑 Access Denied",
@@ -45,7 +47,7 @@ export const BASE_ERROR_CODE_INFO = {
     message: "🕒 Request Timeout",
     description: "The request timed out while waiting for a response.",
     possibleFix:
-      "Please try again later. If the issue persists, contact support.",
+      "Please try again later. If the issue persists, contact support or check your network connection.",
   },
   [COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_ERROR]: {
     message: "💥 Oops! Internal server error",
@@ -79,7 +81,7 @@ export const BASE_ERROR_CODE_INFO = {
   [COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED]: {
     message: "🕒 Invalid parameters passed",
     description: "The parameters passed are invalid",
-    possibleFix: "Please check the metadata.issues for more details",
+    possibleFix: "Please check the error message for more details",
   },
   UNKNOWN: {
     message: null,
