@@ -359,9 +359,6 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def _try_get_github_access_token_for_current_entity(self) -> t.Optional[str]:
         """Try and get github access token for current entiry."""
-        if self._api_key is None:
-            return None
-
         from_env = os.environ.get(f"_COMPOSIO_{ENV_GITHUB_ACCESS_TOKEN}")
         if from_env is not None:
             self.logger.debug("Using composio github access token")
@@ -429,7 +426,10 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if workspace_config.composio_base_url is None:
             workspace_config.composio_base_url = self._base_url
 
-        if workspace_config.github_access_token is None:
+        if (
+            workspace_config.github_access_token is None
+            and workspace_config.composio_api_key is not None
+        ):
             workspace_config.github_access_token = (
                 self._try_get_github_access_token_for_current_entity()
             )
