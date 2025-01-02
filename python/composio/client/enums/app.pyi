@@ -133,6 +133,7 @@ class App(Enum[AppData], metaclass=EnumGenerator):
     GOOGLESHEETS: "App"
     GOOGLETASKS: "App"
     GOOGLE_ANALYTICS: "App"
+    GOOGLE_MAPS: "App"
     GORGIAS: "App"
     GO_TO_WEBINAR: "App"
     GREPTILE: "App"
@@ -289,3 +290,4 @@ class App(Enum[AppData], metaclass=EnumGenerator):
     ZOHO_INVOICE: "App"
     ZOHO_MAIL: "App"
     ZOOM: "App"
+    ZOOMINFO: "App"
