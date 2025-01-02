@@ -142,13 +142,6 @@ export class ConnectedAccounts {
     }
   }
 
-  async getIntegration(data: { integrationId: string }) {
-    const res = await apiClient.appConnector.getConnectorInfo({
-      path: { integrationId: data.integrationId },
-    });
-    return res.data;
-  }
-
   // Should we deprecate this or change the signature?
   async initiate(
     payload: InitiateConnectionDataReq
