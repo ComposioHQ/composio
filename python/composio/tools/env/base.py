@@ -159,25 +159,6 @@ class Workspace(WithLogger, ABC):
         super().__init__()
         self.id = generate_id()
         self.access_token = uuid4().hex.replace("-", "")
-        self.composio_api_key = _read_env_var(
-            name=ENV_COMPOSIO_API_KEY,
-            default=config.composio_api_key,
-        )
-        self.composio_base_url = _read_env_var(
-            name=ENV_COMPOSIO_BASE_URL,
-            default=config.composio_base_url,
-        )
-        self.github_access_token = config.github_access_token or os.environ.get(
-            ENV_GITHUB_ACCESS_TOKEN, "NO_VALUE"
-        )
-        self.environment = {
-            **(config.environment or {}),
-            ENV_COMPOSIO_API_KEY: self.composio_api_key,
-            ENV_COMPOSIO_BASE_URL: self.composio_base_url,
-            ENV_GITHUB_ACCESS_TOKEN: self.github_access_token,
-            f"_COMPOSIO_{ENV_GITHUB_ACCESS_TOKEN}": self.github_access_token,
-            ENV_ACCESS_TOKEN: self.access_token,
-        }
         self.persistent = config.persistent
 
     def __str__(self) -> str:
@@ -219,6 +200,28 @@ class Workspace(WithLogger, ABC):
 
 class RemoteWorkspace(Workspace):
     """Remote workspace client."""
+
+    def __init__(self, config: WorkspaceConfigType):
+        super().__init__(config)
+        self.composio_api_key = _read_env_var(
+            name=ENV_COMPOSIO_API_KEY,
+            default=config.composio_api_key,
+        )
+        self.composio_base_url = _read_env_var(
+            name=ENV_COMPOSIO_BASE_URL,
+            default=config.composio_base_url,
+        )
+        self.github_access_token = config.github_access_token or os.environ.get(
+            ENV_GITHUB_ACCESS_TOKEN, "NO_VALUE"
+        )
+        self.environment = {
+            **(config.environment or {}),
+            ENV_COMPOSIO_API_KEY: self.composio_api_key,
+            ENV_COMPOSIO_BASE_URL: self.composio_base_url,
+            ENV_GITHUB_ACCESS_TOKEN: self.github_access_token,
+            f"_COMPOSIO_{ENV_GITHUB_ACCESS_TOKEN}": self.github_access_token,
+            ENV_ACCESS_TOKEN: self.access_token,
+        }
 
     def _request(
         self,
