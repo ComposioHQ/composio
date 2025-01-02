@@ -476,6 +476,59 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 f"Run `composio add {action.app.lower()}` to fix this"
             )
 
+    def _get_custom_params_for_local_action(
+        self,
+        custom_auth: CustomAuthObject,
+        app: str,
+    ) -> t.Dict:
+        metadata = {}
+        invalid_auth = []
+        for param in custom_auth.parameters:
+            if param["in_"] == "metadata":
+                metadata[param["name"]] = param["value"]
+                continue
+            invalid_auth.append(param)
+
+        if len(invalid_auth) > 0:
+            raise ComposioSDKError(
+                f"Invalid custom auth found for {app}: {invalid_auth}"
+            )
+        return metadata
+
+    def _get_custom_params_for_runtime_action(
+        self,
+        custom_auth: CustomAuthObject,
+    ) -> t.Dict:
+        metadata: t.Dict[str, t.Any] = {
+            "base_url": custom_auth.base_url,
+            "body": custom_auth.body,
+            "path": {},
+            "query": {},
+            "header": {},
+            "subdomain": {},
+        }
+        for param in custom_auth.parameters:
+            if param["in_"] == "metadata":
+                metadata[param["name"]] = param["value"]
+            else:
+                metadata[param["in_"]][param["name"]] = param["value"]
+        return metadata
+
+    def _get_custom_params_for_local_execution(self, action: Action) -> t.Dict:
+        custom_auth = self._custom_auth.get(App(action.app))
+        if custom_auth is None:
+            return {}
+
+        if action.is_runtime:
+            return self._get_custom_params_for_runtime_action(
+                custom_auth=custom_auth,
+            )
+
+        return self._get_custom_params_for_local_action(
+            custom_auth=custom_auth,
+            app=action.app,
+        )
+
     def _execute_local(
         self,
         action: Action,
@@ -486,19 +539,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         """Execute a local action."""
         metadata = metadata or {}
         metadata["_toolset"] = self
-        custom_auth = self._custom_auth.get(App(action.app))
-        if custom_auth is not None:
-            invalid_auth = []
-            for param in custom_auth.parameters:
-                if param["in_"] == "metadata":
-                    metadata[param["name"]] = param["value"]
-                    continue
-                invalid_auth.append(param)
-            if len(invalid_auth) > 0:
-                raise ComposioSDKError(
-                    f"Invalid custom auth found for {action.app}: {invalid_auth}"
-                )
-
+        metadata.update(self._get_custom_params_for_local_execution(action=action))
         response = self.workspace.execute_action(
             action=action,
             request_data=params,
