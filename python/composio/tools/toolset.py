@@ -328,6 +328,10 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         )
         self.max_retries = max_retries
 
+        # To be populated by get_tools(), from within subclasses like
+        # composio_openai's Toolset.
+        self._requested_actions: t.Optional[t.List[str]] = None
+
     def _validating_connection_ids(
         self,
         connected_account_ids: t.Dict[AppType, str],
@@ -482,6 +486,19 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         """Execute a local action."""
         metadata = metadata or {}
         metadata["_toolset"] = self
+        custom_auth = self._custom_auth.get(App(action.app))
+        if custom_auth is not None:
+            invalid_auth = []
+            for param in custom_auth.parameters:
+                if param["in_"] == "metadata":
+                    metadata[param["name"]] = param["value"]
+                    continue
+                invalid_auth.append(param)
+            if len(invalid_auth) > 0:
+                raise ComposioSDKError(
+                    f"Invalid custom auth found for {action.app}: {invalid_auth}"
+                )
+
         response = self.workspace.execute_action(
             action=action,
             request_data=params,
@@ -797,6 +814,16 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         :return: Output object from the function call
         """
         action = Action(action)
+        if (
+            self._requested_actions is not None
+            and action.slug not in self._requested_actions
+        ):
+            raise ComposioSDKError(
+                f"Action {action.slug} is being called, but was never requested by the toolset. "
+                "Make sure that the actions you are trying to execute are requested in your "
+                "`get_tools()` call."
+            )
+
         params = self._serialize_execute_params(param=params)
         if processors is not None:
             self._merge_processors(processors)
@@ -932,6 +959,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         # NOTE: This an experimental, can convert to decorator for more convinience
         if not apps and not actions and not tags:
             return
+
         self.workspace.check_for_missing_dependencies(
             apps=apps,
             actions=actions,
@@ -945,6 +973,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         tags: t.Optional[t.Sequence[TagType]] = None,
         *,
         check_connected_accounts: bool = True,
+        _populate_requested: bool = False,
     ) -> t.List[ActionModel]:
         runtime_actions = t.cast(
             t.List[t.Type[LocalAction]],
@@ -1009,6 +1038,13 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
             if item.name == Action.ANTHROPIC_TEXT_EDITOR.slug:
                 item.name = "str_replace_editor"
+
+        if _populate_requested:
+            action_names = [item.name for item in items]
+            if self._requested_actions is None:
+                self._requested_actions = []
+
+            self._requested_actions += action_names
 
         return items
 
