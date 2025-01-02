@@ -218,14 +218,15 @@ class RemoteWorkspace(Workspace):
         self.github_access_token = config.github_access_token or os.environ.get(
             ENV_GITHUB_ACCESS_TOKEN, "NO_VALUE"
         )
-        self.environment = {
-            **(config.environment or {}),
-            ENV_COMPOSIO_API_KEY: self.composio_api_key,
-            ENV_COMPOSIO_BASE_URL: self.composio_base_url,
-            ENV_GITHUB_ACCESS_TOKEN: self.github_access_token,
-            f"_COMPOSIO_{ENV_GITHUB_ACCESS_TOKEN}": self.github_access_token,
-            ENV_ACCESS_TOKEN: self.access_token,
-        }
+        self.environment.update(
+            {
+                ENV_COMPOSIO_API_KEY: self.composio_api_key,
+                ENV_COMPOSIO_BASE_URL: self.composio_base_url,
+                ENV_GITHUB_ACCESS_TOKEN: self.github_access_token,
+                f"_COMPOSIO_{ENV_GITHUB_ACCESS_TOKEN}": self.github_access_token,
+                ENV_ACCESS_TOKEN: self.access_token,
+            }
+        )
 
     def _request(
         self,
