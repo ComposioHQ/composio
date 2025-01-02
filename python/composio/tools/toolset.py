@@ -1005,12 +1005,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if not apps and not actions and not tags:
             return
 
-        if self._workspace is not None:
-            self.workspace.check_for_missing_dependencies(
-                apps=apps,
-                actions=actions,
-                tags=tags,
-            )
+        self.workspace.check_for_missing_dependencies(
+            apps=apps,
+            actions=actions,
+            tags=tags,
+        )
 
     def get_action_schemas(
         self,
