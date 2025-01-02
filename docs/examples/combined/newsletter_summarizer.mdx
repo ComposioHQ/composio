@@ -391,7 +391,7 @@ print(result)
 
         if (!connection) {
             // If the user hasn't connected their GitHub account
-            const connection = await entity.initiateConnection({appName: "github"});
+            const connection = await entity.initiateConnection({appName: "GITHUB"});
             console.log('Log in via: ', connection.redirectUrl);
             c.json({ redirectUrl: connection.redirectUrl, message: 'Please log in to continue and then call this API again.' });
         }
