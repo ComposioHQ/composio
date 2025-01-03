@@ -1081,9 +1081,9 @@ class Actions(Collection[ActionModel]):
     # TODO: Overload
     def get(  # type: ignore
         self,
-        actions: t.Optional[t.Sequence[ActionType]] = None,
-        apps: t.Optional[t.Sequence[AppType]] = None,
-        tags: t.Optional[t.Sequence[TagType]] = None,
+        actions: t.Optional[t.Collection[ActionType]] = None,
+        apps: t.Optional[t.Collection[AppType]] = None,
+        tags: t.Optional[t.Collection[TagType]] = None,
         limit: t.Optional[int] = None,
         use_case: t.Optional[str] = None,
         allow_all: bool = False,
@@ -1397,6 +1397,14 @@ class Actions(Collection[ActionModel]):
             SearchResultTask.model_validate(task)
             for task in response.json().get("items", [])
         ]
+
+    def list_enums(self) -> list[str]:
+        response = self._raise_if_required(
+            response=self.client.http.get(
+                str(self.endpoint / "list" / "enums"),
+            )
+        )
+        return response.text.split("\n")
 
 
 class ExpectedFieldInput(BaseModel):
