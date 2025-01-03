@@ -61,6 +61,13 @@ describe("Basic SDK spec suite", () => {
       type: "BadRequestError",
       name: "InvalidRequestError",
       message: "Invalid request for apps",
+      errors: [
+        {
+          code: "invalid_type",
+          message: "Invalid request for apps",
+          path: ["apps"],
+        },
+      ],
     });
 
     const client = new Composio({ apiKey: COMPOSIO_API_KEY });
@@ -70,9 +77,8 @@ describe("Basic SDK spec suite", () => {
       const error = e as ComposioError;
       const errorCode = COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST;
       expect(error.errCode).toBe(errorCode);
-      expect(error.message).toContain("InvalidRequestError ");
       expect(error.message).toContain("InvalidRequestError");
-      expect(error.description).toContain("Invalid request for apps");
+      expect(error.description).toContain(`Validation Errors: {"code`);
     }
 
     mock.reset();
