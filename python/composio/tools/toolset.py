@@ -923,14 +923,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 **response,
             }
 
-        return {
-            **response,
-            "data": self._substitute_file_download_data_recursively(
-                schema=_schema.response.model_dump(),
-                response=response["data"],
-                action=action,
-            ),
-        }
+        return self._substitute_file_download_data_recursively(
+            schema=_schema.response.model_dump(),
+            response=response,
+            action=action,
+        )
 
     @_record_action_if_available
     def execute_action(
