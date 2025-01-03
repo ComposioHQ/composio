@@ -543,7 +543,12 @@ def test_invalid_handle_tool_calls() -> None:
     toolset.get_tools(actions=[Action.GMAIL_FETCH_EMAILS])
     with pytest.raises(ComposioSDKError) as exc:
         with mock.patch.object(toolset, "_execute_remote"):
-            toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})
+            toolset.execute_action(
+                Action.HACKERNEWS_GET_FRONTPAGE,
+                {},
+                # This is passed as True by all tools
+                _check_requested_actions=True,
+            )
 
     assert (
         "Action HACKERNEWS_GET_FRONTPAGE is being called, but was never requested by the toolset."
@@ -553,9 +558,15 @@ def test_invalid_handle_tool_calls() -> None:
     # Ensure it does NOT fail if a subsequent get_tools added that action
     toolset.get_tools(actions=[Action.HACKERNEWS_GET_FRONTPAGE])
     with mock.patch.object(toolset, "_execute_remote"):
-        toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})
+        toolset.execute_action(
+            Action.HACKERNEWS_GET_FRONTPAGE,
+            {},
+            # This is passed as True by all tools
+            _check_requested_actions=True,
+        )
 
-    # Ensure it DOES NOT fail if get_tools is never called
+    # Ensure it DOES NOT fail if execute_action is called manually, not by a tool
     toolset = LangchainToolSet()
+    toolset.get_tools(actions=[Action.GMAIL_FETCH_EMAILS])
     with mock.patch.object(toolset, "_execute_remote"):
         toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})

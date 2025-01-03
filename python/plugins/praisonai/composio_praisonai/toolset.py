@@ -79,6 +79,7 @@ class ComposioToolSet(
             action=Action(value=tool_identifier),
             params=params,
             entity_id=self.entity_id,
+            _check_requested_actions=True,
         )
 
     def _process_basetool(
