@@ -236,6 +236,8 @@ export class ComposioToolSet {
         // fetch connected account id
         const connectedAccounts = await this.client.connectedAccounts.list({
           user_uuid: entityId,
+          status: "ACTIVE",
+          showActiveOnly: true,
         });
         accountId = connectedAccounts?.items[0]?.id;
       }
