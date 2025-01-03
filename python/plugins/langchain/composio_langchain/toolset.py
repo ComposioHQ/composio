@@ -88,6 +88,7 @@ class ComposioToolSet(
                 action=action,
                 params=kwargs,
                 entity_id=entity_id or self.entity_id,
+                _check_requested_actions=True,
             )
 
         action_func = types.FunctionType(

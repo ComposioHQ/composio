@@ -328,7 +328,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
         # To be populated by get_tools(), from within subclasses like
         # composio_openai's Toolset.
-        self._requested_actions: t.Optional[t.List[str]] = None
+        self._requested_actions: t.List[str] = []
 
     def _validating_connection_ids(
         self,
@@ -848,6 +848,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         text: t.Optional[str] = None,
         *,
         processors: t.Optional[ProcessorsType] = None,
+        _check_requested_actions: bool = False,
     ) -> t.Dict:
         """
         Execute an action on a given entity.
@@ -861,10 +862,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         :return: Output object from the function call
         """
         action = Action(action)
-        if (
-            self._requested_actions is not None
-            and action.slug not in self._requested_actions
-        ):
+        if _check_requested_actions and action.slug not in self._requested_actions:
             raise ComposioSDKError(
                 f"Action {action.slug} is being called, but was never requested by the toolset. "
                 "Make sure that the actions you are trying to execute are requested in your "
@@ -1088,9 +1086,6 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
         if _populate_requested:
             action_names = [item.name for item in items]
-            if self._requested_actions is None:
-                self._requested_actions = []
-
             self._requested_actions += action_names
 
         return items
