@@ -61,11 +61,13 @@ describe("Basic SDK spec suite", () => {
       type: "BadRequestError",
       name: "InvalidRequestError",
       message: "Invalid request for apps",
-      errors: [
+      details: [
         {
-          code: "invalid_type",
-          message: "Invalid request for apps",
-          path: ["apps"],
+          property: "triggerConfig",
+          children: [],
+          constraints: {
+            isObject: "triggerConfig must be an object",
+          },
         },
       ],
     });
@@ -78,7 +80,7 @@ describe("Basic SDK spec suite", () => {
       const errorCode = COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST;
       expect(error.errCode).toBe(errorCode);
       expect(error.message).toContain("InvalidRequestError");
-      expect(error.description).toContain(`Validation Errors: {"code`);
+      expect(error.description).toContain(`Validation Errors: {"property":"triggerConfig","children":[],"constraints":{"isObject":"triggerConfig must be an object"}}`);
     }
 
     mock.reset();

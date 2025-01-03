@@ -9,7 +9,7 @@ export interface ErrorResponseData {
   type: string;
   name: string;
   message: string;
-  errors?: Record<string, unknown>[] | Record<string, unknown>;
+  details?: Record<string, unknown>[] | Record<string, unknown>;
 }
 
 interface ErrorDetails {
@@ -55,7 +55,7 @@ export const getAPIErrorDetails = (
 
   switch (errorCode) {
     case COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST:
-      const validationErrors = axiosError.response?.data?.errors;
+      const validationErrors = axiosError.response?.data?.details;
       const formattedErrors = Array.isArray(validationErrors)
         ? validationErrors.map((err) => JSON.stringify(err)).join(", ")
         : JSON.stringify(validationErrors);
