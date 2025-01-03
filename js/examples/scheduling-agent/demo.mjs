@@ -10,7 +10,7 @@ const toolset = new VercelAIToolSet({
 });
 
 // Subscribe to triggers and perform actions
-await toolset.client.triggers.subscribe(async (data) => {
+await toolset.triggers.subscribe(async (data) => {
     console.log("trigger received", data);
     const payload = data.payload;
     const message = payload.messageText;
