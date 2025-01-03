@@ -160,7 +160,10 @@ class ComposioToolset(
                     ),
                 )
                 for tool in self.get_action_schemas(
-                    actions=actions, apps=apps, tags=tags, _poplate_requested=True
+                    actions=actions,
+                    apps=apps,
+                    tags=tags,
+                    _populate_requested=True,
                 )
             ]
         )

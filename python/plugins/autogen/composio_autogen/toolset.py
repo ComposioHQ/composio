@@ -47,7 +47,7 @@ class ComposioToolSet(
             actions=actions,
             apps=apps,
             tags=tags,
-            _poplate_requested=True,
+            _populate_requested=True,
         )
         for schema in schemas:
             self._register_schema_to_autogen(
