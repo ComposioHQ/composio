@@ -3,7 +3,9 @@ import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import dts from 'rollup-plugin-dts';
 import json from '@rollup/plugin-json'; // Import the @rollup/plugin-json to handle JSON files
+import { visualizer } from 'rollup-plugin-visualizer'; // Import the bundle analyzer plugin
 
+const IS_VISUALIZE_BUNDLE = process.env.IS_VISUALIZE_BUNDLE === 'true';
 const generateBundleAndTypeBundles = (file) => {
   return [{
     input: `src/${file}.ts`,
@@ -16,7 +18,10 @@ const generateBundleAndTypeBundles = (file) => {
       },
     ],
     plugins: [
-      resolve(), // Resolve node_modules
+      // resolve({
+      //   extensions: ['.ts', '.js', '.json', '.node',"node_modules"],
+      //   resolveOnly: [/node_modules/]
+      // }), // Resolve node_modules
       commonjs(), // Convert CommonJS modules to ES6
       typescript({
         tsconfig: './tsconfig.json',
@@ -25,10 +30,10 @@ const generateBundleAndTypeBundles = (file) => {
           module: 'esnext' // Ensure TypeScript produces ES Modules
         }
       }),
-      json() // Add the json plugin to handle JSON files
+      json(), // Add the json plugin to handle JSON files
+      ...(IS_VISUALIZE_BUNDLE ? [visualizer({ filename: `dist/${file}-bundle-analysis.html` })] : []) // Add the bundle analyzer plugin
     ],
     external: [
-      // List any external dependencies here
     ]
   },
   // // Type Definitions
@@ -36,7 +41,6 @@ const generateBundleAndTypeBundles = (file) => {
     input: `src/${file}.ts`,
     output: { 
       file: `dist/${file}.d.ts`, // Set the output directory for multiple chunks
- 
     },
     plugins: [dts()]
   }]
@@ -51,7 +55,10 @@ export default [
       sourcemap: false,
     },
     plugins: [
-      resolve(), // Resolve node_modules
+      resolve({
+        extensions: ['.ts', '.js', '.json', '.node',"node_modules"],
+        resolveOnly: [/node_modules/]
+      }), // Resolve node_modules
       commonjs(), // Convert CommonJS modules to ES6
       typescript({
         tsconfig: './tsconfig.json',

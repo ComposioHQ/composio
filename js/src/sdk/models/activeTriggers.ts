@@ -12,7 +12,7 @@ import { BackendClient } from "./backendClient";
 
 export type TriggerItemParam = z.infer<typeof ZTriggerItemParam>;
 export type GetActiveTriggersData = z.infer<typeof ZActiveTriggersQuery>;
-export type TriggerItem = z.infer<typeof ZActiveTriggerItemRes>;
+export type TriggerItemRes = z.infer<typeof ZActiveTriggerItemRes>;
 export type TriggerChangeResponse = { status: string };
 export class ActiveTriggers {
   // Remove this as we might not need it
@@ -29,7 +29,7 @@ export class ActiveTriggers {
    * The response includes the trigger's name, description, input parameters, expected response, associated app information, and enabled status.
    *
    * @param {TriggerItemParam} data The data for the request.
-   * @returns {Promise<TriggerItem>} A promise that resolves to the details of the active trigger.
+   * @returns {Promise<TriggerItemRes>} A promise that resolves to the details of the active trigger.
    * @throws {ComposioError} If the request fails.
    */
   async get({ triggerId }: TriggerItemParam) {
@@ -46,7 +46,7 @@ export class ActiveTriggers {
         },
       });
 
-      return data?.triggers?.[0] as unknown as TriggerItem;
+      return data?.triggers?.[0] as unknown as TriggerItemRes;
     } catch (error) {
       throw CEG.handleAllError(error);
     }
@@ -61,7 +61,7 @@ export class ActiveTriggers {
    * @returns {Promise<ZActiveTriggerItemRes[]>} A promise that resolves to the list of all active triggers.
    * @throws {ComposioError} If the request fails.
    */
-  async list(data: GetActiveTriggersData = {}): Promise<TriggerItem[]> {
+  async list(data: GetActiveTriggersData = {}): Promise<TriggerItemRes[]> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "list",
       file: this.fileName,
@@ -73,7 +73,7 @@ export class ActiveTriggers {
         query: parsedData,
       });
 
-      return response?.triggers as unknown as TriggerItem[];
+      return response?.triggers as unknown as TriggerItemRes[];
     } catch (error) {
       throw CEG.handleAllError(error);
     }

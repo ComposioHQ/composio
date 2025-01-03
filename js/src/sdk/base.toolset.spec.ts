@@ -9,10 +9,12 @@ describe("ComposioToolSet class tests", () => {
   const testConfig = getTestConfig();
 
   beforeAll(() => {
-    toolset = new ComposioToolSet(
-      testConfig.COMPOSIO_API_KEY,
-      testConfig.BACKEND_HERMES_URL
-    );
+    toolset = new ComposioToolSet({
+      apiKey: testConfig.COMPOSIO_API_KEY,
+      baseUrl: testConfig.BACKEND_HERMES_URL,
+      runtime: "composio-ai",
+      entityId: "default",
+    });
   });
 
   it("should create a ComposioToolSet instance", async () => {

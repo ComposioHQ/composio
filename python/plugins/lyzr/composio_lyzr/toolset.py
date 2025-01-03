@@ -4,6 +4,7 @@ Lyzr tool spec.
 
 import types
 import typing as t
+import warnings
 from inspect import Signature
 
 import typing_extensions as te
@@ -12,6 +13,7 @@ from lyzr_automata import Tool
 from composio import Action, ActionType, AppType, TagType
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.toolset import ProcessorsType
+from composio.utils import help_msg
 from composio.utils.shared import (
     get_signature_format_from_schema_params,
     json_schema_to_model,
@@ -45,6 +47,7 @@ class ComposioToolSet(
                 action=Action(value=name),
                 params=kwargs,
                 entity_id=entity_id or self.entity_id,
+                _check_requested_actions=True,
             )
 
         action_func = types.FunctionType(
@@ -72,7 +75,7 @@ class ComposioToolSet(
             default_params={},
         )
 
-    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead.\n", category=None)
     def get_actions(
         self,
         actions: t.Sequence[ActionType],
@@ -86,6 +89,11 @@ class ComposioToolSet(
 
         :return: Composio tools wrapped as `Tool` objects
         """
+        warnings.warn(
+            "Use `ComposioToolSet.get_tools` instead.\n" + help_msg(),
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.get_tools(actions=actions, entity_id=entity_id)
 
     def get_tools(
@@ -121,5 +129,6 @@ class ComposioToolSet(
                 apps=apps,
                 tags=tags,
                 check_connected_accounts=check_connected_accounts,
+                _populate_requested=True,
             )
         ]

@@ -41,7 +41,12 @@ export class BackendClient {
     if (!apiKey) {
       throw CEG.getCustomError(
         COMPOSIO_SDK_ERROR_CODES.COMMON.API_KEY_UNAVAILABLE,
-        {}
+        {
+          message: "API key is not available",
+          description:
+            "The API key required for authentication is not provided. You can get the API key from the Composio dashboard.",
+          possibleFix: "Please provide the API key in the constructor",
+        }
       );
     }
 

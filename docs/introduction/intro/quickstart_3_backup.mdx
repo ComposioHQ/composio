@@ -76,7 +76,7 @@ Follow these 5 steps to list your emails as soon as you receive them:
                 const client = new Composio(process.env.COMPOSIO_API_KEY);
 
                 const entity = await client.getEntity("default");
-                const connection = await entity.initiateConnection('gmail');
+                const connection = await entity.initiateConnection({appName: "gmail"});
 
                 console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
                 ```
@@ -170,7 +170,7 @@ Follow these 5 steps to list your emails as soon as you receive them:
     </Tabs>
 </Step>
 
-<Step title="Initialize Composio and OpenAI">
+<Step title="Initialize Composio Toolset and OpenAI">
     Set up your development environment:
 
     <Tabs>
@@ -187,7 +187,7 @@ Follow these 5 steps to list your emails as soon as you receive them:
         </Tab>
         <Tab title="JavaScript">
             <CodeGroup>
-                ```javascript Initialize Composio and OpenAI
+                ```javascript Initialize Composio's OpenAI Toolset and OpenAI
                 import { OpenAI } from "openai";
                 import { OpenAIToolSet } from "composio-core";
 

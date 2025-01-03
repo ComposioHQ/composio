@@ -42,7 +42,7 @@ Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environ
 </Tip>
 </Step>
 
-<Step title="Initialize Composio and OpenAI">
+<Step title="Initialise Composio Toolset and OpenAI">
 <CodeGroup>
 ```python Python
 from composio_openai import ComposioToolSet, App
@@ -88,7 +88,7 @@ print(result)
 </Steps>
 
 </Tab>
-<Tab title="Javascript">
+<Tab title="JavaScript">
 <Steps>
 
     <Step title="Install Libraries">
@@ -120,7 +120,7 @@ print(result)
         </CodeGroup>
     </Step>
 
-    <Step title="Initialize Composio and OpenAI">
+    <Step title="Initialise Composio's OpenAIToolSet and OpenAI">
         <CodeGroup>
             ```javascript JavaScript
             import { OpenAI } from "openai";
@@ -137,19 +137,19 @@ print(result)
 
     <Step title="Fetch GitHub Actions & and pass them to LLM">
         <CodeGroup>
-            ```javascript Star a repo using LLM
+            ```javascript JavaScript
             const tools = await composio_toolset.getTools({
-            actions: ["github_star_a_repository_for_the_authenticated_user"]
-        });
+                actions: ["github_star_a_repository_for_the_authenticated_user"],
+            });
 
             const instruction = "Star the repo composiohq/composio on GitHub";
 
             const response = await openai_client.chat.completions.create({
-            model: "gpt-4o",
-            messages: [{ role: "user", content: instruction }],
-            tools: tools,
-            tool_choice: "auto",
-        });
+                model: "gpt-4o",
+                messages: [{ role: "user", content: instruction }],
+                tools: tools,
+                tool_choice: "auto",
+            });
             ```
         </CodeGroup>
         <Tip>
@@ -159,7 +159,7 @@ print(result)
 
     <Step title="Execute Tool Calls">
         <CodeGroup>
-            ```javascript Execute Function calls
+            ```javascript JavaScript
             const result = await composio_toolset.handleToolCall(response);
             console.log(result);
             ```

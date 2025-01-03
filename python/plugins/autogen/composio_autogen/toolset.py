@@ -26,8 +26,8 @@ class ComposioToolSet(
         self,
         caller: ConversableAgent,
         executor: ConversableAgent,
-        apps: t.Optional[t.Sequence[AppType]] = None,
         actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
     ) -> None:
@@ -43,7 +43,12 @@ class ComposioToolSet(
         :param entity_id: Entity ID to use for executing function calls.
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
-        schemas = self.get_action_schemas(actions=actions, apps=apps, tags=tags)
+        schemas = self.get_action_schemas(
+            actions=actions,
+            apps=apps,
+            tags=tags,
+            _populate_requested=True,
+        )
         for schema in schemas:
             self._register_schema_to_autogen(
                 schema=schema.model_dump(
@@ -121,6 +126,7 @@ class ComposioToolSet(
                 action=Action(value=name),
                 params=kwargs,
                 entity_id=entity_id or self.entity_id,
+                _check_requested_actions=True,
             )
 
         function = types.FunctionType(

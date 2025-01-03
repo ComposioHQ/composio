@@ -1,4 +1,3 @@
-import { spawn } from "child_process";
 import { serializeValue } from "../sdk/utils/common";
 import { IS_DEVELOPMENT_OR_CI } from "../sdk/utils/constants";
 import logger from "./logger";
@@ -34,6 +33,8 @@ export function sendProcessReq(info: {
   try {
     // Use node-fetch for making HTTP requests
     const url = new URL(info.url);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { spawn } = require("child_process");
     const child = spawn("node", [
       "-e",
       `

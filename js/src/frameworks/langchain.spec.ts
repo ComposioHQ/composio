@@ -60,6 +60,11 @@ describe("Apps class tests", () => {
       },
     });
 
+    const tools = await langchainToolSet.getTools({
+      actions: ["starRepositoryCustomAction"],
+    });
+
+    await expect(tools.length).toBe(1);
     const actionOuput = await langchainToolSet.executeAction({
       action: "starRepositoryCustomAction",
       params: {
