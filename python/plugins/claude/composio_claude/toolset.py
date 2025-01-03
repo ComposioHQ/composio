@@ -161,6 +161,7 @@ class ComposioToolSet(
             action=Action(value=tool_call.name),
             params=t.cast(t.Dict, tool_call.input),
             entity_id=entity_id or self.entity_id,
+            _check_requested_actions=True,
         )
 
     def handle_tool_calls(
