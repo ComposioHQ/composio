@@ -65,7 +65,7 @@ description: "Learn how to use connections"
     const entity = await toolset.client.getEntity("Jessica")
 
     // Filters based on app name
-    const connectionDetails = await entity.getConnection("github")
+    const connectionDetails = await entity.getConnection({ appName: "GITHUB" })
 
     if(connectionDetails){
         console.log(connectionDetails)
