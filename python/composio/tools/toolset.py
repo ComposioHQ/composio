@@ -1086,9 +1086,6 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
         if _populate_requested:
             action_names = [item.name for item in items]
-            if self._requested_actions is None:
-                self._requested_actions = []
-
             self._requested_actions += action_names
 
         return items

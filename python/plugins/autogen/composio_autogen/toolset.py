@@ -43,7 +43,12 @@ class ComposioToolSet(
         :param entity_id: Entity ID to use for executing function calls.
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
-        schemas = self.get_action_schemas(actions=actions, apps=apps, tags=tags)
+        schemas = self.get_action_schemas(
+            actions=actions,
+            apps=apps,
+            tags=tags,
+            _poplate_requested=True,
+        )
         for schema in schemas:
             self._register_schema_to_autogen(
                 schema=schema.model_dump(
