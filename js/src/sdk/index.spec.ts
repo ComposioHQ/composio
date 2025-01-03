@@ -80,7 +80,9 @@ describe("Basic SDK spec suite", () => {
       const errorCode = COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST;
       expect(error.errCode).toBe(errorCode);
       expect(error.message).toContain("InvalidRequestError");
-      expect(error.description).toContain(`Validation Errors: {"property":"triggerConfig","children":[],"constraints":{"isObject":"triggerConfig must be an object"}}`);
+      expect(error.description).toContain(
+        `Validation Errors: {"property":"triggerConfig","children":[],"constraints":{"isObject":"triggerConfig must be an object"}}`
+      );
     }
 
     mock.reset();
