@@ -190,6 +190,7 @@ class App(Enum[AppData], metaclass=EnumGenerator):
     MULTIONAI: "App"
     MURAL: "App"
     NCSCALE: "App"
+    NEON: "App"
     NETSUITE: "App"
     NGROK: "App"
     NOTION: "App"
