@@ -100,6 +100,37 @@ describe("Apps class tests subscribe", () => {
     expect(res.config.title).toBe("GmailNewMessageConfigSchema");
   });
 
+  it("should throw an error if trigger not found", async () => {
+    let isErrorThrown = false;
+    try {
+      await triggers.getTriggerConfig({
+        triggerId: "INVALID_TRIGGER_ID",
+      });
+    } catch (e: unknown) {
+      const error = e as ComposioError;
+      expect(error.message).toContain("TriggerNotFoundError");
+      isErrorThrown = true;
+    }
+    expect(isErrorThrown).toBe(true);
+  });
+
+  it("should throw an error if invalid connected account id is provided", async () => {
+    let isErrorThrown = false;
+    try {
+      await triggers.list({
+        connectedAccountIds: ["xxx"],
+      });
+    } catch (e: unknown) {
+      isErrorThrown = true;
+      const error = e as ComposioError;
+      expect(error.message).toContain("BadRequestError");
+      expect(error.description).toContain(
+        "Invalid connected account ids provi"
+      );
+    }
+    expect(isErrorThrown).toBe(true);
+  });
+
   it("should get the payload of a trigger", async () => {
     const res = await triggers.getTriggerInfo({
       triggerId: "GMAIL_NEW_GMAIL_MESSAGE",

@@ -49,7 +49,7 @@ export const getAPIErrorDetails = (
   if (hasNotReceivedResponseFromBE) {
     genericMessage = predefinedError.message as string;
   } else if (axiosError.config?.baseURL && axiosError.config?.url) {
-    genericMessage = `${errorNameFromBE || ""} ${errorTypeFromBE ? `- ${errorTypeFromBE}` : ""} on ${axiosError.config?.baseURL! + axiosError.config?.url!}`;
+    genericMessage = `${errorNameFromBE ? `${errorNameFromBE} - ` : ""}${errorTypeFromBE ? `${errorTypeFromBE}` : ""} on ${axiosError.config?.baseURL! + axiosError.config?.url!}`;
   }
 
   switch (errorCode) {
