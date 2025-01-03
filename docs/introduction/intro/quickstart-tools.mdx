@@ -21,16 +21,16 @@ pip install composio_core composio_openai
 </Step>
 
 <Step title="Connect Your GitHub Account">
-We'll use **`Jessica`** as the user id [(entity id)](../../patterns/Auth/connected_account#entities).
+We'll use **`default`** as the user id [(entity id)](../../patterns/Auth/connected_account#entities).
 <Info>You need to have an active GitHub Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
 <CodeGroup>
 ```shell CLI
 composio login 
-composio add github -e "Jessica"
+composio add github -e "default"
 ```
 ```python Python
 from composio_openai import ComposioToolSet, App, Trigger
-toolset = ComposioToolSet(entity_id="Jessica")
+toolset = ComposioToolSet(entity_id="default")
 
 request = toolset.initiate_connection(app=App.GITHUB)
 
@@ -49,7 +49,7 @@ from composio_openai import ComposioToolSet, App
 from openai import OpenAI
 
 openai_client = OpenAI()
-composio_toolset = ComposioToolSet(entity_id="Jessica")
+composio_toolset = ComposioToolSet(entity_id="default")
 ```
 </CodeGroup>
 </Step>
@@ -100,7 +100,7 @@ print(result)
     </Step>
 
     <Step title="Connect Your GitHub Account">
-        We'll use **`Jessica`** as the user id [(entity id)](../../patterns/Auth/connected_account#entities).
+        We'll use **`default`** as the user id [(entity id)](../../patterns/Auth/connected_account#entities).
         <Info>You need to have an active GitHub Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
         <CodeGroup>
             ```shell CLI
@@ -112,7 +112,7 @@ print(result)
 
             const client = new Composio({ apiKey: "<your-api-key>" });
 
-            const entity = await client.getEntity("Jessica");
+            const entity = await client.getEntity("default");
             const connection = await entity.initiateConnection({appName: 'github'});
 
             console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
