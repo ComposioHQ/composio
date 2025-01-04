@@ -7,7 +7,7 @@ import { RawActionData } from "../types/base_toolset";
 
 type Optional<T> = T | null;
 
-const zExecuteToolCallParams = z.object({
+const ZExecuteToolCallParams = z.object({
   actions: z.array(z.string()).optional(),
   apps: z.array(z.string()).optional(),
   params: z.record(z.any()).optional(),
@@ -40,8 +40,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
   private generateVercelTool(schema: RawActionData) {
     return tool({
       description: schema.description,
-      // @ts-expect-error the type are JSONSchemV7. Internally it's resolved
-      parameters: jsonSchema(schema.parameters),
+      parameters: jsonSchema(schema.parameters as unknown as any),
       execute: async (params) => {
         return await this.executeToolCall(
           {
@@ -76,7 +75,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       usecaseLimit,
       filterByAvailableApps,
       actions,
-    } = zExecuteToolCallParams.parse(filters);
+    } = ZExecuteToolCallParams.parse(filters);
 
     const actionsList = await this.client.actions.list({
       ...(apps && { apps: apps?.join(",") }),
