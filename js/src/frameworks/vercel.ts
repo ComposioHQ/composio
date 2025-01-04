@@ -1,10 +1,10 @@
-import { tool } from "ai";
+import { jsonSchema, tool } from "ai";
 import { z } from "zod";
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 import { RawActionData } from "../types/base_toolset";
-import { jsonSchemaToModel } from "../utils/shared";
+
 type Optional<T> = T | null;
 
 const zExecuteToolCallParams = z.object({
@@ -38,11 +38,11 @@ export class VercelAIToolSet extends BaseComposioToolSet {
   }
 
   private generateVercelTool(schema: RawActionData) {
-    const parameters = jsonSchemaToModel(schema.parameters);
     return tool({
       description: schema.description,
-      parameters,
-      execute: async (params: Record<string, string>) => {
+      // @ts-expect-error the type are JSONSchemV7. Internally it's resolved
+      parameters: jsonSchema(schema.parameters),
+      execute: async (params) => {
         return await this.executeToolCall(
           {
             name: schema.name,
