@@ -40,7 +40,8 @@ export class VercelAIToolSet extends BaseComposioToolSet {
   private generateVercelTool(schema: RawActionData) {
     return tool({
       description: schema.description,
-      parameters: jsonSchema(schema.parameters as unknown as any),
+      // @ts-ignore the type are JSONSchemV7. Internally it's resolved
+      parameters: jsonSchema(schema.parameters as unknown),
       execute: async (params) => {
         return await this.executeToolCall(
           {
