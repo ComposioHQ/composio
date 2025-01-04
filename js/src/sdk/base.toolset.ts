@@ -138,18 +138,13 @@ export class ComposioToolSet {
       filterByAvailableApps: parsedFilters.filterByAvailableApps,
     });
 
-    const toolsWithCustomActions = (
-      await this.userActionRegistry.getAllActions()
-    ).filter((action) => {
-      const { name: actionName, toolName } = action.metadata || {};
+    const customActions = await this.userActionRegistry.getAllActions();
+    const toolsWithCustomActions = customActions.filter((action) => {
+      const { name: actionName } = action || {};
       return (
         (!filters.actions ||
           filters.actions.some(
             (name) => name.toLowerCase() === actionName?.toLowerCase()
-          )) &&
-        (!filters.apps ||
-          filters.apps.some(
-            (name) => name.toLowerCase() === toolName?.toLowerCase()
           )) &&
         (!filters.tags ||
           filters.tags.some((tag) => tag.toLowerCase() === "custom"))
@@ -241,6 +236,8 @@ export class ComposioToolSet {
         // fetch connected account id
         const connectedAccounts = await this.client.connectedAccounts.list({
           user_uuid: entityId,
+          status: "ACTIVE",
+          showActiveOnly: true,
         });
         accountId = connectedAccounts?.items[0]?.id;
       }
