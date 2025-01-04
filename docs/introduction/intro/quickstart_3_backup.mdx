@@ -45,13 +45,13 @@ Follow these 5 steps to list your emails as soon as you receive them:
 </Step>
 
 <Step title="Authenticate Gmail Account">
-    We'll use **`Jessica`** as our example user. Choose your method:
+    We'll use **`default`** as our example user. Choose your method:
 
     <Tabs>
         <Tab title="CLI (Quickest)">
             <CodeGroup>
                 ```bash Authenticate Gmail Account
-                composio add gmail -e "Jessica" # Launches Gmail login
+                composio add gmail -e "default" # Launches Gmail login
                 ```
             </CodeGroup>
         </Tab>
@@ -60,7 +60,7 @@ Follow these 5 steps to list your emails as soon as you receive them:
                 ```python Authenticate Gmail Account
                 from composio import ComposioToolSet, App
 
-                toolset = ComposioToolSet(entity_id="Jessica")
+                toolset = ComposioToolSet(entity_id="default")
                 entity = toolset.get_entity()
                 request = entity.initiate_connection(App.GMAIL)
 
@@ -75,8 +75,8 @@ Follow these 5 steps to list your emails as soon as you receive them:
 
                 const client = new Composio(process.env.COMPOSIO_API_KEY);
 
-                const entity = await client.getEntity("Jessica");
-                const connection = await entity.initiateConnection('gmail');
+                const entity = await client.getEntity("default");
+                const connection = await entity.initiateConnection({appName: "gmail"});
 
                 console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
                 ```
@@ -110,7 +110,7 @@ Follow these 5 steps to list your emails as soon as you receive them:
                 from composio import Composio, Action
 
                 client = Composio()
-                entity = client.get_entity(id="Jessica")
+                entity = client.get_entity(id="default")
 
                 # config is optional, it can be used to pass additional parameters for the trigger
                 entity.enable_trigger(app=App.GMAIL, trigger_name="gmail_new_gmail_message", config={}) # Enable trigger
@@ -170,7 +170,7 @@ Follow these 5 steps to list your emails as soon as you receive them:
     </Tabs>
 </Step>
 
-<Step title="Initialize Composio and OpenAI">
+<Step title="Initialize Composio Toolset and OpenAI">
     Set up your development environment:
 
     <Tabs>
@@ -187,7 +187,7 @@ Follow these 5 steps to list your emails as soon as you receive them:
         </Tab>
         <Tab title="JavaScript">
             <CodeGroup>
-                ```javascript Initialize Composio and OpenAI
+                ```javascript Initialize Composio's OpenAI Toolset and OpenAI
                 import { OpenAI } from "openai";
                 import { OpenAIToolSet } from "composio-core";
 

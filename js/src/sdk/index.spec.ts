@@ -61,6 +61,15 @@ describe("Basic SDK spec suite", () => {
       type: "BadRequestError",
       name: "InvalidRequestError",
       message: "Invalid request for apps",
+      details: [
+        {
+          property: "triggerConfig",
+          children: [],
+          constraints: {
+            isObject: "triggerConfig must be an object",
+          },
+        },
+      ],
     });
 
     const client = new Composio({ apiKey: COMPOSIO_API_KEY });
@@ -70,9 +79,10 @@ describe("Basic SDK spec suite", () => {
       const error = e as ComposioError;
       const errorCode = COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST;
       expect(error.errCode).toBe(errorCode);
-      expect(error.message).toContain("InvalidRequestError ");
       expect(error.message).toContain("InvalidRequestError");
-      expect(error.description).toContain("Invalid request for apps");
+      expect(error.description).toContain(
+        `Validation Errors: {"property":"triggerConfig","children":[],"constraints":{"isObject":"triggerConfig must be an object"}}`
+      );
     }
 
     mock.reset();
