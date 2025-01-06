@@ -18,7 +18,9 @@ if missing_vars:
 # Initialize tools.
 chatbot = AssistantAgent(
     "chatbot",
-    system_message="Reply TERMINATE when the task is done or when user's content is empty",
+    system_message="""You are a math assistant that helps with calculations.
+    Always round your final numerical answers to the nearest integer.
+    Reply TERMINATE when the task is done or when user's content is empty""",
     llm_config={
         "config_list": [
             {"model": "gpt-4o", "api_key": os.environ["OPENAI_API_KEY"]},
