@@ -1,5 +1,12 @@
-composio-core
-composio-llamaindex
-python-dotenv
-llama-index
-openai
+# Core dependencies
+composio-core==0.6.11.post1
+composio-llamaindex==0.6.11.post1
+python-dotenv==1.0.1
+llama-index==0.12.9
+openai>=1.14.0  # Updated to resolve dependency conflict with llama-index-agent-openai
+
+# Alternative ArXiv functionality
+arxiv==2.1.0  # Standard Python package for ArXiv API access
+
+# Note: Original llama-index-tools-arxiv package is pending approval,
+# using standard arxiv package as alternative implementation

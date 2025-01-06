@@ -7,14 +7,34 @@ This script demonstrates the use of LlamaIndex and Composio tools to:
 3. Organize and present the findings in a structured format
 
 The script uses OpenAI's GPT-4o model for processing and analysis.
+
+Required Dependencies:
+- composio-llamaindex: For Composio tool integration
+- llama-index: Core LlamaIndex functionality
+- llama-index-tools-arxiv: For ArXiv research capabilities (separate package)
+- python-dotenv: For environment variable management
+- openai: For GPT-4o model access
+
+Environment Variables Required:
+- OPENAI_API_KEY: Your OpenAI API key
+- COMPOSIO_API_KEY: Your Composio API key
+
+Note: If you encounter import errors, ensure all required packages are installed:
+    pip install -r requirements.txt
 """
 
+import sys
 import dotenv
 from composio_llamaindex import Action, ComposioToolSet  # pylint: disable=import-error
 from llama_index.agent.openai import OpenAIAgent
-from llama_index.core.llms import ChatMessage  # pylint: disable=import-error
-from llama_index.llms.openai import OpenAI  # pylint: disable=import-error
-from llama_index.tools.arxiv.base import ArxivToolSpec
+from llama_index.core.llms import ChatMessage
+from llama_index.llms.openai import OpenAI
+
+try:
+    from test_imports import ArxivToolSpec  # Using our custom implementation
+except ImportError:
+    print("Error: Custom ArxivToolSpec not found. Please ensure test_imports.py is in the same directory.")
+    sys.exit(1)
 
 
 # Load environment variables from .env
