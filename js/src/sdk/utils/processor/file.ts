@@ -10,23 +10,23 @@ export const fileResponseProcessor: TPostProcessor = ({
   actionName,
   toolResponse,
 }) => {
-  const responseData =
-    (toolResponse.data.response_data as Record<string, unknown>) || {};
-  const fileData = responseData.file as
+
+  const fileData = toolResponse?.data?.file as
     | { name: string; content: string }
     | undefined;
 
   if (!fileData) return toolResponse;
 
-  const fileNamePrefix = `${actionName}_${Date.now()}`;
+  const fileName = fileData.name;
+  const randomString = Math.random().toString(36).substring(2, 15);
+  const fileNamePrefix = `${randomString}_${actionName}_${fileName}`;
   const filePath = saveFile(fileNamePrefix, fileData.content, true);
 
-  delete responseData.file;
+  delete toolResponse.data.file;
 
   return {
     ...toolResponse,
     data: {
-      ...toolResponse.data,
       file_uri_path: filePath,
     },
   };
