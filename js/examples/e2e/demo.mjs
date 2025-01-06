@@ -1,5 +1,9 @@
 import { Composio, LangchainToolSet } from "composio-core";
 import { z } from "zod";
+import pkg from "dotenv";
+const { config } = pkg;
+
+config();
 
 const toolset = new LangchainToolSet({});
 
