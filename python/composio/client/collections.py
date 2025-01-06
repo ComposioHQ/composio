@@ -34,7 +34,7 @@ from composio.client.enums import (
 )
 from composio.client.exceptions import ComposioClientError, ComposioSDKError
 from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
-from composio.utils import logging
+from composio.utils import help_msg, logging
 from composio.utils.shared import generate_request_id
 
 
@@ -386,6 +386,7 @@ class TriggerConfigPropertyModel(BaseModel):
 
     description: str
     title: str
+    default: t.Any = None
 
     type: t.Optional[str] = None
 
@@ -531,6 +532,7 @@ class TriggerSubscription(logging.WithLogger):
         self._chunks: t.Dict[str, t.Dict[int, str]] = {}
         self._callbacks: t.List[t.Tuple[TriggerCallback, _TriggerEventFilters]] = []
 
+    # pylint: disable=too-many-statements
     def validate_filters(self, filters: _TriggerEventFilters):
         docs_link_msg = "\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
         if not isinstance(filters, dict):
@@ -553,22 +555,23 @@ class TriggerSubscription(logging.WithLogger):
             # Validate app name
             if filter == "app_name":
                 if isinstance(value, App):
-                    value = value.slug
-
-                elif not isinstance(value, str):
+                    slug = value.slug
+                elif isinstance(value, str):
+                    slug = value
+                else:
                     raise ComposioSDKError(
                         f"Expected 'app_name' to be App or str, found {value!r}"
                         + docs_link_msg
                     )
 
                 # Our enums are in uppercase but we accept lowercase ones too.
-                value = value.upper()
+                slug = slug.upper()
 
                 # Ensure the app exists
                 app_names = list(App.iter())
-                if value not in app_names:
-                    error_msg = f"App {value!r} does not exist."
-                    possible_values = difflib.get_close_matches(value, app_names, n=1)
+                if slug not in app_names:
+                    error_msg = f"App {slug!r} does not exist."
+                    possible_values = difflib.get_close_matches(slug, app_names, n=1)
                     if possible_values:
                         (possible_value,) = possible_values
                         error_msg += f" Did you mean {possible_value!r}?"
@@ -582,9 +585,9 @@ class TriggerSubscription(logging.WithLogger):
                 apps_for_triggers = {
                     Trigger(trigger).app.upper() for trigger in active_triggers
                 }
-                if value not in apps_for_triggers:
+                if slug not in apps_for_triggers:
                     error_msg = (
-                        f"App {value!r} has no triggers enabled on your account.\n"
+                        f"App {slug!r} has no triggers enabled on your account.\n"
                         "Find the possible triggers by running `composio triggers`."
                     )
                     raise ComposioSDKError(error_msg + docs_link_msg)
@@ -592,22 +595,24 @@ class TriggerSubscription(logging.WithLogger):
             # Validate trigger name
             if filter == "trigger_name":
                 if isinstance(value, Trigger):
-                    value = value.slug
-                elif not isinstance(value, str):
+                    slug = value.slug
+                elif isinstance(value, str):
+                    slug = value
+                else:
                     raise ComposioSDKError(
                         f"Expected 'trigger_name' to be Trigger or str, found {value!r}"
                         + docs_link_msg
                     )
 
                 # Our enums are in uppercase but we accept lowercase ones too.
-                value = value.upper()
+                slug = slug.upper()
 
                 # Ensure the trigger exists
                 trigger_names = list(Trigger.iter())
-                if value not in trigger_names:
-                    error_msg = f"Trigger {value!r} does not exist."
+                if slug not in trigger_names:
+                    error_msg = f"Trigger {slug!r} does not exist."
                     possible_values = difflib.get_close_matches(
-                        value, trigger_names, n=1
+                        slug, trigger_names, n=1
                     )
                     if possible_values:
                         (possible_value,) = possible_values
@@ -619,10 +624,10 @@ class TriggerSubscription(logging.WithLogger):
                 active_triggers = [
                     trigger.triggerName for trigger in self.client.active_triggers.get()
                 ]
-                if value not in active_triggers:
+                if slug not in active_triggers:
                     error_msg = (
-                        f"Trigger {value!r} is not enabled on your account.\nEnable"
-                        f" the trigger by doing `composio triggers enable {value}`."
+                        f"Trigger {slug!r} is not enabled on your account.\nEnable"
+                        f" the trigger by doing `composio triggers enable {slug}`."
                     )
                     raise ComposioSDKError(error_msg + docs_link_msg)
 
@@ -691,7 +696,7 @@ class TriggerSubscription(logging.WithLogger):
             self.logger.error(f"Error parsing trigger payload: {event}")
             return
 
-        self.logger.info(
+        self.logger.debug(
             f"Received trigger event with trigger ID: {data.metadata.id} "
             f"and trigger name: {data.metadata.triggerName}"
         )
@@ -921,7 +926,7 @@ class Triggers(Collection[TriggerModel]):
 
     def subscribe(self, timeout: float = 15.0) -> TriggerSubscription:
         """Subscribe to a trigger and receive trigger events."""
-        self.logger.info("Creating trigger subscription")
+        self.logger.debug("Creating trigger subscription")
         response = self._raise_if_required(
             response=self.client.http.get(
                 url="/v1/client/auth/client_info",
@@ -978,7 +983,7 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
             queries["integrationIds"] = ",".join(integration_ids)
         if len(trigger_names) > 0:
             queries["triggerNames"] = to_trigger_names(trigger_names)
-        return self._raise_if_empty(super().get(queries=queries))
+        return super().get(queries=queries)
 
 
 def _check_file_uploadable(param_field: dict) -> bool:
@@ -1032,7 +1037,7 @@ class ActionModel(BaseModel):
     description: t.Optional[str] = None
 
 
-ParamPlacement = t.Literal["header", "path", "query", "subdomain"]
+ParamPlacement = t.Literal["header", "path", "query", "subdomain", "metadata"]
 
 
 class CustomAuthParameter(te.TypedDict):
@@ -1095,7 +1100,20 @@ class Actions(Collection[ActionModel]):
                         app
         :return: List of actions
         """
-        actions = t.cast(t.List[Action], [Action(action) for action in actions or []])
+
+        def is_action(obj):
+            try:
+                return hasattr(obj, "app")
+            except AttributeError:
+                return False
+
+        actions = t.cast(
+            t.List[Action],
+            [
+                action if is_action(action) else Action(action)
+                for action in actions or []
+            ],
+        )
         apps = t.cast(t.List[App], [App(app) for app in apps or []])
         tags = t.cast(t.List[Tag], [Tag(tag) for tag in tags or []])
 
@@ -1131,10 +1149,9 @@ class Actions(Collection[ActionModel]):
 
         if len(apps) > 0 and len(tags) == 0 and not allow_all:
             warnings.warn(
-                "Using all the actions of an app is not recommended. "
-                "Please use tags to filter actions or provide specific actions. "
-                "We just pass the important actions to the agent, but this is not meant "
-                "to be used in production. Check out https://docs.composio.dev/sdk/python/actions for more information.",
+                "Using all actions of an app is not recommended for production."
+                "Learn more: https://docs.composio.dev/patterns/tools/use-tools/use-specific-actions\n\n"
+                + help_msg(),
                 UserWarning,
             )
             tags = ["important"]
@@ -1237,7 +1254,12 @@ class Actions(Collection[ActionModel]):
         action_req_schema = action_model.parameters.properties
         modified_params: t.Dict[str, t.Union[str, t.Dict[str, str]]] = {}
         for param, value in params.items():
-            request_param_schema = action_req_schema[param]
+            request_param_schema = action_req_schema.get(param)
+            if request_param_schema is None:
+                # User has sent a parameter that is not used by this action,
+                # so we can ignore it.
+                continue
+
             file_readable = request_param_schema.get("file_readable", False)
             file_uploadable = _check_file_uploadable(request_param_schema)
 
@@ -1267,7 +1289,7 @@ class Actions(Collection[ActionModel]):
 
         if action.no_auth:
             return self._raise_if_required(
-                self.client.http.post(
+                self.client.long_timeout_http.post(
                     url=str(self.endpoint / action.slug / "execute"),
                     json={
                         "appName": action.app,
@@ -1287,7 +1309,7 @@ class Actions(Collection[ActionModel]):
             )
 
         return self._raise_if_required(
-            self.client.http.post(
+            self.client.long_timeout_http.post(
                 url=str(self.endpoint / action.slug / "execute"),
                 json={
                     "connectedAccountId": connected_account,
@@ -1336,6 +1358,11 @@ class Actions(Collection[ActionModel]):
             {"in": d["in_"], "name": d["name"], "value": d["value"]}
             for d in data["parameters"]
         ]
+        for param in data["parameters"]:
+            if param["in"] == "metadata":
+                raise ComposioClientError(
+                    f"Param placement cannot be 'metadata' for remote action execution: {param}"
+                )
         return data
 
     def search_for_a_task(
@@ -1511,4 +1538,8 @@ class Logs(Collection[LogRecord]):
 
     def push(self, record: t.Dict) -> None:
         """Push logs to composio."""
+        # TODO: handle this better
+        if self.client._api_key is None:  # pylint: disable=protected-access
+            return
+
         self.client.http.post(url=str(self.endpoint), json=record)

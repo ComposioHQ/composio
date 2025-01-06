@@ -13,7 +13,7 @@ class GetListsRequest(BaseModel):
         alias="folder_id",
         description="",
     )
-    archived: bool = Field(
+    archived: t.Optional[bool] = Field(
         default=None,
         alias="archived",
         description="",

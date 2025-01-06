@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import chalk from "chalk";
 import { Command } from "commander";
 
@@ -22,23 +23,23 @@ export default class ConnectionsCommand {
 
   private async handleAction(options: { active: boolean }): Promise<void> {
     getOpenAPIClient();
-    const { data, error } = await client.connections.getConnections({
+    const { data, error } = await client.connections.listConnections({
       query: options.active ? { status: "ACTIVE" } : {},
       throwOnError: false,
     });
 
     if (error) {
-      console.log(chalk.red((error as any).message));
+      console.log(chalk.red(error.message));
       return;
     }
 
     for (const connection of data?.items || []) {
       console.log(chalk.cyan(`• ${chalk.bold("Id")}: ${connection.id}`));
       console.log(
-        chalk.magenta(`  ${chalk.bold("App")}: ${connection.appName}`),
+        chalk.magenta(`  ${chalk.bold("App")}: ${connection.appName}`)
       );
       console.log(
-        chalk.yellow(`  ${chalk.bold("Status")}: ${connection.status}`),
+        chalk.yellow(`  ${chalk.bold("Status")}: ${connection.status}`)
       );
       console.log(""); // Add an empty line for better readability between connections
     }
@@ -65,13 +66,15 @@ export class ConnectionsGetCommand {
     });
 
     if (error) {
-      console.log(chalk.red((error as any).message));
+      console.log(chalk.red((error as Error).message));
       return;
     }
 
-    for (const [key, value] of Object.entries(data as Record<string, any>)) {
+    for (const [key, value] of Object.entries(
+      data as Record<string, unknown>
+    )) {
       console.log(
-        `- ${chalk.cyan.bold(key)}: ${JSON.stringify(value, null, 2)}`,
+        `- ${chalk.cyan.bold(key)}: ${JSON.stringify(value, null, 2)}`
       );
     }
   }

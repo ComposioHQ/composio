@@ -1,7 +1,6 @@
 ---
 title: "How can I get and use specific actions from a Tool?"
 sidebarTitle: "Use Specific Actions"
-icon: "pickaxe"
 description: "Each Tool (like GitHub, Slack, etc.) comes with many Actions. You can explore all available Tools & Actions [here](https://app.composio.dev/apps). Each Action has an associated action ID which you can use to call the action."
 ---
 
@@ -121,7 +120,11 @@ console.log(actionsList);
         apps: ["github", "gmail"],
         useCase: "get repo details and send an email to the owner of the repo"
     });
-    console.log(actionsEnums);
+    console.log("Action enums:", actionsEnums);
+    
+    // Fetch the actual actions using the enums
+    const actions = await toolset.getTools({ actions: actionsEnums });
+    console.log("Fetched actions:", actions);
 })();
 ```
 

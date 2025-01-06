@@ -13,13 +13,16 @@ const appName = "reddit";
 
 async function setupUserConnectionIfNotExists(entityId) {
   const entity = await toolset.client.getEntity(entityId);
-  const connection = await entity.getConnection(appName);
-
+  const connection = await entity.getConnection({
+    app: appName,
+  });
   if (!connection) {
     // Initiate a new connection if it doesn't exist
-    const newConnection = await entity.initiateConnection(appName);
+    const newConnection = await entity.initiateConnection({
+      appName: appName,
+    });
     console.log("Log in via: ", newConnection.redirectUrl);
-    return newConnection.waitUntilActive(60);
+    return newConnection.waitUntilActive(100);
   }
 
   return connection;
@@ -28,17 +31,17 @@ async function setupUserConnectionIfNotExists(entityId) {
 async function executeAgent(entityName) {
   // Setup entity and ensure connection
   const entity = await toolset.client.getEntity(entityName);
-  await setupUserConnectionIfNotExists(entity.id);
+  //await setupUserConnectionIfNotExists(entity.id);
 
   // Retrieve tools for the specified app
   const tools = await toolset.getTools({ apps: [appName] }, entity.id);
   const subreddit = "r/developersIndia/";
   // Generate text using the model and tools
   const output = await generateText({
-    model: openai("gpt-4o"),//groq("llama3-8b-8192"),
+    model: openai("gpt-4o"), //groq("llama3-8b-8192"),
     streamText: false,
     tools: tools,
-    prompt: `Research the subreddit ${subreddit} and provide a summary of the top posts.`, 
+    prompt: `Research the subreddit ${subreddit} and provide a summary of the top posts.`,
     maxToolRoundtrips: 5,
   });
 

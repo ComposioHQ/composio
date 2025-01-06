@@ -1,21 +1,12 @@
-import { getEnvVariable } from './shared';
-import winston from 'winston';
+import { getEnvVariable } from "./shared";
 
 // Define log levels with corresponding priorities
 const LOG_LEVELS = {
   error: 0, // Highest priority - critical errors
-  warn: 1,  // Warning messages
-  info: 2,  // General information
-  debug: 3  // Debug information
+  warn: 1, // Warning messages
+  info: 2, // General information
+  debug: 3, // Debug information
 } as const;
-
-// Define colors for each log level for better visibility
-const LOG_COLORS = {
-  error: 'red',     // Critical errors in red
-  warn: 'yellow',   // Warnings in yellow
-  info: 'blue',     // Info in blue  
-  debug: 'green'    // Debug in green
-};
 
 /**
  * Get the current log level from environment variables.
@@ -23,49 +14,54 @@ const LOG_COLORS = {
  * @returns {keyof typeof LOG_LEVELS} The current log level
  */
 export const getLogLevel = (): keyof typeof LOG_LEVELS => {
-  const envLevel = getEnvVariable("COMPOSIO_LOGGING_LEVEL", "info")?.toLowerCase();
-  return (envLevel && envLevel in LOG_LEVELS) ? envLevel as keyof typeof LOG_LEVELS : 'info';
+  const envLevel = getEnvVariable(
+    "COMPOSIO_LOGGING_LEVEL",
+    "info"
+  )?.toLowerCase();
+  return envLevel && envLevel in LOG_LEVELS
+    ? (envLevel as keyof typeof LOG_LEVELS)
+    : "info";
 };
 
-// Configure winston colors
-winston.addColors(LOG_COLORS);
+const addTimestampToMessage = (message: string): string => {
+  const timestamp = new Date().toISOString();
+  return `${timestamp} - ${message}`;
+};
 
-// Create custom log format
-const logFormat = winston.format.combine(
-  winston.format.timestamp(),
-  winston.format.colorize(),
-  winston.format.printf(({ timestamp, level, message, ...metadata }) => {
-    // Format timestamp for readability
-    const formattedTime = timestamp.slice(5, 22).replace('T', ' ');
-    
-    // Handle metadata serialization
-    let metadataStr = '';
-    if (Object.keys(metadata).length) {
-      try {
-        metadataStr = ` - ${JSON.stringify(metadata)}`;
-      } catch {
-        metadataStr = ' - [Circular metadata object]';
-      }
-    }
+const formatErrorMessage = (args: unknown[]): string => {
+  return args
+    .map((arg) => (typeof arg === "object" ? JSON.stringify(arg) : arg))
+    .join(" ");
+};
 
-    return `[${level}]: ${formattedTime} - ${message}${metadataStr}`;
-  })
-);
+const getLogger = () => {
+  const logger = console;
+  const loggingLevel = getLogLevel();
+  const logLevelValue = LOG_LEVELS[loggingLevel];
+  const noop = () => {};
 
-// Create and configure logger instance
-const logger = winston.createLogger({
-  // This can be overridden by the user by setting the COMPOSIO_LOGGING_LEVEL environment variable
-  // Only this or higher priority logs will be shown
-  level: getLogLevel(),
-  levels: LOG_LEVELS,
-  format: logFormat,
-  transports: [
-    new winston.transports.Console({
-      handleExceptions: true,
-      handleRejections: true
-    })
-  ],
-  exitOnError: false // Prevent crashes on uncaught exceptions
-});
+  return {
+    error:
+      logLevelValue >= LOG_LEVELS.error
+        ? (...args: unknown[]) =>
+            logger.error(addTimestampToMessage(formatErrorMessage(args)))
+        : noop,
+    warn:
+      logLevelValue >= LOG_LEVELS.warn
+        ? (...args: unknown[]) =>
+            logger.warn(addTimestampToMessage(formatErrorMessage(args)))
+        : noop,
+    info:
+      logLevelValue >= LOG_LEVELS.info
+        ? (...args: unknown[]) =>
+            logger.info(addTimestampToMessage(formatErrorMessage(args)))
+        : noop,
+    debug:
+      logLevelValue >= LOG_LEVELS.debug
+        ? (...args: unknown[]) =>
+            logger.debug(addTimestampToMessage(formatErrorMessage(args)))
+        : noop,
+  };
+};
 
-export default logger;
+export default getLogger();

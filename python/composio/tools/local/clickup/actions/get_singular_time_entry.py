@@ -21,12 +21,12 @@ class GetSingularTimeEntryRequest(BaseModel):
             "Within a Date Range](https://clickup.com/api) endpoint. "
         ),
     )
-    include_task: bool = Field(
+    include_task: t.Optional[bool] = Field(
         default=None,
         alias="include_task_",
         description="Include task  in the response for time entries associated with tasks.",
     )
-    include_location_names: bool = Field(
+    include_location_names: t.Optional[bool] = Field(
         default=None,
         alias="include_location_names",
         description=(

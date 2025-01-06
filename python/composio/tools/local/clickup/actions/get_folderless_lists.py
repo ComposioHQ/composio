@@ -13,7 +13,7 @@ class GetFolderlessListsRequest(BaseModel):
         alias="space_id",
         description="",
     )
-    archived: bool = Field(
+    archived: t.Optional[bool] = Field(
         default=None,
         alias="archived",
         description="",

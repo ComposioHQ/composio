@@ -9,10 +9,10 @@ from setuptools import setup
 
 setup(
     name="composio_griptape",
-    version="0.5.50",
+    version="0.6.11.post1",
     author="Sawradip",
     author_email="sawradip@composio.dev",
-    description="Use Composio to get an array of tools with your Griptape wokflow.",
+    description="Use Composio to get an array of tools with your Griptape workflow.",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
     url="https://github.com/ComposioHQ/composio",
@@ -22,6 +22,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9,<4",
-    install_requires=["composio_core>=0.5.40,<=0.5.50", "griptape>=0.24.2"],
+    install_requires=["composio_core>=0.6.11,<0.7.0", "griptape>=0.24.2"],
     include_package_data=True,
 )

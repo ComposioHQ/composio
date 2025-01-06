@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeAll, beforeEach } from "@jest/globals";
+import { beforeAll, beforeEach, describe, expect, it } from "@jest/globals";
 import { z } from "zod";
-import { ActionRegistry } from "./actionRegistry";
 import { Composio } from ".";
 import { getTestConfig } from "../../config/getTestConfig";
+import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
 
 describe("ActionRegistry", () => {
   let actionRegistry: ActionRegistry;
@@ -10,10 +10,10 @@ describe("ActionRegistry", () => {
   const testConfig = getTestConfig();
 
   beforeAll(() => {
-    client = new Composio(
-      testConfig.COMPOSIO_API_KEY!,
-      testConfig.BACKEND_HERMES_URL!
-    );
+    client = new Composio({
+      apiKey: testConfig.COMPOSIO_API_KEY!,
+      baseUrl: testConfig.BACKEND_HERMES_URL!,
+    });
   });
 
   beforeEach(() => {
@@ -26,8 +26,8 @@ describe("ActionRegistry", () => {
       param2: z.string().optional(),
     });
 
-    const callback = async (params: Record<string, any>) => {
-      return { success: true };
+    const callback = async (_params: Record<string, unknown>) => {
+      return { data: { success: true }, successful: true };
     };
 
     const options = {
@@ -61,9 +61,9 @@ describe("ActionRegistry", () => {
       callback: "notAFunction",
     };
 
-    await expect(actionRegistry.createAction(options as any)).rejects.toThrow(
-      "Callback must be a function"
-    );
+    await expect(
+      actionRegistry.createAction(options as unknown as CreateActionOptions)
+    ).rejects.toThrow("Callback must be a function");
   });
 
   it("should throw an error if callback is an anonymous function and noActionName is specified", async () => {
@@ -76,7 +76,7 @@ describe("ActionRegistry", () => {
       description: "This is a test action",
       inputParams: params,
       callback: async function () {
-        return { success: true };
+        return { data: { success: true }, successful: true };
       },
     };
 
@@ -90,8 +90,8 @@ describe("ActionRegistry", () => {
       param1: z.string(),
     });
 
-    const callback = async (params: Record<string, any>) => {
-      return { success: true };
+    const callback = async (_params: Record<string, unknown>) => {
+      return { data: { success: true }, successful: true };
     };
 
     const options = {
@@ -109,7 +109,7 @@ describe("ActionRegistry", () => {
       {}
     );
 
-    expect(result).toEqual({ success: true });
+    expect(result).toEqual({ data: { success: true }, successful: true });
   });
 
   it("should throw an error if action does not exist", async () => {
@@ -123,8 +123,8 @@ describe("ActionRegistry", () => {
       param1: z.string(),
     });
 
-    const callback = async (params: Record<string, any>) => {
-      return { success: true };
+    const callback = async (_params: Record<string, unknown>) => {
+      return { data: { success: true }, successful: true };
     };
 
     const options = {

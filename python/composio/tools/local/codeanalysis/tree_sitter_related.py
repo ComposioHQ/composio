@@ -1,8 +1,11 @@
 import re
 from typing import Dict, List, Tuple
 
-from tree_sitter import Node, Parser, Tree
-from tree_sitter_languages import get_parser
+import tree_sitter_python as tspython
+from tree_sitter import Language, Node, Parser, Tree
+
+
+PY_LANGUAGE = Language(tspython.language())
 
 
 class SpanRelated:
@@ -125,7 +128,7 @@ def fetch_nodes_of_type(file_path: str, types_allowed: List[str]) -> List[Dict]:
     Returns:
         List[Dict]: A list of dictionaries containing node details.
     """
-    parser = get_parser("python")
+    parser = Parser(PY_LANGUAGE)
     with open(file_path, "r", encoding="utf-8") as file:
         test_code_str = file.read()
 
@@ -262,7 +265,7 @@ def fetch_entity_artifacts(entity_body: str, entity_type: str) -> Dict[str, str]
     if entity_type not in ["class", "function"]:
         raise ValueError("Invalid entity_type. Must be 'class' or 'function'.")
 
-    parser = get_parser("python")
+    parser = Parser(PY_LANGUAGE)
     tree = fetch_tree(parser, entity_body)
     entity_node = tree.root_node
 

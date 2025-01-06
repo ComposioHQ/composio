@@ -3,6 +3,7 @@
 import hashlib
 import inspect
 import json
+import textwrap
 import typing as t
 from abc import abstractmethod
 from pathlib import Path
@@ -13,6 +14,7 @@ import pydantic
 from pydantic import BaseModel, Field
 
 from composio.client.enums import Action as ActionEnum
+from composio.client.enums.base import DEPRECATED_MARKER
 from composio.exceptions import ComposioSDKError
 from composio.utils.logging import WithLogger
 from composio.utils.pydantic import parse_pydantic_error
@@ -25,13 +27,12 @@ ActionRequest = t.TypeVar("ActionRequest")
 Loadable = t.TypeVar("Loadable")
 ToolRegistry = t.Dict[GroupID, t.Dict[str, "Tool"]]
 ActionsRegistry = t.Dict[GroupID, t.Dict[str, "Action"]]
+# TODO: create a Trigger type for this
 TriggersRegistry = t.Dict[GroupID, t.Dict[str, t.Any]]
 
 tool_registry: ToolRegistry = {"runtime": {}, "local": {}, "api": {}}
 action_registry: ActionsRegistry = {"runtime": {}, "local": {}, "api": {}}
 trigger_registry: TriggersRegistry = {"runtime": {}, "local": {}, "api": {}}
-
-DEPRECATED_MARKER = "<<DEPRECATED use "
 
 
 def remove_json_ref(data: t.Dict) -> t.Dict:
@@ -40,6 +41,7 @@ def remove_json_ref(data: t.Dict) -> t.Dict:
             jsonref.replace_refs(
                 obj=data,
                 lazy_load=False,
+                merge_props=True,
             ),
             indent=2,
         )
@@ -375,8 +377,8 @@ class ToolBuilder:
                     f"Please implement {name}.{method} as class method"
                 )
 
-    @staticmethod
-    def set_metadata(obj: t.Type["Tool"]) -> None:
+    @classmethod
+    def set_metadata(cls, obj: t.Type["Tool"]) -> None:
         setattr(obj, "file", Path(inspect.getfile(obj)))
         setattr(obj, "gid", getattr(obj, "gid", "local"))
         setattr(obj, "name", getattr(obj, "name", inflection.underscore(obj.__name__)))
@@ -390,18 +392,19 @@ class ToolBuilder:
                 inflection.humanize(inflection.underscore(obj.__name__)),
             ),
         )
-        setattr(obj, "description", (obj.__doc__ or obj.display_name).lstrip().rstrip())
+        setattr(obj, "description", cls._get_description(obj=obj))
         setattr(obj, "_actions", getattr(obj, "_actions", {}))
         setattr(obj, "_triggers", getattr(obj, "_triggers", {}))
 
     @staticmethod
-    def setup_children(obj: t.Type["Tool"]) -> None:
+    def setup_children(obj: t.Type["Tool"], no_auth: bool = False) -> None:
         if obj.gid not in action_registry:
             action_registry[obj.gid] = {}
 
         for action in obj.actions():
             action.tool = obj.name
             action.enum = f"{obj.enum}_{action.name.upper()}"
+            action.no_auth = no_auth
             if obj.requires is not None:
                 action.requires = list(set(obj.requires + (action.requires or [])))
             obj._actions[action.enum] = action  # pylint: disable=protected-access
@@ -424,6 +427,18 @@ class ToolBuilder:
 
             if hasattr(obj, "logo"):
                 setattr(trigger, "logo", getattr(obj, "logo"))
+
+    @staticmethod
+    def _get_description(obj) -> str:
+        return " ".join(
+            line
+            for line in textwrap.dedent(
+                (obj.__doc__ if obj.__doc__ else obj.display_name)
+            )
+            .strip()
+            .splitlines()
+            if line
+        )
 
 
 class Tool(WithLogger, _Attributes):

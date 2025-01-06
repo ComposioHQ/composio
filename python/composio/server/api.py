@@ -21,7 +21,7 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from composio import Action, App
+from composio import Action, App, __version__
 from composio.cli.context import get_context
 from composio.client.collections import ActionModel, AppModel
 from composio.client.enums.base import get_runtime_actions
@@ -80,15 +80,15 @@ class ExecuteActionRequest(BaseModel):
         ...,
         description="Parameters for executing the request.",
     )
-    metadata: t.Dict = Field(
+    metadata: t.Optional[t.Dict] = Field(
         None,
         description="Metadata for executing action.",
     )
-    entity_id: str = Field(
+    entity_id: t.Optional[str] = Field(
         None,
         description="Entity ID associated with the account.",
     )
-    connected_account_id: str = Field(
+    connected_account_id: t.Optional[str] = Field(
         None,
         description="Connection ID to use for executing the action.",
     )
@@ -155,9 +155,7 @@ def create_app() -> FastAPI:
     @with_exception_handling
     def _api() -> GetApiResponse:
         """Composio tooling server API root."""
-        return GetApiResponse(
-            version="0.3.20",
-        )
+        return GetApiResponse(version=__version__)
 
     @app.get("/api/apps", response_model=APIResponse[t.List[AppModel]])
     @with_exception_handling
@@ -169,7 +167,7 @@ def create_app() -> FastAPI:
     @with_exception_handling
     def _update_apps() -> bool:
         """Get list of all available apps."""
-        from composio.cli.apps import (  # pylint: disable=import-outside-toplevel
+        from composio.client.utils import (  # pylint: disable=import-outside-toplevel
             update_actions,
             update_apps,
             update_triggers,

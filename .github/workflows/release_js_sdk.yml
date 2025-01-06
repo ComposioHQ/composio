@@ -14,6 +14,8 @@ on:
 
 jobs:
   run-js-tests:
+    permissions:
+      contents: write
     timeout-minutes: 60
     runs-on: ubuntu-latest
 
@@ -33,30 +35,19 @@ jobs:
     - name: Install packages in js folder
       run: pnpm install --frozen-lockfile
 
+    - name: Bump version
+      run: ./bump_version.sh ${{ github.event.inputs.version }}
+
     - name: Set publishing config
       run: pnpm config set '//registry.npmjs.org/:_authToken' "${NODE_AUTH_TOKEN}"
       env:
         NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
 
-    - name: Update version
-      run: |
-        git config --global user.email "tech@composio.dev"
-        git config --global user.name "Composio"
-        npm version ${{ github.event.inputs.version }} --no-git-tag-version
-
-
-    - name: Commit and push
-      run: |
-        if git diff --quiet; then
-          echo "No changes to commit"
-        else
-          git commit -am "Release ${{ github.event.inputs.version }}" && git push
-        fi
-
     - name: pnpm build
       run: pnpm build
-      
+
     - name: pnpm publish
+      working-directory: js/dist
       run: |
         if ${{ github.event.inputs.isRCRelease }}; then
           pnpm publish --no-git-checks --tag rc

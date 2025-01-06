@@ -1,7 +1,6 @@
 ---
 title: "Using Composio JS SDK with Langchain"
 sidebarTitle: "Langchain (JS)"
-icon: "code"
 description: "Use Composio JS SDK with Langchain"
 ---
 
@@ -25,11 +24,11 @@ const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY, });
 
 async function setupUserConnectionIfNotExists(entityId) {
         const entity = toolset.client.getEntity(entityId);
-        const connection = await entity.getConnection('github');
+        const connection = await entity.getConnection({ appName: "GITHUB" });
 
         if (!connection) {
             // If this entity/user hasn't already connected the account
-            const connection = await entity.initiateConnection(appName);
+            const connection = await entity.initiateConnection({appName: appName});
             console.log("Log in via: ", connection.redirectUrl);
            return connection.waitUntilActive(60);
         }

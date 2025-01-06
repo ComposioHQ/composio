@@ -1,22 +1,10 @@
 ---
 title: "Basic Concepts"
 sidebarTitle: "Basic Concepts"
-icon: "book"
 description: "Core Platform Modules"
 ---
 
-<CardGroup cols={2}>
-<Card color="#7bee0c" title="Tools Guide" icon="arrow-right" href="../../patterns/tools/what-are-tools/">
-Learn how to use, execute, process, and even create tools.
-</Card>
-
-<Card color="#7bee0c" title="User & Auth Guide" icon="users" href="/patterns/Auth/">
-Learn how to manage users and authentication integrations. 
-</Card>
-</CardGroup>
-
-
-| Component         | Description                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Concept           | Description                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 
 | Entity            | **Entity represents your user (Jessica or John)** and all accounts that belong to a specific user will have the same entity ID. 
 | Accounts          | **Accounts represent the link formed when your users connect their accounts (GitHub, Shopify, etc.) to your app**. 
@@ -24,3 +12,27 @@ Learn how to manage users and authentication integrations.
 | Actions           | **Actions are tasks** on top of tools that you can perform using accounts. (Send a mail using Gmail tool) 
 | Triggers          | **Triggers are predefined conditions** that, when met, initiate webhooks to your agents. (When a mail is received in a Gmail account, send a webhook)
 | Integrations      | **Configuration objects that define how your application connects to external services**, including OAuth credentials, permission scopes, and API specifications. They serve as reusable templates for standardizing authentication flows.
+
+
+## Next Steps
+Now that you've seen how to use triggers, you can explore the following resources:
+<CardGroup cols={2}>
+<Card title="Tools" href="../../patterns/tools/what-are-tools">
+Checkout our toolset of 250+ LLM ready tools to build powerful AI applications
+</Card>
+<Card title="Connections" href="patterns/Auth/connected_account">
+Learn how to create and manage connections for your users
+</Card>
+<Card title="Compatible Agentic Frameworks" href="/framework/autogen">
+Integrate with popular agentic frameworks
+</Card>
+<Card title="Kits" href="../../swekit/introduction">
+Composio SWE Kit ([#4 on SWE bench](https://www.swebench.com)) - Your ultimate coding companion
+</Card>
+<Card title="Triggers" href="/patterns/triggers/triggers">
+Subscribe to triggers to execute actions automatically
+</Card>
+<Card title="Other Concepts" href="../../introduction/foundations/components/workspace">
+Learn about workspace environments, using CLI & other concepts
+</Card>
+</CardGroup>

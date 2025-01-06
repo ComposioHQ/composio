@@ -1,20 +1,20 @@
-import { describe, it, expect } from "@jest/globals";
+import { describe, expect, it } from "@jest/globals";
 import { getBackendClient } from "../testUtils/getBackendClient";
 import { Entity } from "./Entity";
 import { ConnectedAccounts } from "./connectedAccounts";
 import { Integrations } from "./integrations";
 
 describe("Entity class tests", () => {
-  let backendClient = getBackendClient();
+  const backendClient = getBackendClient();
   let entity: Entity;
   let triggerId: string;
   let connectedAccounts: ConnectedAccounts;
-  let integrations: Integrations;
+  let _integrations: Integrations;
 
   beforeAll(() => {
     entity = new Entity(backendClient, "default");
     connectedAccounts = new ConnectedAccounts(backendClient);
-    integrations = new Integrations(backendClient);
+    _integrations = new Integrations(backendClient);
   });
 
   it("should create an Entity instance with 'default' id", () => {
@@ -25,7 +25,7 @@ describe("Entity class tests", () => {
   it("should create for different entities", async () => {
     const entityId = "test-entity";
     const entity2 = new Entity(backendClient, entityId);
-    const connection = await entity2.initiateConnection("github");
+    const connection = await entity2.initiateConnection({ appName: "github" });
     expect(connection.connectionStatus).toBe("INITIATED");
 
     const connection2 = await connectedAccounts.get({
@@ -37,24 +37,23 @@ describe("Entity class tests", () => {
 
   it("get connection for github", async () => {
     const app = "github";
-    const connection = await entity.getConnection(app);
-    expect(connection.appUniqueId).toBe(app);
+    const connection = await entity.getConnection({ app });
+    expect(connection?.appUniqueId).toBe(app);
   });
 
   it("execute action", async () => {
-    const connectedAccount = await entity.getConnection("github");
+    const connectedAccount = await entity.getConnection({ app: "github" });
 
     expect(connectedAccount).toHaveProperty("id");
     expect(connectedAccount).toHaveProperty("appUniqueId", "github");
     const actionName = "GITHUB_GITHUB_API_ROOT".toLowerCase();
     const requestBody = {};
 
-    const executionResult = await entity.execute(
+    const executionResult = await entity.execute({
       actionName,
-      requestBody,
-      undefined,
-      connectedAccount.id
-    );
+      params: requestBody,
+      connectedAccountId: connectedAccount?.id,
+    });
     expect(executionResult).toBeDefined();
     expect(executionResult).toHaveProperty("successfull", true);
     expect(executionResult).toHaveProperty("data.authorizations_url");
@@ -62,26 +61,23 @@ describe("Entity class tests", () => {
 
   it("should have an Id of a connected account with label - primary", async () => {
     const entityW2Connection = new Entity(backendClient, "ckemvy");
-    const getConnection = await entityW2Connection.getConnection("github");
+    const getConnection = await entityW2Connection.getConnection({
+      app: "github",
+    });
     expect(getConnection).toHaveProperty("id");
   });
-  
+
   it("get connections", async () => {
     const connections = await entity.getConnections();
     expect(connections.length).toBeGreaterThan(0);
   });
 
-  it("get active triggers", async () => {
-    // const triggers = await entity.getActiveTriggers();
-    // expect(triggers.length).toBeGreaterThan(0);
-  });
-
   it("setup trigger", async () => {
-    const trigger = await entity.setupTrigger(
-      "gmail",
-      "gmail_new_gmail_message",
-      { userId: "me", interval: 60, labelIds: "INBOX" }
-    );
+    const trigger = await entity.setupTrigger({
+      app: "gmail",
+      triggerName: "gmail_new_gmail_message",
+      config: { userId: "me", interval: 60, labelIds: "INBOX" },
+    });
 
     triggerId = trigger.triggerId;
     expect(trigger.status).toBe("success");
@@ -94,7 +90,7 @@ describe("Entity class tests", () => {
   });
 
   it("initiate connection", async () => {
-    const connection = await entity.initiateConnection("github");
+    const connection = await entity.initiateConnection({ appName: "github" });
     expect(connection.connectionStatus).toBe("INITIATED");
   });
 });

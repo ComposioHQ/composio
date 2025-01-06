@@ -1,0 +1,6 @@
+# requirements.txt
+fastapi==0.105.0
+uvicorn==0.24.0
+python-dotenv==1.0.0
+httpx==0.25.2
+python-multipart==0.0.6

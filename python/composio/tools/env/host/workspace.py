@@ -72,6 +72,8 @@ class HostWorkspace(Workspace):
     _browsers: t.Optional[Browsers] = None
     _filemanagers: t.Optional[FileManagers] = None
 
+    _is_ssh_client_set_up: bool
+
     def __init__(self, config: Config):
         """Initialize host workspace."""
         super().__init__(config=config)
@@ -84,6 +86,9 @@ class HostWorkspace(Workspace):
 
     def setup(self) -> None:
         """Setup workspace."""
+        self._is_ssh_client_set_up = False
+
+    def _setup_ssh_client(self) -> None:
         try:
             self.logger.debug(f"Setting up SSH client for workspace {self.id}")
             self._ssh = paramiko.SSHClient()
@@ -106,9 +111,13 @@ class HostWorkspace(Workspace):
             )
             self.logger.debug("Using shell over `subprocess.Popen`")
             self._ssh = None
+        self._is_ssh_client_set_up = True
 
     def _create_shell(self) -> Shell:
         """Create host shell."""
+        if not self._is_ssh_client_set_up:
+            self._setup_ssh_client()
+
         if self._ssh is not None:
             return SSHShell(client=self._ssh, environment=self.environment)
         return HostShell(environment=self.environment)
@@ -171,7 +180,17 @@ class HostWorkspace(Workspace):
                 missing[app.slug].add(dependency)
 
         actions = actions or []
-        for action in map(Action, actions):
+
+        def is_action(obj):
+            try:
+                return hasattr(obj, "app")
+            except AttributeError:
+                return False
+
+        actions = t.cast(
+            t.List[Action], [Action(a) if not is_action(a) else a for a in actions]
+        )
+        for action in actions:
             if not action.is_local or action.is_runtime:
                 continue
 
@@ -242,9 +261,9 @@ class HostWorkspace(Workspace):
 
         registry = load_local_tools()
         tool = (
-            registry["runtime"][action.app.upper()]
+            registry["runtime"][action.app]
             if action.is_runtime
-            else registry["local"][action.app.upper()]
+            else registry["local"][action.app]
         )
         return tool.execute(
             action=action.slug,

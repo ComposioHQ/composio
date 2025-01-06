@@ -18,17 +18,22 @@ def git_reset_cmd(commit_id: str) -> str:
         "git remote get-url origin",
         f"git fetch --depth 1 origin {commit_id}",
         f"git reset --hard {commit_id}",
-        "git clean -fdx",
         "git status",
     ]
     return " && ".join(reset_commands)
 
 
-def git_clone_cmd(repo: str, commit_id: str) -> str:
+def git_clone_cmd(
+    repo: str,
+    commit_id: str,
+    github_access_token: t.Optional[str] = None,
+) -> str:
     """Commands to clone github repository."""
     # repo is in the format of "composiohq/composio" or "django/django"
     repo_name = repo.split("/")[-1]
-    github_access_token = os.environ.get("GITHUB_ACCESS_TOKEN", "").strip()
+    github_access_token = (
+        github_access_token or os.environ.get("GITHUB_ACCESS_TOKEN", "").strip()
+    )
 
     if not github_access_token and os.environ.get("ALLOW_CLONE_WITHOUT_REPO") != "true":
         raise RuntimeError("Cannot clone github repository without github access token")
@@ -112,7 +117,13 @@ class GitClone(LocalAction[GitCloneRequest, GitCloneResponse]):
         command = (
             git_reset_cmd(request.commit_id)
             if request.just_reset
-            else git_clone_cmd(request.repo_name, request.commit_id)
+            else git_clone_cmd(
+                request.repo_name,
+                request.commit_id,
+                github_access_token=metadata.get(
+                    "github-access-token",
+                ),
+            )
         )
         current_dir = filemanager.current_dir()
         if pathlib.Path(current_dir, ".git").exists() and not request.just_reset:

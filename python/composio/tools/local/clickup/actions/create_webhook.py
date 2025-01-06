@@ -23,22 +23,22 @@ class CreateWebhookRequest(BaseModel):
         alias="events",
         description="Events",
     )
-    space_id: int = Field(
+    space_id: t.Optional[int] = Field(
         default=None,
         alias="space_id",
         description="Space Id",
     )
-    folder_id: int = Field(
+    folder_id: t.Optional[int] = Field(
         default=None,
         alias="folder_id",
         description="Folder Id",
     )
-    list_id: int = Field(
+    list_id: t.Optional[int] = Field(
         default=None,
         alias="list_id",
         description="List Id",
     )
-    task_id: str = Field(
+    task_id: t.Optional[str] = Field(
         default=None,
         alias="task_id",
         description="Task Id",

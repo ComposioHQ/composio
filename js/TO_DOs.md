@@ -1,0 +1,11 @@
+List of things to do for Composio JS SDK
+- [ ] Decrease bundle size more to less than 500 kb.[DONE]
+- [ ] Add support via browserify[DONE]
+- [ ] Add test for connected account execution
+- [ ] Add example test for cloudflare, vercel, server components. Check release with different run time
+- [ ] Move away from axios
+- [ ] Optimise code from openapi spec
+- [ ] Move away from class based to functional based code
+- [ ] Add react code library
+- [ ] Add more edge cases
+- [ ] Sign JS SDK CLIs
