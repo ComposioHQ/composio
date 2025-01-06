@@ -3,3 +3,4 @@ composio-crewai
 python-dotenv
 langchain-openai
 crewai
+sqlalchemy>=2.0

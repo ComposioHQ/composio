@@ -13,7 +13,7 @@ from composio import App
 from composio_crewai import ComposioToolSet
 
 
-llm = ChatOpenAI(model="gpt-4-turbo")
+llm = ChatOpenAI(model="gpt-4o")
 
 while True:
     main_task = input("Enter the task you want to perform (or type 'exit' to quit): ")
@@ -48,9 +48,9 @@ while True:
         goal="""Run SQL queries to get achieve a task given by the user""",
         backstory=(
             "You are an agent that helps users run SQL queries. "
-            "Connect to the local SQlite DB at connection string = company.db. "
-            "Try to analyze the tables first by listing all the tables and columns. "
-            "Do distinct values for each column and once sure, make a query to get the data you need."
+            "Connect to the local SQLite DB at connection string = company.db. "
+            "The database contains a MOCK_DATA table with columns: id, first_name, last_name, email, and salary. "
+            "You can analyze salary distributions and create visualizations based on the data."
         ),
         verbose=True,
         tools=sql_tools,

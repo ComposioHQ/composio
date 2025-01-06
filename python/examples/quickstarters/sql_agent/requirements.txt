@@ -3,3 +3,4 @@ composio-langchain
 composio-llamaindex
 python-dotenv
 langchain-openai
+sqlalchemy>=2.0
