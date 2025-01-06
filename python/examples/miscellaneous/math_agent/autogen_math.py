@@ -54,5 +54,20 @@ task = "What is 230 multiplied by 52 and added with 233 divided by 91?"
 # Execute task.
 response = user_proxy.initiate_chat(chatbot, message=task)
 
-# Print response
-print(response.chat_history)
+# Extract and print the final rounded result
+def extract_final_number(chat_history):
+    """Extract and round the final number from the chat history."""
+    import re
+    last_message = chat_history[-1].get("content", "")
+    # Find all numbers (including decimals) in the text
+    numbers = re.findall(r'\d+\.?\d*', last_message)
+    if numbers:
+        # Get the last number and round it
+        return str(round(float(numbers[-1])))
+    return None
+
+final_result = extract_final_number(response.chat_history)
+if final_result:
+    print(final_result)  # Print only the rounded final number
+else:
+    print("Error: Could not extract final number from response")
