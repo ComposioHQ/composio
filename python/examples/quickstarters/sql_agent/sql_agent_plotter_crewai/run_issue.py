@@ -1,18 +1,21 @@
-import os
+"""
+SQL Agent plotter example demonstrating how to create a bar chart of employee data.
+This script specifically plots the relationship between employee name first letters and average salaries.
+"""
+
 from pathlib import Path
 
 import dotenv
 from crewai import Agent, Crew, Task
 from langchain_openai import ChatOpenAI
 
-from composio import Action, App
-
+from composio import App
 from composio_crewai import ComposioToolSet
 
 
 llm = ChatOpenAI(model="gpt-4-turbo")
 
-main_task = "Plot a bar chart of employee's first letter of name to average salary"
+MAIN_TASK = "Plot a bar chart of employee's first letter of name to average salary"
 code_interpreter_tools = ComposioToolSet(
     output_dir=Path.home() / "composio_output"
 ).get_tools(apps=[App.CODEINTERPRETER])
@@ -22,7 +25,7 @@ sql_tools = ComposioToolSet(output_dir=Path.home() / "composio_output").get_tool
 
 code_interpreter_agent = Agent(
     role="Python Code Interpreter Agent",
-    goal=f"""Run I a code to get achieve a task given by the user.""",
+    goal="""Run I a code to get achieve a task given by the user.""",
     backstory="""You are an agent that helps users run Python code.  If you are generating any chart, please download the file at the end using get file action""",
     verbose=True,
     tools=code_interpreter_tools,
@@ -31,14 +34,14 @@ code_interpreter_agent = Agent(
 )
 
 code_interpreter_task = Task(
-    description=f"""Run Python code to get achieve a task - {main_task}""",
-    expected_output=f"""Python code executed successfully. The result of the task is returned - {main_task}""",
+    description="""Run Python code to get achieve a task - """ + MAIN_TASK,
+    expected_output="""Python code executed successfully. The result of the task is returned - """ + MAIN_TASK,
     agent=code_interpreter_agent,
 )
 
 sql_agent = Agent(
     role="SQL Agent",
-    goal=f"""Run SQL queries to get achieve a task given by the user""",
+    goal="""Run SQL queries to get achieve a task given by the user""",
     backstory=(
         "You are an agent that helps users run SQL queries. "
         "Connect to the local SQlite DB at connection string = company.db"
@@ -53,8 +56,8 @@ sql_agent = Agent(
 )
 
 sql_task = Task(
-    description=f"""Run SQL queries to get achieve a task - {main_task}""",
-    expected_output=f"""SQL queries executed successfully. The result of the task is returned - {main_task}""",
+    description="""Run SQL queries to get achieve a task - """ + MAIN_TASK,
+    expected_output="""SQL queries executed successfully. The result of the task is returned - """ + MAIN_TASK,
     agent=sql_agent,
 )
 

@@ -1,12 +1,15 @@
-import os
+"""
+SQL Agent plotter example using CrewAI framework to execute SQL queries and create visualizations.
+This example demonstrates the integration of SQL tools with code interpreter for data analysis.
+"""
+
 from pathlib import Path
 
 import dotenv
 from crewai import Agent, Crew, Task
 from langchain_openai import ChatOpenAI
 
-from composio import Action, App
-
+from composio import App
 from composio_crewai import ComposioToolSet
 
 
@@ -26,7 +29,7 @@ while True:
 
     code_interpreter_agent = Agent(
         role="Python Code Interpreter Agent",
-        goal=f"""Run I a code to get achieve a task given by the user""",
+        goal="""Run I a code to get achieve a task given by the user""",
         backstory="""You are an agent that helps users run Python code.""",
         verbose=True,
         tools=code_interpreter_tools,
@@ -35,19 +38,19 @@ while True:
     )
 
     code_interpreter_task = Task(
-        description=f"""Run Python code to get achieve a task - {main_task}""",
-        expected_output=f"""Python code executed successfully. The result of the task is returned - {main_task}""",
+        description="""Run Python code to get achieve a task - """ + main_task,
+        expected_output="""Python code executed successfully. The result of the task is returned - """ + main_task,
         agent=code_interpreter_agent,
     )
 
     sql_agent = Agent(
         role="SQL Agent",
-        goal=f"""Run SQL queries to get achieve a task given by the user""",
+        goal="""Run SQL queries to get achieve a task given by the user""",
         backstory=(
             "You are an agent that helps users run SQL queries. "
-            "Connect to the local SQlite DB at connection string = company.db"
-            "Try to analyze the tables first by listing all the tables and columns "
-            "and doing distinct values for each column and once sure, make a query to get the data you need."
+            "Connect to the local SQlite DB at connection string = company.db. "
+            "Try to analyze the tables first by listing all the tables and columns. "
+            "Do distinct values for each column and once sure, make a query to get the data you need."
         ),
         verbose=True,
         tools=sql_tools,
@@ -57,8 +60,8 @@ while True:
     )
 
     sql_task = Task(
-        description=f"""Run SQL queries to get achieve a task - {main_task}""",
-        expected_output=f"""SQL queries executed successfully. The result of the task is returned - {main_task}""",
+        description="""Run SQL queries to get achieve a task - """ + main_task,
+        expected_output="""SQL queries executed successfully. The result of the task is returned - """ + main_task,
         agent=sql_agent,
     )
 

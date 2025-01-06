@@ -1,12 +1,13 @@
-import os
+"""
+SQL Agent plotter example using LlamaIndex framework to execute SQL queries and create visualizations.
+This example demonstrates the integration of SQL tools with LlamaIndex's function calling agent worker.
+"""
 
 import dotenv
 from composio_llamaindex import App, ComposioToolSet
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage
 from llama_index.llms.openai import OpenAI
-
-from composio.tools.local import filetool, sqltool
 
 
 dotenv.load_dotenv()
@@ -35,9 +36,9 @@ agent = FunctionCallingAgentWorker(
     verbose=True,
 ).as_agent()
 
-human_description = "The database to use is company.db"
-human_input = "Query the table MOCK_DATA for all rows and plot a graph between first names and salary by using code interpreter"
+HUMAN_DESCRIPTION = "The database to use is company.db"
+HUMAN_INPUT = "Query the table MOCK_DATA for all rows and plot a graph between first names and salary by using code interpreter"
 response = agent.chat(
-    "Database description =" + human_description + "Task to perform:" + human_input
+    "Database description =" + HUMAN_DESCRIPTION + "Task to perform:" + HUMAN_INPUT
 )
 print("Response:", response)

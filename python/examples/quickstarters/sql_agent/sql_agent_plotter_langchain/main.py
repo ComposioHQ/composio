@@ -1,6 +1,8 @@
-import os
+"""
+SQL Agent plotter example using LangChain framework to execute SQL queries and create visualizations.
+This example demonstrates the integration of SQL tools with LangChain's function calling capabilities.
+"""
 
-# Load environment variables
 import dotenv
 from langchain import hub
 from langchain.agents import AgentExecutor, create_openai_functions_agent

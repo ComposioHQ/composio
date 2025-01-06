@@ -1,13 +1,13 @@
-import os
-import sqlite3
+"""
+SQL Agent example using CrewAI framework to execute SQL queries and analyze data.
+This example demonstrates how to use ComposioToolSet with SQL and code interpreter tools.
+"""
 
 import dotenv
 from crewai import Agent, Crew, Process, Task
 from langchain_openai import ChatOpenAI
 
-from composio.tools.local import filetool, sqltool
-
-from composio_langchain import Action, App, ComposioToolSet
+from composio_langchain import App, ComposioToolSet
 
 
 # Load environment variables from .env file
@@ -73,17 +73,17 @@ file_writer_agent = Agent(
 )
 
 # User-provided description of the database and input query
-user_description = "The database name is companydb"  # Edit the description for your database and tables
-user_input = "fetch the rows in the products table"  # Edit the input for the action you want it to perform
+USER_DESCRIPTION = "The database name is companydb"  # Edit the description for your database and tables
+USER_INPUT = "fetch the rows in the products table"  # Edit the input for the action you want it to perform
 
 
 # Define the task for executing the SQL query
 execute_query_task = Task(
     description=(
         "This is the database description="
-        + user_description
+        + USER_DESCRIPTION
         + "form a sql query based on this input="
-        + user_input
+        + USER_INPUT
         + "Execute the SQL query formed by the Query Writer Agent, "
         "and return the results. Pass the query and connection string parameter."
         "The connection string parameter should just be of the format <database_name_given>.db"
