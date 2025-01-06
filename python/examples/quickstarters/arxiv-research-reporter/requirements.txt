@@ -1,0 +1,5 @@
+composio-core
+composio-llamaindex
+python-dotenv
+llama-index
+openai

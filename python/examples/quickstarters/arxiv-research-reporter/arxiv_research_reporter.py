@@ -1,22 +1,43 @@
-import os
+"""
+ArXiv Research Reporter Example
+
+This script demonstrates the use of LlamaIndex and Composio tools to:
+1. Research a specific topic on ArXiv
+2. Create GitHub issues based on the research findings
+3. Organize and present the findings in a structured format
+
+The script uses OpenAI's GPT-4o model for processing and analysis.
+"""
+
 import dotenv
 from composio_llamaindex import Action, ComposioToolSet  # pylint: disable=import-error
+from llama_index.agent.openai import OpenAIAgent
 from llama_index.core.llms import ChatMessage  # pylint: disable=import-error
 from llama_index.llms.openai import OpenAI  # pylint: disable=import-error
-from llama_index.agent.openai import OpenAIAgent
 from llama_index.tools.arxiv.base import ArxivToolSpec
+
 
 # Load environment variables from .env
 dotenv.load_dotenv()
 
 llm = OpenAI(model="gpt-4o")
 
-research_topic = "LLM agents function calling"
-target_repo = "composiohq/composio"
-n_issues = 3
+# Configuration constants
+RESEARCH_TOPIC = "LLM agents function calling"
+TARGET_REPO = "composiohq/composio"
+N_ISSUES = 3
 
 
 def main():
+    """
+    Main function that orchestrates the research and issue creation process.
+
+    This function:
+    1. Initializes the Composio toolset for GitHub integration
+    2. Sets up the ArXiv research tool
+    3. Configures and runs an OpenAI agent to perform research and create issues
+    4. Processes and displays the results
+    """
     # Get All the tools
     composio_toolset = ComposioToolSet()
     tools = composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_AN_ISSUE])
@@ -26,7 +47,7 @@ def main():
         ChatMessage(
             role="system",
             content=(
-                "You are now a integration agent, and what  ever you are "
+                "You are now an integration agent, and whatever you are "
                 "requested, you will try to execute utilizing your tools."
             ),
         )
@@ -42,11 +63,11 @@ def main():
     )
 
     response = agent.chat(
-        f"Please research on Arxiv about `{research_topic}`, Organize "
-        f"the top {n_issues} results as {n_issues} issues for "
+        f"Please research on Arxiv about `{RESEARCH_TOPIC}`, Organize "
+        f"the top {N_ISSUES} results as {N_ISSUES} issues for "
         f"a github repository, finally raise those issues with proper, "
         f"title, body, implementation guidance and reference in "
-        f"{target_repo} repo,  as well as relevant tags and assignee as "
+        f"{TARGET_REPO} repo, as well as relevant tags and assignee as "
         "the repo owner."
     )
 
