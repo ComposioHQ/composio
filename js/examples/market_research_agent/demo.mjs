@@ -19,7 +19,7 @@ dotenv.config();
         });
 
         const tools = await toolset.getTools({
-            apps: ["tavily"]
+            apps: ["tavily","googledocs"]
         });
 
         const prompt = await pull("hwchase17/openai-functions-agent");
