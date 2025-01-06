@@ -1,28 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# Chat with Sheets Example
 
-## Getting Started
+This example demonstrates how to create a chat interface that interacts with Google Sheets using Composio, Next.js, and OpenAI. The application allows users to chat with an AI assistant that can read from and write to Google Sheets.
 
-First, run the development server:
+## Prerequisites
+
+Before running this example, make sure you have:
+
+1. A Composio API key
+2. Google Sheets integration set up in your Composio account
+3. Node.js >= 18.0.0
+4. pnpm (recommended) or npm
+
+## Environment Setup
+
+1. Create a `.env.local` file in the root directory with the following variables:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Required API Keys
+COMPOSIO_API_KEY=your_composio_api_key_here
+
+# Google Sheets Configuration (Optional - defaults to example spreadsheet)
+GOOGLE_SHEETS_SPREADSHEET_ID=your_spreadsheet_id_here
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Google Sheets Integration
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+This example requires proper setup of Google Sheets integration:
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+1. The default entity ("default") is used for Google Sheets access
+2. When first running the application:
+   - The system will automatically initiate Google Sheets OAuth if not connected
+   - You'll need to complete the OAuth flow by following the provided redirect URL
+   - Wait up to 60 seconds for the OAuth connection to become active
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+## Installation
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Install dependencies:
+```bash
+pnpm install
+```
+
+2. Start the development server:
+```bash
+pnpm dev
+```
+
+3. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## Features
+
+- Chat interface for interacting with Google Sheets
+- Automatic OAuth setup for first-time users
+- Support for reading and writing to Google Sheets
+- Integration with OpenAI's GPT-4 model
+
+## Troubleshooting
+
+If you encounter issues:
+1. Ensure all required dependencies are installed
+2. Verify your Composio API key is correctly set in `.env.local`
+3. Check that Google Sheets OAuth setup is complete
+4. Wait for the OAuth connection to become active (up to 60 seconds)
 
 ## Learn More
 

@@ -7,5 +7,5 @@ compatibility_date = "2024-07-01"
 binding = "AI"
 
 [vars]
-COMPOSIO_API_KEY = "your_composio_api_key"
+COMPOSIO_API_KEY = "hz0mv4q4u3sfkoty9f4k8"
 OPENAI_API_KEY = "your_openai_api_key"
