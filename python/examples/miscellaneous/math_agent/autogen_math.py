@@ -1,3 +1,21 @@
+"""
+Math Agent Example using AutoGen and Composio
+
+This script demonstrates how to use AutoGen with Composio to perform mathematical calculations.
+It uses a chatbot agent to solve math problems and formats the output as integers.
+
+Required Environment Variables:
+    - OPENAI_API_KEY: Your OpenAI API key
+    - COMPOSIO_API_KEY: Your Composio API key
+
+To use this example:
+1. Create a .env file in the same directory
+2. Add your API keys to the .env file:
+   OPENAI_API_KEY=your_openai_key_here
+   COMPOSIO_API_KEY=your_composio_key_here
+3. Run the script
+"""
+
 import os
 
 import dotenv
@@ -12,7 +30,12 @@ dotenv.load_dotenv()
 required_env_vars = ["OPENAI_API_KEY", "COMPOSIO_API_KEY"]
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
-    raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
+    raise ValueError(
+        f"Missing required environment variables: {', '.join(missing_vars)}. "
+        "Please create a .env file in the same directory and add these variables:\n"
+        "OPENAI_API_KEY=your_openai_key_here\n"
+        "COMPOSIO_API_KEY=your_composio_key_here"
+    )
 
 
 # Initialize tools.
