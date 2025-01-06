@@ -619,7 +619,10 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             self.logger.debug("Failed to validate success response model")
             return output
 
-        return self._substitute_file_download_data(action=action, response=output)
+        try:
+            return self._substitute_file_download_data(action=action, response=output)
+        except KeyError:
+            return output
 
     def _serialize_execute_params(self, param: ParamType) -> ParamType:
         """Returns a serialized version of the parameters object."""
@@ -852,7 +855,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
         return self._substitute_file_upload_data_recursively(
             params=params,
-            schema=_schema.model_dump().pop("parameters"),
+            schema=_schema.parameters.model_dump(),
         )
 
     def _is_file_downloadable(self, schema: t.Dict) -> bool:
