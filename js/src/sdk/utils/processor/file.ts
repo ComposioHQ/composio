@@ -10,7 +10,6 @@ export const fileResponseProcessor: TPostProcessor = ({
   actionName,
   toolResponse,
 }) => {
-
   const fileData = toolResponse?.data?.file as
     | { name: string; content: string }
     | undefined;
