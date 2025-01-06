@@ -2,12 +2,11 @@ import os
 
 # Load environment variables
 import dotenv
-from composio_langchain import App, ComposioToolSet
 from langchain import hub
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
 
-
+from composio_langchain import App, ComposioToolSet
 
 
 dotenv.load_dotenv()

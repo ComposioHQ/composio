@@ -1,4 +1,5 @@
 import os
+
 import dotenv
 from composio_llamaindex import App, ComposioToolSet
 from llama_index.core.agent import FunctionCallingAgentWorker
@@ -6,6 +7,7 @@ from llama_index.core.llms import ChatMessage
 from llama_index.llms.openai import OpenAI
 
 from composio.tools.local import filetool, sqltool
+
 
 dotenv.load_dotenv()
 toolset = ComposioToolSet()

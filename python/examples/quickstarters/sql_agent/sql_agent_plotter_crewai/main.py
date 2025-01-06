@@ -2,12 +2,12 @@ import os
 from pathlib import Path
 
 import dotenv
-from composio_crewai import ComposioToolSet
 from crewai import Agent, Crew, Task
 from langchain_openai import ChatOpenAI
 
 from composio import Action, App
 
+from composio_crewai import ComposioToolSet
 
 
 llm = ChatOpenAI(model="gpt-4-turbo")
@@ -17,8 +17,12 @@ while True:
     if main_task.lower() == "exit":
         break
 
-    code_interpreter_tools = ComposioToolSet(output_dir=Path.home() / "composio_output").get_tools(apps=[App.CODEINTERPRETER])
-    sql_tools = ComposioToolSet(output_dir=Path.home() / "composio_output").get_tools(apps=[App.SQLTOOL])
+    code_interpreter_tools = ComposioToolSet(
+        output_dir=Path.home() / "composio_output"
+    ).get_tools(apps=[App.CODEINTERPRETER])
+    sql_tools = ComposioToolSet(output_dir=Path.home() / "composio_output").get_tools(
+        apps=[App.SQLTOOL]
+    )
 
     code_interpreter_agent = Agent(
         role="Python Code Interpreter Agent",
