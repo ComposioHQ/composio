@@ -55,7 +55,10 @@ EXAMPLES = {
             "type": "stdout",
             "values": ["11962"],
         },
-        "env": {"OPENAI_API_KEY": OPENAI_API_KEY},
+        "env": {
+            "OPENAI_API_KEY": OPENAI_API_KEY,
+            "COMPOSIO_API_KEY": COMPOSIO_API_KEY,
+        },
     },
     "runtime_tools": {
         "plugin": "langchain",

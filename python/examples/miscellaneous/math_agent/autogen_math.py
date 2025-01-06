@@ -8,6 +8,12 @@ from composio_autogen import App, ComposioToolSet
 # Load environment variables from .env
 dotenv.load_dotenv()
 
+# Validate required environment variables
+required_env_vars = ["OPENAI_API_KEY", "COMPOSIO_API_KEY"]
+missing_vars = [var for var in required_env_vars if not os.getenv(var)]
+if missing_vars:
+    raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
+
 
 # Initialize tools.
 chatbot = AssistantAgent(
