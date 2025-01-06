@@ -15,10 +15,26 @@ cd composio/js/examples/scheduling-agent
 pnpm install
 ```
 
-3. Create a `.env` file in this directory and add your Composio API key:
+Required dependencies:
+- `@ai-sdk/openai`: For OpenAI model integration
+- `ai`: For text generation functionality
+- `composio-core`: For Composio toolset and entity management
+- `dotenv`: For environment variable management
+- `zod`: For data validation
+
+3. Set up environment variables:
+   - Copy `.env.example` to `.env`
+   - Fill in the required API keys:
+     - `COMPOSIO_API_KEY`: Your Composio API key for tool access
+     - `OPENAI_API_KEY`: Your OpenAI API key for GPT-4 model access
+     - `GROQ_API_KEY` (Optional): Your Groq API key if using Groq models instead of OpenAI
+
 ```bash
-COMPOSIO_API_KEY=YOUR_COMPOSIO_API_KEY
-OPENAI_API_KEY=YOUR_OPENAI_API_KEY
+# Copy the example environment file
+cp .env.example .env
+
+# Edit .env and add your API keys
+nano .env
 ```
 
 4. Run the demo:
