@@ -51,7 +51,7 @@ export class AIHelper {
       console.log('Setting up user connection for entityId:', entityId);
       const toolset = new CloudflareToolSet({ apiKey: this.env.COMPOSIO_API_KEY });
       const entity = await toolset.client.getEntity(entityId);
-      const connection = await entity.getConnection('gmail');
+      const connection = await entity.getConnection({app:'gmail'});
 
       if (!connection) {
         const newConnection = await entity.initiateConnection('gmail');
