@@ -146,7 +146,7 @@ jobs:
           files: python/dist/composio-linux-amd64.zip
 
       # Mac Intel Release
-      - if: matrix.os == 'macos013' && github.event_name == 'release'
+      - if: matrix.os == 'macos-13' && github.event_name == 'release'
         run: |
           cd python/
           mv dist/__main__ dist/bin
@@ -155,7 +155,7 @@ jobs:
           cd dist/
           zip -r composio-darwin-amd64.zip bin/*
           rm -rf bin/
-      - if: matrix.os == 'macos013' && github.event_name == 'release'
+      - if: matrix.os == 'macos-13' && github.event_name == 'release'
         name: Upload artifact
         uses: softprops/action-gh-release@v2
         with:
