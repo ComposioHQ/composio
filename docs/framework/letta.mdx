@@ -16,7 +16,7 @@ pip install composio_langchain letta
 <Step title="Import Libraries & Configure Client">
 ```bash Python
 from letta import EmbeddingConfig, LLMConfig, create_client
-from composio_langchain import Action
+from composio_langchain import Action, ComposioToolSet
 
 client = create_client()
 
@@ -24,6 +24,24 @@ client = create_client()
 client.set_default_llm_config(LLMConfig.default_config(model_name="gpt-4"))
 client.set_default_embedding_config(EmbeddingConfig.default_config(model_name="text-embedding-ada-002"))
 ```
+</Step>
+
+<Step title="Connect Your GitHub Account">
+<Info>You need to have an active GitHub Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
+<CodeGroup>
+```shell CLI
+composio login 
+composio add github
+```
+```python Python
+toolset = ComposioToolSet()
+request = toolset.initiate_connection(app=App.GITHUB)
+print(f"Open this URL to authenticate: {request.redirectUrl}")
+```
+</CodeGroup>
+<Tip>
+Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
+</Tip>
 </Step>
 
 <Step title="Add GitHub action to Client">

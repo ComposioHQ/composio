@@ -21,8 +21,8 @@ npm i @langchain/core
 ```
 </CodeGroup>
 </Step>
-<Step title="Import Libraries & Initialize ComposioToolSet & LLM">
-You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
+
+<Step title="Import Libraries & Initialize ComposioToolSet">
 <CodeGroup>
 ```python Python
 from typing import Literal
@@ -32,14 +32,6 @@ from langgraph.prebuilt import ToolNode
 from composio_langgraph import Action, ComposioToolSet, App
 
 composio_toolset = ComposioToolSet()
-tools = composio_toolset.get_tools(
-    apps=[App.GITHUB]
-)
-
-tool_node = ToolNode(tools)
-
-model = ChatOpenAI(temperature=0, streaming=True)
-model_with_tools = model.bind_tools(tools)
 ```
 ```typescript TypeScript
 import { LangGraphToolSet } from "composio-core";
@@ -49,7 +41,43 @@ import { StateGraph, END, MessagesAnnotation, START } from "@langchain/langgraph
 import { HumanMessage } from "@langchain/core/messages";
 
 const composioToolset = new LangGraphToolSet();
+```
+</CodeGroup>
+</Step>
 
+<Step title="Connect Your GitHub Account">
+    <Info>You need to have an active GitHub Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
+    <CodeGroup>
+        ```shell CLI
+        composio login
+        composio add github
+        ```
+        ```python Python
+        request = composio_toolset.initiate_connection(app=App.GITHUB)
+        print(f"Open this URL to authenticate: {request.redirectUrl}")
+        ```
+        ```javascript TypeScript
+        const connection = await composioToolset.connectedAccounts.initiate({appName: "github"})
+        console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
+        ```
+    </CodeGroup>
+    <Tip>
+        Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
+    </Tip>
+</Step>
+
+<Step title="Get And Bind Tools">
+You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
+<CodeGroup>
+```python Python
+tools = composio_toolset.get_tools(
+    apps=[App.GITHUB]
+)
+tool_node = ToolNode(tools)
+model = ChatOpenAI(temperature=0, streaming=True)
+model_with_tools = model.bind_tools(tools)
+```
+```typescript TypeScript
 const tools = await composioToolset.getTools({
     apps: ["github"],
 });
