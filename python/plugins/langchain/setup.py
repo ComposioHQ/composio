@@ -27,7 +27,7 @@ setup(
         "langchain-openai>=0.0.2.post1",
         "pydantic>=2.6.4",
         "langchainhub>=0.1.15",
-        "composio_core>=0.6.0,<0.7.0",
+        "composio_core>=0.6.11,<0.7.0",
     ],
     include_package_data=True,
 )
