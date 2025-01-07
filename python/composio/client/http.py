@@ -56,7 +56,6 @@ class HttpClient(SyncSession, logging.WithLogger):
             self._logger.debug(
                 f"{method.__name__.upper()} {self.base_url}{url} - {kwargs}"
             )
-            self.headers.update({"x-request-id": generate_request_id()})
 
             retries = 0
             while retries < 3:
@@ -64,6 +63,7 @@ class HttpClient(SyncSession, logging.WithLogger):
                     return method(
                         url=f"{self.base_url}{url}",
                         timeout=self.timeout,
+                        headers={"x-request-id": generate_request_id()},
                         **kwargs,
                     )
                 except ReadTimeout:
