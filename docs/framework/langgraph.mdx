@@ -4,8 +4,8 @@ sidebarTitle: "LangGraph"
 description: "Integrate Composio with LangGraph agents to let them seamlessly interact with external apps"
 ---
 
-## Star A Repository on Github
-In this example, we will use LangGraph Agent to star a repository on Github using Composio Tools
+## Star A Repository on GitHub
+In this example, we will use LangGraph Agent to star a repository on GitHub using Composio Tools
 
 <Steps>
 <Step title="Install Packages">
@@ -150,7 +150,7 @@ for chunk in app.stream(
         "messages": [
             (
                 "human",
-                "Star the Github Repository composiohq/composio",
+                "Star the GitHub Repository composiohq/composio",
             )
         ]
     },
@@ -161,7 +161,7 @@ for chunk in app.stream(
 ```typescript TypeScript
 const stream = await app.invoke({
     messages: [
-        new HumanMessage("Star the Github Repository composiohq/composio"),
+        new HumanMessage("Star the GitHub Repository composiohq/composio"),
     ],
 });
 
