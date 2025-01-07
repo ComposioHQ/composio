@@ -62,7 +62,10 @@ class HttpClient(SyncSession, logging.WithLogger):
                     return method(
                         url=f"{self.base_url}{url}",
                         timeout=self.timeout,
-                        headers={"x-request-id": generate_request_id()},
+                        headers={
+                            **kwargs.pop("headers", {}),
+                            "x-request-id": generate_request_id(),
+                        },
                         **kwargs,
                     )
                 except ReadTimeout:
