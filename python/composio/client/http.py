@@ -56,7 +56,6 @@ class HttpClient(SyncSession, logging.WithLogger):
             self._logger.debug(
                 f"{method.__name__.upper()} {self.base_url}{url} - {kwargs}"
             )
-
             retries = 0
             while retries < 3:
                 try:
