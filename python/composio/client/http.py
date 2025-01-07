@@ -41,7 +41,6 @@ class HttpClient(SyncSession, logging.WithLogger):
         self.headers.update(
             {
                 "x-api-key": api_key,
-                "x-request-id": generate_request_id(),
                 "x-source": SOURCE_HEADER,
                 "x-runtime": runtime or DEFAULT_RUNTIME,
                 "x-composio-version": __version__,
@@ -63,6 +62,10 @@ class HttpClient(SyncSession, logging.WithLogger):
                     return method(
                         url=f"{self.base_url}{url}",
                         timeout=self.timeout,
+                        headers={
+                            **kwargs.pop("headers", {}),
+                            "x-request-id": generate_request_id(),
+                        },
                         **kwargs,
                     )
                 except ReadTimeout:
