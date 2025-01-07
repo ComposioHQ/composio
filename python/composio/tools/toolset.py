@@ -1169,8 +1169,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         :return: A list of actions matching the relevant use case.
         """
         if advanced:
+            app_keys = [str(app) for app in apps]
             actions = []
-            for task in self.client.actions.search_for_a_task(use_case=use_case):
+            for task in self.client.actions.search_for_a_task(
+                apps=app_keys, use_case=use_case
+            ):
                 actions += task.actions
         else:
             actions = list(
