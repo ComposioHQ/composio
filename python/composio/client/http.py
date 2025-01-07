@@ -41,7 +41,6 @@ class HttpClient(SyncSession, logging.WithLogger):
         self.headers.update(
             {
                 "x-api-key": api_key,
-                "x-request-id": generate_request_id(),
                 "x-source": SOURCE_HEADER,
                 "x-runtime": runtime or DEFAULT_RUNTIME,
                 "x-composio-version": __version__,
@@ -57,6 +56,8 @@ class HttpClient(SyncSession, logging.WithLogger):
             self._logger.debug(
                 f"{method.__name__.upper()} {self.base_url}{url} - {kwargs}"
             )
+            self.headers.update({"x-request-id": generate_request_id()})
+
             retries = 0
             while retries < 3:
                 try:
