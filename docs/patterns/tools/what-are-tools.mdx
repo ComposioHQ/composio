@@ -30,9 +30,38 @@ LLM's thinking process:
 
 ### Tool calling with Composio
 
-At Composio, we offer tools for multiple platforms, accessible via Python and JavaScript SDKs. These platforms, referred to as **Apps** or **Tools**, include popular services like GitHub, Twitter, Salesforce, Jira, and Notion. Within each of these Apps, we provide **Actions**, which are essentially functions that can be executed. For example, you can send an email on Gmail, star a repository on GitHub, or create an issue on Jira. These tools can also be used directly, similar to function calls, without needing agents.
+At Composio, tools are offered for multiple platforms, accessible via Python and JavaScript SDKs. These platforms, referred to as **Apps** or **Tools**, include popular services like GitHub, Twitter, Salesforce, Jira, and Notion. Within each of these Apps, we provide **Actions**, which are essentially functions that can be executed. For example, you can send an email on Gmail, star a repository on GitHub, or create an issue on Jira. These tools can also be used directly, similar to function calls, without needing agents.
+<Tabs>
+<Tab title="Python">
+Use the `ComposioToolSet` class to use and configure tools:
+- Use `composio-core` package for direct action execution
+- Use framework-specific packages (like `composio-langchain` or `composio-crewai`) when working with Agentic frameworkswhat
 
-<CodeGroup>
+See all supported frameworks [here](../../framework/autogen).
+
+### Arguments Accepted by ComposioToolSet
+
+#### Basic Uscase:
+- `api_key`: Composio API key. Get your API key [here](https://app.composio.dev/developers)
+- `entity_id`: The ID of the entity to execute the action on. Defaults to **default**
+- `connected_account_ids`: Use this to define connected accounts to use when executing an action for a specific app
+
+#### Extensive Usecase:
+- `output_dir`: Directory path to store downloaded files
+- `metadata`: Additional metadata for executing an action. Learn more [here](use-tools/configure-tools)
+- `processors`: Request and response processors, use these to pre-process requests before executing an action and post-process the response after an action has been executed. Learn more [here](use-tools/processing-actions)
+- `logging_level`: Accepted values: CRITICAL, FATAL, ERROR, WARNING, WARN, INFO, DEBUG
+- `verbosity_level`: This defines the size of the log object that will be printed on the console.
+
+#### Advanced Usecase:
+- `base_url`: Base URL for the Composio API server
+- `output_in_file`: Whether to output the result to a file.
+- `workspace_id`: Workspace ID for loading an existing workspace
+- `workspace_config`:
+- `max_retries`: 
+- `**kwargs`: Additional arguments for advanced use cases.
+
+#### Getting Tools
 ```python Python 
 from composio_langchain import ComposioToolSet, Action, App
 
@@ -44,6 +73,18 @@ tools = tool_set.get_tools(apps=[App.GITHUB])
 # Get specific actions
 tools = tool_set.get_tools(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
 ```
+</Tab>
+<Tab title="JavaScript">
+Tools and Actions are available through different toolset classes:
+- Use `ComposioToolSet` for direct action execution
+- Use framework-specific classes like `OpenAIToolSet` or `LangchainToolSet` when working with OpenAI, LangChain or other [frameworks](../../framework/autogen). 
+
+#### Basic Uscase:
+- `apiKey`: Composio API key. Get your API key [here](https://app.composio.dev/developers)
+- `entityId`: The ID of the entity to execute the action on. Defaults to **default**
+
+#### Advanced Usecase:
+- `baseUrl`: Base URL for the Composio API server
 
 ```javascript JavaScript
 import { LangchainToolSet } from "composio-core";
@@ -56,7 +97,8 @@ const tools = await composioToolset.getTools({ apps: ["github"] });
 // Get specific actions
 const tools = await composioToolset.getTools({ actions: ["github_star_a_repository_for_the_authenticated_user"] });
 ```
-</CodeGroup>
+</Tab>
+</Tabs>
 
 ### Action Types
 
