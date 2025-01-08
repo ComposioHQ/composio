@@ -41,7 +41,7 @@ load_dotenv()
 
 <Step title="Initializing the Tools and the LLM">
 ```python initialize toolset and llm
-toolset = ComposioToolSet(api_key="")
+toolset = ComposioToolSet(api_key="YOUR-API-KEY")
 tools = toolset.get_tools(actions=[Action.HUBSPOT_LIST_CONTACTS_PAGE, Action.GMAIL_CREATE_EMAIL_DRAFT])
 
 llm = OpenAI(model="gpt-4o")
