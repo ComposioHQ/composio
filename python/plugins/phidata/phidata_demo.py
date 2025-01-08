@@ -1,12 +1,12 @@
 from composio_phidata import Action, ComposioToolSet
-from phi.assistant import Assistant
+from phi.agent import Agent
 
 
 toolset = ComposioToolSet()
 composio_tools = toolset.get_tools(
-    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
+    actions=[Action.GOOGLECALENDAR_CREATE_EVENT]
 )
 
-assistant = Assistant(tools=composio_tools, show_tool_calls=True)
-
-assistant.print_response("Can you start composiohq/composio repo?")
+print(composio_tools)
+agent = Agent(tools=composio_tools, show_tool_calls=True)
+agent.print_response("Create a new meeting at monday 08:00.")

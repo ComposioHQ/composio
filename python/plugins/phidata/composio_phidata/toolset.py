@@ -44,11 +44,9 @@ class ComposioToolSet(
 
         @validate_call
         def function(**kwargs: t.Any) -> str:
-            """Composio tool wrapped as Phidata `Function`.
-
+            """
             Args:
                 **kwargs: Function parameters based on the schema
-
             Returns:
                 str: JSON string containing the function execution result
             """
@@ -61,15 +59,16 @@ class ComposioToolSet(
                 )
             )
 
-        # Set function docstring from schema
-        param_docs = []
+        # Format docstring in Phidata standard format
+        docstring_parts = [description, "\nArgs:"]
         if "properties" in parameters:
             for param_name, param_info in parameters["properties"].items():
                 param_desc = param_info.get("description", "No description available")
                 param_type = param_info.get("type", "any")
-                param_docs.append(f":param {param_name}: {param_desc} ({param_type})")
-
-        function.__doc__ = f"{description}\n\n" + "\n".join(param_docs)
+                docstring_parts.append(f"    {param_name} ({param_type}): {param_desc}")
+        
+        docstring_parts.append("\nReturns:\n    str: JSON string containing the function execution result")
+        function.__doc__ = "\n".join(docstring_parts)
 
         # Register the function with the toolkit
         toolkit.register(function)
