@@ -165,6 +165,50 @@ console.log(result);
 </Step>
 </Steps>
 
+
+### How to Use Connection Parameters of an Account?
+Connection Parameters of an account are available in the `connected_account` parameter of the custom action
+<CodeGroup>
+```python Python {5,13}
+@action(toolname="github")
+def list_repositories(
+    owner: str,
+    execute_request: t.Callable,
+    connected_account: ConnectedAccountModel
+) -> list[str]:
+    """
+    List repositories for a user.
+
+    :param owner: Name of the owner.
+    :return repositories: List of repositories for given user.
+    """
+    print(connected_account.connectionParams)
+    return [
+        # Custom Action Logic
+    ]
+```
+```javascript JavaScript
+coming soon!
+```
+</CodeGroup>
+Below is an example of the connection parameters for a GitHub account:
+```bash Output
+scope='********'
+base_url='https://api.github.com'
+client_id='********'
+token_type='********'
+access_token='gho_Y3rMb*************'
+client_secret='********'
+consumer_id=None
+consumer_secret=None
+headers={
+  'Authorization': 'Bearer gho_Y***************',
+  'x-request-id': '80ce421*********************'
+}
+queryParams={}
+```
+
+
 ### Why Use Custom Actions?
 
 Custom Actions provide several advantages:
