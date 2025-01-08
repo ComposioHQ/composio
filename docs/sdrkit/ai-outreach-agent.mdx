@@ -160,7 +160,7 @@ const toolset = new LangchainToolSet({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const tools = await toolset.getTools(actions: ["HUBSPOT_LIST_CONTACTS_PAGE", "GMAIL_CREATE_EMAIL_DRAFT"]);
+const tools = await toolset.getTools({actions: ["HUBSPOT_LIST_CONTACTS_PAGE", "GMAIL_CREATE_EMAIL_DRAFT"]});
 
 const llm = new ChatOpenAI({
     model: "gpt-4-turbo",
@@ -220,9 +220,7 @@ const toolset = new LangchainToolSet({
     apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const tools = await toolset.getTools({
-    actions: ["HUBSPOT_LIST_CONTACTS_PAGE", "GMAIL_CREATE_EMAIL_DRAFT"]
-});
+const tools = await toolset.getTools({actions: ["HUBSPOT_LIST_CONTACTS_PAGE", "GMAIL_CREATE_EMAIL_DRAFT"]});
 
 const prompt = await pull("hwchase17/openai-functions-agent");
 
