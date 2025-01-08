@@ -34,8 +34,8 @@ At Composio, tools are offered for multiple platforms, accessible via Python and
 <Tabs>
 <Tab title="Python">
 Use the `ComposioToolSet` class to use and configure tools:
-- Use `composio-core` package for direct action execution
-- Use framework-specific packages (like `composio-langchain` or `composio-crewai`) when working with Agentic frameworkswhat
+- Use [composio-core](https://pypi.org/project/composio-core) package for non-agentic use cases
+- Use framework-specific packages [composio-langchain](https://pypi.org/project/composio-langchain) or [composio-crewai](https://pypi.org/project/composio-crewai) when working with Agentic frameworks
 
 See all supported frameworks [here](../../framework/autogen).
 
@@ -46,20 +46,20 @@ See all supported frameworks [here](../../framework/autogen).
 - `entity_id`: The ID of the entity to execute the action on. Defaults to **default**
 - `connected_account_ids`: Use this to define connected accounts to use when executing an action for a specific app
 
-#### Extensive Usecase:
+#### Extensive Use Case:
 - `output_dir`: Directory path to store downloaded files
 - `metadata`: Additional metadata for executing an action. Learn more [here](use-tools/configure-tools)
 - `processors`: Request and response processors, use these to pre-process requests before executing an action and post-process the response after an action has been executed. Learn more [here](use-tools/processing-actions)
 - `logging_level`: Accepted values: CRITICAL, FATAL, ERROR, WARNING, WARN, INFO, DEBUG
-- `verbosity_level`: This defines the size of the log object that will be printed on the console.
+- `verbosity_level`: This defines the size of the log object that will be printed on the console
 
-#### Advanced Usecase:
+#### Advanced Use Case:
 - `base_url`: Base URL for the Composio API server
-- `output_in_file`: Whether to output the result to a file.
+- `output_in_file`: Whether to output the result to a file
 - `workspace_id`: Workspace ID for loading an existing workspace
-- `workspace_config`:
-- `max_retries`: 
-- `**kwargs`: Additional arguments for advanced use cases.
+- `workspace_config`: Used to specify the configuration for the workspace environment. Supported workspace types: Host, Docker, FlyIO, and E2B
+- `max_retries`: Maximum number of times a tool should be retried in case of a failure during execution
+- `**kwargs`: Additional arguments for advanced use cases
 
 #### Getting Tools & Actions
 <Steps>
@@ -82,14 +82,16 @@ tools = tool_set.get_tools(apps=[App.GITHUB])
 </Tab>
 <Tab title="JavaScript">
 Tools and Actions are available through different toolset classes:
-- Use `ComposioToolSet` for direct action execution
+- Use `ComposioToolSet` class for non-agentic use cases
 - Use framework-specific classes like `OpenAIToolSet` or `LangchainToolSet` when working with OpenAI, LangChain or other [frameworks](../../framework/autogen). 
+
+<Note>JavaScript SDK has just one package [composio-core](https://www.npmjs.com/package/composio-core) that contains all the necessary classes for both direct usage and framework integrations</Note>
 
 #### Basic Uscase:
 - `apiKey`: Composio API key. Get your API key [here](https://app.composio.dev/developers)
 - `entityId`: The ID of the entity to execute the action on. Defaults to **default**
 
-#### Advanced Usecase:
+#### Advanced Use Case:
 - `baseUrl`: Base URL for the Composio API server
 
 <Steps>
@@ -105,7 +107,7 @@ import { LangchainToolSet } from "composio-core";
 const composioToolset = new LangchainToolSet();
 
 // Get all actions from a tool
-const tools = await composioToolset.getTools({ apps: ["github"] });
+const tools = await composioToolset.getTools({ apps: ["GITHUB"] });
 ```
 </Step>
 </Steps>
