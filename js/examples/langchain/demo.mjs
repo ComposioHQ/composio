@@ -3,7 +3,9 @@ import { ChatOpenAI } from "@langchain/openai";
 import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
 import { pull } from "langchain/hub";
 
-import { LangchainToolSet, ExecEnv } from "composio-core";
+import { LangchainToolSet } from "composio-core";
+import 'dotenv/config'
+
 
 const app = express();
 const PORT = process.env.PORT || 2001;
@@ -12,7 +14,7 @@ app.use(express.json());
 
 (async () => {
     try {
-        const body = "TITLE: HELLO WORLD, DESCRIPTION: HELLO WORLD for the repo - utkarsh-dixit/speedy"
+        const task = "Fetch issue #960 from the repo composiohq/composio"
 
         const llm = new ChatOpenAI({
             model: "gpt-4-turbo",
@@ -20,11 +22,10 @@ app.use(express.json());
 
         const toolset = new LangchainToolSet({
             apiKey: process.env.COMPOSIO_API_KEY,
-            workspaceEnv: ExecEnv.DOCKER
         });
 
-        const tools = await toolset.get_actions({
-            actions: ["filetool_write_file"]
+        const tools = await toolset.getTools({
+            actions: ["GITHUB_GET_AN_ISSUE"]
         });
         const prompt = await pull(
             "hwchase17/openai-functions-agent"
@@ -43,7 +44,7 @@ app.use(express.json());
         });
 
         const result = await agentExecutor.invoke({
-            input: "Write a file named test.txt with the content Hello World"
+            input: task
         });
 
     } catch (error) {

@@ -10,9 +10,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@ai-sdk/groq": "^1.0.9",
     "@ai-sdk/openai": "^0.0.36",
     "ai": "^3.2.24",
-    "composio-core": "latest",
+    "composio-core": "^0.5.3",
     "dotenv": "^16.4.5",
     "zod": "^3.23.8"
   }

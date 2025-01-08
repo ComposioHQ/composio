@@ -27,7 +27,7 @@ const todo = `
 `;
 
 async function runAgent() {
-    const tools = await composioToolset.get_actions({
+    const tools = await composioToolset.getTools({
         actions: ["googlecalendar_create_event", "googlecalendar_list_events"]
     });
 
