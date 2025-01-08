@@ -1,13 +1,13 @@
-import { tool } from "ai";
+import { jsonSchema, tool } from "ai";
 import { z } from "zod";
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
-import { TRawActionData } from "../types/base_toolset";
-import { jsonSchemaToModel } from "../utils/shared";
+import { RawActionData } from "../types/base_toolset";
+
 type Optional<T> = T | null;
 
-const zExecuteToolCallParams = z.object({
+const ZExecuteToolCallParams = z.object({
   actions: z.array(z.string()).optional(),
   apps: z.array(z.string()).optional(),
   params: z.record(z.any()).optional(),
@@ -29,20 +29,20 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       entityId?: string;
     } = {}
   ) {
-    super(
-      config.apiKey || null,
-      config.baseUrl || null,
-      "vercel-ai",
-      config.entityId || "default"
-    );
+    super({
+      apiKey: config.apiKey || null,
+      baseUrl: config.baseUrl || null,
+      runtime: "vercel-ai",
+      entityId: config.entityId || "default",
+    });
   }
 
-  private generateVercelTool(schema: TRawActionData) {
-    const parameters = jsonSchemaToModel(schema.parameters);
+  private generateVercelTool(schema: RawActionData) {
     return tool({
       description: schema.description,
-      parameters,
-      execute: async (params: Record<string, string>) => {
+      // @ts-ignore the type are JSONSchemV7. Internally it's resolved
+      parameters: jsonSchema(schema.parameters as unknown),
+      execute: async (params) => {
         return await this.executeToolCall(
           {
             name: schema.name,
@@ -62,7 +62,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     useCase?: Optional<string>;
     usecaseLimit?: Optional<number>;
     filterByAvailableApps?: Optional<boolean>;
-  }): Promise<{ [key: string]: TRawActionData }> {
+  }): Promise<{ [key: string]: RawActionData }> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getTools",
       file: this.fileName,
@@ -76,7 +76,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       usecaseLimit,
       filterByAvailableApps,
       actions,
-    } = zExecuteToolCallParams.parse(filters);
+    } = ZExecuteToolCallParams.parse(filters);
 
     const actionsList = await this.client.actions.list({
       ...(apps && { apps: apps?.join(",") }),

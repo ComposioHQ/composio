@@ -13,7 +13,8 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "composio-core": "0.2.4",
+    "composio-core": "latest",
+    "dotenv": "^16.4.7",
     "express": "^4.19.2",
     "ts-node": "^10.9.2",
     "zod": "^3.23.8"

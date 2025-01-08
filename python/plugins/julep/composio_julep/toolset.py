@@ -13,6 +13,7 @@ class ComposioToolSet(
     BaseComposioToolSet,
     runtime="julep",
     description_char_limit=1024,
+    action_name_char_limit=64,
 ):
     """
     Composio toolset wrapper for Julep framework.
@@ -45,6 +46,7 @@ class ComposioToolSet(
                                 action=Action(value=tool_function["name"]),
                                 params=json.loads(tool_function["arguments"]),
                                 entity_id=entity_id or self.entity_id,
+                                _check_requested_actions=True,
                             )
                         )
                     except json.JSONDecodeError:

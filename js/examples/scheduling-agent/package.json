@@ -1,5 +1,5 @@
 {
-  "name": "vercel",
+  "name": "scheduling-agent",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -12,7 +12,7 @@
   "dependencies": {
     "@ai-sdk/openai": "^0.0.36",
     "ai": "^3.2.24",
-    "composio-core": "0.2.9-7",
+    "composio-core": "0.5.3",
     "dotenv": "^16.4.5",
     "zod": "^3.23.8"
   }

@@ -4,15 +4,17 @@ Test composio toolset.
 
 import logging
 import re
+import typing as t
 from unittest import mock
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from composio import Action, App
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.base.runtime import action as custom_action
+from composio.tools.local.filetool.tool import Filetool, FindFile
 from composio.tools.toolset import ComposioToolSet
 from composio.utils.pypi import reset_installed_list
 
@@ -45,7 +47,7 @@ def test_find_actions_by_tags() -> None:
         App.SLACK, App.GITHUB, tags=["important"]
     ):
         assert "important" in action.tags
-        assert action.app in ("github", "slack", "slackbot")
+        assert action.app in ("GITHUB", "SLACK", "SLACKBOT")
 
 
 def test_uninitialize_app() -> None:
@@ -152,9 +154,9 @@ class TestConnectedAccountProvider:
             )
 
 
-def test_api_key_missing() -> None:
+def test_api_key_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("COMPOSIO_API_KEY", "")
     toolset = ComposioToolSet()
-    toolset._api_key = None  # pylint: disable=protected-access
     with pytest.raises(
         ApiKeyNotProvidedError,
         match=(
@@ -162,7 +164,7 @@ def test_api_key_missing() -> None:
             "`COMPOSIO_API_KEY` or run `composio login`"
         ),
     ):
-        _ = toolset.workspace
+        _ = toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})
 
 
 def test_processors(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -328,3 +330,243 @@ def test_execute_action_param_serialization() -> None:
         text=None,
         session_id=mock.ANY,
     )
+
+
+def test_custom_auth_on_localtool():
+    toolset = ComposioToolSet()
+    toolset.add_auth(
+        app=Filetool.enum,
+        parameters=[
+            {
+                "in_": "metadata",
+                "name": "name",
+                "value": "value",
+            }
+        ],
+    )
+
+    def _execute(cls, request, metadata):  # pylint: disable=unused-argument
+        return mock.MagicMock(
+            model_dump=lambda *_: {
+                "assert": metadata["name"] == "value",
+            },
+        )
+
+    with mock.patch.object(FindFile, "execute", new=_execute):
+        response = toolset.execute_action(
+            action=FindFile.enum,
+            params={
+                "pattern": "*.py",
+            },
+        )
+        assert response["data"]["assert"]
+
+
+def test_bad_custom_auth_on_localtool():
+    toolset = ComposioToolSet()
+    toolset.add_auth(
+        app=Filetool.enum,
+        parameters=[
+            {
+                "in_": "query",
+                "name": "name",
+                "value": "value",
+            }
+        ],
+    )
+
+    with pytest.raises(
+        ComposioSDKError,
+        match="Invalid custom auth found for FILETOOL",
+    ):
+        toolset.execute_action(
+            action=FindFile.enum,
+            params={
+                "pattern": "*.py",
+            },
+        )
+
+
+def test_custom_auth_runtime_tool():
+    tool = "tool"
+    expected_data = {
+        "api-key": "api-key",
+        "entity_id": "default",
+        "subdomain": {"workspace": "composio"},
+        "headers": {"Authorization": "Bearer gth_...."},
+        "base_url": "https://api.app.dev",
+        "body_params": {"address": "633"},
+        "path_params": {"name": "user"},
+        "query_params": {"page": "1"},
+    }
+
+    @custom_action(toolname=tool)
+    def action_1(auth: t.Dict) -> int:
+        """
+        Custom action 1
+
+        :return exit_code: int
+        """
+        del auth["_browsers"]
+        del auth["_filemanagers"]
+        del auth["_shells"]
+        del auth["_toolset"]
+        assert auth == expected_data
+        return 0
+
+    class Req(BaseModel):
+        pass
+
+    class Res(BaseModel):
+        data: int = Field(...)
+
+    @custom_action(toolname=tool)
+    def action_2(
+        request: Req,  # pylint: disable=unused-argument
+        metadata: dict,
+    ) -> Res:
+        del metadata["_browsers"]
+        del metadata["_filemanagers"]
+        del metadata["_shells"]
+        del metadata["_toolset"]
+        assert metadata == expected_data
+        return Res(data=0)
+
+    toolset = ComposioToolSet()
+    toolset.add_auth(
+        app=tool,
+        parameters=[
+            {
+                "in_": "header",
+                "name": "Authorization",
+                "value": "Bearer gth_....",
+            },
+            {
+                "in_": "metadata",
+                "name": "api-key",
+                "value": "api-key",
+            },
+            {
+                "in_": "path",
+                "name": "name",
+                "value": "user",
+            },
+            {
+                "in_": "query",
+                "name": "page",
+                "value": "1",
+            },
+            {
+                "in_": "subdomain",
+                "name": "workspace",
+                "value": "composio",
+            },
+        ],
+        base_url="https://api.app.dev",
+        body={
+            "address": "633",
+        },
+    )
+
+    result = toolset.execute_action(action=action_1, params={})
+    assert result["successful"]
+
+    result = toolset.execute_action(action=action_2, params={})
+    assert result["successful"]
+
+
+class TestSubclassInit:
+
+    def test_runtime(self):
+
+        class SomeToolsetExtention(ComposioToolSet):
+            pass
+
+        assert (
+            SomeToolsetExtention._runtime  # pylint: disable=protected-access
+            == "composio"
+        )
+
+        class SomeOtherToolsetExtention(ComposioToolSet, runtime="some_toolset"):
+            pass
+
+        assert (
+            SomeOtherToolsetExtention._runtime  # pylint: disable=protected-access
+            == "some_toolset"
+        )
+
+    def test_description_char_limit(self) -> None:
+
+        char_limit = 512
+        (schema,) = ComposioToolSet().get_action_schemas(
+            actions=[
+                Action.FILETOOL_GIT_CLONE,
+            ]
+        )
+        assert len(t.cast(str, schema.description)) > char_limit
+
+        class SomeToolsetExtention(ComposioToolSet, description_char_limit=char_limit):
+            pass
+
+        (schema,) = SomeToolsetExtention().get_action_schemas(
+            actions=[
+                Action.FILETOOL_GIT_CLONE,
+            ]
+        )
+        assert len(t.cast(str, schema.description)) == char_limit
+
+    def test_action_name_char_limit(self) -> None:
+
+        char_limit = 12
+        (schema,) = ComposioToolSet().get_action_schemas(
+            actions=[
+                Action.FILETOOL_GIT_CLONE,
+            ]
+        )
+        assert len(t.cast(str, schema.name)) > char_limit
+
+        class SomeToolsetExtention(ComposioToolSet, action_name_char_limit=char_limit):
+            pass
+
+        (schema,) = SomeToolsetExtention().get_action_schemas(
+            actions=[
+                Action.FILETOOL_GIT_CLONE,
+            ]
+        )
+        assert len(t.cast(str, schema.name)) == char_limit
+
+
+def test_invalid_handle_tool_calls() -> None:
+    """Test edge case where the Agent tries to call a tool that wasn't requested from get_tools()."""
+    toolset = LangchainToolSet()
+
+    toolset.get_tools(actions=[Action.GMAIL_FETCH_EMAILS])
+    with pytest.raises(ComposioSDKError) as exc:
+        with mock.patch.object(toolset, "_execute_remote"):
+            toolset.execute_action(
+                Action.HACKERNEWS_GET_FRONTPAGE,
+                {},
+                # This is passed as True by all tools
+                _check_requested_actions=True,
+            )
+
+    assert (
+        "Action HACKERNEWS_GET_FRONTPAGE is being called, but was never requested by the toolset."
+        in exc.value.message
+    )
+
+    # Ensure it does NOT fail if a subsequent get_tools added that action
+    toolset.get_tools(actions=[Action.HACKERNEWS_GET_FRONTPAGE])
+    with mock.patch.object(toolset, "_execute_remote"):
+        toolset.execute_action(
+            Action.HACKERNEWS_GET_FRONTPAGE,
+            {},
+            # This is passed as True by all tools
+            _check_requested_actions=True,
+        )
+
+    # Ensure it DOES NOT fail if execute_action is called manually, not by a tool
+    toolset = LangchainToolSet()
+    toolset.get_tools(actions=[Action.GMAIL_FETCH_EMAILS])
+    with mock.patch.object(toolset, "_execute_remote"):
+        toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})

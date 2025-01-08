@@ -8,7 +8,7 @@ import { LangchainToolSet } from "composio-core";
 const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY });
 
 // Subscribe to triggers and execute the agent
-toolset.client.triggers.subscribe((data) => {
+toolset.triggers.subscribe((data) => {
     console.log("trigger received", data);
     executeAgent("default", data.payload.event);
 });

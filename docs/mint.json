@@ -49,7 +49,7 @@
   ],
   "topbarCtaButton": {
     "name": "Get your API Key",
-    "url": "https://app.composio.dev/settings"
+    "url": "https://app.composio.dev/developers"
   },
   "topAnchor": {
     "name": "Documentation",
@@ -69,7 +69,11 @@
     },
     {
       "name": "All Tools",
-      "url": "https://composio.dev/tools"
+      "url": "https://app.composio.dev/apps"
+    },
+    {
+      "name": "Chat with Code",
+      "url": "https://entelligence.ai/ComposioHQ&composio"
     }
   ],
   "navigation": [
@@ -187,7 +191,8 @@
         "faq/api_key/api_key",
         "faq/api_key/cli",
         "faq/integrations_and_connections/list_of_tools",
-        "faq/supported_llms/supported_llm"
+        "faq/supported_llms/supported_llm",
+        "changelog"
       ]
     },
     {
@@ -367,23 +372,23 @@
     },
     {
       "source": "/apps/usecases/langchain_blogs/:slug2*",
-      "destination": "https://composio.dev/tools/:slug2*"
+      "destination": "https://app.composio.dev/apps/:slug2*"
     },
     {
       "source": "/apps/usecases/crewai/:slug2*",
-      "destination": "https://composio.dev/tools/:slug2*"
+      "destination": "https://app.composio.dev/apps/:slug2*"
     },
     {
       "source": "/apps/usecases/autogen_blogs/:slug2*",
-      "destination": "https://composio.dev/tools/:slug2*"
+      "destination": "https://app.composio.dev/apps/:slug2*"
     },
     {
       "source": "/apps/:slug2*",
-      "destination": "https://composio.dev/tools/:slug2*"
+      "destination": "https://app.composio.dev/apps/:slug2*"
     },
     {
       "source": "/apps",
-      "destination": "https://composio.dev/tools/"
+      "destination": "https://app.composio.dev/apps"
     },
     {
       "source": "/python/local_tools",
@@ -392,6 +397,10 @@
     {
       "source": "/introduction/foundations/components/local_tools",
       "destination": "/introduction/foundations/components/custom_actions"
+    },
+    {
+      "source": "/changelog",
+      "destination": "https://github.com/ComposioHQ/composio/releases"
     }
   ]
 }

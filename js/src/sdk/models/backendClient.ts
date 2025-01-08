@@ -1,8 +1,9 @@
+import { AxiosInstance } from "axios";
 import apiClient from "../client/client";
 import { client as axiosClient } from "../client/services.gen";
 import { setAxiosClientConfig } from "../utils/config";
 import { CEG } from "../utils/error";
-import { SDK_ERROR_CODES } from "../utils/errors/src/constants";
+import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 
 /**
  * Class representing the details required to initialize and configure the API client.
@@ -22,6 +23,7 @@ export class BackendClient {
    * The runtime environment where the client is being used.
    */
   public runtime: string;
+  public instance: AxiosInstance;
 
   /**
    * Creates an instance of apiClientDetails.
@@ -34,17 +36,29 @@ export class BackendClient {
     this.runtime = runtime || "";
     this.apiKey = apiKey;
     this.baseUrl = baseUrl;
+    this.instance = axiosClient.instance;
 
     if (!apiKey) {
-      throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.API_KEY_UNAVAILABLE, {});
+      throw CEG.getCustomError(
+        COMPOSIO_SDK_ERROR_CODES.COMMON.API_KEY_UNAVAILABLE,
+        {
+          message: "API key is not available",
+          description:
+            "The API key required for authentication is not provided. You can get the API key from the Composio dashboard.",
+          possibleFix: "Please provide the API key in the constructor",
+        }
+      );
     }
 
     // Validate baseUrl
     if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
-      throw CEG.getCustomError(SDK_ERROR_CODES.COMMON.BASE_URL_NOT_REACHABLE, {
-        message: `🔗 Base URL ${baseUrl} is not valid`,
-        description: "The composio backend URL provided is not valid",
-      });
+      throw CEG.getCustomError(
+        COMPOSIO_SDK_ERROR_CODES.COMMON.BASE_URL_NOT_REACHABLE,
+        {
+          message: `🔗 Base URL ${baseUrl} is not valid`,
+          description: "The composio backend URL provided is not valid",
+        }
+      );
     }
 
     this.initializeApiClient();
@@ -80,5 +94,6 @@ export class BackendClient {
     });
 
     setAxiosClientConfig(axiosClient.instance);
+    this.instance = axiosClient.instance;
   }
 }

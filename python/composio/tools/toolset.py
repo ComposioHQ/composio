@@ -10,6 +10,7 @@ import json
 import os
 import time
 import typing as t
+import uuid
 import warnings
 from datetime import datetime
 from functools import wraps
@@ -63,6 +64,7 @@ from composio.tools.env.base import (
 from composio.tools.env.factory import HostWorkspaceConfig, WorkspaceFactory
 from composio.tools.local import load_local_tools
 from composio.tools.local.handler import LocalClient
+from composio.utils import help_msg
 from composio.utils.enums import get_enum_key
 from composio.utils.logging import LogIngester, LogLevel, WithLogger
 from composio.utils.url import get_api_url_base
@@ -78,8 +80,7 @@ MetadataType = t.Dict[_KeyType, t.Dict]
 ParamType = t.TypeVar("ParamType")
 ProcessorType = te.Literal["pre", "post", "schema"]
 
-
-NO_CACHE_REFRESH = os.environ.get("COMPOSIO_NO_CACHE_REFRESH", "false") == "true"
+_IS_CI: t.Optional[bool] = None
 
 
 class IntegrationParams(te.TypedDict):
@@ -111,6 +112,13 @@ def _check_agentops() -> bool:
     return agentops.get_api_key() is not None
 
 
+def _is_ci():
+    global _IS_CI
+    if _IS_CI is None:
+        _IS_CI = os.environ.get("CI") == "true"
+    return _IS_CI
+
+
 def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
     @wraps(func)
     def wrapper(self, *args, **kwargs):
@@ -124,6 +132,13 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
     return wrapper  # type: ignore
 
 
+class _Retry:
+    """Sentinel value to indicate that the processor should retry the action"""
+
+
+RETRY = _Retry()
+
+
 class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     """Composio toolset."""
 
@@ -135,12 +150,16 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     _runtime: str = "composio"
     _description_char_limit: int = 1024
+    _action_name_char_limit: t.Optional[int] = None
     _log_ingester_client: t.Optional[LogIngester] = None
 
     def __init_subclass__(
         cls,
+        *args: t.Any,
         runtime: t.Optional[str] = None,
         description_char_limit: t.Optional[int] = None,
+        action_name_char_limit: t.Optional[int] = None,
+        **kwargs: t.Any,
     ) -> None:
         if runtime is None:
             warnings.warn(
@@ -153,6 +172,15 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 f"description_char_limit is not set on {cls.__name__}, using 1024 as default"
             )
         cls._description_char_limit = description_char_limit or 1024
+        cls._action_name_char_limit = action_name_char_limit
+        if len(args) > 0 or len(kwargs) > 0:
+            error = (
+                f"Composio toolset subclass initializer got extra {args=} and {kwargs=}"
+                + help_msg()
+            )
+            if _is_ci():
+                raise RuntimeError(error)
+            warnings.warn(error)
 
     def __init__(
         self,
@@ -168,6 +196,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         output_dir: t.Optional[Path] = None,
         verbosity_level: t.Optional[int] = None,
         connected_account_ids: t.Optional[t.Dict[AppType, str]] = None,
+        *,
+        max_retries: int = 3,
         **kwargs: t.Any,
     ) -> None:
         """
@@ -246,11 +276,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             logging_level=logging_level,
             verbosity_level=verbosity_level,
         )
-        self.logger.info(
-            f"Logging is set to {self._logging_level}, "
-            "use `logging_level` argument or "
-            "`COMPOSIO_LOGGING_LEVEL` change this"
-        )
+        self.session_id = workspace_id or uuid.uuid4().hex
+
         self.entity_id = entity_id
         self.output_in_file = output_in_file
         self.output_dir = (
@@ -272,7 +299,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if processors is not None:
             warnings.warn(
                 "Setting 'processors' on the ToolSet is deprecated, they should"
-                "be provided to the 'get_tools()' method instead.",
+                "be provided to the 'get_tools()' method instead.\n",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -287,7 +314,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self._custom_auth = {}
 
         if len(kwargs) > 0:
-            self.logger.info(f"Extra kwargs while initializing toolset: {kwargs}")
+            self.logger.warning(
+                f"Unused kwargs while initializing toolset: {kwargs}" + help_msg()
+            )
 
         self.logger.debug("Loading local tools")
         load_local_tools()
@@ -295,6 +324,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self._connected_account_ids = self._validating_connection_ids(
             connected_account_ids=connected_account_ids or {}
         )
+        self.max_retries = max_retries
+
+        # To be populated by get_tools(), from within subclasses like
+        # composio_openai's Toolset.
+        self._requested_actions: t.List[str] = []
 
     def _validating_connection_ids(
         self,
@@ -367,8 +401,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 base_url=self._base_url,
                 runtime=self._runtime,
             )
-            if not NO_CACHE_REFRESH:
-                check_cache_refresh(self._remote_client)
+            check_cache_refresh(self._remote_client)
 
         self._remote_client.local = self._local_client
         return self._remote_client
@@ -385,12 +418,20 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
         workspace_config = self._workspace_config or HostWorkspaceConfig()
         if workspace_config.composio_api_key is None:
-            workspace_config.composio_api_key = self.api_key
+            try:
+                workspace_config.composio_api_key = self.api_key
+            except ApiKeyNotProvidedError:
+                warnings.warn(
+                    "Running without a Composio API key", UserWarning, stacklevel=2
+                )
 
         if workspace_config.composio_base_url is None:
             workspace_config.composio_base_url = self._base_url
 
-        if workspace_config.github_access_token is None:
+        if (
+            workspace_config.github_access_token is None
+            and workspace_config.composio_api_key is not None
+        ):
             workspace_config.github_access_token = (
                 self._try_get_github_access_token_for_current_entity()
             )
@@ -442,6 +483,59 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 f"Run `composio add {action.app.lower()}` to fix this"
             )
 
+    def _get_custom_params_for_local_action(
+        self,
+        custom_auth: CustomAuthObject,
+        app: str,
+    ) -> t.Dict:
+        metadata = {}
+        invalid_auth = []
+        for param in custom_auth.parameters:
+            if param["in_"] == "metadata":
+                metadata[param["name"]] = param["value"]
+                continue
+            invalid_auth.append(param)
+
+        if len(invalid_auth) > 0:
+            raise ComposioSDKError(
+                f"Invalid custom auth found for {app}: {invalid_auth}"
+            )
+        return metadata
+
+    def _get_custom_params_for_runtime_action(
+        self,
+        custom_auth: CustomAuthObject,
+    ) -> t.Dict:
+        metadata: t.Dict[str, t.Any] = {
+            "base_url": custom_auth.base_url,
+            "body": custom_auth.body,
+            "path": {},
+            "query": {},
+            "header": {},
+            "subdomain": {},
+        }
+        for param in custom_auth.parameters:
+            if param["in_"] == "metadata":
+                metadata[param["name"]] = param["value"]
+            else:
+                metadata[param["in_"]][param["name"]] = param["value"]
+        return metadata
+
+    def _get_custom_params_for_local_execution(self, action: Action) -> t.Dict:
+        custom_auth = self._custom_auth.get(App(action.app))
+        if custom_auth is None:
+            return {}
+
+        if action.is_runtime:
+            return self._get_custom_params_for_runtime_action(
+                custom_auth=custom_auth,
+            )
+
+        return self._get_custom_params_for_local_action(
+            custom_auth=custom_auth,
+            app=action.app,
+        )
+
     def _execute_local(
         self,
         action: Action,
@@ -452,6 +546,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         """Execute a local action."""
         metadata = metadata or {}
         metadata["_toolset"] = self
+        metadata.update(self._get_custom_params_for_local_execution(action=action))
         response = self.workspace.execute_action(
             action=action,
             request_data=params,
@@ -572,7 +667,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         ).hexdigest()
         self._ensure_output_dir_exists()
         outfile = self.output_dir / filename
-        self.logger.info(f"Writing output to: {outfile}")
+        self.logger.debug(f"Writing output to: {outfile}")
         _write_file(outfile, json.dumps(output))
         return {
             "message": f"output written to {outfile.resolve()}",
@@ -640,10 +735,10 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         key: _KeyType,
         data: t.Dict,
         type_: te.Literal["pre", "post", "schema"],
-    ) -> t.Dict:
+    ) -> t.Union[t.Dict, _Retry]:
         processor = self._get_processor(key=key, type_=type_)
         if processor is not None:
-            self.logger.info(
+            self.logger.debug(
                 f"Running {'request' if type_ == 'pre' else 'response' if type_ == 'post' else 'schema'}"
                 f" through: {processor.__name__}"
             )
@@ -658,37 +753,74 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         return data
 
     def _process_request(self, action: Action, request: t.Dict) -> t.Dict:
-        return self._process(
-            key=action,
-            data=self._process(
-                key=App(action.app),
-                data=request,
-                type_="pre",
-            ),
+        processed = self._process(
+            key=App(action.app),
+            data=request,
             type_="pre",
         )
+        if isinstance(processed, _Retry):
+            raise ComposioSDKError(
+                "Received RETRY from App preprocessor function."
+                " Preprocessors cannot be retried."
+            )
 
-    def _process_respone(self, action: Action, response: t.Dict) -> t.Dict:
-        return self._process(
+        processed = self._process(
+            key=action,
+            data=processed,
+            type_="pre",
+        )
+        if isinstance(processed, _Retry):
+            raise ComposioSDKError(
+                "Received RETRY from Action preprocessor function."
+                " Preprocessors cannot be retried."
+            )
+
+        return processed
+
+    def _process_respone(
+        self, action: Action, response: t.Dict
+    ) -> t.Union[t.Dict, _Retry]:
+        processed = self._process(
             key=App(action.app),
-            data=self._process(
-                key=action,
-                data=response,
-                type_="post",
-            ),
+            data=response,
             type_="post",
         )
+        if isinstance(processed, _Retry):
+            return RETRY
+
+        processed = self._process(
+            key=action,
+            data=processed,
+            type_="post",
+        )
+        if isinstance(processed, _Retry):
+            return RETRY
+
+        return processed
 
     def _process_schema_properties(self, action: Action, properties: t.Dict) -> t.Dict:
-        return self._process(
+        processed = self._process(
             key=App(action.app),
-            data=self._process(
-                key=action,
-                data=properties,
-                type_="schema",
-            ),
+            data=properties,
             type_="schema",
         )
+        if isinstance(processed, _Retry):
+            raise ComposioSDKError(
+                "Received RETRY from App schema processor function."
+                " Schema pprocessors cannot be retried."
+            )
+
+        processed = self._process(
+            key=action,
+            data=processed,
+            type_="schema",
+        )
+        if isinstance(processed, _Retry):
+            raise ComposioSDKError(
+                "Received RETRY from Action preprocessor function."
+                " Schema processors cannot be retried."
+            )
+        return processed
 
     def _merge_processors(self, processors: ProcessorsType) -> None:
         for processor_type in self._processors.keys():
@@ -717,6 +849,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         text: t.Optional[str] = None,
         *,
         processors: t.Optional[ProcessorsType] = None,
+        _check_requested_actions: bool = False,
     ) -> t.Dict:
         """
         Execute an action on a given entity.
@@ -730,6 +863,13 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         :return: Output object from the function call
         """
         action = Action(action)
+        if _check_requested_actions and action.slug not in self._requested_actions:
+            raise ComposioSDKError(
+                f"Action {action.slug} is being called, but was never requested by the toolset. "
+                "Make sure that the actions you are trying to execute are requested in your "
+                "`get_tools()` call."
+            )
+
         params = self._serialize_execute_params(param=params)
         if processors is not None:
             self._merge_processors(processors)
@@ -741,33 +881,50 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 action=action
             )
 
-        self.logger.info(
+        self.logger.debug(
             f"Executing `{action.slug}` with {params=} and {metadata=} {connected_account_id=}"
         )
-        response = (
-            self._execute_local(
-                action=action,
-                params=params,
-                metadata=metadata,
-                entity_id=entity_id,
+
+        failed_responses = []
+        for _ in range(self.max_retries):
+            response = (
+                self._execute_local(
+                    action=action,
+                    params=params,
+                    metadata=metadata,
+                    entity_id=entity_id,
+                )
+                if action.is_local
+                else self._execute_remote(
+                    action=action,
+                    params=params,
+                    entity_id=entity_id or self.entity_id,
+                    connected_account_id=connected_account_id,
+                    text=text,
+                    session_id=self.session_id,
+                )
             )
-            if action.is_local
-            else self._execute_remote(
-                action=action,
-                params=params,
-                entity_id=entity_id or self.entity_id,
-                connected_account_id=connected_account_id,
-                text=text,
-                session_id=self.workspace.id,
+            processed_response = (
+                response
+                if action.is_runtime
+                else self._process_respone(action=action, response=response)
             )
-        )
-        response = (
-            response
-            if action.is_runtime
-            else self._process_respone(action=action, response=response)
-        )
-        self.logger.info(f"Got {response=} from {action=} with {params=}")
-        return response
+            if isinstance(processed_response, _Retry):
+                self.logger.debug(
+                    f"Got {processed_response=} from {action=} with {params=}, retrying..."
+                )
+                failed_responses.append(response)
+                continue
+
+            response = processed_response
+            self.logger.debug(f"Got {response=} from {action=} with {params=}")
+            return response
+
+        return SuccessExecuteActionResponseModel(
+            successfull=False,
+            data={"failed_responses": failed_responses},
+            error=f"Execution failed after {self.max_retries} retries.",
+        ).model_dump()
 
     @t.overload
     def execute_request(
@@ -826,7 +983,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 "Please provide connection id or app name to execute a request"
             )
 
-        self.logger.info(
+        self.logger.debug(
             f"Executing request to {endpoint} with method={method}, connection_id={connection_id}"
         )
         response = self.client.actions.request(
@@ -836,7 +993,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             endpoint=endpoint,
             parameters=parameters,
         )
-        self.logger.info(f"Got {response=}")
+        self.logger.debug(f"Got {response=}")
         return response
 
     def validate_tools(
@@ -848,6 +1005,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         # NOTE: This an experimental, can convert to decorator for more convinience
         if not apps and not actions and not tags:
             return
+
         self.workspace.check_for_missing_dependencies(
             apps=apps,
             actions=actions,
@@ -861,6 +1019,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         tags: t.Optional[t.Sequence[TagType]] = None,
         *,
         check_connected_accounts: bool = True,
+        _populate_requested: bool = False,
     ) -> t.List[ActionModel]:
         runtime_actions = t.cast(
             t.List[t.Type[LocalAction]],
@@ -928,6 +1087,10 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             if item.name == Action.ANTHROPIC_TEXT_EDITOR.slug:
                 item.name = "str_replace_editor"
 
+        if _populate_requested:
+            action_names = [item.name for item in items]
+            self._requested_actions += action_names
+
         return items
 
     def _process_schema(self, action_item: ActionModel) -> ActionModel:
@@ -986,6 +1149,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             action=Action(action_item.name.upper()),
             properties=action_item.parameters.properties,
         )
+        if self._action_name_char_limit is not None:
+            action_item.name = action_item.name[: self._action_name_char_limit]
         return action_item
 
     def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:
@@ -1007,8 +1172,11 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         :return: A list of actions matching the relevant use case.
         """
         if advanced:
+            app_keys = [str(app) for app in apps]
             actions = []
-            for task in self.client.actions.search_for_a_task(use_case=use_case):
+            for task in self.client.actions.search_for_a_task(
+                apps=app_keys, use_case=use_case
+            ):
                 actions += task.actions
         else:
             actions = list(

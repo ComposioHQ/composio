@@ -9,16 +9,16 @@ import pytest
 from composio.client.enums import Action, ActionType, AppType, TagType
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import (
+    RemoteWorkspace,
     SessionFactory,
     Sessionable,
-    Workspace,
     WorkspaceConfigType,
 )
 from composio.tools.env.id import generate_id
 
 
-def test_workspace() -> None:
-    class TestWorkspace(Workspace):
+def test_remote_workspace() -> None:
+    class TestRemoteWorkspace(RemoteWorkspace):
         def check_for_missing_dependencies(
             self,
             apps: t.Optional[t.Sequence[AppType]] = None,
@@ -46,7 +46,7 @@ def test_workspace() -> None:
         ComposioSDKError,
         match="Please provide value for `COMPOSIO_API_KEY`",
     ):
-        _ = TestWorkspace(config=WorkspaceConfigType())
+        _ = TestRemoteWorkspace(config=WorkspaceConfigType())
 
 
 def test_sessionable() -> None:
