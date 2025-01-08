@@ -5,6 +5,7 @@ PhiData tool spec.
 import json
 import typing as t
 import warnings
+from inspect import Parameter, Signature
 
 import typing_extensions as te
 from phi.tools.toolkit import Toolkit
@@ -14,7 +15,7 @@ from composio import Action, ActionType, AppType
 from composio import ComposioToolSet as BaseComposioToolSet
 from composio import TagType
 from composio.tools.toolset import ProcessorsType
-from composio.utils import help_msg
+from composio.utils import help_msg, shared
 
 
 class ComposioToolSet(
@@ -42,22 +43,32 @@ class ComposioToolSet(
         # Create a new Toolkit instance
         toolkit = Toolkit(name=name)
 
+        # Get function parameters from schema
+        params = shared.get_signature_format_from_schema_params(parameters)
+
+        # Create function signature and annotations
+        sig = Signature(parameters=params)
+        annotations = {p.name: p.annotation for p in params}
+        annotations["return"] = str  # Add return type annotation
+
         @validate_call
-        def function(**kwargs: t.Any) -> str:
-            """
-            Args:
-                **kwargs: Function parameters based on the schema
-            Returns:
-                str: JSON string containing the function execution result
-            """
+        def function_template(*args, **kwargs) -> str:
+            # Bind the arguments to the signature
+            bound_args = sig.bind(*args, **kwargs)
+            bound_args.apply_defaults()
+
             return json.dumps(
                 self.execute_action(
                     action=Action(value=name),
-                    params=kwargs,
+                    params=bound_args.arguments,
                     entity_id=entity_id or self.entity_id,
                     _check_requested_actions=True,
                 )
             )
+
+        # Apply the signature and annotations to the function
+        function_template.__signature__ = sig
+        function_template.__annotations__ = annotations
 
         # Format docstring in Phidata standard format
         docstring_parts = [description, "\nArgs:"]
@@ -66,12 +77,14 @@ class ComposioToolSet(
                 param_desc = param_info.get("description", "No description available")
                 param_type = param_info.get("type", "any")
                 docstring_parts.append(f"    {param_name} ({param_type}): {param_desc}")
-        
-        docstring_parts.append("\nReturns:\n    str: JSON string containing the function execution result")
-        function.__doc__ = "\n".join(docstring_parts)
+
+        docstring_parts.append(
+            "\nReturns:\n    str: JSON string containing the function execution result"
+        )
+        function_template.__doc__ = "\n".join(docstring_parts)
 
         # Register the function with the toolkit
-        toolkit.register(function)
+        toolkit.register(function_template)
 
         return toolkit
 

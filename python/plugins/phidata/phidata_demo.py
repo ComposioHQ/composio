@@ -3,9 +3,7 @@ from phi.agent import Agent
 
 
 toolset = ComposioToolSet()
-composio_tools = toolset.get_tools(
-    actions=[Action.GOOGLECALENDAR_CREATE_EVENT]
-)
+composio_tools = toolset.get_tools(actions=[Action.GOOGLECALENDAR_CREATE_EVENT])
 
 print(composio_tools)
 agent = Agent(tools=composio_tools, show_tool_calls=True)
