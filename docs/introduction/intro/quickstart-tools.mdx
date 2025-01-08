@@ -4,8 +4,18 @@ sidebarTitle: "Quick Start - Tools"
 description: "Learn how to use Tools in less than 5 minutes"
 ---
 
-## Composio Quick Start
-In this guide we'll use GitHub tools to star a repo on GitHub.
+## Star A Repository on GitHub
+In this guide, we'll:
+
+1. 🔐 Connect your GitHub account with Composio
+2. 🛠 Fetch GitHub actions 
+3. 🧠 Pass these actions to an LLM
+4. ⭐ Instruct to star the `composiohq/composio` repository
+5. ✅ Execute the action
+
+<Tip>
+**Tools** represent a group of actions specific to an app. **Actions** are operations you can perform - like starring a repo on GitHub or creating an issue in Linear.
+</Tip>
 
 <Tabs>
 <Tab title="Python">
@@ -21,7 +31,7 @@ pip install composio_core composio_openai
 </Step>
 
 <Step title="Connect Your GitHub Account">
-We'll use **`default`** as the user id [(entity id)](../../patterns/Auth/connected_account#entities).
+We'll use **`default`** as the user id, also known as [entity id](../../patterns/Auth/connected_account#entities).
 <Info>You need to have an active GitHub Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
 <CodeGroup>
 ```shell CLI
@@ -170,19 +180,6 @@ print(result)
 
 </Tab>
 </Tabs>
-
-
-## What Just Happened? 🎉
-
-Congratulations! You've just:
-
-1. 🔐 Connected your GitHub account with Composio
-2. 🛠 Fetched GitHub actions 
-3. 🧠 Passed these actions to an AI language model
-4. ⭐ Instructed the AI to star the `composiohq/composio` repository
-5. ✅ Successfully executed the action on GitHub
-
-<br/>
 
 ## Next Steps
 Now that you've seen how to use tools, you can explore the following resources:
