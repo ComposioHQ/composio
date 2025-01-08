@@ -42,7 +42,7 @@ load_dotenv()
 <Step title="Initializing the Tools and the LLM">
 ```python initialize toolset and llm
 toolset = ComposioToolSet(api_key="")
-tools = toolset.get_tools(apps=[App.HUBSPOT, App.GMAIL])
+tools = toolset.get_tools(actions=[Action.HUBSPOT_LIST_CONTACTS_PAGE, Action.GMAIL_CREATE_EMAIL_DRAFT])
 
 llm = OpenAI(model="gpt-4o")
 ```
@@ -91,7 +91,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 toolset = ComposioToolSet(api_key="")
-tools = toolset.get_tools(apps=[App.PEOPLEDATALABS, App.GOOGLESHEETS])
+tools = toolset.get_tools(actions=[Action.HUBSPOT_LIST_CONTACTS_PAGE, Action.GMAIL_CREATE_EMAIL_DRAFT])
 
 llm = OpenAI(model="gpt-4o")
 
@@ -160,7 +160,7 @@ const toolset = new LangchainToolSet({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
 
-const tools = await toolset.getTools([App.HUBSPOT, App.GMAIL]);
+const tools = await toolset.getTools(actions: ["HUBSPOT_LIST_CONTACTS_PAGE", "GMAIL_CREATE_EMAIL_DRAFT"]);
 
 const llm = new ChatOpenAI({
     model: "gpt-4-turbo",
