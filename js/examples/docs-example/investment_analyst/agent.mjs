@@ -14,7 +14,7 @@ dotenv.config();
     const composioToolset = new LangchainToolSet({
         apiKey: process.env.COMPOSIO_API_KEY
     });
-    const tools = await composioToolset.get_actions({
+    const tools = await composioToolset.getTools({
         actions: ["serpapi_search"]
     });
 

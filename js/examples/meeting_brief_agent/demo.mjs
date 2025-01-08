@@ -77,7 +77,7 @@ Make sure to execute these calendar actions and return the results in a structur
         - Recent activities
 
         Make sure to execute these search and scrape actions for each attendee and return the compiled information in a structured format.`,
-        tools: ["EXA_SEARCH","FIRECRAWL_SCRAPE", "FIRECRAWL_SEARCH"],
+        tools: ["EXA_SEARCH"],
         processOutput: (output) => {
             try {
                 const parsed = typeof output === 'string' ? JSON.parse(output) : output;
@@ -102,7 +102,6 @@ Attendees: ${JSON.stringify(context.calendar_research.attendees)}
 Execute these steps:
 1. Use GMAIL_GET_PROFILE to confirm the email account access
 2. Use GMAIL_LIST_THREADS to find recent threads with the meeting attendees
-3. Use GMAIL_FETCH_EMAILS to get the content of latest 5 emails pass the attendee email id as query
 
 Look for:
 - Recent email threads with these attendees
@@ -203,7 +202,7 @@ async function executeSteppedAgent() {
             const currentPair = steps.slice(i, i + 2);
             const requiredTools = [...new Set(currentPair.flatMap(step => step.tools))];
             
-            const tools = await toolset.get_actions({
+            const tools = await toolset.getTools({
                 actions: requiredTools
             });
 

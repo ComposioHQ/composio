@@ -4,6 +4,7 @@ PhiData tool spec.
 
 import json
 import typing as t
+import warnings
 
 import typing_extensions as te
 from phi.tools.toolkit import Toolkit
@@ -13,6 +14,7 @@ from composio import Action, ActionType, AppType
 from composio import ComposioToolSet as BaseComposioToolSet
 from composio import TagType
 from composio.tools.toolset import ProcessorsType
+from composio.utils import help_msg
 
 
 class ComposioToolSet(
@@ -55,6 +57,7 @@ class ComposioToolSet(
                     action=Action(value=name),
                     params=kwargs,
                     entity_id=entity_id or self.entity_id,
+                    _check_requested_actions=True,
                 )
             )
 
@@ -73,7 +76,7 @@ class ComposioToolSet(
 
         return toolkit
 
-    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead.\n", category=None)
     def get_actions(self, actions: t.Sequence[ActionType]) -> t.List[Toolkit]:
         """
         Get composio tools wrapped as Phidata `Toolkit` objects.
@@ -84,6 +87,11 @@ class ComposioToolSet(
         Returns:
             List[Toolkit]: Composio tools wrapped as `Toolkit` objects
         """
+        warnings.warn(
+            "Use `ComposioToolSet.get_tools` instead.\n" + help_msg(),
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.get_tools(actions=actions)
 
     def get_tools(

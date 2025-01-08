@@ -28,11 +28,9 @@ describe("Basic SDK spec suite", () => {
   it("should handle 404 error gracefully", async () => {
     const mock = new AxiosMockAdapter(axiosClient.instance);
     const mockError = {
-      error: {
-        type: "NotFoundError",
-        name: "AppNotFoundError",
-        message: "Not found",
-      },
+      type: "NotFoundError",
+      name: "AppNotFoundError",
+      message: "Not found",
     };
     mock.onGet("/api/v1/apps").reply(404, mockError);
 
@@ -47,8 +45,8 @@ describe("Basic SDK spec suite", () => {
         expect(e.errorId).toBeDefined();
         expect(e.name).toBe("ComposioError");
         expect(e.possibleFix).toBe(e.possibleFix);
-        expect(e.message).toContain(mockError.error.message);
-        expect(e.message).toContain(mockError.error.name);
+        expect(e.message).toContain(mockError.message);
+        expect(e.message).toContain(mockError.name);
       } else {
         throw e;
       }
@@ -60,11 +58,18 @@ describe("Basic SDK spec suite", () => {
   it("should handle 400 error gracefully", async () => {
     const mock = new AxiosMockAdapter(axiosClient.instance);
     mock.onGet("/api/v1/apps").reply(400, {
-      error: {
-        type: "BadRequestError",
-        name: "InvalidRequestError",
-        message: "Invalid request for apps",
-      },
+      type: "BadRequestError",
+      name: "InvalidRequestError",
+      message: "Invalid request for apps",
+      details: [
+        {
+          property: "triggerConfig",
+          children: [],
+          constraints: {
+            isObject: "triggerConfig must be an object",
+          },
+        },
+      ],
     });
 
     const client = new Composio({ apiKey: COMPOSIO_API_KEY });
@@ -74,9 +79,10 @@ describe("Basic SDK spec suite", () => {
       const error = e as ComposioError;
       const errorCode = COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST;
       expect(error.errCode).toBe(errorCode);
-      expect(error.message).toContain("InvalidRequestError ");
       expect(error.message).toContain("InvalidRequestError");
-      expect(error.description).toContain("Invalid request for apps");
+      expect(error.description).toContain(
+        `Validation Errors: {"property":"triggerConfig","children":[],"constraints":{"isObject":"triggerConfig must be an object"}}`
+      );
     }
 
     mock.reset();
@@ -84,7 +90,11 @@ describe("Basic SDK spec suite", () => {
 
   it("should handle 500 and 502 error gracefully, and without backend fix", async () => {
     const mock = new AxiosMockAdapter(axiosClient.instance);
-    mock.onGet("/api/v1/apps").reply(500, { detail: "Internal Server Error" });
+    mock.onGet("/api/v1/apps").reply(500, {
+      type: "InternalServerError",
+      name: "ServerError",
+      message: "Internal Server Error",
+    });
     const client = new Composio({ apiKey: COMPOSIO_API_KEY });
     try {
       await client.apps.list();

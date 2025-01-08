@@ -1,24 +1,36 @@
 import { Composio, LangchainToolSet } from "composio-core";
 import { z } from "zod";
+import pkg from "dotenv";
+const { config } = pkg;
 
-const toolset = new LangchainToolSet();
+config();
+
+const toolset = new LangchainToolSet({});
 
 (async() => {
     console.log("Creating action");
+    try {
     await toolset.createAction({
         actionName: "helloWorld",
         description: "This is a test action for handling hello world",
-        params: z.object({
+        inputParams: z.object({
             name: z.string().optional()
         }),
         callback: async (params) => {
             const { name } = params;
-            return `Hello ${name || "World"} from the function`;
+            return {
+                successful: true,
+                data: {
+                    name: name || "World"
+                }
+            }
         }
     });
-    console.log("Tools are registered", await toolset.getTools({actions: ["helloWorld"]}));
 
-    // Sending params to the action
-    const result = await toolset.executeAction("helloWorld", { name: "Alice" }, {});
-    console.log("Action result:", result);
+    console.log("Tools are registered", await toolset.getTools({
+        actions: ["helloWorld"]
+    }));
+    } catch (error) {
+        console.error("Error creating action", error);
+    }
 })();

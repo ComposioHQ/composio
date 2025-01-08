@@ -19,20 +19,26 @@ import {
 import { BackendClient } from "./backendClient";
 
 // schema types generated from zod
-export type GetRequiredParams = z.infer<typeof ZGetRequiredParams>;
-export type GetRequiredParamsForAuthScheme = z.infer<
+export type AppGetRequiredParams = z.infer<typeof ZGetRequiredParams>;
+export type AppGetRequiredParamsForAuthSchemeParam = z.infer<
   typeof ZGetRequiredParamsForAuthScheme
->;
-export type RequiredParamsFullResponse = z.infer<
+> & {
+  appName?: string;
+  /**
+   * @deprecated use appName instead
+   */
+  appId?: string;
+};
+export type AppRequiredParamsFullResponse = z.infer<
   typeof ZRequiredParamsFullResponse
 >;
-export type RequiredParamsResponse = z.infer<typeof ZRequiredParamsResponse>;
-export type GetAppDataParams = z.infer<typeof ZGetAppParams>;
+export type AppRequiredParamsResponse = z.infer<typeof ZRequiredParamsResponse>;
+export type AppGetDataParams = z.infer<typeof ZGetAppParams>;
 
 // types generated from backend client
 export type AppItemResponse = SingleAppInfoResDTO;
 export type AppListResponse = AppItemListResponse[];
-export type ListAllAppsResponse = AppListResDTO;
+export type AppListRes = AppListResDTO;
 export type AppItemListResponse = AppInfoResponseDto;
 
 export class Apps {
@@ -69,11 +75,11 @@ export class Apps {
    *
    * This method allows clients to fetch detailed information about a specific app by providing its unique key. The response includes the app's name, key, status, description, logo, categories, authentication schemes, and other metadata.
    *
-   * @param {GetAppDataParams} data The data for the request, including the app's unique key.
+   * @param {AppGetDataParams} data The data for the request, including the app's unique key.
    * @returns {Promise<AppItemResponse>} A promise that resolves to the details of the app.
    * @throws {ComposioError} If the request fails.
    */
-  async get(data: GetAppDataParams): Promise<AppItemResponse> {
+  async get(data: AppGetDataParams): Promise<AppItemResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "get",
       file: this.fileName,
@@ -98,10 +104,12 @@ export class Apps {
    * This method allows clients to fetch the necessary parameters for a specific app by providing its unique key. The response includes the app's name, key, status, description, logo, categories, authentication schemes, and other metadata.
    *
    * @param {string} appId The unique key of the app.
-   * @returns {Promise<RequiredParamsFullResponse>} A promise that resolves to the required parameters for the app.
+   * @returns {Promise<AppRequiredParamsFullResponse>} A promise that resolves to the required parameters for the app.
    * @throws {ComposioError} If the request fails.
    */
-  async getRequiredParams(appId: string): Promise<RequiredParamsFullResponse> {
+  async getRequiredParams(
+    appId: string
+  ): Promise<AppRequiredParamsFullResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getRequiredParams",
       file: this.fileName,
@@ -116,7 +124,7 @@ export class Apps {
         authSchemes as Array<{ mode: string }>
       )?.map((scheme) => scheme?.mode);
 
-      const authSchemesObject: Record<string, RequiredParamsResponse> = {};
+      const authSchemesObject: Record<string, AppRequiredParamsResponse> = {};
 
       for (const scheme of authSchemes as Array<{
         mode: string;
@@ -164,22 +172,24 @@ export class Apps {
    *
    * This method allows clients to fetch the necessary parameters for a specific authentication scheme of an app by providing its unique key and the authentication scheme.
    *
-   * @param {GetRequiredParamsForAuthScheme} data The data for the request, including the app's unique key and the authentication scheme.
-   * @returns {Promise<RequiredParamsResponse>} A promise that resolves to the required parameters for the authentication scheme.
+   * @param {AppGetRequiredParamsForAuthSchemeParam} data The data for the request, including the app's unique key and the authentication scheme.
+   * @returns {Promise<AppRequiredParamsResponse>} A promise that resolves to the required parameters for the authentication scheme.
    * @throws {ComposioError} If the request fails.
    */
   async getRequiredParamsForAuthScheme({
     appId,
+    appName,
     authScheme,
-  }: GetRequiredParamsForAuthScheme): Promise<RequiredParamsResponse> {
+  }: AppGetRequiredParamsForAuthSchemeParam): Promise<AppRequiredParamsResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getRequiredParamsForAuthScheme",
       file: this.fileName,
       params: { appId, authScheme },
     });
     try {
-      ZGetRequiredParamsForAuthScheme.parse({ appId, authScheme });
-      const params = await this.getRequiredParams(appId);
+      const finalAppId = appName || appId;
+      ZGetRequiredParamsForAuthScheme.parse({ appId: finalAppId, authScheme });
+      const params = await this.getRequiredParams(finalAppId);
       return params.authSchemes[authScheme];
     } catch (error) {
       throw CEG.handleAllError(error);

@@ -137,10 +137,10 @@ If you want to install the 'composio' package along with its openai plugin: `pip
 
 ### 2. Testing Composio in Action
 
-Let's use Composio to create an AI Agent that can star a Github Repo.
+Let's use Composio to create an AI Agent that can star a GitHub Repo.
 
 ```bash
-composio add github # Connect your Github - Run this in terminal
+composio add github # Connect your GitHub - Run this in terminal
 ```
 
 ```python

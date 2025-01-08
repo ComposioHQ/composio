@@ -8,7 +8,17 @@ description: "Guide to using Tools with LLMs"
 
 Composio enables you to integrate various tools (such as Gmail, GitHub, and Salesforce) and perform actions (such as sending emails or creating GitHub issues). Browse our complete list of supported [Tools](https://app.composio.dev/apps).
 
-Here's how to use Tools with LLMs:
+Install packages:
+<CodeGroup>
+```bash Python
+pip install composio-openai openai
+```
+```bash JavaScript
+npm install composio-core openai
+```
+</CodeGroup>
+
+Using tools with LLMs:
 <CodeGroup>
 ```python Python
 # Import required libraries
@@ -73,6 +83,18 @@ This code demonstrates how to use LLMs with Composio Tools to execute actions. T
 
 ### How can I use Tools for a specific user?
 You can use the `entity_id` parameter to specify the user on behalf of whom you want to execute the action. Learn more about Entities [here](/patterns/Auth/connected_account#entities).
+
+Install packages:
+<CodeGroup>
+```bash Python
+pip install composio-openai openai
+```
+```bash JavaScript
+npm install composio-core openai
+```
+</CodeGroup>
+
+Using tools for a specific user:
 <CodeGroup>
 ```python Python {7}
 # Import required libraries
