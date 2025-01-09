@@ -1,2 +1,3 @@
 composio-openai
 openai
+python-dotenv

@@ -32,10 +32,10 @@ code_review_assistant_prompt = (
 composio_toolset = ComposioToolSet()
 pr_agent_tools = composio_toolset.get_tools(
     actions=[
-        Action.GITHUB_GET_CODE_CHANGES_IN_PR,  # For a given PR it get's all the changes
-        Action.GITHUB_PULLS_CREATE_REVIEW_COMMENT,  # For a given PR it creates a comment
-        Action.GITHUB_CREATE_AN_ISSUE,  # If required, allows you to create issues on github
-        Action.SLACKBOT_CHAT_POST_MESSAGE,  # Send a message to slack using app
+        Action.GITHUB_GET_A_PULL_REQUEST,
+        Action.GITHUB_CREATE_A_REVIEW_FOR_A_PULL_REQUEST,
+        Action.GITHUB_CREATE_AN_ISSUE,
+        Action.SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL,
     ]
 )
 
@@ -82,4 +82,4 @@ def review_new_pr(event: TriggerEventData) -> None:
 
 print("Listener started!")
 print("Create a pr to get the review")
-listener.listen()
+listener.wait_forever()
