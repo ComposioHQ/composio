@@ -46,7 +46,7 @@ composio_toolset = ComposioToolSet()
 
 # Register tools with the ComposioToolSet, specifying the caller (chatbot) and executor (user_proxy)
 composio_toolset.register_tools(
-    tools=[App.EMBED_TOOL],  # Tools to be registered
+    apps=[App.EMBED_TOOL],  # Tools to be registered
     caller=chatbot,  # The chatbot that calls the tools
     executor=user_proxy,  # The user proxy that executes the tools
 )
