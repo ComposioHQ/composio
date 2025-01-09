@@ -16,12 +16,12 @@ pip install -r requirements.txt
 echo "Login to your Composio acount"
 composio login
 
-# Add trello tool
+
 echo "Add github tool. Finish the flow"
 composio add github
 
-echo "Add slackbot tool. Finish the flow"
-composio add slackbot
+echo "Add slack tool. Finish the flow"
+composio add slack
 
 echo "Updating apps"
 composio apps update
