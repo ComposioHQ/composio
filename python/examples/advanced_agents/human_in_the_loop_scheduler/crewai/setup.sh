@@ -16,14 +16,14 @@ pip install -r requirements.txt || { echo "Failed to install libraries"; exit 1;
 echo "Login to your Composio account"
 composio login || { echo "Failed to login to Composio"; exit 1; }
 
-# Add slackbot tool
-echo "Add slackbot tool. Finish the flow"
-composio add slackbot || { echo "Failed to add slackbot"; exit 1; }
+# Add slack tool
+echo "Add slack tool. Finish the flow"
+composio add slack || { echo "Failed to add slack"; exit 1; }
 composio add gmail || { echo "Failed to add gmail"; exit 1; }
 
-echo "Enable Slackbot triggers"
-composio triggers enable slackbot_receive_message || { echo "Failed to enable slackbot_receive_message trigger"; exit 1; }
-composio triggers enable slackbot_receive_thread_reply || { echo "Failed to enable slackbot_receive_thread_reply trigger"; exit 1; }
+echo "Enable slack triggers"
+composio triggers enable slack_receive_message || { echo "Failed to enable slack_receive_message trigger"; exit 1; }
+composio triggers enable slack_receive_thread_reply || { echo "Failed to enable slack_receive_thread_reply trigger"; exit 1; }
 composio triggers enable new_gmail_message || { echo "Failed to enable new_gmail_message trigger"; exit 1; }
 
 # Copy env backup to .env file

@@ -23,6 +23,11 @@ These can be applied at two levels:
 <Tabs>
 <Tab title="Python">
 <Steps>
+<Step title="Install required libraries">
+```bash Python
+pip install langchain langchain-openai composio-langchain
+```
+</Step>
 <Step title="Import required libraries">
 ```python Python
 from langchain.agents import create_openai_functions_agent, AgentExecutor
@@ -101,6 +106,11 @@ agent_executor.invoke({"input": task})
 </Tab>
 <Tab title="TypeScript">
 <Steps>
+<Step title="Install required libraries">
+```bash TypeScript
+npm install composio-core @langchain/openai langchain @langchain/core
+```
+</Step>
 <Step title="Import required libraries">
 ```typescript TypeScript
 import { ActionExecutionResDto, LangchainToolSet, RawActionData, TPostProcessor, TPreProcessor, TSchemaProcessor } from "composio-core";
