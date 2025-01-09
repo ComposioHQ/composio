@@ -27,5 +27,5 @@ Now, Fill in the `.env` file with your secrets.
 
 ### 2. Run the python script
 ```shell
-python cookbook/examples/code-analysis/main.py
+python python/examples/quickstarters/code-analysis/main.py
 ```

@@ -11,8 +11,17 @@ Custom Actions are powerful building blocks that enable you to create custom fun
 ## Creating a Custom Tool without Authentication
 
 <Steps>
-<Step title="Import necessary modules">
-
+<Step title="Install required libraries">
+<CodeGroup>
+```bash Python
+pip install composio-openai openai
+```
+```bash JavaScript
+npm install composio-core openai
+```
+</CodeGroup>
+</Step>
+<Step title="Import libraries">
 <CodeGroup>
 ```python Python
 from composio_openai import ComposioToolSet, action

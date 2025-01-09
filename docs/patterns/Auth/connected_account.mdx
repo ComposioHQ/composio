@@ -77,7 +77,7 @@ Below are the accepted parameters for initiating a new connection:
 - `entity_id`: ID of the user for whom the connection is being created
 - `redirect_url`: URL to redirect the user to after the connection is created (for OAuth auth scheme). If not provided, the user will be redirected to Composio's connection success/failer page
 - `connected_account_params`/`data`: If auth mode is non-OAuth, this is where parameters need to be passed for creating a connection (API key, shopify store name, etc)
-- `auth_scheme`: Type of authentication to be used for the connection (OAUTH2 or API_KEY, etc), OAUTH2 will be defaulted if not provided
+- `auth_scheme`: Type of authentication to be used for the connection (OAUTH2 or API_KEY, BASIC_WITH_JWT, etc), OAUTH2 will be defaulted if not provided
 - `auth_config`: If auth mode is OAuth, this is where the configuration needs to be provided for creating a connection (client_id, client_secret, etc)
 
 Let's create a connection for the user **default** for the Gmail app.

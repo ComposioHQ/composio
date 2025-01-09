@@ -23,18 +23,6 @@ const tools = await toolset.getTools({
 
 const prompt = await pull("hwchase17/openai-functions-agent");
 
-// Debugging logs
-//console.log("LLM:", llm);
-//console.log("Tools:", tools);
-//console.log("Prompt:", prompt);
-
-const additional = `
-    "You are a Lead Outreach Agent that is has access to the CRM through HubSpot."
-    "and is an expert writer. Your job is to first research some info about the lead "
-    "given to you and then draft a perfect ideal email template for whatever input task is given to you. "
-    `;
-
-// Check combined_prompt
 
 const agent = await createOpenAIFunctionsAgent({
     llm,
@@ -45,7 +33,7 @@ const agent = await createOpenAIFunctionsAgent({
 const agentExecutor = new AgentExecutor({
     agent,
     tools,
-    verbose: false, // Change it to true for debugging
+    verbose: false, 
 });
 const result = await agentExecutor.invoke({
     input: `Draft an email for each lead in my Hubspot contacts page introducing yourself and asking them if they're interested in integrating AI Agents in their workflow.`

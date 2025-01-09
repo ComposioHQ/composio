@@ -1,14 +1,16 @@
 import { OpenAI } from "openai";
 import { OpenAIToolSet } from "composio-core";
+import dotenv from "dotenv";
 
+dotenv.config();
 const toolset = new OpenAIToolSet({
-  apiKey: "cc0fu8lookgq1ov8z4xx9n",
+  apiKey: process.env.COMPOSIO_API_KEY,
   });
   
 
   async function setupUserConnectionIfNotExists(entityId) {
     const entity = await toolset.client.getEntity(entityId);
-    const connection = await entity.getConnection('github');
+    const connection = await entity.getConnection({app:'github'});
   
     if (!connection) {
         // If this entity/user hasn't already connected the account
@@ -24,22 +26,28 @@ async function executeAgent(entityName) {
     const entity = await toolset.client.getEntity(entityName)
     await setupUserConnectionIfNotExists(entity.id);
   
-    const tools = await toolset.get_actions({ actions: ["github_issues_create"] }, entity.id);
+    const tools = await toolset.getTools({ actions: ["github_issues_create"] }, entity.id);
     const instruction = "Make an issue with sample title in the repo - himanshu-dixit/custom-repo-breaking"
   
-    const client = new OpenAI({ apiKey: process.env.OPEN_AI_API_KEY })
-    const response = await client.chat.completions.create({
-        model: "gpt-4-turbo",
-        messages: [{
-            role: "user",
-            content: instruction,
-        }],
-        tools: tools,
-        tool_choice: "auto",
-    })
-  
-    console.log(response.choices[0].message.tool_calls);
-    await toolset.handle_tool_call(response, entity.id);
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+    const assistant = await openai.beta.assistants.create({
+      name: "Github Assistant",
+      instructions: "You're a GitHub Assistant, you can do operations on GitHub",
+      tools: tools,
+      model: "gpt-4o-mini"
+  });
+
+  const thread = await openai.beta.threads.create();
+  const run = await openai.beta.threads.runs.create(thread.id, {
+      assistant_id: assistant.id,
+      instructions: instruction,
+      tools: tools,
+      model: "gpt-4o-mini",
+      stream: false
+  });
+  const call = await toolset.waitAndHandleAssistantToolCalls(openai, run, thread);
+  console.log(call);
+
   }
   
-  executeAgent("himanshu")
+  executeAgent("default")

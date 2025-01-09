@@ -224,6 +224,7 @@ class App(Enum[AppData], metaclass=EnumGenerator):
     SCREENSHOTONE: "App"
     SEISMIC: "App"
     SENDGRID: "App"
+    SENTRY: "App"
     SERPAPI: "App"
     SERVICEM8: "App"
     SHARE_POINT: "App"

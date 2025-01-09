@@ -1,6 +1,4 @@
 crewai
-crewai[tools]
 python-dotenv
-composio_core
 composio-crewai
 langchain_openai

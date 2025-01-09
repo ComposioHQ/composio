@@ -4,8 +4,8 @@ sidebarTitle: "CrewAI"
 description: "Integrate Composio with CrewAI agents to let them seamlessly interact with external apps"
 ---
 
-## Star A Repository on Github
-In this example, we will use CrewAI Agent to star a repository on Github using Composio Tools
+## Star A Repository on GitHub
+In this example, we will use CrewAI Agent to star a repository on GitHub using Composio Tools
 
 <Steps>
 <Step title="Install Packages">
@@ -24,7 +24,24 @@ llm = ChatOpenAI(api_key="<your-openai-api-key>")
 ```
 </Step>
 
-<Step title="Get All Github Tools">
+<Step title="Connect Your GitHub Account">
+<Info>You need to have an active GitHub Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
+<CodeGroup>
+```shell CLI
+composio login 
+composio add github
+```
+```python Python
+request = toolset.initiate_connection(app=App.GITHUB)
+print(f"Open this URL to authenticate: {request.redirectUrl}")
+```
+</CodeGroup>
+<Tip>
+Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
+</Tip>
+</Step>
+
+<Step title="Get All GitHub Tools">
 You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
 <CodeGroup>
 ```python Python
@@ -36,9 +53,9 @@ tools = toolset.get_tools(apps=[App.GITHUB])
 <Step title="Define the Agent, Task & Crew">
 ```python Python
 crewai_agent = Agent(
-    role="Github Agent",
-    goal="You take action on Github using Github APIs",
-    backstory="You are AI agent that is responsible for taking actions on Github on behalf of users using Github APIs",
+    role="GitHub Agent",
+    goal="You take action on GitHub using GitHub APIs",
+    backstory="You are AI agent that is responsible for taking actions on GitHub on behalf of users using GitHub APIs",
     verbose=True,
     tools=tools,
     llm=llm,

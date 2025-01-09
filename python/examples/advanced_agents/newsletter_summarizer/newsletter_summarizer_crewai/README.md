@@ -24,5 +24,5 @@ Now, fill in the `.env` file with your secrets.
 
 ### 2. Run the Python Script
 ```shell
-python cookbook/examples/advanced_agents/newsletter_summarizer/newsletter_summarizer_crewai/main.py
+python cookbook/python-examples/advanced_agents/newsletter_summarizer/newsletter_summarizer_crewai/main.py
 ```
