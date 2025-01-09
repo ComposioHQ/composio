@@ -187,12 +187,24 @@ def list_repositories(
         # Custom Action Logic
     ]
 ```
-```javascript JavaScript
-coming soon!
+```javascript JavaScript {9,10}
+const action = await openAIToolset.createAction({
+  actionName: "star_repo",
+  toolName: "github",
+  description: "Stars a repository on GitHub",
+  inputParams: z.object({
+    owner: z.string().describe("The owner of the repository"),
+    repo: z.string().describe("The name of the repository"),
+  }),
+  callback: async (inputParams, authCredentials, executeRequest) => {
+    console.log(authCredentials);
+  },
+})
 ```
 </CodeGroup>
 Below is an example of the connection parameters for a GitHub account:
-```bash Output
+<CodeGroup>
+```bash Python
 scope='********'
 base_url='https://api.github.com'
 client_id='********'
@@ -207,7 +219,20 @@ headers={
 }
 queryParams={}
 ```
-
+```python Python
+{
+  headers: {
+    Authorization: 'Bearer aDVVU0k0ZHdZbjJqZDlkX19GTmJXRm40eVlFUWNQMmJyWnEzZEt0ZjQwMUtUOjE3MzY0MTEzNjA4NzE6MTowOmF0OjE',
+      'x-request-id': '9dcc107d-0d5b-4c17-a915-b2519d477dc1'
+  },
+  queryParams: { },
+  baseUrl: 'https://api.x.com'
+}
+[
+  '{"data":{},"error":"Failed to execute action","successfull":false,"successful":false}'
+]
+```
+</CodeGroup>
 
 ### Why Use Custom Actions?
 
