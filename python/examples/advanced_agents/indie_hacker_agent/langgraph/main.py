@@ -53,7 +53,7 @@ should then be executed and shown to the user. The idea is to build a very simpl
 Also print the link to the original idea on hackernews.""")
 # The config is the **second positional argument** to stream() or invoke()!
 events = graph.stream(
-    {"messages": [("user", user_input)]}, config, stream_mode="values"
+    {"messages": [("user", user_input)]}, config, stream_mode="values" # type: ignore
 )
 for event in events:
     event["messages"][-1].pretty_print()
@@ -68,7 +68,7 @@ events = graph.stream(
             )
         ]
     },
-    config,
+    config, # type: ignore
     stream_mode="values",
 )
 for event in events:
