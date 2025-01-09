@@ -192,6 +192,7 @@
         "faq/api_key/cli",
         "faq/integrations_and_connections/list_of_tools",
         "faq/supported_llms/supported_llm",
+        "monitoring-docs",
         "changelog"
       ]
     },
