@@ -38,6 +38,6 @@ Now, fill in the `.env` file with your secrets.
 
 ### 2. Run the Python Script
 ```shell
-python cookbook/examples/slack_agent_openai/slack_agent_openai.py
+python python/examples/advanced_agents/slack_bot_agent/slack_agent_openai/slack_agent_openai.py
 ```
 
