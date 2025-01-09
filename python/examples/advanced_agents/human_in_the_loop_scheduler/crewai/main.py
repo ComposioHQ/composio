@@ -35,7 +35,7 @@ schedule_tool = composio_toolset.get_tools(
 
 slack_tools = composio_toolset.get_tools(
     actions=[
-        Action.SLACKBOT_CHAT_POST_MESSAGE,
+        Action.SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL,
     ]
 )
 
@@ -54,7 +54,7 @@ def proc() -> None:
         },
     )
     print("Message sent to Slack channel. Waiting for user response...")
-    slack_listener.listen()
+    slack_listener.wait_forever()
 
 # Listens to user response on Slack
 @slack_listener.callback(filters={"trigger_name": "slackbot_receive_message"})
@@ -93,7 +93,7 @@ def callback_new_message(event: TriggerEventData) -> None:
                     You should also draft an email in response to the sender of the previous email  
                 """,
         verbose=True,
-        tools=schedule_tool,
+        tools=schedule_tool, # type: ignore
         llm=llm
     )
 
@@ -117,7 +117,7 @@ def callback_new_message(event: TriggerEventData) -> None:
     """,
     expected_output="Event was scheduler and a reply was drafted",
     agent=scheduler_agent,
-    tools = schedule_tool
+    tools = schedule_tool # type: ignore
     )
 
     crew = Crew(
@@ -129,7 +129,7 @@ def callback_new_message(event: TriggerEventData) -> None:
     response = crew.kickoff()
     print("Response from agent received:")
     print(response)
-    return response.raw
+    return response.raw # type: ignore
 
 # Gmail listener Function
 # We initialize mail content variable mail_message and sender mail here
@@ -156,4 +156,4 @@ def callback_gmail_message(event: TriggerEventData) -> None:
         print(f"Error in callback_gmail_message: {e}")
 
 print("GMAIL LISTENING... Waiting for new messages.")
-gmail_listener.listen()
+gmail_listener.wait_forever()
