@@ -14,18 +14,15 @@ python_executor_agent = Agent(
     role="Lead Outreach Agent",
     goal="Given the information, draft the perfect lead outreach email. You are ",
     verbose=True,
-    memory=True,
     backstory="You are an expert in crafting perfect lead outreach emails.",
-    allow_delegation=False,
-    tools=tools,
+    tools=tools, # type: ignore
 )
 
 execute_code_task = Task(
     description=f"Use Hubspot, Read the names in the CRM by using listing contacts actions using every Hubspot action necessary and draft the perfect lead outreach email. Please pass in the correct params for the action",
     expected_output="Draft of a lead outreach email was created and also mention the email id of the lead",
-    tools=tools,
+    tools=tools, # type: ignore
     agent=python_executor_agent,
-    allow_delegation=False,
 )
 
 crew = Crew(
@@ -37,29 +34,29 @@ crew = Crew(
 class LeadOutreach(Flow):
     model='gpt-4o'
     @start()
-    def draft(self):
-        result = crew.kickoff()
+    async def draft(self):
+        result = await crew.kickoff_async()
         return result.raw
     
     @listen(draft)
-    def create_gmail_draft(self, message):
+    async def create_gmail_draft(self, message):
         print("Creating draft")
         res = toolset.execute_action(
             Action.GMAIL_CREATE_EMAIL_DRAFT,
             params={},
-            text= message
-        )
+            text=message
+        ) # type: ignore
         return res
     
     @listen(and_(draft, create_gmail_draft))
-    def done(self):
+    async def done(self):
         print('done')
         return "Action Done"
     
 async def main():
     flow = LeadOutreach()
     flow.plot('my_flow_plot')
-    await flow.kickoff()
+    return await flow.kickoff_async()
 
 if __name__ == "__main__":
     asyncio.run(main())
