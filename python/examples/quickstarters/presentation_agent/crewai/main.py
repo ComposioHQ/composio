@@ -7,9 +7,9 @@ from dotenv import load_dotenv
 from pathlib import Path
 import os
 load_dotenv()
-import agentops
-AGENTOPS_API_KEY = os.environ["AGENTOPS_API_KEY"]
-agentops.init(AGENTOPS_API_KEY)
+# import agentops
+# AGENTOPS_API_KEY = os.environ["AGENTOPS_API_KEY"]
+# agentops.init(AGENTOPS_API_KEY)
 
 llm = ChatOpenAI(model='gpt-4o')
 #Settings.llm = Groq(model="llama3-groq-70b-8192-tool-use-preview")
