@@ -39,6 +39,6 @@ Now, Fill in the .env file with your secrets.
 
 ### 2. Run the python script
 ```shell
-python cookbook/examples/calendar_agent/main.py
+python python/examples/quickstarters/calendar_agent/llamaindex/main.py
 ```
 A new event has been added to our Google calendar!

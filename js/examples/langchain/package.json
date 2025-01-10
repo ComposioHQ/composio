@@ -2,17 +2,18 @@
   "name": "langchain",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "demo.mjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module",
   "dependencies": {
-    "composio-core": "0.1.6-1",
+    "composio-core": "latest",
+    "dotenv": "^16.4.7",
     "express": "^4.19.2",
-    "pusher-js": "8.4.0-rc2"
+    "pusher-js": "8.4.0-rc2",
+    "typescript": "^5.7.2"
   }
 }

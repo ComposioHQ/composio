@@ -15,8 +15,8 @@ importers:
         specifier: ^3.2.24
         version: 3.4.33(openai@4.73.0(zod@3.23.8))(react@18.3.1)(sswr@2.1.0(svelte@5.2.7))(svelte@5.2.7)(vue@3.5.13(typescript@5.6.3))(zod@3.23.8)
       composio-core:
-        specifier: 0.5.0-rc.6
-        version: 0.5.0-rc.6(@ai-sdk/openai@0.0.36(zod@3.23.8))(@cloudflare/workers-types@4.20241230.0)(@langchain/core@0.2.36(openai@4.73.0(zod@3.23.8)))(@langchain/openai@0.2.11)(ai@3.4.33(openai@4.73.0(zod@3.23.8))(react@18.3.1)(sswr@2.1.0(svelte@5.2.7))(svelte@5.2.7)(vue@3.5.13(typescript@5.6.3))(zod@3.23.8))(langchain@0.2.20(axios@1.7.7)(openai@4.73.0(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.5)))(openai@4.73.0(zod@3.23.8))
+        specifier: ^0.5.3
+        version: 0.5.3(@ai-sdk/openai@0.0.36(zod@3.23.8))(@cloudflare/workers-types@4.20241230.0)(@langchain/core@0.2.36(openai@4.73.0(zod@3.23.8)))(@langchain/openai@0.2.11)(ai@3.4.33(openai@4.73.0(zod@3.23.8))(react@18.3.1)(sswr@2.1.0(svelte@5.2.7))(svelte@5.2.7)(vue@3.5.13(typescript@5.6.3))(zod@3.23.8))(langchain@0.2.20(axios@1.7.7)(openai@4.73.0(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.5)))(openai@4.73.0(zod@3.23.8))
       dotenv:
         specifier: ^16.4.5
         version: 16.4.5
@@ -413,8 +413,8 @@ packages:
     resolution: {integrity: sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA==}
     engines: {node: '>=18'}
 
-  composio-core@0.5.0-rc.6:
-    resolution: {integrity: sha512-f1+4+YapolVZq/36CBXvxPX11wqcXNy4O7LThHk+6gWBoHkNJlQAf9GWnS/wbIIFp3Eu0bfFSLPes0hn6ReAyw==}
+  composio-core@0.5.3:
+    resolution: {integrity: sha512-WTHdUOwnnt1Vm2SHOpmU06EHFhhkJe85x/blgKvmfI/6KGsI6daUACPMiwz5piMZX5HgrmwxeqfBialPhj6Bvw==}
     hasBin: true
     peerDependencies:
       '@ai-sdk/openai': ^0.0.36
@@ -1458,7 +1458,7 @@ snapshots:
 
   commander@12.1.0: {}
 
-  composio-core@0.5.0-rc.6(@ai-sdk/openai@0.0.36(zod@3.23.8))(@cloudflare/workers-types@4.20241230.0)(@langchain/core@0.2.36(openai@4.73.0(zod@3.23.8)))(@langchain/openai@0.2.11)(ai@3.4.33(openai@4.73.0(zod@3.23.8))(react@18.3.1)(sswr@2.1.0(svelte@5.2.7))(svelte@5.2.7)(vue@3.5.13(typescript@5.6.3))(zod@3.23.8))(langchain@0.2.20(axios@1.7.7)(openai@4.73.0(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.5)))(openai@4.73.0(zod@3.23.8)):
+  composio-core@0.5.3(@ai-sdk/openai@0.0.36(zod@3.23.8))(@cloudflare/workers-types@4.20241230.0)(@langchain/core@0.2.36(openai@4.73.0(zod@3.23.8)))(@langchain/openai@0.2.11)(ai@3.4.33(openai@4.73.0(zod@3.23.8))(react@18.3.1)(sswr@2.1.0(svelte@5.2.7))(svelte@5.2.7)(vue@3.5.13(typescript@5.6.3))(zod@3.23.8))(langchain@0.2.20(axios@1.7.7)(openai@4.73.0(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.5)))(openai@4.73.0(zod@3.23.8)):
     dependencies:
       '@ai-sdk/openai': 0.0.36(zod@3.23.8)
       '@cloudflare/workers-types': 4.20241230.0

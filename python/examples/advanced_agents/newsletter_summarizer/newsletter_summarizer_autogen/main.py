@@ -8,8 +8,6 @@ from autogen.agentchat import AssistantAgent, UserProxyAgent
 from composio_autogen import Action, App, ComposioToolSet
 from datetime import datetime
 
-from python.composio.cli import apps
-
 # Load environment variables from a .env file
 dotenv.load_dotenv()
 

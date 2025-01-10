@@ -5,7 +5,7 @@ import dotenv  # For loading environment variables from a .env file
 # Import modules from Composio and LlamaIndex
 import re
 from datetime import datetime
-from composio_llamaindex import App, ComposioToolSet, Action
+from composio_llamaindex import App, ComposioToolSet, Action, Trigger
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage
 from llama_index.llms.openai import OpenAI
@@ -34,25 +34,9 @@ llm = OpenAI(model="gpt-4o")
 date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 timezone = datetime.now().astimezone().tzinfo
 
-def extract_sender_email(payload):
-    delivered_to_header_found = False
-    for header in payload["headers"]:
-        if header.get("name", "") == "Delivered-To" and header.get("value", "") != "":
-            delivered_to_header_found = True
-    print("delivered_to_header_found: ", delivered_to_header_found)
-    if not delivered_to_header_found:
-        return None
-    for header in payload["headers"]:
-        if header["name"] == "From":
-            # Regular expression to extract email from the 'From' header value
-            match = re.search(r"[\w\.-]+@[\w\.-]+", header["value"])
-            if match:
-                return match.group(0)
-    return None
-
 # Create a trigger listener
 listener = composio_toolset.create_trigger_listener()
-@listener.callback(filters={"trigger_name": "GMAIL_NEW_GMAIL_MESSAGE"})
+@listener.callback(filters={"trigger_name": Trigger.GMAIL_NEW_GMAIL_MESSAGE})
 def callback_new_message(event: TriggerEventData) -> None:
     # Using the information from Trigger, execute the agent
     print("here in the function")
@@ -81,7 +65,7 @@ def callback_new_message(event: TriggerEventData) -> None:
         )
     ]
     agent = FunctionCallingAgentWorker(
-    tools=schedule_tool,  # Tools available for the agent to use
+    tools=schedule_tool,  # Tools available for the agent to use # type: ignore
     llm=llm,  # Language model for processing requests
     prefix_messages=prefix_messages,  # Initial system messages for context
     max_function_calls=10,  # Maximum number of function calls allowed
@@ -107,4 +91,4 @@ def callback_new_message(event: TriggerEventData) -> None:
 
 print("Listener started!")
 print("Waiting for email")
-listener.listen()
+listener.wait_forever()

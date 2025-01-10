@@ -43,7 +43,7 @@ prefix_messages = [
 
 
 agent = FunctionCallingAgentWorker(
-    tools=tools,  # Tools available for the agent to use
+    tools=tools,  # Tools available for the agent to use # type: ignore
     llm=llm,  # Language model for processing requests
     prefix_messages=prefix_messages,  # Initial system messages for context
     max_function_calls=10,  # Maximum number of function calls allowed
