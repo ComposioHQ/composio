@@ -8,7 +8,7 @@ describe("Apps class tests", () => {
   let llamaindexToolSet: LlamaIndexToolSet;
   beforeAll(() => {
     llamaindexToolSet = new LlamaIndexToolSet({
-        apiKey: getTestConfig().COMPOSIO_API_KEY,
+      apiKey: getTestConfig().COMPOSIO_API_KEY,
       baseUrl: getTestConfig().BACKEND_HERMES_URL,
     });
   });
