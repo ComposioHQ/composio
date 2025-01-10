@@ -8,10 +8,10 @@ import { ZToolSchemaFilter } from "../types/base_toolset";
 import { Optional, Sequence } from "../types/util";
 
 type ToolSchema = {
-    name: string;
-    description: string;
-    parameters: Record<string, unknown>;
-  };
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+};
 
 export class LlamaIndexToolSet extends BaseComposioToolSet {
   /**
