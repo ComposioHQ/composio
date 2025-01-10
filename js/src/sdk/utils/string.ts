@@ -1,1 +1,2 @@
-export const removeTrailingSlashIfExists = (str: string) => str.replace(/\/+$/, '');
+export const removeTrailingSlashIfExists = (str: string) =>
+  str.replace(/\/+$/, "");
