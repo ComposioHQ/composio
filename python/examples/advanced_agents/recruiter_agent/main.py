@@ -8,8 +8,8 @@ import os
 
 
 load_dotenv()
-import agentops
-agentops.init(os.getenv("AGENTOPS_API_KEY"))
+# import agentops
+# agentops.init(os.getenv("AGENTOPS_API_KEY"))
 
 
 toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"))
@@ -33,7 +33,7 @@ prefix_messages = [
 ]
 
 agent = FunctionCallingAgentWorker(
-    tools=tools,
+    tools=tools, # type: ignore
     llm=llm,
     prefix_messages=prefix_messages,
     max_function_calls=10,

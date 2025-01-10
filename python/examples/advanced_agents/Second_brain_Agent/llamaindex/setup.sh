@@ -16,7 +16,7 @@ pip install -r requirements.txt
 echo "Login to your Composio acount"
 composio login
 
-# Add trello tool
+
 echo "Add tool. Finish the flow"
 composio add serpapi
 

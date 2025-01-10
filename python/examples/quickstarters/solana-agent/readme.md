@@ -1,6 +1,6 @@
-# Solana Agent Guide
+# Trend Finder Agent Guide
 
-This guide provides detailed steps to create a Solana agent that leverages CrewAI, Composio, and ChatGPT to perform web searches and compile research reports. Ensure you have Python 3.8 or higher installed.
+This guide provides detailed steps to create a Trend Finder agent that leverages Composio, ChatGPT to research and find trends in Twitter and Linkedin. Ensure you have Python 3.8 or higher installed.
 
 ## Steps to Run
 **Navigate to the Project Directory:**
@@ -23,7 +23,7 @@ add necessary tools:
 Now, Fill in the .env file with your secrets.
 ### 2. Run the python script
 ```shell
-python python/examples/quickstarters/solana-agent
+    python python/examples/quickstarters/trend_finder/main.py
 ```
 
 

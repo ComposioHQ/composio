@@ -14,12 +14,12 @@ composio_toolset = ComposioToolSet()
 
 
 # Define the tools
-pr_agent_tools = composio_toolset.get_actions(
+pr_agent_tools = composio_toolset.get_tools(
     actions=[
-        Action.GITHUB_GET_CODE_CHANGES_IN_PR,
-        Action.GITHUB_PULLS_CREATE_REVIEW_COMMENT,
-        Action.GITHUB_ISSUES_CREATE,
-        Action.SLACKBOT_CHAT_POST_MESSAGE,
+        Action.GITHUB_GET_A_PULL_REQUEST,
+        Action.GITHUB_CREATE_A_REVIEW_FOR_A_PULL_REQUEST,
+        Action.GITHUB_CREATE_AN_ISSUE,
+        Action.SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL,
     ]
 )
 
@@ -65,13 +65,14 @@ code_reviewer = Agent(
 def review_code_task(code_to_review):
     return Task(
         description=f"Review the following code changes and provide feedback: {code_to_review}",
+        expected_output="A detailed review of the code changes, including any issues, suggestions, and a summary of the changes.",
         agent=code_reviewer,
     )
 
 
 # Create the crew
 code_review_crew = Crew(
-    agents=[code_reviewer], tasks=[], verbose=2, process=Process.sequential
+    agents=[code_reviewer], tasks=[], verbose=True, process=Process.sequential
 )
 
 print("Assistant is ready")
@@ -97,4 +98,4 @@ def review_new_pr(event: TriggerEventData) -> None:
 
 print("Listener started!")
 print("Create a pr to get the review")
-listener.listen()
+listener.wait_forever()

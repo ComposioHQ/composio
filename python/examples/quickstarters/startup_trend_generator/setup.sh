@@ -2,27 +2,18 @@
 
 # Create a virtual environment
 echo "Creating virtual environment..."
-python3 -m venv ~/.venvs/content_writing 
+python3 -m venv ~/.venvs/startup_trend_generator
 
 # Activate the virtual environment
 echo "Activating virtual environment..."
-source ~/.venvs/content_writing/bin/activate
+source ~/.venvs/startup_trend_generator/bin/activate
 
 # Install libraries from requirements.txt 
 echo "Installing libraries from requirements.txt..."
 pip install -r requirements.txt
 
-# Login to your account
-echo "Login to your Composio acount"
-composio login
-
-# Add trello tool
-
-echo "Add slackbot tool. Finish the flow"
-composio add twitter
-composio add linkedin
 composio add firecrawl
-composio add tavily
+composio add slack
 
 # Copy env backup to .env file
 if [ -f ".env.example" ]; then
