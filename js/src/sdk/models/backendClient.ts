@@ -4,6 +4,7 @@ import { client as axiosClient } from "../client/services.gen";
 import { setAxiosClientConfig } from "../utils/config";
 import { CEG } from "../utils/error";
 import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
+import { removeTrailingSlashIfExists } from "../utils/string";
 
 /**
  * Class representing the details required to initialize and configure the API client.
@@ -35,7 +36,7 @@ export class BackendClient {
   constructor(apiKey: string, baseUrl: string, runtime?: string) {
     this.runtime = runtime || "";
     this.apiKey = apiKey;
-    this.baseUrl = baseUrl;
+    this.baseUrl = removeTrailingSlashIfExists(baseUrl);
     this.instance = axiosClient.instance;
 
     if (!apiKey) {
@@ -84,7 +85,7 @@ export class BackendClient {
    */
   private initializeApiClient() {
     axiosClient.setConfig({
-      baseURL: this.baseUrl,
+      baseURL: removeTrailingSlashIfExists(this.baseUrl),
       headers: {
         "X-API-KEY": `${this.apiKey}`,
         "X-SOURCE": "js_sdk",
