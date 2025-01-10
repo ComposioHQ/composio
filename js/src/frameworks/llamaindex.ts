@@ -7,6 +7,12 @@ import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 import { ZToolSchemaFilter } from "../types/base_toolset";
 import { Optional, Sequence } from "../types/util";
 
+type ToolSchema = {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+  };
+
 export class LlamaIndexToolSet extends BaseComposioToolSet {
   /**
    * Composio toolset for LlamaIndex framework.
@@ -33,7 +39,7 @@ export class LlamaIndexToolSet extends BaseComposioToolSet {
   }
 
   private _wrapTool(
-    schema: any,
+    schema: ToolSchema,
     entityId: Optional<string> = null
   ): FunctionTool<Record<string, unknown>, JSONValue | Promise<JSONValue>> {
     return FunctionTool.from(
