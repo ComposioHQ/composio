@@ -8,6 +8,7 @@ import { AxiosInstance } from "axios";
 import { getUUID } from "../../utils/common";
 import logger from "../../utils/logger";
 import { getEnvVariable } from "../../utils/shared";
+import { removeTrailingSlashIfExists } from "../../utils/string";
 import apiClient from "../client/client";
 import { client as axiosClient } from "../client/services.gen";
 declare module "axios" {
@@ -117,7 +118,10 @@ export function getSDKConfig(baseUrl?: string, apiKey?: string) {
   const apiKeyParsed =
     apiKey || getEnvVariable("COMPOSIO_API_KEY") || apiKeyFromUserConfig || "";
 
-  return { baseURL: baseURLParsed, apiKey: apiKeyParsed };
+  return {
+    baseURL: removeTrailingSlashIfExists(baseURLParsed),
+    apiKey: apiKeyParsed,
+  };
 }
 
 // Get the API client
