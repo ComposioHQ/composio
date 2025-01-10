@@ -1,6 +1,7 @@
 import { CloudflareToolSet } from "./frameworks/cloudflare";
 import { LangchainToolSet } from "./frameworks/langchain";
 import { LangGraphToolSet } from "./frameworks/langgraph";
+import { LlamaIndexToolSet } from "./frameworks/llamaindex";
 import { OpenAIToolSet } from "./frameworks/openai";
 import { VercelAIToolSet } from "./frameworks/vercel";
 import { ComposioToolSet } from "./sdk/base.toolset";
@@ -26,6 +27,7 @@ export {
   ConnectionRequest,
   LangGraphToolSet,
   LangchainToolSet,
+  LlamaIndexToolSet,
   OpenAIToolSet,
   VercelAIToolSet,
 };
