@@ -62,34 +62,6 @@
     <li>Pluggable architecture supporting custom tools and extensions</li>
 </ul>
 
-<div align="center">
-<p>
-<a href="https://app.composio.dev">Try on Dashboard</a> <b>|</b>
-<a href="https://www.composio.dev">Homepage</a> <b>|</b>
-<!-- <a href="https://docs.composio.dev/guides/examples">Examples</a> |
-<a href="https://docs.composio.dev/chat-with-docs">Chat with Docs</a> | -->
-<a href="https://docs.composio.dev/sdk">SDK</a> <b>|</b>
-<a href="https://docs.composio.dev/api-reference/">APIs</a> 
-</p>
-</div>
-
-<hr>
-<div align="center">
-<p >
-    <b>Socials >></b>
-    <a href="https://dub.composio.dev/JoinHQ">Discord</a> <b>|</b>
-    <a href="https://www.youtube.com/@Composio">Youtube</a> <b>|</b>
-    <a href="https://twitter.com/composiohq">Twitter</a> <b>|</b>
-    <a href="https://www.linkedin.com/company/composio-dev"> Linkedin </a>
-</p>
-<p align="center">
-    <b>⛏️ Contribute >></b>
-    <a href="https://github.com/composiodev/composio/issues/new?assignees=&labels=type%3A+bug&template=bug_report.yml&title=%F0%9F%90%9B+Bug+Report%3A+">Report Bugs</a> <b>|</b>
-    <a href="https://github.com/composiodev/composio/issues/new?assignees=&labels=feature&template=feature_request.yml&title=%F0%9F%9A%80+Feature%3A+">Request Feature</a> <b>|</b>
-    <a href="https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md">Contribute</a>
-</p>
-</div>
-
 ## 📋 Table of contents
 
 - [🚀 Getting Started with Python](#-getting-started-with-python)
@@ -275,7 +247,7 @@ We're an open-source project and welcome contributions. Please read the <a href=
 
 ## Request a feature
 
-- If you have a feature request, please open an issue, make a pull request, or submit it in our <a href="https://discord.com/channels/1170785031560646836/1247166813205303379" target="_blank" rel="noopener noreferrer">feature requests channel</a>.
+- If you have a feature request, please open an <a href="https://github.com/composiodev/composio/issues/new?assignees=&labels=feature&template=feature_request.yml&title=%F0%9F%9A%80+Feature%3A+">issue</a>, make a pull request, or submit it in our <a href="https://discord.com/channels/1170785031560646836/1247166813205303379" target="_blank" rel="noopener noreferrer">feature requests channel</a>.
 - If you have ideas for improvements, you can also start a discussion in our GitHub repository.
   
 ## Thanks To All Contributors
@@ -283,3 +255,17 @@ We're an open-source project and welcome contributions. Please read the <a href=
 <a href="https://github.com/composiohq/composio/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=composiodev/composio" alt="List of Contributors"/>
 </a>
+
+<div align="center">
+<p >
+    <b>Socials >></b>
+    <a href="https://dub.composio.dev/JoinHQ">Discord</a> <b>|</b>
+    <a href="https://www.youtube.com/@Composio">Youtube</a> <b>|</b>
+    <a href="https://twitter.com/composiohq">Twitter</a> <b>|</b>
+    <a href="https://www.linkedin.com/company/composio-dev"> Linkedin </a>
+</p>
+</div>
+
+![large-filled-discord](large/filled/discord.svg)
+![large-filled-twitter-x](large/filled/twitter-x.svg)
+![large-filled-youtube](large/filled/youtube.svg)
