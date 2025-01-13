@@ -1,0 +1,1 @@
+export { IngestDataDto } from "./IngestDataDto";

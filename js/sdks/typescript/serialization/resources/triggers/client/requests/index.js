@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SetCallbackUrlBodyDto = exports.SwitchTriggerStatusBodyDto = exports.EnableTriggerBodyDto = exports.WehbookNewFormatDto = void 0;
+var WehbookNewFormatDto_1 = require("./WehbookNewFormatDto");
+Object.defineProperty(exports, "WehbookNewFormatDto", { enumerable: true, get: function () { return WehbookNewFormatDto_1.WehbookNewFormatDto; } });
+var EnableTriggerBodyDto_1 = require("./EnableTriggerBodyDto");
+Object.defineProperty(exports, "EnableTriggerBodyDto", { enumerable: true, get: function () { return EnableTriggerBodyDto_1.EnableTriggerBodyDto; } });
+var SwitchTriggerStatusBodyDto_1 = require("./SwitchTriggerStatusBodyDto");
+Object.defineProperty(exports, "SwitchTriggerStatusBodyDto", { enumerable: true, get: function () { return SwitchTriggerStatusBodyDto_1.SwitchTriggerStatusBodyDto; } });
+var SetCallbackUrlBodyDto_1 = require("./SetCallbackUrlBodyDto");
+Object.defineProperty(exports, "SetCallbackUrlBodyDto", { enumerable: true, get: function () { return SetCallbackUrlBodyDto_1.SetCallbackUrlBodyDto; } });
