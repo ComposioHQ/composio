@@ -1,20 +1,6 @@
-<p align="center">
-  <a href="https://x.com/GanatraSoham/?utm_campaign=github-readme" target="_blank">
-    <img src="./python/docs/imgs/follow_x.png" width="100%" alt="Follow me" />
-  </a>
-  <br /> <br />
-</p>
-<p align="center">
-  <a href="https://app.composio.dev/?utm_campaign=github-readme" target="_blank">
-    <img src="./python/docs/imgs/try_hosted.png" width="100%" alt="Sign up" />
-  </a>
-
-  <br /> <br />
-</p>
 <p>
   <a href="https://github.com/composiohq/composio/blob/master/README.md">EN</a> | <a href="https://github.com/composiohq/composio/blob/master/README-CN.md">CN</a> | <a href="https://github.com/composiohq/composio/blob/master/README-JP.md">JP</a>
 </p>
-
 <p align="center">
   <a href="https://composio.dev//#gh-dark-mode-only">
     <img src="./python/docs/imgs/composio_white_font.svg" width="318px" alt="Composio logo" />
@@ -24,9 +10,12 @@
   </a>
 </p>
 <p align="center">
-  <a href="https://github.com/composiodev/composio/actions/workflows/common.yml">
-  <img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/composiodev/composio/common.yml?label=Tests&style=plastic&logo=github&color=blue&cacheSeconds=60">
+  <a href="https://docs.composio.dev">
+    <img src="https://img.shields.io/badge/Read%20the%20Documentation-Click%20Here-green?style=for-the-badge&logo=read-the-docs" alt="Read the Docs">
   </a>
+</p>
+
+<p align="center">
   <a href="https://pypi.org/project/composio-core/">
   <img alt="PyPI" src="https://img.shields.io/pypi/v/composio_core?label=Latest&style=plastic&logo=pypi&color=blue&cacheSeconds=60&logoColor=white">
   </a>
@@ -36,20 +25,44 @@
   <a href="https://pypi.org/project/composio-core/">
   <img alt="Downloads" src="https://img.shields.io/pypi/dm/composio-core?label=Downloads&style=plastic&logo=github&color=blue&cacheSeconds=60">
   </a>
-  
 </p>
 
-<h2 align="center"><i>
+<h2 align="center">
   Production Ready Toolset for AI Agents
-</i></h2>
+</h2>
 
-<h4 align="center">Equip your agent with high-quality tools & integrations without worrying about authentication, accuracy, and reliability in a single line of code!
-</h4>
+<img alt="Illustration" src="./python/docs/imgs/banner.gif" style="border-radius: 5px"/>
+
+<h2>What is Composio?</h2>
+<p><strong>Composio provides production-ready toolset for AI agents</strong>, offering:</p>
+<ul>
+    <li>Support for over 250+ tools across multiple categories:
+        <ul>
+            <li>Software tools like GitHub, Notion, Linear, Gmail, Slack, Hubspot, Salesforce & 
+              <a href="https://app.composio.dev/apps">
+                more
+              </a>
+            </li>
+            <li>OS operations including file tool, shell tool, code analysis tool &
+              <a href="https://app.composio.dev/apps">
+                more
+              </a>
+            </li>
+            <li>Search capabilities through Google, Perplexity, Tavily, and Exa & 
+              <a href="https://app.composio.dev/apps">
+                more
+              </a>
+            </li>
+        </ul>
+    </li>
+    <li>Comprehensive framework support including OpenAI, Groq, Claude, LlamaIndex, Langchain, CrewAI, Autogen, Gemini, and <a href="https://docs.composio.dev/framework">more</a></li>
+    <li>Managed authentication supporting multiple protocols (OAuth, API Keys, Basic JWT)</li>
+    <li>Up to 40% improved tool call accuracy through optimized design</li>
+    <li>Whitelabel solution for backend integration</li>
+    <li>Pluggable architecture supporting custom tools and extensions</li>
+</ul>
+
 <div align="center">
-<p>
-<a href="https://docs.composio.dev" rel="dofollow"><strong>Explore the Docs »</strong></a>
-</p>
-
 <p>
 <a href="https://app.composio.dev">Try on Dashboard</a> <b>|</b>
 <a href="https://www.composio.dev">Homepage</a> <b>|</b>
@@ -63,7 +76,7 @@
 <hr>
 <div align="center">
 <p >
-    <b>✨ Socials >></b>
+    <b>Socials >></b>
     <a href="https://dub.composio.dev/JoinHQ">Discord</a> <b>|</b>
     <a href="https://www.youtube.com/@Composio">Youtube</a> <b>|</b>
     <a href="https://twitter.com/composiohq">Twitter</a> <b>|</b>
@@ -79,9 +92,6 @@
 
 ## 📋 Table of contents
 
-- [📋 Table of contents](#-table-of-contents)
-- [🤔 Why Composio?](#-why-composio)
-- [🔥 Key Features](#-key-features)
 - [🚀 Getting Started with Python](#-getting-started-with-python)
   - [1. Installation](#1-installation)
   - [2. Testing Composio in Action](#2-testing-composio-in-action)
@@ -95,39 +105,14 @@
 - [Star History](#star-history)
 - [📋 Read Our Code Of Conduct](#-read-our-code-of-conduct)
 - [🤗 Contributions](#-contributions)
-- [🔗 Links](#-links)
-- [🛡️ License](#️-license)
 - [💪 Thanks To All Contributors](#-thanks-to-all-contributors)
 
-## 🤔 Why Composio?
 
-We believe AI Based Agents/Workflows are the future.
-Composio is the best toolset to integrate AI Agents to best Agentic Tools and use them to accomplish tasks.
-
-<img alt="Illustration" src="./python/docs/imgs/banner.gif" style="border-radius: 5px"/>
-
-## 🔥 Key Features
-
-- **100+ Tools**: Support for a range of different categories
-
-  - **Software**: Do anything on GitHub, Notion, Linear, Gmail, Slack, Hubspot, Salesforce, & 90 more.
-  - **OS**: Click anywhere, Type anything, Copy to Clipboard, & more.
-  - **Browser**: Smart Search, Take a screenshot, MultiOn, Download, Upload, & more.
-  - **Search**: Google Search, Perplexity Search, Tavily, Exa & more.
-  - **SWE**: Ngrok, Database, Redis, Vercel, Git, etc.
-  - **RAG**: Agentic RAG for any type of data on the fly!
-
-- **Frameworks**: Use tools with agent frameworks like **OpenAI, Groq (OpenAI compatible), Claude, LlamaIndex, Langchain, CrewAI, Autogen, Gemini, Julep, Lyzr**, and more in a single line of code.
-- **Managed Authorisation**: Supports six different auth protocols. _Access Token, Refresh token, OAuth, API Keys, JWT, and more_ abstracted out so you can focus on the building agents.
-- **Accuracy**: Get _up to 40% better agentic accuracy_ in your tool calls due to better tool designs.
-- **Embeddable**: Whitelabel in the backend of your applications managing Auth & Integrations for all your users & agents and maintain a consistent experience.
-- **Pluggable**: Designed to be extended with additional Tools, Frameworks and Authorisation Protocols very easily.
-
-## 🚀 Getting Started with Python
+## Getting Started with Python
 
 ### 1. Installation
 
-To get started, type the following command in your Terminal.
+Start by installing the package
 
 ```bash
 pip install composio-core
@@ -135,10 +120,11 @@ pip install composio-core
 
 If you want to install the 'composio' package along with its openai plugin: `pip install composio-openai`.
 
-### 2. Testing Composio in Action
+### 2. Creating an agent & executing tool call
 
-Let's use Composio to create an AI Agent that can star a GitHub Repo.
+Let's create an AI Agent using OpenAI and use Composio's GitHub tool to star a GitHub repository.
 
+> [!NOTE] You need to 
 ```bash
 composio add github # Connect your GitHub - Run this in terminal
 ```
@@ -199,9 +185,9 @@ response_after_tool_calls = composio_tool_set.wait_and_handle_assistant_tool_cal
 print(response_after_tool_calls)
 ```
 
-## 🚀 Getting Started with Javascript
+## Getting Started with JavaScript
 
-To get started with the Composio SDK in Javascript, follow these steps:
+To get started with the Composio SDK in JavaScript, follow these steps:
 
 ### 1. **Install the Composio SDK**:
    ```bash
@@ -266,40 +252,33 @@ This will set up the Composio SDK and execute an agent that creates a GitHub iss
 For more details, refer to the [Composio SDK Documentation](https://docs.composio.dev/).
 
 
-## 💡 Examples
+## Examples
 
 ### [Python Examples](https://docs.composio.dev/guides/python/)
 
 ### [Javascript Examples](https://docs.composio.dev/guides/javascript/)
 
-
-
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=composiohq/composio&type=Date)](https://star-history.com/#composiohq/composio&Date)
 
+## Getting help
 
-## 📋 Read Our Code Of Conduct
+- Read the docs at <a href="https://docs.composio.dev" target="_blank" rel="noopener noreferrer">docs.composio.dev</a>
+- Post your questions on <a href="https://discord.com/channels/1170785031560646836/1268871288156323901" target="_blank" rel="noopener noreferrer">discord</a>
 
-As part of our open-source community, we hold ourselves and other contributors to a high standard of communication. As a participant and contributor to this project, you agree to abide by our [Code of Conduct](https://github.com/composiodev/composio/blob/master/CODE_OF_CONDUCT.md).
+### Check out the [cookbook](https://github.com/phidatahq/phidata/tree/main/cookbook) for more examples.
 
-## 🤗 Contributions
+## Contributions
 
-Composio is open-source and we welcome contributions. Please fork the repository, create a new branch for your feature, add your feature or improvement, and send a pull request.
+We're an open-source project and welcome contributions. Please read the <a href="https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">contributing guide</a> for more information. Please check our <a href="https://github.com/composiodev/composio/blob/master/CODE_OF_CONDUCT.md" target="_blank" rel="noopener noreferrer">code of conduct</a> before you start.
 
-Also go through our [Contribution Guidelines](https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md) and [Code of Conduct](https://github.com/composiodev/composio/blob/master/CODE_OF_CONDUCT.md) before you start.
+## Request a feature
 
-## 🔗 Links
-
-- [Home page](https://composio.dev?utm_campaign=github-readme)
-- [Contribution Guidelines](https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md)
-- [Docs](https://docs.composio.dev/?utm_campaign=github-readme)
-
-## 🛡️ License
-
-Composio is licensed under the Elastic License - see the [LICENSE](https://github.com/composiodev/composio/blob/master/LICENSE) file for details.
-
-## 💪 Thanks To All Contributors
+- If you have a feature request, please open an issue, make a pull request, or submit it in our <a href="https://discord.com/channels/1170785031560646836/1247166813205303379" target="_blank" rel="noopener noreferrer">feature requests channel</a>.
+- If you have ideas for improvements, you can also start a discussion in our GitHub repository.
+  
+## Thanks To All Contributors
 
 <a href="https://github.com/composiohq/composio/graphs/contributors">
   <img src="https://contributors-img.web.app/image?repo=composiodev/composio" alt="List of Contributors"/>
