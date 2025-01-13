@@ -24,7 +24,7 @@ Now, fill in the `.env` file with your secrets.
 
 ### 2. Run the Python Script
 ```shell
-python cookbook/examples/scheduler_agent/main.py
+python python/examples/advanced_agents/scheduler_agent/scheduler_agent_phidata/main.py
 ```
 
 

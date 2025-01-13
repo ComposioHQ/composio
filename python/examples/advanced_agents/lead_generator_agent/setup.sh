@@ -21,6 +21,9 @@ else
     touch .env
 fi
 
+echo "Authenticating with Composio..."
+composio add peopledatalabs
+composio add googlesheets
 # Prompt the user to enter the OPENAI_API_KEY
 read -p "Enter your OPENAI_API_KEY: " OPENAI_API_KEY
 

@@ -21,6 +21,7 @@ else
     touch .env
 fi
 
+composio add exa
 # Prompt the user to enter the OPENAI_API_KEY
 read -p "Enter your OPENAI_API_KEY: " OPENAI_API_KEY
 

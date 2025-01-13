@@ -38,6 +38,6 @@ Now, fill in the `.env` file with your secrets.
 
 ### 2. Run the Python Script
 ```shell
-python cookbook/examples/slack_agent_langchain/slack_agent_langchain.py
+python python/examples/advanced_agents/slack_bot_agent/slack_agent_langchain/slack_agent_langchain.py
 ```
 
