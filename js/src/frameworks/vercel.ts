@@ -1,4 +1,4 @@
-import { jsonSchema, tool } from "ai";
+import { jsonSchema, tool, CoreTool } from "ai";
 import { z } from "zod";
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
@@ -62,7 +62,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     useCase?: Optional<string>;
     usecaseLimit?: Optional<number>;
     filterByAvailableApps?: Optional<boolean>;
-  }): Promise<{ [key: string]: RawActionData }> {
+  }): Promise<{ [key: string]: CoreTool }> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getTools",
       file: this.fileName,
@@ -78,21 +78,19 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       actions,
     } = ZExecuteToolCallParams.parse(filters);
 
-    const actionsList = await this.client.actions.list({
-      ...(apps && { apps: apps?.join(",") }),
-      ...(tags && { tags: tags?.join(",") }),
-      ...(useCase && { useCase: useCase }),
-      ...(actions && { actions: actions?.join(",") }),
-      ...(usecaseLimit && { usecaseLimit: usecaseLimit }),
-      filterByAvailableApps: filterByAvailableApps ?? undefined,
-    });
+    const actionsList = await this.getToolsSchema({
+      apps,
+      actions,
+      tags,
+      useCase,
+      useCaseLimit: usecaseLimit,
+      filterByAvailableApps
+    })
 
-    const tools = {};
-    actionsList.items?.forEach((actionSchema) => {
-      // @ts-ignore
+    const tools: { [key: string]: CoreTool } = {};
+    actionsList.forEach((actionSchema) => {
       tools[actionSchema.name!] = this.generateVercelTool(
-        // @ts-ignore
-        actionSchema as ActionData
+        actionSchema
       );
     });
 
