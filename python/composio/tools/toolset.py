@@ -1405,7 +1405,10 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         app: AppType,
         auth_scheme: t.Optional[str] = None,
     ) -> IntegrationModel:
-        for integration in sorted(self.get_integrations(), key=lambda x: x.createdAt):
+        for integration in sorted(
+            self.get_integrations(app=app),
+            key=lambda x: x.createdAt,
+        ):
             if integration.appName.lower() == str(app).lower():
                 if (
                     auth_scheme is not None
