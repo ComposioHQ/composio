@@ -1341,8 +1341,12 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         self,
         app: t.Optional[AppType] = None,
         auth_scheme: t.Optional[AuthSchemeType] = None,
+        fetch_disabled: bool = False,
     ) -> t.List[IntegrationModel]:
-        integrations = self.client.integrations.get()
+        integrations = self.client.integrations.get(
+            show_disabled=fetch_disabled,
+            page_size=999,
+        )
         if app is not None:
             app = str(app).lower()
             integrations = [i for i in integrations if i.appName.lower() == app]
@@ -1350,7 +1354,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if auth_scheme is not None:
             integrations = [i for i in integrations if i.authScheme == auth_scheme]
 
-        return integrations
+        return sorted(integrations, key=lambda x: x.createdAt)
 
     def get_connected_account(self, id: str) -> ConnectedAccountModel:
         return self.client.connected_accounts.get(connection_id=id)
@@ -1405,10 +1409,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         app: AppType,
         auth_scheme: t.Optional[str] = None,
     ) -> IntegrationModel:
-        for integration in sorted(
-            self.get_integrations(app=app),
-            key=lambda x: x.createdAt,
-        ):
+        for integration in reversed(self.get_integrations(app=app)):
             if integration.appName.lower() == str(app).lower():
                 if (
                     auth_scheme is not None
