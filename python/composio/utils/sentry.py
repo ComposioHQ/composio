@@ -127,4 +127,5 @@ def update_dsn() -> None:
         return
 
     data["sentry"] = {"dsn": dsn}
+    user_file.parent.mkdir(parents=True, exist_ok=True)
     user_file.write_text(json.dumps(data), encoding="utf-8")
