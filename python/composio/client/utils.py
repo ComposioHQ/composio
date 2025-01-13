@@ -5,7 +5,7 @@ import typing as t
 
 from composio.client import Composio, enums
 from composio.client.collections import ActionModel, AppModel, TriggerModel
-from composio.client.enums.base import create_action, replacement_action_name
+from composio.client.enums.base import AppData, create_action, replacement_action_name
 from composio.tools.local import load_local_tools
 from composio.utils import get_enum_key
 from composio.utils.logging import get_logger
@@ -246,7 +246,6 @@ def check_cache_refresh(client: Composio) -> None:
             local_actions.append(action.stem)
 
     api_actions = client.actions.list_enums()
-
     actions_to_update = set(api_actions) - set(local_actions)
     actions_to_delete = set(local_actions) - set(api_actions)
     logger.debug("Actions to fetch: %s", actions_to_update)
@@ -262,18 +261,40 @@ def check_cache_refresh(client: Composio) -> None:
         update_triggers(client, apps)
         return
 
-    if actions_to_update:
-        actions_data = client.http.get(
-            str(
-                client.actions.endpoint(
-                    queries={"actions": ",".join(actions_to_update)}
-                )
-            )
-        ).json()
-        for action_data in actions_data["items"]:
-            storage_path = enums.base.ACTIONS_CACHE / action_data["name"]
-            create_action(
-                client, response=action_data, storage_path=storage_path
-            ).store()
+    local_apps = []
+    if enums.base.ACTIONS_CACHE.exists():
+        local_apps = list(path.stem for path in enums.base.APPS_CACHE.iterdir())
+
+    api_apps = client.apps.list_enums()
+    breakpoint()
+    apps_to_update = set(api_apps) - set(local_apps)
+    apps_to_delete = set(local_apps) - set(api_apps)
+    logger.debug("Apps to fetch: %s", apps_to_update)
+    logger.debug("Stale apps: %s", apps_to_delete)
+
+    # for app_name in apps_to_delete:
+    #     (enums.base.APPS_CACHE / app_name).unlink()
+
+    # if apps_to_update:
+    #     apps_data = client.http.get(
+    #         str(client.apps.endpoint(queries={"apps": ",".join(apps_to_update)}))
+    #     ).json()
+    #     for app_data in apps_data["items"]:
+    #         storage_path = enums.base.APPS_CACHE / app_data["name"]
+    #         AppData(name=app_data["name"], path=storage_path, is_local=False).store()
+
+    # if actions_to_update:
+    #     actions_data = client.http.get(
+    #         str(
+    #             client.actions.endpoint(
+    #                 queries={"actions": ",".join(actions_to_update)}
+    #             )
+    #         )
+    #     ).json()
+    #     for action_data in actions_data["items"]:
+    #         storage_path = enums.base.ACTIONS_CACHE / action_data["name"]
+    #         create_action(
+    #             client, response=action_data, storage_path=storage_path
+    #         ).store()
 
     logger.debug("Time taken to update cache: %.2f seconds", time.monotonic() - t0)

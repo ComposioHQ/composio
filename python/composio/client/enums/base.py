@@ -134,13 +134,7 @@ def create_action(
         name=response["name"],
         app=response["appName"],
         tags=response["tags"],
-        # TODO: Make no_auth part of the action response itself
-        # Ticket: ENG-3280
-        no_auth=(
-            client.http.get(url=str(client.apps.endpoint / response["appName"]))
-            .json()
-            .get("no_auth", False)
-        ),
+        no_auth=response["no_auth"],
         is_local=False,
         is_runtime=False,
         shell=False,

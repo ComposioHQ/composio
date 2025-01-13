@@ -354,6 +354,15 @@ class Apps(Collection[AppModel]):
 
         return super().get(queries={})
 
+    def list_enums(self) -> list[str]:
+        """Get just the app names on the server."""
+        response = self._raise_if_required(
+            response=self.client.http.get(
+                str(self.endpoint / "list" / "enums"),
+            )
+        )
+        return response.text.split("\n")
+
 
 class TypeModel(BaseModel):
     type: str
@@ -1393,6 +1402,7 @@ class Actions(Collection[ActionModel]):
         ]
 
     def list_enums(self) -> list[str]:
+        """Get just the action names on the server"""
         response = self._raise_if_required(
             response=self.client.http.get(
                 str(self.endpoint / "list" / "enums"),
