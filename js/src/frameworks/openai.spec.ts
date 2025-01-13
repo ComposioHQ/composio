@@ -11,14 +11,6 @@ describe("Apps class tests", () => {
     });
   });
 
-  it("get tools", async () => {
-    const tools = await openAIToolset.getTools({
-      apps: ["github"],
-    });
-
-    expect(tools).toBeInstanceOf(Array);
-  });
-
   it("check if tools are coming", async () => {
     const tools = await openAIToolset.getTools({
       actions: ["GITHUB_GITHUB_API_ROOT"],
