@@ -2,7 +2,6 @@ import { beforeAll, describe, expect, it } from "@jest/globals";
 import { z } from "zod";
 import { getTestConfig } from "../../config/getTestConfig";
 import { VercelAIToolSet } from "./vercel";
-import type { CreateActionOptions } from "../sdk/actionRegistry";
 
 describe("Apps class tests", () => {
   let vercelAIToolSet: VercelAIToolSet;
@@ -36,24 +35,25 @@ describe("Apps class tests", () => {
     beforeAll(async () => {
       const params = z.object({
         owner: z.string().describe("The owner of the repository"),
-        repo: z.string().describe("The name of the repository without the `.git` extension."),
-      })
-
+        repo: z
+          .string()
+          .describe("The name of the repository without the `.git` extension."),
+      });
 
       customAction = await vercelAIToolSet.createAction({
         actionName: "starRepositoryCustomAction",
         toolName: "github",
         description: "Star A Github Repository For Given `Repo` And `Owner`",
         inputParams: params,
-        callback: async (
-          inputParams,
-        ) => ({ successful: true, data: inputParams })
-      })
+        callback: async (inputParams) => ({
+          successful: true,
+          data: inputParams,
+        }),
+      });
 
       tools = await vercelAIToolSet.getTools({
         actions: ["starRepositoryCustomAction"],
       });
-
     });
 
     it("check if custom actions are coming", async () => {
@@ -66,14 +66,12 @@ describe("Apps class tests", () => {
         action: customAction.name,
         params: {
           owner: "composioHQ",
-          repo: "composio"
+          repo: "composio",
         },
-      })
+      });
       expect(res.successful).toBe(true);
       expect(res.data).toHaveProperty("owner", "composioHQ");
       expect(res.data).toHaveProperty("repo", "composio");
     });
-  })
-
-
+  });
 });
