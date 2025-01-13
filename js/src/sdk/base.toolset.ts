@@ -1,4 +1,4 @@
-import { z, ZodObject } from "zod";
+import { z } from "zod";
 import { Composio } from "../sdk";
 import {
   RawActionData,
@@ -10,7 +10,11 @@ import {
 } from "../types/base_toolset";
 import type { Optional, Sequence } from "../types/util";
 import { getEnvVariable } from "../utils/shared";
-import { ActionRegistry, CreateActionOptions, Parameters } from "./actionRegistry";
+import {
+  ActionRegistry,
+  CreateActionOptions,
+  Parameters,
+} from "./actionRegistry";
 import { ActionExecutionResDto } from "./client/types.gen";
 import { ActionExecuteResponse, Actions } from "./models/actions";
 import { ActiveTriggers } from "./models/activeTriggers";
@@ -54,10 +58,10 @@ export class ComposioToolSet {
     post: TPostProcessor[];
     schema: TSchemaProcessor[];
   } = {
-      pre: [fileInputProcessor],
-      post: [fileResponseProcessor],
-      schema: [fileSchemaProcessor],
-    };
+    pre: [fileInputProcessor],
+    post: [fileResponseProcessor],
+    schema: [fileSchemaProcessor],
+  };
 
   private userDefinedProcessors: {
     pre?: TPreProcessor;
@@ -172,7 +176,9 @@ export class ComposioToolSet {
     });
   }
 
-  async createAction<P extends Parameters = z.ZodObject<{}>>(options: CreateActionOptions<P>) {
+  async createAction<P extends Parameters = z.ZodObject<{}>>(
+    options: CreateActionOptions<P>
+  ) {
     return this.userActionRegistry.createAction<P>(options);
   }
 
