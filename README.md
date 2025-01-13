@@ -240,7 +240,7 @@ composio add github # Run this in terminal
 
 ## Contributions
 
-We're an open-source project and welcome contributions. Please read the <a href="https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">contributing guide</a> for more information. Please check our <a href="https://github.com/composiodev/composio/blob/master/CODE_OF_CONDUCT.md" target="_blank" rel="noopener noreferrer">code of conduct</a> before you start.
+We're an open-source project and welcome contributions. Please read the <a href="https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">contributing guide</a> for more information and check our <a href="https://github.com/composiodev/composio/blob/master/CODE_OF_CONDUCT.md" target="_blank" rel="noopener noreferrer">code of conduct</a> before you start.
 
 ## Request a feature
 
