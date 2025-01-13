@@ -1,4 +1,4 @@
-import { jsonSchema, tool, CoreTool } from "ai";
+import { CoreTool, jsonSchema, tool } from "ai";
 import { z } from "zod";
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
@@ -84,14 +84,12 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       tags,
       useCase,
       useCaseLimit: usecaseLimit,
-      filterByAvailableApps
-    })
+      filterByAvailableApps,
+    });
 
     const tools: { [key: string]: CoreTool } = {};
     actionsList.forEach((actionSchema) => {
-      tools[actionSchema.name!] = this.generateVercelTool(
-        actionSchema
-      );
+      tools[actionSchema.name!] = this.generateVercelTool(actionSchema);
     });
 
     return tools;

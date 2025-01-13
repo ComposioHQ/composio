@@ -18,19 +18,17 @@ type RawExecuteRequestParam = {
   };
 };
 
-
-type ValidParameters = ZodObject<{ [key: string]: ZodString | ZodOptional<ZodString> }>
-export type Parameters = ValidParameters | z.ZodObject<{}>
+type ValidParameters = ZodObject<{
+  [key: string]: ZodString | ZodOptional<ZodString>;
+}>;
+export type Parameters = ValidParameters | z.ZodObject<{}>;
 
 type inferParameters<PARAMETERS extends Parameters> =
   PARAMETERS extends ValidParameters
-  ? z.infer<PARAMETERS>
-  : z.infer<z.ZodObject<{}>>
+    ? z.infer<PARAMETERS>
+    : z.infer<z.ZodObject<{}>>;
 
-
-export type CreateActionOptions<
-  P extends Parameters = z.ZodObject<{}>
-> = {
+export type CreateActionOptions<P extends Parameters = z.ZodObject<{}>> = {
   actionName?: string;
   toolName?: string;
   description?: string;
@@ -64,7 +62,7 @@ export class ActionRegistry {
     string,
     {
       metadata: CreateActionOptions;
-      schema: Record<string, unknown>
+      schema: Record<string, unknown>;
     }
   >;
 
@@ -73,8 +71,9 @@ export class ActionRegistry {
     this.customActions = new Map();
   }
 
-
-  async createAction<P extends Parameters = z.ZodObject<{}>>(options: CreateActionOptions<P>): Promise<RawActionData> {
+  async createAction<P extends Parameters = z.ZodObject<{}>>(
+    options: CreateActionOptions<P>
+  ): Promise<RawActionData> {
     const { callback } = options;
     if (typeof callback !== "function") {
       throw new Error("Callback must be a function");
@@ -83,7 +82,7 @@ export class ActionRegistry {
       throw new Error("You must provide actionName for this action");
     }
     if (!options.inputParams) {
-      options.inputParams = z.object({}) as P
+      options.inputParams = z.object({}) as P;
     }
     const params = options.inputParams;
     const actionName = options.actionName || callback.name || "";
