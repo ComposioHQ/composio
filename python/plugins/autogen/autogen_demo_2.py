@@ -2,22 +2,25 @@
 Autogen demo using get_tools() approach.
 """
 
+import asyncio
 import os
 
 import dotenv
-from autogen import AssistantAgent, UserProxyAgent
+from autogen_agentchat.agents import AssistantAgent
+from autogen_core import CancellationToken
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 
 from composio_autogen import App, ComposioToolSet
 
 
-def main():
+async def main():
     # Initialize toolset and get tools
     composio_toolset = ComposioToolSet()
     tools = composio_toolset.get_tools(apps=[App.GITHUB])
 
     model_client = OpenAIChatCompletionClient(
-        model="gpt-4o",
+        model="gpt-4",
+        api_key=os.environ["OPENAI_API_KEY"],
     )
     # Create assistant agent with tools
     assistant = AssistantAgent(
@@ -27,22 +30,16 @@ def main():
             "Use the provided tools to interact with GitHub."
         ),
         model_client=model_client,
-        tools=tools,
-    )
-
-    # Create user proxy agent
-    user_proxy = UserProxyAgent(
-        name="user_proxy",
-        human_input_mode="NEVER",
-        code_execution_config={"work_dir": "coding"},
+        tools=list(tools),
     )
 
     # Define task and initiate chat
     task = "Star the repository composiohq/composio on GitHub"
-    user_proxy.initiate_chat(assistant, message=task)
+    result = await assistant.run(task=task, cancellation_token=CancellationToken())
+    print(result)
 
 
 if __name__ == "__main__":
     # Load environment variables from .env
     dotenv.load_dotenv()
-    main()
+    asyncio.run(main())

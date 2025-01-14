@@ -142,10 +142,12 @@ class ComposioToolSet(
         params = get_signature_format_from_schema_params(
             schema_params=schema["parameters"],
         )
-        setattr(function, '__signature__', Signature(parameters=params))
-        setattr(function, '__annotations__', {
-            p.name: p.annotation for p in params
-        } | {'return': t.Dict[str, t.Any]})
+        setattr(function, "__signature__", Signature(parameters=params))
+        setattr(
+            function,
+            "__annotations__",
+            {p.name: p.annotation for p in params} | {"return": t.Dict[str, t.Any]},
+        )
         function.__doc__ = (
             description if description else f"Action {name} from {appName}"
         )
@@ -166,11 +168,11 @@ class ComposioToolSet(
     ) -> FunctionTool:
         """
         Wraps a composio action as an Autogen FunctionTool.
-        
+
         Args:
             schema: The action schema to wrap
             entity_id: Optional entity ID for executing function calls
-            
+
         Returns:
             FunctionTool: Wrapped function as an Autogen FunctionTool
         """
@@ -193,13 +195,17 @@ class ComposioToolSet(
             name=self._process_function_name_for_registration(input_string=name),
             closure=execute_action.__closure__,
         )
-        
+
         # Set signature and annotations
-        params = get_signature_format_from_schema_params(schema_params=schema["parameters"])
-        setattr(function, '__signature__', Signature(parameters=params))
-        setattr(function, '__annotations__', {
-            p.name: p.annotation for p in params
-        } | {'return': t.Dict[str, t.Any]})
+        params = get_signature_format_from_schema_params(
+            schema_params=schema["parameters"]
+        )
+        setattr(function, "__signature__", Signature(parameters=params))
+        setattr(
+            function,
+            "__annotations__",
+            {p.name: p.annotation for p in params} | {"return": t.Dict[str, t.Any]},
+        )
         function.__doc__ = description
 
         return FunctionTool(
@@ -223,7 +229,7 @@ class ComposioToolSet(
 
         Args:
             actions: List of actions to wrap
-            apps: List of apps to wrap  
+            apps: List of apps to wrap
             tags: Filter apps by given tags
             entity_id: Entity ID for function wrapper
             processors: Optional dict of processors to merge
