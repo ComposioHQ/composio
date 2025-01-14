@@ -1491,13 +1491,28 @@ class Integrations(Collection[IntegrationModel]):
         self.client.http.delete(url=str(self.endpoint / id))
 
     @t.overload  # type: ignore
-    def get(self) -> t.List[IntegrationModel]: ...
+    def get(
+        self,
+        *,
+        page_size: t.Optional[int] = None,
+        page: t.Optional[int] = None,
+        app_id: t.Optional[str] = None,
+        app_name: t.Optional[str] = None,
+        show_disabled: t.Optional[bool] = None,
+    ) -> t.List[IntegrationModel]: ...
 
     @t.overload
     def get(self, id: t.Optional[str] = None) -> IntegrationModel: ...
 
     def get(
-        self, id: t.Optional[str] = None
+        self,
+        id: t.Optional[str] = None,
+        *,
+        page_size: t.Optional[int] = None,
+        page: t.Optional[int] = None,
+        app_id: t.Optional[str] = None,
+        app_name: t.Optional[str] = None,
+        show_disabled: t.Optional[bool] = None,
     ) -> t.Union[t.List[IntegrationModel], IntegrationModel]:
         if id is not None:
             return IntegrationModel(
@@ -1505,7 +1520,24 @@ class Integrations(Collection[IntegrationModel]):
                     self.client.http.get(url=str(self.endpoint / id))
                 ).json()
             )
-        return super().get({})
+
+        quries = {}
+        if page_size is not None:
+            quries["pageSize"] = json.dumps(page_size)
+
+        if page is not None:
+            quries["page"] = json.dumps(page)
+
+        if app_id is not None:
+            quries["appId"] = app_id
+
+        if app_name is not None:
+            quries["appName"] = app_name
+
+        if show_disabled is not None:
+            quries["showDisabled"] = json.dumps(show_disabled)
+
+        return super().get(queries=quries)
 
     @te.deprecated("`get_id` is deprecated, use `get(id=id)`")
     def get_by_id(
