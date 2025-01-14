@@ -66,7 +66,7 @@ setup(
         "swebench==2.1.0",
         "datasets>=2.20.0",
         "gitpython>=3.1.43",
-        "composio_core>=0.6.0,<0.7.0",
+        "composio_core>=0.6.11,<0.7.0",
         "unidiff==0.7.5",
         "tqdm==4.66.4",
         "rich",

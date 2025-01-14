@@ -22,6 +22,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.9",
-    install_requires=["composio_core>=0.6.0,<0.7.0", "PraisonAI>=0.0.2"],
+    install_requires=["composio_core>=0.6.11,<0.7.0", "PraisonAI>=0.0.2"],
     include_package_data=True,
 )
