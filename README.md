@@ -70,17 +70,17 @@
   <li>Pluggable architecture supporting custom tools and extensions</li>
 </ul>
 
-## 📋 Table of contents
+## Table of contents
 
 - [Getting Started with Python](#1-installation)
-- [1. Installation](#1-installation)
-- [2. Creating an agent & executing a tool](#2-creating-an-agent--executing-a-tool)
+  - [1. Installation](#1-installation)
+  - [2. Creating an agent & executing a tool](#2-creating-an-agent--executing-a-tool)
 - [Getting Started with Javascript]()
-- [1. Installation](#1-installation-1)
-- [2. Creating an agent & executing a tool](#2-creating-an-agent--executing-a-tool-1)
+  - [1. Installation](#1-installation-1)
+  - [2. Creating an agent & executing a tool](#2-creating-an-agent--executing-a-tool-1)
 - [Examples](#examples)
-- [Python Examples](#python-examples)
-- [Javascript Examples](#javascript-examples)
+  - [Python Examples](#python-examples)
+  - [Javascript Examples](#javascript-examples)
 - [Star History](#star-history)
 - [Getting help](#getting-help)
 - [Contributions](#contributions)
