@@ -26,6 +26,8 @@ setup(
         "composio_core>=0.6.11,<0.7.0",
         "pyautogen>=0.2.19",
         "flaml==2.2.0",
+        "autogen_core>=0.4.0",
+        "autogen_agentchat>=0.4.0",
     ],
     include_package_data=True,
 )
