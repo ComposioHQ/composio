@@ -12,6 +12,9 @@ import type {
   AdvancedUseCaseSearchData,
   AdvancedUseCaseSearchError,
   AdvancedUseCaseSearchResponse2,
+  CreateConnector1Data,
+  CreateConnector1Error,
+  CreateConnector1Response,
   CreateConnectorData,
   CreateConnectorError,
   CreateConnectorResponse,
@@ -80,9 +83,12 @@ import type {
   GetConnectionInfoError,
   GetConnectionInfoResponse,
   GetConnectionResponse,
+  GetConnectorData,
+  GetConnectorError,
   GetConnectorInfoData,
   GetConnectorInfoError,
   GetConnectorInfoResponse,
+  GetConnectorResponse,
   GetLogsData,
   GetLogsError,
   GetLogsResponse,
@@ -103,6 +109,9 @@ import type {
   GetUserInfoResponse,
   GetWebhookUrlError,
   GetWebhookUrlResponse,
+  InitiateConnection1Data,
+  InitiateConnection1Error,
+  InitiateConnection1Response,
   InitiateConnectionData,
   InitiateConnectionError,
   InitiateConnectionResponse2,
@@ -151,6 +160,9 @@ import type {
   RegenerateProjectApiKeyData,
   RegenerateProjectApiKeyError,
   RegenerateProjectApiKeyResponse,
+  ReinitiateConnectionData,
+  ReinitiateConnectionError,
+  ReinitiateConnectionResponse,
   RenameProjectData,
   RenameProjectError,
   RenameProjectResponse,
@@ -739,6 +751,23 @@ export class ConnectionsService {
   }
 
   /**
+   * Reinitiate connection
+   * Reinitiate an existing connection to get new credentials
+   */
+  public static reinitiateConnection<ThrowOnError extends boolean = false>(
+    options: Options<ReinitiateConnectionData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      ReinitiateConnectionResponse,
+      ReinitiateConnectionError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v1/connectedAccounts/{connectedAccountId}/reinitiate",
+    });
+  }
+
+  /**
    * Get single connection
    */
   public static getConnection<ThrowOnError extends boolean = false>(
@@ -819,6 +848,22 @@ export class ConnectionsService {
     >({
       ...options,
       url: "/api/v1/connectedAccounts/{connectedAccountId}/enable",
+    });
+  }
+
+  /**
+   * Initiate connection
+   */
+  public static initiateConnection1<ThrowOnError extends boolean = false>(
+    options?: Options<InitiateConnection1Data, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      InitiateConnection1Response,
+      InitiateConnection1Error,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/connectedAccounts/initiateConnection",
     });
   }
 }
@@ -1211,6 +1256,59 @@ export class ProjectsService {
     >({
       ...options,
       url: "/api/v1/org/projects/{projectId}/rename",
+    });
+  }
+}
+
+export class IntegrationsV2Service {
+  /**
+   * Search connector
+   * Create a new connector
+   */
+  public static createConnector<ThrowOnError extends boolean = false>(
+    options?: Options<CreateConnectorData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      CreateConnectorResponse,
+      CreateConnectorError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/integrations/search-by-filters",
+    });
+  }
+
+  /**
+   * Create connector
+   * Create a new connector
+   */
+  public static createConnector1<ThrowOnError extends boolean = false>(
+    options?: Options<CreateConnector1Data, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      CreateConnector1Response,
+      CreateConnector1Error,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/integrations/create",
+    });
+  }
+
+  /**
+   * Get or create connector
+   * Get a connector
+   */
+  public static getConnector<ThrowOnError extends boolean = false>(
+    options?: Options<GetConnectorData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      GetConnectorResponse,
+      GetConnectorError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/integrations/get-or-create",
     });
   }
 }

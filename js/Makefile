@@ -7,6 +7,12 @@ install:
 build:
 	pnpm run build
 
+.PHONY: api_client_generate
+api_client_generate:
+	pnpm run openapispec:generate
+	sed -i '' '/export type in = '\''query'\'' | '\''header'\'';/d' src/sdk/client/types.gen.ts
+	pnpm prettier
+
 .PHONY: lint
 lint:
 	pnpm run lint
