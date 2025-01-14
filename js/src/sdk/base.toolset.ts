@@ -10,7 +10,11 @@ import {
 } from "../types/base_toolset";
 import type { Optional, Sequence } from "../types/util";
 import { getEnvVariable } from "../utils/shared";
-import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
+import {
+  ActionRegistry,
+  CreateActionOptions,
+  Parameters,
+} from "./actionRegistry";
 import { ActionExecutionResDto } from "./client/types.gen";
 import { ActionExecuteResponse, Actions } from "./models/actions";
 import { ActiveTriggers } from "./models/activeTriggers";
@@ -172,8 +176,10 @@ export class ComposioToolSet {
     });
   }
 
-  async createAction(options: CreateActionOptions) {
-    return this.userActionRegistry.createAction(options);
+  async createAction<P extends Parameters = z.ZodObject<{}>>(
+    options: CreateActionOptions<P>
+  ) {
+    return this.userActionRegistry.createAction<P>(options);
   }
 
   private isCustomAction(action: string) {
