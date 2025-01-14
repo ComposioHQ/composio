@@ -1,7 +1,7 @@
 <p>
-    <a href="https://github.com/composiohq/composio/blob/master/README.md">EN</a> | <a
-        href="https://github.com/composiohq/composio/blob/master/README-CN.md">CN</a> | <a
-        href="https://github.com/composiohq/composio/blob/master/README-JP.md">JP</a>
+    <a href="https://github.com/composiohq/composio/blob/master/README.md">英語</a> | <a
+        href="https://github.com/composiohq/composio/blob/master/README-CN.md">中国語</a> | <a
+        href="https://github.com/composiohq/composio/blob/master/README-JP.md">日本語</a>
 </p>
 <p align="center">
     <a href="https://composio.dev//#gh-dark-mode-only">
@@ -71,20 +71,20 @@
 
 ## 📋 目次
 
-- [Python の使用開始](#1-installation)
-- [1. インストール](#1-installation)
-- [2. エージェントの作成とツールの実行](#2-creating-an-agent--executing-a-tool)
-- [Javascript の使用開始]()
-- [1. インストール](#1-installation-1)
-- [2.エージェントの作成とツールの実行](#2-creating-an-agent--executing-a-tool-1)
-- [例](#examples)
-- [Python の例](#python-examples)
-- [Javascript の例](#javascript-examples)
-- [スター履歴](#star-history)
-- [ヘルプの取得](#getting-help)
-- [貢献](#contributions)
-- [機能のリクエスト](#request-a-feature)
-- [すべての貢献者に感謝](#thanks-to-all-contributors)
+- [Python の使用開始](#python-を使い始める)
+    - [1. インストール](#1-インストール)
+    - [2. エージェントの作成とツールの実行](#2-エージェントの作成とツールの実行)
+- [JavaScript の使用開始](#javascript-を使い始める)
+    - [1. インストール](#1-インストール-1 )
+    - [2.エージェントの作成とツールの実行](#2-エージェントの作成とツールの実行-1)
+- [例](#例)
+    - [Python の例](#python-の例)
+    - [JavaScript の例](#javascript-の例)
+- [スター履歴](#星の履歴)
+- [ヘルプの取得](#ヘルプの取得)
+- [貢献](#貢献)
+- [機能のリクエスト](#機能のリクエスト)
+- [すべての貢献者に感謝](#すべての貢献者に感謝)
 
 
 ## Python を使い始める
@@ -228,7 +228,7 @@ async function executeAssistantTask(openai, toolset, assistant, task) {
 
 ### [Python の例](https://docs.composio.dev/guides/python/)
 
-### [Javascript の例](https://docs.composio.dev/guides/javascript/)
+### [JavaScript の例](https://docs.composio.dev/guides/javascript/)
 
 ## 星の履歴
 
