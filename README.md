@@ -75,7 +75,7 @@
 - [Getting Started with Python](#1-installation)
   - [1. Installation](#1-installation)
   - [2. Creating an agent & executing a tool](#2-creating-an-agent--executing-a-tool)
-- [Getting Started with Javascript]()
+- [Getting Started with Javascript](#getting-started-with-javascript)
   - [1. Installation](#1-installation-1)
   - [2. Creating an agent & executing a tool](#2-creating-an-agent--executing-a-tool-1)
 - [Examples](#examples)
