@@ -1,7 +1,7 @@
 <p>
-    <a href="https://github.com/composiohq/composio/blob/master/README.md">英文</a> | <a
-        href="https://github.com/composiohq/composio/blob/master/README-CN.md">中文</a> | <a
-        href="https://github.com/composiohq/composio/blob/master/README-JP.md">JP</a>
+    <a href="https://github.com/composiohq/composio/blob/master/README.md">英语</a> | <a
+        href="https://github.com/composiohq/composio/blob/master/README-CN.md">中国人</a> | <a
+        href="https://github.com/composiohq/composio/blob/master/README-JP.md">日本人</a>
 </p>
 <p align="center">
     <a href="https://composio.dev//#gh-dark-mode-only">
@@ -71,20 +71,20 @@
 
 ## 📋 目录
 
-- [Python 入门](#1-安装)
-- [1. 安装](#1-安装)
-- [2. 创建代理并执行工具](#2-创建代理--执行工具)
-- [Javascript 入门]()
-- [1. 安装](#1-安装-1)
-- [2.创建代理并执行工具](#2-creating-an-agent--executing-a-tool-1)
-- [示例](#examples)
-- [Python 示例](#python-examples)
-- [Javascript 示例](#javascript-examples)
-- [Star 历史](#star-history)
-- [获取帮助](#getting-help)
-- [贡献](#contributions)
-- [请求功能](#request-a-feature)
-- [感谢所有贡献者](#thanks-to-all-contributors)
+- [Python 入门](#开始使用-python)
+    - [1. 安装](#1-安装)
+    - [2. 创建代理并执行工具](#2-创建代理并执行工具)
+- [JavaScript 入门](#javascript-入门)
+    - [1. 安装](#1安装)
+    - [2.创建代理并执行工具](#2-创建代理并执行工具-1)
+- [示例](#示例)
+    - [Python 示例](#python-示例)
+    - [JavaScript 示例](#javascript-示例)
+- [Star 历史](#星号历史)
+- [获取帮助](#获取帮助)
+- [贡献](#贡献)
+- [请求功能](#请求功能)
+- [感谢所有贡献者](#感谢所有贡献者)
 
 ## 开始使用 Python
 
@@ -228,7 +228,7 @@ async function executeAssistantTask(openai, toolset, assistant, task) {
 
 ### [Python 示例](https://docs.composio.dev/guides/python/)
 
-### [Javascript 示例](https://docs.composio.dev/guides/javascript/)
+### [JavaScript 示例](https://docs.composio.dev/guides/javascript/)
 
 ## 星号历史
 
