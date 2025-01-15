@@ -117,7 +117,7 @@ def update_dsn() -> None:
         except json.JSONDecodeError:
             return
     else:
-        data: t.Dict[str, t.Any] = {}
+        data = {}
 
     if data.get("sentry", {}).get("dsn") is not None:
         return
