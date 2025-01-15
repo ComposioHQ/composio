@@ -1360,7 +1360,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         return self.client.connected_accounts.get(connection_id=id)
 
     def get_connected_accounts(self) -> t.List[ConnectedAccountModel]:
-        return self.client.connected_accounts.get()
+        return self.client.connected_accounts.get(entity_ids=[self.entity_id] if self.entity_id else None)
 
     def get_entity(self, id: t.Optional[str] = None) -> Entity:
         """Get entity object for given ID."""
