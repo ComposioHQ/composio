@@ -180,9 +180,9 @@ export class ConnectedAccounts {
     }
   }
 
-  async reiniateConnection(data: ReinitiateConnectionPayload) {
+  async reinitiateConnection(data: ReinitiateConnectionPayload) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
-      method: "reiniateConnection",
+      method: "reinitiateConnection",
       file: this.fileName,
       params: { data },
     });

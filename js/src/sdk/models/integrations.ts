@@ -197,17 +197,6 @@ export class Integrations {
     } catch (error) {
       throw CEG.handleAllError(error);
     }
-
-    // const parsedData = ZCreateIntegrationParams.parse(data);
-
-    // const integrations = await this.list();
-    // // const integration = integrations.find(
-    // //   (integration) => integration.name === data.name
-    // // );
-    // // if (integration) {
-    // //   return integration;
-    // // }
-    // // return this.create(data);
   }
 
   /**
