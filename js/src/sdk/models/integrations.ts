@@ -7,6 +7,7 @@ import {
 } from "../client";
 import apiClient from "../client/client";
 import {
+  ZAuthMode,
   ZCreateIntegrationParams,
   ZListIntegrationsParams,
   ZSingleIntegrationParams,
@@ -140,23 +141,25 @@ export class Integrations {
       params: { data },
     });
     try {
-      if (!data?.authConfig) {
-        data!.authConfig = {};
-      }
       ZCreateIntegrationParams.parse(data);
 
-      const response = await apiClient.appConnector.createConnector({
+      const response = await apiClient.appConnectorV2.createConnectorV2({
         body: {
-          name: data?.name!,
-          appId: data?.appId!,
-          authConfig: data?.authConfig! as Record<string, unknown>,
-          authScheme: data?.authScheme,
-          useComposioAuth: data?.useComposioAuth!,
-          forceNewIntegration: true,
+          app: {
+            uniqueKey: data?.name!,
+          },
+          config: {
+            useComposioAuth: data.useComposioAuth,
+            name: data.name,
+            authScheme: data.authScheme as z.infer<typeof ZAuthMode>,
+            integrationSecrets: data.authConfig,
+          },
         },
         throwOnError: true,
       });
-      return response.data;
+
+      const integrationId = response.data.integrationId;
+      return this.get({ integrationId });
     } catch (error) {
       throw CEG.handleAllError(error);
     }
@@ -165,14 +168,46 @@ export class Integrations {
   async getOrCreateIntegration(
     data: IntegrationCreateParams
   ): Promise<IntegrationGetRes> {
-    const integrations = await this.list();
-    const integration = integrations.find(
-      (integration) => integration.name === data.name
-    );
-    if (integration) {
-      return integration;
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getOrCreateIntegration",
+      file: this.fileName,
+      params: { data },
+    });
+
+    try {
+      ZCreateIntegrationParams.parse(data);
+
+      const response = await apiClient.appConnectorV2.getOrCreateConnector({
+        body: {
+          app: {
+            uniqueKey: data?.name!,
+          },
+          config: {
+            useComposioAuth: data.useComposioAuth,
+            name: data.name,
+            authScheme: data.authScheme as z.infer<typeof ZAuthMode>,
+            integrationSecrets: data.authConfig,
+          },
+        },
+        throwOnError: true,
+      });
+
+      const integrationId = response.data.integrationId;
+      return this.get({ integrationId });
+    } catch (error) {
+      throw CEG.handleAllError(error);
     }
-    return this.create(data);
+
+    // const parsedData = ZCreateIntegrationParams.parse(data);
+
+    // const integrations = await this.list();
+    // // const integration = integrations.find(
+    // //   (integration) => integration.name === data.name
+    // // );
+    // // if (integration) {
+    // //   return integration;
+    // // }
+    // // return this.create(data);
   }
 
   /**

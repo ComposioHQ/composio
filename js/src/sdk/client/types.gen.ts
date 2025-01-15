@@ -3496,11 +3496,11 @@ export type AppFilterDTO = {
   /**
    * List of app unique keys to filter by
    */
-  unique_key?: string;
+  uniqueKey?: string;
   /**
    * List of app unique keys to filter by
    */
-  integration_id?: string;
+  integrationId?: string;
 };
 
 export type ComposioSearchConfigDTO = {
@@ -3569,7 +3569,7 @@ export type AppInfoPayload = {
   /**
    * List of app unique keys to filter by
    */
-  unique_key?: string;
+  uniqueKey?: string;
 };
 
 export type ComposioCreateConfigDTO = {
@@ -3604,7 +3604,7 @@ export type ComposioCreateConfigDTO = {
   };
 };
 
-export type ConnectorCreateInfo = {
+export type ConnectorCreateReqDTO = {
   /**
    * Filter options for the connector
    */
@@ -3619,7 +3619,7 @@ export type CreateConnectorResDTO = {
   /**
    * List of matched integration IDs
    */
-  integrationId: Array<string>;
+  integrationId: string;
 };
 
 export type GetOrCreateConnectorInfo = {
@@ -4361,24 +4361,35 @@ export type RenameProjectResponse = UpdateRowAPIDTO;
 
 export type RenameProjectError = unknown;
 
-export type CreateConnector1Data = {
+export type SearchConnectorData = {
   /**
-   * ConnectorCreateInfo
+   * ConnectorSearchFilterDTOV2
    */
-  body?: ConnectorCreateInfo;
+  body?: ConnectorSearchFilterDTOV2;
 };
 
-export type CreateConnector1Response = CreateConnectorResDTO;
+export type SearchConnectorResponse = ConnectorSearchResDTO;
 
-export type CreateConnector1Error = unknown;
+export type SearchConnectorError = unknown;
 
-export type GetConnectorData = {
+export type CreateConnectorV2Data = {
+  /**
+   * ConnectorCreateReqDTO
+   */
+  body?: ConnectorCreateReqDTO;
+};
+
+export type CreateConnectorV2Response = CreateConnectorResDTO;
+
+export type CreateConnectorV2Error = unknown;
+
+export type GetOrCreateConnectorData = {
   /**
    * GetOrCreateConnectorInfo
    */
   body?: GetOrCreateConnectorInfo;
 };
 
-export type GetConnectorResponse = GetOrCreateConnectorResDTOV2;
+export type GetOrCreateConnectorResponse = GetOrCreateConnectorResDTOV2;
 
-export type GetConnectorError = unknown;
+export type GetOrCreateConnectorError = unknown;

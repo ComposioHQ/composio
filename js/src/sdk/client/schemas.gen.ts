@@ -5075,11 +5075,11 @@ export const $UpdateRowAPIDTO = {
 
 export const $AppFilterDTO = {
   properties: {
-    unique_key: {
+    uniqueKey: {
       type: "string",
       description: "List of app unique keys to filter by",
     },
-    integration_id: {
+    integrationId: {
       type: "string",
       description: "List of app unique keys to filter by",
     },
@@ -5150,7 +5150,7 @@ export const $ConnectorSearchResDTO = {
 
 export const $AppInfoPayload = {
   properties: {
-    unique_key: {
+    uniqueKey: {
       type: "string",
       description: "List of app unique keys to filter by",
     },
@@ -5194,7 +5194,7 @@ export const $ComposioCreateConfigDTO = {
   required: ["name", "authScheme"],
 } as const;
 
-export const $ConnectorCreateInfo = {
+export const $ConnectorCreateReqDTO = {
   properties: {
     app: {
       $ref: "#/components/schemas/AppInfoPayload",
@@ -5212,10 +5212,7 @@ export const $ConnectorCreateInfo = {
 export const $CreateConnectorResDTO = {
   properties: {
     integrationId: {
-      items: {
-        type: "string",
-      },
-      type: "array",
+      type: "string",
       description: "List of matched integration IDs",
     },
   },

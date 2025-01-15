@@ -12,12 +12,12 @@ import type {
   AdvancedUseCaseSearchData,
   AdvancedUseCaseSearchError,
   AdvancedUseCaseSearchResponse2,
-  CreateConnector1Data,
-  CreateConnector1Error,
-  CreateConnector1Response,
   CreateConnectorData,
   CreateConnectorError,
   CreateConnectorResponse,
+  CreateConnectorV2Data,
+  CreateConnectorV2Error,
+  CreateConnectorV2Response,
   CreateProjectData,
   CreateProjectError,
   CreateProjectResponse,
@@ -83,15 +83,15 @@ import type {
   GetConnectionInfoError,
   GetConnectionInfoResponse,
   GetConnectionResponse,
-  GetConnectorData,
-  GetConnectorError,
   GetConnectorInfoData,
   GetConnectorInfoError,
   GetConnectorInfoResponse,
-  GetConnectorResponse,
   GetLogsData,
   GetLogsError,
   GetLogsResponse,
+  GetOrCreateConnectorData,
+  GetOrCreateConnectorError,
+  GetOrCreateConnectorResponse,
   GetOrgApiKeyError,
   GetOrgApiKeyResponse,
   GetProjectData,
@@ -163,6 +163,9 @@ import type {
   RenameProjectData,
   RenameProjectError,
   RenameProjectResponse,
+  SearchConnectorData,
+  SearchConnectorError,
+  SearchConnectorResponse,
   SetCallbackUrlData,
   SetCallbackUrlError,
   SetCallbackUrlResponse,
@@ -1244,14 +1247,14 @@ export class ProjectsService {
 export class IntegrationsV2Service {
   /**
    * Search connector
-   * Create a new connector
+   * Search for a connector
    */
-  public static createConnector<ThrowOnError extends boolean = false>(
-    options?: Options<CreateConnectorData, ThrowOnError>
+  public static searchConnector<ThrowOnError extends boolean = false>(
+    options?: Options<SearchConnectorData, ThrowOnError>
   ) {
     return (options?.client ?? client).post<
-      CreateConnectorResponse,
-      CreateConnectorError,
+      SearchConnectorResponse,
+      SearchConnectorError,
       ThrowOnError
     >({
       ...options,
@@ -1263,12 +1266,12 @@ export class IntegrationsV2Service {
    * Create connector
    * Create a new connector
    */
-  public static createConnector1<ThrowOnError extends boolean = false>(
-    options?: Options<CreateConnector1Data, ThrowOnError>
+  public static createConnectorV2<ThrowOnError extends boolean = false>(
+    options?: Options<CreateConnectorV2Data, ThrowOnError>
   ) {
     return (options?.client ?? client).post<
-      CreateConnector1Response,
-      CreateConnector1Error,
+      CreateConnectorV2Response,
+      CreateConnectorV2Error,
       ThrowOnError
     >({
       ...options,
@@ -1278,14 +1281,14 @@ export class IntegrationsV2Service {
 
   /**
    * Get or create connector
-   * Get a connector
+   * Get or create a connector
    */
-  public static getConnector<ThrowOnError extends boolean = false>(
-    options?: Options<GetConnectorData, ThrowOnError>
+  public static getOrCreateConnector<ThrowOnError extends boolean = false>(
+    options?: Options<GetOrCreateConnectorData, ThrowOnError>
   ) {
     return (options?.client ?? client).post<
-      GetConnectorResponse,
-      GetConnectorError,
+      GetOrCreateConnectorResponse,
+      GetOrCreateConnectorError,
       ThrowOnError
     >({
       ...options,
