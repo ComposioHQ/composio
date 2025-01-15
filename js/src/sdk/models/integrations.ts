@@ -16,6 +16,7 @@ import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { BackendClient } from "./backendClient";
+import { Apps } from "./apps";
 
 // Types generated from zod schemas
 export type IntegrationListParam = z.infer<typeof ZListIntegrationsParams>;
@@ -35,9 +36,11 @@ export type IntegrationDeleteRes = DeleteRowAPIDTO;
 export class Integrations {
   private backendClient: BackendClient;
   private fileName: string = "js/src/sdk/models/integrations.ts";
+  private apps: Apps;
 
   constructor(backendClient: BackendClient) {
     this.backendClient = backendClient;
+    this.apps = new Apps(backendClient);
   }
 
   /**
@@ -143,10 +146,13 @@ export class Integrations {
     try {
       ZCreateIntegrationParams.parse(data);
 
+      const apps = await apiClient.apps.getApps();
+      const app = apps.data?.items.find((app) => app.appId === data.appId);
+
       const response = await apiClient.appConnectorV2.createConnectorV2({
         body: {
           app: {
-            uniqueKey: data?.name!,
+            uniqueKey: app!.key || "",
           },
           config: {
             useComposioAuth: data.useComposioAuth,
@@ -177,10 +183,13 @@ export class Integrations {
     try {
       ZCreateIntegrationParams.parse(data);
 
+      const apps = await apiClient.apps.getApps();
+      const app = apps.data?.items.find((app) => app.appId === data.appId);
+
       const response = await apiClient.appConnectorV2.getOrCreateConnector({
         body: {
           app: {
-            uniqueKey: data?.name!,
+            uniqueKey: app!.key,
           },
           config: {
             useComposioAuth: data.useComposioAuth,
