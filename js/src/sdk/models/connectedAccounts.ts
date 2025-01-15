@@ -159,7 +159,7 @@ export class ConnectedAccounts {
           },
           connection: {
             entityId: payload.entityId,
-            initiateData: payload.connectionParams as Record<string, unknown>,
+            initiateData: payload.connectionParams as Record<string, unknown> || {},
             extra: {
               redirectURL: payload.redirectUri,
               labels: payload.labels || [],
