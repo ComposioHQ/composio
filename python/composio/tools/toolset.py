@@ -18,8 +18,8 @@ from importlib.util import find_spec
 from pathlib import Path
 
 import typing_extensions as te
-from pydantic import BaseModel
 import yaml
+from pydantic import BaseModel
 
 from composio import Action, ActionType, App, AppType, TagType
 from composio.client import Composio, Entity
@@ -1682,7 +1682,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if not lockfile_path.exists():
             return {}
 
-        with open(lockfile_path, "r") as file:
+        with open(lockfile_path, encoding="utf-8") as file:
             tool_versions = yaml.safe_load(file)
 
         # Validate lockfile
@@ -1702,7 +1702,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     def store_tool_versions_to_lockfile(self) -> None:
         """Store tool versions to lockfile."""
         lockfile_path = Path("./.composio.lock")
-        with open(lockfile_path, "w") as file:
+        with open(lockfile_path, "w", encoding="utf-8") as file:
             yaml.safe_dump(self._tool_versions, file)
 
 

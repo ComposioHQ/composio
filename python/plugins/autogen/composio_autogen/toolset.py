@@ -242,7 +242,7 @@ class ComposioToolSet(
         if processors is not None:
             self._merge_processors(processors)
 
-        return [
+        tools = [
             self._wrap_tool(
                 schema=tool.model_dump(
                     exclude_none=True,
@@ -257,3 +257,5 @@ class ComposioToolSet(
                 _populate_requested=True,
             )
         ]
+
+        return tools
