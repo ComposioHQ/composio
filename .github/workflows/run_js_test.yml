@@ -16,7 +16,14 @@ on:
         options:
           - prod
           - staging
+          - custom
         default: prod
+      baseUrl:
+        type: string
+        required: false
+      apiKey:
+        type: string
+        required: false
 
 jobs:
   run-js-tests:
@@ -42,9 +49,19 @@ jobs:
       run: cd js && pnpm install --frozen-lockfile
     - name: pnpm build
       run: cd js && pnpm build
+    - name: Set environment variables
+      run: |
+        echo "COMPOSIO_API_KEY=${{ inputs.apiKey }}" >> $GITHUB_ENV
+        echo "BACKEND_HERMES_URL=${{ inputs.baseUrl }}" >> $GITHUB_ENV
+    - name: If base URL, create js/test.config.custom.json
+      run: |
+        if [ -n "${{ inputs.baseUrl }}" ]; then
+          echo "Creating test.config.custom.json with base URL: $COMPOSIO_API_KEY"
+          echo "Creating test.config.custom.json with base URL: $BACKEND_HERMES_URL"
+          echo "{\n    \"COMPOSIO_API_KEY\": \"${{ inputs.apiKey }}\",\n    \"BACKEND_HERMES_URL\": \"${{ inputs.baseUrl }}\"\n}" > js/config/test.config.custom.json
+        fi
     - name: run test
-      run: cd js && pnpm test:coverage --max-workers 16
-
+      run: cd js && TEST_ENVIRONMENT=${{ inputs.environment }} pnpm test:coverage --max-workers 16
 
     - name: Upload `coverage` folder to R2
       if: ${{ always() }}
