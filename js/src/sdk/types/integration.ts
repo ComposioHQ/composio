@@ -15,7 +15,7 @@ export const ZAuthMode = z.enum([
 
 export const ZCreateIntegrationParams = z.object({
   name: z.string(),
-  authScheme: ZAuthMode.optional(),
+  authScheme: ZAuthMode,
   appId: z.string(),
   forceNewIntegration: z.boolean().optional(),
   authConfig: z

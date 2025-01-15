@@ -23,16 +23,22 @@ describe("Entity class tests", () => {
   });
 
   it("should create for different entities", async () => {
-    const entityId = "test-entity";
-    const entity2 = new Entity(backendClient, entityId);
-    const connection = await entity2.initiateConnection({ appName: "github" });
-    expect(connection.connectionStatus).toBe("INITIATED");
+    try {
+      const entityId = "test-entity";
+      const entity2 = new Entity(backendClient, entityId);
+      const connection = await entity2.initiateConnection({ appName: "github" });
+      expect(connection.connectionStatus).toBe("INITIATED");
 
     const connection2 = await connectedAccounts.get({
       connectedAccountId: connection.connectedAccountId,
     });
     if (!connection2) throw new Error("Connection not found");
-    expect(connection2.entityId).toBe(entityId);
+      expect(connection2.entityId).toBe(entityId);
+    } catch (error) {
+      console.log(error);
+      throw error;
+      console.error(error);
+    }
   });
 
   it("get connection for github", async () => {
