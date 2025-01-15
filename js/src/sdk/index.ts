@@ -18,12 +18,12 @@ import { Triggers } from "./models/triggers";
 import { ZAuthMode } from "./types/integration";
 import ComposioSDKContext from "./utils/composioContext";
 import { getSDKConfig } from "./utils/config";
+import { IS_DEVELOPMENT_OR_CI } from "./utils/constants";
 import { CEG } from "./utils/error";
 import { COMPOSIO_SDK_ERROR_CODES } from "./utils/errors/src/constants";
 import { isNewerVersion } from "./utils/other";
 import { TELEMETRY_LOGGER } from "./utils/telemetry";
 import { TELEMETRY_EVENTS } from "./utils/telemetry/events";
-import { IS_DEVELOPMENT_OR_CI } from "./utils/constants";
 
 export type ComposioInputFieldsParams = z.infer<
   typeof ZGetExpectedParamsForUserParams
@@ -62,7 +62,6 @@ export class Composio {
       config?.baseUrl,
       config?.apiKey
     );
-
 
     if (IS_DEVELOPMENT_OR_CI) {
       logger.info(
