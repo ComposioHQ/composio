@@ -109,9 +109,6 @@ import type {
   GetUserInfoResponse,
   GetWebhookUrlError,
   GetWebhookUrlResponse,
-  InitiateConnection1Data,
-  InitiateConnection1Error,
-  InitiateConnection1Response,
   InitiateConnectionData,
   InitiateConnectionError,
   InitiateConnectionResponse2,
@@ -850,22 +847,6 @@ export class ConnectionsService {
       url: "/api/v1/connectedAccounts/{connectedAccountId}/enable",
     });
   }
-
-  /**
-   * Initiate connection
-   */
-  public static initiateConnection1<ThrowOnError extends boolean = false>(
-    options?: Options<InitiateConnection1Data, ThrowOnError>
-  ) {
-    return (options?.client ?? client).post<
-      InitiateConnection1Response,
-      InitiateConnection1Error,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v2/connectedAccounts/initiateConnection",
-    });
-  }
 }
 
 export class TriggersService {
@@ -1309,6 +1290,24 @@ export class IntegrationsV2Service {
     >({
       ...options,
       url: "/api/v2/integrations/get-or-create",
+    });
+  }
+}
+
+export class Connectionsv2Service {
+  /**
+   * Initiate connection
+   */
+  public static initiateConnection<ThrowOnError extends boolean = false>(
+    options?: Options<InitiateConnectionData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      InitiateConnectionResponse2,
+      InitiateConnectionError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/connectedAccounts/initiateConnection",
     });
   }
 }

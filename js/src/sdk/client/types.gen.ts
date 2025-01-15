@@ -3633,11 +3633,11 @@ export type GetOrCreateConnectorInfo = {
   config: ComposioCreateConfigDTO;
 };
 
-export type GetOrCreateConnectorResDTO = {
+export type GetOrCreateConnectorResDTOV2 = {
   /**
-   * List of matched integration IDs
+   * Matched integration ID
    */
-  integrationId: Array<string>;
+  integrationId: string;
   /**
    * Whether a new integration was created
    */
@@ -3683,6 +3683,10 @@ export type InitiateConnectionPayloadDtoV2 = {
    * Configuration options for the connection, including authentication scheme and settings.
    */
   config: ComposioCreateConfigDTO;
+  /**
+   * Additional metadata and configuration options for the connection.
+   */
+  connection: ConnectionInitData;
 };
 
 export type IntegrationData = {
@@ -3704,12 +3708,17 @@ export type ConnectionResponseV2 = {
   /**
    * The current status of the connection.
    */
-  connectionStatus: string;
+  connectionStatus: "INITIATED" | "ACTIVE" | "FAILED" | "EXPIRED";
   /**
    * The unique identifier of the connected account.
    */
   connectedAccountId: string;
 };
+
+/**
+ * The current status of the connection.
+ */
+export type connectionStatus = "INITIATED" | "ACTIVE" | "FAILED" | "EXPIRED";
 
 export type InitiateConnectionResponseV2 = {
   /**
@@ -4116,17 +4125,6 @@ export type EnableConnectionResponse = ToggleConnectedAccountResponseDTO;
 
 export type EnableConnectionError = unknown;
 
-export type InitiateConnection1Data = {
-  /**
-   * InitiateConnectionPayloadDtoV2
-   */
-  body?: InitiateConnectionPayloadDtoV2;
-};
-
-export type InitiateConnection1Response = InitiateConnectionResponseV2;
-
-export type InitiateConnection1Error = BadRequestError | NotFoundError;
-
 export type ListTriggersData = {
   query?: {
     appNames?: string;
@@ -4381,6 +4379,6 @@ export type GetConnectorData = {
   body?: GetOrCreateConnectorInfo;
 };
 
-export type GetConnectorResponse = GetOrCreateConnectorResDTO;
+export type GetConnectorResponse = GetOrCreateConnectorResDTOV2;
 
 export type GetConnectorError = unknown;

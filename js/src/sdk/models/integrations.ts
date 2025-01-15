@@ -162,6 +162,19 @@ export class Integrations {
     }
   }
 
+  async getOrCreateIntegration(
+    data: IntegrationCreateParams
+  ): Promise<IntegrationGetRes> {
+    const integrations = await this.list();
+    const integration = integrations.find(
+      (integration) => integration.name === data.name
+    );
+    if (integration) {
+      return integration;
+    }
+    return this.create(data);
+  }
+
   /**
    * Deletes an existing integration in the Composio platform.
    *

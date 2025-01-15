@@ -5238,14 +5238,11 @@ export const $GetOrCreateConnectorInfo = {
   required: ["app", "config"],
 } as const;
 
-export const $GetOrCreateConnectorResDTO = {
+export const $GetOrCreateConnectorResDTOV2 = {
   properties: {
     integrationId: {
-      items: {
-        type: "string",
-      },
-      type: "array",
-      description: "List of matched integration IDs",
+      type: "string",
+      description: "Matched integration ID",
     },
     isNewIntegration: {
       type: "boolean",
@@ -5311,9 +5308,14 @@ export const $InitiateConnectionPayloadDtoV2 = {
       description:
         "Configuration options for the connection, including authentication scheme and settings.",
     },
+    connection: {
+      $ref: "#/components/schemas/ConnectionInitData",
+      description:
+        "Additional metadata and configuration options for the connection.",
+    },
   },
   type: "object",
-  required: ["app", "config"],
+  required: ["app", "config", "connection"],
 } as const;
 
 export const $IntegrationData = {
@@ -5345,6 +5347,7 @@ export const $ConnectionResponseV2 = {
     connectionStatus: {
       minLength: 1,
       type: "string",
+      enum: ["INITIATED", "ACTIVE", "FAILED", "EXPIRED"],
       description: "The current status of the connection.",
     },
     connectedAccountId: {
