@@ -97,4 +97,8 @@ export class BackendClient {
     setAxiosClientConfig(axiosClient.instance);
     this.instance = axiosClient.instance;
   }
+
+  getAxiosInstance() {
+    return axiosClient.instance;
+  }
 }
