@@ -62,10 +62,10 @@ jobs:
     
     - name: Print config file
       run: |
-        echo "Running test with environment: ${{ inputs.environment }}"
+        echo "Running test with environment: ${{ inputs.environment || 'prod' }}"
 
     - name: run test
-      run: cd js && TEST_ENVIRONMENT=${{ inputs.environment }} pnpm test:coverage --max-workers 16
+      run: cd js && TEST_ENV=${{ inputs.environment || 'prod' }} pnpm test:coverage --max-workers 16
 
     - name: Upload `coverage` folder to R2
       if: ${{ always() }}
@@ -126,4 +126,3 @@ jobs:
           https://pub-92e668239ab84bfd80ee07d61e9d2f40.r2.dev/html-report-${{ github.run_id }}/html-report/report.html
         reactions: rocket
         comment-id: ${{ steps.fc.outputs.comment-id }}
-
