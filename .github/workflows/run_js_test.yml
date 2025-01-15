@@ -56,10 +56,14 @@ jobs:
     - name: If base URL, create js/test.config.custom.json
       run: |
         if [ -n "${{ inputs.baseUrl }}" ]; then
-          echo "Creating test.config.custom.json with base URL: $COMPOSIO_API_KEY"
           echo "Creating test.config.custom.json with base URL: $BACKEND_HERMES_URL"
           echo "{\n    \"COMPOSIO_API_KEY\": \"${{ inputs.apiKey }}\",\n    \"BACKEND_HERMES_URL\": \"${{ inputs.baseUrl }}\"\n}" > js/config/test.config.custom.json
         fi
+    
+    - name: Print config file
+      run: |
+        echo "Running test with environment: ${{ inputs.environment }}"
+
     - name: run test
       run: cd js && TEST_ENVIRONMENT=${{ inputs.environment }} pnpm test:coverage --max-workers 16
 
