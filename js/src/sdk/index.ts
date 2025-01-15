@@ -23,6 +23,7 @@ import { COMPOSIO_SDK_ERROR_CODES } from "./utils/errors/src/constants";
 import { isNewerVersion } from "./utils/other";
 import { TELEMETRY_LOGGER } from "./utils/telemetry";
 import { TELEMETRY_EVENTS } from "./utils/telemetry/events";
+import { IS_DEVELOPMENT_OR_CI } from "./utils/constants";
 
 export type ComposioInputFieldsParams = z.infer<
   typeof ZGetExpectedParamsForUserParams
@@ -62,6 +63,12 @@ export class Composio {
       config?.apiKey
     );
 
+
+    if (IS_DEVELOPMENT_OR_CI) {
+      logger.debug(
+        `Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}`
+      );
+    }
     ComposioSDKContext.apiKey = apiKeyParsed;
     ComposioSDKContext.sessionId = getUUID();
     ComposioSDKContext.baseURL = baseURLParsed;
