@@ -1027,6 +1027,7 @@ class ActionModel(BaseModel):
 
     name: str
     display_name: t.Optional[str] = None
+    version: str
     parameters: ActionParametersModel
     response: ActionResponseModel
     appName: str

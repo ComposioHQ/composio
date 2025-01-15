@@ -242,20 +242,24 @@ class ComposioToolSet(
         if processors is not None:
             self._merge_processors(processors)
 
-        tools = [
+        tools = self.get_action_schemas(
+            actions=actions,
+            apps=apps,
+            tags=tags,
+            check_connected_accounts=check_connected_accounts,
+            _populate_requested=True,
+        )
+        wrapped_tools = [
             self._wrap_tool(
                 schema=tool.model_dump(
                     exclude_none=True,
                 ),
                 entity_id=entity_id or self.entity_id,
             )
-            for tool in self.get_action_schemas(
-                actions=actions,
-                apps=apps,
-                tags=tags,
-                check_connected_accounts=check_connected_accounts,
-                _populate_requested=True,
-            )
+            for tool in tools
         ]
 
-        return tools
+        if self.locking_enabled:
+            self._tool_versions |= {tool.name: tool.version for tool in tools}
+
+        return wrapped_tools

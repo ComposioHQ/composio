@@ -19,6 +19,7 @@ from pathlib import Path
 
 import typing_extensions as te
 from pydantic import BaseModel
+import yaml
 
 from composio import Action, ActionType, App, AppType, TagType
 from composio.client import Composio, Entity
@@ -198,6 +199,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         connected_account_ids: t.Optional[t.Dict[AppType, str]] = None,
         *,
         max_retries: int = 3,
+        lock: bool = True,
         **kwargs: t.Any,
     ) -> None:
         """
@@ -329,6 +331,13 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         # To be populated by get_tools(), from within subclasses like
         # composio_openai's Toolset.
         self._requested_actions: t.List[str] = []
+
+        if lock:
+            self.locking_enabled = True
+            self._tool_versions = self.load_tool_versions_from_lockfile()
+        else:
+            self.locking_enabled = False
+            self._tool_versions = {}
 
     def _validating_connection_ids(
         self,
@@ -1019,6 +1028,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         *,
         check_connected_accounts: bool = True,
         _populate_requested: bool = False,
+        # TODO: take manual override version as parameter
     ) -> t.List[ActionModel]:
         runtime_actions = t.cast(
             t.List[t.Type[LocalAction]],
@@ -1054,6 +1064,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 apps=remote_apps,
                 actions=remote_actions,
                 tags=tags,
+                # TODO: use tool version when fetching actions
             )
             if check_connected_accounts:
                 for item in remote_items:
@@ -1087,6 +1098,10 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         if _populate_requested:
             action_names = [item.name for item in items]
             self._requested_actions += action_names
+
+        if self.locking_enabled:
+            self._tool_versions |= {tool.name: tool.version for tool in items}
+            self.store_tool_versions_to_lockfile()
 
         return items
 
@@ -1659,6 +1674,36 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 auth_config[field.name] = field.default
 
         return auth_config, False
+
+    @staticmethod
+    def load_tool_versions_from_lockfile() -> t.Dict[str, str]:
+        """Load tool versions from lockfile."""
+        lockfile_path = Path("./.composio.lock")
+        if not lockfile_path.exists():
+            return {}
+
+        with open(lockfile_path, "r") as file:
+            tool_versions = yaml.safe_load(file)
+
+        # Validate lockfile
+        if not isinstance(tool_versions, dict):
+            raise ComposioSDKError(
+                f"Invalid lockfile format, expected dict, got {type(tool_versions)}"
+            )
+
+        for tool in tool_versions.values():
+            if not isinstance(tool, str):
+                raise ComposioSDKError(
+                    f"Invalid lockfile format, expected version to be string, got {tool!r}"
+                )
+
+        return tool_versions
+
+    def store_tool_versions_to_lockfile(self) -> None:
+        """Store tool versions to lockfile."""
+        lockfile_path = Path("./.composio.lock")
+        with open(lockfile_path, "w") as file:
+            yaml.safe_dump(self._tool_versions, file)
 
 
 def _write_file(file_path: t.Union[str, os.PathLike], content: t.Union[str, bytes]):
