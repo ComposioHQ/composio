@@ -1,15 +1,19 @@
 import { beforeAll, describe, expect, it } from "@jest/globals";
 import { getBackendClient } from "../testUtils/getBackendClient";
 import { Integrations } from "./integrations";
+import { Apps } from "./apps";
+
 
 describe("Integrations class tests", () => {
-  let backendClient;
   let integrations: Integrations;
   let createdIntegrationId: string;
+  let apps: Apps;
+  let appId: string;
 
   beforeAll(() => {
-    backendClient = getBackendClient();
+    const backendClient = getBackendClient();
     integrations = new Integrations(backendClient);
+    apps = new Apps(backendClient);
   });
 
   it("Retrieve integrations list", async () => {
@@ -19,8 +23,12 @@ describe("Integrations class tests", () => {
   });
 
   it("should create an integration and verify its properties", async () => {
+    const app = await apps.get({appKey: "github"})
+    if(!app) throw new Error("App not found");
+    appId = app.appId;
+
     const integrationCreation = await integrations.create({
-      appId: "01e22f33-dc3f-46ae-b58d-050e4d2d1909",
+      appId: appId,
       name: "test_integration_220",
       useComposioAuth: true,
       forceNewIntegration: true,
@@ -37,7 +45,7 @@ describe("Integrations class tests", () => {
       integrationId: createdIntegrationId,
     });
     expect(integration?.id).toBe(createdIntegrationId);
-    expect(integration?.appId).toBe("01e22f33-dc3f-46ae-b58d-050e4d2d1909");
+    expect(integration?.appId).toBe(appId);
     expect(integration?.authScheme).toBe("OAUTH2");
     expect(integration?.expectedInputFields).toBeDefined();
   });
