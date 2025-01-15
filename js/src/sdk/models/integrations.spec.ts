@@ -1,8 +1,7 @@
 import { beforeAll, describe, expect, it } from "@jest/globals";
 import { getBackendClient } from "../testUtils/getBackendClient";
-import { Integrations } from "./integrations";
 import { Apps } from "./apps";
-
+import { Integrations } from "./integrations";
 
 describe("Integrations class tests", () => {
   let integrations: Integrations;
@@ -23,8 +22,8 @@ describe("Integrations class tests", () => {
   });
 
   it("should create an integration and verify its properties", async () => {
-    const app = await apps.get({appKey: "github"})
-    if(!app) throw new Error("App not found");
+    const app = await apps.get({ appKey: "github" });
+    if (!app) throw new Error("App not found");
     appId = app.appId;
 
     const integrationCreation = await integrations.create({

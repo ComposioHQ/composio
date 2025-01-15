@@ -11,10 +11,13 @@ import {
 const { COMPOSIO_API_KEY, BACKEND_HERMES_URL } = getTestConfig();
 
 describe("Basic SDK spec suite", () => {
-  const mock = new AxiosMockAdapter(axiosClient.instance);  
+  const mock = new AxiosMockAdapter(axiosClient.instance);
 
   it("should create a basic client", async () => {
-    const client = new Composio({ apiKey: COMPOSIO_API_KEY, baseUrl: getTestConfig().BACKEND_HERMES_URL });
+    const client = new Composio({
+      apiKey: COMPOSIO_API_KEY,
+      baseUrl: getTestConfig().BACKEND_HERMES_URL,
+    });
     expect(client).toBeInstanceOf(Composio);
   });
 
@@ -23,12 +26,13 @@ describe("Basic SDK spec suite", () => {
 
     // @ts-expect-error
     process.exit = jest.fn();
-    expect(() => new Composio({ baseUrl: getTestConfig().BACKEND_HERMES_URL })).toThrow("🔑 API Key is not provided");
+    expect(
+      () => new Composio({ baseUrl: getTestConfig().BACKEND_HERMES_URL })
+    ).toThrow("🔑 API Key is not provided");
     process.exit = originalExit;
   });
 
   it("should handle 404 error gracefully", async () => {
-
     const mockError = {
       type: "NotFoundError",
       name: "AppNotFoundError",
@@ -36,7 +40,10 @@ describe("Basic SDK spec suite", () => {
     };
     mock.onGet(/.*\/api\/v1\/apps/).reply(404, mockError);
 
-    const client = new Composio({ apiKey: COMPOSIO_API_KEY, baseUrl: getTestConfig().BACKEND_HERMES_URL });
+    const client = new Composio({
+      apiKey: COMPOSIO_API_KEY,
+      baseUrl: getTestConfig().BACKEND_HERMES_URL,
+    });
 
     let hasThrownTheError = false;
     try {
@@ -60,7 +67,6 @@ describe("Basic SDK spec suite", () => {
   });
 
   it("should handle 400 error gracefully", async () => {
-
     mock.onGet(/.*\/api\/v1\/apps/).reply(400, {
       type: "BadRequestError",
       name: "InvalidRequestError",
@@ -77,7 +83,10 @@ describe("Basic SDK spec suite", () => {
     });
 
     let hasThrownTheError = false;
-    const client = new Composio({ apiKey: COMPOSIO_API_KEY, baseUrl: getTestConfig().BACKEND_HERMES_URL });
+    const client = new Composio({
+      apiKey: COMPOSIO_API_KEY,
+      baseUrl: getTestConfig().BACKEND_HERMES_URL,
+    });
     try {
       await client.apps.list();
     } catch (e) {
@@ -95,14 +104,16 @@ describe("Basic SDK spec suite", () => {
   });
 
   it("should handle 500 and 502 error gracefully, and without backend fix", async () => {
-
     mock.onGet(/.*\/api\/v1\/apps/).reply(500, {
       type: "InternalServerError",
       name: "ServerError",
       message: "Internal Server Error",
     });
     let hasThrownTheError = false;
-    const client = new Composio({ apiKey: COMPOSIO_API_KEY, baseUrl: getTestConfig().BACKEND_HERMES_URL });
+    const client = new Composio({
+      apiKey: COMPOSIO_API_KEY,
+      baseUrl: getTestConfig().BACKEND_HERMES_URL,
+    });
     try {
       await client.apps.list();
     } catch (e) {
@@ -128,7 +139,9 @@ describe("Basic SDK spec suite", () => {
       const errorInfo = BASE_ERROR_CODE_INFO[errorCode];
       expect(error.errCode).toBe(errorCode);
       expect(error.message).toContain(errorInfo.message);
-      expect(error.description).toContain("er is currently unable to handle the reque");
+      expect(error.description).toContain(
+        "er is currently unable to handle the reque"
+      );
       expect(error.errorId).toBeDefined();
       expect(error.name).toBe("ComposioError");
       expect(error.possibleFix).toContain(errorInfo.possibleFix);
@@ -152,8 +165,10 @@ describe("Basic SDK spec suite", () => {
   });
 
   it("should give request timeout error", async () => {
-  
-    const client = new Composio({ apiKey: COMPOSIO_API_KEY, baseUrl: getTestConfig().BACKEND_HERMES_URL   });
+    const client = new Composio({
+      apiKey: COMPOSIO_API_KEY,
+      baseUrl: getTestConfig().BACKEND_HERMES_URL,
+    });
 
     mock.onGet(/.*\/api\/v1\/apps/).reply(408, {
       error: {
@@ -188,13 +203,10 @@ describe("Basic SDK spec suite", () => {
     mock.reset();
     mock.resetHandlers();
   });
-
- 
 });
 
-
 describe("Entity spec suite", () => {
-   it("should get an entity and then fetch a connection", async () => {
+  it("should get an entity and then fetch a connection", async () => {
     const app = "github";
     const composio = new Composio({
       apiKey: COMPOSIO_API_KEY,
