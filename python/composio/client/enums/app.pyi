@@ -261,6 +261,7 @@ class App(Enum[AppData], metaclass=EnumGenerator):
     TWITCH: "App"
     TWITTER: "App"
     TWITTER_MEDIA: "App"
+    TYPEFULLY: "App"
     VENLY: "App"
     VERO: "App"
     VISME: "App"

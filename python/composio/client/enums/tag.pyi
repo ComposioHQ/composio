@@ -1123,6 +1123,8 @@ class Tag(Enum[TagData], metaclass=EnumGenerator):
     TWITTER_TWEETS: "Tag"
     TWITTER_USAGE: "Tag"
     TWITTER_USERS: "Tag"
+    TYPEFULLY_DRAFTS: "Tag"
+    TYPEFULLY_NOTIFICATIONS: "Tag"
     WRIKE_ACCOUNTS: "Tag"
     WRIKE_CONTACTS: "Tag"
     WRIKE_CUSTOM_FIELDS: "Tag"
