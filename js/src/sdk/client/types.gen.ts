@@ -1363,7 +1363,7 @@ export type GetConnectorListResDTO = {
   /**
    * Array of connector items matching the query parameters. Each item contains detailed information about a connector and its associated connections.
    */
-  items: ConnectorListItemDTO;
+  items: Array<ConnectorListItemDTO>;
   /**
    * Total number of pages available based on the current page size. Use this for implementing pagination controls.
    */
@@ -2444,7 +2444,7 @@ export type ActionExecutionResDto = {
    * Whether the action execution was successfully executed or not. If this is false, error field will be populated with the error message.
    * @deprecated
    */
-  successfull: boolean;
+  successfull?: boolean;
   /**
    * Whether the action execution was successfully executed or not. If this is false, error field will be populated with the error message.
    */

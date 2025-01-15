@@ -11,6 +11,7 @@ build:
 api_client_generate:
 	pnpm run openapispec:generate
 	sed -i '' '/export type in = '\''query'\'' | '\''header'\'';/d' src/sdk/client/types.gen.ts
+	sed -i '' 's/successfull: boolean/successfull?: boolean/g' src/sdk/client/types.gen.ts
 	pnpm prettier
 
 .PHONY: lint

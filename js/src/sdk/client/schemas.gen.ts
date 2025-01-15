@@ -1966,10 +1966,9 @@ export const $GetConnectorListResDTO = {
   properties: {
     items: {
       items: {
-        type: "object",
+        $ref: "#/components/schemas/ConnectorListItemDTO",
       },
       type: "array",
-      $ref: "#/components/schemas/ConnectorListItemDTO",
       description:
         "Array of connector items matching the query parameters. Each item contains detailed information about a connector and its associated connections.",
     },
