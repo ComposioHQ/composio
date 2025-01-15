@@ -69,6 +69,7 @@ class AuthConnectionParamsModel(BaseModel):
     client_id: t.Optional[str] = None
     token_type: t.Optional[str] = None
     access_token: t.Optional[str] = None
+    refresh_token: t.Optional[str] = None
     client_secret: t.Optional[str] = None
     consumer_id: t.Optional[str] = None
     consumer_secret: t.Optional[str] = None
