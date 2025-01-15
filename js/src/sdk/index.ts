@@ -65,7 +65,7 @@ export class Composio {
 
 
     if (IS_DEVELOPMENT_OR_CI) {
-      logger.debug(
+      logger.info(
         `Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}`
       );
     }
