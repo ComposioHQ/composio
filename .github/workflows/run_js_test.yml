@@ -9,7 +9,14 @@ on:
   pull_request:
     paths:
       - 'js/**'
-    
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options:
+          - prod
+          - staging
+        default: prod
 
 jobs:
   run-js-tests:
