@@ -98,3 +98,8 @@ PUSHER_CLUSTER = "mt1"
 """
 Name of the pusher cluster.
 """
+
+LOCKFILE_PATH = Path("./.composio.lock")
+"""
+Path to the .composio.lock file.
+"""

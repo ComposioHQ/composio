@@ -52,6 +52,7 @@ from composio.constants import (
     LOCAL_CACHE_DIRECTORY,
     LOCAL_OUTPUT_FILE_DIRECTORY_NAME,
     USER_DATA_FILE_NAME,
+    LOCKFILE_PATH,
 )
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.storage.user import UserData
@@ -1678,11 +1679,10 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     @staticmethod
     def load_tool_versions_from_lockfile() -> t.Dict[str, str]:
         """Load tool versions from lockfile."""
-        lockfile_path = Path("./.composio.lock")
-        if not lockfile_path.exists():
+        if not LOCKFILE_PATH.exists():
             return {}
 
-        with open(lockfile_path, encoding="utf-8") as file:
+        with open(LOCKFILE_PATH, encoding="utf-8") as file:
             tool_versions = yaml.safe_load(file)
 
         # Validate lockfile
@@ -1701,8 +1701,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def store_tool_versions_to_lockfile(self) -> None:
         """Store tool versions to lockfile."""
-        lockfile_path = Path("./.composio.lock")
-        with open(lockfile_path, "w", encoding="utf-8") as file:
+        with open(LOCKFILE_PATH, "w", encoding="utf-8") as file:
             yaml.safe_dump(self._tool_versions, file)
 
 
