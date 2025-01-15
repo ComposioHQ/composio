@@ -1,12 +1,12 @@
 """Sentry utilities."""
 
 import atexit
-from functools import cache
 import json
 import os
 import traceback
 import types
 import typing as t
+from functools import cache
 from pathlib import Path
 
 import requests
