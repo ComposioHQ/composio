@@ -30,7 +30,7 @@ describe("Integrations class tests", () => {
       appId: appId,
       name: "test_integration_220",
       authScheme: "OAUTH2",
-      useComposioAuth: true
+      useComposioAuth: true,
     });
     expect(integrationCreation.id).toBeTruthy();
     expect(integrationCreation.appName).toBe("github");

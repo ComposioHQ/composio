@@ -23,22 +23,19 @@ describe("Entity class tests", () => {
   });
 
   it("should create for different entities", async () => {
-    try {
-      const entityId = "test-entity";
-      const entity2 = new Entity(backendClient, entityId);
-      const connection = await entity2.initiateConnection({ appName: "github" });
-      expect(connection.connectionStatus).toBe("INITIATED");
+    const entityId = "test-entity";
+    const entity2 = new Entity(backendClient, entityId);
+    const connection = await entity2.initiateConnection({
+      appName: "github",
+      authMode: "OAUTH2",
+    });
+    expect(connection.connectionStatus).toBe("INITIATED");
 
     const connection2 = await connectedAccounts.get({
       connectedAccountId: connection.connectedAccountId,
     });
     if (!connection2) throw new Error("Connection not found");
-      expect(connection2.entityId).toBe(entityId);
-    } catch (error) {
-      console.log(error);
-      throw error;
-      console.error(error);
-    }
+    expect(connection2.entityId).toBe(entityId);
   });
 
   it("get connection for github", async () => {
@@ -115,7 +112,10 @@ describe("Entity class tests", () => {
   });
 
   it("initiate connection", async () => {
-    const connection = await entity.initiateConnection({ appName: "github" });
+    const connection = await entity.initiateConnection({
+      appName: "github",
+      authMode: "OAUTH2",
+    });
     expect(connection.connectionStatus).toBe("INITIATED");
   });
 });
