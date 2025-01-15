@@ -27,6 +27,10 @@ class BaseFactoryTest:
     def setup_class(cls) -> None:
         cls.workspace = WorkspaceFactory.new(config=cls.config)
 
+    @classmethod
+    def teardown_class(cls) -> None:
+        cls.workspace.teardown()
+
     def test_init(self) -> None:
         assert isinstance(self.workspace, self.type)
 
