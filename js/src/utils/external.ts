@@ -24,7 +24,7 @@ export function sendProcessReq(info: {
 }) {
   if (IS_DEVELOPMENT_OR_CI) {
     // eslint-disable-next-line no-console
-    console.log(
+    logger.debug(
       `Hitting ${info.url}[${info.method}] with ${serializeValue(info.data)}`
     );
     return true;
