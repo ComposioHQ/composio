@@ -15,8 +15,8 @@ import {
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
-import { BackendClient } from "./backendClient";
 import { Apps } from "./apps";
+import { BackendClient } from "./backendClient";
 
 // Types generated from zod schemas
 export type IntegrationListParam = z.infer<typeof ZListIntegrationsParams>;
