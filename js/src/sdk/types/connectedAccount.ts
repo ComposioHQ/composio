@@ -20,7 +20,7 @@ export const ZListConnectionsData = z.object({
 export const ZInitiateConnectionDataReq = z.object({
   connectionParams: z.record(z.string(), z.unknown()).optional(),
   entityId: z.string().optional(),
-  labels: z.string().array().optional(),
+  labels: z.array(z.string()).optional(),
   integrationId: z.string().optional(),
   redirectUri: z.string().optional(),
   authMode: ZAuthMode.optional(),
@@ -49,4 +49,10 @@ export const ZInitiateConnectionPayloadDto = z.object({
   userUuid: z.string().optional(),
   entityId: z.string().optional(),
   labels: z.string().array().optional(),
+});
+
+export const ZReinitiateConnectionPayloadDto = z.object({
+  connectedAccountId: z.string(),
+  data: z.record(z.string(), z.unknown()),
+  redirectUri: z.string().optional(),
 });

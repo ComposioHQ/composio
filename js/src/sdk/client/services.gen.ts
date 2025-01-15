@@ -112,6 +112,9 @@ import type {
   InitiateConnectionData,
   InitiateConnectionError,
   InitiateConnectionResponse2,
+  InitiateConnectionV2Data,
+  InitiateConnectionV2Error,
+  InitiateConnectionV2Response,
   InviteMemberData,
   InviteMemberError,
   InviteMemberResponse,
@@ -1301,12 +1304,12 @@ export class Connectionsv2Service {
   /**
    * Initiate connection
    */
-  public static initiateConnection<ThrowOnError extends boolean = false>(
-    options?: Options<InitiateConnectionData, ThrowOnError>
+  public static initiateConnectionV2<ThrowOnError extends boolean = false>(
+    options?: Options<InitiateConnectionV2Data, ThrowOnError>
   ) {
     return (options?.client ?? client).post<
-      InitiateConnectionResponse2,
-      InitiateConnectionError,
+      InitiateConnectionV2Response,
+      InitiateConnectionV2Error,
       ThrowOnError
     >({
       ...options,

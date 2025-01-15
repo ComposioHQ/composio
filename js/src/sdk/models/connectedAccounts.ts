@@ -1,28 +1,24 @@
 import { z } from "zod";
-import logger from "../../utils/logger";
 import {
   ConnectedAccountResponseDTO,
   ConnectionParams,
   DeleteRowAPIDTO,
   GetConnectionsResponseDto,
-  GetConnectorInfoResDTO,
 } from "../client";
-import { default as apiClient, default as client } from "../client/client";
+import { default as apiClient } from "../client/client";
 import {
   ZInitiateConnectionDataReq,
   ZInitiateConnectionPayloadDto,
   ZListConnectionsData,
+  ZReinitiateConnectionPayloadDto,
   ZSaveUserAccessDataParam,
   ZSingleConnectionParams,
 } from "../types/connectedAccount";
 import { ZAuthMode } from "../types/integration";
 import { CEG } from "../utils/error";
-import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
-import { Apps } from "./apps";
 import { BackendClient } from "./backendClient";
-import { Integrations } from "./integrations";
 
 // Schema type from conectedAccount.ts
 type ConnectedAccountsListData = z.infer<typeof ZListConnectionsData>;
@@ -30,6 +26,9 @@ type InitiateConnectionDataReq = z.infer<typeof ZInitiateConnectionDataReq>;
 type SingleConnectionParam = z.infer<typeof ZSingleConnectionParams>;
 type SaveUserAccessDataParam = z.infer<typeof ZSaveUserAccessDataParam>;
 type InitiateConnectionPayload = z.infer<typeof ZInitiateConnectionPayloadDto>;
+type ReinitiateConnectionPayload = z.infer<
+  typeof ZReinitiateConnectionPayloadDto
+>;
 
 export type ConnectedAccountListResponse = GetConnectionsResponseDto;
 export type SingleConnectedAccountResponse = ConnectedAccountResponseDTO;
@@ -38,14 +37,10 @@ export type ConnectionItem = ConnectionParams;
 
 export class ConnectedAccounts {
   private backendClient: BackendClient;
-  private integrations: Integrations;
-  private apps: Apps;
   private fileName: string = "js/src/sdk/models/connectedAccounts.ts";
 
   constructor(backendClient: BackendClient) {
     this.backendClient = backendClient;
-    this.integrations = new Integrations(this.backendClient);
-    this.apps = new Apps(this.backendClient);
   }
 
   async list(
@@ -150,107 +145,60 @@ export class ConnectedAccounts {
       params: { payload },
     });
     try {
-      const {
-        authMode,
-        appName,
-        entityId,
-        redirectUri,
-        labels,
-        authConfig,
-        integrationId,
-        connectionParams,
-      } = payload;
-      if (!integrationId && !appName) {
-        throw CEG.getCustomError(
-          COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
-          {
-            message: "Please pass appName or integrationId",
-            description:
-              "We need atleast one of the params to initiate a connection",
-          }
-        );
-      }
-
-      /* Get the integration */
-      const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
-
-      const isIntegrationIdPassed = !!integrationId;
-      let integration = isIntegrationIdPassed
-        ? await this.integrations.get({ integrationId: integrationId })
-        : null;
-
-      if (!integration && !!authMode) {
-        const integrations = await this.integrations.list({
-          appName: appName,
-        });
-        integration = integrations.items?.find((integration) => {
-          return integration.authScheme === authMode;
-        }) as GetConnectorInfoResDTO;
-      }
-
-      if (isIntegrationIdPassed && !integration) {
-        throw CEG.getCustomError(
-          COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
-          {
-            message: "Integration not found",
-            description: "The integration with the given id does not exist",
-          }
-        );
-      }
-
-      /* If integration is not found, create a new integration */
-      if (!isIntegrationIdPassed) {
-        const app = await this.apps.get({ appKey: appName! });
-
-        if (!!authMode && !!authConfig) {
-          integration = await this.integrations.create({
-            appId: app.appId!,
-            name: `integration_${timestamp}`,
-            authScheme: authMode as z.infer<typeof ZAuthMode>,
-            authConfig: authConfig,
-            useComposioAuth: false,
-          });
-        } else {
-          const isTestConnectorAvailable =
-            app.testConnectors && app.testConnectors.length > 0;
-
-          if (!isTestConnectorAvailable && app.no_auth === false) {
-            logger.debug(
-              "Auth schemes not provided, available auth schemes and authConfig"
-            );
-            // @ts-ignore
-            for (const authScheme of app.auth_schemes) {
-              logger.debug(
-                "authScheme:",
-                authScheme.name,
-                "\n",
-                "fields:",
-                authScheme.fields
-              );
-            }
-
-            throw new Error("Please pass authMode and authConfig.");
-          }
-
-          integration = await this.integrations.create({
-            appId: app.appId!,
-            name: `integration_${timestamp}`,
-            useComposioAuth: true,
-          });
-        }
-      }
-
-      const res = await client.connections
-        .initiateConnection({
-          body: {
-            integrationId: integration?.id!,
-            entityId: entityId,
-            labels: labels,
-            redirectUri: redirectUri,
-            data: connectionParams || {},
+      const connection = await apiClient.connectionsV2.initiateConnectionV2({
+        body: {
+          app: {
+            uniqueKey: payload.appName!,
+            integrationId: payload.integrationId,
           },
-        })
-        .then((res) => res.data);
+          config: {
+            name: payload.appName!,
+            useComposioAuth: !!payload.authMode && !!payload.authConfig,
+            authScheme: payload.authMode as z.infer<typeof ZAuthMode>,
+            integrationSecrets: payload.authConfig,
+          },
+          connection: {
+            entityId: payload.entityId,
+            initiateData: payload.connectionParams as Record<string, unknown>,
+            extra: {
+              redirectURL: payload.redirectUri,
+              labels: payload.labels || [],
+            },
+          },
+        },
+      });
+
+      const connectionResponse = connection?.data?.connectionResponse;
+
+      return new ConnectionRequest({
+        connectionStatus: connectionResponse?.connectionStatus!,
+        connectedAccountId: connectionResponse?.connectedAccountId!,
+        redirectUri: connectionResponse?.redirectUrl!,
+      });
+    } catch (error) {
+      throw CEG.handleAllError(error);
+    }
+  }
+
+  async reiniateConnection(data: ReinitiateConnectionPayload) {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "reiniateConnection",
+      file: this.fileName,
+      params: { data },
+    });
+    try {
+      ZReinitiateConnectionPayloadDto.parse(data);
+      const connection = await apiClient.connections.reinitiateConnection({
+        path: {
+          connectedAccountId: data.connectedAccountId,
+        },
+        body: {
+          data: data.data,
+          redirectUri: data.redirectUri,
+        },
+      });
+
+      const res = connection.data;
 
       return new ConnectionRequest({
         connectionStatus: res?.connectionStatus!,

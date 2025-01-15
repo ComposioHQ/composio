@@ -5191,7 +5191,7 @@ export const $ComposioCreateConfigDTO = {
     },
   },
   type: "object",
-  required: ["name", "authScheme"],
+  required: ["authScheme"],
 } as const;
 
 export const $ConnectorCreateReqDTO = {
@@ -5259,7 +5259,7 @@ export const $ConnectionExtraData = {
     },
     labels: {
       items: {
-        type: "object",
+        type: "string",
       },
       type: "array",
       description:
@@ -5365,8 +5365,7 @@ export const $InitiateConnectionResponseV2 = {
         "Details about the integration associated with this connection.",
     },
     connectionResponse: {
-      minLength: 1,
-      type: "object",
+      $ref: "#/components/schemas/ConnectionResponseV2",
       description: "Response data containing connection details and status.",
     },
   },

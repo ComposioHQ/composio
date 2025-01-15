@@ -3576,7 +3576,7 @@ export type ComposioCreateConfigDTO = {
   /**
    * Name of the integration
    */
-  name: string;
+  name?: string;
   /**
    * Whether to use Composio authentication
    */
@@ -3652,9 +3652,7 @@ export type ConnectionExtraData = {
   /**
    * Array of labels to associate with the connection for organization and filtering.
    */
-  labels?: Array<{
-    [key: string]: unknown;
-  }>;
+  labels?: Array<string>;
 };
 
 export type ConnectionInitData = {
@@ -3728,9 +3726,7 @@ export type InitiateConnectionResponseV2 = {
   /**
    * Response data containing connection details and status.
    */
-  connectionResponse: {
-    [key: string]: unknown;
-  };
+  connectionResponse: ConnectionResponseV2;
 };
 
 export type GetUserInfoResponse = ClientInfoResDTO;
@@ -4393,3 +4389,14 @@ export type GetOrCreateConnectorData = {
 export type GetOrCreateConnectorResponse = GetOrCreateConnectorResDTOV2;
 
 export type GetOrCreateConnectorError = unknown;
+
+export type InitiateConnectionV2Data = {
+  /**
+   * InitiateConnectionPayloadDtoV2
+   */
+  body?: InitiateConnectionPayloadDtoV2;
+};
+
+export type InitiateConnectionV2Response = InitiateConnectionResponseV2;
+
+export type InitiateConnectionV2Error = BadRequestError | NotFoundError;
