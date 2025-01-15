@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@jest/globals";
+import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 import AxiosMockAdapter from "axios-mock-adapter";
 import { getTestConfig } from "../../config/getTestConfig";
 import { client as axiosClient } from "./client/services.gen";
@@ -12,6 +12,10 @@ const { COMPOSIO_API_KEY, BACKEND_HERMES_URL } = getTestConfig();
 
 describe("Basic SDK spec suite", () => {
   const mock = new AxiosMockAdapter(axiosClient.instance);
+
+  beforeEach(() => {
+    mock.reset();
+  });
 
   it("should create a basic client", async () => {
     const client = new Composio({
@@ -45,11 +49,11 @@ describe("Basic SDK spec suite", () => {
       baseUrl: getTestConfig().BACKEND_HERMES_URL,
     });
 
-    let hasThrownTheError = false;
+    let errorWasThrown = false;
     try {
       await client.apps.list();
     } catch (e) {
-      hasThrownTheError = true;
+      errorWasThrown = true;
       if (e instanceof ComposioError) {
         expect(e.errCode).toBe(COMPOSIO_SDK_ERROR_CODES.BACKEND.NOT_FOUND);
         expect(e.description).toBe("Not found");
@@ -62,8 +66,7 @@ describe("Basic SDK spec suite", () => {
         throw e;
       }
     }
-    expect(hasThrownTheError).toBe(true);
-    mock.reset();
+    expect(errorWasThrown).toBe(true);
   });
 
   it("should handle 400 error gracefully", async () => {
@@ -82,7 +85,7 @@ describe("Basic SDK spec suite", () => {
       ],
     });
 
-    let hasThrownTheError = false;
+    let errorWasThrown = false;
     const client = new Composio({
       apiKey: COMPOSIO_API_KEY,
       baseUrl: getTestConfig().BACKEND_HERMES_URL,
@@ -90,7 +93,7 @@ describe("Basic SDK spec suite", () => {
     try {
       await client.apps.list();
     } catch (e) {
-      hasThrownTheError = true;
+      errorWasThrown = true;
       const error = e as ComposioError;
       const errorCode = COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST;
       expect(error.errCode).toBe(errorCode);
@@ -99,8 +102,7 @@ describe("Basic SDK spec suite", () => {
         `Validation Errors: {"property":"triggerConfig","children":[],"constraints":{"isObject":"triggerConfig must be an object"}}`
       );
     }
-    expect(hasThrownTheError).toBe(true);
-    mock.reset();
+    expect(errorWasThrown).toBe(true);
   });
 
   it("should handle 500 and 502 error gracefully, and without backend fix", async () => {
@@ -109,7 +111,7 @@ describe("Basic SDK spec suite", () => {
       name: "ServerError",
       message: "Internal Server Error",
     });
-    let hasThrownTheError = false;
+    let errorWasThrown = false;
     const client = new Composio({
       apiKey: COMPOSIO_API_KEY,
       baseUrl: getTestConfig().BACKEND_HERMES_URL,
@@ -117,7 +119,7 @@ describe("Basic SDK spec suite", () => {
     try {
       await client.apps.list();
     } catch (e) {
-      hasThrownTheError = true;
+      errorWasThrown = true;
       const error = e as ComposioError;
       const errorCode = COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_ERROR;
       const errorInfo = BASE_ERROR_CODE_INFO[errorCode];
@@ -128,7 +130,7 @@ describe("Basic SDK spec suite", () => {
       expect(error.name).toBe("ComposioError");
       expect(error.possibleFix).toContain(errorInfo.possibleFix);
     }
-    expect(hasThrownTheError).toBe(true);
+    expect(errorWasThrown).toBe(true);
     mock.onGet(/.*\/api\/v1\/apps/).reply(502, { detail: "Bad Gateway" });
 
     try {
@@ -177,11 +179,11 @@ describe("Basic SDK spec suite", () => {
         message: "Not found",
       },
     });
-    let hasThrownTheError = false;
+    let errorWasThrown = false;
     try {
       await client.apps.list();
     } catch (e) {
-      hasThrownTheError = true;
+      errorWasThrown = true;
       const error = e as ComposioError;
       const errorCode = COMPOSIO_SDK_ERROR_CODES.COMMON.REQUEST_TIMEOUT;
       const errorInfo = BASE_ERROR_CODE_INFO[errorCode];
@@ -191,32 +193,16 @@ describe("Basic SDK spec suite", () => {
       expect(error.possibleFix).toBe(errorInfo.possibleFix);
     }
 
-    expect(hasThrownTheError).toBe(true);
-    mock.reset();
+    expect(errorWasThrown).toBe(true);
   });
 
   it("syntax error handling", async () => {
     expect(() => new Composio()).toThrow("🔑 API Key is not provided");
   });
 
-  afterAll(() => {
+  afterEach(() => {
     mock.reset();
     mock.resetHandlers();
-  });
-});
-
-describe("Entity spec suite", () => {
-  it("should get an entity and then fetch a connection", async () => {
-    const app = "github";
-    const composio = new Composio({
-      apiKey: COMPOSIO_API_KEY,
-      baseUrl: BACKEND_HERMES_URL,
-    });
-    const entity = composio.getEntity("default");
-
-    expect(entity.id).toBe("default");
-
-    const connection = await entity.getConnection({ app: app! });
-    expect(connection?.appUniqueId).toBe(app);
+    mock.restore();
   });
 });

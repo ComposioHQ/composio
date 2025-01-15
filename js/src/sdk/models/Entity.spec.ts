@@ -75,6 +75,17 @@ describe("Entity class tests", () => {
     // expect(getConnection).toHaveProperty("id");
   });
 
+  it("should have an Id of a connected account with default - primary", async () => {
+    const entityW2Connection = new Entity(backendClient, "default");
+
+    const entity = new Entity(backendClient, "default");
+
+    const getConnection = await entity.getConnection({
+      app: "github",
+    });
+    expect(getConnection).toHaveProperty("id");
+  });
+
   it("get connections", async () => {
     const connections = await entity.getConnections();
     expect(connections.length).toBeGreaterThan(0);
