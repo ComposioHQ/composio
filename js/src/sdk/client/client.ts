@@ -8,7 +8,9 @@ export default {
   clientAuth: SDKClient.ClientService,
   cli: SDKClient.CliService,
   appConnector: SDKClient.IntegrationsService,
+  appConnectorV2: SDKClient.IntegrationsV2Service,
   apps: SDKClient.AppsService,
   connections: SDKClient.ConnectionsService,
+  connectionsV2: SDKClient.Connectionsv2Service,
   triggers: SDKClient.TriggersService,
 };
