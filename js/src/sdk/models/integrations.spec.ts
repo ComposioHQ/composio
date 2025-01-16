@@ -29,8 +29,8 @@ describe("Integrations class tests", () => {
     const integrationCreation = await integrations.create({
       appId: appId,
       name: "test_integration_220",
+      authScheme: "OAUTH2",
       useComposioAuth: true,
-      forceNewIntegration: true,
     });
     expect(integrationCreation.id).toBeTruthy();
     expect(integrationCreation.appName).toBe("github");
