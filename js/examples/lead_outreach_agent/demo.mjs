@@ -37,14 +37,3 @@ const result = await agentExecutor.invoke({
     input: `Draft an email for each lead in my Hubspot contacts page introducing yourself and asking them if they're interested in integrating AI Agents in their workflow.`
 });
 console.log('🎉Output from agent: ', result.output);
-
-
-// Error Boundary
-try {
-
-}
-catch(e){
-    console.log(e);
-    throw Error("asdbnkajsdba")
-}
-//
