@@ -10,6 +10,7 @@ export const ZAuthMode = z.enum([
   "GOOGLE_SERVICE_ACCOUNT",
   "NO_AUTH",
   "BASIC_WITH_JWT",
+  "COMPOSIO_LINK",
 ]);
 
 export const ZCreateIntegrationParams = z.object({
