@@ -10,14 +10,16 @@ const langbase = new Langbase({
 const GOOGLEDOCS_CREATE_DOCUMENT = async ({ title, text }) => {
 	const toolset = new OpenAIToolSet({
         apiKey: process.env.COMPOSIO_API_KEY,
-		entityId: "default_user",
+		entityId: "default",
     });
-	const response = await toolset.client.getEntity("default_user").execute(
-		'GOOGLEDOCS_CREATE_DOCUMENT',
-		{
+	const response = await toolset.client.getEntity("default").execute({
+		actionName:'GOOGLEDOCS_CREATE_DOCUMENT',
+		params:{
 			title,
 			text
 		}
+	}
+
 	);
 	return response;
 };
@@ -54,12 +56,12 @@ const tools = {
 	const threadId = await res.headers.get('lb-thread-id');
 
 	const { raw } = data;
-
+	console.log(raw)
 	// get the response message from the model
-	const responseMessage = raw.choices[0].message;
+	const responseMessage = raw[''];
 
 	// get the tool calls from the response message
-	const toolCalls = responseMessage.tool_calls;
+	const toolCalls = responseMessage;
 
 	if (toolCalls) {
 		const toolMessages = [];

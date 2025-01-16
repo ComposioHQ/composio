@@ -1,5 +1,5 @@
-from phi.agent import Agent
-from phi.model.openai import OpenAIChat
+from phi.agent.agent import Agent
+from phi.model.openai.chat import OpenAIChat
 from composio_phidata import ComposioToolSet, App, Action
 from dotenv import load_dotenv
 import json
@@ -12,7 +12,7 @@ agent = Agent(
     description="you help the user plan their weekends",
     name="AI Writer",
     add_chat_history_to_messages=True,
-    model=OpenAIChat(id="gpt-4o"),
+    model=OpenAIChat(id="gpt-4o"), # type: ignore
     instructions=[
                 """
                 You are a creative content automation agent. Your tasks are:

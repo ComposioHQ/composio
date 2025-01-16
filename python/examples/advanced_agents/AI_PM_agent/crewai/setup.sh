@@ -16,15 +16,15 @@ pip install -r requirements.txt
 echo "Login to your Composio acount"
 composio login
 
-# Add trello tool
 
-echo "Add slackbot tool. Finish the flow"
-composio add slackbot
+echo "Add slack tool. Finish the flow"
+composio add slack
 composio add gmail
+composio add linear
 
 echo "Enable Slackbot triggers"
-composio triggers enable slackbot_receive_message
-composio triggers enable slackbot_receive_thread_reply
+composio triggers enable slack_receive_message
+composio triggers enable slack_receive_thread_reply
 composio triggers enable new_gmail_message
 
 # Copy env backup to .env file

@@ -1,4 +1,5 @@
 langchain
 langchain-openai
+langchain-ollama
 composio-langchain
 python-dotenv

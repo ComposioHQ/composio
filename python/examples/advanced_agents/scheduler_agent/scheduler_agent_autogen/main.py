@@ -3,7 +3,7 @@ import os
 import re
 from dotenv import load_dotenv
 from autogen.agentchat import AssistantAgent, UserProxyAgent
-from composio_autogen import Action, App, ComposioToolSet
+from composio_autogen import Action, App, ComposioToolSet, Trigger
 from composio.client.collections import TriggerEventData
 from datetime import datetime
 from typing import Optional, Any
@@ -38,25 +38,11 @@ user_proxy = UserProxyAgent(
     human_input_mode="NEVER",
     code_execution_config={"use_docker": False},
 )
-def extract_sender_email(payload):
-    delivered_to_header_found = False
-    for header in payload["headers"]:
-        if header.get("name", "") == "Delivered-To" and header.get("value", "") != "":
-            delivered_to_header_found = True
-    print("delivered_to_header_found: ", delivered_to_header_found)
-    if not delivered_to_header_found:
-        return None
-    for header in payload["headers"]:
-        if header["name"] == "From":
-            # Regular expression to extract email from the 'From' header value
-            match = re.search(r"[\w\.-]+@[\w\.-]+", header["value"])
-            if match:
-                return match.group(0)
-    return None
-
 # Creating a ComposioToolSet instance for handling actions
 composio_toolset = ComposioToolSet()
-schedule_tool = composio_toolset.register_actions(
+schedule_tool = composio_toolset.register_tools(
+    caller=chatbot,
+    executor=user_proxy,
     actions=[
         Action.GOOGLECALENDAR_FIND_FREE_SLOTS,
         Action.GOOGLECALENDAR_CREATE_EVENT,
@@ -70,7 +56,7 @@ timezone = datetime.now().astimezone().tzinfo
 listener = composio_toolset.create_trigger_listener()
 
 
-@listener.callback(filters={"trigger_name": "gmail_new_gmail_message"})
+@listener.callback(filters={"trigger_name": Trigger.GMAIL_NEW_GMAIL_MESSAGE})
 def callback_new_message(event: TriggerEventData) -> None:
     print("here in the function")
     payload = event.payload
@@ -101,4 +87,4 @@ def callback_new_message(event: TriggerEventData) -> None:
 
 
 print("Subscription created!")
-listener.listen()
+listener.wait_forever()

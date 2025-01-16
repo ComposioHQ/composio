@@ -1,4 +1,5 @@
 import { sendBrowserReq, sendProcessReq } from "../../../utils/external";
+import logger from "../../../utils/logger";
 import { getEnvVariable } from "../../../utils/shared";
 import ComposioSDKContext from "../composioContext";
 import { TELEMETRY_URL } from "../constants";
@@ -39,7 +40,7 @@ export async function logError(payload: ErrorPayload) {
     }
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error("Error sending error to telemetry", error);
+    logger.debug("Error sending error to telemetry", error);
     // DO NOTHING
   }
 }

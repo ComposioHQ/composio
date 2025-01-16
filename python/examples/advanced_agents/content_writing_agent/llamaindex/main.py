@@ -50,7 +50,7 @@ prefix_messages = create_prefix_message()
 
 # Initialize the agent
 agent = FunctionCallingAgentWorker(
-    tools=tools,
+    tools=tools, # type: ignore
     llm=llm,
     prefix_messages=prefix_messages,
     max_function_calls=10,

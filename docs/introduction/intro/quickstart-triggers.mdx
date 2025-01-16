@@ -4,8 +4,17 @@ sidebarTitle: "Quick Start - Triggers"
 description: "Learn how to use Triggers in less than 5 minutes"
 ---
 
-## Composio Quick Start
-In this guide we'll configure and enable a trigger to listen to new emails in Gmail & configure an agent to add important label to emails that contains details about bank transactions.
+## Listen to New Emails in Gmail
+In this guide, we'll:
+
+1. 🔐 Connect your Gmail account with Composio
+2. 🛠 Enable Triggers to listen to new emails in Gmail
+3. 🧠 Pass these triggers event payloads to an AI language model to identify bank transactions
+4. ⭐ Execute an action from Gmail tool to add **important** label to relevant emails
+
+<Tip>
+**Tools** represent a group of actions specific to an app. **Actions** are operations you can perform - like starring a repo on GitHub or creating an issue in Linear.
+</Tip>
 
 <Tabs>
 <Tab title="Python">
@@ -18,7 +27,7 @@ pip install composio-core composio_openai
 </Step>
 
 <Step title="Connect Your Gmail Account">
-We'll use **`Jessica`** as the user id [(entity id)](../../patterns/Auth/connected_account#entities).
+We'll use **`default`** as the user id, also known as [entity id](../../patterns/Auth/connected_account#entities).
 <Info>You need to have an active Gmail Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
 <CodeGroup>
 ```shell CLI
@@ -115,7 +124,7 @@ npm install composio-core openai
 </Step>
 
 <Step title="Connect Your Gmail Account">
-We'll use **`Jessica`** as the user id [(entity id)](../../patterns/Auth/connected_account#entities).
+We'll use **`default`** as the user id [(entity id)](../../patterns/Auth/connected_account#entities).
 <Info>You need to have an active Gmail Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
 
 <CodeGroup>
@@ -216,16 +225,7 @@ toolset.triggers.subscribe(
 </Tab>
 </Tabs>
 
-## What Just Happened? 🎉
 
-Congratulations! You've just:
-
-1. 🔐 Connected your Gmail account with Composio
-2. 🛠 Enabled Triggers
-3. 🧠 Passed these triggers event payloads to an AI language model
-4. ⭐ Executed an action from Gmail tool
-
-<br/>
 
 ## Next Steps
 Now that you've seen how to use triggers, you can explore the following resources:

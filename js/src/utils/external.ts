@@ -24,7 +24,7 @@ export function sendProcessReq(info: {
 }) {
   if (IS_DEVELOPMENT_OR_CI) {
     // eslint-disable-next-line no-console
-    console.log(
+    logger.debug(
       `Hitting ${info.url}[${info.method}] with ${serializeValue(info.data)}`
     );
     return true;
@@ -75,7 +75,7 @@ export function sendProcessReq(info: {
     // // Close the stdin stream
     child.stdin.end();
   } catch (error) {
-    logger.error("Error sending error to telemetry", error);
+    logger.debug("Error sending error to telemetry", error);
     // DO NOTHING
   }
 }
@@ -120,7 +120,7 @@ export function sendBrowserReq(info: {
     // Send the reporting payload as a JSON string
     xhr.send(JSON.stringify(info.data));
   } catch (error) {
-    logger.error("Error sending error to telemetry", error);
+    logger.debug("Error sending error to telemetry", error);
     // DO NOTHING
   }
 }

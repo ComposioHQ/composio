@@ -27,13 +27,13 @@ app.post('/', async (c) => {
     apiKey: c.env.COMPOSIO_API_KEY,
   });
 
-  try {
+  
     const entity = await toolset.client.getEntity('default');
-    const connectionResult = await setupUserConnection(toolset, entity.id);
+    //const connectionResult = await setupUserConnection(toolset, entity.id);
     
-    if (connectionResult.redirectUrl) {
-      return c.json(connectionResult);
-    }
+    //if (connectionResult.redirectUrl) {
+    //  return c.json(connectionResult);
+    //}
 
     const tools = await toolset.getTools({ actions: ['github_issues_create'] }, entity.id);
     const instruction = 'Create an issue with the title "Sample Issue" in the repo anonthedev/break. Use only the provided tools.';
@@ -50,10 +50,7 @@ app.post('/', async (c) => {
 
     await toolset.handleToolCall(toolCallResp, entity.id);
     return c.json({ message: "Issue has been created successfully" });
-  } catch (err) {
-    console.error('Error:', err);
-    return c.json({ error: 'An unexpected error occurred' }, 500);
-  }
+
 });
 
 export default app;

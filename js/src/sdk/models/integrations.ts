@@ -7,6 +7,7 @@ import {
 } from "../client";
 import apiClient from "../client/client";
 import {
+  ZAuthMode,
   ZCreateIntegrationParams,
   ZListIntegrationsParams,
   ZSingleIntegrationParams,
@@ -14,6 +15,7 @@ import {
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
+import { Apps } from "./apps";
 import { BackendClient } from "./backendClient";
 
 // Types generated from zod schemas
@@ -34,9 +36,11 @@ export type IntegrationDeleteRes = DeleteRowAPIDTO;
 export class Integrations {
   private backendClient: BackendClient;
   private fileName: string = "js/src/sdk/models/integrations.ts";
+  private apps: Apps;
 
   constructor(backendClient: BackendClient) {
     this.backendClient = backendClient;
+    this.apps = new Apps(backendClient);
   }
 
   /**
@@ -140,23 +144,65 @@ export class Integrations {
       params: { data },
     });
     try {
-      if (!data?.authConfig) {
-        data!.authConfig = {};
-      }
       ZCreateIntegrationParams.parse(data);
 
-      const response = await apiClient.appConnector.createConnector({
+      const apps = await apiClient.apps.getApps();
+      const app = apps.data?.items.find((app) => app.appId === data.appId);
+
+      const response = await apiClient.appConnectorV2.createConnectorV2({
         body: {
-          name: data?.name!,
-          appId: data?.appId!,
-          authConfig: data?.authConfig! as Record<string, unknown>,
-          authScheme: data?.authScheme,
-          useComposioAuth: data?.useComposioAuth!,
-          forceNewIntegration: true,
+          app: {
+            uniqueKey: app!.key || "",
+          },
+          config: {
+            useComposioAuth: data.useComposioAuth,
+            name: data.name,
+            authScheme: data.authScheme as z.infer<typeof ZAuthMode>,
+            integrationSecrets: data.authConfig,
+          },
         },
         throwOnError: true,
       });
-      return response.data;
+
+      const integrationId = response.data.integrationId;
+      return this.get({ integrationId });
+    } catch (error) {
+      throw CEG.handleAllError(error);
+    }
+  }
+
+  async getOrCreateIntegration(
+    data: IntegrationCreateParams
+  ): Promise<IntegrationGetRes> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getOrCreateIntegration",
+      file: this.fileName,
+      params: { data },
+    });
+
+    try {
+      ZCreateIntegrationParams.parse(data);
+
+      const apps = await apiClient.apps.getApps();
+      const app = apps.data?.items.find((app) => app.appId === data.appId);
+
+      const response = await apiClient.appConnectorV2.getOrCreateConnector({
+        body: {
+          app: {
+            uniqueKey: app!.key,
+          },
+          config: {
+            useComposioAuth: data.useComposioAuth,
+            name: data.name,
+            authScheme: data.authScheme as z.infer<typeof ZAuthMode>,
+            integrationSecrets: data.authConfig,
+          },
+        },
+        throwOnError: true,
+      });
+
+      const integrationId = response.data.integrationId;
+      return this.get({ integrationId });
     } catch (error) {
       throw CEG.handleAllError(error);
     }

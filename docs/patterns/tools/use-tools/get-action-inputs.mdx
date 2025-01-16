@@ -13,6 +13,17 @@ When executing actions without agents, you'll need to provide the input paramete
 
 <Tabs>
 <Tab title="SDK">
+Install packages:
+<CodeGroup>
+```bash Python
+pip install composio-openai
+```
+```bash JavaScript
+npm install composio-core
+```
+</CodeGroup>
+
+Import libraries & get action schema:
 <CodeGroup>
  ```python Python 
 from composio import ComposioToolSet, Action
@@ -27,7 +38,7 @@ action_schema = composio_toolset.get_action_schemas(actions=[Action.GITHUB_STAR_
 print(json.dumps(action_schema[0].parameters.properties, indent=2))
 ```
 
-```javascript Javascript
+```javascript JavaScript
 import { OpenAIToolSet } from "composio-core";
 
 const composio_toolset = new OpenAIToolSet();

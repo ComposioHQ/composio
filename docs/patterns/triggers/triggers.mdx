@@ -31,7 +31,12 @@ composio triggers disable 818bd52e-c5...
 </Tab>
 <Tab title="Python">
 <Steps>
-<Step title="Import packages">
+<Step title="Install required libraries">
+```bash Python
+pip install composio-core
+```
+</Step>
+<Step title="Import libraries">
 ```python
 from composio import ComposioToolSet, App
 ```
@@ -87,7 +92,12 @@ entity.disable_trigger("818bd52e-c5...")
 </Tab>
 <Tab title="JavaScript">
 <Steps>
-<Step title="Import packages & Initialize Toolset">
+<Step title="Install required libraries">
+```bash JavaScript
+npm install composio-core
+```
+</Step>
+<Step title="Import libraries & Initialize Toolset">
 ```javascript
 import { ComposioToolSet } from "composio-core";
 const toolset = new ComposioToolSet();

@@ -18,6 +18,7 @@ import { Triggers } from "./models/triggers";
 import { ZAuthMode } from "./types/integration";
 import ComposioSDKContext from "./utils/composioContext";
 import { getSDKConfig } from "./utils/config";
+import { IS_DEVELOPMENT_OR_CI } from "./utils/constants";
 import { CEG } from "./utils/error";
 import { COMPOSIO_SDK_ERROR_CODES } from "./utils/errors/src/constants";
 import { isNewerVersion } from "./utils/other";
@@ -62,6 +63,11 @@ export class Composio {
       config?.apiKey
     );
 
+    if (IS_DEVELOPMENT_OR_CI) {
+      logger.info(
+        `Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}`
+      );
+    }
     ComposioSDKContext.apiKey = apiKeyParsed;
     ComposioSDKContext.sessionId = getUUID();
     ComposioSDKContext.baseURL = baseURLParsed;
@@ -119,9 +125,12 @@ export class Composio {
       );
       const latestVersion = response.data.version;
 
-      if (isNewerVersion(latestVersion, currentVersionFromPackageJson)) {
+      if (
+        isNewerVersion(latestVersion, currentVersionFromPackageJson) &&
+        !IS_DEVELOPMENT_OR_CI
+      ) {
         // eslint-disable-next-line no-console
-        console.warn(
+        logger.info(
           `🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`
         );
       }
