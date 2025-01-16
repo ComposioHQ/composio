@@ -51,8 +51,8 @@ from composio.constants import (
     ENV_COMPOSIO_API_KEY,
     LOCAL_CACHE_DIRECTORY,
     LOCAL_OUTPUT_FILE_DIRECTORY_NAME,
-    USER_DATA_FILE_NAME,
     LOCKFILE_PATH,
+    USER_DATA_FILE_NAME,
 )
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.storage.user import UserData
