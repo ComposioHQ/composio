@@ -74,7 +74,6 @@ jobs:
           COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY_RELEASE }}
           COMPOSIO_BASE_URL: 'https://backend.composio.dev'
           HELICONE_API_KEY: ${{secrets.HELICONE_API_KEY}}
-          HELICONE_CACHE_ENABLED: "true"
         run: |
           pnpm exec jest tests/test_examples.test.js
       - name: Slack Notification on Failure
