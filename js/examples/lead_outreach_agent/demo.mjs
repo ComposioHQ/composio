@@ -7,7 +7,7 @@ import { LangchainToolSet } from "composio-core";
 dotenv.config();
 
 const llm = new OpenAI({
-    model: "gpt-3.5-turbo",
+    model: "gpt-3.5-turbo-instruct",
     apiKey: process.env.OPENAI_API_KEY,
 
     // Uncomment all the below lines to use the default openai
