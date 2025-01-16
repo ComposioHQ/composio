@@ -7,9 +7,9 @@ import { LangchainToolSet } from "composio-core";
 dotenv.config();
 
 const llm = new OpenAI({
-    model: "gpt-4-turbo",
+    model: "gpt-3.5-turbo",
     apiKey: process.env.OPENAI_API_KEY,
-    
+
     // Uncomment all the below lines to use the default openai
     baseURL: "https://oai.helicone.ai/v1",
     headers: {
