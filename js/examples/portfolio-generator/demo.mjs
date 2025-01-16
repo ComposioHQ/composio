@@ -22,7 +22,6 @@ async function setupUserConnectionIfNotExists(entityId) {
     console.log("Log in via: ", newConnection.redirectUrl);
     return newConnection.waitUntilActive(60);
   }
-
   return connection;
 }
 
