@@ -1,4 +1,4 @@
-import { OpenAI } from "@langchain/openai";
+import { ChatOpenAI } from "@langchain/openai";
 import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
 import { pull } from "langchain/hub";
 import dotenv from 'dotenv';
@@ -6,10 +6,9 @@ import { LangchainToolSet } from "composio-core";
 
 dotenv.config();
 
-const llm = new OpenAI({
-    model: "gpt-3.5-turbo-instruct",
+const llm = new ChatOpenAI({
+    model: "gpt-3.5-turbo",
     apiKey: process.env.OPENAI_API_KEY,
-
     // Uncomment all the below lines to use the default openai
     baseURL: "https://oai.helicone.ai/v1",
     headers: {
@@ -45,3 +44,14 @@ const result = await agentExecutor.invoke({
     input: `Draft an email for each lead in my Hubspot contacts page introducing yourself and asking them if they're interested in integrating AI Agents in their workflow.`
 });
 console.log('🎉Output from agent: ', result.output);
+
+
+// Error Boundary
+try {
+
+}
+catch(e){
+    console.log(e);
+    throw Error("asdbnkajsdba")
+}
+//
