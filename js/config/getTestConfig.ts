@@ -1,4 +1,4 @@
-export const env = process.env.TEST_ENV  || "prod"
+export const env = process.env.TEST_ENV  || "staging"
 const CURRENT_FILE_DIR = __dirname;
 
 export type BACKEND_CONFIG = {
@@ -12,6 +12,6 @@ export const getTestConfig = (): BACKEND_CONFIG => {
         return JSON.parse(JSON.stringify(require(path))) as unknown as BACKEND_CONFIG;
     } catch (error) {
         console.error("Error loading test config file:", error);
-        throw new Error("Error loading test config file. You  can create test.{{env}}.json file in the config folder.");
+        throw new Error(`Error loading test config file. You  can create test.config.${env}.json file in the config folder.`);
     }
 }
