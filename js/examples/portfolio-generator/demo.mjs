@@ -1,5 +1,5 @@
 import { VercelAIToolSet } from "composio-core";
-import { openai } from "../utils"; // Comment this to use the default openai 
+import { openai } from "../utils.mjs"; // Comment this to use the default openai 
 // import { openai } from "@ai-sdk/openai"; // Uncomment this to use the default openai 
 
 import dotenv from "dotenv";
