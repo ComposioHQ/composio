@@ -1101,7 +1101,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             self._requested_actions += action_names
 
         if self.locking_enabled:
-            self._tool_versions |= {tool.name: tool.version for tool in items}
+            self._tool_versions = {
+                tool.name: tool.version for tool in items
+            } | self._tool_versions
             self.store_tool_versions_to_lockfile()
 
         return items
