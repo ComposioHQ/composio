@@ -27,11 +27,10 @@ email_fetcher_agent = Agent(
     role="Email Fetcher Agent",
     goal="Fetch recent newsletter emails from the inbox. Please look for labels 'newsletter' only for last 7 days. Don't add any other unnecessary filters.",
     verbose=True,
-    memory=True,
     backstory=f"You are an expert in retrieving and organizing email content, with a keen eye for identifying relevant newsletters. Today's date is {datetime.now().strftime('%B %d, %Y')}. You are writing an email to a reader who is interested in the stock market and trading.",
     llm=llm,
     allow_delegation=False,
-    tools=gmail_tools,
+    tools=gmail_tools, # type: ignore
 )
 
 # Define the Summarizer Agent
@@ -39,7 +38,6 @@ summarizer_agent = Agent(
     role="Summarizer Agent",
     goal="Summarize the content of newsletter emails, highlighting key information and trends",
     verbose=True,
-    memory=True,
     backstory=f"You are an expert in analyzing and summarizing complex information, with a talent for distilling essential points from various sources. Today's date is {datetime.now().strftime('%B %d, %Y')}. You are writing an email to a reader who is interested in the stock market and trading. You are writing an email to a reader who is interested in the stock market and trading.",
     llm=llm,
     allow_delegation=False,
@@ -51,11 +49,10 @@ email_sender_agent = Agent(
     role="Email Sender Agent",
     goal="Send the summarized newsletter content via email to investtradegame@gmail.com with a professional and engaging format",
     verbose=True,
-    memory=True,
     backstory=f"You are an expert in composing and sending emails with well-formatted, visually appealing content. You have a knack for creating engaging subject lines and structuring information for easy readability. Today's date is {datetime.now().strftime('%B %d, %Y')}. You are writing an email to a reader who is interested in the stock market and trading.",
     llm=llm,
     allow_delegation=False,
-    tools=gmail_tools,
+    tools=gmail_tools, # type: ignore
 )
 
 # Define the task for fetching emails
@@ -67,7 +64,7 @@ fetch_emails_task = Task(
         "Pay special attention to newsletters from reputable sources and industry leaders."
     ),
     expected_output="A detailed list of recent newsletter emails with their content, including any relevant links or attachments",
-    tools=gmail_tools,
+    tools=gmail_tools, # type: ignore
     agent=email_fetcher_agent,
 )
 
@@ -113,7 +110,7 @@ send_summary_task = Task(
         "Important: Ensure all HTML tags are properly closed and nested correctly."
     ),
     expected_output="Confirmation that the well-formatted, detailed summary email with important links has been sent to investtradegame@gmail.com",
-    tools=gmail_tools,
+    tools=gmail_tools, # type: ignore
     agent=email_sender_agent,
     context=[summarize_emails_task],
 )

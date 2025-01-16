@@ -13,7 +13,7 @@ class CreateTaskRequest(BaseModel):
         alias="list_id",
         description="",
     )
-    custom_task_ids: bool = Field(
+    custom_task_ids: t.Optional[bool] = Field(
         default=None,
         alias="custom_task_ids",
         description=(
@@ -21,7 +21,7 @@ class CreateTaskRequest(BaseModel):
             "be `true`. "
         ),
     )
-    team_id: int = Field(
+    team_id: t.Optional[int] = Field(
         default=None,
         alias="team_id",
         description=(
@@ -29,12 +29,12 @@ class CreateTaskRequest(BaseModel):
             "`custom_task_ids=true&team_id=123`. "
         ),
     )
-    tags: t.List[str] = Field(
+    tags: t.Optional[t.List[str]] = Field(
         default=None,
         alias="tags",
         description="",
     )
-    description: str = Field(
+    description: t.Optional[str] = Field(
         default=None,
         alias="description",
         description="Description",
@@ -44,47 +44,47 @@ class CreateTaskRequest(BaseModel):
         alias="name",
         description="Name",
     )
-    assignees: t.List[int] = Field(
+    assignees: t.Optional[t.List[int]] = Field(
         default=None,
         alias="assignees",
         description="",
     )
-    status: str = Field(
+    status: t.Optional[str] = Field(
         default=None,
         alias="status",
         description="Status",
     )
-    priority: int = Field(
+    priority: t.Optional[int] = Field(
         default=None,
         alias="priority",
         description="Priority",
     )
-    due_date: int = Field(
+    due_date: t.Optional[int] = Field(
         default=None,
         alias="due_date",
         description="Due Date",
     )
-    due_date_time: bool = Field(
+    due_date_time: t.Optional[bool] = Field(
         default=None,
         alias="due_date_time",
         description="Due Date Time",
     )
-    time_estimate: int = Field(
+    time_estimate: t.Optional[int] = Field(
         default=None,
         alias="time_estimate",
         description="Time Estimate",
     )
-    start_date: int = Field(
+    start_date: t.Optional[int] = Field(
         default=None,
         alias="start_date",
         description="Start Date",
     )
-    start_date_time: bool = Field(
+    start_date_time: t.Optional[bool] = Field(
         default=None,
         alias="start_date_time",
         description="Start Date Time",
     )
-    notify_all: bool = Field(
+    notify_all: t.Optional[bool] = Field(
         default=None,
         alias="notify_all",
         description=(
@@ -92,7 +92,7 @@ class CreateTaskRequest(BaseModel):
             "the creator of the comment. "
         ),
     )
-    parent: str = Field(
+    parent: t.Optional[str] = Field(
         default=None,
         alias="parent",
         description=(
@@ -101,12 +101,12 @@ class CreateTaskRequest(BaseModel):
             "in the path parameter. "
         ),
     )
-    links_to: str = Field(
+    links_to: t.Optional[str] = Field(
         default=None,
         alias="links_to",
         description="Include a task ID to create a linked dependency with your new task.",
     )
-    check_required_custom_fields: bool = Field(
+    check_required_custom_fields: t.Optional[bool] = Field(
         default=None,
         alias="check_required_custom_fields",
         description=(
@@ -115,12 +115,12 @@ class CreateTaskRequest(BaseModel):
             "true`. "
         ),
     )
-    custom_fields: t.List[dict] = Field(
+    custom_fields: t.Optional[t.List[dict]] = Field(
         default=None,
         alias="custom_fields",
         description="[Filter by Custom Fields.](https://clickup.com/api)",
     )
-    custom_item_id: int = Field(
+    custom_item_id: t.Optional[int] = Field(
         default=None,
         alias="custom_item_id",
         description=(

@@ -1,7 +1,6 @@
 ---
 title: "Using Composio JS SDK with OpenAI"
 sidebarTitle: "OpenAI (JS)"
-icon: "code"
 description: "Use Composio JS SDK with OpenAI to create a github issue creation agent"
 ---
 
@@ -50,10 +49,10 @@ const appName = 'github';
 
 async function setupUserConnectionIfNotExists(entityId) {
         const entity = toolset.client.getEntity(entityId);
-        const connection = await entity.getConnection(appName);
+        const connection = await entity.getConnection({ appName: appName });
 
         if (!connection) {
-            const connection = await entity.initiateConnection(appName);
+            const connection = await entity.initiateConnection({appName: appName});
             console.log("Log in via: ", connection.redirectUrl);
             return connection.waitUntilActive(60);
         }

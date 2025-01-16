@@ -1,7 +1,6 @@
 ---
 title: "Newsletter Summarizer"
 sidebarTitle: "Newsletter Summarizer"
-icon: "book"
 description: "This project serves as an example of how to use Composio to seamlessly fetch and summarize newsletter emails. It automatically retrieves recent newsletters, summarizes their content, and sends a well-formatted email to the specified recipient."
 ---
 
@@ -12,8 +11,6 @@ description: "This project serves as an example of how to use Composio to seamle
     <Tab title="Python">
     <Card color="#7bee0c" title="Newsletter Summarizer GitHub Repository" icon="github" href="https://www.github.com/ComposioHQ/composio/blob/master/python/examples/newsletter_summarizer/">
   Explore the complete source code for the Newsletter Summarizer project. This repository contains all the necessary files and scripts to set up and run the Newsletter Summarizer using Composio and Cloudflare.
-  <CardBody>
-  </CardBody>
 </Card>
 <Steps>
     <Step title="Import Base Packages">
@@ -151,8 +148,6 @@ description: "This project serves as an example of how to use Composio to seamle
     <Tab title="Javascript">
     <Card color="#7bee0c" title="Newsletter Summarizer GitHub Repository" icon="github" href="https://github.com/ComposioHQ/composio/tree/master/js/examples/newsletter_summarizer/newsletter_summarizer_cloudflare">
   Explore the complete source code for the Newsletter Summarizer project. This repository contains all the necessary files and scripts to set up and run the Newsletter Summarizer using Composio and Cloudflare.
-  <CardBody>
-  </CardBody>
 </Card>
     <Steps>
         <Step title="Import base packages">
@@ -252,26 +247,6 @@ description: "This project serves as an example of how to use Composio to seamle
 </Steps>
 </Tab>
 </Tabs>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -388,11 +363,11 @@ print(result)
     // Function to set up the GitHub connection for the user if it doesn't exist
     async function setupUserConnectionIfNotExists(toolset, entityId, c) {
         const entity = await toolset.client.getEntity(entityId);
-        const connection = await entity.getConnection('github');
+        const connection = await entity.getConnection({ appName: "GITHUB" });
 
         if (!connection) {
             // If the user hasn't connected their GitHub account
-            const connection = await entity.initiateConnection('github');
+            const connection = await entity.initiateConnection({appName: "GITHUB"});
             console.log('Log in via: ', connection.redirectUrl);
             c.json({ redirectUrl: connection.redirectUrl, message: 'Please log in to continue and then call this API again.' });
         }

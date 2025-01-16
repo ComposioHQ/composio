@@ -1,12 +1,11 @@
 ---
 title: "🦜🔗 Using Composio With LangChain"
 sidebarTitle: "LangChain"
-icon: "link"
 description: "Integrate Composio with LangChain agents to let them seamlessly interact with external apps"
 ---
 
-## Star A Repository on Github
-In this example, we will use LangChain Agent to star a repository on Github using Composio Tools
+## Star A Repository on GitHub
+In this example, we will use LangChain Agent to star a repository on GitHub using Composio Tools
 
 <Steps>
 <Step title="Install Packages">
@@ -15,7 +14,7 @@ In this example, we will use LangChain Agent to star a repository on Github usin
 pip install composio-langchain langchain_openai
 ```
 ```javascript JavaScript
-npm install composio-core langchain
+npm install composio-core langchain @langchain/openai
 ```
 </CodeGroup>
 </Step>
@@ -42,7 +41,28 @@ const toolset = new LangchainToolSet();
 </CodeGroup>
 </Step>
 
-<Step title="Get All Github Tools">
+<Step title="Connect Your GitHub Account">
+    <Info>You need to have an active GitHub Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
+    <CodeGroup>
+        ```shell CLI
+        composio login
+        composio add github
+        ```
+        ```python Python
+        request = composio_toolset.initiate_connection(app=App.GITHUB)
+        print(f"Open this URL to authenticate: {request.redirectUrl}")
+        ```
+        ```javascript JavaScript
+        const connection = await toolset.connectedAccounts.initiate({appName: "github"})
+        console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
+        ```
+    </CodeGroup>
+    <Tip>
+        Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
+    </Tip>
+</Step>
+
+<Step title="Get All GitHub Tools">
 You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
 <CodeGroup>
 ```python Python

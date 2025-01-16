@@ -11,6 +11,8 @@ source ./venv/bin/activate
 echo "Installing libraries from requirements.txt..."
 pip install -r requirements.txt
 
+composio add notion
+composio add slack
 # Copy env backup to .env file
 if [ -f ".env.example" ]; then
     echo "Copying .env.example to .env..."

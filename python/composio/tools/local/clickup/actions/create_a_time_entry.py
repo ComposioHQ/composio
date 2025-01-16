@@ -13,7 +13,7 @@ class CreateATimeEntryRequest(BaseModel):
         alias="team_Id",
         description="Team ID (Workspace)",
     )
-    custom_task_ids: bool = Field(
+    custom_task_ids: t.Optional[bool] = Field(
         default=None,
         alias="custom_task_ids",
         description=(
@@ -21,7 +21,7 @@ class CreateATimeEntryRequest(BaseModel):
             "be `true`. "
         ),
     )
-    team_id: int = Field(
+    team_id: t.Optional[int] = Field(
         default=None,
         alias="team_id",
         description=(
@@ -29,12 +29,12 @@ class CreateATimeEntryRequest(BaseModel):
             "`custom_task_ids=true&team_id=123`. "
         ),
     )
-    tags: t.List[dict] = Field(
+    tags: t.Optional[t.List[dict]] = Field(
         default=None,
         alias="tags",
         description="Users on the Business Plan and above can include a time tracking label.",
     )
-    description: str = Field(
+    description: t.Optional[str] = Field(
         default=None,
         alias="description",
         description="Description",
@@ -44,17 +44,17 @@ class CreateATimeEntryRequest(BaseModel):
         alias="start",
         description="Start",
     )
-    stop: int = Field(
+    stop: t.Optional[int] = Field(
         default=None,
         alias="stop",
         description="The `duration` parameter can be used instead of the `stop` parameter. ",
     )
-    end: int = Field(
+    end: t.Optional[int] = Field(
         default=None,
         alias="end",
         description="End",
     )
-    billable: bool = Field(
+    billable: t.Optional[bool] = Field(
         default=None,
         alias="billable",
         description="Billable",
@@ -67,7 +67,7 @@ class CreateATimeEntryRequest(BaseModel):
             "The `stop` parameter can be used instead of the `duration` parameter. "
         ),
     )
-    assignee: int = Field(
+    assignee: t.Optional[int] = Field(
         default=None,
         alias="assignee",
         description=(
@@ -75,7 +75,7 @@ class CreateATimeEntryRequest(BaseModel):
             "only include their own user id. "
         ),
     )
-    tid: str = Field(
+    tid: t.Optional[str] = Field(
         default=None,
         alias="tid",
         description="Tid",

@@ -45,10 +45,10 @@ class TestCodeAnalysisTool:
     def test_get_class_info(self):
         get_class_info = GetClassInfo()
         response = get_class_info.execute(
-            GetClassInfoRequest(class_name="UpdateExamples"),
+            GetClassInfoRequest(class_name="AppsExamples"),
             metadata={"dir_to_index_path": self.repo_path},
         )
-        assert "UpdateExamples" in str(response.result)
+        assert "AppsExamples" in str(response.result)
         assert "apps.py" in str(response.result)
 
         response = get_class_info.execute(
@@ -60,10 +60,10 @@ class TestCodeAnalysisTool:
     def test_get_method_signature(self):
         get_method_signature = GetMethodSignature()
         response = get_method_signature.execute(
-            GetMethodSignatureRequest(method_name="_update_apps"),
+            GetMethodSignatureRequest(method_name="_update"),
             metadata={"dir_to_index_path": self.repo_path},
         )
-        assert "_update_apps" in str(response.result)
+        assert "_update" in str(response.result)
         assert "apps.py" in str(response.result)
         assert "Not a member of any class" in str(response.result)
 
@@ -96,11 +96,11 @@ class TestCodeAnalysisTool:
     def test_get_method_body(self):
         get_method_body = GetMethodBody()
         response = get_method_body.execute(
-            GetMethodBodyRequest(method_name="_update_apps"),
+            GetMethodBodyRequest(method_name="_update"),
             metadata={"dir_to_index_path": self.repo_path},
         )
         assert "```python" in str(response.result)
-        assert "_update_apps" in str(response.result)
+        assert "_update" in str(response.result)
 
         response = get_method_body.execute(
             GetMethodBodyRequest(

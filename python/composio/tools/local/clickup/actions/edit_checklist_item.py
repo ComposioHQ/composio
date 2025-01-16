@@ -18,22 +18,22 @@ class EditChecklistItemRequest(BaseModel):
         alias="checklist_item_id",
         description="e491-47f5-9fd8-d1dc4cedcc6f (uuid)",
     )
-    name: str = Field(
+    name: t.Optional[str] = Field(
         default=None,
         alias="name",
         description="Name",
     )
-    assignee: str = Field(
+    assignee: t.Optional[str] = Field(
         default=None,
         alias="assignee",
         description="Assignee",
     )
-    resolved: bool = Field(
+    resolved: t.Optional[bool] = Field(
         default=None,
         alias="resolved",
         description="Resolved",
     )
-    parent: str = Field(
+    parent: t.Optional[str] = Field(
         default=None,
         alias="parent",
         description=(

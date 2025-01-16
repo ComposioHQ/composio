@@ -1,7 +1,6 @@
 ---
 title: "Build Tools with Auth"
 sidebarTitle: "Build Tools with Auth"
-icon: "toolbox"
 description: "Create custom actions that leverage existing tool authentication to extend functionality."
 ---
 
@@ -11,7 +10,29 @@ Custom Actions are powerful building blocks that enable you to create custom fun
 
 ## Creating a Custom Action with Authentication
 
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/tVfm90v5_sM?si=4nk5sOBwhUdx_HtT"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen
+></iframe>
+
+
 <Steps>
+<Step title="Install Dependencies">
+<CodeGroup>
+```bash Python
+pip install composio_openai openai
+```
+
+```bash JavaScript
+npm install composio-core openai
+```
+</CodeGroup>
+</Step>
 <Step title="Import necessary modules & initialize them">
 
 <CodeGroup>
@@ -23,19 +44,28 @@ from openai import OpenAI
 openai_client = OpenAI()
 toolset = ComposioToolSet()
 ```
-```javascript Javascript
-import { OpenAIToolSet } from "composio-core";
+```javascript JavaScript
 import { OpenAI } from "openai";
+import { OpenAIToolSet } from "composio-core";
 import { z } from "zod";
 
 const openai_client = new OpenAI();
-const toolset = new OpenAIToolSet({});
+const openAIToolset = new OpenAIToolSet();
 ```
 </CodeGroup>
 </Step>
 
 <Step title="Creating a custom action">
-Below is an example of creating a custom action called `list_repositories` that integrates with the `github` tool. This action demonstrates how to list all the repositories for a given user or organization.
+Below are examples of creating a custom action called `list_repositories` (Python) & `star_repo` (JavaScript) that integrates with the `github` tool.
+
+You need to add the action, input parameters & return content description, this is what the LLM will use to understand the action.
+
+The `execute_request/executeRequest` method is used to make API calls, it accepts the following arguments:
+- `endpoint`: Endpoint URL. The base URL of the API will be prepended to this. You can find it in your connection's **Connection Info** section
+- `method`: HTTP method to use
+- `body`: Request body to pass to the API
+- `parameters`: Custom Authentication Parameters
+- `connection_id`: ID of the connected account
 
 <Note>
 Since `github` is a registered tool in Composio, the authentication credentials are automatically injected into your custom action!
@@ -61,22 +91,22 @@ def list_repositories(
     ]
 ```
 
-```javascript Javascript
-await toolSet.createAction({
-    actionName: "my_custom_action",
-    toolName: "$app_name$",
-    description:
-        "my custom action is amazing. This description will tell LLMs about it",
+```javascript JavaScript
+const action = await openAIToolset.createAction({
+    actionName: "star_repo",
+    toolName: "github",
+    description: "Stars a repository on GitHub",
     inputParams: z.object({
-        param1: z.string().describe("This is a required string parameter"),
-        param2: z.string().describe("This is a required string parameter"),
+        owner: z.string().describe("The owner of the repository"),
+        repo: z.string().describe("The name of the repository"),
     }),
-    callback: async (inputParams, executeRequest) => {
+    callback: async (inputParams, authCredentials, executeRequest) => {
         try {
             const res = await executeRequest({
-                endpoint: `/user/starred/${inputParams.param1}/${inputParams.param2}`,
+                endpoint: `/user/starred/${inputParams.owner}/${inputParams.repo}`,
                 method: "PUT",
                 parameters: [],
+                body: {}
             });
             return res;
         } catch (e) {
@@ -84,13 +114,13 @@ await toolSet.createAction({
             return {};
         }
     },
-});
+})
 ```
 </CodeGroup>
 
 </Step>
 <Step title="Executing the Custom Action">
-Executing the custom action using LLM
+Executing the custom action using LLM. Learn how to execute the custom action without LLM [here](/patterns/tools/use-tools/action-guide-without-agents#how-to-execute-custom-actions-directly).
 <CodeGroup>
 ```python Python
 tools = toolset.get_tools(actions=[list_repositories])
@@ -112,11 +142,11 @@ print(result)
 ```
 
 ```javascript JavaScript
-const tools = await toolSet.getTools({
-    actions: ["my_custom_action"]
+const tools = await openAIToolset.getTools({
+    actions: ["star_repo"]
 });
 
-const task = "<task>";
+const task = "Star the repository composioHQ/composio";
 
 const response = await openai_client.chat.completions.create({
     model: "gpt-4o-mini",
@@ -128,12 +158,81 @@ const response = await openai_client.chat.completions.create({
     tool_choice: "auto",
 });
 
-const result = await toolSet.handleToolCall(response);
+const result = await openAIToolset.handleToolCall(response, "default");
 console.log(result);
 ```
 </CodeGroup>
 </Step>
 </Steps>
+
+
+### How to Use Connection Parameters of an Account?
+Connection Parameters of an account are available in the `connected_account` parameter of the custom action
+<CodeGroup>
+```python Python {5,13}
+@action(toolname="github")
+def list_repositories(
+    owner: str,
+    execute_request: t.Callable,
+    connected_account: ConnectedAccountModel
+) -> list[str]:
+    """
+    List repositories for a user.
+
+    :param owner: Name of the owner.
+    :return repositories: List of repositories for given user.
+    """
+    print(connected_account.connectionParams)
+    return [
+        # Custom Action Logic
+    ]
+```
+```javascript JavaScript {9,10}
+const action = await openAIToolset.createAction({
+  actionName: "star_repo",
+  toolName: "github",
+  description: "Stars a repository on GitHub",
+  inputParams: z.object({
+    owner: z.string().describe("The owner of the repository"),
+    repo: z.string().describe("The name of the repository"),
+  }),
+  callback: async (inputParams, authCredentials, executeRequest) => {
+    console.log(authCredentials);
+  },
+})
+```
+</CodeGroup>
+Below is an example of the connection parameters for a GitHub account:
+<CodeGroup>
+```bash Python
+scope='********'
+base_url='https://api.github.com'
+client_id='********'
+token_type='********'
+access_token='gho_Y3rMb*************'
+client_secret='********'
+consumer_id=None
+consumer_secret=None
+headers={
+  'Authorization': 'Bearer gho_Y***************',
+  'x-request-id': '80ce421*********************'
+}
+queryParams={}
+```
+```javascript JavaScript
+{
+  headers: {
+    Authorization: 'Bearer aDVVU0k0*************',
+      'x-request-id': '9dcc107d-0d5b-4c17-a915-b2519d477dc1'
+  },
+  queryParams: { },
+  baseUrl: 'https://api.x.com'
+}
+[
+  '{"data":{},"error":"Failed to execute action","successfull":false,"successful":false}'
+]
+```
+</CodeGroup>
 
 ### Why Use Custom Actions?
 

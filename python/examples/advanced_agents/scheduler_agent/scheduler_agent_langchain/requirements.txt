@@ -1,3 +1,5 @@
 composio-langchain
 langchain
 langchain-openai
+python-dotenv
+agentops

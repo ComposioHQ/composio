@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeAll } from "@jest/globals";
+import { beforeAll, describe, expect, it } from "@jest/globals";
 import { z } from "zod";
 import { getTestConfig } from "../../config/getTestConfig";
+import { ActionExecuteResponse } from "../sdk/models/actions";
 import { LangchainToolSet } from "./langchain";
 
 describe("Apps class tests", () => {
@@ -37,40 +38,49 @@ describe("Apps class tests", () => {
   });
 
   it("Should create custom action to star a repository", async () => {
-    const action = await langchainToolSet.createAction({
-      actionName: "starRepositoryPlxityCustom12345",
+    await langchainToolSet.createAction({
+      actionName: "starRepositoryCustomAction",
       toolName: "github",
       description: "This action stars a repository",
       inputParams: z.object({
         owner: z.string(),
         repo: z.string(),
       }),
-      callback: async (inputParams, authCredentials, executeRequest) => {
-        try {
-          const res = await executeRequest({
-              endpoint: `/user/starred/${inputParams.owner}/${inputParams.repo}`,
-              method: "PUT",
-              parameters: [],
-          });
-          return res;
-        } catch (e) {
-          console.error(e);
-          return {};
-        }
+      callback: async (
+        inputParams,
+        _authCredentials,
+        executeRequest
+      ): Promise<ActionExecuteResponse> => {
+        const res = await executeRequest({
+          endpoint: `/user/starred/${inputParams.owner}/${inputParams.repo}`,
+          method: "PUT",
+          parameters: [],
+        });
+        return res;
       },
     });
 
-    const actionOuput = await langchainToolSet.executeAction(
-      "starRepositoryPlxityCustom12345",
-      {
+    const tools = await langchainToolSet.getTools({
+      actions: ["starRepositoryCustomAction"],
+    });
+
+    await expect(tools.length).toBe(1);
+
+    const connectedAccount = await langchainToolSet.connectedAccounts.list({
+      appNames: "github",
+      showActiveOnly: true,
+    });
+
+    const actionOuput = await langchainToolSet.executeAction({
+      action: "starRepositoryCustomAction",
+      params: {
         owner: "plxity",
         repo: "achievementsof.life",
       },
-      "default",
-      "",
-      "db3c8d95-73e9-474e-8ae8-edfbdaab98b1"
-    );
+      entityId: "default",
+      connectedAccountId: connectedAccount.items[0].id,
+    });
 
-    expect(actionOuput).toHaveProperty("successfull", true);
+    expect(actionOuput).toHaveProperty("successful", true);
   });
 });

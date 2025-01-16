@@ -8,7 +8,7 @@ export function getArgs(args: string[] = []) {
       acc[key] = value[index];
       return acc;
     },
-    {} as Record<string, string | undefined>,
+    {} as Record<string, string | undefined>
   );
 }
 

@@ -1,7 +1,6 @@
 ---
 title: "How To Configure Connections?"
 sidebarTitle: "Configuring Connection"
-icon: "sliders"
 description: "Learn how to configure connections for your users"
 ---
 
@@ -45,10 +44,13 @@ You can create an integration using the SDK by following the steps below:
 from composio import ComposioToolSet
 
 toolset = ComposioToolSet()
-entity = toolset.get_entity("Jessica")
+entity = toolset.get_entity("default")
 ```
 ```javascript JavaScript
-Coming Soon
+import { Composio } from "composio-core";
+
+const toolset = new Composio();
+const entity = toolset.getEntity("default");
 ```
 </CodeGroup>
 </Step>
@@ -82,7 +84,25 @@ integration = entity.client.integrations.create(
 
 ```
 ```javascript JavaScript
-Coming Soon
+// Using Composio's default OAuth flow
+const integration = await entity.integrations.create({
+    name: "GITHUB_Integration_Demo",
+    appId: "01e22f33-dc3f-46ae-b58d-050e4d2d1909",
+    authScheme: "OAUTH2",
+    useComposioAuth: true,
+});
+
+// Using your own OAuth flow
+const integration = await entity.integrations.create({
+    name: "GITHUB_Integration_Demo",
+    appId: "01e22f33-dc3f-46ae-b58d-050e4d2d1909",
+    authScheme: "OAUTH2",
+    useComposioAuth: false,
+    authConfig: {
+        client_id: "",
+        client_secret: ""
+    }
+});
 ```
 </CodeGroup>
 </Step>
@@ -95,7 +115,12 @@ request = entity.initiate_connection("GITHUB", redirect_url="https://yourwebsite
 print(request.redirectUrl)
 ```
 ```javascript JavaScript
-Coming Soon
+const request = await entity.initiateConnection({
+    appName: "github",
+    redirectUrl: "https://composio.dev",
+    integrationId: integration.id
+});
+console.log(request.redirectUrl)
 ```
 </CodeGroup>
 </Step>
@@ -140,20 +165,39 @@ console.log(await openai_client.client.integrations.get({integrationId:"<integra
 
 ### Creating a new connection using an Integration
 
-You can follow the same steps as mentioned in [Creating a new connection](/patterns/Auth/connected_account) and use integration object.
+You can follow the same steps as mentioned in [Creating a new connection](/patterns/Auth/connected_account) and use integration object (Python) or integrationId (JavaScript).
 <CodeGroup>
 ```python Python
 from composio import ComposioToolSet
 
-toolset = ComposioToolSet(api_key=os.getenv("COMPOSIO_API_KEY"), entity_id="Jessica")
+toolset = ComposioToolSet(entity_id="default")
 
 entity = toolset.get_entity()
 
 integration = entity.client.integrations.get_by_id("integration_id...")
-connection_request = entity.initiate_connection(app_name="TWITTER", redirect_url="https://yourwebsite.com/connection/success", integration=integration)
+connection_request = entity.initiate_connection(
+    app_name="TWITTER",
+    redirect_url="https://yourwebsite.com/connection/success",
+    integration=integration,
+)
 
 # If the connection method is OAuth, redirect the user to the URL below
 print(connection_request.redirectUrl)
+```
+
+```javascript JavaScript
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet();
+
+const connectionRequest = await toolset.client.connectedAccounts.initiate({
+  appName: "gmail",
+  redirect_url: "https://yourwebsite.com/connection/success",
+  integrationId: integration.id,
+  entityId:"default"
+});
+
+console.log(connectionRequest.redirectUrl);
 ```
 </CodeGroup>
 
@@ -171,3 +215,34 @@ When users connect using this integration, they'll see your app's name and logo 
 </Info>
 
 <img width="500" height="500" src="../../media/images/custom-oauth.png" />
+
+### Adding custom redirect URL
+To use your own domain for OAuth callbacks, set up a 301 redirect from your domain to Composio's default <Tooltip tip="https://backend.composio.dev/api/v1/auth-apps/add">redirect URL</Tooltip>
+. It would look something like this: <br />
+`yourdomain.com/redirect` → `https://backend.composio.dev/api/v1/auth-apps/add`
+
+<iframe
+  width="720" 
+  height="405"
+  src="https://www.youtube.com/embed/PYJ3JQGUG6w?si=v482zmxhMY4TGhNG"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen
+></iframe>
+
+<Steps>
+<Step title="Copy the redirect URL">
+```bash Redirect URL
+https://backend.composio.dev/api/v1/auth-apps/add
+```
+</Step>
+<Step title="Go to your DNS provider and set up a 301 redirect">
+Head over to your DNS provider and set up a 301 redirect from your domain to Composio's default redirect URL, here are doc references for some of the popular DNS providers: [Cloudflare](https://developers.cloudflare.com/rules/url-forwarding/single-redirects/create-dashboard/), [GoDaddy](https://www.godaddy.com/en-in/help/forward-my-godaddy-domain-12123), [NameCheap](https://www.namecheap.com/support/knowledgebase/article.aspx/385/2237/how-to-set-up-a-url-redirect-for-a-domain/)
+<Info>Please make sure that you enable the Preserve query string option when setting up the redirect. If you’re using your own custom application code for redirect, please remember to pass the exact query parameters and headers</Info>
+</Step>
+<Step title="Creating an integration">
+Head over to [dashboard](https://app.composio.dev/), select the app you want to integrate and enable **Use your own Developer App** toggle, enter your OAuth credentials and click on the edit button and add your own redirect URL (yourdomain.com/redirect). Click on **Create Integration** and you're done. 
+<img src="media/newIntegrationPage.jpg" />
+</Step>
+</Steps>

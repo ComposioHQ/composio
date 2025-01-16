@@ -1,179 +1,203 @@
-export const ERROR = {
-    BACKEND: {
-        NOT_FOUND: "BACKEND::NOT_FOUND", 
-        RATE_LIMIT: "BACKEND::RATE_LIMIT",
-        BAD_REQUEST: "BACKEND::BAD_REQUEST",
-        UNAUTHORIZED: "BACKEND::UNAUTHORIZED",
-        SERVER_ERROR: "BACKEND::SERVER_ERROR",
-        UNKNOWN: "BACKEND::UNKNOWN"
-    },
-    COMMON: {
-        API_KEY_UNAVAILABLE: "COMMON::API_KEY_INVALID",
-        UNKNOWN: "SDK::UNKNOWN"
-    }
-}
+import { AxiosError } from "axios";
+import { ZodError } from "zod";
+import { ComposioError } from "./errors/src/composioError";
+import {
+  API_TO_SDK_ERROR_CODE,
+  BASE_ERROR_CODE_INFO,
+  COMPOSIO_SDK_ERROR_CODES,
+} from "./errors/src/constants";
+import {
+  ErrorResponseData,
+  generateMetadataFromAxiosError,
+  getAPIErrorDetails,
+} from "./errors/src/formatter";
 
-export const PREDEFINED_ERROR_REGISTRY = {
-    [ERROR.BACKEND.NOT_FOUND]: {
-        message: "🔍 We searched everywhere but couldn't find what you're looking for.",
-        description: "The requested resource is missing.",
-        possibleFix: "Verify the URL or resource identifier."
-    },
-    [ERROR.BACKEND.BAD_REQUEST]: {
-        message: "🚫 Bad Request. The request was malformed or incorrect.",
-        description: null,
-        possibleFix: "Please check your request format and parameters."
-    },
-    [ERROR.BACKEND.UNAUTHORIZED]: {
-        message: "🔑 Access Denied.",
-        description: "You do not have the necessary credentials.",
-        possibleFix: "Ensure your API key is correct and has the required permissions."
-    },
-    [ERROR.BACKEND.SERVER_ERROR]: {
-        message: "💥 Oops! Something went wrong on our end.",
-        description: null,
-        possibleFix: "Please try again later. If the issue persists, contact support."
-    },
-    [ERROR.BACKEND.RATE_LIMIT]: {
-        message: "⏱️ Slow down! You're moving too fast.",
-        description: "You have exceeded the rate limit for requests.",
-        possibleFix: "Please wait a bit before trying your request again."
-    },
-    [ERROR.COMMON.API_KEY_UNAVAILABLE]: {
-        message: "🔑 API Key Missing or Invalid.",
-        description: "The API key provided is missing or incorrect.",
-        possibleFix: "Ensure that your API key is passed to Client or set in your environment variables."
-    },
-    UNKNOWN: {
-        message: "❓ An unknown error occurred.",
-        description: null,
-        possibleFix: "Contact our support team with the error details for further assistance."
-    },
-    [ERROR.BACKEND.UNKNOWN]: {
-        message: "❓ An unknown error occurred.",
-        description: null,
-        possibleFix: "Contact our support team with the error details for further assistance."
-    }
-}
-class ComposioError extends Error {
-    constructor(public errCode: string, public message: string, public description?: string, public possibleFix?: string,originalError?:any) {
-        super(message);
-        this.name = 'ComposioError';
-        this.errCode = errCode;
-        this.description = description;
-        this.possibleFix = possibleFix;
-
-        let detailedMessage = `Error Code: ${errCode}\nMessage: ${message}\n`;
-     
-        if (description) detailedMessage += `Description: ${description}\n`;
-        if (possibleFix) detailedMessage += `Suggested Fix: ${possibleFix}\n`;
-
-        Object.defineProperty(this, 'errCode', { enumerable: false });
-        Object.defineProperty(this, 'message', { enumerable: false });
-        Object.defineProperty(this, 'description', { enumerable: false });
-        Object.defineProperty(this, 'possibleFix', { enumerable: false });
-
-        this.stack = `${this.name}:${detailedMessage}Stack Trace: \n ${ originalError?.stack}`;
-    }
-}
-
-
-// Composio Error Generator
 export class CEG {
-    static handleError(axiosError: any,) {
-         let errorDetails: {
-            message: string;    
-            description: string | null;
-            possibleFix: string;
-         } = PREDEFINED_ERROR_REGISTRY.UNKNOWN as any;
+  static handleAllError(error: unknown, shouldThrow: boolean = false) {
+    if (error instanceof ComposioError) {
+      if (shouldThrow) {
+        throw error;
+      }
+      return error;
+    }
 
-        let errorKey = ERROR.COMMON.UNKNOWN;
-        
-        if (axiosError.response) {
-            const { status } = axiosError.response;
-        
-            switch (status) {
-                case 400:
-                    errorKey = ERROR.BACKEND.BAD_REQUEST;
-                    break;
-                case 404:
-                    errorKey = ERROR.BACKEND.NOT_FOUND;
-                    break;
-                case 429:
-                    errorKey = ERROR.BACKEND.RATE_LIMIT;
-                    break;
-                case 401:
-                    errorKey = ERROR.BACKEND.UNAUTHORIZED;
-                    break;
-                case 500:
-                    errorKey = ERROR.BACKEND.SERVER_ERROR;
-                    break;
-                default:
-                    errorKey = ERROR.BACKEND.UNKNOWN;
-                    break;
-            }
-            if (errorKey !== ERROR.BACKEND.UNKNOWN) {
-                errorDetails = PREDEFINED_ERROR_REGISTRY[errorKey];
-            }if(errorKey === ERROR.BACKEND.BAD_REQUEST){    
-                const axiosErrorMessage = axiosError.response.data.message;
-                const errors = axiosError.response.data.errors;
-                errorDetails = {
-                    ...PREDEFINED_ERROR_REGISTRY.UNKNOWN,
-                    description: `${axiosErrorMessage} ${errors.map((error:any) => JSON.stringify(error)).join(", ")}`
-                }
-            }
-            else{
-                const description = axiosError.response.data.message || axiosError.response.data.error || axiosError.message;
-                errorDetails = {
-                    message: axiosError.message,
-                    description: description,
-                    possibleFix: "Please check the network connection, request parameters, and ensure the API endpoint is correct."
-                }
-            }
+    if (!(error instanceof Error)) {
+      const error = new Error("Passed error is not an instance of Error");
+      if (shouldThrow) {
+        throw error;
+      }
+      return error;
+    }
+
+    if (error instanceof ZodError) {
+      const zodError = this.returnZodError(error);
+      if (shouldThrow) {
+        throw zodError;
+      }
+      return zodError;
+    }
+
+    const isAxiosError = (error as AxiosError).isAxiosError;
+
+    if (!isAxiosError) {
+      const customError = this.getCustomError(
+        COMPOSIO_SDK_ERROR_CODES.COMMON.UNKNOWN,
+        {
+          message: error.message,
+          description: "",
+          possibleFix: "Please check error message and stack trace",
+          originalError: error,
+          metadata: {},
         }
-
-
-        let axiosDataMessage = axiosError.response?.data?.message || axiosError.message;
-        const status = axiosError.response?.status || axiosError.status || axiosError.code || 'unknown';
-        const request_id = axiosError.response?.headers?.["x-request-id"];
-        const urlAndStatus = axiosError.config?.url ? ` got 📊 ${status} response from URL🔗: ${axiosError.config.url}, request_id: ${request_id}` : '';
-
-        const errorDescription = `❌ ${ifObjectStringify(errorDetails.description || axiosDataMessage) || "No additional information available."} ${urlAndStatus}`;
-        throw new ComposioError(
-            errorKey as string,
-            errorDetails.message,
-            errorDescription,
-            errorDetails.possibleFix || "Please check the network connection and the request parameters.",
-            axiosError
+      );
+      if (shouldThrow) {
+        throw customError;
+      }
+      return customError;
+    } else {
+      const isResponseNotPresent = !("response" in error);
+      if (isResponseNotPresent) {
+        const nonResponseError = this.handleNonResponseAxiosError(
+          error as AxiosError
         );
+        if (shouldThrow) {
+          throw nonResponseError;
+        }
+        return nonResponseError;
+      }
+      const apiError = this.throwAPIError(error as AxiosError);
+      if (shouldThrow) {
+        throw apiError;
+      }
+      return apiError;
+    }
+  }
+
+  private static handleNonResponseAxiosError(error: AxiosError) {
+    const fullUrl = (error.config?.baseURL || "") + (error.config?.url || "");
+    const metadata = generateMetadataFromAxiosError(error);
+
+    if (error.code === "ECONNREFUSED") {
+      throw new ComposioError(
+        COMPOSIO_SDK_ERROR_CODES.COMMON.BASE_URL_NOT_REACHABLE,
+        `ECONNREFUSED for ${fullUrl}`,
+        "",
+        "Make sure:\n1. The base URL is correct and is accessible\n2. Your network connection is stable\n3. There are no firewall rules blocking the connection",
+        metadata,
+        error
+      );
     }
 
-    static throwCustomError(messageCode: string, {
-        message,
-        type,
-        subtype,
-        description,
-        possibleFix 
+    if (error.code === "ETIMEDOUT") {
+      throw new ComposioError(
+        COMPOSIO_SDK_ERROR_CODES.COMMON.REQUEST_TIMEOUT,
+        `ECONNABORTED for ${fullUrl}`,
+        `Request to ${fullUrl} timed out after the configured timeout period. This could be due to slow network conditions, server performance issues, or the request being too large. Error code: ETIMEDOUT`,
+        "Try:\n1. Checking your network speed and stability\n2. Increasing the request timeout setting if needed\n3. Breaking up large requests into smaller chunks\n4. Retrying the request when network conditions improve\n5. Contact tech@composio.dev if the issue persists",
+        metadata,
+        error
+      );
+    }
+
+    if (error.code === "ECONNABORTED") {
+      throw new ComposioError(
+        COMPOSIO_SDK_ERROR_CODES.COMMON.REQUEST_ABORTED,
+        error.message,
+        "The request was aborted due to a timeout or other network-related issues. This could be due to network instability, server issues, or the request being too large. Error code: ECONNABORTED",
+        "Try:\n1. Checking your network speed and stability\n2. Increasing the request timeout setting if needed\n3. Breaking up large requests into smaller chunks\n4. Retrying the request when network conditions improve\n5. Contact tech@composio.dev if the issue persists",
+        metadata,
+        error
+      );
+    }
+
+    throw new ComposioError(
+      COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_UNREACHABLE,
+      error.message ||
+        "Server is unreachable. Please contact tech@composio.dev with the error details.",
+      "Server is unreachable. Please contact tech@composio.dev with the error details.",
+      "Please contact tech@composio.dev with the error details.",
+      metadata,
+      error
+    );
+  }
+
+  static throwAPIError(error: AxiosError) {
+    const statusCode = error?.response?.status || null;
+    const errorCode = statusCode
+      ? API_TO_SDK_ERROR_CODE[statusCode] ||
+        COMPOSIO_SDK_ERROR_CODES.BACKEND.UNKNOWN
+      : COMPOSIO_SDK_ERROR_CODES.BACKEND.UNKNOWN;
+
+    const errorDetails = getAPIErrorDetails(
+      error as AxiosError<ErrorResponseData>
+    );
+
+    const metadata = generateMetadataFromAxiosError(error);
+    throw new ComposioError(
+      errorCode,
+      errorDetails.message,
+      errorDetails.description,
+      errorDetails.possibleFix,
+      metadata,
+      error
+    );
+  }
+
+  static returnZodError(error: ZodError) {
+    const errorCode = COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED;
+    const errorMessage = error.message;
+    const errorDescription = "The parameters passed are invalid";
+    const possibleFix = "Please check error message for more details";
+    const metadata = {
+      issues: error.issues,
+    };
+
+    return new ComposioError(
+      errorCode,
+      errorMessage,
+      errorDescription,
+      possibleFix,
+      metadata,
+      error
+    );
+  }
+
+  static getCustomError(
+    messageCode: string,
+    {
+      message,
+      type,
+      subtype,
+      description,
+      possibleFix,
+      originalError,
+      metadata,
     }: {
-
-        type?: string;
-        subtype?: string;
-        message?: string;
-        description?: string;
-        possibleFix?: string;
-    }): never {
-    
-        const finalErrorCode = !!messageCode ? messageCode : `${type}::${subtype}`;
-        const errorDetails = PREDEFINED_ERROR_REGISTRY[finalErrorCode] || PREDEFINED_ERROR_REGISTRY.UNKNOWN;
-      
-        const finalMessage = message || errorDetails.message;
-        const finalDescription = description || errorDetails.description || undefined;
-        const finalPossibleFix = possibleFix || errorDetails.possibleFix;
-
-        throw new ComposioError(finalErrorCode,  finalMessage, finalDescription, finalPossibleFix);
+      type?: string;
+      subtype?: string;
+      message: string;
+      description: string;
+      possibleFix?: string;
+      originalError?: unknown;
+      metadata?: Record<string, unknown>;
     }
-}
+  ): never {
+    const finalErrorCode = !!messageCode ? messageCode : `${type}::${subtype}`;
+    const errorDetails =
+      BASE_ERROR_CODE_INFO[finalErrorCode] || BASE_ERROR_CODE_INFO.UNKNOWN;
 
-export const ifObjectStringify = (obj: any) => {
-    return typeof obj === 'object' ? JSON.stringify(obj) : obj;
+    const finalMessage = message || errorDetails.message || "";
+    const finalDescription =
+      description || errorDetails.description || undefined;
+    const finalPossibleFix = possibleFix || errorDetails.possibleFix || "";
+
+    throw new ComposioError(
+      messageCode,
+      finalMessage,
+      finalDescription,
+      finalPossibleFix,
+      metadata,
+      originalError
+    );
+  }
 }

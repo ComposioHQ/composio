@@ -1,7 +1,6 @@
 ---
 title: "Using Composio With Phidata"
 sidebarTitle: "Phidata"
-icon: "link"
 description: "Integrate Composio with Phidata agents to let them seamlessly interact with external apps"
 ---
 
@@ -17,10 +16,27 @@ pip install composio-phidata
 <Step title="Import Libraries & Initialize ComposioToolSet & LLM">
 ```python Python
 from phi.assistant import Assistant
-from composio_phidata import Action, ComposioToolSet
+from composio_phidata import Action, App, ComposioToolSet
 
 toolset = ComposioToolSet()
 ```
+</Step>
+
+<Step title="Connect Your GitHub Account">
+<Info>You need to have an active GitHub Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
+<CodeGroup>
+```shell CLI
+composio login 
+composio add github
+```
+```python Python
+request = toolset.initiate_connection(app=App.GITHUB)
+print(f"Open this URL to authenticate: {request.redirectUrl}")
+```
+</CodeGroup>
+<Tip>
+Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
+</Tip>
 </Step>
 
 <Step title="Get All Github Tools">

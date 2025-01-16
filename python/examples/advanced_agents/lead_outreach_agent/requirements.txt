@@ -1,2 +1,0 @@
-composio-llamaindex
-gradio

@@ -1,5 +1,6 @@
 # Import necessary libraries
 import os
+from re import T
 from dotenv import load_dotenv
 from composio_crewai import Action, App, ComposioToolSet
 from crewai import Agent, Crew, Task
@@ -41,7 +42,7 @@ crewai_agent = Agent(
     goal="Assist users by answering questions and performing tasks using integrated tools",
     backstory=("As an AI assistant, I am equipped with a suite of tools to help users"),
     verbose=True,
-    tools=composio_tools,
+    tools=composio_tools, # type: ignore
     llm=llm,
 )
 
@@ -51,7 +52,7 @@ task = Task(
     expected_output="Confirmation of the completed action or a well-informed response",
 )
 
-crew = Crew(agents=[crewai_agent], tasks=[task], verbose=2)
+crew = Crew(agents=[crewai_agent], tasks=[task], verbose=True)
 
 
 # Callback function for handling new messages in a Slack channel
@@ -63,7 +64,7 @@ def callback_new_message(event: TriggerEventData) -> None:
 
     # Ignore messages from the bot itself to prevent self-responses
     if user_id == BOT_USER_ID:
-        return "Bot ignored"
+        return "Bot ignored" # type: ignore
 
     message = payload.get("text", "")
 
@@ -72,7 +73,7 @@ def callback_new_message(event: TriggerEventData) -> None:
         print(f"Bot not tagged, ignoring message - {message} - {BOT_USER_ID}")
         return (
             f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}"
-        )
+        ) # type: ignore
 
     # Extract channel and timestamp information from the event payload
     channel_id = payload.get("channel", "")
@@ -91,4 +92,4 @@ def callback_new_message(event: TriggerEventData) -> None:
     )
 
 
-listener.listen()
+listener.wait_forever()

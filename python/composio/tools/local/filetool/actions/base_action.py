@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import Callable, Dict, TypeVar
+from typing import Callable, Dict, Optional, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -13,8 +13,8 @@ class BaseFileRequest(BaseModel):
 
 
 class BaseFileResponse(BaseModel):
-    error: str = Field(
-        default="",
+    error: Optional[str] = Field(
+        default=None,
         description="Error message if the action failed",
     )
     current_working_directory: str = Field(

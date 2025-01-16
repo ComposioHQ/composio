@@ -5,6 +5,7 @@ OpenAI tool spec.
 import json
 import time
 import typing as t
+import warnings
 
 import typing_extensions as te
 from openai import Client
@@ -16,17 +17,19 @@ from openai.types.chat.chat_completion_message_tool_call import (
 )
 from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 
-from composio import Action, ActionType, AppType, TagType
+from composio import ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import OpenAISchema, SchemaType
 from composio.tools.toolset import ProcessorsType
+from composio.utils import help_msg
 
 
 class ComposioToolSet(
     BaseComposioToolSet,
     runtime="openai",
     description_char_limit=1024,
+    action_name_char_limit=64,
 ):
     """
     Composio toolset for OpenAI framework.
@@ -85,7 +88,7 @@ class ComposioToolSet(
             entity_id = self.entity_id
         return entity_id
 
-    @te.deprecated("Use `ComposioToolSet.get_tools` instead")
+    @te.deprecated("Use `ComposioToolSet.get_tools` instead.\n", category=None)
     def get_actions(
         self, actions: t.Sequence[ActionType]
     ) -> t.List[ChatCompletionToolParam]:
@@ -95,6 +98,11 @@ class ComposioToolSet(
         :param actions: List of actions to wrap
         :return: Composio tools wrapped as `ChatCompletionToolParam` objects
         """
+        warnings.warn(
+            "Use `ComposioToolSet.get_tools` instead.\n" + help_msg(),
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self.get_tools(actions=actions)
 
     def get_tools(
@@ -134,6 +142,7 @@ class ComposioToolSet(
                 apps=apps,
                 tags=tags,
                 check_connected_accounts=check_connected_accounts,
+                _populate_requested=True,
             )
         ]
 
@@ -176,9 +185,10 @@ class ComposioToolSet(
         :return: Object containing output data from the tool call.
         """
         return self.execute_action(
-            action=Action(value=tool_call.function.name),
+            action=tool_call.function.name,
             params=json.loads(tool_call.function.arguments),
             entity_id=entity_id or self.entity_id,
+            _check_requested_actions=True,
         )
 
     def handle_tool_calls(

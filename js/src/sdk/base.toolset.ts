@@ -1,299 +1,339 @@
+import { z } from "zod";
 import { Composio } from "../sdk";
-import { ExecEnv, WorkspaceFactory } from "../env/factory";
-import { COMPOSIO_BASE_URL } from "./client/core/OpenAPI";
-import { RemoteWorkspace } from "../env/base";
-import type { IPythonActionDetails, Optional, Sequence } from "./types";
+import {
+  RawActionData,
+  TPostProcessor,
+  TPreProcessor,
+  TSchemaProcessor,
+  ZExecuteActionParams,
+  ZToolSchemaFilter,
+} from "../types/base_toolset";
+import type { Optional, Sequence } from "../types/util";
 import { getEnvVariable } from "../utils/shared";
-import { WorkspaceConfig } from "../env/config";
-import { Workspace } from "../env";
-import logger from "../utils/logger";
-import { CEG } from '../sdk/utils/error';
-import { ExecuteActionResDTO } from "./client/types.gen";
-import { saveFile } from "./utils/fileUtils";
-import { convertReqParams, converReqParamForActionExecution } from "./utils";
-import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
+import {
+  ActionRegistry,
+  CreateActionOptions,
+  Parameters,
+} from "./actionRegistry";
+import { ActionExecutionResDto } from "./client/types.gen";
+import { ActionExecuteResponse, Actions } from "./models/actions";
+import { ActiveTriggers } from "./models/activeTriggers";
+import { Apps } from "./models/apps";
+import { BackendClient } from "./models/backendClient";
+import { ConnectedAccounts } from "./models/connectedAccounts";
+import { Integrations } from "./models/integrations";
+import { Triggers } from "./models/triggers";
 import { getUserDataJson } from "./utils/config";
-import apiClient from '../sdk/client/client';
-import { ActionProxyRequestConfigDTO } from './client';
+import { CEG } from "./utils/error";
+import { COMPOSIO_SDK_ERROR_CODES } from "./utils/errors/src/constants";
+import {
+  fileInputProcessor,
+  fileResponseProcessor,
+  fileSchemaProcessor,
+} from "./utils/processor/file";
 
-type GetListActionsResponse = any;
-
+export type ExecuteActionParams = z.infer<typeof ZExecuteActionParams> & {
+  // @deprecated
+  action?: string;
+  actionName?: string;
+};
 export class ComposioToolSet {
-    client: Composio;
-    apiKey: string;
-    runtime: string | null;
-    entityId: string;
-    workspace: WorkspaceFactory;
-    workspaceEnv: ExecEnv;
+  client: Composio;
+  apiKey: string;
+  runtime: string | null;
+  entityId: string = "default";
 
-    localActions: IPythonActionDetails["data"] | undefined;
-    customActionRegistry: ActionRegistry;
+  backendClient: BackendClient;
+  connectedAccounts: ConnectedAccounts;
+  apps: Apps;
+  actions: Actions;
+  triggers: Triggers;
+  integrations: Integrations;
+  activeTriggers: ActiveTriggers;
 
-    constructor(
-        apiKey: string | null,
-        baseUrl: string | null = COMPOSIO_BASE_URL,
-        runtime: string | null = null,
-        entityId: string = "default",
-        workspaceConfig: WorkspaceConfig = Workspace.Host()
-    ) {
-        const clientApiKey: string | undefined = apiKey || getEnvVariable("COMPOSIO_API_KEY") || getUserDataJson().api_key as string;
-        this.apiKey = clientApiKey;
-        this.client = new Composio(this.apiKey, baseUrl || undefined, runtime as string);
-        this.customActionRegistry = new ActionRegistry(this.client);
-        this.runtime = runtime;
-        this.entityId = entityId;
+  userActionRegistry: ActionRegistry;
 
-        if (!workspaceConfig.config.composioBaseURL) {
-            workspaceConfig.config.composioBaseURL = baseUrl
-        }
-        if (!workspaceConfig.config.composioAPIKey) {
-            workspaceConfig.config.composioAPIKey = apiKey;
-        }
-        this.workspace = new WorkspaceFactory(workspaceConfig.env, workspaceConfig);
-        this.workspaceEnv = workspaceConfig.env;
+  private internalProcessors: {
+    pre: TPreProcessor[];
+    post: TPostProcessor[];
+    schema: TSchemaProcessor[];
+  } = {
+    pre: [fileInputProcessor],
+    post: [fileResponseProcessor],
+    schema: [fileSchemaProcessor],
+  };
 
-        if (typeof process !== 'undefined') {
-            process.on("exit", async () => {
-                await this.workspace.workspace?.teardown();
-            });
-        }
+  private userDefinedProcessors: {
+    pre?: TPreProcessor;
+    post?: TPostProcessor;
+    schema?: TSchemaProcessor;
+  } = {};
 
+  /**
+   * Creates a new instance of ComposioToolSet
+   * @param {Object} config - Configuration object
+   * @param {string|null} config.apiKey - API key for authentication
+   * @param {string|null} config.baseUrl - Base URL for API requests
+   * @param {string|null} config.runtime - Runtime environment
+   * @param {string} config.entityId - Entity ID for operations
+   */
+  constructor({
+    apiKey,
+    baseUrl,
+    runtime,
+    entityId,
+  }: {
+    apiKey?: string | null;
+    baseUrl?: string | null;
+    runtime?: string | null;
+    entityId?: string;
+  } = {}) {
+    const clientApiKey: string | undefined =
+      apiKey ||
+      getEnvVariable("COMPOSIO_API_KEY") ||
+      (getUserDataJson().api_key as string);
+    this.apiKey = clientApiKey;
+    this.client = new Composio({
+      apiKey: this.apiKey,
+      baseUrl: baseUrl || undefined,
+      runtime: runtime as string,
+    });
+
+    this.runtime = runtime || null;
+    this.backendClient = this.client.backendClient;
+    this.connectedAccounts = this.client.connectedAccounts;
+    this.apps = this.client.apps;
+    this.actions = this.client.actions;
+    this.triggers = this.client.triggers;
+    this.integrations = this.client.integrations;
+    this.activeTriggers = this.client.activeTriggers;
+
+    this.userActionRegistry = new ActionRegistry(this.client);
+
+    if (entityId) {
+      this.entityId = entityId;
     }
+  }
 
-    async getExpectedParamsForUser(
-        params: { app?: string; integrationId?: string; entityId?: string; authScheme?: "OAUTH2" | "OAUTH1" | "API_KEY" | "BASIC" | "BEARER_TOKEN" | "BASIC_WITH_JWT" } = {},
-    ) {
-        return this.client.getExpectedParamsForUser(params);
-    }
+  async getActionsSchema(
+    filters: { actions?: Optional<Sequence<string>> } = {},
+    _entityId?: Optional<string>
+  ) {
+    return this.getToolsSchema(
+      {
+        actions: filters.actions || [],
+      },
+      _entityId
+    );
+  }
 
-    async setup() {
-        await this.workspace.new();
+  async getToolsSchema(
+    filters: z.infer<typeof ZToolSchemaFilter>,
+    _entityId?: Optional<string>
+  ): Promise<RawActionData[]> {
+    const parsedFilters = ZToolSchemaFilter.parse(filters);
 
-        if (!this.localActions && this.workspaceEnv !== ExecEnv.HOST) {
-            this.localActions = await (this.workspace.workspace as RemoteWorkspace).getLocalActionsSchema();
-        }
-    }
+    const apps = await this.client.actions.list({
+      apps: parsedFilters.apps?.join(","),
+      tags: parsedFilters.tags?.join(","),
+      useCase: parsedFilters.useCase,
+      actions: parsedFilters.actions?.join(","),
+      usecaseLimit: parsedFilters.useCaseLimit,
+      filterByAvailableApps: parsedFilters.filterByAvailableApps,
+    });
 
-    async getActionsSchema(
-        filters: { actions?: Optional<Sequence<string>> } = {},
-        entityId?: Optional<string>
-    ): Promise<Sequence<NonNullable<GetListActionsResponse["items"]>[0]>> {
-        await this.setup();
-        let actions = (await this.client.actions.list({
-            actions: filters.actions?.join(","),
-            showAll: true
-        })).items;
-        const localActionsMap = new Map<string, NonNullable<GetListActionsResponse["items"]>[0]>();
-        filters.actions?.forEach((action: string) => {
-            const actionData = this.localActions?.find((a: any) => a.name === action);
-            if (actionData) {
-                localActionsMap.set(actionData.name!, actionData);
-            }
+    const customActions = await this.userActionRegistry.getAllActions();
+    const toolsWithCustomActions = customActions.filter((action) => {
+      const { name: actionName } = action || {};
+      return (
+        (!filters.actions ||
+          filters.actions.some(
+            (name) => name.toLowerCase() === actionName?.toLowerCase()
+          )) &&
+        (!filters.tags ||
+          filters.tags.some((tag) => tag.toLowerCase() === "custom"))
+      );
+    });
+
+    const toolsActions = [...(apps?.items || []), ...toolsWithCustomActions];
+
+    const allSchemaProcessor = [
+      ...this.internalProcessors.schema,
+      ...(this.userDefinedProcessors.schema
+        ? [this.userDefinedProcessors.schema]
+        : []),
+    ];
+
+    return toolsActions.map((tool) => {
+      let schema = tool as RawActionData;
+      allSchemaProcessor.forEach((processor) => {
+        schema = processor({
+          actionName: schema?.name,
+          toolSchema: schema,
         });
-        const uniqueLocalActions = Array.from(localActionsMap.values());
-        const _newActions = filters.actions?.map((action: string) => action.toLowerCase());
-        const toolsWithCustomActions = (await this.customActionRegistry.getActions({ actions: _newActions! })).filter((action: any) => {
-            if (_newActions && !_newActions.includes(action.parameters.title.toLowerCase()!)) {
-                return false;
-            }
-            return true;
-        }).map((action: any) => {
-            return action;
-        });
+      });
+      return schema;
+    });
+  }
 
-        const toolsActions = [...actions!, ...uniqueLocalActions, ...toolsWithCustomActions];
+  async createAction<P extends Parameters = z.ZodObject<{}>>(
+    options: CreateActionOptions<P>
+  ) {
+    return this.userActionRegistry.createAction<P>(options);
+  }
 
-        return toolsActions.map((action: any) => {
-            return this.modifyActionForLocalExecution(action);
-        });
-    }
+  private isCustomAction(action: string) {
+    return this.userActionRegistry
+      .getActions({ actions: [action] })
+      .then((actions) => actions.length > 0);
+  }
 
-    async getAuthParams(data: { connectedAccountId: string }) {
-        return this.client.connectedAccounts.getAuthParams({
-            connectedAccountId: data.connectedAccountId
-        })
-    }
+  async getEntity(entityId: string) {
+    return this.client.getEntity(entityId);
+  }
 
-    async getTools(
-        filters: {
-            apps: Sequence<string>;
-            tags?: Optional<Array<string>>;
-            useCase?: Optional<string>;
-        },
-        entityId?: Optional<string>
-    ): Promise<any> {
-        throw new Error("Not implemented");
-    }
+  async executeAction(
+    functionParams: ExecuteActionParams
+  ): Promise<ActionExecuteResponse> {
+    const {
+      action,
+      params: inputParams = {},
+      entityId = this.entityId,
+      nlaText = "",
+      connectedAccountId,
+    } = ZExecuteActionParams.parse({
+      action: functionParams.actionName || functionParams.action,
+      params: functionParams.params,
+      entityId: functionParams.entityId,
+      nlaText: functionParams.nlaText,
+      connectedAccountId: functionParams.connectedAccountId,
+    });
 
-    async getToolsSchema(
-        filters: {
-            actions?: Optional<Array<string>>;
-            apps?: Array<string>;
-            tags?: Optional<Array<string>>;
-            useCase?: Optional<string>;
-            useCaseLimit?: Optional<number>;
-            filterByAvailableApps?: Optional<boolean>;
-        },
-        entityId?: Optional<string>
-    ): Promise<Sequence<NonNullable<GetListActionsResponse["items"]>[0]>> {
-        await this.setup();
-
-        const apps = await this.client.actions.list({
-            ...(filters?.apps && { apps: filters?.apps?.join(",") }),
-            ...(filters?.tags && { tags: filters?.tags?.join(",") }),
-            ...(filters?.useCase && { useCase: filters?.useCase }),
-            ...(filters?.actions && { actions: filters?.actions?.join(",") }),
-            ...(filters?.useCaseLimit && { usecaseLimit: filters?.useCaseLimit }),
-            filterByAvailableApps: filters?.filterByAvailableApps ?? undefined
-        });
-        const localActions = new Map<string, NonNullable<GetListActionsResponse["items"]>[0]>();
-        if (filters.apps && Array.isArray(filters.apps)) {
-            for (const appName of filters.apps!) {
-                const actionData = this.localActions?.filter((a: any) => a.appName === appName);
-                if (actionData) {
-                    for (const action of actionData) {
-                        localActions.set(action.name, action);
-                    }
-                }
-            }
+    if (!entityId && !connectedAccountId) {
+      throw CEG.getCustomError(
+        COMPOSIO_SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
+        {
+          message: `No entityId or connectedAccountId provided`,
+          description: `Please provide either entityId or connectedAccountId`,
         }
-        const uniqueLocalActions = Array.from(localActions.values());
+      );
+    }
 
-        const toolsWithCustomActions = (await this.customActionRegistry.getAllActions()).filter((action: any) => {
-            if (filters.actions && !filters.actions.some(actionName => actionName.toLowerCase() === action.metadata.actionName!.toLowerCase())) {
-                return false;
-            }
-            if (filters.apps && !filters.apps.some(appName => appName.toLowerCase() === action.metadata.toolName!.toLowerCase())) {
-                return false;
-            }
-            if (filters.tags && !filters.tags.some(tag => tag.toLocaleLowerCase() === "custom".toLocaleLowerCase())) {
-                return false;
-            }
-            return true;
-        }).map((action: any) => {
-            return action.schema;
+    let params = (inputParams as Record<string, unknown>) || {};
+
+    const allInputProcessor = [
+      ...this.internalProcessors.pre,
+      ...(this.userDefinedProcessors.pre
+        ? [this.userDefinedProcessors.pre]
+        : []),
+    ];
+
+    for (const processor of allInputProcessor) {
+      params = processor({
+        params: params,
+        actionName: action,
+      });
+    }
+
+    // Custom actions are always executed in the host/local environment for JS SDK
+    if (await this.isCustomAction(action)) {
+      let accountId = connectedAccountId;
+      if (!accountId) {
+        // fetch connected account id
+        const connectedAccounts = await this.client.connectedAccounts.list({
+          user_uuid: entityId,
+          status: "ACTIVE",
+          showActiveOnly: true,
         });
+        accountId = connectedAccounts?.items[0]?.id;
+      }
 
-        const toolsActions = [...apps?.items!, ...uniqueLocalActions, ...toolsWithCustomActions];
+      if (!accountId) {
+        throw new Error("No connected account found for the user");
+      }
 
-        return toolsActions.map((action: any) => {
-            return this.modifyActionForLocalExecution(action);
-        });
-
+      return this.userActionRegistry.executeAction(action, params, {
+        entityId: entityId,
+        connectionId: accountId,
+      });
     }
 
-    modifyActionForLocalExecution(toolSchema: any) {
-        const properties = convertReqParams(toolSchema.parameters.properties);
-        toolSchema.parameters.properties = properties;
-        const response = toolSchema.response.properties;
+    const data = await this.client.getEntity(entityId).execute({
+      actionName: action,
+      params: params,
+      text: nlaText,
+      connectedAccountId: connectedAccountId,
+    });
 
-        for (const responseKey of Object.keys(response)) {
-            if (responseKey === "file") {
-                response["file_uri_path"] = {
-                    type: "string",
-                    title: "Name",
-                    description: "Local absolute path to the file or http url to the file"
-                }
+    return this.processResponse(data, {
+      action: action,
+      entityId: entityId,
+    });
+  }
 
-                delete response[responseKey];
-            }
-        }
+  private async processResponse(
+    data: ActionExecutionResDto,
+    meta: {
+      action: string;
+      entityId: string;
+    }
+  ): Promise<ActionExecutionResDto> {
+    const allOutputProcessor = [
+      ...this.internalProcessors.post,
+      ...(this.userDefinedProcessors.post
+        ? [this.userDefinedProcessors.post]
+        : []),
+    ];
 
-        return toolSchema;
+    let dataToReturn = { ...data };
+    for (const processor of allOutputProcessor) {
+      dataToReturn = processor({
+        actionName: meta.action,
+        toolResponse: dataToReturn,
+      });
+    }
+    return dataToReturn;
+  }
+
+  async addSchemaProcessor(processor: TSchemaProcessor) {
+    if (typeof processor === "function") {
+      this.userDefinedProcessors.schema = processor as TSchemaProcessor;
+    } else {
+      throw new Error("Invalid processor type");
     }
 
-    async createAction(options: CreateActionOptions) {
-        return this.customActionRegistry.createAction(options);
+    return this;
+  }
+
+  async addPreProcessor(processor: TPreProcessor) {
+    if (typeof processor === "function") {
+      this.userDefinedProcessors.pre = processor as unknown as TPreProcessor;
+    } else {
+      throw new Error("Invalid processor type");
     }
 
-    private isCustomAction(action: string) {
-        return this.customActionRegistry.getActions({ actions: [action] }).then((actions: any) => actions.length > 0);
+    return this;
+  }
+
+  async addPostProcessor(processor: TPostProcessor) {
+    if (typeof processor === "function") {
+      this.userDefinedProcessors.post = processor as unknown as TPostProcessor;
+    } else {
+      throw new Error("Invalid processor type");
     }
 
-    async executeAction(
-        action: string,
-        params: Record<string, any>,
-        entityId: string = "default",
-        nlaText: string = "",
-        connectedAccountId?: string,
-    ): Promise<Record<string, any>> {
-        // Custom actions are always executed in the host/local environment for JS SDK
-        if (await this.isCustomAction(action)) {
-            let accountId = connectedAccountId;
-            if (!accountId) {
-                // fetch connected account id
-                const connectedAccounts = await this.client.connectedAccounts.list({
-                    user_uuid: entityId
-                });
-                accountId = connectedAccounts?.items[0]?.id;
-            }
+    return this;
+  }
 
-            if(!accountId) {
-                throw new Error("No connected account found for the user");
-            }
-            
-            return this.customActionRegistry.executeAction(action, params, {
-                entityId: entityId,
-                connectionId: accountId
-            });
-        }
-        if (this.workspaceEnv && this.workspaceEnv !== ExecEnv.HOST) {
-            const workspace = await this.workspace.get();
-            return workspace.executeAction(action, params, {
-                entityId: this.entityId
-            });
-        }
-        params = await converReqParamForActionExecution(params);
-        const data = await this.client.getEntity(entityId).execute(action, params, nlaText) as unknown as ExecuteActionResDTO
+  async removePreProcessor() {
+    delete this.userDefinedProcessors.pre;
+  }
 
+  async removePostProcessor() {
+    delete this.userDefinedProcessors.post;
+  }
 
-        return this.processResponse(data, {
-            action: action,
-            entityId: entityId
-        });
-    }
-
-    async processResponse(
-        data: ExecuteActionResDTO,
-        meta: {
-            action: string,
-            entityId: string
-        }
-    ): Promise<ExecuteActionResDTO> {
-
-        // @ts-ignore
-        const isFile = !!data?.response_data?.file;
-        if (isFile) {
-            // @ts-ignore
-            const fileData = data.response_data.file;
-            const { name, content } = fileData as { name: string, content: string };
-            const file_name_prefix = `${meta.action}_${meta.entityId}_${Date.now()}`;
-            const filePath = saveFile(file_name_prefix, content);
-
-            // @ts-ignore
-            delete data.response_data.file
-
-            return {
-                ...data,
-                response_data: {
-                    // @ts-ignore
-                    ...data.response_data,
-                    file_uri_path: filePath
-                }
-            }
-        }
-
-        return data;
-    }
-
-    async execute_action(
-        action: string,
-        // this need to improve
-        params: Record<string, any>,
-        entityId: string = "default"
-    ): Promise<Record<string, any>> {
-        logger.warn("execute_action is deprecated, use executeAction instead");
-        return this.executeAction(action, params, entityId);
-    }
-
+  async removeSchemaProcessor() {
+    delete this.userDefinedProcessors.schema;
+  }
 }

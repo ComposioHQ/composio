@@ -4,8 +4,26 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'js/**'
   pull_request:
-    
+    paths:
+      - 'js/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options:
+          - prod
+          - staging
+          - custom
+        default: prod
+      baseUrl:
+        type: string
+        required: false
+      apiKey:
+        type: string
+        required: false
 
 jobs:
   run-js-tests:
@@ -31,9 +49,23 @@ jobs:
       run: cd js && pnpm install --frozen-lockfile
     - name: pnpm build
       run: cd js && pnpm build
-    - name: run test
-      run: cd js && pnpm test:coverage --max-workers 16
+    - name: Set environment variables
+      run: |
+        echo "COMPOSIO_API_KEY=${{ inputs.apiKey }}" >> $GITHUB_ENV
+        echo "BACKEND_HERMES_URL=${{ inputs.baseUrl }}" >> $GITHUB_ENV
+    - name: If base URL, create js/test.config.custom.json
+      run: |
+        if [ -n "${{ inputs.baseUrl }}" ]; then
+          echo "Creating test.config.custom.json with base URL: $BACKEND_HERMES_URL"
+          echo "{\n    \"COMPOSIO_API_KEY\": \"${{ inputs.apiKey }}\",\n    \"BACKEND_HERMES_URL\": \"${{ inputs.baseUrl }}\"\n}" > js/config/test.config.custom.json
+        fi
+    
+    - name: Print config file
+      run: |
+        echo "Running test with environment: ${{ inputs.environment || 'prod' }}"
 
+    - name: run test
+      run: cd js && TEST_ENV=${{ inputs.environment || 'prod' }} pnpm test:coverage --max-workers 16
 
     - name: Upload `coverage` folder to R2
       if: ${{ always() }}
@@ -94,4 +126,3 @@ jobs:
           https://pub-92e668239ab84bfd80ee07d61e9d2f40.r2.dev/html-report-${{ github.run_id }}/html-report/report.html
         reactions: rocket
         comment-id: ${{ steps.fc.outputs.comment-id }}
-

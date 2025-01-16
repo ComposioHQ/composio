@@ -1,7 +1,6 @@
 ---
 title: "֎ Using Composio With OpenAI"
 sidebarTitle: "OpenAI"
-icon: "robot"
 description: "Integrate Composio with OpenAI Assistants to let them seamlessly interact with external apps"
 ---
 
@@ -36,6 +35,27 @@ const toolset = new OpenAIToolSet();
 const openai = new OpenAI();
 ```
 </CodeGroup>
+</Step>
+
+<Step title="Connect Your GitHub Account">
+    <Info>You need to have an active GitHub Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
+    <CodeGroup>
+        ```shell CLI
+        composio login
+        composio add github
+        ```
+        ```python Python
+        request = composio_toolset.initiate_connection(app=App.GITHUB)
+        print(f"Open this URL to authenticate: {request.redirectUrl}")
+        ```
+        ```javascript JavaScript
+        const connection = await toolset.connectedAccounts.initiate({appName: "github"})
+        console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
+        ```
+    </CodeGroup>
+    <Tip>
+        Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
+    </Tip>
 </Step>
 
 <Step title="Get All Github Tools">

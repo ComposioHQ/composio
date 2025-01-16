@@ -1,0 +1,42 @@
+name: Check Linting and Formatting (JS)
+
+on:
+  push:
+    paths:
+      - '**/*.js'
+      - '**/*.ts'
+  pull_request:
+    paths:
+      - '**/*.js'
+      - '**/*.ts'
+
+jobs:
+  lint-and-prettify:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: js
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install pnpm
+      run: npm install -g pnpm
+
+    - name: Install packages in js folder
+      run: pnpm install --frozen-lockfile
+
+    - name: Run ESLint
+      run: pnpm run lint
+      continue-on-error: false
+
+    - name: Run Prettier
+      run: pnpm run prettier:check
+      continue-on-error: false

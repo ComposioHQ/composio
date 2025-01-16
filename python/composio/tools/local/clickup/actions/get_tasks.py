@@ -18,24 +18,24 @@ class GetTasksRequest(BaseModel):
             "URL. "
         ),
     )
-    archived: bool = Field(
+    archived: t.Optional[bool] = Field(
         default=None,
         alias="archived",
         description="",
     )
-    include_markdown_description: bool = Field(
+    include_markdown_description: t.Optional[bool] = Field(
         default=None,
         alias="include_markdown_description",
         description=(
             "To return task descriptions in Markdown format, use `?include_markdown_description=true`. "
         ),
     )
-    page: int = Field(
+    page: t.Optional[int] = Field(
         default=None,
         alias="page",
         description="Page to fetch (starts at 0).",
     )
-    order_by: str = Field(
+    order_by: t.Optional[str] = Field(
         default=None,
         alias="order_by",
         description=(
@@ -43,17 +43,17 @@ class GetTasksRequest(BaseModel):
             "  Options include: `id`, `created`, `updated`, and `due_date`. "
         ),
     )
-    reverse: bool = Field(
+    reverse: t.Optional[bool] = Field(
         default=None,
         alias="reverse",
         description="Tasks are displayed in reverse order.",
     )
-    subtasks: bool = Field(
+    subtasks: t.Optional[bool] = Field(
         default=None,
         alias="subtasks",
         description="Include or exclude subtasks. By default, subtasks are excluded.",
     )
-    statuses: t.List[str] = Field(
+    statuses: t.Optional[t.List[str]] = Field(
         default=None,
         alias="statuses",
         description=(
@@ -61,7 +61,7 @@ class GetTasksRequest(BaseModel):
             "   For example:    `?statuses[]=to%20do&statuses[]=in%20progress` "
         ),
     )
-    include_closed: bool = Field(
+    include_closed: t.Optional[bool] = Field(
         default=None,
         alias="include_closed",
         description=(
@@ -69,59 +69,59 @@ class GetTasksRequest(BaseModel):
             "closed tasks, use `include_closed: true`. "
         ),
     )
-    assignees: t.List[str] = Field(
+    assignees: t.Optional[t.List[str]] = Field(
         default=None,
         alias="assignees",
         description=(
             "Filter by Assignees. For example:    `?assignees[]=1234&assignees[]=5678` "
         ),
     )
-    tags: t.List[str] = Field(
+    tags: t.Optional[t.List[str]] = Field(
         default=None,
         alias="tags",
         description="Filter by tags. For example:    `?tags[]=tag1&tags[]=this%20tag`",
     )
-    due_date_gt: int = Field(
+    due_date_gt: t.Optional[int] = Field(
         default=None,
         alias="due_date_gt",
         description="Filter by due date greater than Unix time in milliseconds.",
     )
-    due_date_lt: int = Field(
+    due_date_lt: t.Optional[int] = Field(
         default=None,
         alias="due_date_lt",
         description="Filter by due date less than Unix time in milliseconds.",
     )
-    date_created_gt: int = Field(
+    date_created_gt: t.Optional[int] = Field(
         default=None,
         alias="date_created_gt",
         description="Filter by date created greater than Unix time in milliseconds.",
     )
-    date_created_lt: int = Field(
+    date_created_lt: t.Optional[int] = Field(
         default=None,
         alias="date_created_lt",
         description="Filter by date created less than Unix time in milliseconds.",
     )
-    date_updated_gt: int = Field(
+    date_updated_gt: t.Optional[int] = Field(
         default=None,
         alias="date_updated_gt",
         description="Filter by date updated greater than Unix time in milliseconds.",
     )
-    date_updated_lt: int = Field(
+    date_updated_lt: t.Optional[int] = Field(
         default=None,
         alias="date_updated_lt",
         description="Filter by date updated less than Unix time in milliseconds.",
     )
-    date_done_gt: int = Field(
+    date_done_gt: t.Optional[int] = Field(
         default=None,
         alias="date_done_gt",
         description="Filter by date done greater than Unix time in milliseconds.",
     )
-    date_done_lt: int = Field(
+    date_done_lt: t.Optional[int] = Field(
         default=None,
         alias="date_done_lt",
         description="Filter by date done less than Unix time in milliseconds.",
     )
-    custom_fields: t.List[str] = Field(
+    custom_fields: t.Optional[t.List[str]] = Field(
         default=None,
         alias="custom_fields",
         description=(
@@ -131,7 +131,7 @@ class GetTasksRequest(BaseModel):
             "use `custom_field` instead.   Learn more about [filtering using Custom Fields.](https://clickup.com/api) "
         ),
     )
-    custom_items: t.List[int] = Field(
+    custom_items: t.Optional[t.List[int]] = Field(
         default=None,
         alias="custom_items",
         description=(

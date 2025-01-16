@@ -1,5 +1,5 @@
 [MASTER]
-ignore-patterns=
+ignore-patterns=.*\.pyi
 ignore=
 
 [MESSAGES CONTROL]

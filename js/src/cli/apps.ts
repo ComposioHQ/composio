@@ -1,20 +1,27 @@
+/* eslint-disable no-console */
 import chalk from "chalk";
 import { Command } from "commander";
 
-import { getOpenAPIClient } from "../sdk/utils/config";
 import client from "../sdk/client/client";
+import { getOpenAPIClient } from "../sdk/utils/config";
 
-// @ts-ignore
-import resolvePackagePath from "resolve-package-path";
 import fs from "fs";
 import path from "path";
+import resolvePackagePath from "resolve-package-path";
+
+type ErrorWithMessage = {
+  message: string;
+};
+
 export default class AppsCommand {
   private program: Command;
 
   constructor(program: Command) {
     this.program = program;
 
-    const command = this.program.command("apps");
+    const command = this.program
+      .command("apps")
+      .option("--enabled", "Only show enabled apps");
 
     command
       .description("List all apps you have access to")
@@ -23,17 +30,24 @@ export default class AppsCommand {
     new AppUpdateCommand(command);
   }
 
-  private async handleAction(options: { browser: boolean }): Promise<void> {
+  private async handleAction(options: {
+    browser: boolean;
+    enabled: boolean;
+  }): Promise<void> {
     getOpenAPIClient();
+    const onlyShowEnabledApps = options?.enabled;
     try {
       const { data } = await client.apps.getApps({});
       console.log("Here are the apps you have access to:");
 
       for (const app of data?.items || []) {
+        if (onlyShowEnabledApps && !app.enabled) {
+          continue;
+        }
         console.log(app.key);
       }
     } catch (error) {
-      console.log(chalk.red((error as any).message));
+      console.log(chalk.red((error as ErrorWithMessage).message));
       return;
     }
   }
@@ -52,7 +66,7 @@ class AppUpdateCommand {
 
   async updateActionsAndAppList(
     appList: string,
-    actionsList: string,
+    actionsList: string
   ): Promise<void> {
     try {
       const constantPath = resolvePackagePath("composio-core", process.cwd());
@@ -65,18 +79,18 @@ class AppUpdateCommand {
         if (fileNamePath.includes("cli/index.ts")) {
           constantFilePath = path.join(
             "/Users/himanshu/Desktop/composio/composio/js" as string,
-            "./lib/src/constants.js",
+            "./lib/src/constants.js"
           );
         } else {
           // if package is used then we need to update the constants file in the package folder
           constantFilePath = path.join(
             constantPath as string,
-            "../lib/src/constants.js",
+            "../lib/src/constants.js"
           );
         }
       } catch (e) {
         console.log(chalk.red("Error while updating constants file"));
-        console.log(chalk.red((e as any).message));
+        console.log(chalk.red((e as ErrorWithMessage).message));
       }
 
       const constantFile = fs.readFileSync(constantFilePath, "utf8");
@@ -84,22 +98,22 @@ class AppUpdateCommand {
       const updatedConstantFile = constantFile
         .replace(
           /\/\/ apps list start here[\s\S]*?\/\/ apps list end here/,
-          `// apps list start here\n${appList}// apps list end here`,
+          `// apps list start here\n${appList}// apps list end here`
         )
         .replace(
           /\/\/ actions list start here[\s\S]*?\/\/ actions list end here/,
-          `// actions list start here\n    ${actionsList}\n    // actions list end here`,
+          `// actions list start here\n    ${actionsList}\n    // actions list end here`
         );
 
       fs.writeFileSync(constantFilePath, updatedConstantFile);
 
       console.log(
         chalk.green("Constants file updated successfully"),
-        chalk.green(constantFilePath),
+        chalk.green(constantFilePath)
       );
     } catch (e) {
       console.log(chalk.red("Error while updating constants file"));
-      console.log(chalk.red((e as any).message));
+      console.log(chalk.red((e as ErrorWithMessage).message));
     }
   }
 
@@ -112,20 +126,19 @@ class AppUpdateCommand {
         (res) =>
           res.data?.items
             .map((app) => `'${app.key.toUpperCase()}': '${app.key}'`)
-            .join(",\n") || [],
+            .join(",\n") || []
       );
-    const actionsList = await client.actionsV2.listActionsMinimalV2({})
-      .then(
-        (res) =>
-          res.data?.items
-            // @ts-ignore
-            .map((action) => `'${action.name}': '${action.enum}'`)
-            .join(",\n") || [],
-      );
+    const actionsList = await client.actionsV2.listActionsMinimalV2({}).then(
+      (res) =>
+        res.data?.items
+          // @ts-ignore
+          .map((action) => `'${action.name}': '${action.enum}'`)
+          .join(",\n") || []
+    );
 
     await this.updateActionsAndAppList(
       appList as string,
-      actionsList as string,
+      actionsList as string
     );
   }
 }

@@ -1,10 +1,31 @@
-import { Composio } from "./sdk";
-import { LangchainToolSet } from "./frameworks/langchain";
-import { OpenAIToolSet } from "./frameworks/openai";
 import { CloudflareToolSet } from "./frameworks/cloudflare";
+import { LangchainToolSet } from "./frameworks/langchain";
+import { LangGraphToolSet } from "./frameworks/langgraph";
+import { OpenAIToolSet } from "./frameworks/openai";
 import { VercelAIToolSet } from "./frameworks/vercel";
-import { Workspace } from "./env/";
+import { ComposioToolSet } from "./sdk/base.toolset";
+import { Composio } from "./sdk/index";
+import { ConnectionRequest } from "./sdk/models/connectedAccounts";
+import { ComposioError } from "./sdk/utils/errors/src/composioError";
+import { COMPOSIO_SDK_ERROR_CODES } from "./sdk/utils/errors/src/constants";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { APPS, ACTIONS } = require("./constants");
 
-const { APPS,ACTIONS } = require("./constants");
-
-export { Composio, LangchainToolSet, OpenAIToolSet, CloudflareToolSet, VercelAIToolSet, Workspace,APPS,ACTIONS };
+export {
+  // Constants
+  ACTIONS,
+  APPS,
+  COMPOSIO_SDK_ERROR_CODES,
+  // Frameworks
+  CloudflareToolSet,
+  // SDK
+  Composio,
+  // Classes
+  ComposioError,
+  ComposioToolSet,
+  ConnectionRequest,
+  LangGraphToolSet,
+  LangchainToolSet,
+  OpenAIToolSet,
+  VercelAIToolSet,
+};

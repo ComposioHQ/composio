@@ -1,0 +1,40 @@
+name: Type stubs check
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '**/setup.py'
+  pull_request:
+    paths:
+      - '**/setup.py'
+  workflow_dispatch:
+
+env:
+  COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_PROD }}
+
+jobs:
+  generate-types:
+    defaults:
+      run:
+        working-directory: ./python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run `composio apps generate-types`
+        run: |
+            python -m pip install uv
+            python -m uv pip install -e .
+            python -m uv pip install black isort
+            python -m uv run composio apps generate-types
+            # Run black over the files before checking if they changed
+            python -m uv run black composio/client/enums
+            python -m uv run isort composio/client/enums --profile black
+
+      - name: Check if type stubs changed, and fail if they did
+        run: git diff --exit-code

@@ -13,12 +13,12 @@ class UpdateTeamRequest(BaseModel):
         alias="group_id",
         description="7C73-4002-A6A9-310014852858 (string) - Team ID (user group)",
     )
-    name: str = Field(
+    name: t.Optional[str] = Field(
         default=None,
         alias="name",
         description="Name",
     )
-    handle: str = Field(
+    handle: t.Optional[str] = Field(
         default=None,
         alias="handle",
         description="Handle",
