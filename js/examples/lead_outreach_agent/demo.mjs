@@ -1,4 +1,4 @@
-import { ChatOpenAI } from "@langchain/openai";
+import { OpenAI } from "@langchain/openai";
 import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
 import { pull } from "langchain/hub";
 import dotenv from 'dotenv';
@@ -6,11 +6,17 @@ import { LangchainToolSet } from "composio-core";
 
 dotenv.config();
 
-
-
-const llm = new ChatOpenAI({
+const llm = new OpenAI({
     model: "gpt-4-turbo",
     apiKey: process.env.OPENAI_API_KEY,
+    
+    // Uncomment all the below lines to use the default openai
+    baseURL: "https://oai.helicone.ai/v1",
+    headers: {
+      "Helicone-Auth": `Bearer ${process.env.HELICONE_API_KEY}`,
+      "Helicone-Cache-Enabled": "true",
+      "Cache-Control": "max-age=2592000",
+    },
 });
 
 const toolset = new LangchainToolSet({
