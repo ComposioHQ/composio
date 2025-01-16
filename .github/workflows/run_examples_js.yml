@@ -5,14 +5,12 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - '**/*.js'
-      - '**/*.ts'
+      - "js/examples/**"
   push:
     branches:
       - master
     paths:
-      - '**/*.js'
-      - '**/*.ts'
+      - "js/examples/**"
 
 jobs:
   test-examples:
