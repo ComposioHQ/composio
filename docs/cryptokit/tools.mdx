@@ -1,0 +1,1647 @@
+---
+title: "Tools For AI SDR Kit"
+sidebarTitle: "Tools"
+description: "List of tools you can use for your AI SDR Development, compatible with agentic frameworks like CrewAI, LangChain, and LlamaIndex etc. These utilities enable file system operations, command execution, and other core development tasks"
+---
+
+## Centralized Exchanges
+<AccordionGroup>
+<Accordion title="Coinbase">
+Coinbase is a centralized exchange (CEX) protocol that allows users to trade cryptocurrencies with the need for intermediaries.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.COINBASE])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["COINBASE"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Binance">
+Binance is a centralized exchange (CEX) protocol that allows users to trade cryptocurrencies with the need for intermediaries.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.BINANCE])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["BINANCE"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+
+## Decentralized Exchanges
+<AccordionGroup>
+<Accordion title="Uniswap">
+Uniswap is a decentralized exchange (DEX) protocol that allows users to trade cryptocurrencies without the need for intermediaries.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.UNISWAP])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["UNISWAP"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="SushiSwap">
+SushiSwap is a decentralized exchange (DEX) protocol that allows users to trade cryptocurrencies without the need for intermediaries.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.SUSHISWAP])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["SUSHISWAP"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Jupiter">
+Jupiter is a decentralized exchange (DEX) protocol that allows users to trade cryptocurrencies without the need for intermediaries.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.JUPITER])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["JUPITER"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="dYdX">
+dYdX is a decentralized exchange (DEX) protocol that allows users to trade cryptocurrencies without the need for intermediaries.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.DYDX])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["DYDX"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+## Analytics and Research
+<AccordionGroup>
+<Accordion title="CoinGecko">
+CoinGecko is a platform that provides information about prices and market cap of cryptocurrencies.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.COINGECKO])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["COINGECKO"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+
+<Accordion title="Glassnode">
+Glassnode is a platform that provides on chain analytics and research tools for cryptocurrencies.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.GLASSNODE])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["GLASSNODE"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+
+<Accordion title="Nansen">
+Nansen is a platform that provides on chain analytics and research tools for cryptocurrencies.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.NANSEN])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["NANSEN"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Dune Analytics">
+Dune Analytics is a platform that provides on chain analytics and research tools for cryptocurrencies.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.DUNE])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["DUNE"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+## DeFi Lending/Borrowing
+<AccordionGroup>
+<Accordion title="Aave">
+Aave is a decentralized lending protocol that allows users to lend and borrow cryptocurrencies.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.AAVE])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["AAVE"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Compound">
+Compound is a decentralized lending protocol that allows users to lend and borrow cryptocurrencies.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.COMPOUND])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["COMPOUND"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="MakerDAO">
+MakerDAO is a decentralized lending protocol that allows users to lend and borrow cryptocurrencies.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.MAKERDAO])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["MAKERDAO"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="YearnFinance">
+YearnFinance is a decentralized lending protocol that allows users to lend and borrow cryptocurrencies.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.YEARN])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["YEARN"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Beefy Finance">
+Beefy Finance is a decentralized lending protocol that allows users to lend and borrow cryptocurrencies.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.BEEFY])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["BEEFY"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+## Staking platforms
+<AccordionGroup>
+<Accordion title="Lido Finance">
+Lido Finance is a decentralized staking protocol that allows users to stake their cryptocurrencies.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.LIDO])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["LIDO"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Rocket Pool   ">
+Rocket Pool is a decentralized staking protocol that allows users to stake their cryptocurrencies.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.ROCKETPOOL])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["ROCKETPOOL"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Stader">
+Stader is a decentralized staking protocol that allows users to stake their cryptocurrencies.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.STADER])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["STADER"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Ankr">
+Ankr is a decentralized staking protocol that allows users to stake their cryptocurrencies.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.ANKR])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["ANKR"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+## NFT Marketplaces
+<AccordionGroup>
+<Accordion title="Opensea">
+Opensea is a decentralized NFT marketplace that allows users to buy and sell NFTs.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.OPENSEA])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["OPENSEA"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Blur">
+Blur is a decentralized NFT marketplace that allows users to buy and sell NFTs.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.BLUR])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["BLUR"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Magic Eden">
+Magic Eden is a decentralized NFT marketplace that allows users to buy and sell NFTs.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.MAGICEDEN])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["MAGICEDEN"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="NFTGo">
+NFTGo is a decentralized NFT marketplace that allows users to buy and sell NFTs.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.NFTGO])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["NFTGO"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Manifold">
+Manifold is a decentralized NFT marketplace that allows users to buy and sell NFTs.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.MANIFOLD])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["MANIFOLD"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Zora  ">
+Zora is a decentralized NFT marketplace that allows users to buy and sell NFTs.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.ZORA])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["ZORA"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+## Security and Compliance
+<AccordionGroup>
+<Accordion title="Chainalysis">
+Chainlysis is a platform that helps ensure crypto compliance.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.OPENSEA])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["OPENSEA"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Elliptic">
+Elliptic is a platform that helps ensure crypto compliance.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.ELLIPTIC])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["ELLIPTIC"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Chainalysis">
+Chainlysis is a platform that helps ensure crypto compliance.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.OPENSEA])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["OPENSEA"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+## Payments and Infrastructure
+<AccordionGroup>
+<Accordion title="BitPay">
+BitPay is a payment processor that allows users to pay for goods and services.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.BITPAY])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["BITPAY"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="MoonPay">
+MoonPay is a payment processor that allows users to pay for goods and services.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.MOONPAY])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["MOONPAY"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+## Oracles
+<AccordionGroup>
+<Accordion title="Chainlink">
+Chainlink is a platform that provides oracle services for blockchain networks.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.CHAINLINK])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["CHAINLINK"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+<Accordion title="Band Protocol">
+Band Protocol is a platform that provides oracle services for blockchain networks.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.BAND_PROTOCOL])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["BAND_PROTOCOL"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
+
+## Community Engagement
+<AccordionGroup>
+<Accordion title="Discord">
+Discord is a platform that allows users to communicate with each other.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.DISCORD])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["DISCORD"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+
+<Accordion title="Telegram">
+Telegram is a platform that allows users to communicate with each other.
+          <CodeGroup>
+              ```python Python
+              from langchain.agents import create_openai_functions_agent, AgentExecutor
+              from langchain import hub
+              from langchain_openai import ChatOpenAI
+              from composio_langchain import ComposioToolSet, Action, App
+
+              llm = ChatOpenAI()
+              prompt = hub.pull("hwchase17/openai-functions-agent")
+
+              composio_toolset = ComposioToolSet()
+              tools = composio_toolset.get_tools(apps=[App.TELEGRAM])
+
+              agent = create_openai_functions_agent(llm, tools, prompt)
+              agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+              task = "your task description here"
+              result = agent_executor.invoke({"input": task})
+              print(result)
+              ```
+              ```javascript JS
+              import { ChatOpenAI } from "@langchain/openai";
+              import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+              import { LangchainToolSet } from "composio-core";
+              import { pull } from "langchain/hub";
+
+              const llm = new ChatOpenAI({
+                model: "gpt-4-turbo",
+                temperature: 0,
+              });
+
+              const prompt = await pull("hwchase17/openai-functions-agent");
+
+              const toolset = new LangchainToolSet({ apiKey: "<your-composio-api-key>" });
+              const tools = await toolset.getTools({ apps: ["TELEGRAM"] });
+
+              const agent = await createOpenAIFunctionsAgent({llm, tools, prompt});
+
+              const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+              const response = await agentExecutor.invoke({ input: "your task description here" });
+              console.log(response);
+              ```
+          </CodeGroup>
+</Accordion>
+</AccordionGroup>
