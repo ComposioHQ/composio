@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { COMPOSIO_SDK_ERROR_CODES } from "../../../dist";
+
 import {
   DeleteRowAPIDTO,
   ExpectedInputFieldsDTO,
@@ -14,6 +14,7 @@ import {
   ZSingleIntegrationParams,
 } from "../types/integration";
 import { CEG } from "../utils/error";
+import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { Apps } from "./apps";
