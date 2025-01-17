@@ -1,0 +1,139 @@
+---
+title: "Coinbase Wallet Manager Agent"
+sidebarTitle: "Coinbase Wallet Manager Agent"
+description: "This project demonstrates how to use Composio to create a Coinbase Wallet Manager Agent."
+---
+
+## Overview
+
+The Coinbase Wallet Manager Agent is an AI Agent that allows your agent to create wallets, send tokens, check balances, and more using Coinbase.
+
+## Getting Started
+
+<Tabs>
+<Tab title="Python">
+<Steps>
+<Step title="Installation">
+```bash install dependencies
+pip install composio-llamaindex python-dotenv
+```
+</Step>
+
+<Step title="Connecting to tools and models">
+```bash connect to required tools
+composio add coinbase
+
+export OPENAI_API_KEY="<your-openai-api-key>"
+```
+</Step>
+
+<Step title="Importing the required libraries">
+```python import required libraries
+from composio_llamaindex import ComposioToolSet, App, Action
+from llama_index.core.agent import FunctionCallingAgentWorker
+from llama_index.core.llms import ChatMessage
+from llama_index.llms.openai import OpenAI
+from dotenv import load_dotenv
+import json
+import os
+
+```
+</Step>
+
+<Step title="Initializing the Tools and the LLM">
+```python initialize toolset and llm
+toolset = ComposioToolSet(api_key="")
+tools = toolset.get_tools(actions=[
+    Action.COINBASE_CREATE_WALLET,
+    Action.COINBASE_LIST_WALLETS,
+    Action.COINBASE_GET_WALLET_INFO,
+    Action.COINBASE_SEND_TOKENS,
+    Action.COINBASE_CHECK_TRANSFER,
+    Action.COINBASE_COINBASE_FAUCET,
+    Action.FILETOOL_CREATE_FILE,
+    Action.FILETOOL_WRITE
+])
+
+
+llm = OpenAI(model="gpt-4o")
+```
+</Step>
+
+<Step title="Setting up Function Calling Worker">
+```python setup function calling worker
+prefix_messages = [
+    ChatMessage(
+        role="system",
+        content=(
+            "You are a coinbase agent that can execute coinbase actions"
+        ),
+    )
+]
+
+agent = FunctionCallingAgentWorker(
+    tools=tools,
+    llm=llm,
+    prefix_messages=prefix_messages,
+    max_function_calls=10,
+    allow_parallel_tool_calls=False,
+    verbose=True,
+).as_agent()
+```
+</Step>
+
+<Step title="Executing the Agent">
+```python run the agent
+agent.chat("Create a coinbase wallet, write the wallet address, seed and wallet id in a file called wallet.txt and get its balance")
+```
+</Step>
+
+<Step title='Final Code'>
+```python final code
+from composio_llamaindex import ComposioToolSet, App, Action
+from llama_index.core.agent import FunctionCallingAgentWorker
+from llama_index.core.llms import ChatMessage
+from llama_index.llms.openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
+
+toolset = ComposioToolSet(api_key="")
+tools = toolset.get_tools(actions=[
+    Action.COINBASE_CREATE_WALLET,
+    Action.COINBASE_LIST_WALLETS,
+    Action.COINBASE_GET_WALLET_INFO,
+    Action.COINBASE_SEND_TOKENS,
+    Action.COINBASE_CHECK_TRANSFER,
+    Action.COINBASE_COINBASE_FAUCET,
+    Action.FILETOOL_CREATE_FILE,
+    Action.FILETOOL_WRITE
+])
+
+llm = OpenAI(model="gpt-4o")
+
+prefix_messages = [
+    ChatMessage(
+        role="system",
+        content=(
+              "You are a coinbase agent that can execute actions on Coinbase"
+        ),
+    )
+]
+
+agent = FunctionCallingAgentWorker(
+    tools=tools,
+    llm=llm,
+    prefix_messages=prefix_messages,
+    max_function_calls=10,
+    allow_parallel_tool_calls=False,
+    verbose=True,
+).as_agent()
+
+
+response = agent.chat("Create a coinbase wallet, write the wallet address, seed and wallet id in a file called wallet.txt and get its balance")
+print(response)
+```
+</Step>
+</Steps>
+</Tab>
+</Tabs>
