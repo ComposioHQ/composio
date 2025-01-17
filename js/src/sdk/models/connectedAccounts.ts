@@ -19,14 +19,17 @@ import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { BackendClient } from "./backendClient";
 
-// Schema type from conectedAccount.ts
 type ConnectedAccountsListData = z.infer<typeof ZListConnectionsData> & {
   /** @deprecated use appUniqueKeys field instead */
   appNames?: string;
 };
+
 type InitiateConnectionDataReq = z.infer<typeof ZInitiateConnectionDataReq>;
+
 type SingleConnectionParam = z.infer<typeof ZSingleConnectionParams>;
+
 type SaveUserAccessDataParam = z.infer<typeof ZSaveUserAccessDataParam>;
+
 type ReinitiateConnectionPayload = z.infer<
   typeof ZReinitiateConnectionPayloadDto
 >;
@@ -41,14 +44,26 @@ export type ConnectionChangeResponse = {
 };
 export type ConnectionItem = ConnectionParams;
 
+/**
+ * Class representing connected accounts in the system.
+ */
 export class ConnectedAccounts {
   private backendClient: BackendClient;
   private fileName: string = "js/src/sdk/models/connectedAccounts.ts";
 
+  /**
+   * Initializes a new instance of the ConnectedAccounts class.
+   * @param {BackendClient} backendClient - The backend client instance.
+   */
   constructor(backendClient: BackendClient) {
     this.backendClient = backendClient;
   }
 
+  /**
+   * List all connected accounts
+   * @param {ConnectedAccountsListData} data - The data for the connected accounts list
+   * @returns {Promise<ConnectedAccountListResponse>} - A promise that resolves to a list of connected accounts
+   */
   async list(
     data: ConnectedAccountsListData
   ): Promise<ConnectedAccountListResponse> {
@@ -72,6 +87,11 @@ export class ConnectedAccounts {
     }
   }
 
+  /**
+   * Get a single connected account
+   * @param {SingleConnectionParam} data - The data for the single connection
+   * @returns {Promise<SingleConnectedAccountResponse>} - A promise that resolves to a single connected account
+   */
   async get(
     data: SingleConnectionParam
   ): Promise<SingleConnectedAccountResponse> {
@@ -92,6 +112,11 @@ export class ConnectedAccounts {
     }
   }
 
+  /**
+   * Delete a single connected account
+   * @param {SingleConnectionParam} data - The data for the single connection
+   * @returns {Promise<SingleDeleteResponse>} - A promise that resolves when the connected account is deleted
+   */
   async delete(data: SingleConnectionParam): Promise<SingleDeleteResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "delete",
@@ -110,6 +135,11 @@ export class ConnectedAccounts {
     }
   }
 
+  /**
+   * Disable a single connected account
+   * @param {SingleConnectionParam} data - The data for the single connection
+   * @returns {Promise<ConnectionChangeResponse>} - A promise that resolves when the connected account is disabled
+   */
   async disable(
     data: SingleConnectionParam
   ): Promise<ConnectionChangeResponse> {
@@ -133,6 +163,11 @@ export class ConnectedAccounts {
     }
   }
 
+  /**
+   * Enable a single connected account
+   * @param {SingleConnectionParam} data - The data for the single connection
+   * @returns {Promise<ConnectionChangeResponse>} - A promise that resolves when the connected account is enabled
+   */
   async enable(data: SingleConnectionParam): Promise<ConnectionChangeResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "disable",
@@ -158,6 +193,8 @@ export class ConnectedAccounts {
 
   /**
    * Initiate a connection
+   * @param {InitiateConnectionDataReq} payload - The payload for the connection initiation
+   * @returns {Promise<ConnectionRequest>} - A promise that resolves to a connection request
    */
   async initiate(
     payload: InitiateConnectionDataReq
@@ -204,6 +241,11 @@ export class ConnectedAccounts {
     }
   }
 
+  /**
+   * Reinitiate a connection
+   * @param {ReinitiateConnectionPayload} data - The payload for the connection reinitialization
+   * @returns {Promise<ConnectionRequest>} - A promise that resolves to a connection request
+   */
   async reinitiateConnection(data: ReinitiateConnectionPayload) {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "reinitiateConnection",
@@ -277,6 +319,11 @@ export class ConnectionRequest {
     }
   }
 
+  /**
+   * Wait until the connection becomes active
+   * @param {number} timeout - The timeout for the connection to become active
+   * @returns {Promise<Connection>} - A promise that resolves to the connection
+   */
   async waitUntilActive(timeout = 60) {
     try {
       const startTime = Date.now();
