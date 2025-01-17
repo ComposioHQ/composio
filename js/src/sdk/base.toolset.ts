@@ -31,6 +31,7 @@ import {
   fileResponseProcessor,
   fileSchemaProcessor,
 } from "./utils/processor/file";
+import logger from "../utils/logger";
 
 export type ExecuteActionParams = z.infer<typeof ZExecuteActionParams> & {
   // @deprecated
@@ -246,6 +247,11 @@ export class ComposioToolSet {
           showActiveOnly: true,
         });
         accountId = connectedAccounts?.items[0]?.id;
+      }
+
+      // allows the user to use custom actions and tools without a connected account
+      if (!accountId) {
+        logger.warn("No connected account found for the user. If your custom action requires a connected account, please double check if you have active accounts connected to it.");
       }
 
       return this.userActionRegistry.executeAction(action, params, {
