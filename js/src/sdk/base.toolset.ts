@@ -248,10 +248,6 @@ export class ComposioToolSet {
         accountId = connectedAccounts?.items[0]?.id;
       }
 
-      if (!accountId) {
-        throw new Error("No connected account found for the user");
-      }
-
       return this.userActionRegistry.executeAction(action, params, {
         entityId: entityId,
         connectionId: accountId,
