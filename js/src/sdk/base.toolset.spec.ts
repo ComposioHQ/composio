@@ -3,6 +3,7 @@ import { getTestConfig } from "../../config/getTestConfig";
 import { TSchemaProcessor } from "../types/base_toolset";
 import { ComposioToolSet } from "./base.toolset";
 import { ActionExecutionResDto } from "./client";
+import { z } from "zod";
 
 describe("ComposioToolSet class tests", () => {
   let toolset: ComposioToolSet;
@@ -158,19 +159,19 @@ describe("ComposioToolSet class tests", () => {
 
   it("should execute an file upload", async () => {
     const ACTION_NAME = "GMAIL_SEND_EMAIL";
-    const actions = await toolset.getToolsSchema({ actions: [ACTION_NAME] });
-
-    // Check if exist
-    expect(
-      actions[0]!.parameters.properties["attachment_file_uri_path"]
-    ).toBeDefined();
+    const imageResponse = await fetch("https://composio.dev/wp-content/uploads/2024/07/Composio-Logo.webp");
+    const arrayBuffer = await imageResponse.arrayBuffer();
+    const base64Image = Buffer.from(arrayBuffer).toString('base64');
 
     const requestBody = {
       recipient_email: "himanshu@composio.dev",
       subject: "Test email from himanshu",
       body: "This is a test email",
-      attachment_file_uri_path:
-        "https://composio.dev/wp-content/uploads/2024/07/Composio-Logo.webp",
+      is_html: false,
+      attachment: {
+        name: "composio-Logo.webp",
+        content: base64Image
+      }
     };
 
     const executionResult = await toolset.executeAction({
@@ -193,4 +194,182 @@ describe("ComposioToolSet class tests", () => {
 
     expect(tools.length).toBe(1);
   });
+
+  // Custom action tests
+  it("Should create custom action to star a repository", async () => {
+    await toolset.createAction({
+      actionName: "starRepositoryCustomAction",
+      toolName: "github",
+      description: "This action stars a repository",
+      inputParams: z.object({
+        owner: z.string(),
+        repo: z.string(),
+      }),
+      callback: async (
+        inputParams,
+        _authCredentials,
+        executeRequest
+      ): Promise<ActionExecutionResDto> => {
+        const res = await executeRequest({
+          endpoint: `/user/starred/${inputParams.owner}/${inputParams.repo}`,
+          method: "PUT",
+          parameters: [],
+        });
+        return res;
+      },
+    });
+
+    const tools = await toolset.getToolsSchema({
+      actions: ["starRepositoryCustomAction"],
+    });
+
+    await expect(tools.length).toBe(1);
+
+    const connectedAccount = await toolset.connectedAccounts.list({
+      appNames: "github",
+      showActiveOnly: true,
+    });
+
+    const actionOuput = await toolset.executeAction({
+      action: "starRepositoryCustomAction",
+      params: {
+        owner: "plxity",
+        repo: "achievementsof.life",
+      },
+      entityId: "default",
+      connectedAccountId: connectedAccount.items[0].id,
+    });
+
+    expect(actionOuput).toHaveProperty("successful", true);
+  });
+
+  // Connected accounts tests
+  let createdConnectionId: string;
+
+  it("Should initiate a connection", async () => {
+    const connectionRequest = await toolset.connectedAccounts.initiate({ appName: "GITHUB" });
+
+    createdConnectionId = connectionRequest.connectedAccountId;
+
+    expect(connectionRequest.connectionStatus).toBe('INITIATED');
+    expect(connectionRequest.connectedAccountId).toBeTruthy();
+    expect(connectionRequest.redirectUrl).toBeTruthy();
+  });
+
+  it("Should get connection details", async () => {
+    const connection = await toolset.connectedAccounts.get({
+      connectedAccountId: createdConnectionId,
+    });
+    expect(connection.id).toBe(createdConnectionId);
+  });
+
+  it("Should list all connections", async () => {
+    const connections = await toolset.connectedAccounts.list({
+      appNames: "GITHUB",
+    });
+    expect(connections.items.length).toBeGreaterThan(0);
+  });
+
+  it("Should delete the connection", async () => {
+    const response = await toolset.connectedAccounts.delete({
+      connectedAccountId: createdConnectionId,
+    });
+    expect(response).toEqual({ status: 'success', count: 1 });
+  });
+
+  it("should throw error if connected account id is invalid in get method", async () => {
+    await expect(toolset.connectedAccounts.get({
+      connectedAccountId: "invalid-id"
+    })).rejects.toThrow();
+  });
+
+  // Integration tests
+  let createdIntegrationId: string;
+
+  it("should create an integration", async () => {
+    const appId = "01e22f33-dc3f-46ae-b58d-050e4d2d1909";
+    const integration = await toolset.integrations.create({
+      name: "testIntegration",
+      authScheme: "OAUTH2",
+      appId: appId,
+      useComposioAuth: true
+    });
+    createdIntegrationId = integration.id!;
+    expect(appId).toBe(integration.appId);
+  });
+
+  it("should get an integration", async () => {
+    const integration = await toolset.integrations.get({ integrationId: createdIntegrationId });
+    expect(integration.id).toBe(createdIntegrationId);
+  });
+
+  it("should list all integrations", async () => {
+    const integrations = await toolset.integrations.list({ appName: "GITHUB" });
+    expect(integrations.items.length).toBeGreaterThan(0);
+  });
+
+  // Trigger tests
+  let createdTriggerId: string;
+
+  it("should get trigger config", async () => {
+    const triggerConfig = await toolset.triggers.getTriggerConfig({
+      triggerId: "GITHUB_STAR_ADDED_EVENT"
+    });
+    expect(triggerConfig.config.properties).toBeTruthy();
+  });
+
+  it("should throw error when invalid trigger id is passed", async () => {
+    await expect(toolset.triggers.getTriggerConfig({
+      triggerId: "invalid-trigger-id"
+    })).rejects.toThrow();
+  });
+
+  it("should setup a trigger", async () => {
+    const trigger = await toolset.triggers.setup({
+      connectedAccountId: "d7bb2a05-22c2-41d7-bf3c-b4c4e7c6c46e",
+      triggerName: "GITHUB_STAR_ADDED_EVENT",
+      config: {
+        owner: "abhishekpatil4",
+        repo: "tweetify",
+      }
+    });
+    createdTriggerId = trigger.triggerId;
+    expect(trigger.status).toBe("success");
+  });
+
+  it("should disable a trigger", async () => {
+    const trigger = await toolset.triggers.disable({
+      triggerInstanceId: createdTriggerId
+    });
+    expect(trigger.status).toBe("success");
+  });
+
+  afterAll(async () => {
+    const integrations = await toolset.integrations.list({ appName: "GITHUB" });
+
+    for (const integration of integrations.items) {
+      if (integration.id !== "fe9a63e1-eb22-42b7-ae3b-93173c3c2aee") {
+        try {
+          const connections = await toolset.connectedAccounts.list({
+            appNames: "GITHUB",
+          });
+
+          for (const connection of connections.items) {
+            if (connection.integrationId === integration.id &&
+              connection.id !== "d7bb2a05-22c2-41d7-bf3c-b4c4e7c6c46e") {
+              await toolset.connectedAccounts.delete({
+                connectedAccountId: connection.id,
+              });
+            }
+          }
+
+          await toolset.integrations.delete(integration.id as string);
+          console.log(`Deleted integration: ${integration.id}`);
+        } catch (error) {
+          console.error(`Error deleting integration ${integration.id}:`, error as string);
+        }
+      }
+    }
+  });
+
 });
