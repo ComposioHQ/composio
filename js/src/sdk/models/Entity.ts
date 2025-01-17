@@ -29,7 +29,7 @@ const LABELS = {
 // Types from zod schemas
 export type TriggerSubscribeParam = z.infer<typeof ZTriggerSubscribeParam>;
 export type ConnectionParams = z.infer<typeof ZConnectionParams> & {
-  // @deprecated
+  /** @deprecated use appName field instead */
   app?: string;
   appName?: string;
 };

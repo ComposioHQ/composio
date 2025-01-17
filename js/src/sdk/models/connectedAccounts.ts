@@ -8,7 +8,6 @@ import {
 import { default as apiClient } from "../client/client";
 import {
   ZInitiateConnectionDataReq,
-  ZInitiateConnectionPayloadDto,
   ZListConnectionsData,
   ZReinitiateConnectionPayloadDto,
   ZSaveUserAccessDataParam,
@@ -21,11 +20,13 @@ import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { BackendClient } from "./backendClient";
 
 // Schema type from conectedAccount.ts
-type ConnectedAccountsListData = z.infer<typeof ZListConnectionsData>;
+type ConnectedAccountsListData = z.infer<typeof ZListConnectionsData> & {
+  /** @deprecated use appUniqueKeys field instead */
+  appNames?: string;
+};
 type InitiateConnectionDataReq = z.infer<typeof ZInitiateConnectionDataReq>;
 type SingleConnectionParam = z.infer<typeof ZSingleConnectionParams>;
 type SaveUserAccessDataParam = z.infer<typeof ZSaveUserAccessDataParam>;
-type InitiateConnectionPayload = z.infer<typeof ZInitiateConnectionPayloadDto>;
 type ReinitiateConnectionPayload = z.infer<
   typeof ZReinitiateConnectionPayloadDto
 >;
@@ -33,6 +34,11 @@ type ReinitiateConnectionPayload = z.infer<
 export type ConnectedAccountListResponse = GetConnectionsResponseDto;
 export type SingleConnectedAccountResponse = ConnectedAccountResponseDTO;
 export type SingleDeleteResponse = DeleteRowAPIDTO;
+
+export type ConnectionChangeResponse = {
+  status: "success";
+  connectedAccountId: string;
+};
 export type ConnectionItem = ConnectionParams;
 
 export class ConnectedAccounts {
@@ -52,30 +58,15 @@ export class ConnectedAccounts {
       params: { data },
     });
     try {
-      const res = await apiClient.connections.listConnections({ query: data });
+      const { appNames, appUniqueKeys } = ZListConnectionsData.parse(data);
+      const finalAppNames = appNames || appUniqueKeys?.join(",");
+      const res = await apiClient.connections.listConnections({
+        query: {
+          ...data,
+          appNames: finalAppNames,
+        },
+      });
       return res.data!;
-    } catch (error) {
-      throw CEG.handleAllError(error);
-    }
-  }
-
-  async create(data: InitiateConnectionPayload): Promise<ConnectionRequest> {
-    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
-      method: "create",
-      file: this.fileName,
-      params: { data },
-    });
-    try {
-      const { data: res } = await apiClient.connections.initiateConnection({
-        body: data,
-        throwOnError: true,
-      });
-
-      return new ConnectionRequest({
-        connectionStatus: res.connectionStatus,
-        connectedAccountId: res.connectedAccountId,
-        redirectUri: res.redirectUrl ?? null,
-      });
     } catch (error) {
       throw CEG.handleAllError(error);
     }
@@ -101,22 +92,6 @@ export class ConnectedAccounts {
     }
   }
 
-  async getAuthParams(data: { connectedAccountId: string }) {
-    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
-      method: "getAuthParams",
-      file: this.fileName,
-      params: { data },
-    });
-    try {
-      const res = await apiClient.connections.getConnection({
-        path: { connectedAccountId: data.connectedAccountId },
-      });
-      return res.data;
-    } catch (error) {
-      throw CEG.handleAllError(error);
-    }
-  }
-
   async delete(data: SingleConnectionParam): Promise<SingleDeleteResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "delete",
@@ -135,7 +110,55 @@ export class ConnectedAccounts {
     }
   }
 
-  // Should we deprecate this or change the signature?
+  async disable(
+    data: SingleConnectionParam
+  ): Promise<ConnectionChangeResponse> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "disable",
+      file: this.fileName,
+      params: { data },
+    });
+    try {
+      ZSingleConnectionParams.parse(data);
+      const res = await apiClient.connections.disableConnection({
+        path: data,
+        throwOnError: true,
+      });
+      return {
+        status: "success",
+        connectedAccountId: data.connectedAccountId,
+      };
+    } catch (error) {
+      throw CEG.handleAllError(error);
+    }
+  }
+
+  async enable(data: SingleConnectionParam): Promise<ConnectionChangeResponse> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "disable",
+      file: this.fileName,
+      params: { data },
+    });
+    try {
+      ZSingleConnectionParams.parse(data);
+      await apiClient.connections.enableConnection({
+        path: {
+          connectedAccountId: data.connectedAccountId,
+        },
+        throwOnError: true,
+      });
+      return {
+        status: "success",
+        connectedAccountId: data.connectedAccountId,
+      };
+    } catch (error) {
+      throw CEG.handleAllError(error);
+    }
+  }
+
+  /**
+   * Initiate a connection
+   */
   async initiate(
     payload: InitiateConnectionDataReq
   ): Promise<ConnectionRequest> {
