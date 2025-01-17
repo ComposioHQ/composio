@@ -273,6 +273,16 @@ export class Triggers {
     });
     try {
       const finalTriggerId = data.triggerId || data.triggerInstanceId;
+      if (!finalTriggerId) {
+        throw CEG.getCustomError(
+          COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
+          {
+            message: "Trigger ID is required",
+            description: "Trigger ID is required",
+            possibleFix: "Pass either triggerId or triggerInstanceId",
+          }
+        );
+      }
       await apiClient.triggers.switchTriggerInstanceStatus({
         path: {
           triggerId: finalTriggerId!,
