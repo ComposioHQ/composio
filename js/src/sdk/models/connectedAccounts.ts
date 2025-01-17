@@ -170,7 +170,7 @@ export class ConnectedAccounts {
    */
   async enable(data: SingleConnectionParam): Promise<ConnectionChangeResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
-      method: "disable",
+      method: "enable",
       file: this.fileName,
       params: { data },
     });
