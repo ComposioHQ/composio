@@ -185,7 +185,7 @@ export class Triggers {
     }
   }
 
-    /**
+  /**
    * Retrieves information about a single trigger.
    *
    * @param {TriggerSingleParam} data The data for the request.
@@ -201,7 +201,9 @@ export class Triggers {
     try {
       const parsedData = ZSingleTriggerParam.parse(data);
       const res = await apiClient.triggers.getTriggerInfoV2({
-        path: { triggerName: parsedData.triggerName || parsedData.triggerId || "" },
+        path: {
+          triggerName: parsedData.triggerName || parsedData.triggerId || "",
+        },
       });
 
       // Bad type inference
