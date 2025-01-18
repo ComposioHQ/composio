@@ -1,9 +1,9 @@
 import { beforeAll, describe, expect, it } from "@jest/globals";
+import { z } from "zod";
 import { getTestConfig } from "../../config/getTestConfig";
 import { TSchemaProcessor } from "../types/base_toolset";
 import { ComposioToolSet } from "./base.toolset";
 import { ActionExecutionResDto } from "./client";
-import { z } from "zod";
 
 describe("ComposioToolSet class tests", () => {
   let toolset: ComposioToolSet;
@@ -17,6 +17,9 @@ describe("ComposioToolSet class tests", () => {
       entityId: "default",
     });
   });
+
+  let createdConnectionIds: string[] = [];
+  let createdIntegrationIds: string[] = [];
 
   it("should create a ComposioToolSet instance", async () => {
     const tools = await toolset.getToolsSchema({ apps: ["github"] });
@@ -157,21 +160,52 @@ describe("ComposioToolSet class tests", () => {
     expect(executionResultAfterRemove.data.title).toBe("Test issue");
   });
 
+  // it("should execute an file upload", async () => {
+  //   const ACTION_NAME = "GMAIL_SEND_EMAIL";
+  //   const imageResponse = await fetch(
+  //     "https://composio.dev/wp-content/uploads/2024/07/Composio-Logo.webp"
+  //   );
+  //   const arrayBuffer = await imageResponse.arrayBuffer();
+  //   const base64Image = Buffer.from(arrayBuffer).toString("base64");
+
+  //   const requestBody = {
+  //     recipient_email: "abhishek@composio.dev",
+  //     subject: "Test email from himanshu",
+  //     body: "This is a test email",
+  //     is_html: false,
+  //     attachment: {
+  //       name: "composio-Logo.webp",
+  //       content: base64Image,
+  //     },
+  //   };
+
+  //   const executionResult = await toolset.executeAction({
+  //     action: ACTION_NAME,
+  //     params: requestBody,
+  //     entityId: "default",
+  //   });
+  //   expect(executionResult).toBeDefined();
+  //   // @ts-ignore
+  //   expect(executionResult).toHaveProperty("successfull", true);
+  //   expect(executionResult.data).toBeDefined();
+  // });
+
   it("should execute an file upload", async () => {
     const ACTION_NAME = "GMAIL_SEND_EMAIL";
-    const imageResponse = await fetch("https://composio.dev/wp-content/uploads/2024/07/Composio-Logo.webp");
-    const arrayBuffer = await imageResponse.arrayBuffer();
-    const base64Image = Buffer.from(arrayBuffer).toString('base64');
+    const actions = await toolset.getToolsSchema({ actions: [ACTION_NAME] });
+
+    // Check if exist
+    expect(
+      actions[0]!.parameters.properties["attachment_file_uri_path"]
+    ).toBeDefined();
 
     const requestBody = {
-      recipient_email: "himanshu@composio.dev",
+      recipient_email: "abhishek@composio.dev",
       subject: "Test email from himanshu",
       body: "This is a test email",
-      is_html: false,
-      attachment: {
-        name: "composio-Logo.webp",
-        content: base64Image
-      }
+      attachment_file_uri_path:
+        // "https://composio.dev/wp-content/uploads/2024/07/Composio-Logo.webp",
+        "/Users/abhishek/Desktop/randomimage.png",
     };
 
     const executionResult = await toolset.executeAction({
@@ -247,11 +281,18 @@ describe("ComposioToolSet class tests", () => {
   let createdConnectionId: string;
 
   it("Should initiate a connection", async () => {
-    const connectionRequest = await toolset.connectedAccounts.initiate({ appName: "GITHUB" });
-
+    const connectionRequest = await toolset.connectedAccounts.initiate({
+      appName: "github",
+    });
+    const connection = await toolset.connectedAccounts.get({
+      connectedAccountId: connectionRequest.connectedAccountId,
+    });
+    if (connection.integrationId) {
+      createdIntegrationIds.push(connection.integrationId);
+    }
     createdConnectionId = connectionRequest.connectedAccountId;
-
-    expect(connectionRequest.connectionStatus).toBe('INITIATED');
+    createdConnectionIds.push(connectionRequest.connectedAccountId);
+    expect(connectionRequest.connectionStatus).toBe("INITIATED");
     expect(connectionRequest.connectedAccountId).toBeTruthy();
     expect(connectionRequest.redirectUrl).toBeTruthy();
   });
@@ -274,13 +315,15 @@ describe("ComposioToolSet class tests", () => {
     const response = await toolset.connectedAccounts.delete({
       connectedAccountId: createdConnectionId,
     });
-    expect(response).toEqual({ status: 'success', count: 1 });
+    expect(response).toEqual({ status: "success", count: 1 });
   });
 
   it("should throw error if connected account id is invalid in get method", async () => {
-    await expect(toolset.connectedAccounts.get({
-      connectedAccountId: "invalid-id"
-    })).rejects.toThrow();
+    await expect(
+      toolset.connectedAccounts.get({
+        connectedAccountId: "invalid-id",
+      })
+    ).rejects.toThrow();
   });
 
   // Integration tests
@@ -292,14 +335,17 @@ describe("ComposioToolSet class tests", () => {
       name: "testIntegration",
       authScheme: "OAUTH2",
       appId: appId,
-      useComposioAuth: true
+      useComposioAuth: true,
     });
     createdIntegrationId = integration.id!;
+    createdIntegrationIds.push(integration.id!);
     expect(appId).toBe(integration.appId);
   });
 
   it("should get an integration", async () => {
-    const integration = await toolset.integrations.get({ integrationId: createdIntegrationId });
+    const integration = await toolset.integrations.get({
+      integrationId: createdIntegrationId,
+    });
     expect(integration.id).toBe(createdIntegrationId);
   });
 
@@ -313,15 +359,17 @@ describe("ComposioToolSet class tests", () => {
 
   it("should get trigger config", async () => {
     const triggerConfig = await toolset.triggers.getTriggerConfig({
-      triggerId: "GITHUB_STAR_ADDED_EVENT"
+      triggerId: "GITHUB_STAR_ADDED_EVENT",
     });
     expect(triggerConfig.config.properties).toBeTruthy();
   });
 
   it("should throw error when invalid trigger id is passed", async () => {
-    await expect(toolset.triggers.getTriggerConfig({
-      triggerId: "invalid-trigger-id"
-    })).rejects.toThrow();
+    await expect(
+      toolset.triggers.getTriggerConfig({
+        triggerId: "invalid-trigger-id",
+      })
+    ).rejects.toThrow();
   });
 
   it("should setup a trigger", async () => {
@@ -331,7 +379,7 @@ describe("ComposioToolSet class tests", () => {
       config: {
         owner: "abhishekpatil4",
         repo: "tweetify",
-      }
+      },
     });
     createdTriggerId = trigger.triggerId;
     expect(trigger.status).toBe("success");
@@ -339,37 +387,51 @@ describe("ComposioToolSet class tests", () => {
 
   it("should disable a trigger", async () => {
     const trigger = await toolset.triggers.disable({
-      triggerInstanceId: createdTriggerId
+      triggerInstanceId: createdTriggerId,
     });
     expect(trigger.status).toBe("success");
   });
 
   afterAll(async () => {
-    const integrations = await toolset.integrations.list({ appName: "GITHUB" });
-
-    for (const integration of integrations.items) {
-      if (integration.id !== "fe9a63e1-eb22-42b7-ae3b-93173c3c2aee") {
+    const integrationIdsToDelete = new Set<string>();
+    for (const connectionId of createdConnectionIds) {
+      try {
+        // First check if the connection exists
         try {
-          const connections = await toolset.connectedAccounts.list({
-            appNames: "GITHUB",
+          const connection = await toolset.connectedAccounts.get({
+            connectedAccountId: connectionId,
           });
-
-          for (const connection of connections.items) {
-            if (connection.integrationId === integration.id &&
-              connection.id !== "d7bb2a05-22c2-41d7-bf3c-b4c4e7c6c46e") {
-              await toolset.connectedAccounts.delete({
-                connectedAccountId: connection.id,
-              });
-            }
+          // If connection exists, proceed with deletion
+          if (connection.integrationId) {
+            integrationIdsToDelete.add(connection.integrationId);
           }
-
-          await toolset.integrations.delete(integration.id as string);
-          console.log(`Deleted integration: ${integration.id}`);
+          await toolset.connectedAccounts.delete({
+            connectedAccountId: connectionId,
+          });
+          console.log(`Deleted connection: ${connectionId}`);
         } catch (error) {
-          console.error(`Error deleting integration ${integration.id}:`, error as string);
+          console.log(
+            `Connection ${connectionId} has been deleted during the process`
+          );
         }
+      } catch (error) {
+        console.error(
+          `Error processing connection ${connectionId}:`,
+          error as string
+        );
+      }
+    }
+    createdIntegrationIds.forEach((id) => integrationIdsToDelete.add(id));
+    for (const integrationId of integrationIdsToDelete) {
+      try {
+        await toolset.integrations.delete(integrationId);
+        console.log(`Deleted integration: ${integrationId}`);
+      } catch (error) {
+        console.error(
+          `Error deleting integration ${integrationId}:`,
+          error as string
+        );
       }
     }
   });
-
 });
