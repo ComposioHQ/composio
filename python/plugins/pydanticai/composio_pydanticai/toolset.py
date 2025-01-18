@@ -73,9 +73,9 @@ class ComposioToolSet(
 
     def __init__(
         self,
-        *args,
         max_retries: int = 3,
         tool_configs: t.Optional[Dict[str, ToolConfig]] = None,
+        *args,
         **kwargs,
     ):
         """Initialize the toolset with configurable max_retries.
