@@ -1,9 +1,8 @@
-// @ts-ignore - Jest globals are provided by the test environment
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { getTestConfig } from "../../../config/getTestConfig";
 import { RawActionData, TPreProcessor, TPostProcessor, TSchemaProcessor } from "../../types/base_toolset";
 import { ComposioToolSet } from "../base.toolset";
-import { ActionExecutionResDto } from "../client";
+import type { ActionExecutionResDto } from "../client";
 
 describe("ComposioToolSet - Processor Management", () => {
   let toolset: ComposioToolSet;
@@ -26,11 +25,11 @@ describe("ComposioToolSet - Processor Management", () => {
 
       await toolset.addSchemaProcessor(processor);
       const tools = await toolset.getToolsSchema({ apps: ['github'] });
-      expect(tools[0].description).toBe('processed');
+      expect(tools[0]?.description).toBe('processed');
 
       await toolset.removeSchemaProcessor();
       const toolsAfterRemove = await toolset.getToolsSchema({ apps: ['github'] });
-      expect(toolsAfterRemove[0].description).not.toBe('processed');
+      expect(toolsAfterRemove[0]?.description).not.toBe('processed');
     });
 
     it("should reject invalid processor type", async () => {
@@ -53,7 +52,7 @@ describe("ComposioToolSet - Processor Management", () => {
         params: { test: 'value' },
         entityId: 'default',
       });
-      expect(result.data.processed).toBe(true);
+      expect((result.data as Record<string, boolean>).processed).toBe(true);
 
       await toolset.removePreProcessor();
     });

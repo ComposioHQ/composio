@@ -1,16 +1,24 @@
-// This file has been split into smaller test modules in the tests directory:
-// - base.toolset.constructor.spec.ts: Constructor and initialization tests
-// - base.toolset.tools.spec.ts: Tools schema and filtering tests
-// - base.toolset.actions.spec.ts: Action management and execution tests
-// - base.toolset.processors.spec.ts: Processor chain and management tests
+/**
+ * @fileoverview This file has been split into smaller test modules in the tests directory.
+ * The tests have been moved to:
+ * - tests/base.toolset.constructor.spec.ts: Constructor and initialization tests
+ * - tests/base.toolset.tools.spec.ts: Tools schema and filtering tests
+ * - tests/base.toolset.actions.spec.ts: Action management and execution tests
+ * - tests/base.toolset.processors.spec.ts: Processor chain and management tests
+ */
 
-// @ts-ignore - Jest globals are provided by the test environment
-import { describe } from "@jest/globals";
+import { describe, it, expect } from '@jest/globals';
+import { ComposioToolSet } from './base.toolset';
 
-// This file is kept as a placeholder to maintain Git history.
-// All tests have been moved to separate files in the tests directory.
-describe("ComposioToolSet", () => {
-  // Tests have been moved to separate files in the tests directory
+/**
+ * @deprecated This file is kept as a placeholder to maintain Git history.
+ * All tests have been moved to separate files in the tests directory.
+ */
+describe('ComposioToolSet', () => {
+  it('should be properly initialized', () => {
+    const _toolset = new ComposioToolSet({ apiKey: 'test' });
+    expect(_toolset).toBeInstanceOf(ComposioToolSet);
+  });
 });
   let toolset: ComposioToolSet;
   const testConfig = getTestConfig();
