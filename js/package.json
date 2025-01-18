@@ -100,5 +100,9 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "engineStrict": true,
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

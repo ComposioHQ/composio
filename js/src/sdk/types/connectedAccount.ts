@@ -5,6 +5,7 @@ export const ZConnectionStatus = z.enum(["INITIATED", "ACTIVE", "FAILED"]);
 
 export const ZListConnectionsData = z.object({
   appNames: z.string().optional(),
+  appUniqueKeys: z.string().array().optional(),
   connectionId: z.string().optional(),
   entityId: z.string().optional(),
   integrationId: z.string().optional(),

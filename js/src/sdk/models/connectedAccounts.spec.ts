@@ -33,7 +33,9 @@ describe("ConnectedAccounts class tests", () => {
     const connectionsData: TConnectionData = {
       appNames: "github",
     };
-    const connectionsList = await connectedAccounts.list(connectionsData);
+    const connectionsList = await connectedAccounts.list({
+      appUniqueKeys: ["gmail"],
+    });
 
     const connectionId = connectionsList.items[0].id;
 
