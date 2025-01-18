@@ -101,8 +101,8 @@ describe("Apps class tests subscribe", () => {
   });
 
   it("should get the payload of a trigger", async () => {
-    const res = await triggers.getTriggerInfo({
-      triggerId: "GMAIL_NEW_GMAIL_MESSAGE",
+    const res = await triggers.get({
+      triggerName: "GMAIL_NEW_GMAIL_MESSAGE",
     });
     expect(res.displayName).toBe("New Gmail Message Received Trigger");
   });

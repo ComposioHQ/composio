@@ -7,6 +7,7 @@ export const ZTriggerQuery = z.object({
     .optional()
     .describe("Trigger Instance IDs"),
   appNames: z.array(z.string()).optional().describe("App Names in lowercase"),
+  appUniqueKeys: z.array(z.string()).optional().describe("App Unique Keys"),
   connectedAccountIds: z
     .array(z.string())
     .optional()
@@ -42,10 +43,20 @@ export const ZTriggerSubscribeParam = z.object({
 });
 
 export const ZSingleTriggerParam = z.object({
-  triggerId: z.string(),
+  triggerId: z.string().optional(),
+  triggerName: z.string().optional(),
 });
 
-export type TriggerSingleParam = z.infer<typeof ZSingleTriggerParam>;
+export const ZTriggerInstanceParam = z.object({
+  triggerInstanceId: z.string().optional(),
+  triggerId: z.string().optional(),
+});
+
+export type TriggerSingleParam = z.infer<typeof ZSingleTriggerParam> & {
+  triggerName?: string;
+  /** @deprecated use triggerName field instead */
+  triggerId?: string;
+};
 
 export const ZSingleTriggerRes = z.object({
   name: z.string(),
