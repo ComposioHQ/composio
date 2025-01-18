@@ -150,7 +150,7 @@ export class ConnectedAccounts {
     });
     try {
       ZSingleConnectionParams.parse(data);
-      const res = await apiClient.connections.disableConnection({
+      await apiClient.connections.disableConnection({
         path: data,
         throwOnError: true,
       });
@@ -332,7 +332,7 @@ export class ConnectionRequest {
           .getConnection({
             path: { connectedAccountId: this.connectedAccountId },
           })
-          .then((res) => res.data);
+          .then((res: { data: any }) => res.data);
         if (!connection) throw new Error("Connected account not found");
         if (connection.status === "ACTIVE") {
           return connection;
