@@ -1,20 +1,31 @@
 import types
 import typing as t
 import warnings
+from dataclasses import dataclass
 from inspect import Parameter, Signature
+from typing import Any, Dict, TypeVar
 
 import pydantic
-from pydantic import ValidationError
 import typing_extensions as te
-from typing import TypeVar
+from pydantic import ValidationError
+from pydantic_ai.tools import RunContext, Tool, ToolDefinition
 
 from composio import Action, ActionType, AppType, TagType
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.toolset import ProcessorsType
 from composio.utils import help_msg
-from pydantic_ai.tools import Tool, RunContext, ToolDefinition 
+from composio.utils.shared import get_signature_format_from_schema_params
 
-AgentDeps = TypeVar('AgentDeps')
+
+AgentDeps = TypeVar("AgentDeps", bound=Any)
+
+
+@dataclass
+class ToolConfig:
+    """Configuration for a specific tool."""
+
+    max_retries: int = 3
+
 
 class ComposioToolSet(
     BaseComposioToolSet,
@@ -37,8 +48,8 @@ class ComposioToolSet(
 
     # Load environment variables from .env
     load_dotenv(".env")
-    # Initialize tools
-    composio_toolset = ComposioToolSet()
+    # Initialize tools with custom max retries
+    composio_toolset = ComposioToolSet(max_retries=5)  # Configure max retries for all tools
 
     # Get GitHub tools that are pre-configured
     tools = composio_toolset.get_tools(
@@ -61,6 +72,24 @@ class ComposioToolSet(
     ```
     """
 
+    def __init__(
+        self,
+        max_retries: int = 3,
+        tool_configs: t.Optional[Dict[str, ToolConfig]] = None,
+        *args,
+        **kwargs,
+    ):
+        """Initialize the toolset with configurable max_retries.
+
+        Args:
+            max_retries (int, optional): Default maximum number of retries for tool execution. Defaults to 3.
+            tool_configs (Dict[str, ToolConfig], optional): Specific configurations for individual tools.
+                Keys are tool names, values are ToolConfig objects.
+        """
+        super().__init__(*args, **kwargs)
+        self.max_retries = max_retries
+        self.tool_configs = tool_configs or {}
+
     def _wrap_action(
         self,
         action: str,
@@ -70,7 +99,7 @@ class ComposioToolSet(
     ):
         """Create a wrapper function for the Composio action."""
 
-        async def function(ctx: RunContext[AgentDeps], **kwargs: t.Any) -> t.Dict:
+        async def function(ctx: "RunContext[AgentDeps]", **kwargs: t.Any) -> t.Dict:
             """Wrapper function for composio action."""
             try:
                 return self.execute_action(
@@ -83,22 +112,6 @@ class ComposioToolSet(
                 # Handle validation errors according to pydantic-ai expectations
                 raise ValidationError(e.errors())
 
-        # Create parameter annotations
-        params = {}
-        if schema_params.get("properties"):
-            for name, prop in schema_params["properties"].items():
-                # Map JSON schema types to Python types
-                type_map = {
-                    "string": str,
-                    "integer": int,
-                    "number": float,
-                    "boolean": bool,
-                    "array": list,
-                    "object": dict,
-                }
-                param_type = type_map.get(prop.get("type", "string"), t.Any)
-                params[name] = param_type
-
         # Create function with type hints
         action_func = types.FunctionType(
             function.__code__,
@@ -106,33 +119,25 @@ class ComposioToolSet(
             name=action,
             closure=function.__closure__,
         )
-        
+
+        # Get parameters using shared utility
+        parameters = get_signature_format_from_schema_params(schema_params)
+
         # Add type hints
+        params = {param.name: param.annotation for param in parameters}
         action_func.__annotations__ = {
-            "ctx": RunContext[AgentDeps],
+            "ctx": "RunContext[AgentDeps]",
             "return": t.Dict,
-            **params
+            **params,
         }
-        
-        # Create signature
-        parameters = [
-            Parameter(
-                name="ctx",
-                kind=Parameter.POSITIONAL_OR_KEYWORD,
-                annotation=RunContext[AgentDeps]
-            )
-        ]
-        for name, type_hint in params.items():
-            parameters.append(
-                Parameter(
-                    name=name,
-                    kind=Parameter.KEYWORD_ONLY,
-                    annotation=type_hint,
-                    default=Parameter.empty if name in schema_params.get("required", []) else None
-                )
-            )
-        
-        action_func.__signature__ = Signature(parameters=parameters)  # type: ignore
+
+        # Create signature with context parameter first
+        ctx_param = Parameter(
+            name="ctx",
+            kind=Parameter.POSITIONAL_OR_KEYWORD,
+            annotation="RunContext[AgentDeps]",
+        )
+        action_func.__signature__ = Signature(parameters=[ctx_param] + parameters)  # type: ignore
         action_func.__doc__ = description
 
         return action_func
@@ -155,15 +160,19 @@ class ComposioToolSet(
             entity_id=entity_id,
         )
 
+        # Get tool-specific config or use default
+        tool_config = self.tool_configs.get(
+            action, ToolConfig(max_retries=self.max_retries)
+        )
+
         return Tool(
             function=action_func,
             name=action,
             description=description,
             takes_ctx=True,
-            max_retries=3,  # Can be made configurable
+            max_retries=tool_config.max_retries,
             docstring_format="auto",
         )
-    
 
     def get_tools(
         self,

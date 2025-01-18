@@ -2,18 +2,19 @@
 Pydantic-AI demo.
 """
 
-from dotenv import load_dotenv  # type: ignore
 import os
 
-from composio import Action
 from composio_pydanticai import ComposioToolSet
+from dotenv import load_dotenv  # type: ignore
 from pydantic_ai import Agent
+
+from composio import Action
 
 
 # Load environment variables from .env
 load_dotenv(".env")
 # Initialize tools
-composio_toolset = ComposioToolSet()
+composio_toolset: ComposioToolSet = ComposioToolSet()
 
 # Get GitHub tools that are pre-configured
 tools = composio_toolset.get_tools(

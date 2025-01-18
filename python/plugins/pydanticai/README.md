@@ -42,14 +42,25 @@ from pydantic_ai import Agent
 Configure and fetch GitHub tools provided by Composio:
 
 ```python
-# Initialize tools
-composio_toolset = ComposioToolSet()
+from composio_pydanticai import ComposioToolSet, ToolConfig
+
+# Initialize tools with default retry settings
+composio_toolset = ComposioToolSet(max_retries=3)  # Default max retries for all tools
+
+# Or configure specific tools differently
+tool_configs = {
+    "github_star_repository": ToolConfig(max_retries=5),  # More retries for starring
+    "github_create_repository": ToolConfig(max_retries=2)  # Fewer retries for creation
+}
+composio_toolset = ComposioToolSet(max_retries=3, tool_configs=tool_configs)
 
 # Get GitHub tools that are pre-configured
 tools = composio_toolset.get_tools(
     actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
 )
 ```
+
+The `max_retries` parameter sets the default number of retries for all tools (default is 3). You can override this for specific tools using `tool_configs`.
 
 #### 3. Set Up the Pydantic-AI Agent
 
