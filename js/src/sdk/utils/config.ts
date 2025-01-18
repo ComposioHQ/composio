@@ -52,6 +52,7 @@ export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
       `API Req [${request.method?.toUpperCase()}] ${request.url}, x-request-id: ${request.headers["x-request-id"]}`,
       {
         ...(body && { body }),
+        query: request.params,
       }
     );
     request.metadata = { startTime: Date.now() };

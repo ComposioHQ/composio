@@ -33,7 +33,7 @@ import {
 } from "./utils/processor/file";
 
 export type ExecuteActionParams = z.infer<typeof ZExecuteActionParams> & {
-  // @deprecated
+  /** @deprecated use actionName field instead */
   action?: string;
   actionName?: string;
 };
