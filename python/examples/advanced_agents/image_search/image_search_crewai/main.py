@@ -34,7 +34,7 @@ image_search_agent = Agent(
     role="Image Search Agent",
     goal=("Search and retrieve images based on specific queries."),
     verbose=True,  # Enable verbose output
-    memory=True,  # Enable memory for the agent
+    memory=True,  # Enable memory for the agent # type: ignore
     backstory=(
         "You are an image search expert, skilled in finding and retrieving relevant images from the web. "
         "Your keen eye for detail ensures that the images you find are accurate and high quality."

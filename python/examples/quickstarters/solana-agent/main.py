@@ -11,7 +11,7 @@ tools = toolset.get_tools(actions=[search, Action.SLACK_SENDS_A_MESSAGE_TO_A_SLA
 # Create an agent with code execution enabled
 sol_agent = Agent(
     role="SOL Balance and Price Notifier",
-    goal="Retrieve SOL balance using get_balance and internet search to get price, then send it to Slack General channel.",
+    goal="Retrieve SOL balance using get_balance and internet search to get price, then send it to Slack balance_sol channel.",
     backstory="You are an agent specialized in monitoring SOL balance and price.",
 )
 
@@ -33,8 +33,8 @@ price_analysis_task = Task(
 
 # Create a task to send the analyzed price information to Slack
 send_price_info_task = Task(
-    description="Send the analyzed real-time price information of Solana to the Slack General channel.",
-    expected_output='Analyzed price information sent to Slack General channel.',
+    description="Send the analyzed real-time price information of Solana to the Slack balance_sol channel. Don't say anything in the message other than the data, your insights and recommendation on future investment or sale but make sure its well formatted and nicely written.",
+    expected_output='Analyzed price information and wrote a detailed analysis on it.',
     agent=sol_agent,
     tools=tools # type: ignore
 )
@@ -48,5 +48,9 @@ analysis_crew = Crew(
 
 # Execute the crew
 result = analysis_crew.kickoff(inputs={'wallet_address':'BHiAM94bZB9KKZhcVvx8mEVqdnaEANVmZ2XykZMSG8iB'})
-
+toolset.execute_action(
+    action=Action.SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL,
+    params={},
+    text=str(result)+'send it on balance_sol channel'
+)
 print(result)

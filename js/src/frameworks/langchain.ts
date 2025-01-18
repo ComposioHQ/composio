@@ -34,7 +34,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
     super({
       apiKey: config.apiKey || null,
       baseUrl: config.baseUrl || COMPOSIO_BASE_URL,
-      runtime: config?.runtime || null,
+      runtime: config?.runtime || LangchainToolSet.FRAMEWORK_NAME,
       entityId: config.entityId || LangchainToolSet.DEFAULT_ENTITY_ID,
     });
   }

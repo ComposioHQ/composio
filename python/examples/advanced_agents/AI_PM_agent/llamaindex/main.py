@@ -20,8 +20,8 @@ BOT_USER_ID = os.environ[
 RESPOND_ONLY_IF_TAGGED = (
     True  # Set to True to have the bot respond only when tagged in a message
 )
-import agentops
-agentops.init(os.environ["AGENTOPS_API_KEY"])
+# import agentops
+# agentops.init(os.environ["AGENTOPS_API_KEY"])
 
 llm = OpenAI(model="gpt-4o")
 
@@ -44,7 +44,7 @@ def proc():
             "text": f"Are you sure you want to post message:{mail_message} from sender email:{sender_mail}. If yes, tag test_app and tell it the project id and team id.",
         },
     )
-    slack_listener.listen()
+    slack_listener.wait_forever()
 
 
 
@@ -60,7 +60,7 @@ prefix_messages = [
 ]
 
 agent = FunctionCallingAgentWorker(
-    tools=composio_tools,
+    tools=composio_tools, # type: ignore
     llm=llm,
     prefix_messages=prefix_messages,
     max_function_calls=10,
@@ -71,14 +71,14 @@ agent = FunctionCallingAgentWorker(
 
 # Callback function for handling new messages in a Slack channel
 @slack_listener.callback(filters={"trigger_name": "slackbot_receive_message"})
-def callback_new_message(event: TriggerEventData) -> None:
+def callback_slack_new_message(event: TriggerEventData) -> None:
     print("Recieved new messsage")
     payload = event.payload
     user_id = payload.get("user", "")
 
     # Ignore messages from the bot itself to prevent self-responses
     if user_id == BOT_USER_ID:
-        return "Bot ignored"
+        return "Bot ignored" # type: ignore
 
     message = payload.get("text", "")
 
@@ -86,8 +86,8 @@ def callback_new_message(event: TriggerEventData) -> None:
     if RESPOND_ONLY_IF_TAGGED and f"<@{BOT_USER_ID}>" not in message:
         print(f"Bot not tagged, ignoring message - {message} - {BOT_USER_ID}")
         return (
-            f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}"
-        )
+            f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}" # type: ignore
+        ) # type: ignore
 
     # Extract channel and timestamp information from the event payload
     channel_id = payload.get("channel", "")
@@ -105,16 +105,16 @@ def callback_new_message(event: TriggerEventData) -> None:
         ),
     )
 ]
-    tools = composio_toolset.get_tools(apps=[App.LINEAR])
+    tools = composio_toolset.get_tools(apps=[App.LINEAR]) # type: ignore
     # Process the message and post the response in the same channel or thread
     check_agent = FunctionCallingAgentWorker(
-    tools=tools,
+    tools=tools, # type: ignore
     llm=llm,
     prefix_messages=YES_OR_NO_prefix_messages,
     max_function_calls=10,
     allow_parallel_tool_calls=False,
     verbose=True,
-    ).as_agent()
+    ).as_agent() # type: ignore
     query_task = f"""
             2. If you decide to create an issue, Create it on Linear.
             3. If you decide to create an issue it should be a summary of the email content.
@@ -125,7 +125,7 @@ def callback_new_message(event: TriggerEventData) -> None:
             6. If the user does not give project_id or team_id find them out by using Linear Tool's actions.
             """
     result = check_agent.chat(query_task)
-    print(result)
+    print(result) # type: ignore
     composio_toolset.execute_action(
         action=Action.SLACKBOT_CHAT_POST_MESSAGE,
         params={
@@ -152,16 +152,10 @@ def callback_new_message(event: TriggerEventData) -> None:
         return
     print(sender_mail)
     print("WAITING FOR SLACK CONFIRMATION")
-    composio_toolset_1 = ComposioToolSet(
-        processors={
-        "pre": {
-            Action.LINEAR_CREATE_LINEAR_ISSUE: proc()
-            },
-        }
-    )
+    proc()
 
 
 print("GMAIL LISTENING")
 
-gmail_listener.listen()
+gmail_listener.wait_forever()
 

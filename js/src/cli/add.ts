@@ -193,9 +193,9 @@ export default class AddCommand {
       config.scopes = (options.scope as string[]).join(",");
     }
 
-    const connectionData = await composioClient.connectedAccounts.create({
+    const connectionData = await composioClient.connectedAccounts.initiate({
       integrationId,
-      data: config,
+      connectionParams: config,
       labels: options.label as string[],
     });
 

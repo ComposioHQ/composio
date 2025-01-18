@@ -1,6 +1,6 @@
 # Indie Hacker Agent Guide
 
-This guide provides detailed steps to create an Indie Hacker Agent that leverages Composio, agentic frameworks such as Letta and OpenAI to create a complete content writing and posting pipeline. Ensure you have Python 3.8 or higher installed.
+This guide provides detailed steps to create an Indie Hacker Agent that leverages Composio, agentic frameworks such as Langgraph and OpenAI to create a complete content writing and posting pipeline. Ensure you have Python 3.8 or higher installed.
 
 
 ## Steps to Run

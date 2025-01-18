@@ -215,3 +215,34 @@ When users connect using this integration, they'll see your app's name and logo 
 </Info>
 
 <img width="500" height="500" src="../../media/images/custom-oauth.png" />
+
+### Adding custom redirect URL
+To use your own domain for OAuth callbacks, set up a 301 redirect from your domain to Composio's default <Tooltip tip="https://backend.composio.dev/api/v1/auth-apps/add">redirect URL</Tooltip>
+. It would look something like this: <br />
+`yourdomain.com/redirect` → `https://backend.composio.dev/api/v1/auth-apps/add`
+
+<iframe
+  width="720" 
+  height="405"
+  src="https://www.youtube.com/embed/PYJ3JQGUG6w?si=v482zmxhMY4TGhNG"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  allowfullscreen
+></iframe>
+
+<Steps>
+<Step title="Copy the redirect URL">
+```bash Redirect URL
+https://backend.composio.dev/api/v1/auth-apps/add
+```
+</Step>
+<Step title="Go to your DNS provider and set up a 301 redirect">
+Head over to your DNS provider and set up a 301 redirect from your domain to Composio's default redirect URL, here are doc references for some of the popular DNS providers: [Cloudflare](https://developers.cloudflare.com/rules/url-forwarding/single-redirects/create-dashboard/), [GoDaddy](https://www.godaddy.com/en-in/help/forward-my-godaddy-domain-12123), [NameCheap](https://www.namecheap.com/support/knowledgebase/article.aspx/385/2237/how-to-set-up-a-url-redirect-for-a-domain/)
+<Info>Please make sure that you enable the Preserve query string option when setting up the redirect. If you’re using your own custom application code for redirect, please remember to pass the exact query parameters and headers</Info>
+</Step>
+<Step title="Creating an integration">
+Head over to [dashboard](https://app.composio.dev/), select the app you want to integrate and enable **Use your own Developer App** toggle, enter your OAuth credentials and click on the edit button and add your own redirect URL (yourdomain.com/redirect). Click on **Create Integration** and you're done. 
+<img src="media/newIntegrationPage.jpg" />
+</Step>
+</Steps>

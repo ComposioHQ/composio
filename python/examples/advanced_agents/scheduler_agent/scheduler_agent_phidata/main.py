@@ -9,13 +9,13 @@ from phi.workflow.workflow import Workflow
 # Initialize Composio tools
 composio_toolset = ComposioToolSet()
 
-schedule_tool = composio_toolset.get_actions(
+schedule_tool = composio_toolset.get_tools(
     actions=[
         Action.GOOGLECALENDAR_FIND_FREE_SLOTS,
         Action.GOOGLECALENDAR_CREATE_EVENT,
     ]
 )
-email_tool = composio_toolset.get_actions(actions=[Action.GMAIL_CREATE_EMAIL_DRAFT])
+email_tool = composio_toolset.get_tools(actions=[Action.GMAIL_CREATE_EMAIL_DRAFT])
 
 date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 timezone = datetime.now().astimezone().tzinfo
@@ -29,17 +29,8 @@ email_assistant = Assistant(
     Current DateTime: {date_time}. All the conversations happen in {timezone} timezone.
     Pass empty config ("config": {{}}) for the function calls, if you get an error about not passing config.""",
     run_id="",
-    tools=schedule_tool
+    tools=schedule_tool # type: ignore
 )
-
-def extract_sender_email(payload):
-    for header in payload["payload"]["headers"]:
-        if header["name"] == "From":
-            match = re.search(r"[\w\.-]+@[\w\.-]+", header["value"])
-            if match:
-                return match.group(0)
-    return None
-
 
 listener = composio_toolset.create_trigger_listener()
 
@@ -72,4 +63,4 @@ def callback_new_message(event: TriggerEventData) -> None:
 
 if __name__ == "__main__":
     print("Subscription created!")
-    listener.listen()
+    listener.wait_forever()

@@ -181,6 +181,15 @@
             "sdrkit/ai-market-research-agent",
             "sdrkit/ai-scheduling-agent"  
           ]
+        },
+        {
+          "group": "Crypto Kit",
+          "pages": [
+            "cryptokit/tools",
+            "cryptokit/community_reward_agent",
+            "cryptokit/github_contributor_reward_agent",
+            "cryptokit/coinbase_agent"
+          ]
         }
       ]
     },
@@ -192,6 +201,7 @@
         "faq/api_key/cli",
         "faq/integrations_and_connections/list_of_tools",
         "faq/supported_llms/supported_llm",
+        "monitoring-docs",
         "changelog"
       ]
     },

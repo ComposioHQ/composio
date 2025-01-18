@@ -15,6 +15,9 @@ import type {
   CreateConnectorData,
   CreateConnectorError,
   CreateConnectorResponse,
+  CreateConnectorV2Data,
+  CreateConnectorV2Error,
+  CreateConnectorV2Response,
   CreateProjectData,
   CreateProjectError,
   CreateProjectResponse,
@@ -86,6 +89,9 @@ import type {
   GetLogsData,
   GetLogsError,
   GetLogsResponse,
+  GetOrCreateConnectorData,
+  GetOrCreateConnectorError,
+  GetOrCreateConnectorResponse,
   GetOrgApiKeyError,
   GetOrgApiKeyResponse,
   GetProjectData,
@@ -106,6 +112,9 @@ import type {
   InitiateConnectionData,
   InitiateConnectionError,
   InitiateConnectionResponse2,
+  InitiateConnectionV2Data,
+  InitiateConnectionV2Error,
+  InitiateConnectionV2Response,
   InviteMemberData,
   InviteMemberError,
   InviteMemberResponse,
@@ -151,9 +160,15 @@ import type {
   RegenerateProjectApiKeyData,
   RegenerateProjectApiKeyError,
   RegenerateProjectApiKeyResponse,
+  ReinitiateConnectionData,
+  ReinitiateConnectionError,
+  ReinitiateConnectionResponse,
   RenameProjectData,
   RenameProjectError,
   RenameProjectResponse,
+  SearchConnectorData,
+  SearchConnectorError,
+  SearchConnectorResponse,
   SetCallbackUrlData,
   SetCallbackUrlError,
   SetCallbackUrlResponse,
@@ -739,6 +754,23 @@ export class ConnectionsService {
   }
 
   /**
+   * Reinitiate connection
+   * Reinitiate an existing connection to get new credentials
+   */
+  public static reinitiateConnection<ThrowOnError extends boolean = false>(
+    options: Options<ReinitiateConnectionData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      ReinitiateConnectionResponse,
+      ReinitiateConnectionError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v1/connectedAccounts/{connectedAccountId}/reinitiate",
+    });
+  }
+
+  /**
    * Get single connection
    */
   public static getConnection<ThrowOnError extends boolean = false>(
@@ -1211,6 +1243,77 @@ export class ProjectsService {
     >({
       ...options,
       url: "/api/v1/org/projects/{projectId}/rename",
+    });
+  }
+}
+
+export class IntegrationsV2Service {
+  /**
+   * Search connector
+   * Search for a connector
+   */
+  public static searchConnector<ThrowOnError extends boolean = false>(
+    options?: Options<SearchConnectorData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      SearchConnectorResponse,
+      SearchConnectorError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/integrations/search-by-filters",
+    });
+  }
+
+  /**
+   * Create connector
+   * Create a new connector
+   */
+  public static createConnectorV2<ThrowOnError extends boolean = false>(
+    options?: Options<CreateConnectorV2Data, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      CreateConnectorV2Response,
+      CreateConnectorV2Error,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/integrations/create",
+    });
+  }
+
+  /**
+   * Get or create connector
+   * Get or create a connector
+   */
+  public static getOrCreateConnector<ThrowOnError extends boolean = false>(
+    options?: Options<GetOrCreateConnectorData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      GetOrCreateConnectorResponse,
+      GetOrCreateConnectorError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/integrations/get-or-create",
+    });
+  }
+}
+
+export class Connectionsv2Service {
+  /**
+   * Initiate connection
+   */
+  public static initiateConnectionV2<ThrowOnError extends boolean = false>(
+    options?: Options<InitiateConnectionV2Data, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      InitiateConnectionV2Response,
+      InitiateConnectionV2Error,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/connectedAccounts/initiateConnection",
     });
   }
 }

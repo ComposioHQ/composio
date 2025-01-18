@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import {
   DeleteRowAPIDTO,
   ExpectedInputFieldsDTO,
@@ -7,20 +8,34 @@ import {
 } from "../client";
 import apiClient from "../client/client";
 import {
+  ZAuthMode,
   ZCreateIntegrationParams,
   ZListIntegrationsParams,
   ZSingleIntegrationParams,
 } from "../types/integration";
 import { CEG } from "../utils/error";
+import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
+import { Apps } from "./apps";
 import { BackendClient } from "./backendClient";
 
 // Types generated from zod schemas
-export type IntegrationListParam = z.infer<typeof ZListIntegrationsParams>;
-export type IntegrationGetParam = z.infer<typeof ZSingleIntegrationParams>;
-export type IntegrationListData = string;
-type IntegrationCreateParams = z.infer<typeof ZCreateIntegrationParams>;
+
+export type IntegrationGetRequiredParam = z.infer<
+  typeof ZSingleIntegrationParams
+>;
+export type IntegrationCreateParams = z.infer<
+  typeof ZCreateIntegrationParams
+> & {
+  /** @deprecated use appUniqueKey field instead */
+  appId?: string;
+};
+export type IntegrationListParam = z.infer<typeof ZListIntegrationsParams> & {
+  /** @deprecated use appUniqueKeys field instead */
+  appName?: string;
+};
+type IntegrationDeleteParam = z.infer<typeof ZSingleIntegrationParams>;
 
 // API response types
 export type IntegrationCreateData = {
@@ -31,12 +46,15 @@ export type IntegrationListRes = GetConnectorListResDTO;
 export type IntegrationGetRes = GetConnectorInfoResDTO;
 export type IntegrationRequiredParamsRes = ExpectedInputFieldsDTO[];
 export type IntegrationDeleteRes = DeleteRowAPIDTO;
+
 export class Integrations {
   private backendClient: BackendClient;
   private fileName: string = "js/src/sdk/models/integrations.ts";
+  private apps: Apps;
 
   constructor(backendClient: BackendClient) {
     this.backendClient = backendClient;
+    this.apps = new Apps(backendClient);
   }
 
   /**
@@ -54,8 +72,12 @@ export class Integrations {
       params: { data },
     });
     try {
+      const { appName, appUniqueKey, ...rest } =
+        ZListIntegrationsParams.parse(data);
+      const finalAppName =
+        appName && appName.length > 0 ? appName : appUniqueKey;
       const response = await apiClient.appConnector.listAllConnectors({
-        query: data,
+        query: { ...rest, appName: finalAppName },
         throwOnError: true,
       });
 
@@ -74,7 +96,7 @@ export class Integrations {
    * @returns {Promise<IntegrationGetResponse>} A promise that resolves to the details of the integration.
    * @throws {ComposioError} If the request fails.
    */
-  async get(data: IntegrationGetParam): Promise<IntegrationGetRes> {
+  async get(data: IntegrationGetRequiredParam): Promise<IntegrationGetRes> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "get",
       file: this.fileName,
@@ -96,25 +118,23 @@ export class Integrations {
    *
    * This method is used to get the necessary input fields for a specific integration's authentication scheme.
    *
-   * @param {IntegrationListData} data The data for the request.
+   * @param {IntegrationGetParam} data The data for the request.
    * @returns {Promise<IntegrationRequiredParamsRes>} A promise that resolves to the required parameters for the integration's authentication scheme.
    * @throws {ComposioError} If the request fails.
    */
   async getRequiredParams(
-    integrationId: IntegrationListData
+    data: IntegrationGetRequiredParam
   ): Promise<IntegrationRequiredParamsRes> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getRequiredParams",
       file: this.fileName,
-      params: { integrationId },
+      params: { data },
     });
     try {
-      ZSingleIntegrationParams.parse({
-        integrationId,
-      });
+      ZSingleIntegrationParams.parse(data);
       const response = await apiClient.appConnector.getConnectorInfo({
         path: {
-          integrationId,
+          integrationId: data.integrationId,
         },
         throwOnError: true,
       });
@@ -140,23 +160,91 @@ export class Integrations {
       params: { data },
     });
     try {
-      if (!data?.authConfig) {
-        data!.authConfig = {};
-      }
       ZCreateIntegrationParams.parse(data);
 
-      const response = await apiClient.appConnector.createConnector({
+      let uniqueKey = data.appUniqueKey;
+
+      if (!uniqueKey) {
+        const apps = await apiClient.apps.getApps();
+        const app = apps.data?.items.find((app) => app.appId === data.appId);
+        uniqueKey = app!.key;
+        if (!uniqueKey) {
+          throw CEG.getCustomError(
+            COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
+            {
+              message: `No app was found with the provided appId`,
+              description: `Please provide an app unique key`,
+            }
+          );
+        }
+      }
+
+      const response = await apiClient.appConnectorV2.createConnectorV2({
         body: {
-          name: data?.name!,
-          appId: data?.appId!,
-          authConfig: data?.authConfig! as Record<string, unknown>,
-          authScheme: data?.authScheme,
-          useComposioAuth: data?.useComposioAuth!,
-          forceNewIntegration: true,
+          app: {
+            uniqueKey: uniqueKey,
+          },
+          config: {
+            useComposioAuth: data.useComposioAuth,
+            name: data.name,
+            authScheme: data.authScheme as z.infer<typeof ZAuthMode>,
+            integrationSecrets: data.authConfig,
+          },
         },
         throwOnError: true,
       });
-      return response.data;
+
+      const integrationId = response.data.integrationId;
+      return this.get({ integrationId });
+    } catch (error) {
+      throw CEG.handleAllError(error);
+    }
+  }
+
+  async getOrCreateIntegration(
+    data: IntegrationCreateParams
+  ): Promise<IntegrationGetRes> {
+    TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
+      method: "getOrCreateIntegration",
+      file: this.fileName,
+      params: { data },
+    });
+
+    try {
+      ZCreateIntegrationParams.parse(data);
+
+      let uniqueKey = data.appUniqueKey;
+
+      if (!uniqueKey) {
+        const apps = await apiClient.apps.getApps();
+        const app = apps.data?.items.find((app) => app.appId === data.appId);
+        uniqueKey = app!.key;
+        throw CEG.getCustomError(
+          COMPOSIO_SDK_ERROR_CODES.COMMON.INVALID_PARAMS_PASSED,
+          {
+            message: `No app was found with the provided appId`,
+            description: `Please provide an app unique key`,
+          }
+        );
+      }
+
+      const response = await apiClient.appConnectorV2.getOrCreateConnector({
+        body: {
+          app: {
+            uniqueKey,
+          },
+          config: {
+            useComposioAuth: data.useComposioAuth,
+            name: data.name,
+            authScheme: data.authScheme as z.infer<typeof ZAuthMode>,
+            integrationSecrets: data.authConfig,
+          },
+        },
+        throwOnError: true,
+      });
+
+      const integrationId = response.data.integrationId;
+      return this.get({ integrationId });
     } catch (error) {
       throw CEG.handleAllError(error);
     }
@@ -171,21 +259,17 @@ export class Integrations {
    * @returns {Promise<IntegrationDeleteResponse>} A promise that resolves to the deleted integration model.
    * @throws {ComposioError} If the request fails.
    */
-  async delete(
-    integrationId: IntegrationListData
-  ): Promise<IntegrationDeleteRes> {
+  async delete(data: IntegrationDeleteParam): Promise<IntegrationDeleteRes> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "delete",
       file: this.fileName,
-      params: { integrationId },
+      params: { data },
     });
     try {
-      ZSingleIntegrationParams.parse({
-        integrationId,
-      });
+      ZSingleIntegrationParams.parse(data);
       const response = await apiClient.appConnector.deleteConnector({
         path: {
-          integrationId,
+          integrationId: data.integrationId,
         },
         throwOnError: true,
       });
