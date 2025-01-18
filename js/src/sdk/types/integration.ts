@@ -16,7 +16,8 @@ export const ZAuthMode = z.enum([
 export const ZCreateIntegrationParams = z.object({
   name: z.string(),
   authScheme: ZAuthMode.optional(),
-  appId: z.string(),
+  appUniqueKey: z.string().optional(),
+  appId: z.string().optional(),
   forceNewIntegration: z.boolean().optional(),
   authConfig: z
     .union([
@@ -42,5 +43,6 @@ export const ZListIntegrationsParams = z.object({
   page: z.number().optional(),
   pageSize: z.number().optional(),
   appName: z.string().optional(),
+  appUniqueKey: z.string().optional(),
   showDisabled: z.boolean().optional(),
 });
