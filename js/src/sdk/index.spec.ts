@@ -8,7 +8,7 @@ import {
   BASE_ERROR_CODE_INFO,
   COMPOSIO_SDK_ERROR_CODES,
 } from "./utils/errors/src/constants";
-const { COMPOSIO_API_KEY, BACKEND_HERMES_URL } = getTestConfig();
+const { COMPOSIO_API_KEY, _BACKEND_HERMES_URL } = getTestConfig();
 
 describe("Basic SDK spec suite", () => {
   const mock = new AxiosMockAdapter(axiosClient.instance);

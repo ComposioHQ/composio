@@ -13,10 +13,10 @@ describe("ConnectedAccounts class tests", () => {
 
   it("should create a ConnectedAccounts instance and retrieve connections list", async () => {
     // @ts-ignore
-    const connectionsData: TConnectionData = {
+    const _connectionsData: TConnectionData = {
       appNames: "github",
     };
-    const connectionsList = await connectedAccounts.list(connectionsData);
+    const connectionsList = await connectedAccounts.list(_connectionsData);
     expect(connectionsList.items).toBeInstanceOf(Array);
     expect(connectionsList.items).not.toHaveLength(0);
 
@@ -30,7 +30,7 @@ describe("ConnectedAccounts class tests", () => {
 
   it("should retrieve a specific connection", async () => {
     // @ts-ignore
-    const connectionsData: TConnectionData = {
+    const _connectionsData: TConnectionData = {
       appNames: "github",
     };
     const connectionsList = await connectedAccounts.list({
@@ -48,10 +48,10 @@ describe("ConnectedAccounts class tests", () => {
 
   it("should retrieve a specific connection for entity", async () => {
     // @ts-ignore
-    const connectionsData: TConnectionData = {
+    const _connectionsData: TConnectionData = {
       user_uuid: "default",
     };
-    const connectionsList = await connectedAccounts.list(connectionsData);
+    const connectionsList = await connectedAccounts.list(_connectionsData);
 
     const connectionId = connectionsList.items[0].id;
 
