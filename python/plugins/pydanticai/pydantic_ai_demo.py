@@ -2,8 +2,6 @@
 Pydantic-AI demo.
 """
 
-import os
-
 from composio_pydanticai import ComposioToolSet
 from dotenv import load_dotenv  # type: ignore
 from pydantic_ai import Agent

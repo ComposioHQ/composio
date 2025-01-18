@@ -5,10 +5,9 @@ from dataclasses import dataclass
 from inspect import Parameter, Signature
 from typing import Any, Dict, TypeVar
 
-import pydantic
 import typing_extensions as te
 from pydantic import ValidationError
-from pydantic_ai.tools import RunContext, Tool, ToolDefinition
+from pydantic_ai.tools import RunContext, Tool
 
 from composio import Action, ActionType, AppType, TagType
 from composio.tools import ComposioToolSet as BaseComposioToolSet
@@ -74,9 +73,9 @@ class ComposioToolSet(
 
     def __init__(
         self,
+        *args,
         max_retries: int = 3,
         tool_configs: t.Optional[Dict[str, ToolConfig]] = None,
-        *args,
         **kwargs,
     ):
         """Initialize the toolset with configurable max_retries.
@@ -99,7 +98,9 @@ class ComposioToolSet(
     ):
         """Create a wrapper function for the Composio action."""
 
-        async def function(ctx: "RunContext[AgentDeps]", **kwargs: t.Any) -> t.Dict:
+        async def function(
+            ctx: "RunContext[AgentDeps]", **kwargs: t.Any
+        ) -> t.Dict:  # pylint: disable=unused-argument
             """Wrapper function for composio action."""
             try:
                 return self.execute_action(
