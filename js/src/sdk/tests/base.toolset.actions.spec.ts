@@ -1,10 +1,7 @@
 // @ts-ignore - Jest globals are provided by the test environment
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { z } from "zod";
 import { getTestConfig } from "../../../config/getTestConfig";
 import { ComposioToolSet } from "../base.toolset";
-import { ActionProxyRequestConfigDTO } from "../client/types.gen";
-import { ActionExecutionResDto } from "../client";
 
 describe("ComposioToolSet - Actions Schema", () => {
   let toolset: ComposioToolSet;
