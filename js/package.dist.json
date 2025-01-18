@@ -25,7 +25,8 @@
     "@langchain/core": ">0.2.0",
     "@langchain/openai": ">0.2.0",
     "langchain": ">0.2.0",
-    "openai": ">4.0"
+    "openai": ">4.0",
+    "resolve-package-path": "*"
   },
   "dependencies": {
     "chalk": "^4",
