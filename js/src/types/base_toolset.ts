@@ -35,7 +35,8 @@ export type RawActionData = z.infer<typeof ZRawActionSchema>;
     This is the schema for the params object in the ExecuteAction function
 */
 export const ZExecuteActionParams = z.object({
-  action: z.string(),
+  action: z.string().optional(),
+  actionName: z.string().optional(),
   params: z.record(z.any()).optional(),
   entityId: z.string().optional(),
   nlaText: z.string().optional(),
