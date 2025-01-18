@@ -36,10 +36,10 @@ code_review_assistant_prompt = (
 # Define the tools
 pr_agent_tools = composio_toolset.get_tools(
     actions=[
-        Action.GITHUB_GET_CODE_CHANGES_IN_PR,
-        Action.GITHUB_PULLS_CREATE_REVIEW_COMMENT,
+        Action.GITHUB_GET_A_PULL_REQUEST,
+        Action.GITHUB_CREATE_A_REVIEW_FOR_A_PULL_REQUEST,
         Action.GITHUB_CREATE_AN_ISSUE,
-        Action.SLACKBOT_CHAT_POST_MESSAGE,
+        Action.SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL,
     ]
 )
 

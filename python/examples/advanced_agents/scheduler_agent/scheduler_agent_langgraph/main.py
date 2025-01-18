@@ -27,13 +27,13 @@ DATE_TIME = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 llm = ChatOpenAI(model="gpt-4-turbo")
 composio_toolset = ComposioToolSet()
 
-schedule_tools = composio_toolset.get_actions(
+schedule_tools = composio_toolset.get_tools(
     actions=[
         Action.GOOGLECALENDAR_FIND_FREE_SLOTS,
         Action.GOOGLECALENDAR_CREATE_EVENT,
     ]
 )
-email_tools = composio_toolset.get_actions(actions=[Action.GMAIL_CREATE_EMAIL_DRAFT])
+email_tools = composio_toolset.get_tools(actions=[Action.GMAIL_CREATE_EMAIL_DRAFT])
 tools = [*schedule_tools, *email_tools]
 
 tool_node = ToolNode(tools)
@@ -129,16 +129,6 @@ workflow.add_conditional_edges(
 
 app = workflow.compile()
 
-def extract_sender_email(payload):
-    if not any(header.get("name") == "Delivered-To" and header.get("value") for header in payload["headers"]):
-        return None
-
-    for header in payload["headers"]:
-        if header["name"] == "From":
-            match = re.search(r"[\w\.-]+@[\w\.-]+", header["value"])
-            return match.group(0) if match else None
-    return None
-
 def process_email(email_sender, email_content, thread_id):
     final_state = app.invoke({
         "messages": [
@@ -171,4 +161,5 @@ def callback_new_message(event: TriggerEventData) -> None:
     output = process_email(email_sender, email_content, thread_id)
     print("Final output:", output)
 
-listener.listen()
+print("Starting listener")
+listener.wait_forever()

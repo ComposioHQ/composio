@@ -1,0 +1,262 @@
+---
+title: "Community Reward Agent"
+sidebarTitle: "Community Reward Agent"
+description: "This project demonstrates how to use Composio to create a Community Reward Agent."
+---
+
+## Overview
+
+The Community Reward Agent is an AI Agent that rewards community members with SOL based on their engagement.
+
+## Getting Started
+
+<Tabs>
+<Tab title="Python">
+<Steps>
+<Step title="Installation">
+```bash install dependencies
+pip install composio-llamaindex python-dotenv
+```
+</Step>
+
+<Step title="Connecting to tools and models">
+```bash connect to required tools
+composio add github
+
+export OPENAI_API_KEY="<your-openai-api-key>"
+```
+</Step>
+
+<Step title="Importing the required libraries">
+```python import required libraries
+from composio_llamaindex import ComposioToolSet, App, Action
+from llama_index.core.agent import FunctionCallingAgentWorker
+from llama_index.core.llms import ChatMessage
+from llama_index.llms.openai import OpenAI
+from solana_kit import get_balance, send_sol, get_transaction_status, request_airdrop
+from dotenv import load_dotenv
+import json
+import os
+import datetime
+
+date = datetime.datetime.now().strftime("%Y-%m-%d")
+```
+</Step>
+
+<Step title='Creating Solana Transfer Action'>
+```python create solana transfer action
+from solders.keypair import Keypair
+from solders.pubkey import Pubkey
+from solana.rpc.api import Client
+from solders.system_program import TransferParams, transfer
+from solders.transaction import Transaction
+from solders.message import Message
+from composio import action
+import base58
+from solders.signature import Signature
+
+@action(toolname='solanakit', requires=['solana','solders'])
+def send_sol(sender_private_key: str, receiver_public_key: str, amount: str, network: str = "devnet") -> str:
+    """
+    Send SOL to a wallet
+    :param sender_private_key: private key of the sender
+    :param receiver_public_key: address of the wallet to send SOL to
+    :param amount: amount of SOL to send, should be in lamports
+    :param network: network to send the transaction on
+    :return transaction_hash: transaction hash
+    """
+    try:
+        # Create keypair for sender
+        # Use a valid Base58-encoded private key for the sender
+        sender_keypair = Keypair.from_base58_string(sender_private_key)
+        sender_public_key = sender_keypair.pubkey()
+
+        # Define receiver's public key
+        receiver_public_key_ = Pubkey.from_string(receiver_public_key)
+
+        # Build the transfer instruction
+        ixns = [
+            transfer(
+                TransferParams(
+                    from_pubkey=sender_public_key,
+                    to_pubkey=receiver_public_key_,
+                    lamports=int(amount)
+                )
+            )
+        ]
+
+        # Create a message with the transaction
+        msg = Message(ixns, sender_public_key)
+
+        # Connect to a Solana client
+        client = Client(f"https://api.{network}.solana.com")  # Using Devnet RPC endpoint
+
+        # Fetch the latest blockhash
+        latest_blockhash = client.get_latest_blockhash().value.blockhash
+
+        # Create the transaction
+        transaction = Transaction([sender_keypair], msg, latest_blockhash)
+
+        # Send the transaction
+        response = client.send_transaction(transaction)
+        print("Transaction response:", response)
+        return "Transaction sent successfully: "+str(response)
+    except ValueError as e:
+        return f"Error: Invalid key format - {str(e)}"
+    except Exception as e:
+        return f"Error sending transaction: {str(e)}"
+
+```
+</Step>
+
+<Step title="Initializing the Tools and the LLM">
+```python initialize toolset and llm
+toolset = ComposioToolSet(api_key="")
+tools = toolset.get_tools(actions=[send_sol, Action.SLACK_FETCH_CONVERSATION_HISTORY, Action.SLACK_LIST_ALL_SLACK_TEAM_CHANNELS_WITH_VARIOUS_FILTERS, Action.SLACK_LIST_ALL_SLACK_TEAM_USERS_WITH_PAGINATION, Action.SLACK_SENDS_A_MESSAGE_TO_A_SLACK_CHANNEL])
+
+llm = OpenAI(model="gpt-4o")
+```
+</Step>
+
+<Step title="Setting up Function Calling Worker">
+```python setup function calling worker
+prefix_messages = [
+    ChatMessage(
+        role="system",
+        content=(
+              "You are a solana agent that can execute actions with Solana Kit"
+              "You also have access to Slack and can fetch conversation history and get channel id based on the channel name. You can also get username based on the user id by fetching all users in the slack team. Your job is to find out the most active community member and reward them with 1 SOL"
+        ),
+    )
+]
+
+agent = FunctionCallingAgentWorker(
+    tools=tools,
+    llm=llm,
+    prefix_messages=prefix_messages,
+    max_function_calls=10,
+    allow_parallel_tool_calls=False,
+    verbose=True,
+).as_agent()
+```
+</Step>
+
+<Step title="Executing the Agent">
+```python run the agent
+community_channel_name = input("Enter the name of the slack channel: ")
+response = agent.chat(f"""Find only the most active community member this week from the slack channel {community_channel_name} and then print their slack name. The date today is {date}""")
+print(response)
+wallet_address = input("Enter the wallet address of the most active community member: ")
+private_key = os.getenv('SOLANA_PRIVATE_KEY')
+my_wallet_address = os.getenv('SOLANA_WALLET_ADDRESS')
+agent.chat(f"""send 1 SOL from my wallet {my_wallet_address}, my private key is {private_key} to {wallet_address} on devnet using send sol action and then check transaction status twice/thrice after 5 seconds of the transaction using get transaction status action. After the the transaction is confirmed, send a message to the slack channel {community_channel_name} with the username of the most active community member announcing that they are the most active community member this week and congratulate them and tell them they have been rewarded with 1 SOL""")
+```
+</Step>
+
+<Step title='Final Code'>
+```python final code
+from composio_llamaindex import ComposioToolSet, App, Action
+from llama_index.core.agent import FunctionCallingAgentWorker
+from llama_index.core.llms import ChatMessage
+from llama_index.llms.openai import OpenAI
+from dotenv import load_dotenv
+from solders.keypair import Keypair
+from solders.pubkey import Pubkey
+from solana.rpc.api import Client
+from solders.system_program import TransferParams, transfer
+from solders.transaction import Transaction
+from solders.message import Message
+from composio import action
+import base58
+from solders.signature import Signature
+
+load_dotenv()
+
+@action(toolname='solanakit', requires=['solana','solders'])
+def send_sol(sender_private_key: str, receiver_public_key: str, amount: str, network: str = "devnet") -> str:
+    """
+    Send SOL to a wallet
+    :param sender_private_key: private key of the sender
+    :param receiver_public_key: address of the wallet to send SOL to
+    :param amount: amount of SOL to send, should be in lamports
+    :param network: network to send the transaction on
+    :return transaction_hash: transaction hash
+    """
+    try:
+        # Create keypair for sender
+        # Use a valid Base58-encoded private key for the sender
+        sender_keypair = Keypair.from_base58_string(sender_private_key)
+        sender_public_key = sender_keypair.pubkey()
+
+        # Define receiver's public key
+        receiver_public_key_ = Pubkey.from_string(receiver_public_key)
+
+        # Build the transfer instruction
+        ixns = [
+            transfer(
+                TransferParams(
+                    from_pubkey=sender_public_key,
+                    to_pubkey=receiver_public_key_,
+                    lamports=int(amount)
+                )
+            )
+        ]
+
+        # Create a message with the transaction
+        msg = Message(ixns, sender_public_key)
+
+        # Connect to a Solana client
+        client = Client(f"https://api.{network}.solana.com")  # Using Devnet RPC endpoint
+
+        # Fetch the latest blockhash
+        latest_blockhash = client.get_latest_blockhash().value.blockhash
+
+        # Create the transaction
+        transaction = Transaction([sender_keypair], msg, latest_blockhash)
+
+        # Send the transaction
+        response = client.send_transaction(transaction)
+        print("Transaction response:", response)
+        return "Transaction sent successfully: "+str(response)
+    except ValueError as e:
+        return f"Error: Invalid key format - {str(e)}"
+    except Exception as e:
+        return f"Error sending transaction: {str(e)}"
+
+toolset = ComposioToolSet(api_key="")
+tools = toolset.get_tools(actions=[send_sol, Action.GITHUB_LIST_REPOSITORY_CONTRIBUTORS])
+
+llm = OpenAI(model="gpt-4o")
+
+prefix_messages = [
+    ChatMessage(
+        role="system",
+        content=(
+              "You are a solana agent that can execute actions with Solana Kit"
+              "You have access to Github and can list repository contributors"
+        ),
+    )
+]
+
+agent = FunctionCallingAgentWorker(
+    tools=tools,
+    llm=llm,
+    prefix_messages=prefix_messages,
+    max_function_calls=10,
+    allow_parallel_tool_calls=False,
+    verbose=True,
+).as_agent()
+
+
+community_channel_name = input("Enter the name of the slack channel: ")
+response = agent.chat(f"""Find only the most active community member this week from the slack channel {community_channel_name} and then print their slack name. The date today is {date}""")
+print(response)
+wallet_address = input("Enter the wallet address of the most active community member: ")
+private_key = os.getenv('SOLANA_PRIVATE_KEY')
+my_wallet_address = os.getenv('SOLANA_WALLET_ADDRESS')
+agent.chat(f"""send 1 SOL from my wallet {my_wallet_address}, my private key is {private_key} to {wallet_address} on devnet using send sol action and then check transaction status twice/thrice after 5 seconds of the transaction using get transaction status action. After the the transaction is confirmed, send a message to the slack channel {community_channel_name} with the username of the most active community member announcing that they are the most active community member this week and congratulate them and tell them they have been rewarded with 1 SOL""")
+```
+</Step>
+</Steps>
+</Tab>
+</Tabs>

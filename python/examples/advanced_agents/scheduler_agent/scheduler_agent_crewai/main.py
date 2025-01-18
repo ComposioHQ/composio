@@ -32,26 +32,9 @@ email_assistant = Agent(
     Pass empty config ("config": {{}}) for the function calls, if you get an error about not passing config.""",
     verbose=True,
     llm=llm,
-    tools=schedule_tool,
+    tools=schedule_tool, # type: ignore
     allow_delegation=False,
 )
-
-
-def extract_sender_email(payload):
-    delivered_to_header_found = False
-    for header in payload["headers"]:
-        if header.get("name", "") == "Delivered-To" and header.get("value", "") != "":
-            delivered_to_header_found = True
-    print("delivered_to_header_found: ", delivered_to_header_found)
-    if not delivered_to_header_found:
-        return None
-    for header in payload["headers"]:
-        if header["name"] == "From":
-            # Regular expression to extract email from the 'From' header value
-            match = re.search(r"[\w\.-]+@[\w\.-]+", header["value"])
-            if match:
-                return match.group(0)
-    return None
 
 
 listener = composio_toolset.create_trigger_listener()
@@ -90,19 +73,19 @@ def callback_new_message(event: TriggerEventData) -> None:
         should describe what the meeting is about""",
         expected_output="emails was drafted",
         agent=email_assistant,
-        tools=[email_tool],
+        tools=email_tool, # type: ignore
         context=[analyze_email_task],
     )
 
     email_processing_crew = Crew(
         agents=[email_assistant],
         tasks=[analyze_email_task, draft_email_task],
-        verbose=1,
+        verbose=True,
         process=Process.sequential,
     )
     result = email_processing_crew.kickoff()
-    return result
+    return result.raw # type: ignore
 
 
 print("Subscription created!")
-listener.listen()
+listener.wait_forever()

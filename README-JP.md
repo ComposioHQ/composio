@@ -1,151 +1,135 @@
 <p>
-  <a href="https://github.com/composiohq/composio/blob/master/README.md">EN</a> | <a href="https://github.com/composiohq/composio/blob/master/README-CN.md">CN</a> | <a href="https://github.com/composiohq/composio/blob/master/README-JP.md">JP</a>
+    <a href="https://github.com/composiohq/composio/blob/master/README.md">英語</a> | <a
+        href="https://github.com/composiohq/composio/blob/master/README-CN.md">中国語</a> | <a
+        href="https://github.com/composiohq/composio/blob/master/README-JP.md">日本語</a>
+</p>
+<p align="center">
+    <a href="https://composio.dev//#gh-dark-mode-only">
+        <img src="./python/docs/imgs/composio_white_font.svg" width="318px" alt="Composio ロゴ" />
+    </a>
+    <a href="https://composio.dev//#gh-light-mode-only">
+        <img src="./python/docs/imgs/composio_black_font.svg" width="318px" alt="Composio ロゴ" />
+    </a>
+</p>
+<p align="center">
+    <a href="https://docs.composio.dev">
+        <img src="https://img.shields.io/badge/Read%20the%20Documentation-Click%20Here-green?style=for-the-badge&logo=read-the-docs"
+            alt="ドキュメントを読む">
+    </a>
 </p>
 
 <p align="center">
-  <a href="https://composio.dev//#gh-dark-mode-only">
-    <img src="./python/docs/imgs/composio_white_font.svg" width="318px" alt="Composio ロゴ" />
-  </a>
-  <a href="https://composio.dev//#gh-light-mode-only">
-    <img src="./python/docs/imgs/composio_black_font.svg" width="318px" alt="Composio ロゴ" />
-  </a>
-</p>
-<p align="center">
-  <a href="https://github.com/composiodev/composio/actions/workflows/common.yml">
-  <img alt="テスト" src="https://img.shields.io/github/actions/workflow/status/composiodev/composio/common.yml?label=Tests&style=plastic&logo=github&color=blue&cacheSeconds=60">
-  </a>
-  <a href="https://pypi.org/project/composio-core/">
-  <img alt="PyPI" src="https://img.shields.io/pypi/v/composio_core?label=最新&style=plastic&logo=pypi&color=blue&cacheSeconds=60&logoColor=white">
-  </a>
-  <a href="https://pypi.org/project/composio-core/">
-  <img alt="ダウンロード" src="https://img.shields.io/pypi/dm/composio-core?label=ダウンロード&style=plastic&logo=github&color=blue&cacheSeconds=60">
-  </a>
+    <a href="https://pypi.org/project/composio-core/">
+        <img alt="PyPI"
+            src="https://img.shields.io/pypi/v/composio_core?label=Latest&style=plastic&logo=pypi&color=blue&cacheSeconds=60&logoColor=white">
+    </a>
+    <a href="https://www.npmjs.com/package/composio-core">
+        <img alt="NPM"
+            src="https://img.shields.io/npm/v/composio-core?style=plastic&logo=npm&logoColor=white&label=latest&color=blue&cacheSeconds=60">
+    </a>
+    <a href="https://pypi.org/project/composio-core/">
+        <img alt="ダウンロード"
+            src="https://img.shields.io/pypi/dm/composio-core?label=Downloads&style=plastic&logo=github&color=blue&cacheSeconds=60">
+    </a>
 </p>
 
-<h2 align="center"><i>
-  AIエージェントのためのプロダクションレディツールセット
-</i></h2>
+<h2 align="center">
+    AI エージェント向けの製品版ツールセット
+</h2>
 
-<h4 align="center">認証、精度、信頼性を心配することなく、エージェントに高品質のツールと統合を1行のコードで装備しましょう！
-</h4>
+<img alt="イラスト" src="./python/docs/imgs/banner.gif" style="border-radius: 5px" />
 
-<div align="center">
-<p>
-<a href="https://docs.composio.dev" rel="dofollow"><strong>ドキュメントを探索 »</strong></a>
-</p>
-
-<p>
-<a href="https://app.composio.dev">ダッシュボードで試す</a> <b>|</b>
-<a href="https://www.composio.dev">ホームページ</a> <b>|</b>
-<a href="https://docs.composio.dev/sdk">SDK</a> <b>|</b>
-<a href="https://docs.composio.dev/api-reference/">API</a> 
-</p>
-</div>
-
-<hr>
-<div align="center">
-<p >
-    <b>✨ ソーシャル >></b>
-    <a href="https://dub.composio.dev/JoinHQ">Discord</a> <b>|</b>
-    <a href="https://www.youtube.com/@Composio">Youtube</a> <b>|</b>
-    <a href="https://twitter.com/composiohq">Twitter</a> <b>|</b>
-    <a href="https://www.linkedin.com/company/composio-dev">LinkedIn</a>
-</p>
-<p align="center">
-    <b>⛏️ 貢献 >></b>
-    <a href="https://github.com/composiodev/composio/issues/new?assignees=&labels=type%3A+bug&template=bug_report.yml&title=%F0%9F%90%9B+Bug+Report%3A+">バグを報告</a> <b>|</b>
-    <a href="https://github.com/composiodev/composio/issues/new?assignees=&labels=feature&template=feature_request.yml&title=%F0%9F%9A%80+Feature%3A+">機能をリクエスト</a> <b>|</b>
-    <a href="https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md">貢献する</a>
-</p>
-</div>
+<h2> Composio?</h2>
+<p><strong>Composio は AI エージェント向けの製品化対応ツールセットを提供します</strong>。以下を提供します:</p>
+<ul>
+    <li>複数のカテゴリにわたる 250 以上のツールのサポート:
+        <ul>
+            <li>GitHub、Notion、Linear、Gmail、Slack、Hubspot、Salesforce などのソフトウェア ツール &
+                <a href="https://app.composio.dev/apps">
+                    その他
+                </a>
+            </li>
+            <li>ファイル ツール、シェル ツール、コード分析ツールなどの OS 操作 &
+                <a href="https://app.composio.dev/apps">
+                    その他
+                </a>
+            </li>
+            <li>Google、Perplexity、Tavily、Exa による検索機能 &
+                <a href="https://app.composio.dev/apps">
+                    その他
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li>OpenAI、Groq、 Claude、LlamaIndex、Langchain、CrewAI、Autogen、Gemini、
+        および <a href="https://docs.composio.dev/framework">その他</a></li>
+    <li>複数のプロトコル (OAuth、API キー、Basic JWT) をサポートするマネージド認証</li>
+    <li>最適化された設計により、ツール呼び出しの精度が最大 40% 向上</li>
+    <li>バックエンド統合のためのホワイトラベル ソリューション</li>
+    <li>カスタム ツールと拡張機能をサポートするプラグ可能なアーキテクチャ</li>
+</ul>
 
 ## 📋 目次
 
-- [📋 目次](#-目次)
-- [🤔 なぜComposio？](#-なぜcomposio)
-- [🔥 主要機能](#-主要機能)
-- [🚀 Pythonでの始め方](#-pythonでの始め方)
-  - [1. インストール](#1-インストール)
-  - [2. Composioの実践テスト](#2-composioの実践テスト)
-- [🚀 Javascriptでの始め方](#-javascriptでの始め方)
-  - [1. **Composio SDKのインストール**：](#1-composio-sdkのインストール)
-  - [2. **OpenAIとComposioツールセットの設定**：](#2-openaiとcomposioツールセットの設定)
-  - [3. **スクリプトを実行**：](#3-スクリプトを実行)
-- [💡 例](#-例)
-  - [Python](#python)
-  - [Javascript](#javascript)
-- [Star履歴](#star履歴)
-- [📋 行動規範を読む](#-行動規範を読む)
-- [🤗 貢献](#-貢献)
-- [🔗 リンク](#-リンク)
-- [🛡️ ライセンス](#️-ライセンス)
-- [💪 すべての貢献者に感謝](#-すべての貢献者に感謝)
+- [Python の使用開始](#python-を使い始める)
+    - [1. インストール](#1-インストール)
+    - [2. エージェントの作成とツールの実行](#2-エージェントの作成とツールの実行)
+- [JavaScript の使用開始](#javascript-を使い始める)
+    - [1. インストール](#1-インストール-1 )
+    - [2.エージェントの作成とツールの実行](#2-エージェントの作成とツールの実行-1)
+- [例](#例)
+    - [Python の例](#python-の例)
+    - [JavaScript の例](#javascript-の例)
+- [スター履歴](#星の履歴)
+- [ヘルプの取得](#ヘルプの取得)
+- [貢献](#貢献)
+- [機能のリクエスト](#機能のリクエスト)
+- [すべての貢献者に感謝](#すべての貢献者に感謝)
 
-## 🤔 なぜComposio？
 
-私たちはAIベースのエージェント/ワークフローが未来であると信じています。
-Composioは、AIエージェントを最高のエージェントツールに統合し、それらを使用してタスクを完了するための最良のツールセットです。
-
-<img alt="イラスト" src="./python/docs/imgs/banner.gif" style="border-radius: 5px"/>
-
-## 🔥 主要機能
-
-- **100+ ツール**：さまざまなカテゴリをサポート
-  - **ソフトウェア**：GitHub、Notion、Linear、Gmail、Slack、Hubspot、Salesforceなど90以上のプラットフォームで何でも実行できます。
-  - **OS**：どこでもクリック、何でも入力、クリップボードにコピーなど。
-  - **ブラウザ**：スマート検索、スクリーンショット、MultiOn、ダウンロード、アップロードなど。
-  - **検索**：Google検索、Perplexity検索、Tavily、Exaなど。 
-  - **SWE**：Ngrok、データベース、Redis、Vercel、Gitなど。
-  - **RAG**：即時に任意のデータタイプに対するエージェントRAG！
-
-- **フレームワーク**：**OpenAI、Claude、LlamaIndex、Langchain、CrewAI、Autogen、Gemini、Julep、Lyzr**などのエージェントフレームワークでツールを1行のコードで使用できます。
-- **管理された認証**：6つの異なる認証プロトコルをサポート。_アクセストークン、リフレッシュトークン、OAuth、APIキー、JWTなど_を抽象化して、エージェントの構築に集中できます。
-- **精度**：より良いツール設計により、ツール呼び出しのエージェント精度が_最大40%向上_します。
-- **埋め込み可能**：アプリケーションのバックエンドにホワイトラベルを付け、すべてのユーザーとエージェントの認証と統合を管理し、一貫したエクスペリエンスを維持します。
-- **プラグ可能**：追加のツール、フレームワーク、認証プロトコルを簡単に拡張できるように設計されています。
-
-## 🚀 Pythonでの始め方
+## Python を使い始める
 
 ### 1. インストール
 
-始めるには、ターミナルに以下のコマンドを入力します。
+まずパッケージをインストールします
 
 ```bash
 pip install composio-core
 ```
 
-'composio'パッケージをopenaiプラグインと一緒にインストールしたい場合は：`pip install composio-openai`。
+'composio' パッケージをその openai プラグインとともにインストールする場合は、`pip install composio-openai` を実行します。
 
-### 2. Composioの実践テスト
+### 2. エージェントの作成とツールの実行
 
-Composioを使用して、GitHubリポジトリにスターを付けるAIエージェントを作成しましょう。
+OpenAI を使用して AI エージェントを作成し、Composio の GitHub ツールを使用して GitHub リポジトリにスターを付けましょう
 
+> [!NOTE]
+> 環境変数に COMPOSIO_API_KEY と OPENAI_API_KEY を設定します。
+
+GitHubアカウントをComposioに接続する
 ```bash
-composio add github # GitHubを接続 - ターミナルで実行
+composio add github # ターミナルでこれを実行する
 ```
 
 ```python
-
 from openai import OpenAI
 from composio_openai import ComposioToolSet, App, Action
 
-openai_client = OpenAI(
-    api_key="{{OPENAIKEY}}"
-)
+openai_client = OpenAI(api_key="{{OPENAIKEY}}")
 
-# Composioツールセットを初期化
+# Composioツールセットを初期化する
 
 composio_tool_set = ComposioToolSet()
 
-# 事前に設定されたGitHubツールを取得
+# 事前設定されたGitHubツールを入手する
 actions = composio_tool_set.get_actions(
     actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
 )
 
-my_task = "GitHubでcomposiodev/composioリポジトリにスターを付ける"
+my_task = "Star a repo composiodev/composio on GitHub"
 
-# openaiアシスタントを設定
-assistant_instruction = "あなたは非常に知的なパーソナルアシスタントです"
+# Openaiアシスタントのセットアップ
+assistant_instruction = "You are a super intelligent personal assistant"
 
 assistant = openai_client.beta.assistants.create(
     name="Personal Assistant",
@@ -154,23 +138,20 @@ assistant = openai_client.beta.assistants.create(
     tools=actions,
 )
 
-# スレッドを作成
+# スレッドを作成する
 thread = openai_client.beta.threads.create()
 
 message = openai_client.beta.threads.messages.create(
-    thread_id=thread.id,
-    role="user",
-    content=my_task
+    thread_id=thread.id, role="user", content=my_task
 )
 
-# 統合でエージェントを実行
+# 統合されたエージェントの実行
 run = openai_client.beta.threads.runs.create(
-    thread_id=thread.id,
-    assistant_id=assistant.id
+    thread_id=thread.id, assistant_id=assistant.id
 )
 
 
-# 関数呼び出しを実行
+# 関数呼び出しを実行する
 response_after_tool_calls = composio_tool_set.wait_and_handle_assistant_tool_calls(
     client=openai_client,
     run=run,
@@ -180,104 +161,123 @@ response_after_tool_calls = composio_tool_set.wait_and_handle_assistant_tool_cal
 print(response_after_tool_calls)
 ```
 
-## 🚀 Javascriptでの始め方
+## JavaScript を使い始める
 
-JavascriptでComposio SDKを使用するには、以下の手順に従ってください：
+JavaScript で Composio SDK を使い始めるには、次の手順に従います:
 
-### 1. **Composio SDKのインストール**：
-   ```bash
-   npm install composio-core
-   ```
+### 1. インストール:
+```bash
+npm install composio-core
+```
 
-### 2. **OpenAIとComposioツールセットの設定**：
-   ```javascript
-   import { OpenAI } from "openai";
-   import { OpenAIToolSet } from "composio-core";
+### 2. エージェントの作成とツールの実行
 
-   const toolset = new OpenAIToolSet({
-       apiKey: process.env.COMPOSIO_API_KEY,
-   });
+OpenAI を使用して AI エージェントを作成し、Composio の GitHub ツールを使用して GitHub リポジトリにスターを付けましょう
 
-   async function setupUserConnectionIfNotExists(entityId) {
-       const entity = await toolset.client.getEntity(entityId);
-       const connection = await entity.getConnection('github');
+> [!NOTE]
+> 環境変数に COMPOSIO_API_KEY と OPENAI_API_KEY を設定します。
 
-       if (!connection) {
-           // このエンティティ/ユーザーがまだアカウントを接続していない場合
-           const connection = await entity.initiateConnection(appName);
-           console.log("次のURLでログインしてください: ", connection.redirectUrl);
-           return connection.waitUntilActive(60);
-       }
+GitHubアカウントをComposioに接続する
+```bash
+composio add github # ターミナルでこれを実行する
+```
 
-       return connection;
-   }
+```javascript
+import { OpenAIToolSet } from "composio-core";
+import OpenAI from "openai";
 
-   async function executeAgent(entityName) {
-       const entity = await toolset.client.getEntity(entityName)
-       await setupUserConnectionIfNotExists(entity.id);
+const toolset = new OpenAIToolSet({ apiKey: process.env.COMPOSIO_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-       const tools = await toolset.get_actions({ actions: ["github_issues_create"] }, entity.id);
-       const instruction = "リポジトリ - himanshu-dixit/custom-repo-breakingにサンプルタイトルのissueを作成する"
+const tools = await toolset.getTools({ actions: ["GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER"] });
 
-       const client = new OpenAI({ apiKey: process.env.OPEN_AI_API_KEY })
-       const response = await client.chat.completions.create({
-           model: "gpt-4-turbo",
-           messages: [{
-               role: "user",
-               content: instruction,
-           }],
-           tools: tools,
-           tool_choice: "auto",
-       })
+async function createGithubAssistant(openai, tools) {
+    return await openai.beta.assistants.create({
+        name: "Github Assistant",
+        instructions: "You're a GitHub Assistant, you can do operations on GitHub",
+        tools: tools,
+        model: "gpt-4o"
+    });
+}
 
-       console.log(response.choices[0].message.tool_calls);
-       await toolset.handle_tool_call(response, entity.id);
-   }
+async function executeAssistantTask(openai, toolset, assistant, task) {
+    const thread = await openai.beta.threads.create();
+    const run = await openai.beta.threads.runs.create(thread.id, {
+        assistant_id: assistant.id,
+        instructions: task,
+        tools: tools,
+        model: "gpt-4o",
+        stream: false
+    });
+    const call = await toolset.waitAndHandleAssistantToolCalls(openai, run, thread);
+    console.log(call);
+}
 
-   executeAgent("your-entity-name");
-   ```
+(async () => {
+    const githubAssistant = await createGithubAssistant(openai, tools);
+    await executeAssistantTask(
+        openai,
+        toolset,
+        githubAssistant,
+        "Star the repository 'composiohq/composio'"
+    );
+})();
+```
 
-### 3. **スクリプトを実行**：
-   ```bash
-   node your_script.js
-   ```
+## 例
 
-これにより、Composio SDKが設定され、提供された指示を使用してGitHubのissueを作成するエージェントが実行されます。
+### [Python の例](https://docs.composio.dev/guides/python/)
 
-詳細については、[Composio SDKドキュメント](https://docs.composio.dev/)を参照してください。
+### [JavaScript の例](https://docs.composio.dev/guides/javascript/)
 
-## 💡 例
+## 星の履歴
 
-### [Python](https://docs.composio.dev/guides/python/)
+[![星の履歴
+チャート](https://api.star-history.com/svg?repos=composiohq/composio&type=Date)](https://star-history.com/#composiohq/composio&Date)
 
-### [Javascript](https://docs.composio.dev/guides/javascript/)
+## ヘルプの取得
 
-## Star履歴
+- <a href="https://docs.composio.dev" target="_blank" rel="noopener noreferrer">docs.composio.dev</a> でドキュメントを読む
+- <a href="https://discord.com/channels/1170785031560646836/1268871288156323901" target="_blank"
+    rel="noopener noreferrer">discord</a>
 
-[![Star History Chart](https://api.star-history.com/svg?repos=composiohq/composio&type=Date)](https://star-history.com/#composiohq/composio&Date)
+## 貢献
 
-## 📋 行動規範を読む
-  
-私たちのオープンソースコミュニティの一員として、私たちは自分自身と他の貢献者に高いコミュニケーション基準を求めています。このプロジェクトの参加者および貢献者として、あなたは私たちの[行動規範](https://github.com/composiodev/composio/blob/master/CODE_OF_CONDUCT.md)に従うことに同意します。
+私たちはオープンソース プロジェクトであり、貢献を歓迎しています。詳細については、<a href="https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md"
+    target="_blank" rel="noopener noreferrer">貢献ガイド</a>をお読みになり、開始する前に、<a
+    href="https://github.com/composiodev/composio/blob/master/CODE_OF_CONDUCT.md" target="_blank"
+    rel="noopener noreferrer">行動規範</a>を確認してください。
 
-## 🤗 貢献
+## 機能のリクエスト
 
-Composioはオープンソースであり、貢献を歓迎します。リポジトリをフォークし、機能のための新しいブランチを作成し、機能や改善を追加し、プルリクエストを送信してください。
+- 機能のリクエストがある場合は、<a
+    href="https://github.com/composiodev/composio/issues/new?assignees=&labels=feature&template=feature_request.yml&title=%F0%9F%9A%80+Feature%3A+">問題</a>を開くか、プルリクエストを作成するか、<a
+    href="https://discord.com/channels/1170785031560646836/1247166813205303379" target="_blank"
+    rel="noopener noreferrer">機能リクエスト チャンネル</a>に送信してください。
 
-始める前に、[貢献ガイドライン](https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md)と[行動規範](https://github.com/composiodev/composio/blob/master/CODE_OF_CONDUCT.md)をお読みください。
+- 改善のアイデアがある場合は、GitHub リポジトリでディスカッションを開始することもできます。
 
-## 🔗 リンク
-
-- [ホームページ](https://composio.dev?utm_campaign=github-readme) 
-- [貢献ガイドライン](https://github.com/composiodev/composio/blob/master/CONTRIBUTING.md)
-- [ドキュメント](https://docs.composio.dev/?utm_campaign=github-readme)
-
-## 🛡️ ライセンス
-
-ComposioはElasticライセンスの下でライセンスされています - 詳細については[LICENSE](https://github.com/composiodev/composio/blob/master/LICENSE)ファイルを参照してください。
-
-## 💪 すべての貢献者に感謝
+## すべての貢献者に感謝
 
 <a href="https://github.com/composiohq/composio/graphs/contributors">
-  <img src="https://contributors-img.web.app/image?repo=composiodev/composio" alt="貢献者のリスト"/>
+    <img src="https://contributors-img.web.app/image?repo=composiodev/composio" alt="貢献者リスト" />
 </a>
+
+<br><br>
+
+<div align="center">
+    <p>
+        <a href="https://dub.composio.dev/JoinHQ" target="_blank" rel="noopener noreferrer">
+            <img src="https://github.com/user-attachments/assets/c499721b-d3c2-4bfc-891f-4d74b587911f" alt="discord" />
+        </a>&nbsp;&nbsp;&nbsp;
+        <a href="https://www.youtube.com/@Composio" target="_blank" rel="noopener noreferrer">
+            <img src="https://github.com/user-attachments/assets/57072338-3e7a-42a5-bd2b-c58b143ffa29" alt="youtube" />
+        </a>&nbsp;&nbsp;&nbsp;
+        <a href="https://twitter.com/composiohq" target="_blank" rel="noopener noreferrer">
+            <img src="https://github.com/user-attachments/assets/14b87a1d-8ac7-48b4-ae7c-3a36aacc260b" alt="x" />
+        </a>&nbsp;&nbsp;&nbsp;
+        <a href="https://www.linkedin.com/company/composio-dev" target="_blank" rel="noopener noreferrer">
+            <img src="https://github.com/user-attachments/assets/cb6cc650-672e-41f6-8abf-dfc97fddfcbc" alt="linkedin" />
+        </a>
+    </p>
+</div>

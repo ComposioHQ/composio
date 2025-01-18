@@ -14,7 +14,7 @@
     "test:watch": "jest --testMatch=\"**/*.spec.ts\" --watch",
     "test:coverage": "jest --coverage --testMatch=\"**/*.spec.ts\"",
     "type-docs": "typedoc",
-    "openapispec:generate": "npx @hey-api/openapi-ts",
+    "openapispec:generate": "npx @hey-api/openapi-ts ",
     "run:cli": "ts-node src/cli/index.ts",
     "run:sample": "ts-node sample.ts",
     "prettier": "prettier --write 'src/**/*.{ts,js,cjs}'",
@@ -99,5 +99,9 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "engineStrict": true,
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
