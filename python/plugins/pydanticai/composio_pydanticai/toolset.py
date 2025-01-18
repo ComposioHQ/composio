@@ -94,7 +94,7 @@ class ComposioToolSet(
         self,
         action: str,
         description: str,
-        schema_params: t.Dict,
+        schema_params: t.Dict[str, t.Any],
         entity_id: t.Optional[str] = None,
     ):
         """Create a wrapper function for the Composio action."""
@@ -109,8 +109,8 @@ class ComposioToolSet(
                     _check_requested_actions=True,
                 )
             except ValidationError as e:
-                # Handle validation errors according to pydantic-ai expectations
-                raise ValidationError(e.errors())
+                # Re-raise the original validation error to preserve context
+                raise e
 
         # Create function with type hints
         action_func = types.FunctionType(
