@@ -5,6 +5,7 @@
         "src/frameworks/openai.ts",
         "src/frameworks/cloudflare.ts",
         "src/frameworks/vercel.ts",
+        "src/frameworks/langgraph.ts",
         "src/sdk/index.ts",
         "src/sdk/models/*.ts",
         "src/sdk/client/types.gen.ts"
