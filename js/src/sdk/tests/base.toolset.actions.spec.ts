@@ -1,5 +1,5 @@
 // @ts-ignore - Jest globals are provided by the test environment
-import { beforeEach, describe, expect, it } from "@jest/globals";
+import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { getTestConfig } from "../../../config/getTestConfig";
 import { ComposioToolSet } from "../base.toolset";
 

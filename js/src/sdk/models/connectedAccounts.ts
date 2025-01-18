@@ -332,7 +332,7 @@ export class ConnectionRequest {
           .getConnection({
             path: { connectedAccountId: this.connectedAccountId },
           })
-          .then((res: { data: any }) => res.data);
+          .then((response: { data: unknown }) => response.data);
         if (!connection) throw new Error("Connected account not found");
         if (connection.status === "ACTIVE") {
           return connection;
