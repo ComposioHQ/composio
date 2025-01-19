@@ -85,8 +85,8 @@ class ComposioToolSet(
             tool_configs (Dict[str, ToolConfig], optional): Specific configurations for individual tools.
                 Keys are tool names, values are ToolConfig objects.
         """
+        kwargs["max_retries"] = max_retries
         super().__init__(*args, **kwargs)
-        self.max_retries = max_retries
         self.tool_configs = tool_configs or {}
 
     def _wrap_action(
