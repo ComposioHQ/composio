@@ -11,12 +11,21 @@ from composio import Action
 
 # Load environment variables from .env
 load_dotenv(".env")
-# Initialize tools
-composio_toolset: ComposioToolSet = ComposioToolSet()
 
-# Get GitHub tools that are pre-configured
+# Initialize toolset
+composio_toolset = ComposioToolSet()
+
+# Configure max retries for specific tools
+max_retries = {
+    Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER: 5,
+}
+
+
+# Get GitHub tools with retry configuration
 tools = composio_toolset.get_tools(
-    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
+    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER],
+    max_retries=max_retries,
+    default_max_retries=3
 )
 
 # Create an agent with the tools
@@ -31,7 +40,7 @@ agent = Agent(
 
 def main():
     # Define task
-    task = "Star a repo wjayesh/mahilo on GitHub"
+    task = "Star a repo composiohq/composio on GitHub"
 
     # Run the agent
     result = agent.run_sync(task)

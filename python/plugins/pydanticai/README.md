@@ -16,10 +16,10 @@ Install the necessary packages and connect your GitHub account to enable agent i
 pip install composio-pydanticai
 
 # Connect your GitHub account
-composio-cli add github
+composio add github
 
 # View available applications you can connect with
-composio-cli show-apps
+composio apps
 ```
 
 ### Usage Steps
@@ -42,25 +42,24 @@ from pydantic_ai import Agent
 Configure and fetch GitHub tools provided by Composio:
 
 ```python
-from composio_pydanticai import ComposioToolSet, ToolConfig
+# Initialize toolset
+composio_toolset = ComposioToolSet()
 
-# Initialize tools with default retry settings
-composio_toolset = ComposioToolSet(max_retries=3)  # Default max retries for all tools
-
-# Or configure specific tools differently
-tool_configs = {
-    "github_star_repository": ToolConfig(max_retries=5),  # More retries for starring
-    "github_create_repository": ToolConfig(max_retries=2)  # Fewer retries for creation
+# Configure max retries for specific tools
+max_retries = {
+    Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER: 5,    # More retries for starring
+    Action.GITHUB_CREATE_REPOSITORY: 2   # Fewer retries for creation
 }
-composio_toolset = ComposioToolSet(max_retries=3, tool_configs=tool_configs)
 
-# Get GitHub tools that are pre-configured
+# Get GitHub tools with retry configuration
 tools = composio_toolset.get_tools(
-    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
+    actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER],
+    max_retries=max_retries,
+    default_max_retries=3  # Default retries for tools not specified in max_retries
 )
 ```
 
-The `max_retries` parameter sets the default number of retries for all tools (default is 3). You can override this for specific tools using `tool_configs`.
+The `max_retries` parameter lets you configure retry attempts per tool, with a default fallback for unspecified tools.
 
 #### 3. Set Up the Pydantic-AI Agent
 
@@ -97,6 +96,7 @@ print("Trace:\n\n", result.all_messages())
 2. **Async Support**: Built-in support for asynchronous operations
 3. **Error Handling**: Proper validation error handling with detailed feedback
 4. **Tool Context**: Automatic context injection for tool execution
+5. **Flexible Retry Configuration**: Configure retries per tool with fallback defaults
 
 ### Advanced Usage
 
@@ -108,17 +108,25 @@ tools = composio_toolset.get_tools(
     actions=[
         Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
         Action.GITHUB_CREATE_REPOSITORY
-    ]
+    ],
+    max_retries={
+        Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER: 5,
+        Action.GITHUB_CREATE_REPOSITORY: 2
+    }
 )
 
 # Filtering tools by tags
 tools = composio_toolset.get_tools(
-    tags=["github", "repository"]
+    tags=["github", "repository"],
+    default_max_retries=3
 )
 
 # Using app-specific tools
 tools = composio_toolset.get_tools(
-    apps=[App.GITHUB]
+    apps=[App.GITHUB],
+    max_retries={
+        Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER: 5
+    }
 )
 ```
 
@@ -129,3 +137,4 @@ tools = composio_toolset.get_tools(
 3. Use the latest version of both Pydantic-AI and Composio
 4. Leverage async operations for better performance
 5. Keep your API keys secure using environment variables
+6. Configure retries based on the specific needs of each tool

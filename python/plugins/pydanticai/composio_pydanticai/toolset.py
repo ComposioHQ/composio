@@ -1,7 +1,6 @@
 import types
 import typing as t
 import warnings
-from dataclasses import dataclass
 from inspect import Parameter, Signature
 from typing import Any, Dict, TypeVar
 
@@ -17,13 +16,6 @@ from composio.utils.shared import get_signature_format_from_schema_params
 
 
 AgentDeps = TypeVar("AgentDeps", bound=Any)
-
-
-@dataclass
-class ToolConfig:
-    """Configuration for a specific tool."""
-
-    max_retries: int = 3
 
 
 class ComposioToolSet(
@@ -47,12 +39,21 @@ class ComposioToolSet(
 
     # Load environment variables from .env
     load_dotenv(".env")
-    # Initialize tools with custom max retries
-    composio_toolset = ComposioToolSet(max_retries=5)  # Configure max retries for all tools
+    
+    # Initialize toolset
+    composio_toolset = ComposioToolSet()
 
-    # Get GitHub tools that are pre-configured
+    # Configure max retries for specific tools
+    max_retries = {
+        Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER: 5,
+        Action.GITHUB_CREATE_REPOSITORY: 2
+    }
+
+    # Get GitHub tools with retry configuration
     tools = composio_toolset.get_tools(
-        actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
+        actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER],
+        max_retries=max_retries,
+        default_max_retries=3
     )
 
     # Create an agent with the tools
@@ -65,29 +66,11 @@ class ComposioToolSet(
     )
 
     # Define task
-    task = "Star a repo wjayesh/mahilo on GitHub"
+    task = "Star a repo composiohq/composio on GitHub"
     # Run the agent
     result = agent.run_sync(task)
     ```
     """
-
-    def __init__(
-        self,
-        max_retries: int = 3,
-        tool_configs: t.Optional[Dict[str, ToolConfig]] = None,
-        *args,
-        **kwargs,
-    ):
-        """Initialize the toolset with configurable max_retries.
-
-        Args:
-            max_retries (int, optional): Default maximum number of retries for tool execution. Defaults to 3.
-            tool_configs (Dict[str, ToolConfig], optional): Specific configurations for individual tools.
-                Keys are tool names, values are ToolConfig objects.
-        """
-        kwargs["max_retries"] = max_retries
-        super().__init__(*args, **kwargs)
-        self.tool_configs = tool_configs or {}
 
     def _wrap_action(
         self,
@@ -98,9 +81,7 @@ class ComposioToolSet(
     ):
         """Create a wrapper function for the Composio action."""
 
-        async def function(
-            ctx: "RunContext[AgentDeps]", **kwargs: t.Any
-        ) -> t.Dict:  # pylint: disable=unused-argument
+        async def function(ctx, **kwargs):  # pylint: disable=unused-argument
             """Wrapper function for composio action."""
             try:
                 return self.execute_action(
@@ -110,8 +91,12 @@ class ComposioToolSet(
                     _check_requested_actions=True,
                 )
             except ValidationError as e:
-                # Re-raise the original validation error to preserve context
-                raise e
+                # Return a structured error response that the agent can understand
+                return {
+                    "error": "validation_error",
+                    "details": e.errors(include_url=False),
+                    "message": "Invalid parameters provided to the tool"
+                }
 
         # Create function with type hints
         action_func = types.FunctionType(
@@ -147,6 +132,7 @@ class ComposioToolSet(
         self,
         schema: t.Dict[str, t.Any],
         entity_id: t.Optional[str] = None,
+        max_retries: t.Optional[int] = None,
     ) -> Tool:
         """Wraps composio tool as Pydantic-AI Tool object."""
         action = schema["name"]
@@ -161,17 +147,12 @@ class ComposioToolSet(
             entity_id=entity_id,
         )
 
-        # Get tool-specific config or use default
-        tool_config = self.tool_configs.get(
-            action, ToolConfig(max_retries=self.max_retries)
-        )
-
         return Tool(
             function=action_func,
             name=action,
             description=description,
             takes_ctx=True,
-            max_retries=tool_config.max_retries,
+            max_retries=max_retries,
             docstring_format="auto",
         )
 
@@ -182,20 +163,38 @@ class ComposioToolSet(
         tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
         *,
+        max_retries: t.Optional[t.Dict[Action, int]] = None,
+        default_max_retries: int = 3,
         processors: t.Optional[ProcessorsType] = None,
         check_connected_accounts: bool = True,
     ) -> t.Sequence[Tool]:
         """
         Get composio tools wrapped as Pydantic-AI Tool objects.
+
+        Args:
+            actions: Optional sequence of actions to get tools for
+            apps: Optional sequence of apps to get tools for
+            tags: Optional list of tags to filter tools by
+            entity_id: Optional entity ID to use for the tools
+            max_retries: Optional dict mapping Action enum values to their max retry counts
+            default_max_retries: Default max retries for tools not specified in max_retries
+            processors: Optional processors to apply to the tools
+            check_connected_accounts: Whether to check for connected accounts
+
+        Returns:
+            Sequence of Pydantic-AI Tool objects
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
         if processors is not None:
             self._merge_processors(processors)
 
+        max_retries = max_retries or {}
+
         return [
             self._wrap_tool(
                 schema=tool.model_dump(exclude_none=True),
                 entity_id=entity_id or self.entity_id,
+                max_retries=max_retries.get(Action(tool.name), default_max_retries),
             )
             for tool in self.get_action_schemas(
                 actions=actions,
@@ -205,24 +204,3 @@ class ComposioToolSet(
                 _populate_requested=True,
             )
         ]
-
-    @te.deprecated("Use `ComposioToolSet.get_tools` instead.\n", category=None)
-    def get_actions(
-        self,
-        actions: t.Sequence[ActionType],
-        entity_id: t.Optional[str] = None,
-    ) -> t.Sequence[Tool]:
-        """
-        Get composio tools wrapped as Pydantic-AI Tool objects.
-
-        :param actions: List of actions to wrap
-        :param entity_id: Entity ID to use for executing function calls.
-
-        :return: Composio tools wrapped as `Tool` objects
-        """
-        warnings.warn(
-            "Use `ComposioToolSet.get_tools` instead.\n" + help_msg(),
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.get_tools(actions=actions, entity_id=entity_id)

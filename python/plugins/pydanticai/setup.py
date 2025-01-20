@@ -11,7 +11,7 @@ setup(
     name="composio_pydanticai",
     version="0.6.12",
     author="Siddharth",
-    author_email="sid@composio.dev",
+    author_email="tech@composio.dev",
     description="Use Composio to get array of strongly typed tools for Pydantic AI",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
