@@ -831,6 +831,7 @@ class _PusherClient(logging.WithLogger):
                 "x-api-key": self.api_key,
                 "x-request-id": generate_request_id(),
             },
+            auto_sub=True,
         )
 
         # Patch pusher logger
@@ -1319,6 +1320,9 @@ class Actions(Collection[ActionModel]):
                     "input": modified_params,
                     "text": text,
                     "authConfig": self._serialize_auth(auth=auth),
+                    "sessionInfo": {
+                        "sessionId": session_id,
+                    },
                 },
             )
         ).json()
