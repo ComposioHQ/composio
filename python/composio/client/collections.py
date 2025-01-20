@@ -831,6 +831,7 @@ class _PusherClient(logging.WithLogger):
                 "x-api-key": self.api_key,
                 "x-request-id": generate_request_id(),
             },
+            auto_sub=True,
         )
 
         # Patch pusher logger
