@@ -82,6 +82,7 @@
     "globals": "^15.13.0",
     "jest": "^29.7.0",
     "jest-html-reporters": "^3.1.7",
+    "llamaindex": "^0.8.31",
     "prettier": "^3.4.2",
     "prettier-plugin-organize-imports": "^4.1.0",
     "regenerator-runtime": "^0.14.1",
@@ -100,5 +101,6 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "packageManager": "pnpm@9.12.2+sha512.22721b3a11f81661ae1ec68ce1a7b879425a1ca5b991c975b074ac220b187ce56c708fe5db69f4c962c989452eee76c82877f4ee80f474cebd61ee13461b6228"
 }
