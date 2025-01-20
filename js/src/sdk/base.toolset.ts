@@ -219,6 +219,16 @@ export class ComposioToolSet {
       );
     }
 
+    if (!action) {
+      throw CEG.getCustomError(
+        COMPOSIO_SDK_ERROR_CODES.SDK.NO_ACTION_PROVIDED,
+        {
+          message: `No action provided`,
+          description: `Please provide an action`,
+        }
+      );
+    }
+
     let params = (inputParams as Record<string, unknown>) || {};
 
     const allInputProcessor = [
