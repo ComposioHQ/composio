@@ -108,7 +108,7 @@ class ComposioToolSet(
     @te.deprecated("Use `ComposioToolSet.get_tools` instead.\n", category=None)
     def get_actions(
         self, actions: t.Sequence[ActionType]
-    ) -> t.List[t.Union[Tool, Toolkit, t.Callable, t.Dict, Function]] | None:
+    ) -> t.List[t.Union[Tool, Toolkit, t.Callable, t.Dict, Function]]:
         """
         Get composio tools wrapped as Phidata `Toolkit` objects.
 
@@ -133,7 +133,7 @@ class ComposioToolSet(
         *,
         processors: t.Optional[ProcessorsType] = None,
         check_connected_accounts: bool = True,
-    ) -> t.List[t.Union[Tool, Toolkit, t.Callable, t.Dict, Function]] | None:
+    ) -> t.List[t.Union[Tool, Toolkit, t.Callable, t.Dict, Function]]:
         """
         Get composio tools wrapped as Phidata `Toolkit` objects.
 
