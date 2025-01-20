@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import {
-  DeleteRowAPIDTO,
   ExpectedInputFieldsDTO,
   GetConnectorInfoResDTO,
   GetConnectorListResDTO,
@@ -45,7 +44,10 @@ export type IntegrationCreateData = {
 export type IntegrationListRes = GetConnectorListResDTO;
 export type IntegrationGetRes = GetConnectorInfoResDTO;
 export type IntegrationRequiredParamsRes = ExpectedInputFieldsDTO[];
-export type IntegrationDeleteRes = DeleteRowAPIDTO;
+export type IntegrationDeleteRes = {
+  successful: boolean;
+  integrationId: string;
+};
 
 export class Integrations {
   private backendClient: BackendClient;
@@ -267,13 +269,16 @@ export class Integrations {
     });
     try {
       ZSingleIntegrationParams.parse(data);
-      const response = await apiClient.appConnector.deleteConnector({
+      await apiClient.appConnector.deleteConnector({
         path: {
           integrationId: data.integrationId,
         },
         throwOnError: true,
       });
-      return response.data;
+      return {
+        successful: true,
+        integrationId: data.integrationId,
+      };
     } catch (error) {
       throw CEG.handleAllError(error);
     }
