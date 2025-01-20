@@ -297,6 +297,32 @@ describe("ComposioToolSet class tests", () => {
     expect(connectionRequest.redirectUrl).toBeTruthy();
   });
 
+  it("Should disable connection", async () => {
+    const status = await toolset.connectedAccounts.disable({
+      connectedAccountId: createdConnectionId,
+    });
+    expect(status.status).toBe("success");
+    expect(status.connectedAccountId).toBe(createdConnectionId);
+
+    const connectionData = await toolset.connectedAccounts.get({
+      connectedAccountId: createdConnectionId,
+    });
+    expect(connectionData.enabled).toBe(false);
+  });
+
+  it("Should enable connection", async () => {
+    const status = await toolset.connectedAccounts.enable({
+      connectedAccountId: createdConnectionId,
+    });
+    expect(status.status).toBe("success");
+    expect(status.connectedAccountId).toBe(createdConnectionId);
+
+    const connectionData = await toolset.connectedAccounts.get({
+      connectedAccountId: createdConnectionId,
+    });
+    expect(connectionData.enabled).toBe(true);
+  });
+
   it("Should get connection details", async () => {
     const connection = await toolset.connectedAccounts.get({
       connectedAccountId: createdConnectionId,
@@ -358,7 +384,7 @@ describe("ComposioToolSet class tests", () => {
   let createdTriggerId: string;
 
   it("should get trigger config", async () => {
-    const triggerConfig = await toolset.triggers.getTriggerConfig({
+    const triggerConfig = await toolset.triggers.get({
       triggerId: "GITHUB_STAR_ADDED_EVENT",
     });
     expect(triggerConfig.config.properties).toBeTruthy();
@@ -366,15 +392,19 @@ describe("ComposioToolSet class tests", () => {
 
   it("should throw error when invalid trigger id is passed", async () => {
     await expect(
-      toolset.triggers.getTriggerConfig({
+      toolset.triggers.get({
         triggerId: "invalid-trigger-id",
       })
     ).rejects.toThrow();
   });
 
   it("should setup a trigger", async () => {
+    const connectedAccounts = await toolset.connectedAccounts.list({
+      appNames: "github",
+      showActiveOnly: true,
+    });
     const trigger = await toolset.triggers.setup({
-      connectedAccountId: "d7bb2a05-22c2-41d7-bf3c-b4c4e7c6c46e",
+      connectedAccountId: connectedAccounts.items[0].id,
       triggerName: "GITHUB_STAR_ADDED_EVENT",
       config: {
         owner: "abhishekpatil4",
@@ -387,7 +417,7 @@ describe("ComposioToolSet class tests", () => {
 
   it("should disable a trigger", async () => {
     const trigger = await toolset.triggers.disable({
-      triggerInstanceId: createdTriggerId,
+      triggerId: createdTriggerId,
     });
     expect(trigger.status).toBe("success");
   });
@@ -424,7 +454,7 @@ describe("ComposioToolSet class tests", () => {
     createdIntegrationIds.forEach((id) => integrationIdsToDelete.add(id));
     for (const integrationId of integrationIdsToDelete) {
       try {
-        await toolset.integrations.delete(integrationId);
+        await toolset.integrations.delete({ integrationId: integrationId });
         console.log(`Deleted integration: ${integrationId}`);
       } catch (error) {
         console.error(
