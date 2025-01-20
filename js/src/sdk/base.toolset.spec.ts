@@ -5,6 +5,7 @@ import { TSchemaProcessor } from "../types/base_toolset";
 import { ComposioToolSet } from "./base.toolset";
 import { ActionExecutionResDto } from "./client";
 
+// eslint-disable-next-line max-lines-per-function
 describe("ComposioToolSet class tests", () => {
   let toolset: ComposioToolSet;
   const testConfig = getTestConfig();
@@ -18,8 +19,8 @@ describe("ComposioToolSet class tests", () => {
     });
   });
 
-  let createdConnectionIds: string[] = [];
-  let createdIntegrationIds: string[] = [];
+  const createdConnectionIds: string[] = [];
+  const createdIntegrationIds: string[] = [];
 
   it("should create a ComposioToolSet instance", async () => {
     const tools = await toolset.getToolsSchema({ apps: ["github"] });
@@ -438,29 +439,19 @@ describe("ComposioToolSet class tests", () => {
           await toolset.connectedAccounts.delete({
             connectedAccountId: connectionId,
           });
-          console.log(`Deleted connection: ${connectionId}`);
         } catch (error) {
-          console.log(
-            `Connection ${connectionId} has been deleted during the process`
-          );
+          throw error;
         }
       } catch (error) {
-        console.error(
-          `Error processing connection ${connectionId}:`,
-          error as string
-        );
+        throw error;
       }
     }
     createdIntegrationIds.forEach((id) => integrationIdsToDelete.add(id));
     for (const integrationId of integrationIdsToDelete) {
       try {
         await toolset.integrations.delete({ integrationId: integrationId });
-        console.log(`Deleted integration: ${integrationId}`);
       } catch (error) {
-        console.error(
-          `Error deleting integration ${integrationId}:`,
-          error as string
-        );
+        throw error;
       }
     }
   });
