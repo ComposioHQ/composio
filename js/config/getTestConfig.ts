@@ -1,4 +1,4 @@
-export const env = process.env.TEST_ENV  || "staging"
+export const env = process.env.TEST_ENV  || "prod"
 const CURRENT_FILE_DIR = __dirname;
 
 export type BACKEND_CONFIG = {

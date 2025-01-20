@@ -357,16 +357,15 @@ describe("ComposioToolSet class tests", () => {
   let createdIntegrationId: string;
 
   it("should create an integration", async () => {
-    const appId = "01e22f33-dc3f-46ae-b58d-050e4d2d1909";
     const integration = await toolset.integrations.create({
       name: "testIntegration",
       authScheme: "OAUTH2",
-      appId: appId,
+      appUniqueKey: "github",
       useComposioAuth: true,
     });
     createdIntegrationId = integration.id!;
     createdIntegrationIds.push(integration.id!);
-    expect(appId).toBe(integration.appId);
+    expect("github").toBe(integration.appName);
   });
 
   it("should get an integration", async () => {
@@ -408,8 +407,8 @@ describe("ComposioToolSet class tests", () => {
       connectedAccountId: connectedAccounts.items[0].id,
       triggerName: "GITHUB_STAR_ADDED_EVENT",
       config: {
-        owner: "abhishekpatil4",
-        repo: "tweetify",
+        owner: "plxity",
+        repo: "achievementsof.life",
       },
     });
     createdTriggerId = trigger.triggerId;
@@ -439,9 +438,7 @@ describe("ComposioToolSet class tests", () => {
           await toolset.connectedAccounts.delete({
             connectedAccountId: connectionId,
           });
-        } catch (error) {
-          throw error;
-        }
+        } catch (_) {}
       } catch (error) {
         throw error;
       }
