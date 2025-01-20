@@ -1319,6 +1319,9 @@ class Actions(Collection[ActionModel]):
                     "input": modified_params,
                     "text": text,
                     "authConfig": self._serialize_auth(auth=auth),
+                    "sessionInfo": {
+                        "sessionId": session_id,
+                    },
                 },
             )
         ).json()

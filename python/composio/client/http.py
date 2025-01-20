@@ -53,8 +53,9 @@ class HttpClient(SyncSession, logging.WithLogger):
 
         def request(url: str, **kwargs: t.Any) -> t.Any:
             """Perform HTTP request."""
+            rid = generate_request_id()
             self._logger.debug(
-                f"{method.__name__.upper()} {self.base_url}{url} - {kwargs}"
+                f"[{rid}] {method.__name__.upper()} {self.base_url}{url} - {kwargs}"
             )
             retries = 0
             while retries < 3:
@@ -64,7 +65,7 @@ class HttpClient(SyncSession, logging.WithLogger):
                         timeout=self.timeout,
                         headers={
                             **kwargs.pop("headers", {}),
-                            "x-request-id": generate_request_id(),
+                            "x-request-id": rid,
                         },
                         **kwargs,
                     )
