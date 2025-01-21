@@ -2,6 +2,7 @@
 Global constants for Composio SDK
 """
 
+import os
 from pathlib import Path
 
 
@@ -13,6 +14,11 @@ Environment variable for Composio API key
 ENV_COMPOSIO_LOGGING_LEVEL = "COMPOSIO_LOGGING_LEVEL"
 """
 Environment variable for specifying logging level
+"""
+
+ENV_COMPOSIO_VERSIONING_POLICY = "COMPOSIO_VERSIONING_POLICY"
+"""
+Environment variable for specifying default versioning policy.
 """
 
 LOCAL_CACHE_DIRECTORY_NAME = ".composio"
@@ -103,3 +109,14 @@ LOCKFILE_PATH = Path("./.composio.lock")
 """
 Path to the .composio.lock file.
 """
+
+VERSION_LATEST = "latest"
+"""Latest version specifier."""
+
+VERSION_LATEST_BASE = "latest:base"
+"""Latest none-breaking version specifier."""
+
+COMPOSIO_VERSIONING_POLICY = os.environ.get(
+    ENV_COMPOSIO_VERSIONING_POLICY,
+    VERSION_LATEST_BASE,
+)
