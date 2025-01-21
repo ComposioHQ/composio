@@ -137,7 +137,8 @@ export class TriggerAdd {
 
     for (const key in properties) {
       if (requiredProperties.includes(key)) {
-        const answer = await inquirer.prompt([
+        const prompt = inquirer.createPromptModule();
+        const answer = await prompt([
           {
             type: "input",
             name: key,
