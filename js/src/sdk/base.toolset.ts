@@ -9,6 +9,7 @@ import {
   ZToolSchemaFilter,
 } from "../types/base_toolset";
 import type { Optional, Sequence } from "../types/util";
+import logger from "../utils/logger";
 import { getEnvVariable } from "../utils/shared";
 import {
   ActionRegistry,
@@ -31,7 +32,6 @@ import {
   fileResponseProcessor,
   fileSchemaProcessor,
 } from "./utils/processor/file";
-import logger from "../utils/logger";
 
 export type ExecuteActionParams = z.infer<typeof ZExecuteActionParams> & {
   /** @deprecated use actionName field instead */
@@ -251,7 +251,9 @@ export class ComposioToolSet {
 
       // allows the user to use custom actions and tools without a connected account
       if (!accountId) {
-        logger.warn("No connected account found for the user. If your custom action requires a connected account, please double check if you have active accounts connected to it.");
+        logger.warn(
+          "No connected account found for the user. If your custom action requires a connected account, please double check if you have active accounts connected to it."
+        );
       }
 
       return this.userActionRegistry.executeAction(action, params, {
