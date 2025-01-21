@@ -191,11 +191,11 @@ def test_clean_action_version_strings(version: str, clean: str):
 
 @pytest.mark.parametrize("version", ("0_5", "2_0", "latest"))
 def test_action_version_specifier(version):
-    assert Action.SHELLTOOL_CREATE_SHELL.version != version
-    assert (Action.SHELLTOOL_CREATE_SHELL @ version).version == version
+    assert Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION.version != version
+    assert (Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION @ version).version == version
 
 
 def test_is_version_set():
-    assert Action.SHELLTOOL_CREATE_SHELL.is_version_set is False
-    assert (Action.SHELLTOOL_CREATE_SHELL @ "0_1").is_version_set is True
-    assert Action.SHELLTOOL_CREATE_SHELL.is_version_set is False
+    assert Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION.is_version_set is False
+    assert (Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION @ "0_1").is_version_set is True
+    assert Action.GITHUB_ACCEPT_A_REPOSITORY_INVITATION.is_version_set is False
