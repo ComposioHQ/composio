@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from composio import action
 from composio.client.enums import Action, App, Tag, Trigger
+from composio.client.enums.action import clean_version_string
 from composio.client.enums.enum import EnumStringNotFound
 from composio.tools.base.local import LocalAction, LocalTool
 
@@ -173,3 +174,28 @@ def test_invalid_enum():
 
     with pytest.raises(EnumStringNotFound):
         App.SOME_BS.load()
+
+
+@pytest.mark.parametrize(
+    "version,clean",
+    (
+        ("2.0", "2_0"),
+        ("v0.1", "0_1"),
+        ("v2.0", "2_0"),
+        ("Latest", "latest"),
+    ),
+)
+def test_clean_action_version_strings(version: str, clean: str):
+    assert clean_version_string(version=version) == clean
+
+
+@pytest.mark.parametrize("version", ("0_5", "2_0", "latest"))
+def test_action_version_specifier(version):
+    assert Action.SHELLTOOL_CREATE_SHELL.version != version
+    assert (Action.SHELLTOOL_CREATE_SHELL @ version).version == version
+
+
+def test_is_version_set():
+    assert Action.SHELLTOOL_CREATE_SHELL.is_version_set is False
+    assert (Action.SHELLTOOL_CREATE_SHELL @ "0_1").is_version_set is True
+    assert Action.SHELLTOOL_CREATE_SHELL.is_version_set is False
