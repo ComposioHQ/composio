@@ -62,7 +62,8 @@ export default class LoginCommand {
   }
 
   private async promptForAuthCode(): Promise<string> {
-    const { authCode } = await inquirer.prompt({
+    const prompt = inquirer.createPromptModule();
+    const { authCode } = await prompt({
       type: "input",
       name: "authCode",
       message: "Enter authentication code:",
