@@ -340,8 +340,6 @@ class Action(
         cls._schema = {
             "name": cls.name,
             "enum": cls.enum,
-            # TODO: get version from api
-            "version": "0_1",
             "appName": cls.tool,
             "appId": generate_app_id(cls.tool),
             "tags": cls.tags(),

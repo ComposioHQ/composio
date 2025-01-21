@@ -55,9 +55,6 @@ class LocalClient(WithLogger):
 
         for schema in action_schemas:
             schema["name"] = schema["enum"]
-            # TODO: Put version in local tool schemas
-            schema["version"] = "0_1"
-
         return action_schemas
 
 
