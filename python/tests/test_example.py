@@ -186,6 +186,15 @@ EXAMPLES = {
     #     "env": {"COMPOSIO_API_KEY": COMPOSIO_API_KEY},
     # },
     # TODO: Add camel
+    "pydantic_ai": {
+        "plugin": "pydantic_ai",
+        "file": PLUGINS / "pydanticai" / "pydantic_ai_demo.py",
+        "match": {
+            "type": "stdout",
+            "values": ["Action executed successfully"],
+        },
+        "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
+    },
 }
 
 
