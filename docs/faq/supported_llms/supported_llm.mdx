@@ -12,21 +12,26 @@ By default you can use LLMs from any of the frameworks including Langchain, Llam
 <Accordion title="Ollama (Open Source Models)">
 <CodeGroup>
 ```python Python
-import openai
-from composio_openai import ComposioToolSet, App, Action
+from openai import OpenAI
+from composio_openai import ComposioToolSet, Action
 
-openai.base_url = "http://localhost:11434/v1"
-openai.api_key = 'ollama'
+client = OpenAI(
+    base_url = 'http://localhost:11434/v1',
+    api_key='ollama',
+)
 toolset = ComposioToolSet(api_key="COMPOSIO_API_KEY")
 
 messages=[{'role': 'user', 'content': 'Star the repo composiohq/composio'}]
 
-tools = toolset.get_tools(apps=[App.GITHUB])
-response = openai.chat.completions.create(
-	model="llama3.1",
+tools = toolset.get_tools(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
+response = client.chat.completions.create(
+	model="llama3.1:8b",
 	messages=messages,
 	tools=tools,
 )
+
+result = toolset.handle_tool_calls(response)
+print(result)
 ```
 
 ```javascript Javascript
