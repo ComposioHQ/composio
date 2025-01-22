@@ -13,14 +13,11 @@ from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.toolset import ProcessorsType
 from composio.utils import help_msg
 from composio.utils.shared import get_signature_format_from_schema_params
-
-
-AgentDeps = TypeVar("AgentDeps", bound=Any)
+from composio.utils.pydantic import parse_pydantic_error
 
 
 class ComposioToolSet(
     BaseComposioToolSet,
-    t.Generic[AgentDeps],
     runtime="pydantic_ai",
     description_char_limit=1024,
     action_name_char_limit=64,
@@ -93,9 +90,9 @@ class ComposioToolSet(
             except ValidationError as e:
                 # Return a structured error response that the agent can understand
                 return {
-                    "error": "validation_error",
-                    "details": e.errors(include_url=False),
-                    "message": "Invalid parameters provided to the tool"
+                    "error": parse_pydantic_error(e),
+                    "successful": False,
+                    "data": None,
                 }
 
         # Create function with type hints
@@ -112,7 +109,7 @@ class ComposioToolSet(
         # Add type hints
         params = {param.name: param.annotation for param in parameters}
         action_func.__annotations__ = {
-            "ctx": "RunContext[AgentDeps]",
+            "ctx": "RunContext[None]",
             "return": t.Dict,
             **params,
         }
@@ -121,7 +118,7 @@ class ComposioToolSet(
         ctx_param = Parameter(
             name="ctx",
             kind=Parameter.POSITIONAL_OR_KEYWORD,
-            annotation="RunContext[AgentDeps]",
+            annotation="RunContext[None]",
         )
         action_func.__signature__ = Signature(parameters=[ctx_param] + parameters)  # type: ignore
         action_func.__doc__ = description

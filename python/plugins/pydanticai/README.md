@@ -82,7 +82,7 @@ Run your agent with specific tasks:
 
 ```python
 # Define task
-task = "Star a repo wjayesh/mahilo on GitHub"
+task = "Star a repo composiohq/composio on GitHub"
 
 # Run the agent synchronously
 result = agent.run_sync(task)
