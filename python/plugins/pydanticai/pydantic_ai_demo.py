@@ -25,7 +25,7 @@ max_retries = {
 tools = composio_toolset.get_tools(
     actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER],
     max_retries=max_retries,
-    default_max_retries=3
+    default_max_retries=3,
 )
 
 # Create an agent with the tools
