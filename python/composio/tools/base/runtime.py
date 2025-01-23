@@ -157,6 +157,7 @@ def _wrap(
         display_name = f.__name__
 
         file = _file
+        runtime = True
         requires = _requires
         run_on_shell: bool = runs_on_shell
 
@@ -180,9 +181,9 @@ def _wrap(
     cls.__doc__ = f.__doc__
     cls.description = f.__doc__  # type: ignore
 
-    existing_actions = []
     # Normalize app name
     toolname = toolname.upper()
+    existing_actions = []
     if toolname in tool_registry["runtime"]:
         existing_actions = tool_registry["runtime"][toolname].actions()
     tool = _create_tool_class(name=toolname, actions=[cls, *existing_actions])  # type: ignore

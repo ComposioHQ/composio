@@ -18,6 +18,7 @@ from importlib.util import find_spec
 from pathlib import Path
 
 import typing_extensions as te
+import yaml
 from pydantic import BaseModel
 
 from composio import Action, ActionType, App, AppType, TagType
@@ -50,12 +51,13 @@ from composio.constants import (
     ENV_COMPOSIO_API_KEY,
     LOCAL_CACHE_DIRECTORY,
     LOCAL_OUTPUT_FILE_DIRECTORY_NAME,
+    LOCKFILE_PATH,
     USER_DATA_FILE_NAME,
+    VERSION_LATEST,
 )
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.storage.user import UserData
-from composio.tools.base.abs import tool_registry
-from composio.tools.base.local import LocalAction
+from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.env.base import (
     ENV_GITHUB_ACCESS_TOKEN,
     Workspace,
@@ -139,6 +141,114 @@ class _Retry:
 RETRY = _Retry()
 
 
+class VersionError(ComposioSDKError):
+    pass
+
+
+class VersionSelectionError(VersionError):
+
+    def __init__(
+        self,
+        action: str,
+        requested: str,
+        locked: str,
+        delegate: bool = False,
+    ) -> None:
+        self.action = action
+        self.requested = requested
+        self.locked = locked
+        super().__init__(
+            message=(
+                f"Error selecting version for action: {action!r}, "
+                f"requested: {requested!r}, locked: {locked!r}"
+            ),
+            delegate=delegate,
+        )
+
+
+class VersionLock:
+    """Lock file representing action->version mapping"""
+
+    def __init__(self, path: t.Optional[Path] = None) -> None:
+        self._path = path or LOCKFILE_PATH
+        self._versions = self.__load()
+
+    def __getitem__(self, action: ActionType) -> str:
+        return self._versions[str(action)]
+
+    def __setitem__(self, action: ActionType, version: str) -> None:
+        self._versions[str(action)] = version
+
+    def __contains__(self, action: ActionType) -> bool:
+        return str(action) in self._versions
+
+    def __load(self) -> t.Dict[str, str]:
+        """Load tool versions from lockfile."""
+        if not self._path.exists():
+            return {}
+
+        with open(self._path, encoding="utf-8") as file:
+            versions = yaml.safe_load(file)
+
+        if not isinstance(versions, dict):
+            raise ComposioSDKError(
+                f"Invalid lockfile format, expected dict, got {type(versions)}"
+            )
+
+        for tool in versions.values():
+            if not isinstance(tool, str):
+                raise ComposioSDKError(
+                    f"Invalid lockfile format, expected version to be string, got {tool!r}"
+                )
+
+        return versions
+
+    def __store(self) -> None:
+        """Store tool versions to lockfile."""
+        with open(self._path, "w", encoding="utf-8") as file:
+            yaml.safe_dump(self._versions, file)
+
+    set = __setitem__
+
+    def update(
+        self,
+        versions: t.Optional[t.Dict[str, str]] = None,
+        override: bool = False,
+        **_versions: str,
+    ):
+        for action, version in {**(versions or {}), **_versions}.items():
+            if action in self._versions and not override:
+                continue
+            self._versions[action] = version
+
+    def _apply(self, action: Action) -> Action:
+        if action not in self:
+            if action.is_version_set:
+                self[action] = action.version
+            return action
+
+        if action.is_version_set:
+            if action.version == self[action]:
+                return action
+
+            raise VersionSelectionError(
+                action=action.slug,
+                requested=action.version,
+                locked=self[action],
+            )
+
+        return action @ self[action]
+
+    def apply(self, actions: t.List[Action]) -> t.List[Action]:
+        return list(map(self._apply, actions))
+
+    def get(self, action: ActionType) -> t.Optional[str]:
+        return self._versions.get(str(action))
+
+    def lock(self) -> None:
+        self.__store()
+
+
 class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
     """Composio toolset."""
 
@@ -198,6 +308,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         connected_account_ids: t.Optional[t.Dict[AppType, str]] = None,
         *,
         max_retries: int = 3,
+        lockfile: t.Optional[Path] = None,
+        lock: bool = True,
         **kwargs: t.Any,
     ) -> None:
         """
@@ -277,14 +389,12 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             verbosity_level=verbosity_level,
         )
         self.session_id = workspace_id or uuid.uuid4().hex
-
         self.entity_id = entity_id
         self.output_in_file = output_in_file
         self.output_dir = (
             output_dir or LOCAL_CACHE_DIRECTORY / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
         )
         self._ensure_output_dir_exists()
-
         self._base_url = base_url or get_api_url_base()
         try:
             self._api_key = (
@@ -326,9 +436,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         )
         self.max_retries = max_retries
 
-        # To be populated by get_tools(), from within subclasses like
-        # composio_openai's Toolset.
+        # To be populated by get_tools(), from within subclasses like composio_openai's Toolset.
         self._requested_actions: t.List[str] = []
+        self._version_lock = VersionLock(path=lockfile) if lock else None
 
     def _validating_connection_ids(
         self,
@@ -862,6 +972,9 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         :return: Output object from the function call
         """
         action = Action(action)
+        if self._version_lock is not None:
+            (action,) = self._version_lock.apply(actions=[action])
+
         if _check_requested_actions and action.slug not in self._requested_actions:
             raise ComposioSDKError(
                 f"Action {action.slug} is being called, but was never requested by the toolset. "
@@ -881,7 +994,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             )
 
         self.logger.debug(
-            f"Executing `{action.slug}` with {params=} and {metadata=} {connected_account_id=}"
+            f"Executing `{action.slug}@{action.version}` with {params=} "
+            f"and {metadata=} {connected_account_id=}"
         )
 
         failed_responses = []
@@ -1011,6 +1125,88 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             tags=tags,
         )
 
+    def __map_enums(self, _t: t.Type[T], _sequence: t.Sequence[t.Any]) -> t.Sequence[T]:
+        return list(map(_t, _sequence))
+
+    def __get_runtime_action_schemas(
+        self, actions: t.List[Action]
+    ) -> t.List[ActionModel]:
+        items: list[ActionModel] = []
+        for action in actions:
+            if not action.is_runtime:
+                continue
+
+            _action = action_registry["runtime"][action.slug]
+            schema = _action.schema()
+            schema["name"] = _action.enum
+            items.append(
+                ActionModel(
+                    **schema,
+                    version=VERSION_LATEST,
+                    available_versions=[VERSION_LATEST],
+                ).model_copy(deep=True)
+            )
+        return items
+
+    def __get_local_action_schemas(
+        self,
+        apps: t.List[App],
+        actions: t.List[Action],
+        tags: t.Optional[t.Sequence[TagType]] = None,
+    ) -> t.List[ActionModel]:
+        actions = [
+            action for action in actions if action.is_local and not action.is_runtime
+        ]
+        apps = [app for app in apps if app.is_local]
+        if len(actions) > 0 or len(apps) > 0:
+            return [
+                ActionModel(
+                    **item,
+                    version=VERSION_LATEST,
+                    available_versions=[VERSION_LATEST],
+                )
+                for item in self._local_client.get_action_schemas(
+                    apps=apps,
+                    actions=actions,
+                    tags=tags,
+                )
+            ]
+        return []
+
+    def __get_remote_actions_schemas(
+        self,
+        apps: t.List[App],
+        actions: t.List[Action],
+        tags: t.Optional[t.Sequence[TagType]] = None,
+        check_connected_accounts: bool = True,
+    ) -> t.List[ActionModel]:
+        remote_actions = [action for action in actions if not action.is_local]
+        remote_apps = [app for app in apps if not app.is_local]
+        if len(remote_actions) > 0 or len(remote_apps) > 0:
+            versioned_actions = [a for a in remote_actions if a.is_version_set]
+            none_versioned_actions = [a for a in remote_actions if not a.is_version_set]
+            # TODO: use tool version when fetching actions
+            items = [self.client.actions.get(a) for a in versioned_actions]
+            if len(none_versioned_actions) > 0:
+                items += self.client.actions.get(
+                    apps=remote_apps,
+                    actions=none_versioned_actions,
+                    tags=tags,
+                )
+
+            if check_connected_accounts:
+                for item in items:
+                    self.check_connected_account(action=item.name)
+
+            else:
+                warnings.warn(
+                    "Not verifying connected accounts for apps."
+                    " Actions may fail when the Agent tries to use them.",
+                    UserWarning,
+                )
+            return items
+        return []
+
     def get_action_schemas(
         self,
         apps: t.Optional[t.Sequence[AppType]] = None,
@@ -1019,74 +1215,30 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         *,
         check_connected_accounts: bool = True,
         _populate_requested: bool = False,
+        # TODO: take manual override version as parameter
     ) -> t.List[ActionModel]:
-        runtime_actions = t.cast(
-            t.List[t.Type[LocalAction]],
-            [action for action in actions or [] if hasattr(action, "run_on_shell")],
-        )
-        actions = t.cast(
-            t.List[Action],
-            [
-                Action(action)
-                for action in actions or []
-                if action not in runtime_actions
-            ],
-        )
-        apps = t.cast(t.List[App], [App(app) for app in apps or []])
-        items: t.List[ActionModel] = []
+        apps = t.cast(t.List[App], self.__map_enums(App, apps or []))
+        actions = t.cast(t.List[Action], self.__map_enums(Action, actions or []))
+        if self._version_lock is not None:
+            actions = self._version_lock.apply(actions=actions)
 
-        local_actions = [action for action in actions if action.is_local]
-        local_apps = [app for app in apps if app.is_local]
-        if len(local_actions) > 0 or len(local_apps) > 0:
-            items += [
-                ActionModel(**item)
-                for item in self._local_client.get_action_schemas(
-                    apps=local_apps,
-                    actions=local_actions,
-                    tags=tags,
-                )
-            ]
-
-        remote_actions = [action for action in actions if not action.is_local]
-        remote_apps = [app for app in apps if not app.is_local]
-        if len(remote_actions) > 0 or len(remote_apps) > 0:
-            remote_items = self.client.actions.get(
-                apps=remote_apps,
-                actions=remote_actions,
+        items: t.List[ActionModel] = [
+            *self.__get_runtime_action_schemas(actions=actions),
+            *self.__get_local_action_schemas(apps=apps, actions=actions, tags=tags),
+            *self.__get_remote_actions_schemas(
+                apps=apps,
+                actions=actions,
+                check_connected_accounts=check_connected_accounts,
                 tags=tags,
-            )
-            if check_connected_accounts:
-                for item in remote_items:
-                    self.check_connected_account(action=item.name)
-            else:
-                warnings.warn(
-                    "Not verifying connected accounts for apps."
-                    " Actions may fail when the Agent tries to use them.",
-                    UserWarning,
-                )
-            items = items + remote_items
+            ),
+        ]
 
-        for act in runtime_actions:
-            schema = act.schema()
-            schema["name"] = act.enum
-            items.append(ActionModel(**schema).model_copy(deep=True))
-
-        for item in items:
-            item = self._process_schema(item)
-
-            # This is to support anthropic-claude
-            if item.name == Action.ANTHROPIC_BASH_COMMAND.slug:
-                item.name = "bash"
-
-            if item.name == Action.ANTHROPIC_COMPUTER.slug:
-                item.name = "computer"
-
-            if item.name == Action.ANTHROPIC_TEXT_EDITOR.slug:
-                item.name = "str_replace_editor"
-
+        items = list(map(self._process_schema, items))
         if _populate_requested:
-            action_names = [item.name for item in items]
-            self._requested_actions += action_names
+            self._requested_actions += [item.name for item in items]
+
+        if self._version_lock is not None:
+            self._version_lock.lock()
 
         return items
 
@@ -1148,6 +1300,17 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         )
         if self._action_name_char_limit is not None:
             action_item.name = action_item.name[: self._action_name_char_limit]
+
+        # This is to support anthropic-claude
+        if action_item.name == Action.ANTHROPIC_BASH_COMMAND.slug:
+            action_item.name = "bash"
+
+        if action_item.name == Action.ANTHROPIC_COMPUTER.slug:
+            action_item.name = "computer"
+
+        if action_item.name == Action.ANTHROPIC_TEXT_EDITOR.slug:
+            action_item.name = "str_replace_editor"
+
         return action_item
 
     def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:
