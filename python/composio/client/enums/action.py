@@ -3,16 +3,36 @@ import warnings
 
 from composio.client.enums.base import ActionData, replacement_action_name
 from composio.client.enums.enum import Enum, EnumGenerator
+from composio.constants import VERSION_LATEST, VERSION_LATEST_BASE
 from composio.exceptions import ComposioSDKError
 
 
 _ACTION_CACHE: t.Dict[str, "Action"] = {}
 
 
+class InvalidVersionString(ComposioSDKError):
+
+    def __init__(self, message: str, *args: t.Any, delegate: bool = False) -> None:
+        super().__init__(message, *args, delegate=delegate)
+
+
+def clean_version_string(version: str) -> str:
+    version = version.lower()
+    if version in (VERSION_LATEST, VERSION_LATEST_BASE):
+        return version
+
+    version = "_".join(version.split(".")).lstrip("v")
+    if version.count("_") != 1:
+        raise InvalidVersionString(version)
+    return version
+
+
 class Action(Enum[ActionData], metaclass=EnumGenerator):
     cache_folder = "actions"
     cache = _ACTION_CACHE
     storage = ActionData
+
+    _version: t.Optional[str] = None
 
     def load(self) -> ActionData:
         """Handle deprecated actions"""
@@ -121,3 +141,38 @@ class Action(Enum[ActionData], metaclass=EnumGenerator):
     def is_runtime(self) -> bool:
         """If set `True` the `app` is a runtime app."""
         return self.load().is_runtime
+
+    @property
+    def is_version_set(self) -> bool:
+        """If `True` version is set explicitly."""
+        return self._version is not None
+
+    @property
+    def version(self) -> str:
+        """Version string for the action enum instance."""
+        return self._version or self.load().version
+
+    @property
+    def available_versions(self) -> t.List[str]:
+        """List of available version strings."""
+        return self.load().available_version
+
+    def with_version(self, version: str) -> "Action":
+        if self.is_local:
+            raise RuntimeError("Versioning is not allowed for local tools")
+
+        action = Action(self.slug, cache=False)
+        action._data = self.load()  # pylint: disable=protected-access
+        action._version = clean_version_string(  # pylint: disable=protected-access
+            version=version
+        )
+        return action
+
+    def latest(self) -> "Action":
+        return self.with_version(version=VERSION_LATEST)
+
+    def latest_base(self) -> "Action":
+        return self.with_version(version=VERSION_LATEST_BASE)
+
+    def __matmul__(self, other: str) -> "Action":
+        return self.with_version(version=other)
