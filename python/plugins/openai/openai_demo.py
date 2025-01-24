@@ -21,11 +21,6 @@ task = "Star a repo composiohq/composio on GitHub"
 # Get GitHub tools that are pre-configured
 tools = composio_toolset.get_tools(apps=[App.GITHUB])
 
-# Extension of system prompt(Not using at this moment)
-_ = composio_toolset.get_agent_instructions(
-    apps=[App.GITHUB],
-)
-
 # Get response from the LLM
 response = openai_client.chat.completions.create(
     model="gpt-4-turbo-preview",

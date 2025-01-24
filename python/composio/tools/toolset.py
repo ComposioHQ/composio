@@ -533,7 +533,7 @@ class SchemaHelper(WithLogger):
             versioned_actions = [a for a in remote_actions if a.is_version_set]
             none_versioned_actions = [a for a in remote_actions if not a.is_version_set]
             items = [self.client.actions.get(a) for a in versioned_actions]
-            if len(none_versioned_actions) > 0:
+            if len(none_versioned_actions) > 0 or len(apps) > 0:
                 items += self.client.actions.get(
                     apps=remote_apps,
                     actions=none_versioned_actions,
