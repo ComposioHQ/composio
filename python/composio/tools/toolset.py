@@ -134,6 +134,10 @@ def _record_action_if_available(func: t.Callable[P, T]) -> t.Callable[P, T]:
     return wrapper  # type: ignore
 
 
+def _map_enums(_t: t.Type[T], _sequence: t.Sequence[t.Any]) -> t.Sequence[T]:
+    return list(map(_t, _sequence))
+
+
 class _Retry:
     """Sentinel value to indicate that the processor should retry the action"""
 
@@ -249,312 +253,389 @@ class VersionLock:
         self.__store()
 
 
-class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
-    """Composio toolset."""
+class ProcessorHelper(WithLogger):
 
-    _custom_auth: t.Dict[App, CustomAuthObject]
+    __processors: ProcessorsType
+    __metadata: MetadataType
 
-    _connected_accounts: t.Optional[t.List[ConnectedAccountModel]] = None
-    _remote_client: t.Optional[Composio] = None
-    _workspace: t.Optional[Workspace] = None
+    def __init__(self, metadata: MetadataType) -> None:
+        super().__init__()
+        self.__processors = {"post": {}, "pre": {}, "schema": {}}
+        self.__metadata = metadata
 
-    _runtime: str = "composio"
-    _description_char_limit: int = 1024
-    _action_name_char_limit: t.Optional[int] = None
-    _log_ingester_client: t.Optional[LogIngester] = None
+    def merge_processors(self, processors: ProcessorsType) -> None:
+        for ptype in t.cast(t.Iterator[ProcessorType], self.__processors.keys()):
+            if ptype not in processors:
+                continue
 
-    def __init_subclass__(
-        cls,
-        *args: t.Any,
-        runtime: t.Optional[str] = None,
-        description_char_limit: t.Optional[int] = None,
-        action_name_char_limit: t.Optional[int] = None,
-        **kwargs: t.Any,
-    ) -> None:
-        if runtime is None:
-            warnings.warn(
-                f"runtime is not set on {cls.__name__}, using 'composio' as default"
-            )
-        cls._runtime = runtime or "composio"
+            if ptype not in self.__processors:
+                self.__processors[ptype] = {}
+            self.__processors[ptype].update(processors[ptype])  # type: ignore
 
-        if description_char_limit is None:
-            warnings.warn(
-                f"description_char_limit is not set on {cls.__name__}, using 1024 as default"
-            )
-        cls._description_char_limit = description_char_limit or 1024
-        cls._action_name_char_limit = action_name_char_limit
-        if len(args) > 0 or len(kwargs) > 0:
-            error = (
-                f"Composio toolset subclass initializer got extra {args=} and {kwargs=}"
-                + help_msg()
-            )
-            if _is_ci():
-                raise RuntimeError(error)
-            warnings.warn(error)
-
-    def __init__(
+    def _get_processor(
         self,
-        api_key: t.Optional[str] = None,
-        base_url: t.Optional[str] = None,
-        entity_id: str = DEFAULT_ENTITY_ID,
-        workspace_id: t.Optional[str] = None,
-        workspace_config: t.Optional[WorkspaceConfigType] = None,
-        metadata: t.Optional[MetadataType] = None,
-        processors: t.Optional[ProcessorsType] = None,
-        output_in_file: bool = False,
-        logging_level: LogLevel = LogLevel.INFO,
-        output_dir: t.Optional[Path] = None,
-        verbosity_level: t.Optional[int] = None,
-        connected_account_ids: t.Optional[t.Dict[AppType, str]] = None,
-        *,
-        max_retries: int = 3,
-        lockfile: t.Optional[Path] = None,
-        lock: bool = True,
-        **kwargs: t.Any,
-    ) -> None:
-        """
-        Initialize composio toolset
+        key: _KeyType,
+        type_: te.Literal["post", "pre", "schema"],
+    ) -> t.Optional[_CallableType]:
+        """Get processor for given app or action"""
+        processor = self.__processors.get(type_, {}).get(key)  # type: ignore
+        if processor is not None:
+            return processor
 
-        :param api_key: Composio API key
-        :param base_url: Base URL for the Composio API server
-        :param runtime: Name of the framework runtime, eg. openai, crewai...
-        :param output_in_file: Whether to output the result to a file.
-        :param entity_id: The ID of the entity to execute the action on.
-            Defaults to "default".
-        :param workspace_env: Environment where actions should be executed,
-            you can choose from `host`, `docker`, `flyio` and `e2b`.
-        :param workspace_id: Workspace ID for loading an existing workspace
-        :param metadata: Additional metadata for executing an action or an
-            action which belongs to a specific app. The additional metadata
-            needs to be JSON serialisable dictionary. For example
-
-            ```python
-            toolset = ComposioToolSet(
-                ...,
-                metadata={
-                    App.IMAGEANALYSER: {
-                        "base_url": "https://image.analyser/api",
-                    },
-                    Action.IMAGEANALYSER_GTP4:{
-                        "openai_api_key": "sk-proj-somekey",
-                    }
-                }
-            )
-            ```
-        :param processors: Request and response processors, use these to
-            pre-process requests before executing an action and post-process
-            the response after an action has been executed. The processors can
-            be defined at app and action level. The order of execution will be
-
-            `App pre-processor -> Action pre-processor -> execute action -> Action post-processor -> App post-processor`
-
-            Heres and example of a request pre-processor
-
-            ```python
-            def _add_cwd_if_missing(request: t.Dict) -> t.Dict:
-                if "cwd" not in request:
-                    request["cwd"] = "~/project"
-                return request
-
-            def _sanitise_file_search_request(request: t.Dict) -> t.Dict:
-                if ".tox" not in request["exclude"]:
-                    request["exclude"].append(".tox")
-                return request
-
-            def _limit_file_search_response(response: t.Dict) -> t.Dict:
-                if len(response["results"]) > 100:
-                    response["results"] = response["results"][:100]
-                return response
-
-            toolset = ComposioToolSet(
-                ...,
-                processors={
-                    "pre": {
-                        App.FILETOOL: _add_cwd_if_missing,
-                        Action.FILETOOL_SEARCH: _sanitise_file_search_request,
-                    },
-                    "post": {
-                        Action.FILETOOL_SEARCH: _limit_file_search_response,
-                    }
-                }
-            )
-            ```
-        :param verbosity_level: This defines the size of the log object that will
-            be printed on the console.
-        :param connection_ids: Use this to define connection IDs to use when executing
-            an action for a specific app.
-        """
-        super().__init__(
-            logging_level=logging_level,
-            verbosity_level=verbosity_level,
-        )
-        self.session_id = workspace_id or uuid.uuid4().hex
-        self.entity_id = entity_id
-        self.output_in_file = output_in_file
-        self.output_dir = (
-            output_dir or LOCAL_CACHE_DIRECTORY / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
-        )
-        self._ensure_output_dir_exists()
-        self._base_url = base_url or get_api_url_base()
         try:
-            self._api_key = (
-                api_key
-                or os.environ.get(ENV_COMPOSIO_API_KEY)
-                or UserData.load(LOCAL_CACHE_DIRECTORY / USER_DATA_FILE_NAME).api_key
-            )
-        except FileNotFoundError:
-            self._api_key = None
-            self.logger.debug("`api_key` is not set when initializing toolset.")
+            return self.__processors.get(type_, {}).get(Action(t.cast(ActionType, key)))  # type: ignore
+        except EnumStringNotFound:
+            return self.__processors.get(type_, {}).get(App(t.cast(AppType, key)))  # type: ignore
 
-        if processors is not None:
-            warnings.warn(
-                "Setting 'processors' on the ToolSet is deprecated, they should"
-                "be provided to the 'get_tools()' method instead.\n",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            self._processors: ProcessorsType = processors
-        else:
-            self._processors = {"post": {}, "pre": {}, "schema": {}}
-
-        self._metadata = metadata or {}
-        self._workspace_id = workspace_id
-        self._workspace_config = workspace_config
-        self._local_client = LocalClient()
-        self._custom_auth = {}
-
-        if len(kwargs) > 0:
-            self.logger.warning(
-                f"Unused kwargs while initializing toolset: {kwargs}" + help_msg()
-            )
-
-        self.logger.debug("Loading local tools")
-        load_local_tools()
-
-        self._connected_account_ids = self._validating_connection_ids(
-            connected_account_ids=connected_account_ids or {}
-        )
-        self.max_retries = max_retries
-
-        # To be populated by get_tools(), from within subclasses like composio_openai's Toolset.
-        self._requested_actions: t.List[str] = []
-        self._version_lock = VersionLock(path=lockfile) if lock else None
-
-    def _validating_connection_ids(
+    def _process(
         self,
-        connected_account_ids: t.Dict[AppType, str],
-    ) -> t.Dict[App, str]:
-        """Validate connection IDs."""
-        valid = {}
-        invalid = []
-        entity = self.client.get_entity(id=self.entity_id)
-        for app, connected_account_id in connected_account_ids.items():
-            self.logger.debug(f"Validating {app} {connected_account_id=}")
-            try:
-                entity.get_connection(
-                    app=app,
-                    connected_account_id=connected_account_id,
-                )
-                valid[App(app)] = connected_account_id
-            except HTTPError:
-                invalid.append((str(app), connected_account_id))
-
-        if len(invalid) == 0:
-            return valid
-
-        raise ComposioSDKError(message=f"Invalid connected accounts found: {invalid}")
-
-    def _get_connected_account(self, action: ActionType) -> t.Optional[str]:
-        return self._connected_account_ids.get(App(Action(action).app))
-
-    def _try_get_github_access_token_for_current_entity(self) -> t.Optional[str]:
-        """Try and get github access token for current entiry."""
-        from_env = os.environ.get(f"_COMPOSIO_{ENV_GITHUB_ACCESS_TOKEN}")
-        if from_env is not None:
-            self.logger.debug("Using composio github access token")
-            return from_env
-
-        self.logger.debug(f"Trying to get github access token for {self.entity_id=}")
-        try:
-            account = self.client.get_entity(id=self.entity_id).get_connection(
-                app=App.GITHUB
-            )
-            token = (
-                self.client.connected_accounts.get(connection_id=account.id)
-                .connectionParams.headers["Authorization"]  # type: ignore
-                .replace("Bearer ", "")
-            )
+        key: _KeyType,
+        data: t.Dict,
+        type_: te.Literal["pre", "post", "schema"],
+    ) -> t.Union[t.Dict, _Retry]:
+        processor = self._get_processor(key=key, type_=type_)
+        if processor is not None:
             self.logger.debug(
-                f"Using `{token}` with scopes: {account.connectionParams.scope}"
+                f"Running {'request' if type_ == 'pre' else 'response' if type_ == 'post' else 'schema'}"
+                f" through: {processor.__name__}"
             )
-            return token
-        except ComposioClientError:
-            return None
+            data = processor(data)
+            # Users may not respect our type annotations and return something that isn't a dict.
+            # If that happens we should show a friendly error message.
+            if not isinstance(data, t.Dict):
+                warnings.warn(
+                    f"Expected {type_}-processor to return 'dict', got {type(data).__name__!r}",
+                    stacklevel=2,
+                )
+        return data
 
-    @property
-    def _log_ingester(self) -> LogIngester:
-        if self._log_ingester_client is None:
-            self._log_ingester_client = LogIngester()
-        return self._log_ingester_client
+    def process_request(self, action: Action, request: t.Dict) -> t.Dict:
+        processed = self._process(
+            key=App(action.app),
+            data=request,
+            type_="pre",
+        )
+        if isinstance(processed, _Retry):
+            raise ComposioSDKError(
+                "Received RETRY from App preprocessor function."
+                " Preprocessors cannot be retried."
+            )
 
-    @property
-    def api_key(self) -> str:
-        if self._api_key is None:
-            raise ApiKeyNotProvidedError()
-        return self._api_key
+        processed = self._process(
+            key=action,
+            data=processed,
+            type_="pre",
+        )
+        if isinstance(processed, _Retry):
+            raise ComposioSDKError(
+                "Received RETRY from Action preprocessor function."
+                " Preprocessors cannot be retried."
+            )
+
+        return processed
+
+    def process_respone(
+        self, action: Action, response: t.Dict
+    ) -> t.Union[t.Dict, _Retry]:
+        processed = self._process(
+            key=App(action.app),
+            data=response,
+            type_="post",
+        )
+        if isinstance(processed, _Retry):
+            return RETRY
+
+        processed = self._process(
+            key=action,
+            data=processed,
+            type_="post",
+        )
+        if isinstance(processed, _Retry):
+            return RETRY
+
+        return processed
+
+    def process_schema_properties(self, action: Action, properties: t.Dict) -> t.Dict:
+        processed = self._process(
+            key=App(action.app),
+            data=properties,
+            type_="schema",
+        )
+        if isinstance(processed, _Retry):
+            raise ComposioSDKError(
+                "Received RETRY from App schema processor function."
+                " Schema pprocessors cannot be retried."
+            )
+
+        processed = self._process(
+            key=action,
+            data=processed,
+            type_="schema",
+        )
+        if isinstance(processed, _Retry):
+            raise ComposioSDKError(
+                "Received RETRY from Action preprocessor function."
+                " Schema processors cannot be retried."
+            )
+        return processed
+
+    def _get_metadata(self, key: _KeyType) -> t.Dict:
+        metadata = self.__metadata.get(key)  # type: ignore
+        if metadata is not None:
+            return metadata
+
+        try:
+            return self.__metadata.get(Action(t.cast(ActionType, key)), {})  # type: ignore
+        except EnumStringNotFound:
+            return self.__metadata.get(App(t.cast(AppType, key)), {})  # type: ignore
+
+    def add_metadata(self, action: Action, metadata: t.Optional[t.Dict]) -> t.Dict:
+        metadata = metadata or {}
+        metadata.update(self._get_metadata(key=App(action.app)))
+        metadata.update(self._get_metadata(key=action))
+        return metadata
+
+
+class FileIOHelper(WithLogger):
+
+    def __init__(self, outdir: t.Optional[Path] = None) -> None:
+        super().__init__()
+        self.outdir = outdir or LOCAL_CACHE_DIRECTORY / LOCAL_OUTPUT_FILE_DIRECTORY_NAME
+        self.outdir.mkdir(parents=True, exist_ok=True)
+
+    @staticmethod
+    def _write_file(path: t.Union[str, os.PathLike], content: t.Union[str, bytes]):
+        """Write content to a file."""
+        if isinstance(content, str):
+            with open(path, "w", encoding="utf-8") as file:
+                file.write(content)
+                return
+
+        with open(path, "wb") as file:
+            file.write(content)
+
+    def write_output(
+        self,
+        action: Action,
+        output: t.Dict,
+        entity_id: str = DEFAULT_ENTITY_ID,
+    ) -> t.Dict:
+        """Write output to a file."""
+        filename = hashlib.sha256(
+            f"{action.name}-{entity_id}-{time.time()}".encode()
+        ).hexdigest()
+
+        outfile = self.outdir / filename
+        self.logger.debug(f"Writing output to: {outfile}")
+        self._write_file(outfile, json.dumps(output))
+        return {
+            "message": f"output written to {outfile.resolve()}",
+            "file": str(outfile.resolve()),
+        }
+
+    def write_downloadable(
+        self,
+        prefix: str,
+        response_model: SuccessExecuteActionResponseModel,
+    ) -> dict:
+        error = response_model.error
+        resp_data = response_model.data
+        is_invalid_file = False
+        for key, val in resp_data.items():
+            try:
+                file_model = FileType.model_validate(val)
+                local_filepath = (
+                    self.outdir / f"{prefix}_{file_model.name.replace('/', '_')}"
+                )
+                self._write_file(
+                    path=local_filepath,
+                    content=base64.urlsafe_b64decode(file_model.content),
+                )
+                resp_data[key] = str(local_filepath)
+            except binascii.Error:
+                is_invalid_file = True
+                resp_data[key] = "Invalid File! Unable to decode."
+            except Exception:
+                pass
+
+        if is_invalid_file is True and error is None:
+            response_model.error = "Execution failed"
+        response_model.data = resp_data
+        return response_model.model_dump()
+
+
+class SchemaHelper(WithLogger):
+
+    def __init__(self, client: t.Callable[[], Composio]):
+        super().__init__()
+        self._local_client = LocalClient()
+        self._client = client
 
     @property
     def client(self) -> Composio:
-        if self._remote_client is None:
-            self._remote_client = Composio(
-                api_key=self._api_key,
-                base_url=self._base_url,
-                runtime=self._runtime,
+        return self._client()
+
+    def get_runtime_action_schemas(
+        self, actions: t.List[Action]
+    ) -> t.List[ActionModel]:
+        items: list[ActionModel] = []
+        for action in actions:
+            if not action.is_runtime:
+                continue
+
+            _action = action_registry["runtime"][action.slug]
+            schema = _action.schema()
+            schema["name"] = _action.enum
+            items.append(
+                ActionModel(
+                    **schema,
+                    version=VERSION_LATEST,
+                    available_versions=[VERSION_LATEST],
+                ).model_copy(deep=True)
             )
-            check_cache_refresh(self._remote_client)
+        return items
 
-        self._remote_client.local = self._local_client
-        return self._remote_client
+    def get_local_action_schemas(
+        self,
+        apps: t.List[App],
+        actions: t.List[Action],
+        tags: t.Optional[t.Sequence[TagType]] = None,
+    ) -> t.List[ActionModel]:
+        actions = [
+            action for action in actions if action.is_local and not action.is_runtime
+        ]
+        apps = [app for app in apps if app.is_local]
+        if len(actions) > 0 or len(apps) > 0:
+            return [
+                ActionModel(
+                    **item,
+                    version=VERSION_LATEST,
+                    available_versions=[VERSION_LATEST],
+                )
+                for item in self._local_client.get_action_schemas(
+                    apps=apps,
+                    actions=actions,
+                    tags=tags,
+                )
+            ]
+        return []
 
-    @property
-    def workspace(self) -> Workspace:
-        """Workspace for this toolset instance."""
-        if self._workspace is not None:
-            return self._workspace
-
-        if self._workspace_id is not None:
-            self._workspace = WorkspaceFactory.get(id=self._workspace_id)
-            return self._workspace
-
-        workspace_config = self._workspace_config or HostWorkspaceConfig()
-        if workspace_config.composio_api_key is None:
-            try:
-                workspace_config.composio_api_key = self.api_key
-            except ApiKeyNotProvidedError:
-                warnings.warn(
-                    "Running without a Composio API key", UserWarning, stacklevel=2
+    def get_remote_actions_schemas(
+        self,
+        apps: t.List[App],
+        actions: t.List[Action],
+        tags: t.Optional[t.Sequence[TagType]] = None,
+        check_connected_account: t.Optional[t.Callable] = None,
+    ) -> t.List[ActionModel]:
+        remote_actions = [action for action in actions if not action.is_local]
+        remote_apps = [app for app in apps if not app.is_local]
+        if len(remote_actions) > 0 or len(remote_apps) > 0:
+            versioned_actions = [a for a in remote_actions if a.is_version_set]
+            none_versioned_actions = [a for a in remote_actions if not a.is_version_set]
+            items = [self.client.actions.get(a) for a in versioned_actions]
+            if len(none_versioned_actions) > 0:
+                items += self.client.actions.get(
+                    apps=remote_apps,
+                    actions=none_versioned_actions,
+                    tags=tags,
                 )
 
-        if workspace_config.composio_base_url is None:
-            workspace_config.composio_base_url = self._base_url
+            if check_connected_account is not None:
+                for item in items:
+                    check_connected_account(action=item.name)
 
-        if (
-            workspace_config.github_access_token is None
-            and workspace_config.composio_api_key is not None
-        ):
-            workspace_config.github_access_token = (
-                self._try_get_github_access_token_for_current_entity()
-            )
+            else:
+                warnings.warn(
+                    "Not verifying connected accounts for apps."
+                    " Actions may fail when the Agent tries to use them.",
+                    UserWarning,
+                )
+            return items
+        return []
 
-        self._workspace = WorkspaceFactory.new(config=workspace_config)
-        return self._workspace
+    def process_schema(
+        self,
+        action: ActionModel,
+        processor_helper: ProcessorHelper,
+        description_char_limit: int,
+        action_name_char_limit: t.Optional[int] = None,
+    ) -> ActionModel:
+        required_params = action.parameters.required or []
+        for param_name, param_details in action.parameters.properties.items():
+            if param_details.get("title") == "FileType" and all(
+                fprop in param_details.get("properties", {})
+                for fprop in ("name", "content")
+            ):
+                action.parameters.properties[param_name].pop("properties")
+                action.parameters.properties[param_name] = {
+                    "default": param_details.get("default"),
+                    "type": "string",
+                    "format": "file-path",
+                    "description": f"File path to {param_details.get('description', '')}",
+                }
+            elif param_details.get("allOf", [{}])[0].get("title") == "FileType" and all(
+                fprop in param_details.get("allOf", [{}])[0].get("properties", {})
+                for fprop in ("name", "content")
+            ):
+                action.parameters.properties[param_name].pop("allOf")
+                action.parameters.properties[param_name].update(
+                    {
+                        "default": param_details.get("default"),
+                        "type": "string",
+                        "format": "file-path",
+                        "description": f"File path to {param_details.get('description', '')}",
+                    }
+                )
+            elif param_details.get("type") in [
+                "string",
+                "integer",
+                "number",
+                "boolean",
+            ]:
+                ext = f'Please provide a value of type {param_details["type"]}.'
+                description = param_details.get("description", "").rstrip(".")
+                param_details["description"] = (
+                    f"{description}. {ext}" if description else ext
+                )
 
-    def set_workspace_id(self, workspace_id: str) -> None:
-        self._workspace_id = workspace_id
-        if self._workspace is not None:
-            self._workspace = WorkspaceFactory.get(id=workspace_id)
+            if param_name in required_params:
+                description = param_details.get("description", "")
+                if description:
+                    param_details["description"] = (
+                        f"{description.rstrip('.')}. This parameter is required."
+                    )
+                else:
+                    param_details["description"] = "This parameter is required."
 
-    def add_auth(
+        if action.description is not None:
+            action.description = action.description[:description_char_limit]
+        action.parameters.properties = processor_helper.process_schema_properties(
+            action=Action(action.name.upper()),
+            properties=action.parameters.properties,
+        )
+        if action_name_char_limit is not None:
+            action.name = action.name[:action_name_char_limit]
+
+        # This is to support anthropic-claude
+        if action.name == Action.ANTHROPIC_BASH_COMMAND.slug:
+            action.name = "bash"
+
+        if action.name == Action.ANTHROPIC_COMPUTER.slug:
+            action.name = "computer"
+
+        if action.name == Action.ANTHROPIC_TEXT_EDITOR.slug:
+            action.name = "str_replace_editor"
+
+        return action
+
+
+class CustomAuthHelper(WithLogger):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._custom_auth: t.Dict[App, CustomAuthObject] = {}
+
+    def add(
         self,
         app: AppType,
         parameters: t.List[CustomAuthParameter],
@@ -566,31 +647,6 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             base_url=base_url,
             parameters=parameters,
         )
-
-    def check_connected_account(self, action: ActionType) -> None:
-        """Check if connected account is required and if required it exists or not."""
-        action = Action(action)
-        if action.no_auth or action.is_runtime:
-            return
-
-        if App(action.app) in self._custom_auth:
-            return
-
-        if self._connected_accounts is None:
-            self._connected_accounts = t.cast(
-                t.List[ConnectedAccountModel],
-                self.client.connected_accounts.get(),
-            )
-
-        if action.app not in [
-            # Normalize app names/ids coming from API
-            connection.appUniqueId.upper()
-            for connection in self._connected_accounts
-        ]:
-            raise ComposioSDKError(
-                f"No connected account found for app `{action.app}`; "
-                f"Run `composio add {action.app.lower()}` to fix this"
-            )
 
     def _get_custom_params_for_local_action(
         self,
@@ -630,7 +686,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 metadata[param["in_"]][param["name"]] = param["value"]
         return metadata
 
-    def _get_custom_params_for_local_execution(self, action: Action) -> t.Dict:
+    def get_custom_params_for_local_execution(self, action: Action) -> t.Dict:
         custom_auth = self._custom_auth.get(App(action.app))
         if custom_auth is None:
             return {}
@@ -645,677 +701,20 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             app=action.app,
         )
 
-    def _execute_local(
-        self,
-        action: Action,
-        params: t.Dict,
-        metadata: t.Optional[t.Dict] = None,
-        entity_id: t.Optional[str] = None,
-    ) -> t.Dict:
-        """Execute a local action."""
-        metadata = metadata or {}
-        metadata["_toolset"] = self
-        metadata.update(self._get_custom_params_for_local_execution(action=action))
-        response = self.workspace.execute_action(
-            action=action,
-            request_data=params,
-            metadata={
-                **(metadata or {}),
-                "entity_id": entity_id or self.entity_id,
-            },
-        )
+    def get_custom_params_for_remote_execution(
+        self, action: Action
+    ) -> t.Optional[CustomAuthObject]:
+        return self._custom_auth.get(App(action.app))
 
-        if isinstance(response, BaseModel):
-            response = response.model_dump()
+    def has_custom_auth(self, app: App) -> bool:
+        return app in self._custom_auth
 
-        self._log_ingester.log(
-            connection_id=None,
-            provider_name=action.app,
-            action_name=action.name,
-            request=params,
-            response=response,
-            is_error=not response.get("successful", False),
-            session_id=self.workspace.id,
-        )
 
-        return response
+class _GetMixin(WithLogger):
 
-    def _execute_remote(
-        self,
-        action: Action,
-        params: t.Dict,
-        entity_id: str = DEFAULT_ENTITY_ID,
-        connected_account_id: t.Optional[str] = None,
-        session_id: t.Optional[str] = None,
-        text: t.Optional[str] = None,
-    ) -> t.Dict:
-        """Execute a remote action."""
-        auth = self._custom_auth.get(App(action.app))
-        if auth is None:
-            self.check_connected_account(action=action)
-
-        entity = self.client.get_entity(id=entity_id)
-        output = entity._execute(  # pylint: disable=protected-access
-            action=action,
-            params=params,
-            connected_account_id=connected_account_id,
-            session_id=session_id,
-            text=text,
-            auth=auth,
-        )
-
-        if self.output_in_file:
-            return self._write_to_file(
-                action=action,
-                output=output,
-                entity_id=entity_id,
-            )
-
-        try:
-            self.logger.debug("Trying to validate success response model")
-            success_response_model = SuccessExecuteActionResponseModel.model_validate(
-                output
-            )
-        except Exception:
-            self.logger.debug("Failed to validate success response model")
-            return output
-
-        return self._save_var_files(
-            file_name_prefix=f"{action.name}_{entity_id}_{time.time()}",
-            success_response_model=success_response_model,
-        )
-
-    def _ensure_output_dir_exists(self):
-        """Ensure the output directory exists."""
-        if not self.output_dir.exists():
-            self.output_dir.mkdir(parents=True, exist_ok=True)
-
-    def _save_var_files(
-        self,
-        file_name_prefix: str,
-        success_response_model: SuccessExecuteActionResponseModel,
-    ) -> dict:
-        error = success_response_model.error
-        resp_data = success_response_model.data
-        is_invalid_file = False
-        for key, val in resp_data.items():
-            try:
-                file_model = FileType.model_validate(val)
-                self._ensure_output_dir_exists()
-
-                local_filepath = (
-                    self.output_dir
-                    / f"{file_name_prefix}_{file_model.name.replace('/', '_')}"
-                )
-
-                _write_file(
-                    local_filepath, base64.urlsafe_b64decode(file_model.content)
-                )
-
-                resp_data[key] = str(local_filepath)
-            except binascii.Error:
-                is_invalid_file = True
-                resp_data[key] = "Invalid File! Unable to decode."
-            except Exception:
-                pass
-
-        if is_invalid_file is True and error is None:
-            success_response_model.error = "Execution failed"
-        success_response_model.data = resp_data
-        return success_response_model.model_dump()
-
-    def _write_to_file(
-        self,
-        action: Action,
-        output: t.Dict,
-        entity_id: str = DEFAULT_ENTITY_ID,
-    ) -> t.Dict:
-        """Write output to a file."""
-        filename = hashlib.sha256(
-            f"{action.name}-{entity_id}-{time.time()}".encode()
-        ).hexdigest()
-        self._ensure_output_dir_exists()
-        outfile = self.output_dir / filename
-        self.logger.debug(f"Writing output to: {outfile}")
-        _write_file(outfile, json.dumps(output))
-        return {
-            "message": f"output written to {outfile.resolve()}",
-            "file": str(outfile.resolve()),
-        }
-
-    def _serialize_execute_params(self, param: ParamType) -> ParamType:
-        """Returns a serialized version of the parameters object."""
-        if param is None:
-            return param  # type: ignore
-
-        if isinstance(param, (int, float, str, bool)):
-            return param  # type: ignore
-
-        if isinstance(param, BaseModel):
-            return param.model_dump(exclude_none=True)  # type: ignore
-
-        if isinstance(param, list):
-            return [self._serialize_execute_params(p) for p in param]  # type: ignore
-
-        if isinstance(param, dict):
-            return {
-                key: self._serialize_execute_params(val)  # type: ignore
-                for key, val in param.items()
-            }
-
-        raise ValueError(
-            "Invalid value found for execute parameters"
-            f"\ntype={type(param)} \nvalue={param}"
-        )
-
-    def _get_metadata(self, key: _KeyType) -> t.Dict:
-        metadata = self._metadata.get(key)  # type: ignore
-        if metadata is not None:
-            return metadata
-
-        try:
-            return self._metadata.get(Action(t.cast(ActionType, key)), {})  # type: ignore
-        except EnumStringNotFound:
-            return self._metadata.get(App(t.cast(AppType, key)), {})  # type: ignore
-
-    def _add_metadata(self, action: Action, metadata: t.Optional[t.Dict]) -> t.Dict:
-        metadata = metadata or {}
-        metadata.update(self._get_metadata(key=App(action.app)))
-        metadata.update(self._get_metadata(key=action))
-        return metadata
-
-    def _get_processor(
-        self,
-        key: _KeyType,
-        type_: te.Literal["post", "pre", "schema"],
-    ) -> t.Optional[_CallableType]:
-        """Get processor for given app or action"""
-        processor = self._processors.get(type_, {}).get(key)  # type: ignore
-        if processor is not None:
-            return processor
-
-        try:
-            return self._processors.get(type_, {}).get(Action(t.cast(ActionType, key)))  # type: ignore
-        except EnumStringNotFound:
-            return self._processors.get(type_, {}).get(App(t.cast(AppType, key)))  # type: ignore
-
-    def _process(
-        self,
-        key: _KeyType,
-        data: t.Dict,
-        type_: te.Literal["pre", "post", "schema"],
-    ) -> t.Union[t.Dict, _Retry]:
-        processor = self._get_processor(key=key, type_=type_)
-        if processor is not None:
-            self.logger.debug(
-                f"Running {'request' if type_ == 'pre' else 'response' if type_ == 'post' else 'schema'}"
-                f" through: {processor.__name__}"
-            )
-            data = processor(data)
-            # Users may not respect our type annotations and return something that isn't a dict.
-            # If that happens we should show a friendly error message.
-            if not isinstance(data, t.Dict):
-                warnings.warn(
-                    f"Expected {type_}-processor to return 'dict', got {type(data).__name__!r}",
-                    stacklevel=2,
-                )
-        return data
-
-    def _process_request(self, action: Action, request: t.Dict) -> t.Dict:
-        processed = self._process(
-            key=App(action.app),
-            data=request,
-            type_="pre",
-        )
-        if isinstance(processed, _Retry):
-            raise ComposioSDKError(
-                "Received RETRY from App preprocessor function."
-                " Preprocessors cannot be retried."
-            )
-
-        processed = self._process(
-            key=action,
-            data=processed,
-            type_="pre",
-        )
-        if isinstance(processed, _Retry):
-            raise ComposioSDKError(
-                "Received RETRY from Action preprocessor function."
-                " Preprocessors cannot be retried."
-            )
-
-        return processed
-
-    def _process_respone(
-        self, action: Action, response: t.Dict
-    ) -> t.Union[t.Dict, _Retry]:
-        processed = self._process(
-            key=App(action.app),
-            data=response,
-            type_="post",
-        )
-        if isinstance(processed, _Retry):
-            return RETRY
-
-        processed = self._process(
-            key=action,
-            data=processed,
-            type_="post",
-        )
-        if isinstance(processed, _Retry):
-            return RETRY
-
-        return processed
-
-    def _process_schema_properties(self, action: Action, properties: t.Dict) -> t.Dict:
-        processed = self._process(
-            key=App(action.app),
-            data=properties,
-            type_="schema",
-        )
-        if isinstance(processed, _Retry):
-            raise ComposioSDKError(
-                "Received RETRY from App schema processor function."
-                " Schema pprocessors cannot be retried."
-            )
-
-        processed = self._process(
-            key=action,
-            data=processed,
-            type_="schema",
-        )
-        if isinstance(processed, _Retry):
-            raise ComposioSDKError(
-                "Received RETRY from Action preprocessor function."
-                " Schema processors cannot be retried."
-            )
-        return processed
-
-    def _merge_processors(self, processors: ProcessorsType) -> None:
-        for processor_type in self._processors.keys():
-            if processor_type not in processors:
-                continue
-
-            processor_type = t.cast(ProcessorType, processor_type)
-            new_processors = processors[processor_type]
-
-            if processor_type in self._processors:
-                existing_processors = self._processors[processor_type]
-            else:
-                existing_processors = {}
-                self._processors[processor_type] = existing_processors
-
-            existing_processors.update(new_processors)
-
-    @_record_action_if_available
-    def execute_action(
-        self,
-        action: ActionType,
-        params: dict,
-        metadata: t.Optional[t.Dict] = None,
-        entity_id: t.Optional[str] = None,
-        connected_account_id: t.Optional[str] = None,
-        text: t.Optional[str] = None,
-        *,
-        processors: t.Optional[ProcessorsType] = None,
-        _check_requested_actions: bool = False,
-    ) -> t.Dict:
-        """
-        Execute an action on a given entity.
-
-        :param action: Action to execute
-        :param params: The parameters to pass to the action
-        :param entity_id: The ID of the entity to execute the action on. Defaults to "default"
-        :param text: Extra text to use for generating function calling metadata
-        :param metadata: Metadata for executing local action
-        :param connected_account_id: Connection ID for executing the remote action
-        :return: Output object from the function call
-        """
-        action = Action(action)
-        if self._version_lock is not None:
-            (action,) = self._version_lock.apply(actions=[action])
-
-        if _check_requested_actions and action.slug not in self._requested_actions:
-            raise ComposioSDKError(
-                f"Action {action.slug} is being called, but was never requested by the toolset. "
-                "Make sure that the actions you are trying to execute are requested in your "
-                "`get_tools()` call."
-            )
-
-        params = self._serialize_execute_params(param=params)
-        if processors is not None:
-            self._merge_processors(processors)
-
-        if not action.is_runtime:
-            params = self._process_request(action=action, request=params)
-            metadata = self._add_metadata(action=action, metadata=metadata)
-            connected_account_id = connected_account_id or self._get_connected_account(
-                action=action
-            )
-
-        self.logger.debug(
-            f"Executing `{action.slug}@{action.version}` with {params=} "
-            f"and {metadata=} {connected_account_id=}"
-        )
-
-        failed_responses = []
-        for _ in range(self.max_retries):
-            response = (
-                self._execute_local(
-                    action=action,
-                    params=params,
-                    metadata=metadata,
-                    entity_id=entity_id,
-                )
-                if action.is_local
-                else self._execute_remote(
-                    action=action,
-                    params=params,
-                    entity_id=entity_id or self.entity_id,
-                    connected_account_id=connected_account_id,
-                    text=text,
-                    session_id=self.session_id,
-                )
-            )
-            processed_response = (
-                response
-                if action.is_runtime
-                else self._process_respone(action=action, response=response)
-            )
-            if isinstance(processed_response, _Retry):
-                self.logger.debug(
-                    f"Got {processed_response=} from {action=} with {params=}, retrying..."
-                )
-                failed_responses.append(response)
-                continue
-
-            response = processed_response
-            self.logger.debug(f"Got {response=} from {action=} with {params=}")
-            return response
-
-        return SuccessExecuteActionResponseModel(
-            successfull=False,
-            data={"failed_responses": failed_responses},
-            error=f"Execution failed after {self.max_retries} retries.",
-        ).model_dump()
-
-    @t.overload
-    def execute_request(
-        self,
-        endpoint: str,
-        method: str,
-        *,
-        body: t.Optional[t.Dict] = None,
-        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
-        connection_id: t.Optional[str] = None,
-    ) -> t.Dict:
-        pass
-
-    @t.overload
-    def execute_request(
-        self,
-        endpoint: str,
-        method: str,
-        *,
-        body: t.Optional[t.Dict] = None,
-        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
-        app: t.Optional[AppType] = None,
-    ) -> t.Dict:
-        pass
-
-    def execute_request(
-        self,
-        endpoint: str,
-        method: str,
-        *,
-        body: t.Optional[t.Dict] = None,
-        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
-        connection_id: t.Optional[str] = None,
-        app: t.Optional[AppType] = None,
-    ) -> t.Dict:
-        """
-        Execute a proxy request to a connected account.
-
-        :param endpoint: API endpoint to call
-        :param method: HTTP method to use (GET, POST, etc.)
-        :param body: Request body data
-        :param parameters: Additional auth parameters
-        :param connection_id: ID of the connected account
-        :param app: App type to use for connection lookup
-
-        :returns: Response from the proxy request
-        :raises: ComposioSDKError: If neither connection_id nor app is provided
-        """
-        if app is not None and connection_id is None:
-            connection_id = (
-                self.get_entity(id=self.entity_id).get_connection(app=app).id
-            )
-
-        if connection_id is None:
-            raise ComposioSDKError(
-                "Please provide connection id or app name to execute a request"
-            )
-
-        self.logger.debug(
-            f"Executing request to {endpoint} with method={method}, connection_id={connection_id}"
-        )
-        response = self.client.actions.request(
-            connection_id=connection_id,
-            body=body,
-            method=method,
-            endpoint=endpoint,
-            parameters=parameters,
-        )
-        self.logger.debug(f"Got {response=}")
-        return response
-
-    def validate_tools(
-        self,
-        apps: t.Optional[t.Sequence[AppType]] = None,
-        actions: t.Optional[t.Sequence[ActionType]] = None,
-        tags: t.Optional[t.Sequence[TagType]] = None,
-    ) -> None:
-        # NOTE: This an experimental, can convert to decorator for more convinience
-        if not apps and not actions and not tags:
-            return
-
-        self.workspace.check_for_missing_dependencies(
-            apps=apps,
-            actions=actions,
-            tags=tags,
-        )
-
-    def __map_enums(self, _t: t.Type[T], _sequence: t.Sequence[t.Any]) -> t.Sequence[T]:
-        return list(map(_t, _sequence))
-
-    def __get_runtime_action_schemas(
-        self, actions: t.List[Action]
-    ) -> t.List[ActionModel]:
-        items: list[ActionModel] = []
-        for action in actions:
-            if not action.is_runtime:
-                continue
-
-            _action = action_registry["runtime"][action.slug]
-            schema = _action.schema()
-            schema["name"] = _action.enum
-            items.append(
-                ActionModel(
-                    **schema,
-                    version=VERSION_LATEST,
-                    available_versions=[VERSION_LATEST],
-                ).model_copy(deep=True)
-            )
-        return items
-
-    def __get_local_action_schemas(
-        self,
-        apps: t.List[App],
-        actions: t.List[Action],
-        tags: t.Optional[t.Sequence[TagType]] = None,
-    ) -> t.List[ActionModel]:
-        actions = [
-            action for action in actions if action.is_local and not action.is_runtime
-        ]
-        apps = [app for app in apps if app.is_local]
-        if len(actions) > 0 or len(apps) > 0:
-            return [
-                ActionModel(
-                    **item,
-                    version=VERSION_LATEST,
-                    available_versions=[VERSION_LATEST],
-                )
-                for item in self._local_client.get_action_schemas(
-                    apps=apps,
-                    actions=actions,
-                    tags=tags,
-                )
-            ]
-        return []
-
-    def __get_remote_actions_schemas(
-        self,
-        apps: t.List[App],
-        actions: t.List[Action],
-        tags: t.Optional[t.Sequence[TagType]] = None,
-        check_connected_accounts: bool = True,
-    ) -> t.List[ActionModel]:
-        remote_actions = [action for action in actions if not action.is_local]
-        remote_apps = [app for app in apps if not app.is_local]
-        if len(remote_actions) > 0 or len(remote_apps) > 0:
-            versioned_actions = [a for a in remote_actions if a.is_version_set]
-            none_versioned_actions = [a for a in remote_actions if not a.is_version_set]
-            # TODO: use tool version when fetching actions
-            items = [self.client.actions.get(a) for a in versioned_actions]
-            if len(none_versioned_actions) > 0:
-                items += self.client.actions.get(
-                    apps=remote_apps,
-                    actions=none_versioned_actions,
-                    tags=tags,
-                )
-
-            if check_connected_accounts:
-                for item in items:
-                    self.check_connected_account(action=item.name)
-
-            else:
-                warnings.warn(
-                    "Not verifying connected accounts for apps."
-                    " Actions may fail when the Agent tries to use them.",
-                    UserWarning,
-                )
-            return items
-        return []
-
-    def get_action_schemas(
-        self,
-        apps: t.Optional[t.Sequence[AppType]] = None,
-        actions: t.Optional[t.Sequence[ActionType]] = None,
-        tags: t.Optional[t.Sequence[TagType]] = None,
-        *,
-        check_connected_accounts: bool = True,
-        _populate_requested: bool = False,
-        # TODO: take manual override version as parameter
-    ) -> t.List[ActionModel]:
-        apps = t.cast(t.List[App], self.__map_enums(App, apps or []))
-        actions = t.cast(t.List[Action], self.__map_enums(Action, actions or []))
-        if self._version_lock is not None:
-            actions = self._version_lock.apply(actions=actions)
-
-        items: t.List[ActionModel] = [
-            *self.__get_runtime_action_schemas(actions=actions),
-            *self.__get_local_action_schemas(apps=apps, actions=actions, tags=tags),
-            *self.__get_remote_actions_schemas(
-                apps=apps,
-                actions=actions,
-                check_connected_accounts=check_connected_accounts,
-                tags=tags,
-            ),
-        ]
-
-        items = list(map(self._process_schema, items))
-        if _populate_requested:
-            self._requested_actions += [item.name for item in items]
-
-        if self._version_lock is not None:
-            self._version_lock.lock()
-
-        return items
-
-    def _process_schema(self, action_item: ActionModel) -> ActionModel:
-        required_params = action_item.parameters.required or []
-        for param_name, param_details in action_item.parameters.properties.items():
-            if param_details.get("title") == "FileType" and all(
-                fprop in param_details.get("properties", {})
-                for fprop in ("name", "content")
-            ):
-                action_item.parameters.properties[param_name].pop("properties")
-                action_item.parameters.properties[param_name] = {
-                    "default": param_details.get("default"),
-                    "type": "string",
-                    "format": "file-path",
-                    "description": f"File path to {param_details.get('description', '')}",
-                }
-            elif param_details.get("allOf", [{}])[0].get("title") == "FileType" and all(
-                fprop in param_details.get("allOf", [{}])[0].get("properties", {})
-                for fprop in ("name", "content")
-            ):
-                action_item.parameters.properties[param_name].pop("allOf")
-                action_item.parameters.properties[param_name].update(
-                    {
-                        "default": param_details.get("default"),
-                        "type": "string",
-                        "format": "file-path",
-                        "description": f"File path to {param_details.get('description', '')}",
-                    }
-                )
-            elif param_details.get("type") in [
-                "string",
-                "integer",
-                "number",
-                "boolean",
-            ]:
-                ext = f'Please provide a value of type {param_details["type"]}.'
-                description = param_details.get("description", "").rstrip(".")
-                param_details["description"] = (
-                    f"{description}. {ext}" if description else ext
-                )
-
-            if param_name in required_params:
-                description = param_details.get("description", "")
-                if description:
-                    param_details["description"] = (
-                        f"{description.rstrip('.')}. This parameter is required."
-                    )
-                else:
-                    param_details["description"] = "This parameter is required."
-
-        if action_item.description is not None:
-            action_item.description = action_item.description[
-                : self._description_char_limit
-            ]
-        action_item.parameters.properties = self._process_schema_properties(
-            action=Action(action_item.name.upper()),
-            properties=action_item.parameters.properties,
-        )
-        if self._action_name_char_limit is not None:
-            action_item.name = action_item.name[: self._action_name_char_limit]
-
-        # This is to support anthropic-claude
-        if action_item.name == Action.ANTHROPIC_BASH_COMMAND.slug:
-            action_item.name = "bash"
-
-        if action_item.name == Action.ANTHROPIC_COMPUTER.slug:
-            action_item.name = "computer"
-
-        if action_item.name == Action.ANTHROPIC_TEXT_EDITOR.slug:
-            action_item.name = "str_replace_editor"
-
-        return action_item
-
-    def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:
-        """Create trigger subscription."""
-        return self.client.triggers.subscribe(timeout=timeout)
+    client: Composio
+    entity_id: str
+    get_action_schemas: t.Callable
 
     def find_actions_by_use_case(
         self,
@@ -1560,6 +959,8 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             )
         )
 
+
+class _IntegrationMixin(_GetMixin):
     def _get_expected_params_from_integration_id(self, id: str) -> IntegrationParams:
         integration = self.get_integration(id=id)
         return {
@@ -1825,11 +1226,674 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
         return auth_config, False
 
 
-def _write_file(file_path: t.Union[str, os.PathLike], content: t.Union[str, bytes]):
-    """Write content to a file."""
-    if isinstance(content, str):
-        with open(file_path, "w", encoding="utf-8") as file:
-            file.write(content)
-    else:
-        with open(file_path, "wb") as file:
-            file.write(content)
+class ComposioToolSet(_IntegrationMixin):
+    """Composio toolset."""
+
+    _connected_accounts: t.Optional[t.List[ConnectedAccountModel]] = None
+    _remote_client: t.Optional[Composio] = None
+    _workspace: t.Optional[Workspace] = None
+
+    _runtime: str = "composio"
+    _description_char_limit: int = 1024
+    _action_name_char_limit: t.Optional[int] = None
+    _log_ingester_client: t.Optional[LogIngester] = None
+
+    def __init_subclass__(
+        cls,
+        *args: t.Any,
+        runtime: t.Optional[str] = None,
+        description_char_limit: t.Optional[int] = None,
+        action_name_char_limit: t.Optional[int] = None,
+        **kwargs: t.Any,
+    ) -> None:
+        if runtime is None:
+            warnings.warn(
+                f"runtime is not set on {cls.__name__}, using 'composio' as default"
+            )
+        cls._runtime = runtime or "composio"
+
+        if description_char_limit is None:
+            warnings.warn(
+                f"description_char_limit is not set on {cls.__name__}, using 1024 as default"
+            )
+        cls._description_char_limit = description_char_limit or 1024
+        cls._action_name_char_limit = action_name_char_limit
+        if len(args) > 0 or len(kwargs) > 0:
+            error = (
+                f"Composio toolset subclass initializer got extra {args=} and {kwargs=}"
+                + help_msg()
+            )
+            if _is_ci():
+                raise RuntimeError(error)
+            warnings.warn(error)
+
+    def __init__(
+        self,
+        api_key: t.Optional[str] = None,
+        base_url: t.Optional[str] = None,
+        entity_id: str = DEFAULT_ENTITY_ID,
+        workspace_id: t.Optional[str] = None,
+        workspace_config: t.Optional[WorkspaceConfigType] = None,
+        metadata: t.Optional[MetadataType] = None,
+        processors: t.Optional[ProcessorsType] = None,
+        logging_level: LogLevel = LogLevel.INFO,
+        output_dir: t.Optional[Path] = None,
+        output_in_file: bool = False,
+        verbosity_level: t.Optional[int] = None,
+        connected_account_ids: t.Optional[t.Dict[AppType, str]] = None,
+        *,
+        max_retries: int = 3,
+        lockfile: t.Optional[Path] = None,
+        lock: bool = True,
+        **kwargs: t.Any,
+    ) -> None:
+        """
+        Initialize composio toolset
+
+        :param api_key: Composio API key
+        :param base_url: Base URL for the Composio API server
+        :param runtime: Name of the framework runtime, eg. openai, crewai...
+        :param output_in_file: Whether to output the result to a file.
+        :param entity_id: The ID of the entity to execute the action on.
+            Defaults to "default".
+        :param workspace_env: Environment where actions should be executed,
+            you can choose from `host`, `docker`, `flyio` and `e2b`.
+        :param workspace_id: Workspace ID for loading an existing workspace
+        :param metadata: Additional metadata for executing an action or an
+            action which belongs to a specific app. The additional metadata
+            needs to be JSON serialisable dictionary. For example
+
+            ```python
+            toolset = ComposioToolSet(
+                ...,
+                metadata={
+                    App.IMAGEANALYSER: {
+                        "base_url": "https://image.analyser/api",
+                    },
+                    Action.IMAGEANALYSER_GTP4:{
+                        "openai_api_key": "sk-proj-somekey",
+                    }
+                }
+            )
+            ```
+        :param processors: Request and response processors, use these to
+            pre-process requests before executing an action and post-process
+            the response after an action has been executed. The processors can
+            be defined at app and action level. The order of execution will be
+
+            `App pre-processor -> Action pre-processor -> execute action -> Action post-processor -> App post-processor`
+
+            Heres and example of a request pre-processor
+
+            ```python
+            def _add_cwd_if_missing(request: t.Dict) -> t.Dict:
+                if "cwd" not in request:
+                    request["cwd"] = "~/project"
+                return request
+
+            def _sanitise_file_search_request(request: t.Dict) -> t.Dict:
+                if ".tox" not in request["exclude"]:
+                    request["exclude"].append(".tox")
+                return request
+
+            def _limit_file_search_response(response: t.Dict) -> t.Dict:
+                if len(response["results"]) > 100:
+                    response["results"] = response["results"][:100]
+                return response
+
+            toolset = ComposioToolSet(
+                ...,
+                processors={
+                    "pre": {
+                        App.FILETOOL: _add_cwd_if_missing,
+                        Action.FILETOOL_SEARCH: _sanitise_file_search_request,
+                    },
+                    "post": {
+                        Action.FILETOOL_SEARCH: _limit_file_search_response,
+                    }
+                }
+            )
+            ```
+        :param verbosity_level: This defines the size of the log object that will
+            be printed on the console.
+        :param connection_ids: Use this to define connection IDs to use when executing
+            an action for a specific app.
+        """
+        super().__init__(logging_level=logging_level, verbosity_level=verbosity_level)
+        if len(kwargs) > 0:
+            self.logger.warning(
+                f"Unused kwargs while initializing toolset: {kwargs}" + help_msg()
+            )
+
+        self.session_id = workspace_id or uuid.uuid4().hex
+        self.entity_id = entity_id
+        self.output_in_file = output_in_file
+
+        self._base_url = base_url or get_api_url_base()
+        try:
+            self._api_key = (
+                api_key
+                or os.environ.get(ENV_COMPOSIO_API_KEY)
+                or UserData.load(LOCAL_CACHE_DIRECTORY / USER_DATA_FILE_NAME).api_key
+            )
+        except FileNotFoundError:
+            self._api_key = None
+            self.logger.debug("`api_key` is not set when initializing toolset.")
+
+        self._version_lock = VersionLock(path=lockfile) if lock else None
+        self._schema_helper = SchemaHelper(client=self._init_client)
+        self._file_io_helper = FileIOHelper(outdir=output_dir)
+        self._custom_auth_helper = CustomAuthHelper()
+        self._processor_helpers = ProcessorHelper(metadata=metadata or {})
+        if processors is not None:
+            warnings.warn(
+                "Setting 'processors' on the ToolSet is deprecated, they should"
+                "be provided to the 'get_tools()' method instead.\n",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            self._processor_helpers.merge_processors(processors=processors)
+
+        self._workspace_id = workspace_id
+        self._workspace_config = workspace_config
+        self._local_client = LocalClient()
+
+        self.logger.debug("Loading local tools")
+        load_local_tools()
+
+        self._connected_account_ids = self.__validating_connection_ids(
+            connected_account_ids=connected_account_ids or {}
+        )
+        self.max_retries = max_retries
+        self.add_auth = self._custom_auth_helper.add
+
+        # To be populated by get_tools(), from within subclasses like composio_openai's Toolset.
+        self._requested_actions: t.List[str] = []
+
+    @property
+    def _log_service(self) -> LogIngester:
+        if self._log_ingester_client is None:
+            self._log_ingester_client = LogIngester()
+        return self._log_ingester_client
+
+    @property
+    def api_key(self) -> str:
+        if self._api_key is None:
+            raise ApiKeyNotProvidedError()
+        return self._api_key
+
+    def _init_client(self) -> Composio:
+        if self._remote_client is None:
+            self._remote_client = Composio(
+                api_key=self._api_key,
+                base_url=self._base_url,
+                runtime=self._runtime,
+            )
+            check_cache_refresh(self._remote_client)
+
+        self._remote_client.local = self._local_client
+        return self._remote_client
+
+    @property
+    def client(self) -> Composio:  # type: ignore[override]
+        return self._init_client()
+
+    @property
+    def workspace(self) -> Workspace:
+        """Workspace for this toolset instance."""
+        if self._workspace is not None:
+            return self._workspace
+
+        if self._workspace_id is not None:
+            self._workspace = WorkspaceFactory.get(id=self._workspace_id)
+            return self._workspace
+
+        workspace_config = self._workspace_config or HostWorkspaceConfig()
+        if workspace_config.composio_api_key is None:
+            try:
+                workspace_config.composio_api_key = self.api_key
+            except ApiKeyNotProvidedError:
+                warnings.warn(
+                    "Running without a Composio API key", UserWarning, stacklevel=2
+                )
+
+        if workspace_config.composio_base_url is None:
+            workspace_config.composio_base_url = self._base_url
+
+        if (
+            workspace_config.github_access_token is None
+            and workspace_config.composio_api_key is not None
+        ):
+            workspace_config.github_access_token = (
+                self._try_get_github_access_token_for_current_entity()
+            )
+
+        self._workspace = WorkspaceFactory.new(config=workspace_config)
+        return self._workspace
+
+    def __validating_connection_ids(
+        self,
+        connected_account_ids: t.Dict[AppType, str],
+    ) -> t.Dict[App, str]:
+        """Validate connection IDs."""
+        valid = {}
+        invalid = []
+        entity = self.client.get_entity(id=self.entity_id)
+        for app, connected_account_id in connected_account_ids.items():
+            self.logger.debug(f"Validating {app} {connected_account_id=}")
+            try:
+                entity.get_connection(
+                    app=app,
+                    connected_account_id=connected_account_id,
+                )
+                valid[App(app)] = connected_account_id
+            except HTTPError:
+                invalid.append((str(app), connected_account_id))
+
+        if len(invalid) == 0:
+            return valid
+
+        raise ComposioSDKError(message=f"Invalid connected accounts found: {invalid}")
+
+    def check_connected_account(self, action: ActionType) -> None:
+        """Check if connected account is required and if required it exists or not."""
+        action = Action(action)
+        if action.no_auth or action.is_runtime:
+            return
+
+        if self._custom_auth_helper.has_custom_auth(App(action.app)):
+            return
+
+        if self._connected_accounts is None:
+            self._connected_accounts = t.cast(
+                t.List[ConnectedAccountModel],
+                self.client.connected_accounts.get(),
+            )
+
+        if action.app not in [
+            # Normalize app names/ids coming from API
+            connection.appUniqueId.upper()
+            for connection in self._connected_accounts
+        ]:
+            raise ComposioSDKError(
+                f"No connected account found for app `{action.app}`; "
+                f"Run `composio add {action.app.lower()}` to fix this"
+            )
+
+    def _try_get_github_access_token_for_current_entity(self) -> t.Optional[str]:
+        """Try and get github access token for current entiry."""
+        from_env = os.environ.get(f"_COMPOSIO_{ENV_GITHUB_ACCESS_TOKEN}")
+        if from_env is not None:
+            self.logger.debug("Using composio github access token")
+            return from_env
+
+        self.logger.debug(f"Trying to get github access token for {self.entity_id=}")
+        try:
+            account = self.client.get_entity(id=self.entity_id).get_connection(
+                app=App.GITHUB
+            )
+            token = (
+                self.client.connected_accounts.get(connection_id=account.id)
+                .connectionParams.headers["Authorization"]  # type: ignore
+                .replace("Bearer ", "")
+            )
+            self.logger.debug(
+                f"Using `{token}` with scopes: {account.connectionParams.scope}"
+            )
+            return token
+        except ComposioClientError:
+            return None
+
+    def set_workspace_id(self, workspace_id: str) -> None:
+        self._workspace_id = workspace_id
+        if self._workspace is not None:
+            self._workspace = WorkspaceFactory.get(id=workspace_id)
+
+    def _serialize_execute_params(self, param: ParamType) -> ParamType:
+        """Returns a serialized version of the parameters object."""
+        if param is None:
+            return param  # type: ignore
+
+        if isinstance(param, (int, float, str, bool)):
+            return param  # type: ignore
+
+        if isinstance(param, BaseModel):
+            return param.model_dump(exclude_none=True)  # type: ignore
+
+        if isinstance(param, list):
+            return [self._serialize_execute_params(p) for p in param]  # type: ignore
+
+        if isinstance(param, dict):
+            return {
+                key: self._serialize_execute_params(val)  # type: ignore
+                for key, val in param.items()
+            }
+
+        raise ValueError(
+            "Invalid value found for execute parameters"
+            f"\ntype={type(param)} \nvalue={param}"
+        )
+
+    def _execute_local(
+        self,
+        action: Action,
+        params: t.Dict,
+        metadata: t.Optional[t.Dict] = None,
+        entity_id: t.Optional[str] = None,
+    ) -> t.Dict:
+        """Execute a local action."""
+        metadata = metadata or {}
+        metadata["_toolset"] = self
+        metadata.update(
+            self._custom_auth_helper.get_custom_params_for_local_execution(
+                action=action
+            )
+        )
+        response = self.workspace.execute_action(
+            action=action,
+            request_data=params,
+            metadata={
+                **(metadata or {}),
+                "entity_id": entity_id or self.entity_id,
+            },
+        )
+
+        if isinstance(response, BaseModel):
+            response = response.model_dump()
+
+        self._log_service.log(
+            connection_id=None,
+            provider_name=action.app,
+            action_name=action.name,
+            request=params,
+            response=response,
+            is_error=not response.get("successful", False),
+            session_id=self.workspace.id,
+        )
+
+        return response
+
+    def _execute_remote(
+        self,
+        action: Action,
+        params: t.Dict,
+        entity_id: str = DEFAULT_ENTITY_ID,
+        connected_account_id: t.Optional[str] = None,
+        session_id: t.Optional[str] = None,
+        text: t.Optional[str] = None,
+    ) -> t.Dict:
+        """Execute a remote action."""
+        auth = self._custom_auth_helper.get_custom_params_for_remote_execution(
+            action=action
+        )
+        if auth is None:
+            self.check_connected_account(action=action)
+
+        output = self.client.get_entity(id=entity_id).execute(
+            action=action,
+            params=params,
+            auth=auth,
+            text=text,
+            session_id=session_id,
+            connected_account_id=connected_account_id,
+        )
+
+        if self.output_in_file:
+            return self._file_io_helper.write_output(
+                action=action,
+                output=output,
+                entity_id=entity_id,
+            )
+
+        try:
+            self.logger.debug("Trying to validate success response model")
+            success_response_model = SuccessExecuteActionResponseModel.model_validate(
+                output
+            )
+        except Exception:
+            self.logger.debug("Failed to validate success response model")
+            return output
+
+        return self._file_io_helper.write_downloadable(
+            prefix=f"{action.name}_{entity_id}_{time.time()}",
+            response_model=success_response_model,
+        )
+
+    @_record_action_if_available
+    def execute_action(
+        self,
+        action: ActionType,
+        params: dict,
+        metadata: t.Optional[t.Dict] = None,
+        entity_id: t.Optional[str] = None,
+        connected_account_id: t.Optional[str] = None,
+        text: t.Optional[str] = None,
+        *,
+        processors: t.Optional[ProcessorsType] = None,
+        _check_requested_actions: bool = False,
+    ) -> t.Dict:
+        """
+        Execute an action on a given entity.
+
+        :param action: Action to execute
+        :param params: The parameters to pass to the action
+        :param entity_id: The ID of the entity to execute the action on. Defaults to "default"
+        :param text: Extra text to use for generating function calling metadata
+        :param metadata: Metadata for executing local action
+        :param connected_account_id: Connection ID for executing the remote action
+        :return: Output object from the function call
+        """
+        action = Action(action)
+        if self._version_lock is not None:
+            (action,) = self._version_lock.apply(actions=[action])
+
+        if _check_requested_actions and action.slug not in self._requested_actions:
+            raise ComposioSDKError(
+                f"Action {action.slug} is being called, but was never requested by the toolset. "
+                "Make sure that the actions you are trying to execute are requested in your "
+                "`get_tools()` call."
+            )
+
+        params = self._serialize_execute_params(param=params)
+        if processors is not None:
+            self._processor_helpers.merge_processors(processors)
+
+        if not action.is_runtime:
+            params = self._processor_helpers.process_request(
+                action=action, request=params
+            )
+            metadata = self._processor_helpers.add_metadata(
+                action=action, metadata=metadata
+            )
+            connected_account_id = (
+                connected_account_id
+                or self._connected_account_ids.get(App(Action(action).app))
+            )
+
+        self.logger.debug(
+            f"Executing `{action.slug}@{action.version}` with {params=} "
+            f"and {metadata=} {connected_account_id=}"
+        )
+
+        failed_responses = []
+        for _ in range(self.max_retries):
+            response = (
+                self._execute_local(
+                    action=action,
+                    params=params,
+                    metadata=metadata,
+                    entity_id=entity_id,
+                )
+                if action.is_local
+                else self._execute_remote(
+                    action=action,
+                    params=params,
+                    entity_id=entity_id or self.entity_id,
+                    connected_account_id=connected_account_id,
+                    text=text,
+                    session_id=self.session_id,
+                )
+            )
+            processed_response = (
+                response
+                if action.is_runtime
+                else self._processor_helpers.process_respone(
+                    action=action,
+                    response=response,
+                )
+            )
+            if isinstance(processed_response, _Retry):
+                self.logger.debug(
+                    f"Got {processed_response=} from {action=} with {params=}, retrying..."
+                )
+                failed_responses.append(response)
+                continue
+
+            response = processed_response
+            self.logger.debug(f"Got {response=} from {action=} with {params=}")
+            return response
+
+        return SuccessExecuteActionResponseModel(
+            successfull=False,
+            data={"failed_responses": failed_responses},
+            error=f"Execution failed after {self.max_retries} retries.",
+        ).model_dump()
+
+    @t.overload
+    def execute_request(
+        self,
+        endpoint: str,
+        method: str,
+        *,
+        body: t.Optional[t.Dict] = None,
+        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+        connection_id: t.Optional[str] = None,
+    ) -> t.Dict:
+        pass
+
+    @t.overload
+    def execute_request(
+        self,
+        endpoint: str,
+        method: str,
+        *,
+        body: t.Optional[t.Dict] = None,
+        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+        app: t.Optional[AppType] = None,
+    ) -> t.Dict:
+        pass
+
+    def execute_request(
+        self,
+        endpoint: str,
+        method: str,
+        *,
+        body: t.Optional[t.Dict] = None,
+        parameters: t.Optional[t.List[CustomAuthParameter]] = None,
+        connection_id: t.Optional[str] = None,
+        app: t.Optional[AppType] = None,
+    ) -> t.Dict:
+        """
+        Execute a proxy request to a connected account.
+
+        :param endpoint: API endpoint to call
+        :param method: HTTP method to use (GET, POST, etc.)
+        :param body: Request body data
+        :param parameters: Additional auth parameters
+        :param connection_id: ID of the connected account
+        :param app: App type to use for connection lookup
+
+        :returns: Response from the proxy request
+        :raises: ComposioSDKError: If neither connection_id nor app is provided
+        """
+        if app is not None and connection_id is None:
+            connection_id = (
+                self.get_entity(id=self.entity_id).get_connection(app=app).id
+            )
+
+        if connection_id is None:
+            raise ComposioSDKError(
+                "Please provide connection id or app name to execute a request"
+            )
+
+        self.logger.debug(
+            f"Executing request to {endpoint} with method={method}, connection_id={connection_id}"
+        )
+        response = self.client.actions.request(
+            connection_id=connection_id,
+            body=body,
+            method=method,
+            endpoint=endpoint,
+            parameters=parameters,
+        )
+        self.logger.debug(f"Got {response=}")
+        return response
+
+    def validate_tools(
+        self,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        tags: t.Optional[t.Sequence[TagType]] = None,
+    ) -> None:
+        # NOTE: This an experimental, can convert to decorator for more convinience
+        if not apps and not actions and not tags:
+            return
+
+        self.workspace.check_for_missing_dependencies(
+            apps=apps,
+            actions=actions,
+            tags=tags,
+        )
+
+    def get_action_schemas(
+        self,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        tags: t.Optional[t.Sequence[TagType]] = None,
+        *,
+        check_connected_accounts: bool = True,
+        _populate_requested: bool = False,
+    ) -> t.List[ActionModel]:
+        apps = t.cast(t.List[App], _map_enums(App, apps or []))
+        actions = t.cast(t.List[Action], _map_enums(Action, actions or []))
+        if self._version_lock is not None:
+            actions = self._version_lock.apply(actions=actions)
+
+        items: t.List[ActionModel] = [
+            *self._schema_helper.get_runtime_action_schemas(actions=actions),
+            *self._schema_helper.get_local_action_schemas(
+                apps=apps, actions=actions, tags=tags
+            ),
+            *self._schema_helper.get_remote_actions_schemas(
+                apps=apps,
+                actions=actions,
+                tags=tags,
+                check_connected_account=(
+                    self.check_connected_account if check_connected_accounts else None
+                ),
+            ),
+        ]
+
+        items = list(
+            map(
+                lambda x: self._schema_helper.process_schema(
+                    action=x,
+                    processor_helper=self._processor_helpers,
+                    description_char_limit=self._description_char_limit,
+                    action_name_char_limit=self._action_name_char_limit,
+                ),
+                items,
+            )
+        )
+
+        if _populate_requested:
+            self._requested_actions += [item.name for item in items]
+
+        if self._version_lock is not None:
+            self._version_lock.lock()
+
+        return items
+
+    def create_trigger_listener(self, timeout: float = 15.0) -> TriggerSubscription:
+        """Create trigger subscription."""
+        return self.client.triggers.subscribe(timeout=timeout)
