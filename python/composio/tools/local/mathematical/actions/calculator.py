@@ -22,6 +22,8 @@ class CalculatorResponse(BaseModel):
 class Calculator(LocalAction[CalculatorRequest, CalculatorResponse]):
     """
     Performs mathematical calculations such as addition, subtraction, multiplication, and division.
+
+    NOTE: When providing an operation, use mathematical syntax like 33*12, 90/2*6, 3+5.3/3
     """
 
     _tags = ["calculator"]
@@ -44,11 +46,17 @@ class Calculator(LocalAction[CalculatorRequest, CalculatorResponse]):
         Executes the calculator operation with proper error handling.
         """
         try:
-            node = ast.parse(request.operation, mode="eval").body
-            result = self._safe_eval(node)
+            result = self._safe_eval(
+                ast.parse(
+                    request.operation,
+                    mode="eval",
+                ).body
+            )
             return CalculatorResponse(result=str(result))
         except SyntaxError:
-            return CalculatorResponse(result="Error: Invalid mathematical expression")
+            return CalculatorResponse(
+                result=f"Invalid mathematical expression: {request.operation}"
+            )
         except (TypeError, ValueError) as e:
             return CalculatorResponse(result=f"Error: {str(e)}")
         except Exception:
