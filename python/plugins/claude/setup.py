@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_claude",
-    version="0.6.15",
+    version="0.6.17",
     author="Sawradip",
     author_email="sawradip@composio.dev",
     description="Use Composio to get an array of tools with your Claude LLMs.",
