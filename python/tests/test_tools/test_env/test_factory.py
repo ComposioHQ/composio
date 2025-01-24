@@ -68,9 +68,9 @@ class TestDocker(BaseFactoryTest):
 
 class TestE2B(BaseFactoryTest):
     type = E2BWorkspace
-    config = WorkspaceType.E2B(template="bg8v5hkbhq1w09i5h65u")
+    config = WorkspaceType.E2B()
 
 
 class TestFlyIO(BaseFactoryTest):
     type = FlyIOWorkspace
-    config = WorkspaceType.FlyIO(image="composio/composio:dev")
+    config = WorkspaceType.FlyIO(image="composio/composio")

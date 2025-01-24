@@ -3,7 +3,7 @@ import os
 import dotenv
 from autogen import AssistantAgent, UserProxyAgent
 
-from composio_autogen import Action, ComposioToolSet
+from composio_autogen import App, ComposioToolSet
 
 
 # Load environment variables from .env
@@ -39,9 +39,7 @@ def main():
 
     # Register the preferred Applications, with right executor.
     composio_toolset.register_tools(
-        actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER],
-        caller=chatbot,
-        executor=user_proxy,
+        apps=[App.GITHUB], caller=chatbot, executor=user_proxy
     )
 
     # Define task.
