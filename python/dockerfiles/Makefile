@@ -19,7 +19,10 @@ e2b:
 
 .PHONY: e2b-dev
 e2b-dev:
+	@sed -i.bck 's/RUN useradd/# RUN useradd/g' Dockerfile.dev
 	@cd e2b-dev/ && bash build.sh
+	@rm Dockerfile.dev && mv Dockerfile.dev.bck Dockerfile.dev
+
 
 .PHONY: prod
 prod:
@@ -53,3 +56,7 @@ computer:
 publish:
 	@docker buildx build --platform linux/amd64,linux/arm64 -t composio/composio:$$VERSION . --push
 	@docker buildx build --platform linux/amd64,linux/arm64 -t composio/composio:latest . --push
+
+.PHONY: publish-dev
+publish-dev: _copy-composio
+	@docker buildx build --platform linux/amd64,linux/arm64 -t composio/composio:dev -f Dockerfile.dev . --push

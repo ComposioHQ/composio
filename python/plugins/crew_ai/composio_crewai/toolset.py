@@ -1,13 +1,13 @@
 import warnings
 
 from crewai import __version__
-from semver import Version
+from semver import VersionInfo
 
 from composio.utils import help_msg
 
 
-_BREAKING_VERSION = Version(major=0, minor=79, patch=0)
-_CURRENT_VERSION = Version.parse(__version__)
+_BREAKING_VERSION = VersionInfo(major=0, minor=79, patch=0)
+_CURRENT_VERSION = VersionInfo.parse(__version__)
 
 if _CURRENT_VERSION < _BREAKING_VERSION:
     from composio_langchain import ComposioToolSet as Base
