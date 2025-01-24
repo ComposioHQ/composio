@@ -1,2 +1,2 @@
-*.composio.lock
+.composio.lock
 agentops.log
