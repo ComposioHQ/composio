@@ -1187,7 +1187,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             none_versioned_actions = [a for a in remote_actions if not a.is_version_set]
             # TODO: use tool version when fetching actions
             items = [self.client.actions.get(a) for a in versioned_actions]
-            if len(none_versioned_actions) > 0:
+            if len(none_versioned_actions) > 0 or len(remote_apps) > 0:
                 items += self.client.actions.get(
                     apps=remote_apps,
                     actions=none_versioned_actions,
