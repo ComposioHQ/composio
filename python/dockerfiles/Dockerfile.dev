@@ -1,31 +1,4 @@
-FROM python:3.10-slim
-
-# Install dependencies
-RUN apt update \
-    && apt install  -y \
-    git \
-    curl \
-    sudo \
-    python3-dev \
-    python3-pip \
-    python3-venv \
-    uuid-runtime \
-    openssh-server
-
-# Create Venv
-RUN /bin/python3 -m venv .composio/venv
-
-# Setup path
-RUN export PATH=$PATH:$(pwd)/.composio/venv/bin
-
-# Install composio for dependency caching
-RUN python -m pip install composio-core[all]==0.5.48-rc.1 fastapi playwright uvicorn
-
-# Install playwright deps
-RUN playwright install-deps
-
-# Install playwright binaries
-RUN playwright install chromium
+FROM composio/composio:latest
 
 # Set working dir
 WORKDIR /root
@@ -38,6 +11,9 @@ RUN python -m pip install /root/composio[all] --no-deps --force-reinstall
 
 # Remove cache
 RUN rm -rf /root/composio/
+
+# Remove default user
+RUN userdel -r user
 
 # Setup user
 RUN useradd -rm -d /home/user -s /bin/bash -g root -G sudo -u 1000 user

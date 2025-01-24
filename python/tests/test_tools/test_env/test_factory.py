@@ -67,10 +67,12 @@ class TestDocker(BaseFactoryTest):
 
 
 class TestE2B(BaseFactoryTest):
+    # If this test is failing make sure `Dockerfile.dev` is up to date and run `make e2b-dev`
     type = E2BWorkspace
-    config = WorkspaceType.E2B()
+    config = WorkspaceType.E2B(template="bg8v5hkbhq1w09i5h65u")
 
 
 class TestFlyIO(BaseFactoryTest):
+    # If this test is failing make sure `Dockerfile.dev` is up to date and run `make publish-dev`
     type = FlyIOWorkspace
-    config = WorkspaceType.FlyIO(image="composio/composio")
+    config = WorkspaceType.FlyIO(image="composio/composio:dev")
