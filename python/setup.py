@@ -52,6 +52,7 @@ core_requirements = [
     # Tooling server dependencies
     "fastapi",
     "uvicorn",
+    "pyyaml>=6.0.2",
 ]
 
 e2b_workspace_requirements = [
