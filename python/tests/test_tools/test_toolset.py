@@ -10,7 +10,7 @@ from unittest import mock
 import pytest
 from pydantic import BaseModel, Field
 
-from composio import Action, App
+from composio import Action, App, Trigger
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.base.runtime import action as custom_action
@@ -36,6 +36,32 @@ def test_get_schemas() -> None:
         > 0
     )
 
+def test_get_trigger_config_scheme() -> None:
+    """Test `ComposioToolSet.get_trigger_config_scheme` method."""
+    toolset = ComposioToolSet()
+    assert toolset.get_trigger_config_scheme(
+        trigger=Trigger.GMAIL_NEW_GMAIL_MESSAGE
+    ).title == "GmailNewMessageConfigSchema"
+
+def test_delete_trigger() -> None:
+    """Test `ComposioToolSet.delete_trigger` method."""
+    toolset = ComposioToolSet(
+        api_key="s7cccojimwxj9od0344an" # test@compoio.dev account key
+    )
+
+    enabled_trigger = toolset.client.triggers.enable(
+        name="GMAIL_NEW_GMAIL_MESSAGE",
+        connected_account_id="14711197-9b53-41b1-a0ab-2448fe7a5cc0", # id from 
+        config={
+            "interval": 1,
+            "userId": "me",
+            "labelIds": "INBOX"
+        }
+    )
+
+    assert toolset.delete_trigger(
+        id=enabled_trigger["triggerId"]
+    )["status"] == "success"
 
 def test_find_actions_by_tags() -> None:
     """Test `ComposioToolSet.find_actions_by_tags` method."""
