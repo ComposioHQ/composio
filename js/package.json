@@ -40,6 +40,7 @@
     "@langchain/openai": "^0.2.5",
     "ai": "^3.2.22",
     "langchain": "^0.2.11",
+    "llamaindex": "^0.8.31",
     "openai": "^4.50.0"
   },
   "dependencies": {
@@ -82,6 +83,7 @@
     "globals": "^15.13.0",
     "jest": "^29.7.0",
     "jest-html-reporters": "^3.1.7",
+    "llamaindex": "^0.8.31",
     "prettier": "^3.4.2",
     "prettier-plugin-organize-imports": "^4.1.0",
     "regenerator-runtime": "^0.14.1",
