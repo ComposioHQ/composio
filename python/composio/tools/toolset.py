@@ -40,11 +40,11 @@ from composio.client.collections import (
     FileType,
     IntegrationModel,
     SuccessExecuteActionResponseModel,
-    TriggerModel,
     TriggerConfigModel,
+    TriggerModel,
     TriggerSubscription,
 )
-from composio.client.enums import TriggerType, Trigger
+from composio.client.enums import Trigger, TriggerType
 from composio.client.enums.base import EnumStringNotFound
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.utils import check_cache_refresh
@@ -1497,23 +1497,24 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
 
     def get_trigger(self, trigger: TriggerType) -> TriggerModel:
         return self.client.triggers.get(trigger_names=[trigger]).pop()
-    
+
     def get_trigger_config_scheme(self, trigger: TriggerType) -> TriggerConfigModel:
         return self.client.triggers.get(trigger_names=[trigger]).pop().config
-    
-    def get_active_triggers(self, 
+
+    def get_active_triggers(
+        self,
         trigger_ids: t.List[str] | None = None,
         connected_account_ids: t.List[str] | None = None,
         integration_ids: t.List[str] | None = None,
-        trigger_names: t.List[str | Trigger] | None = None
+        trigger_names: t.List[str | Trigger] | None = None,
     ) -> t.List[ActiveTriggerModel]:
         return self.client.active_triggers.get(
             trigger_ids=trigger_ids,
             connected_account_ids=connected_account_ids,
             integration_ids=integration_ids,
-            trigger_names=trigger_names
+            trigger_names=trigger_names,
         )
-    
+
     def delete_trigger(self, id: str):
         return self.client.triggers.delete(id=id)
 
