@@ -44,7 +44,7 @@ from composio.client.collections import (
     TriggerModel,
     TriggerSubscription,
 )
-from composio.client.enums import Trigger, TriggerType
+from composio.client.enums import TriggerType
 from composio.client.enums.base import EnumStringNotFound
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.utils import check_cache_refresh
@@ -905,7 +905,7 @@ class _GetMixin(WithLogger):
         trigger_ids: t.Optional[t.List[str]] = None,
         connected_account_ids: t.Optional[t.List[str]] = None,
         integration_ids: t.Optional[t.List[str]] = None,
-        trigger_names: t.Optional[t.List[str | TriggerType]] = None,
+        trigger_names: t.Optional[t.List[TriggerType]] = None,
     ) -> t.List[ActiveTriggerModel]:
         return self.client.active_triggers.get(
             trigger_ids=trigger_ids,
