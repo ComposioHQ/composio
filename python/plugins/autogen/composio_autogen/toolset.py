@@ -6,9 +6,11 @@ from inspect import Signature
 import autogen
 import typing_extensions as te
 from autogen.agentchat.conversable_agent import ConversableAgent
+from autogen_core.tools import FunctionTool
 
 from composio import Action, ActionType, AppType, TagType
 from composio.tools import ComposioToolSet as BaseComposioToolSet
+from composio.tools.toolset import ProcessorsType
 from composio.utils.shared import get_signature_format_from_schema_params
 
 
@@ -43,7 +45,12 @@ class ComposioToolSet(
         :param entity_id: Entity ID to use for executing function calls.
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
-        schemas = self.get_action_schemas(actions=actions, apps=apps, tags=tags)
+        schemas = self.get_action_schemas(
+            actions=actions,
+            apps=apps,
+            tags=tags,
+            _populate_requested=True,
+        )
         for schema in schemas:
             self._register_schema_to_autogen(
                 schema=schema.model_dump(
@@ -121,6 +128,7 @@ class ComposioToolSet(
                 action=Action(value=name),
                 params=kwargs,
                 entity_id=entity_id or self.entity_id,
+                _check_requested_actions=True,
             )
 
         function = types.FunctionType(
@@ -131,10 +139,14 @@ class ComposioToolSet(
             ),
             closure=execute_action.__closure__,
         )
-        function.__signature__ = Signature(  # type: ignore
-            parameters=get_signature_format_from_schema_params(
-                schema_params=schema["parameters"],
-            ),
+        params = get_signature_format_from_schema_params(
+            schema_params=schema["parameters"],
+        )
+        setattr(function, "__signature__", Signature(parameters=params))
+        setattr(
+            function,
+            "__annotations__",
+            {p.name: p.annotation for p in params} | {"return": t.Dict[str, t.Any]},
         )
         function.__doc__ = (
             description if description else f"Action {name} from {appName}"
@@ -148,3 +160,102 @@ class ComposioToolSet(
             ),
             description=description if description else f"Action {name} from {appName}",
         )
+
+    def _wrap_tool(
+        self,
+        schema: t.Dict[str, t.Any],
+        entity_id: t.Optional[str] = None,
+    ) -> FunctionTool:
+        """
+        Wraps a composio action as an Autogen FunctionTool.
+
+        Args:
+            schema: The action schema to wrap
+            entity_id: Optional entity ID for executing function calls
+
+        Returns:
+            FunctionTool: Wrapped function as an Autogen FunctionTool
+        """
+        name = schema["name"]
+        description = schema["description"] or f"Action {name} from {schema['appName']}"
+
+        def execute_action(**kwargs: t.Any) -> t.Dict:
+            """Placeholder function for executing action."""
+            return self.execute_action(
+                action=Action(value=name),
+                params=kwargs,
+                entity_id=entity_id or self.entity_id,
+                _check_requested_actions=True,
+            )
+
+        # Create function with proper signature
+        function = types.FunctionType(
+            code=execute_action.__code__,
+            globals=globals(),
+            name=self._process_function_name_for_registration(input_string=name),
+            closure=execute_action.__closure__,
+        )
+
+        # Set signature and annotations
+        params = get_signature_format_from_schema_params(
+            schema_params=schema["parameters"]
+        )
+        setattr(function, "__signature__", Signature(parameters=params))
+        setattr(
+            function,
+            "__annotations__",
+            {p.name: p.annotation for p in params} | {"return": t.Dict[str, t.Any]},
+        )
+        function.__doc__ = description
+
+        return FunctionTool(
+            func=function,
+            description=description,
+            name=self._process_function_name_for_registration(input_string=name),
+        )
+
+    def get_tools(
+        self,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        tags: t.Optional[t.List[TagType]] = None,
+        entity_id: t.Optional[str] = None,
+        *,
+        processors: t.Optional[ProcessorsType] = None,
+        check_connected_accounts: bool = True,
+    ) -> t.Sequence[FunctionTool]:
+        """
+        Get composio tools as Autogen FunctionTool objects.
+
+        Args:
+            actions: List of actions to wrap
+            apps: List of apps to wrap
+            tags: Filter apps by given tags
+            entity_id: Entity ID for function wrapper
+            processors: Optional dict of processors to merge
+            check_connected_accounts: Whether to check for connected accounts
+
+        Returns:
+            List of Autogen FunctionTool objects
+        """
+        self.validate_tools(apps=apps, actions=actions, tags=tags)
+        if processors is not None:
+            self._processor_helpers.merge_processors(processors)
+
+        tools = [
+            self._wrap_tool(
+                schema=tool.model_dump(
+                    exclude_none=True,
+                ),
+                entity_id=entity_id or self.entity_id,
+            )
+            for tool in self.get_action_schemas(
+                actions=actions,
+                apps=apps,
+                tags=tags,
+                check_connected_accounts=check_connected_accounts,
+                _populate_requested=True,
+            )
+        ]
+
+        return tools

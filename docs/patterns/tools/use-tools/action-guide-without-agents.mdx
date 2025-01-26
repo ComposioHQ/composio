@@ -8,6 +8,17 @@ description: "Guide to use Tools directly as function calls"
 
 Composio allows you to execute tools directly as function calls. When calling a tool directly, you'll need to provide the input parameters. Checkout [Get Action Schema](/patterns/tools/use-tools/get-action-inputs) to learn how to get the input parameters for an action.
 
+Install packages:
+<CodeGroup>
+```bash Python
+pip install composio-core
+```
+```bash JavaScript
+npm install composio-core
+```
+</CodeGroup>
+
+Using tools directly:
 <CodeGroup>
  ```python Python
 from composio import ComposioToolSet, Action
@@ -25,15 +36,15 @@ tool_set.execute_action(
 import { OpenAIToolSet } from "composio-core";
 
 const toolset = new OpenAIToolSet();
-const entity = toolset.client.getEntity("Jessica");
+const entity = toolset.client.getEntity("default");
 
-const result = await entity.execute(
-    "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
-    {
-        "owner": "composiohq",
-        "repo": "composio"
-    }
-);
+const result = await entity.execute({
+  actionName: "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
+  params: {
+    owner: "composiohq",
+    repo: "composio",
+  },
+});
 console.log(result);
   ```
 </CodeGroup>
@@ -52,12 +63,12 @@ tool_set.execute_action(
 ```
 
 ```javascript JavaScript
-const result = await toolset.client.getEntity("Jessica").execute(
-    'github_star_a_repository_for_the_authenticated_user',
-    {},
+const result = await toolset.client.getEntity("default").execute({
+    actionName: "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
+    params: {},
     // Natural language prompt
-    "Star the repo composiohq/composio"
-)
+    text: "Star the repo composiohq/composio"
+});
 console.log(result);
 ```
 </CodeGroup>

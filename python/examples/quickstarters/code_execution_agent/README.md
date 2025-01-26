@@ -27,5 +27,5 @@ Now, Fill in the `.env` file with your secrets.
 
 ### 2. Run the python script
 ```shell
-python cookbook/examples/code_execution_agent/main.py
+python python/examples/quickstarters/code_execution_agent/main.py
 ```

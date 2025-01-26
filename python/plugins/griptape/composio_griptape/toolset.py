@@ -86,6 +86,7 @@ class ComposioToolSet(
                 action=Action(value=name),
                 params=params,
                 entity_id=entity_id or self.entity_id,
+                _check_requested_actions=True,
             )
 
         class GripTapeTool(BaseTool):
@@ -160,7 +161,7 @@ class ComposioToolSet(
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
         if processors is not None:
-            self._merge_processors(processors)
+            self._processor_helpers.merge_processors(processors)
         return [
             self._wrap_tool(
                 schema=tool.model_dump(

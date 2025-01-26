@@ -125,7 +125,7 @@ class ComposioToolSet(
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
         if processors is not None:
-            self._merge_processors(processors)
+            self._processor_helpers.merge_processors(processors)
         return [
             ChatCompletionToolParam(  # type: ignore
                 **t.cast(
@@ -188,6 +188,7 @@ class ComposioToolSet(
             action=tool_call.function.name,
             params=json.loads(tool_call.function.arguments),
             entity_id=entity_id or self.entity_id,
+            _check_requested_actions=True,
         )
 
     def handle_tool_calls(

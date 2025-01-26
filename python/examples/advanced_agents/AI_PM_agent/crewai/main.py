@@ -19,8 +19,8 @@ BOT_USER_ID = os.environ[
 RESPOND_ONLY_IF_TAGGED = (
     True  # Set to True to have the bot respond only when tagged in a message
 )
-import agentops
-agentops.init(os.environ["AGENTOPS_API_KEY"])
+# import agentops
+# agentops.init(os.environ["AGENTOPS_API_KEY"])
 
 #from langchain_cerebras import ChatCerebras
 
@@ -46,7 +46,7 @@ def proc(mail_message, sender_mail):
             "text": f"Are you sure you want to post message:{mail_message} from sender email:{sender_mail}. If yes, tag test_app and tell it the project id and team id.",
         },
     )
-    slack_listener.listen()
+    slack_listener.wait_forever()
 
 
 
@@ -55,20 +55,20 @@ issue_creator_agent = Agent(
     goal="You are an agent that creates issues in Linear based on customer feedback emails",
     backstory="You are an expert in using Linear and creating issues on it.",
     llm=llm,
-    tools=composio_tools,
+    tools=composio_tools, # type: ignore
 )
 
 
 # Callback function for handling new messages in a Slack channel
 @slack_listener.callback(filters={"trigger_name": "slackbot_receive_message"})
-def callback_new_message(event: TriggerEventData) -> None:
+def callback_slack_new_message(event: TriggerEventData) -> None:
     print("Recieved new messsage")
     payload = event.payload
     user_id = payload.get("user", "")
 
     # Ignore messages from the bot itself to prevent self-responses
     if user_id == BOT_USER_ID:
-        return "Bot ignored"
+        return "Bot ignored" # type: ignore
 
     message = payload.get("text", "")
 
@@ -77,7 +77,7 @@ def callback_new_message(event: TriggerEventData) -> None:
         print(f"Bot not tagged, ignoring message - {message} - {BOT_USER_ID}")
         return (
             f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}"
-        )
+        ) # type: ignore
 
     # Extract channel and timestamp information from the event payload
     channel_id = payload.get("channel", "")
@@ -98,14 +98,14 @@ def callback_new_message(event: TriggerEventData) -> None:
         ),
         expected_output="issue was created",
         agent=issue_creator_agent,
-        tools=composio_tools
+        tools=composio_tools # type: ignore
     )
     
     crew = Crew(
         agents=[issue_creator_agent],
         tasks=[issue_task],
         process=Process.sequential,
-        tools = composio_tools
+        tools = composio_tools # type: ignore
     )
 
     result = crew.kickoff()
@@ -120,7 +120,7 @@ def callback_new_message(event: TriggerEventData) -> None:
         
 
 @gmail_listener.callback(filters={"trigger_name": "gmail_new_gmail_message"})
-def callback_new_message(event: TriggerEventData) -> None:
+def callback_gmail_new_message(event: TriggerEventData) -> None:
     print("MESSAGE RECEIVED")
     print("here in the function")
     payload = event.payload
@@ -140,12 +140,12 @@ def callback_new_message(event: TriggerEventData) -> None:
         "pre": {
             Action.LINEAR_CREATE_LINEAR_ISSUE: proc(mail_message, sender_mail)
             },
-        }
+        } # type: ignore
     )
 
 
 print("GMAIL LISTENING")
 
-gmail_listener.listen()
+gmail_listener.wait_forever()
 
 

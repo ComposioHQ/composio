@@ -1,13 +1,13 @@
-import { tool } from "ai";
+import { CoreTool, jsonSchema, tool } from "ai";
 import { z } from "zod";
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
 import { RawActionData } from "../types/base_toolset";
-import { jsonSchemaToModel } from "../utils/shared";
+
 type Optional<T> = T | null;
 
-const zExecuteToolCallParams = z.object({
+const ZExecuteToolCallParams = z.object({
   actions: z.array(z.string()).optional(),
   apps: z.array(z.string()).optional(),
   params: z.record(z.any()).optional(),
@@ -38,11 +38,11 @@ export class VercelAIToolSet extends BaseComposioToolSet {
   }
 
   private generateVercelTool(schema: RawActionData) {
-    const parameters = jsonSchemaToModel(schema.parameters);
     return tool({
       description: schema.description,
-      parameters,
-      execute: async (params: Record<string, string>) => {
+      // @ts-ignore the type are JSONSchemV7. Internally it's resolved
+      parameters: jsonSchema(schema.parameters as unknown),
+      execute: async (params) => {
         return await this.executeToolCall(
           {
             name: schema.name,
@@ -62,7 +62,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     useCase?: Optional<string>;
     usecaseLimit?: Optional<number>;
     filterByAvailableApps?: Optional<boolean>;
-  }): Promise<{ [key: string]: RawActionData }> {
+  }): Promise<{ [key: string]: CoreTool }> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getTools",
       file: this.fileName,
@@ -76,24 +76,20 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       usecaseLimit,
       filterByAvailableApps,
       actions,
-    } = zExecuteToolCallParams.parse(filters);
+    } = ZExecuteToolCallParams.parse(filters);
 
-    const actionsList = await this.client.actions.list({
-      ...(apps && { apps: apps?.join(",") }),
-      ...(tags && { tags: tags?.join(",") }),
-      ...(useCase && { useCase: useCase }),
-      ...(actions && { actions: actions?.join(",") }),
-      ...(usecaseLimit && { usecaseLimit: usecaseLimit }),
-      filterByAvailableApps: filterByAvailableApps ?? undefined,
+    const actionsList = await this.getToolsSchema({
+      apps,
+      actions,
+      tags,
+      useCase,
+      useCaseLimit: usecaseLimit,
+      filterByAvailableApps,
     });
 
-    const tools = {};
-    actionsList.items?.forEach((actionSchema) => {
-      // @ts-ignore
-      tools[actionSchema.name!] = this.generateVercelTool(
-        // @ts-ignore
-        actionSchema as ActionData
-      );
+    const tools: { [key: string]: CoreTool } = {};
+    actionsList.forEach((actionSchema) => {
+      tools[actionSchema.name!] = this.generateVercelTool(actionSchema);
     });
 
     return tools;

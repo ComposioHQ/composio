@@ -9,6 +9,7 @@ export interface ErrorResponseData {
   type: string;
   name: string;
   message: string;
+  details?: Record<string, unknown>[] | Record<string, unknown>;
 }
 
 interface ErrorDetails {
@@ -49,17 +50,29 @@ export const getAPIErrorDetails = (
   if (hasNotReceivedResponseFromBE) {
     genericMessage = predefinedError.message as string;
   } else if (axiosError.config?.baseURL && axiosError.config?.url) {
-    genericMessage = `${errorNameFromBE || ""} ${errorTypeFromBE ? `- ${errorTypeFromBE}` : ""} on ${axiosError.config?.baseURL! + axiosError.config?.url!}`;
+    genericMessage = `${errorNameFromBE || predefinedError.message} ${errorTypeFromBE ? `- ${errorTypeFromBE}` : ""} on ${axiosError.config?.baseURL! + axiosError.config?.url!}`;
   }
 
   switch (errorCode) {
+    case COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST:
+      const validationErrors = axiosError.response?.data?.details;
+      const formattedErrors = Array.isArray(validationErrors)
+        ? validationErrors.map((err) => JSON.stringify(err)).join(", ")
+        : JSON.stringify(validationErrors);
+
+      return {
+        message: genericMessage,
+        description: `Validation Errors: ${formattedErrors}`,
+        possibleFix:
+          "Please check the request parameters and ensure they are correct.",
+        metadata,
+      };
     case COMPOSIO_SDK_ERROR_CODES.BACKEND.NOT_FOUND:
     case COMPOSIO_SDK_ERROR_CODES.BACKEND.UNAUTHORIZED:
     case COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_ERROR:
     case COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_UNAVAILABLE:
     case COMPOSIO_SDK_ERROR_CODES.BACKEND.RATE_LIMIT:
     case COMPOSIO_SDK_ERROR_CODES.BACKEND.UNKNOWN:
-    case COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST:
       return {
         message: genericMessage,
         description: errorMessage || (predefinedError.description as string),

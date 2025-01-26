@@ -167,93 +167,95 @@ def test_api_key_missing(monkeypatch: pytest.MonkeyPatch) -> None:
         _ = toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})
 
 
-def test_processors(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test the `processors` field in `ComposioToolSet` constructor."""
-    preprocessor_called = postprocessor_called = False
+class TestProcessors:
 
-    def preprocess(request: dict) -> dict:
-        nonlocal preprocessor_called
-        preprocessor_called = True
-        return request
+    def test_processors(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test the `processors` field in `ComposioToolSet` constructor."""
+        preprocessor_called = postprocessor_called = False
 
-    def postprocess(response: dict) -> dict:
-        nonlocal postprocessor_called
-        postprocessor_called = True
-        return response
+        def preprocess(request: dict) -> dict:
+            nonlocal preprocessor_called
+            preprocessor_called = True
+            return request
 
-    with pytest.warns(DeprecationWarning):
+        def postprocess(response: dict) -> dict:
+            nonlocal postprocessor_called
+            postprocessor_called = True
+            return response
+
+        with pytest.warns(DeprecationWarning):
+            toolset = ComposioToolSet(
+                processors={
+                    "pre": {App.GMAIL: preprocess},
+                    "post": {App.GMAIL: postprocess},
+                }
+            )
+        monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
+
+        # Happy case
+        toolset.execute_action(action=Action.GMAIL_FETCH_EMAILS, params={})
+        assert preprocessor_called
+        assert postprocessor_called
+
+        # Improperly defined processors
+        preprocessor_called = postprocessor_called = False
+
+        def weird_postprocessor(reponse: dict) -> None:
+            """Forgets to return the reponse."""
+            reponse["something"] = True
+
+        # users may not respect our type annotations
         toolset = ComposioToolSet(
-            processors={
-                "pre": {App.GMAIL: preprocess},
-                "post": {App.GMAIL: postprocess},
-            }
+            processors={"post": {App.SERPAPI: weird_postprocessor}}  # type: ignore
         )
-    monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
+        monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
 
-    # Happy case
-    toolset.execute_action(action=Action.GMAIL_FETCH_EMAILS, params={})
-    assert preprocessor_called
-    assert postprocessor_called
+        with pytest.warns(
+            UserWarning,
+            match="Expected post-processor to return 'dict', got 'NoneType'",
+        ):
+            result = toolset.execute_action(action=Action.SERPAPI_SEARCH, params={})
 
-    # Improperly defined processors
-    preprocessor_called = postprocessor_called = False
+        assert result is None
 
-    def weird_postprocessor(reponse: dict) -> None:
-        """Forgets to return the reponse."""
-        reponse["something"] = True
+    def test_processors_on_execute_action(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test the `processors` field in `execute_action()` methods of ToolSet's."""
+        preprocessor_called = False
 
-    # users may not respect our type annotations
-    toolset = ComposioToolSet(
-        processors={"post": {App.SERPAPI: weird_postprocessor}}  # type: ignore
-    )
-    monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
+        def preprocess(response: dict) -> dict:
+            nonlocal preprocessor_called
+            preprocessor_called = True
+            return response
 
-    with pytest.warns(
-        UserWarning,
-        match="Expected post-processor to return 'dict', got 'NoneType'",
-    ):
-        result = toolset.execute_action(action=Action.SERPAPI_SEARCH, params={})
+        toolset = LangchainToolSet()
+        monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
+        toolset.execute_action(
+            Action.ATTIO_LIST_NOTES,
+            params={},
+            processors={"pre": {Action.ATTIO_LIST_NOTES: preprocess}},
+        )
+        assert preprocessor_called
 
-    assert result is None
+    def test_processors_on_get_tools(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test the `processors` field in `get_tools()` methods of ToolSet's."""
+        postprocessor_called = False
 
+        def postprocess(response: dict) -> dict:
+            nonlocal postprocessor_called
+            postprocessor_called = True
+            return response
 
-def test_processors_on_execute_action(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test the `processors` field in `execute_action()` methods of ToolSet's."""
-    preprocessor_called = False
+        toolset = LangchainToolSet()
+        monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
 
-    def preprocess(response: dict) -> dict:
-        nonlocal preprocessor_called
-        preprocessor_called = True
-        return response
-
-    toolset = LangchainToolSet()
-    monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
-    toolset.execute_action(
-        Action.ATTIO_LIST_NOTES,
-        params={},
-        processors={"pre": {Action.ATTIO_LIST_NOTES: preprocess}},
-    )
-    assert preprocessor_called
-
-
-def test_processors_on_get_tools(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test the `processors` field in `get_tools()` methods of ToolSet's."""
-    postprocessor_called = False
-
-    def postprocess(response: dict) -> dict:
-        nonlocal postprocessor_called
-        postprocessor_called = True
-        return response
-
-    toolset = LangchainToolSet()
-    monkeypatch.setattr(toolset, "_execute_remote", lambda **_: {})
-
-    toolset.get_tools(
-        actions=[Action.COMPOSIO_ENABLE_TRIGGER],
-        processors={"post": {Action.COMPOSIO_ENABLE_TRIGGER: postprocess}},
-    )
-    toolset.execute_action(Action.COMPOSIO_ENABLE_TRIGGER, {})
-    assert postprocessor_called
+        toolset.get_tools(
+            actions=[Action.COMPOSIO_ENABLE_TRIGGER],
+            processors={"post": {Action.COMPOSIO_ENABLE_TRIGGER: postprocess}},
+        )
+        toolset.execute_action(Action.COMPOSIO_ENABLE_TRIGGER, {})
+        assert postprocessor_called
 
 
 def test_check_connected_accounts_flag() -> None:
@@ -543,7 +545,12 @@ def test_invalid_handle_tool_calls() -> None:
     toolset.get_tools(actions=[Action.GMAIL_FETCH_EMAILS])
     with pytest.raises(ComposioSDKError) as exc:
         with mock.patch.object(toolset, "_execute_remote"):
-            toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})
+            toolset.execute_action(
+                Action.HACKERNEWS_GET_FRONTPAGE,
+                {},
+                # This is passed as True by all tools
+                _check_requested_actions=True,
+            )
 
     assert (
         "Action HACKERNEWS_GET_FRONTPAGE is being called, but was never requested by the toolset."
@@ -553,9 +560,15 @@ def test_invalid_handle_tool_calls() -> None:
     # Ensure it does NOT fail if a subsequent get_tools added that action
     toolset.get_tools(actions=[Action.HACKERNEWS_GET_FRONTPAGE])
     with mock.patch.object(toolset, "_execute_remote"):
-        toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})
+        toolset.execute_action(
+            Action.HACKERNEWS_GET_FRONTPAGE,
+            {},
+            # This is passed as True by all tools
+            _check_requested_actions=True,
+        )
 
-    # Ensure it DOES NOT fail if get_tools is never called
+    # Ensure it DOES NOT fail if execute_action is called manually, not by a tool
     toolset = LangchainToolSet()
+    toolset.get_tools(actions=[Action.GMAIL_FETCH_EMAILS])
     with mock.patch.object(toolset, "_execute_remote"):
         toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})

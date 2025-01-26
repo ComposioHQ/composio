@@ -9,8 +9,13 @@ import {
   ZToolSchemaFilter,
 } from "../types/base_toolset";
 import type { Optional, Sequence } from "../types/util";
+import logger from "../utils/logger";
 import { getEnvVariable } from "../utils/shared";
-import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
+import {
+  ActionRegistry,
+  CreateActionOptions,
+  Parameters,
+} from "./actionRegistry";
 import { ActionExecutionResDto } from "./client/types.gen";
 import { ActionExecuteResponse, Actions } from "./models/actions";
 import { ActiveTriggers } from "./models/activeTriggers";
@@ -29,7 +34,7 @@ import {
 } from "./utils/processor/file";
 
 export type ExecuteActionParams = z.infer<typeof ZExecuteActionParams> & {
-  // @deprecated
+  /** @deprecated use actionName field instead */
   action?: string;
   actionName?: string;
 };
@@ -138,18 +143,13 @@ export class ComposioToolSet {
       filterByAvailableApps: parsedFilters.filterByAvailableApps,
     });
 
-    const toolsWithCustomActions = (
-      await this.userActionRegistry.getAllActions()
-    ).filter((action) => {
-      const { name: actionName, toolName } = action.metadata || {};
+    const customActions = await this.userActionRegistry.getAllActions();
+    const toolsWithCustomActions = customActions.filter((action) => {
+      const { name: actionName } = action || {};
       return (
         (!filters.actions ||
           filters.actions.some(
             (name) => name.toLowerCase() === actionName?.toLowerCase()
-          )) &&
-        (!filters.apps ||
-          filters.apps.some(
-            (name) => name.toLowerCase() === toolName?.toLowerCase()
           )) &&
         (!filters.tags ||
           filters.tags.some((tag) => tag.toLowerCase() === "custom"))
@@ -177,8 +177,10 @@ export class ComposioToolSet {
     });
   }
 
-  async createAction(options: CreateActionOptions) {
-    return this.userActionRegistry.createAction(options);
+  async createAction<P extends Parameters = z.ZodObject<{}>>(
+    options: CreateActionOptions<P>
+  ) {
+    return this.userActionRegistry.createAction<P>(options);
   }
 
   private isCustomAction(action: string) {
@@ -241,12 +243,17 @@ export class ComposioToolSet {
         // fetch connected account id
         const connectedAccounts = await this.client.connectedAccounts.list({
           user_uuid: entityId,
+          status: "ACTIVE",
+          showActiveOnly: true,
         });
         accountId = connectedAccounts?.items[0]?.id;
       }
 
+      // allows the user to use custom actions and tools without a connected account
       if (!accountId) {
-        throw new Error("No connected account found for the user");
+        logger.warn(
+          "No connected account found for the user. If your custom action requires a connected account, please double check if you have active accounts connected to it."
+        );
       }
 
       return this.userActionRegistry.executeAction(action, params, {

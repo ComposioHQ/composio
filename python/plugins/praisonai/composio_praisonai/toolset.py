@@ -79,6 +79,7 @@ class ComposioToolSet(
             action=Action(value=tool_identifier),
             params=params,
             entity_id=self.entity_id,
+            _check_requested_actions=True,
         )
 
     def _process_basetool(
@@ -212,7 +213,7 @@ class ComposioToolSet(
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
         if processors is not None:
-            self._merge_processors(processors)
+            self._processor_helpers.merge_processors(processors)
         return [
             self._write_tool(
                 schema=tool.model_dump(exclude_none=True),

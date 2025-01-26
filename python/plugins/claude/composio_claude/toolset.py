@@ -124,7 +124,7 @@ class ComposioToolSet(
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
         if processors is not None:
-            self._merge_processors(processors)
+            self._processor_helpers.merge_processors(processors)
         return [
             ToolParam(
                 **t.cast(
@@ -161,6 +161,7 @@ class ComposioToolSet(
             action=Action(value=tool_call.name),
             params=t.cast(t.Dict, tool_call.input),
             entity_id=entity_id or self.entity_id,
+            _check_requested_actions=True,
         )
 
     def handle_tool_calls(
