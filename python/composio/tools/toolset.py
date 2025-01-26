@@ -902,10 +902,10 @@ class _GetMixin(WithLogger):
 
     def get_active_triggers(
         self,
-        trigger_ids: t.List[str] | None = None,
-        connected_account_ids: t.List[str] | None = None,
-        integration_ids: t.List[str] | None = None,
-        trigger_names: t.List[str | Trigger] | None = None,
+        trigger_ids: t.Optional[t.List[str]] = None,
+        connected_account_ids: t.Optional[t.List[str]] = None,
+        integration_ids: t.Optional[t.List[str]] = None,
+        trigger_names: t.Optional[t.List[str | Trigger]] = None,
     ) -> t.List[ActiveTriggerModel]:
         return self.client.active_triggers.get(
             trigger_ids=trigger_ids,
