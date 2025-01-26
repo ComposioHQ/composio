@@ -11,6 +11,7 @@ import pytest
 from pydantic import BaseModel, Field
 
 from composio import Action, App
+from composio.client.collections import AUTH_SCHEMES
 from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
 from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.base.runtime import action as custom_action
@@ -66,6 +67,17 @@ def test_uninitialize_app() -> None:
     ):
         ComposioToolSet().get_action_schemas(actions=[Action.ATTIO_UPDATE_A_LIST])
 
+
+def test_get_apps() -> None:
+    toolset = ComposioToolSet()
+    apps = toolset.get_apps()
+    for app in apps:
+        if app.no_auth is False:
+            auth_app = app
+            break
+    if auth_app.auth_schemes:
+        for auth_scheme in auth_app.auth_schemes:
+            assert auth_scheme.auth_mode in AUTH_SCHEMES
 
 class TestValidateTools:
     toolset: ComposioToolSet
