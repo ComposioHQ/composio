@@ -905,7 +905,7 @@ class _GetMixin(WithLogger):
         trigger_ids: t.Optional[t.List[str]] = None,
         connected_account_ids: t.Optional[t.List[str]] = None,
         integration_ids: t.Optional[t.List[str]] = None,
-        trigger_names: t.Optional[t.List[str | Trigger]] = None,
+        trigger_names: t.Optional[t.List[str | TriggerType]] = None,
     ) -> t.List[ActiveTriggerModel]:
         return self.client.active_triggers.get(
             trigger_ids=trigger_ids,
