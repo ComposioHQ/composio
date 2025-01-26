@@ -3,6 +3,7 @@ Test composio toolset.
 """
 
 import logging
+import os
 import re
 import typing as t
 from unittest import mock
@@ -48,13 +49,17 @@ def test_get_trigger_config_scheme() -> None:
 
 def test_delete_trigger() -> None:
     """Test `ComposioToolSet.delete_trigger` method."""
-    toolset = ComposioToolSet(
-        api_key="s7cccojimwxj9od0344an"  # test@compoio.dev account key
-    )
+    api_key = os.getenv("COMPOSIO_API_KEY")
+    toolset = ComposioToolSet(api_key=api_key)
+
+    connected_account_id: str
+    for account in toolset.get_connected_accounts():
+        if account.appName == "gmail":
+            connected_account_id = account.id
 
     enabled_trigger = toolset.client.triggers.enable(
         name="GMAIL_NEW_GMAIL_MESSAGE",
-        connected_account_id="14711197-9b53-41b1-a0ab-2448fe7a5cc0",  # id from
+        connected_account_id=connected_account_id,
         config={"interval": 1, "userId": "me", "labelIds": "INBOX"},
     )
 

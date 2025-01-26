@@ -933,7 +933,7 @@ class Triggers(Collection[TriggerModel]):
         :param id: ID of the trigger to be deleted
         """
         response = self._raise_if_required(
-            self.client.http.delete(url=str(self.endpoint / "instance" / "delete" / id))
+            self.client.http.delete(url=str(self.endpoint / "instance" / id))
         )
         return response.json()
 
