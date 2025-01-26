@@ -213,7 +213,7 @@ class ComposioToolSet(
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
         if processors is not None:
-            self._merge_processors(processors)
+            self._processor_helpers.merge_processors(processors)
         return [
             self._write_tool(
                 schema=tool.model_dump(exclude_none=True),

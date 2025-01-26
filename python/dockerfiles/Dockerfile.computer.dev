@@ -70,7 +70,7 @@ RUN /bin/python3 -m venv .composio/venv
 RUN export PATH=$PATH:$(pwd)/.composio/venv/bin
 
 # Install composio
-RUN python3 -m pip install composio-core[all]==0.5.48-rc.1 fastapi playwright uvicorn pyautogui
+RUN python3 -m pip install composio-core[all]==0.6.18 fastapi playwright uvicorn pyautogui
 
 # Install playwright deps
 RUN playwright install-deps

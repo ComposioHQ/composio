@@ -280,17 +280,20 @@ class RemoteWorkspace(Workspace):
                 "dependencies": obj.requires or [],
             },
         )
+        if request.status_code != 200:
+            raise ComposioSDKError(
+                message=f"Error uploading {action.slug}: {request.status_code=} {request.text}"
+            )
+
         response = request.json()
         if response["error"] is not None:
-            self.logger.error(
+            raise ComposioSDKError(
                 f"Error while uploading {action.slug}: " + response["error"]
             )
-            return
 
         self.logger.debug(
             f"Successfully uploaded: {action.slug} - {response}",
         )
-        return
 
     def check_for_missing_dependencies(
         self,
@@ -338,6 +341,11 @@ class RemoteWorkspace(Workspace):
                 "metadata": metadata,
             },
         )
+        if request.status_code != 200:
+            raise ComposioSDKError(
+                message=f"Error executing {action.slug}: {request.status_code=} {request.text}"
+            )
+
         response = request.json()
         if response["error"] is None:
             return response["data"]
