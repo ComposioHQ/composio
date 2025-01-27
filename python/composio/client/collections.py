@@ -986,27 +986,20 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
         return super().get(queries=queries)
 
 
-class ActionParametersModel(BaseModel):
+class OpenAPISchema(BaseModel):
+    properties: t.Dict[str, t.Any]
+    title: str
+    type: str
+    required: t.Optional[t.List[str]] = None
+    examples: t.Optional[t.List[t.Any]] = None
+
+
+class ActionParametersModel(OpenAPISchema):
     """Action parameter data models."""
 
-    properties: t.Dict[str, t.Any]
-    title: str
-    type: str
 
-    accept: t.List[str] = Field(default_factory=lambda: ["*/*"])
-    file_uploadable: bool = False
-    required: t.Optional[t.List[str]] = None
-
-
-class ActionResponseModel(BaseModel):
+class ActionResponseModel(OpenAPISchema):
     """Action response data model."""
-
-    properties: t.Dict[str, t.Any]
-    title: str
-    type: str
-
-    file_downloadable: bool = False
-    required: t.Optional[t.List[str]] = None
 
 
 class ActionModel(BaseModel):
@@ -1061,6 +1054,12 @@ class SearchResultTask(BaseModel):
     order: int = Field(
         description="Order of the subtask, SHOULD START FROM 0",
     )
+
+
+class CreateUploadURLResponse(BaseModel):
+    id: str = Field(..., description="ID of the file")
+    url: str = Field(..., description="Onetime upload URL")
+    key: str = Field(..., description="S3 upload location")
 
 
 class Actions(Collection[ActionModel]):
@@ -1302,10 +1301,6 @@ class Actions(Collection[ActionModel]):
         :param session_id: ID of the current workspace session
         :return: A dictionary containing the response from the executed action.
         """
-        # TOFIX: Remvoe this
-        if action.is_local:
-            return self.client.local.execute_action(action=action, request_data=params)
-
         if action.no_auth:
             return self._raise_if_required(
                 self.client.long_timeout_http.post(
@@ -1404,6 +1399,29 @@ class Actions(Collection[ActionModel]):
             SearchResultTask.model_validate(task)
             for task in response.json().get("items", [])
         ]
+
+    def create_file_upload(
+        self,
+        app: str,
+        action: str,
+        filename: str,
+        mimetype: str,
+        md5: str,
+    ) -> CreateUploadURLResponse:
+        return CreateUploadURLResponse(
+            **self._raise_if_required(
+                response=self.client.http.post(
+                    url=str(self.endpoint / "files" / "upload" / "request"),
+                    json={
+                        "md5": md5,
+                        "app": app,
+                        "action": action,
+                        "filename": filename,
+                        "mimetype": mimetype,
+                    },
+                )
+            ).json()
+        )
 
 
 class ExpectedFieldInput(BaseModel):
