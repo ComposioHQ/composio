@@ -1510,12 +1510,11 @@ class ComposioToolSet(_IntegrationMixin):
         if self._custom_auth_helper.has_custom_auth(App(action.app)):
             return
 
+        _entity_ids = [self.entity_id] if entity_ids is None else entity_ids
         if self._connected_accounts is None:
             self._connected_accounts = t.cast(
                 t.List[ConnectedAccountModel],
-                self.client.connected_accounts.get(
-                    entity_ids=[self.entity_id] if entity_ids is None else entity_ids
-                ),
+                self.client.connected_accounts.get(entity_ids=_entity_ids),
             )
 
         if action.app not in [
@@ -1524,7 +1523,7 @@ class ComposioToolSet(_IntegrationMixin):
             for connection in self._connected_accounts
         ]:
             raise ComposioSDKError(
-                f"No connected account found for app `{action.app}`; "
+                f"No connected account found for app `{action.app}` for entity ids `{_entity_ids}`; "
                 f"Run `composio add {action.app.lower()}` to fix this"
             )
 
