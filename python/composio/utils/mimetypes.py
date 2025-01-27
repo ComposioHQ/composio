@@ -1,6 +1,7 @@
 import typing as t
 from pathlib import Path
 
+
 _default = "application/octet-stream"
 _types = {
     ".3dm": "x-world/x-3dmf",

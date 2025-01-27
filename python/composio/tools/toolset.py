@@ -45,6 +45,7 @@ from composio.client.collections import (
 from composio.client.enums import TriggerType
 from composio.client.enums.base import EnumStringNotFound
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
+from composio.client.files import FileDownloadable, FileUploadable
 from composio.client.utils import check_cache_refresh
 from composio.constants import (
     DEFAULT_ENTITY_ID,
@@ -468,8 +469,9 @@ class SchemaHelper(WithLogger):
 
     def __init__(self, client: t.Callable[[], Composio]):
         super().__init__()
-        self._local_client = LocalClient()
         self._client = client
+        self._local_client = LocalClient()
+        self._schema_cache: dict[str, ActionModel] = {}
 
     @property
     def client(self) -> Composio:
@@ -493,6 +495,7 @@ class SchemaHelper(WithLogger):
                     available_versions=[VERSION_LATEST],
                 ).model_copy(deep=True)
             )
+        self._schema_cache.update({item.name: item.model_copy() for item in items})
         return items
 
     def get_local_action_schemas(
@@ -505,20 +508,23 @@ class SchemaHelper(WithLogger):
             action for action in actions if action.is_local and not action.is_runtime
         ]
         apps = [app for app in apps if app.is_local]
-        if len(actions) > 0 or len(apps) > 0:
-            return [
-                ActionModel(
-                    **item,
-                    version=VERSION_LATEST,
-                    available_versions=[VERSION_LATEST],
-                )
-                for item in self._local_client.get_action_schemas(
-                    apps=apps,
-                    actions=actions,
-                    tags=tags,
-                )
-            ]
-        return []
+        if len(actions) == 0 and len(apps) == 0:
+            return []
+
+        items = [
+            ActionModel(
+                **item,
+                version=VERSION_LATEST,
+                available_versions=[VERSION_LATEST],
+            )
+            for item in self._local_client.get_action_schemas(
+                apps=apps,
+                actions=actions,
+                tags=tags,
+            )
+        ]
+        self._schema_cache.update({item.name: item.model_copy() for item in items})
+        return items
 
     def get_remote_actions_schemas(
         self,
@@ -527,31 +533,79 @@ class SchemaHelper(WithLogger):
         tags: t.Optional[t.Sequence[TagType]] = None,
         check_connected_account: t.Optional[t.Callable] = None,
     ) -> t.List[ActionModel]:
-        remote_actions = [action for action in actions if not action.is_local]
-        remote_apps = [app for app in apps if not app.is_local]
-        if len(remote_actions) > 0 or len(remote_apps) > 0:
-            versioned_actions = [a for a in remote_actions if a.is_version_set]
-            none_versioned_actions = [a for a in remote_actions if not a.is_version_set]
-            items = [self.client.actions.get(a) for a in versioned_actions]
-            if len(none_versioned_actions) > 0 or len(apps) > 0:
-                items += self.client.actions.get(
-                    apps=remote_apps,
-                    actions=none_versioned_actions,
-                    tags=tags,
-                )
+        actions = [action for action in actions if not action.is_local]
+        apps = [app for app in apps if not app.is_local]
+        if len(actions) == 0 and len(apps) == 0:
+            return []
 
-            if check_connected_account is not None:
-                for item in items:
-                    check_connected_account(action=item.name)
+        versioned_actions = [a for a in actions if a.is_version_set]
+        none_versioned_actions = [a for a in actions if not a.is_version_set]
+        items = [self.client.actions.get(a) for a in versioned_actions]
+        if len(none_versioned_actions) > 0 or len(apps) > 0:
+            items += self.client.actions.get(
+                apps=apps,
+                actions=none_versioned_actions,
+                tags=tags,
+            )
 
-            else:
-                warnings.warn(
-                    "Not verifying connected accounts for apps."
-                    " Actions may fail when the Agent tries to use them.",
-                    UserWarning,
-                )
+        self._schema_cache.update({item.name: item.model_copy() for item in items})
+        if check_connected_account is None:
+            warnings.warn(
+                "Not verifying connected accounts for apps."
+                " Actions may fail when the Agent tries to use them.",
+                UserWarning,
+            )
             return items
-        return []
+
+        for item in items:
+            check_connected_account(action=item.name)
+
+        return items
+
+    def _file_uploadable(self, schema: t.Dict):
+        if "allOf" in schema:
+            return any(
+                (
+                    _schema.get("file_uploadable", False)
+                    if isinstance(_schema, dict)
+                    else False
+                )
+                for _schema in schema["allOf"]
+            )
+        return schema.get("file_uploadable", False)
+
+    def _process_file_uploadable(self, schema: t.Dict):
+        return {
+            "type": "string",
+            "format": "path",
+            "description": schema.get("description", "Path to file."),
+            "title": schema.get("title"),
+        }
+
+    def _process_schema_recursively(self, schema: t.Dict) -> t.Dict:
+        required = schema.get("required", [])
+        for _param, _schema in schema["properties"].items():
+            if self._file_uploadable(schema=_schema):
+                schema["properties"][_param] = self._process_file_uploadable(
+                    schema=_schema
+                )
+
+            if _schema.get("type") in ["string", "integer", "number", "boolean"]:
+                ext = f'Please provide a value of type {_schema["type"]}.'
+                description = _schema.get("description", "").rstrip(".")
+                _schema["description"] = f"{description}. {ext}" if description else ext
+
+            if _param in required:
+                description = _schema.get("description", "")
+                if description:
+                    _schema["description"] = (
+                        f"{description.rstrip('.')}. This parameter is required."
+                    )
+
+                else:
+                    _schema["description"] = "This parameter is required."
+
+        return schema
 
     def process_schema(
         self,
@@ -560,59 +614,25 @@ class SchemaHelper(WithLogger):
         description_char_limit: int,
         action_name_char_limit: t.Optional[int] = None,
     ) -> ActionModel:
-        required_params = action.parameters.required or []
-        for param_name, param_details in action.parameters.properties.items():
-            if param_details.get("title") == "FileType" and all(
-                fprop in param_details.get("properties", {})
-                for fprop in ("name", "content")
-            ):
-                action.parameters.properties[param_name].pop("properties")
-                action.parameters.properties[param_name] = {
-                    "default": param_details.get("default"),
-                    "type": "string",
-                    "format": "file-path",
-                    "description": f"File path to {param_details.get('description', '')}",
-                }
-            elif param_details.get("allOf", [{}])[0].get("title") == "FileType" and all(
-                fprop in param_details.get("allOf", [{}])[0].get("properties", {})
-                for fprop in ("name", "content")
-            ):
-                action.parameters.properties[param_name].pop("allOf")
-                action.parameters.properties[param_name].update(
-                    {
-                        "default": param_details.get("default"),
-                        "type": "string",
-                        "format": "file-path",
-                        "description": f"File path to {param_details.get('description', '')}",
-                    }
-                )
-            elif param_details.get("type") in [
-                "string",
-                "integer",
-                "number",
-                "boolean",
-            ]:
-                ext = f'Please provide a value of type {param_details["type"]}.'
-                description = param_details.get("description", "").rstrip(".")
-                param_details["description"] = (
-                    f"{description}. {ext}" if description else ext
-                )
-
-            if param_name in required_params:
-                description = param_details.get("description", "")
-                if description:
-                    param_details["description"] = (
-                        f"{description.rstrip('.')}. This parameter is required."
-                    )
-                else:
-                    param_details["description"] = "This parameter is required."
+        action.parameters = action.parameters.model_validate(
+            obj=self._process_schema_recursively(
+                schema=action.parameters.model_dump(),
+            )
+        )
+        action.response = action.response.model_validate(
+            obj=self._process_schema_recursively(
+                schema=action.response.model_dump(),
+            )
+        )
 
         if action.description is not None:
             action.description = action.description[:description_char_limit]
+
         action.parameters.properties = processor_helper.process_schema_properties(
             action=Action(action.name.upper()),
             properties=action.parameters.properties,
         )
+
         if action_name_char_limit is not None:
             action.name = action.name[:action_name_char_limit]
 
@@ -627,6 +647,121 @@ class SchemaHelper(WithLogger):
             action.name = "str_replace_editor"
 
         return action
+
+    def _get_single_action_schema(self, action: Action) -> ActionModel:
+        if action.slug in self._schema_cache:
+            return self._schema_cache[action.slug]
+
+        if action.is_runtime:
+            (schema,) = (  # pylint: disable=unbalanced-tuple-unpacking
+                self.get_runtime_action_schemas(actions=[action])
+            )
+            return schema
+
+        if action.is_local:
+            (schema,) = self.get_local_action_schemas(apps=[], actions=[action])
+            return schema
+
+        (schema,) = self.get_remote_actions_schemas(apps=[], actions=[action])
+        return schema
+
+    def _substitute_file_uploads_recursively(
+        self,
+        schema: t.Dict,
+        request: t.Dict,
+        action: Action,
+    ) -> t.Dict:
+        params = schema["properties"]
+        for _param in request:
+            if _param not in params:
+                continue
+
+            if self._file_uploadable(schema=params[_param]):
+                request[_param] = FileUploadable.from_path(
+                    file=request[_param],
+                    client=self._client(),
+                    action=action.slug,
+                    app=action.app,
+                ).model_dump()
+                continue
+
+            if isinstance(request[_param], dict) and params[_param]["type"] == "object":
+                request[_param] = self._substitute_file_uploads_recursively(
+                    schema=params[_param],
+                    request=request[_param],
+                    action=action,
+                )
+                continue
+
+        return request
+
+    def substitute_file_uploads(self, action: Action, request: t.Dict) -> t.Dict:
+        model = self._get_single_action_schema(action=action)
+        return self._substitute_file_uploads_recursively(
+            schema=model.parameters.model_dump(),
+            request=request,
+            action=action,
+        )
+
+    def _file_downloadable(self, schema: t.Dict) -> bool:
+        if "allOf" in schema:
+            return any(
+                (
+                    _schema.get("file_downloadable", False)
+                    if isinstance(_schema, dict)
+                    else False
+                )
+                for _schema in schema["allOf"]
+            )
+        return schema.get("file_downloadable", False)
+
+    def _substitute_file_downloads_recursively(
+        self,
+        schema: t.Dict,
+        request: t.Dict,
+        action: Action,
+        file_helper: FileIOHelper,
+    ) -> t.Dict:
+        if "properties" not in schema:
+            return request
+
+        params = schema["properties"]
+        for _param in request:
+            if _param not in params:
+                continue
+
+            if self._file_downloadable(schema=params[_param]):
+                request[_param] = str(
+                    FileDownloadable(**request[_param]).download(
+                        file_helper.outdir / action.app / action.slug
+                    )
+                )
+                continue
+
+            if isinstance(request[_param], dict) and params[_param]["type"] == "object":
+                request[_param] = self._substitute_file_downloads_recursively(
+                    schema=params[_param],
+                    request=request[_param],
+                    action=action,
+                    file_helper=file_helper,
+                )
+                continue
+
+        return request
+
+    def substitute_file_downloads(
+        self,
+        action: Action,
+        request: t.Dict,
+        file_helper: FileIOHelper,
+    ) -> t.Dict:
+        model = self._get_single_action_schema(action=action)
+        return self._substitute_file_downloads_recursively(
+            schema=model.response.model_dump(),
+            request=request,
+            action=action,
+            file_helper=file_helper,
+        )
 
 
 class CustomAuthHelper(WithLogger):
@@ -1401,7 +1536,7 @@ class ComposioToolSet(_IntegrationMixin):
         self.logger.debug("Loading local tools")
         load_local_tools()
 
-        self._connected_account_ids = self.__validating_connection_ids(
+        self._connected_account_ids = self._validate_connection_ids(
             connected_account_ids=connected_account_ids or {}
         )
         self.max_retries = max_retries
@@ -1471,7 +1606,7 @@ class ComposioToolSet(_IntegrationMixin):
         self._workspace = WorkspaceFactory.new(config=workspace_config)
         return self._workspace
 
-    def __validating_connection_ids(
+    def _validate_connection_ids(
         self,
         connected_account_ids: t.Dict[AppType, str],
     ) -> t.Dict[App, str]:
@@ -1629,7 +1764,9 @@ class ComposioToolSet(_IntegrationMixin):
         if auth is None:
             self.check_connected_account(action=action)
 
-        output = self.client.get_entity(id=entity_id).execute(
+        output = self.client.get_entity(  # pylint: disable=protected-access
+            id=entity_id
+        )._execute(
             action=action,
             params=params,
             auth=auth,
@@ -1637,26 +1774,19 @@ class ComposioToolSet(_IntegrationMixin):
             session_id=session_id,
             connected_account_id=connected_account_id,
         )
+        output = self._schema_helper.substitute_file_downloads(
+            action=action,
+            request=output,
+            file_helper=self._file_io_helper,
+        )
 
-        if self.output_in_file:
-            return self._file_io_helper.write_output(
-                action=action,
-                output=output,
-                entity_id=entity_id,
-            )
-
-        try:
-            self.logger.debug("Trying to validate success response model")
-            success_response_model = SuccessExecuteActionResponseModel.model_validate(
-                output
-            )
-        except Exception:
-            self.logger.debug("Failed to validate success response model")
+        if not self.output_in_file:
             return output
 
-        return self._file_io_helper.write_downloadable(
-            prefix=f"{action.name}_{entity_id}_{time.time()}",
-            response_model=success_response_model,
+        return self._file_io_helper.write_output(
+            action=action,
+            output=output,
+            entity_id=entity_id,
         )
 
     @_record_action_if_available
@@ -1698,6 +1828,10 @@ class ComposioToolSet(_IntegrationMixin):
         if processors is not None:
             self._processor_helpers.merge_processors(processors)
 
+        params = self._schema_helper.substitute_file_uploads(
+            action=action,
+            request=params,
+        )
         if not action.is_runtime:
             params = self._processor_helpers.process_request(
                 action=action, request=params
