@@ -179,7 +179,7 @@ def _wrap(
         type(inflection.camelize(f.__name__), (WrappedAction,), {}),
     )
     cls.__doc__ = f.__doc__
-    cls.description = f.__doc__  # type: ignore
+    cls.description = f.__doc__ or f.__name__  # type: ignore
 
     # Normalize app name
     toolname = toolname.upper()

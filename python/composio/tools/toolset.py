@@ -583,7 +583,7 @@ class SchemaHelper(WithLogger):
         }
 
     def _process_schema_recursively(self, schema: t.Dict) -> t.Dict:
-        required = schema.get("required", [])
+        required = schema.get("required") or []
         for _param, _schema in schema["properties"].items():
             if self._file_uploadable(schema=_schema):
                 schema["properties"][_param] = self._process_file_uploadable(
