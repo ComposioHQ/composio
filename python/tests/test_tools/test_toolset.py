@@ -79,6 +79,7 @@ def test_get_apps() -> None:
         for auth_scheme in auth_app.auth_schemes:
             assert auth_scheme.auth_mode in AUTH_SCHEMES
 
+
 class TestValidateTools:
     toolset: ComposioToolSet
     package = "somepackage1"
