@@ -898,7 +898,7 @@ class _GetMixin(WithLogger):
         return self.client.triggers.get(trigger_names=[trigger]).pop()
 
     def get_trigger_config_scheme(self, trigger: TriggerType) -> TriggerConfigModel:
-        return self.client.triggers.get(trigger_names=[trigger]).pop().config
+        return self.get_trigger(trigger=trigger).config
 
     def get_active_triggers(
         self,
@@ -914,7 +914,7 @@ class _GetMixin(WithLogger):
             trigger_names=trigger_names,
         )
 
-    def delete_trigger(self, id: str):
+    def delete_trigger(self, id: str) -> t.Dict:
         return self.client.triggers.delete(id=id)
 
     def get_integration(self, id: str) -> IntegrationModel:

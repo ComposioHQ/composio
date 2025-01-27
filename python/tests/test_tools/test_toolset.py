@@ -56,6 +56,7 @@ def test_delete_trigger() -> None:
     for account in toolset.get_connected_accounts():
         if account.appName == "gmail":
             connected_account_id = account.id
+            break
 
     enabled_trigger = toolset.client.triggers.enable(
         name="GMAIL_NEW_GMAIL_MESSAGE",
@@ -63,6 +64,7 @@ def test_delete_trigger() -> None:
         config={"interval": 1, "userId": "me", "labelIds": "INBOX"},
     )
 
+    assert enabled_trigger["triggerId"] is not None
     assert (
         toolset.delete_trigger(id=enabled_trigger["triggerId"])["status"] == "success"
     )
