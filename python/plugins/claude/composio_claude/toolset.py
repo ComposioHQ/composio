@@ -190,7 +190,6 @@ class ComposioToolSet(
 
         outputs = []
         entity_id = self.validate_entity_id(entity_id or self.entity_id)
-        llm_response = t.cast(ToolsBetaMessage, llm_response)
         for content in llm_response.content:
             if isinstance(content, (ToolUseBlock, BetaToolUseBlock)):
                 outputs.append(
