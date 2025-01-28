@@ -188,7 +188,8 @@
             "cryptokit/tools",
             "cryptokit/community_reward_agent",
             "cryptokit/github_contributor_reward_agent",
-            "cryptokit/coinbase_agent"
+            "cryptokit/coinbase_agent",
+            "cryptokit/trading_agent"
           ]
         }
       ]
