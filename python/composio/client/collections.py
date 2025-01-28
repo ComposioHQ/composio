@@ -188,7 +188,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
     @t.overload
     def get(
         self,
-        connection_id: t.Optional[str] = None,
+        *,
         entity_ids: t.Optional[t.Sequence[str]] = None,
         active: bool = False,
     ) -> t.List[ConnectedAccountModel]:
@@ -203,6 +203,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
     def get(
         self,
         connection_id: t.Optional[str] = None,
+        *,
         entity_ids: t.Optional[t.Sequence[str]] = None,
         active: bool = False,
     ) -> t.Union[ConnectedAccountModel, t.List[ConnectedAccountModel]]:
@@ -229,7 +230,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
             )
             return self.model(**response.json())
 
-        queries = {}
+        queries = {"pageSize": "99999999"}
         if len(entity_ids) > 0:
             queries["user_uuid"] = ",".join(entity_ids)
 
