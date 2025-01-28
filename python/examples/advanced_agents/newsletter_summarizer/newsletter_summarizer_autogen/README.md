@@ -1,6 +1,6 @@
 # Newsletter Summarizer Guide
 
-This guide provides detailed steps to create an Newsletter Summarizer Agent that leverages Composio, agentic frameworks such as Autogen and ChatGPT to Summarize all your newsletters and send a Weekly Summary. Ensure you have Python 3.8 or higher installed.
+This guide provides detailed steps to create an Newsletter Summarizer Agent that leverages Composio, agentic frameworks such as AG2 (Formerly AutoGen) and ChatGPT to Summarize all your newsletters and send a Weekly Summary. Ensure you have Python 3.8 or higher installed.
 
 ## Steps to Run
 

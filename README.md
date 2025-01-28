@@ -62,7 +62,7 @@
       </li>
     </ul>
   </li>
-  <li>Comprehensive framework support including OpenAI, Groq, Claude, LlamaIndex, Langchain, CrewAI, Autogen, Gemini,
+  <li>Comprehensive framework support including OpenAI, Groq, Claude, LlamaIndex, Langchain, CrewAI, AG2 (Formerly AutoGen), Gemini,
     and <a href="https://docs.composio.dev/framework">more</a></li>
   <li>Managed authentication supporting multiple protocols (OAuth, API Keys, Basic JWT)</li>
   <li>Up to 40% improved tool call accuracy through optimized design</li>
