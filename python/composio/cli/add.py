@@ -238,12 +238,16 @@ def add_integration(
             AuthSchemeType,
             click.prompt(
                 "Select auth mode: ",
-                type=click.Choice(choices=list(auth_modes)),
+                type=click.Choice(choices=t.cast(t.List[str], auth_modes)),
             ),
         )
         auth_scheme = auth_modes[auth_mode]
 
-    if auth_mode.lower() in ("basic", "api_key", "bearer_token"):
+    if auth_mode is not None and auth_mode.lower() in (
+        "basic",
+        "api_key",
+        "bearer_token",
+    ):
         return _handle_basic_auth(
             entity=entity,
             app_name=name,

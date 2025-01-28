@@ -294,8 +294,10 @@ class AuthSchemeField(BaseModel):
 class AppAuthScheme(BaseModel):
     """App authenticatio scheme."""
 
-    scheme_name: str
-    auth_mode: AuthSchemeType
+    scheme_name: t.Optional[str] = None
+    name: t.Optional[str] = None
+    auth_mode: t.Optional[AuthSchemeType] = None
+    mode: t.Optional[str] = None
     fields: t.List[AuthSchemeField]
 
     proxy: t.Optional[t.Dict] = None
@@ -343,8 +345,13 @@ class Apps(Collection[AppModel]):
     def get(self, name: t.Optional[str] = None) -> AppModel:
         """Get a specific app."""
 
-    def get(self, name: t.Optional[str] = None) -> t.Union[AppModel, t.List[AppModel]]:
+    def get(
+        self,
+        name: t.Optional[str] = None,
+    ) -> t.Union[AppModel, t.List[AppModel]]:
         """Get apps."""
+        queries = {"additionalFields": "auth_schemes,test_connectors"}
+
         if name is not None:
             return self.model(
                 **self._raise_if_required(
@@ -354,7 +361,13 @@ class Apps(Collection[AppModel]):
                 ).json()
             )
 
-        return super().get(queries={})
+        apps = super().get(queries=queries)
+        for app in apps:
+            if app.auth_schemes is not None:
+                for auth_scheme in app.auth_schemes:
+                    if auth_scheme.mode is not None:
+                        auth_scheme.auth_mode = t.cast(AuthSchemeType, auth_scheme.mode)
+        return apps
 
 
 class TypeModel(BaseModel):
