@@ -122,10 +122,14 @@ def update_dsn() -> None:
     if data.get("sentry", {}).get("dsn") is not None:
         return
 
-    dsn = fetch_dsn()
-    if dsn is None:
-        return
+    try:
+        dsn = fetch_dsn()
+        if dsn is None:
+            return
 
-    data["sentry"] = {"dsn": dsn}
+        data["sentry"] = {"dsn": dsn}
+    except Exception:  # pylint: disable=broad-except
+        pass
+
     user_file.parent.mkdir(parents=True, exist_ok=True)
     user_file.write_text(json.dumps(data), encoding="utf-8")

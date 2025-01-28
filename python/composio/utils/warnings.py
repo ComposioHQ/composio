@@ -15,12 +15,15 @@ _latest_version = None
 
 def _fetch_latest_version():
     global _latest_version
-    request = requests.get(COMPOSIO_PYPI_METADATA, timeout=10.0)
-    if request.status_code != 200:
-        return
+    try:
+        request = requests.get(COMPOSIO_PYPI_METADATA, timeout=10.0)
+        if request.status_code != 200:
+            return
 
-    data = request.json()
-    _latest_version = data["info"]["version"]
+        data = request.json()
+        _latest_version = data["info"]["version"]
+    except Exception:  # pylint: disable=broad-except
+        pass
 
 
 def create_latest_version_warning_hook(version: str):
