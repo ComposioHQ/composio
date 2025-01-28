@@ -179,6 +179,13 @@ class ComposioToolSet(
         """
         outputs = []
         entity_id = self.validate_entity_id(entity_id or self.entity_id)
+        # since llm_response can also be a dictionary, we should only proceed
+        # towards action execution if we have the correct type of llm_response
+        llm_response = t.cast(ToolsBetaMessage, llm_response)
+        if not isinstance(llm_response, ToolsBetaMessage):
+            raise ValueError(
+                f"llm_response should be of type `Message` or castable to type `Message`, received object {llm_response} of type {type(llm_response)}"
+            )
         for content in llm_response.content:
             if isinstance(content, (ToolUseBlock, BetaToolUseBlock)):
                 outputs.append(
