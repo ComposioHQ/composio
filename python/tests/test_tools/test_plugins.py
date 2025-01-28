@@ -1,9 +1,10 @@
 import composio_llamaindex
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from composio import action
 from composio.client.enums.action import Action
+from composio.exceptions import ComposioSDKError
 
 import composio_claude
 import composio_crewai
@@ -407,13 +408,20 @@ def test_claude_toolset() -> None:
     }
 
     # check that objects that cannot be casted into Message type raise an error.
-    random_llm_response = {"some_random_key_from_llm": "some_random_value_from_llm"}
+    wrong_type_response = "some_random_value_from_llm"
     with pytest.raises(
-        expected_exception=ValueError,
+        expected_exception=ComposioSDKError,
         match=(
             "llm_response should be of type `Message` or castable to type `Message`, "
-            f"received object {random_llm_response} of type {type(random_llm_response)}"
+            f"received object {wrong_type_response} of type {type(wrong_type_response)}"
         ),
+    ):
+        toolset.handle_tool_calls(llm_response=wrong_type_response)
+
+    random_llm_response = {"some_random_key_from_llm": "some_random_value_from_llm"}
+    with pytest.raises(
+        expected_exception=ValidationError,
+        match=None,
     ):
         toolset.handle_tool_calls(llm_response=random_llm_response)
 
