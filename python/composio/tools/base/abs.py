@@ -397,13 +397,14 @@ class ToolBuilder:
         setattr(obj, "_triggers", getattr(obj, "_triggers", {}))
 
     @staticmethod
-    def setup_children(obj: t.Type["Tool"]) -> None:
+    def setup_children(obj: t.Type["Tool"], no_auth: bool = False) -> None:
         if obj.gid not in action_registry:
             action_registry[obj.gid] = {}
 
         for action in obj.actions():
             action.tool = obj.name
             action.enum = f"{obj.enum}_{action.name.upper()}"
+            action.no_auth = no_auth
             if obj.requires is not None:
                 action.requires = list(set(obj.requires + (action.requires or [])))
             obj._actions[action.enum] = action  # pylint: disable=protected-access

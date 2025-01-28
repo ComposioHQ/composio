@@ -9,24 +9,48 @@ import {
   ZToolSchemaFilter,
 } from "../types/base_toolset";
 import type { Optional, Sequence } from "../types/util";
+import logger from "../utils/logger";
 import { getEnvVariable } from "../utils/shared";
-import { ActionRegistry, CreateActionOptions } from "./actionRegistry";
-import { COMPOSIO_BASE_URL } from "./client/core/OpenAPI";
+import {
+  ActionRegistry,
+  CreateActionOptions,
+  Parameters,
+} from "./actionRegistry";
 import { ActionExecutionResDto } from "./client/types.gen";
-import { ActionExecuteResponse } from "./models/actions";
+import { ActionExecuteResponse, Actions } from "./models/actions";
+import { ActiveTriggers } from "./models/activeTriggers";
+import { Apps } from "./models/apps";
+import { BackendClient } from "./models/backendClient";
+import { ConnectedAccounts } from "./models/connectedAccounts";
+import { Integrations } from "./models/integrations";
+import { Triggers } from "./models/triggers";
 import { getUserDataJson } from "./utils/config";
+import { CEG } from "./utils/error";
+import { COMPOSIO_SDK_ERROR_CODES } from "./utils/errors/src/constants";
 import {
   fileInputProcessor,
   fileResponseProcessor,
   fileSchemaProcessor,
 } from "./utils/processor/file";
 
-export type ExecuteActionParams = z.infer<typeof ZExecuteActionParams>;
+export type ExecuteActionParams = z.infer<typeof ZExecuteActionParams> & {
+  /** @deprecated use actionName field instead */
+  action?: string;
+  actionName?: string;
+};
 export class ComposioToolSet {
   client: Composio;
   apiKey: string;
   runtime: string | null;
-  entityId: string;
+  entityId: string = "default";
+
+  backendClient: BackendClient;
+  connectedAccounts: ConnectedAccounts;
+  apps: Apps;
+  actions: Actions;
+  triggers: Triggers;
+  integrations: Integrations;
+  activeTriggers: ActiveTriggers;
 
   userActionRegistry: ActionRegistry;
 
@@ -46,12 +70,25 @@ export class ComposioToolSet {
     schema?: TSchemaProcessor;
   } = {};
 
-  constructor(
-    apiKey: string | null = null,
-    baseUrl: string | null = COMPOSIO_BASE_URL,
-    runtime: string | null = null,
-    _entityId: string = "default"
-  ) {
+  /**
+   * Creates a new instance of ComposioToolSet
+   * @param {Object} config - Configuration object
+   * @param {string|null} config.apiKey - API key for authentication
+   * @param {string|null} config.baseUrl - Base URL for API requests
+   * @param {string|null} config.runtime - Runtime environment
+   * @param {string} config.entityId - Entity ID for operations
+   */
+  constructor({
+    apiKey,
+    baseUrl,
+    runtime,
+    entityId,
+  }: {
+    apiKey?: string | null;
+    baseUrl?: string | null;
+    runtime?: string | null;
+    entityId?: string;
+  } = {}) {
     const clientApiKey: string | undefined =
       apiKey ||
       getEnvVariable("COMPOSIO_API_KEY") ||
@@ -62,9 +99,21 @@ export class ComposioToolSet {
       baseUrl: baseUrl || undefined,
       runtime: runtime as string,
     });
+
+    this.runtime = runtime || null;
+    this.backendClient = this.client.backendClient;
+    this.connectedAccounts = this.client.connectedAccounts;
+    this.apps = this.client.apps;
+    this.actions = this.client.actions;
+    this.triggers = this.client.triggers;
+    this.integrations = this.client.integrations;
+    this.activeTriggers = this.client.activeTriggers;
+
     this.userActionRegistry = new ActionRegistry(this.client);
-    this.runtime = runtime;
-    this.entityId = _entityId;
+
+    if (entityId) {
+      this.entityId = entityId;
+    }
   }
 
   async getActionsSchema(
@@ -94,18 +143,13 @@ export class ComposioToolSet {
       filterByAvailableApps: parsedFilters.filterByAvailableApps,
     });
 
-    const toolsWithCustomActions = (
-      await this.userActionRegistry.getAllActions()
-    ).filter((action) => {
-      const { actionName, toolName } = action.metadata;
+    const customActions = await this.userActionRegistry.getAllActions();
+    const toolsWithCustomActions = customActions.filter((action) => {
+      const { name: actionName } = action || {};
       return (
         (!filters.actions ||
           filters.actions.some(
-            (name) => name.toLowerCase() === actionName!.toLowerCase()
-          )) &&
-        (!filters.apps ||
-          filters.apps.some(
-            (name) => name.toLowerCase() === toolName!.toLowerCase()
+            (name) => name.toLowerCase() === actionName?.toLowerCase()
           )) &&
         (!filters.tags ||
           filters.tags.some((tag) => tag.toLowerCase() === "custom"))
@@ -133,8 +177,10 @@ export class ComposioToolSet {
     });
   }
 
-  async createAction(options: CreateActionOptions) {
-    return this.userActionRegistry.createAction(options);
+  async createAction<P extends Parameters = z.ZodObject<{}>>(
+    options: CreateActionOptions<P>
+  ) {
+    return this.userActionRegistry.createAction<P>(options);
   }
 
   private isCustomAction(action: string) {
@@ -143,16 +189,36 @@ export class ComposioToolSet {
       .then((actions) => actions.length > 0);
   }
 
+  async getEntity(entityId: string) {
+    return this.client.getEntity(entityId);
+  }
+
   async executeAction(
     functionParams: ExecuteActionParams
   ): Promise<ActionExecuteResponse> {
     const {
       action,
       params: inputParams = {},
-      entityId = "default",
+      entityId = this.entityId,
       nlaText = "",
       connectedAccountId,
-    } = ZExecuteActionParams.parse(functionParams);
+    } = ZExecuteActionParams.parse({
+      action: functionParams.actionName || functionParams.action,
+      params: functionParams.params,
+      entityId: functionParams.entityId,
+      nlaText: functionParams.nlaText,
+      connectedAccountId: functionParams.connectedAccountId,
+    });
+
+    if (!entityId && !connectedAccountId) {
+      throw CEG.getCustomError(
+        COMPOSIO_SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
+        {
+          message: `No entityId or connectedAccountId provided`,
+          description: `Please provide either entityId or connectedAccountId`,
+        }
+      );
+    }
 
     let params = (inputParams as Record<string, unknown>) || {};
 
@@ -177,12 +243,17 @@ export class ComposioToolSet {
         // fetch connected account id
         const connectedAccounts = await this.client.connectedAccounts.list({
           user_uuid: entityId,
+          status: "ACTIVE",
+          showActiveOnly: true,
         });
         accountId = connectedAccounts?.items[0]?.id;
       }
 
+      // allows the user to use custom actions and tools without a connected account
       if (!accountId) {
-        throw new Error("No connected account found for the user");
+        logger.warn(
+          "No connected account found for the user. If your custom action requires a connected account, please double check if you have active accounts connected to it."
+        );
       }
 
       return this.userActionRegistry.executeAction(action, params, {
@@ -195,6 +266,7 @@ export class ComposioToolSet {
       actionName: action,
       params: params,
       text: nlaText,
+      connectedAccountId: connectedAccountId,
     });
 
     return this.processResponse(data, {

@@ -10,6 +10,11 @@ Composio allows you to [execute actions directly](action-guide-without-agents) u
 
 <Tabs>
 <Tab title="Python">
+Install packages:
+```bash
+pip install composio-core
+```
+
 Use the `add_auth` method to add the existing authentication to the toolset for the app you want to use. `in_` is where you want to add the auth, `name` is the name of the header you want to add and `value` is the value of the header.
 ```python {7-13}
 from composio import ComposioToolSet, App
@@ -34,6 +39,10 @@ toolset.execute_action(
 ```
 </Tab>
 <Tab title="JavaScript">
+Install packages:
+```bash 
+npm install composio-core
+```
 Here you need to pass the authentication parameters inside the `authConfig`. `in_` is where you want to add the auth, `name` is the name of the header you want to add and `value` is the value of the header.
 ```javascript {10-14}
 import { OpenAIToolSet } from "composio-core";

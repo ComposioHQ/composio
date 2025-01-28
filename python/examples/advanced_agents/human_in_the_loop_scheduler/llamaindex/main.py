@@ -56,7 +56,7 @@ def proc() -> None:
         },
     )
     print("Message sent to Slack channel. Waiting for user response...")
-    slack_listener.listen()
+    slack_listener.wait_forever()
 
 # Listens to user response on Slack
 @slack_listener.callback(filters={"trigger_name": "slackbot_receive_message"})
@@ -101,7 +101,7 @@ def callback_new_message(event: TriggerEventData) -> None:
 
     print("Creating agent for analyzing email...")
     agent = FunctionCallingAgentWorker(
-        tools=schedule_tool,  # Tools available for the agent to use
+        tools=schedule_tool,  # Tools available for the agent to use # type: ignore
         llm=llm,  # Language model for processing requests
         prefix_messages=prefix_messages,  # Initial system messages for context
         max_function_calls=10,  # Maximum number of function calls allowed
@@ -160,4 +160,4 @@ def callback_gmail_message(event: TriggerEventData) -> None:
         print(f"Error in callback_gmail_message: {e}")
 
 print("GMAIL LISTENING... Waiting for new messages.")
-gmail_listener.listen()
+gmail_listener.wait_forever()

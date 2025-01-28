@@ -41,7 +41,6 @@ class HttpClient(SyncSession, logging.WithLogger):
         self.headers.update(
             {
                 "x-api-key": api_key,
-                "x-request-id": generate_request_id(),
                 "x-source": SOURCE_HEADER,
                 "x-runtime": runtime or DEFAULT_RUNTIME,
                 "x-composio-version": __version__,
@@ -54,8 +53,9 @@ class HttpClient(SyncSession, logging.WithLogger):
 
         def request(url: str, **kwargs: t.Any) -> t.Any:
             """Perform HTTP request."""
+            rid = generate_request_id()
             self._logger.debug(
-                f"{method.__name__.upper()} {self.base_url}{url} - {kwargs}"
+                f"[{rid}] {method.__name__.upper()} {self.base_url}{url} - {kwargs}"
             )
             retries = 0
             while retries < 3:
@@ -63,6 +63,10 @@ class HttpClient(SyncSession, logging.WithLogger):
                     return method(
                         url=f"{self.base_url}{url}",
                         timeout=self.timeout,
+                        headers={
+                            **kwargs.pop("headers", {}),
+                            "x-request-id": rid,
+                        },
                         **kwargs,
                     )
                 except ReadTimeout:

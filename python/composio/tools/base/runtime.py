@@ -157,6 +157,7 @@ def _wrap(
         display_name = f.__name__
 
         file = _file
+        runtime = True
         requires = _requires
         run_on_shell: bool = runs_on_shell
 
@@ -180,9 +181,9 @@ def _wrap(
     cls.__doc__ = f.__doc__
     cls.description = f.__doc__  # type: ignore
 
-    existing_actions = []
     # Normalize app name
     toolname = toolname.upper()
+    existing_actions = []
     if toolname in tool_registry["runtime"]:
         existing_actions = tool_registry["runtime"][toolname].actions()
     tool = _create_tool_class(name=toolname, actions=[cls, *existing_actions])  # type: ignore
@@ -266,20 +267,32 @@ def _get_connected_account(
         return None
 
 
-def _get_auth_params(app: str, entity_id: str) -> t.Optional[t.Dict]:
+def _get_auth_params(app: str, metadata: t.Dict) -> t.Dict:
     try:
         client = Composio.get_latest()
         connected_account = client.connected_accounts.get(
-            connection_id=client.get_entity(entity_id).get_connection(app=app).id
+            connection_id=client.get_entity(metadata["entity_id"])
+            .get_connection(app=app)
+            .id
         )
         connection_params = connected_account.connectionParams
         return {
+            "entity_id": metadata["entity_id"],
             "headers": connection_params.headers,
             "base_url": connection_params.base_url,
             "query_params": connection_params.queryParams,
         }
     except ComposioClientError:
-        return None
+        return {
+            "entity_id": metadata["entity_id"],
+            "subdomain": metadata.pop("subdomain", {}),
+            "headers": metadata.pop("header", {}),
+            "base_url": metadata.pop("base_url", None),
+            "body_params": metadata.pop("body", {}),
+            "path_params": metadata.pop("path", {}),
+            "query_params": metadata.pop("query", {}),
+            **metadata,
+        }
 
 
 def _build_executable_from_args(  # pylint: disable=too-many-statements
@@ -400,9 +413,7 @@ def _build_executable_from_args(  # pylint: disable=too-many-statements
                 _get_connected_account(app=app, entity_id=metadata["entity_id"]) or {}
             )
         if auth_param:
-            kwargs["auth"] = (
-                _get_auth_params(app=app, entity_id=metadata["entity_id"]) or {}
-            )
+            kwargs["auth"] = _get_auth_params(app=app, metadata=metadata)
 
         if request_executor:
             toolset = t.cast("ComposioToolSet", metadata["_toolset"])
@@ -443,7 +454,7 @@ def _build_executable_from_args(  # pylint: disable=too-many-statements
 def _build_executable_from_request_class(f: t.Callable, app: str) -> t.Callable:
     def execute(request: BaseModel, metadata: t.Dict) -> BaseModel:
         """Wrapper for action callable."""
-        auth_data = _get_auth_params(app=app, entity_id=metadata["entity_id"])
+        auth_data = _get_auth_params(app=app, metadata=metadata)
         if auth_data is not None:
             metadata.update(auth_data)
         return f(request, metadata)

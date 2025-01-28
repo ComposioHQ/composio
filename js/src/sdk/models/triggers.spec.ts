@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from "@jest/globals";
 import { getBackendClient } from "../testUtils/getBackendClient";
 
+import { ComposioError } from "../utils/errors/src/composioError";
 import { Entity } from "./Entity";
 import { Actions } from "./actions";
 import { ConnectedAccounts } from "./connectedAccounts";
@@ -90,6 +91,29 @@ describe("Apps class tests subscribe", () => {
 
     trigger = await triggers.disable({ triggerId });
     expect(trigger.status).toBe("success");
+  });
+
+  it("should get the config of a trigger", async () => {
+    const res = await triggers.getTriggerConfig({
+      triggerId: "GMAIL_NEW_GMAIL_MESSAGE",
+    });
+    expect(res.config.title).toBe("GmailNewMessageConfigSchema");
+  });
+
+  it("should get the payload of a trigger", async () => {
+    const res = await triggers.get({
+      triggerName: "GMAIL_NEW_GMAIL_MESSAGE",
+    });
+    expect(res.displayName).toBe("New Gmail Message Received Trigger");
+  });
+
+  it("should throw an error if trigger not found", async () => {
+    try {
+      await triggers.list({ triggerIds: ["INVALID_TRIGGER_ID"] });
+    } catch (e: unknown) {
+      const error = e as ComposioError;
+      expect(error.message).toContain("Trigger not found");
+    }
   });
 
   // it("should subscribe to a trigger and receive a trigger", async () => {

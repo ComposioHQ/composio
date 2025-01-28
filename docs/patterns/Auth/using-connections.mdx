@@ -11,7 +11,7 @@ description: "Learn how to use connections"
     toolset = ComposioToolSet()
 
     # Filter based on entity id
-    entity = toolset.get_entity(id="Jessica")
+    entity = toolset.get_entity(id="default")
     try:
         # Lists all connections of the entity
         connected_accounts  = entity.get_connections() 
@@ -24,7 +24,7 @@ description: "Learn how to use connections"
     const toolset = new OpenAIToolSet();
 
     // Filter based on entity id
-    const entity = await toolset.client.getEntity("Jessica")
+    const entity = await toolset.client.getEntity("default")
 
     // lists all connections of the entity
     const connected_accounts = await entity.getConnections()
@@ -46,7 +46,7 @@ description: "Learn how to use connections"
     toolset = ComposioToolSet()
 
     # Filter based on entity id
-    entity = toolset.get_entity(id="Jessica") 
+    entity = toolset.get_entity(id="default") 
 
     try:
         # Filters based on app name
@@ -62,10 +62,10 @@ description: "Learn how to use connections"
     const toolset = new OpenAIToolSet();
 
     // Filter based on entity id
-    const entity = await toolset.client.getEntity("Jessica")
+    const entity = await toolset.client.getEntity("default")
 
     // Filters based on app name
-    const connectionDetails = await entity.getConnection("github")
+    const connectionDetails = await entity.getConnection({ appName: "GITHUB" })
 
     if(connectionDetails){
         console.log(connectionDetails)

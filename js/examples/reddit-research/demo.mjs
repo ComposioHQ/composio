@@ -1,4 +1,5 @@
-import { openai } from "@ai-sdk/openai";
+import { openai } from "../utils.mjs"; // Comment this to use the default openai 
+// import { openai } from "@ai-sdk/openai"; // Uncomment this to use the default openai 
 import { VercelAIToolSet } from "composio-core";
 import dotenv from "dotenv";
 import { generateText } from "ai";
@@ -31,7 +32,7 @@ async function setupUserConnectionIfNotExists(entityId) {
 async function executeAgent(entityName) {
   // Setup entity and ensure connection
   const entity = await toolset.client.getEntity(entityName);
-  await setupUserConnectionIfNotExists(entity.id);
+  //await setupUserConnectionIfNotExists(entity.id);
 
   // Retrieve tools for the specified app
   const tools = await toolset.getTools({ apps: [appName] }, entity.id);

@@ -5,14 +5,15 @@
   "main": "demo.mjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "debug": "COMPOSIO_API_KEY=cc0fu8lookgq1ov8z4xx9n node sample.mjs"
+    "debug": "COMPOSIO_API_KEY=ADD_YOUR_KEY_HERE node sample.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "composio-core": "^0.1.4",
+    "composio-core": "latest",
+    "dotenv": "^16.4.7",
     "express": "^4.19.2"
   }
 }

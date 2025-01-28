@@ -50,12 +50,15 @@ importers:
       pusher-js:
         specifier: 8.4.0-rc2
         version: 8.4.0-rc2
+      resolve-package-path:
+        specifier: ^4.0.0
+        version: 4.0.3
+      rollup-plugin-visualizer:
+        specifier: ^5.13.1
+        version: 5.13.1(rollup@4.28.1)
       uuid:
         specifier: ^10.0.0
         version: 10.0.0
-      winston:
-        specifier: ^3.13.1
-        version: 3.14.0
       zod:
         specifier: ^3.23.8
         version: 3.23.8
@@ -147,9 +150,6 @@ importers:
       regenerator-runtime:
         specifier: ^0.14.1
         version: 0.14.1
-      resolve-package-path:
-        specifier: ^4.0.3
-        version: 4.0.3
       rollup:
         specifier: ^4.9.1
         version: 4.28.1
@@ -2968,6 +2968,19 @@ packages:
     deprecated: This package has been deprecated and is no longer maintained. Please use @rollup/plugin-terser
     peerDependencies:
       rollup: ^2.0.0
+
+  rollup-plugin-visualizer@5.13.1:
+    resolution: {integrity: sha512-vMg8i6BprL8aFm9DKvL2c8AwS8324EgymYQo9o6E26wgVvwMhsJxS37aNL6ZsU7X9iAcMYwdME7gItLfG5fwJg==}
+    engines: {node: '>=18'}
+    hasBin: true
+    peerDependencies:
+      rolldown: 1.x
+      rollup: 2.x || 3.x || 4.x
+    peerDependenciesMeta:
+      rolldown:
+        optional: true
+      rollup:
+        optional: true
 
   rollup@4.28.1:
     resolution: {integrity: sha512-61fXYl/qNVinKmGSTHAZ6Yy8I3YIJC/r2m9feHo6SwVAVcLT5MPwOUFe7EuURA/4m0NR8lXG4BBXuo/IZEsjMg==}
@@ -6507,6 +6520,15 @@ snapshots:
       rollup: 4.28.1
       serialize-javascript: 4.0.0
       terser: 5.31.1
+
+  rollup-plugin-visualizer@5.13.1(rollup@4.28.1):
+    dependencies:
+      open: 8.4.2
+      picomatch: 4.0.2
+      source-map: 0.7.4
+      yargs: 17.7.2
+    optionalDependencies:
+      rollup: 4.28.1
 
   rollup@4.28.1:
     dependencies:

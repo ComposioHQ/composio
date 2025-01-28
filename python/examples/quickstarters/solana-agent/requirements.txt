@@ -1,0 +1,4 @@
+composio_crewai
+python-dotenv
+solana
+solders

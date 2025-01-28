@@ -4,8 +4,18 @@ sidebarTitle: "Quick Start - Tools"
 description: "Learn how to use Tools in less than 5 minutes"
 ---
 
-## Composio Quick Start
-In this guide we'll use GitHub tools to star a repo on GitHub.
+## Star A Repository on GitHub
+In this guide, we'll:
+
+1. 🔐 Connect your GitHub account with Composio
+2. 🛠 Fetch GitHub actions 
+3. 🧠 Pass these actions to an LLM
+4. ⭐ Instruct to star the `composiohq/composio` repository
+5. ✅ Execute the action
+
+<Tip>
+**Tools** represent a group of actions specific to an app. **Actions** are operations you can perform - like starring a repo on GitHub or creating an issue in Linear.
+</Tip>
 
 <Tabs>
 <Tab title="Python">
@@ -21,16 +31,16 @@ pip install composio_core composio_openai
 </Step>
 
 <Step title="Connect Your GitHub Account">
-We'll use **`Jessica`** as the user id [(entity id)](../../patterns/Auth/connected_account#entities).
+We'll use **`default`** as the user id, also known as [entity id](../../patterns/Auth/connected_account#entities).
 <Info>You need to have an active GitHub Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
 <CodeGroup>
 ```shell CLI
 composio login 
-composio add github -e "Jessica"
+composio add github -e "default"
 ```
 ```python Python
 from composio_openai import ComposioToolSet, App, Trigger
-toolset = ComposioToolSet(entity_id="Jessica")
+toolset = ComposioToolSet(entity_id="default")
 
 request = toolset.initiate_connection(app=App.GITHUB)
 
@@ -42,14 +52,14 @@ Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environ
 </Tip>
 </Step>
 
-<Step title="Initialize Composio and OpenAI">
+<Step title="Initialise Composio Toolset and OpenAI">
 <CodeGroup>
 ```python Python
 from composio_openai import ComposioToolSet, App
 from openai import OpenAI
 
 openai_client = OpenAI()
-composio_toolset = ComposioToolSet(entity_id="Jessica")
+composio_toolset = ComposioToolSet(entity_id="default")
 ```
 </CodeGroup>
 </Step>
@@ -88,7 +98,7 @@ print(result)
 </Steps>
 
 </Tab>
-<Tab title="Javascript">
+<Tab title="JavaScript">
 <Steps>
 
     <Step title="Install Libraries">
@@ -100,7 +110,7 @@ print(result)
     </Step>
 
     <Step title="Connect Your GitHub Account">
-        We'll use **`Jessica`** as the user id [(entity id)](../../patterns/Auth/connected_account#entities).
+        We'll use **`default`** as the user id [(entity id)](../../patterns/Auth/connected_account#entities).
         <Info>You need to have an active GitHub Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
         <CodeGroup>
             ```shell CLI
@@ -112,7 +122,7 @@ print(result)
 
             const client = new Composio({ apiKey: "<your-api-key>" });
 
-            const entity = await client.getEntity("Jessica");
+            const entity = await client.getEntity("default");
             const connection = await entity.initiateConnection({appName: 'github'});
 
             console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
@@ -120,7 +130,7 @@ print(result)
         </CodeGroup>
     </Step>
 
-    <Step title="Initialize Composio and OpenAI">
+    <Step title="Initialise Composio's OpenAIToolSet and OpenAI">
         <CodeGroup>
             ```javascript JavaScript
             import { OpenAI } from "openai";
@@ -137,19 +147,19 @@ print(result)
 
     <Step title="Fetch GitHub Actions & and pass them to LLM">
         <CodeGroup>
-            ```javascript Star a repo using LLM
+            ```javascript JavaScript
             const tools = await composio_toolset.getTools({
-            actions: ["github_star_a_repository_for_the_authenticated_user"]
-        });
+                actions: ["github_star_a_repository_for_the_authenticated_user"],
+            });
 
             const instruction = "Star the repo composiohq/composio on GitHub";
 
             const response = await openai_client.chat.completions.create({
-            model: "gpt-4o",
-            messages: [{ role: "user", content: instruction }],
-            tools: tools,
-            tool_choice: "auto",
-        });
+                model: "gpt-4o",
+                messages: [{ role: "user", content: instruction }],
+                tools: tools,
+                tool_choice: "auto",
+            });
             ```
         </CodeGroup>
         <Tip>
@@ -159,7 +169,7 @@ print(result)
 
     <Step title="Execute Tool Calls">
         <CodeGroup>
-            ```javascript Execute Function calls
+            ```javascript JavaScript
             const result = await composio_toolset.handleToolCall(response);
             console.log(result);
             ```
@@ -170,19 +180,6 @@ print(result)
 
 </Tab>
 </Tabs>
-
-
-## What Just Happened? 🎉
-
-Congratulations! You've just:
-
-1. 🔐 Connected your GitHub account with Composio
-2. 🛠 Fetched GitHub actions 
-3. 🧠 Passed these actions to an AI language model
-4. ⭐ Instructed the AI to star the `composiohq/composio` repository
-5. ✅ Successfully executed the action on GitHub
-
-<br/>
 
 ## Next Steps
 Now that you've seen how to use tools, you can explore the following resources:

@@ -129,7 +129,8 @@ export default class AddCommand {
   }
 
   async shouldForceConnectionSetup() {
-    const { shouldForce } = await inquirer.prompt([
+    const prompt = inquirer.createPromptModule();
+    const { shouldForce } = await prompt([
       {
         type: "confirm",
         name: "shouldForce",
@@ -193,9 +194,9 @@ export default class AddCommand {
       config.scopes = (options.scope as string[]).join(",");
     }
 
-    const connectionData = await composioClient.connectedAccounts.create({
+    const connectionData = await composioClient.connectedAccounts.initiate({
       integrationId,
-      data: config,
+      connectionParams: config,
       labels: options.label as string[],
     });
 
@@ -263,7 +264,8 @@ export default class AddCommand {
       !skipDefaultConnectorAuth &&
       testConnectors.find((connector) => connector.auth_mode === userAuthMode)
     ) {
-      const { doYouWantToUseComposioAuth } = await inquirer.prompt({
+      const prompt = inquirer.createPromptModule();
+      const { doYouWantToUseComposioAuth } = await prompt({
         type: "confirm",
         name: "doYouWantToUseComposioAuth",
         message: "Do you want to use Composio Auth?",
@@ -275,7 +277,8 @@ export default class AddCommand {
       useComposioAuth = false;
     }
 
-    const { integrationName } = await inquirer.prompt({
+    const prompt = inquirer.createPromptModule();
+    const { integrationName } = await prompt({
       type: "input",
       name: "integrationName",
       message: "Enter the Integration name",
@@ -411,7 +414,8 @@ export default class AddCommand {
         continue;
       }
 
-      const { [field.name]: value } = await inquirer.prompt({
+      const prompt = inquirer.createPromptModule();
+      const { [field.name]: value } = await prompt({
         type: "input",
         name: field.name,
         message: (field.displayName || field.display_name) as string,

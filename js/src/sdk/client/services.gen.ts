@@ -15,6 +15,9 @@ import type {
   CreateConnectorData,
   CreateConnectorError,
   CreateConnectorResponse,
+  CreateConnectorV2Data,
+  CreateConnectorV2Error,
+  CreateConnectorV2Response,
   CreateProjectData,
   CreateProjectError,
   CreateProjectResponse,
@@ -86,6 +89,9 @@ import type {
   GetLogsData,
   GetLogsError,
   GetLogsResponse,
+  GetOrCreateConnectorData,
+  GetOrCreateConnectorError,
+  GetOrCreateConnectorResponse,
   GetOrgApiKeyError,
   GetOrgApiKeyResponse,
   GetProjectData,
@@ -106,9 +112,16 @@ import type {
   InitiateConnectionData,
   InitiateConnectionError,
   InitiateConnectionResponse2,
+  InitiateConnectionV2Data,
+  InitiateConnectionV2Error,
+  InitiateConnectionV2Response,
   InviteMemberData,
   InviteMemberError,
   InviteMemberResponse,
+  ListActionEnums1Error,
+  ListActionEnums1Response,
+  ListActionEnumsError,
+  ListActionEnumsResponse,
   ListActionTagsData,
   ListActionTagsError,
   ListActionTagsResponse,
@@ -124,11 +137,15 @@ import type {
   ListApiKeysResponse,
   ListAppCategoriesError,
   ListAppCategoriesResponse,
+  ListAppEnumsError,
+  ListAppEnumsResponse,
   ListConnectionsData,
   ListConnectionsError,
   ListConnectionsResponse,
   ListMembersError,
   ListMembersResponse,
+  ListTriggerEnumsError,
+  ListTriggerEnumsResponse,
   ListTriggersData,
   ListTriggersError,
   ListTriggersResponse,
@@ -143,9 +160,15 @@ import type {
   RegenerateProjectApiKeyData,
   RegenerateProjectApiKeyError,
   RegenerateProjectApiKeyResponse,
+  ReinitiateConnectionData,
+  ReinitiateConnectionError,
+  ReinitiateConnectionResponse,
   RenameProjectData,
   RenameProjectError,
   RenameProjectResponse,
+  SearchConnectorData,
+  SearchConnectorError,
+  SearchConnectorResponse,
   SetCallbackUrlData,
   SetCallbackUrlError,
   SetCallbackUrlResponse,
@@ -369,6 +392,23 @@ export class AppsService {
   }
 
   /**
+   * List app enums
+   * List app enums
+   */
+  public static listAppEnums<ThrowOnError extends boolean = false>(
+    options?: Options<unknown, ThrowOnError>
+  ) {
+    return (options?.client ?? client).get<
+      ListAppEnumsResponse,
+      ListAppEnumsError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v1/apps/list/enums",
+    });
+  }
+
+  /**
    * List apps
    * List all apps based on the given filters, if any. This will return all available apps if no filters are provided.
    */
@@ -490,6 +530,178 @@ export class IntegrationsService {
   }
 }
 
+export class ActionsService {
+  /**
+   * List action enums
+   * List action enums
+   */
+  public static listActionEnums<ThrowOnError extends boolean = false>(
+    options?: Options<unknown, ThrowOnError>
+  ) {
+    return (options?.client ?? client).get<
+      ListActionEnumsResponse,
+      ListActionEnumsError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v1/actions/list/enums",
+    });
+  }
+
+  /**
+   * List action tags
+   * List all the action tags available in composio
+   */
+  public static listActionTags<ThrowOnError extends boolean = false>(
+    options?: Options<ListActionTagsData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).get<
+      ListActionTagsResponse,
+      ListActionTagsError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/actions/list/tags",
+    });
+  }
+
+  /**
+   * List action enums
+   * List action enums
+   */
+  public static listActionEnums1<ThrowOnError extends boolean = false>(
+    options?: Options<unknown, ThrowOnError>
+  ) {
+    return (options?.client ?? client).get<
+      ListActionEnums1Response,
+      ListActionEnums1Error,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/actions/list/enums",
+    });
+  }
+
+  /**
+   * List actions with complete details
+   * List and filter all the actions available in composio, with all the details needed for manual action execution or through function-calling.
+   */
+  public static listActionsV2<ThrowOnError extends boolean = false>(
+    options?: Options<ListActionsV2Data, ThrowOnError>
+  ) {
+    return (options?.client ?? client).get<
+      ListActionsV2Response,
+      ListActionsV2Error,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/actions",
+    });
+  }
+
+  /**
+   * List actions
+   * Retrieve a list of all actions based on query parameters.
+   */
+  public static listActionsMinimalV2<ThrowOnError extends boolean = false>(
+    options?: Options<ListActionsMinimalV2Data, ThrowOnError>
+  ) {
+    return (options?.client ?? client).get<
+      ListActionsMinimalV2Response,
+      ListActionsMinimalV2Error,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/actions/list/all",
+    });
+  }
+
+  /**
+   * Execute an action
+   * Execute an action. Support both connected account and no auth auth.
+   */
+  public static executeActionV2<ThrowOnError extends boolean = false>(
+    options: Options<ExecuteActionV2Data, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      ExecuteActionV2Response,
+      ExecuteActionV2Error,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/actions/{actionId}/execute",
+    });
+  }
+
+  /**
+   * Get action inputs
+   * Get the inputs for an action with NLA
+   */
+  public static getActionInputsV2<ThrowOnError extends boolean = false>(
+    options: Options<GetActionInputsV2Data, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      GetActionInputsV2Response,
+      GetActionInputsV2Error,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/actions/{actionId}/execute/get.inputs",
+    });
+  }
+
+  /**
+   * Get single action
+   * Get action details, including the input and response schema. This is very useful for setting upfunction/tool calling with composio actions.
+   */
+  public static getActionV2<ThrowOnError extends boolean = false>(
+    options: Options<GetActionV2Data, ThrowOnError>
+  ) {
+    return (options?.client ?? client).get<
+      GetActionV2Response,
+      GetActionV2Error,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/actions/{actionId}",
+    });
+  }
+
+  /**
+   * Execute with HTTP Client
+   * Use composio as a http client to make request to the connected account service on your behalf, without managing authentication on your side.
+   */
+  public static executeWithHttpClient<ThrowOnError extends boolean = false>(
+    options?: Options<ExecuteWithHttpClientData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      ExecuteWithHttpClientResponse,
+      ExecuteWithHttpClientError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/actions/proxy",
+    });
+  }
+
+  /**
+   * Advanced use case search
+   * Perform use case search.
+   */
+  public static advancedUseCaseSearch<ThrowOnError extends boolean = false>(
+    options?: Options<AdvancedUseCaseSearchData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).get<
+      AdvancedUseCaseSearchResponse2,
+      AdvancedUseCaseSearchError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/actions/search/advanced",
+    });
+  }
+}
+
 export class ConnectionsService {
   /**
    * List connections
@@ -538,6 +750,23 @@ export class ConnectionsService {
     >({
       ...options,
       url: "/api/v1/connectedAccounts/{connectedAccountId}/data",
+    });
+  }
+
+  /**
+   * Reinitiate connection
+   * Reinitiate an existing connection to get new credentials
+   */
+  public static reinitiateConnection<ThrowOnError extends boolean = false>(
+    options: Options<ReinitiateConnectionData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      ReinitiateConnectionResponse,
+      ReinitiateConnectionError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v1/connectedAccounts/{connectedAccountId}/reinitiate",
     });
   }
 
@@ -641,6 +870,23 @@ export class TriggersService {
     >({
       ...options,
       url: "/api/v1/triggers",
+    });
+  }
+
+  /**
+   * List trigger enums
+   * List trigger enums
+   */
+  public static listTriggerEnums<ThrowOnError extends boolean = false>(
+    options?: Options<unknown, ThrowOnError>
+  ) {
+    return (options?.client ?? client).get<
+      ListTriggerEnumsResponse,
+      ListTriggerEnumsError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v1/triggers/list/enums",
     });
   }
 
@@ -901,144 +1147,6 @@ export class LogsService {
   }
 }
 
-export class ActionsService {
-  /**
-   * List action tags
-   * List all the action tags available in composio
-   */
-  public static listActionTags<ThrowOnError extends boolean = false>(
-    options?: Options<ListActionTagsData, ThrowOnError>
-  ) {
-    return (options?.client ?? client).get<
-      ListActionTagsResponse,
-      ListActionTagsError,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v2/actions/list/tags",
-    });
-  }
-
-  /**
-   * List actions with complete details
-   * List and filter all the actions available in composio, with all the details needed for manual action execution or through function-calling.
-   */
-  public static listActionsV2<ThrowOnError extends boolean = false>(
-    options?: Options<ListActionsV2Data, ThrowOnError>
-  ) {
-    return (options?.client ?? client).get<
-      ListActionsV2Response,
-      ListActionsV2Error,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v2/actions",
-    });
-  }
-
-  /**
-   * List actions
-   * Retrieve a list of all actions based on query parameters.
-   */
-  public static listActionsMinimalV2<ThrowOnError extends boolean = false>(
-    options?: Options<ListActionsMinimalV2Data, ThrowOnError>
-  ) {
-    return (options?.client ?? client).get<
-      ListActionsMinimalV2Response,
-      ListActionsMinimalV2Error,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v2/actions/list/all",
-    });
-  }
-
-  /**
-   * Execute an action
-   * Execute an action. Support both connected account and no auth auth.
-   */
-  public static executeActionV2<ThrowOnError extends boolean = false>(
-    options: Options<ExecuteActionV2Data, ThrowOnError>
-  ) {
-    return (options?.client ?? client).post<
-      ExecuteActionV2Response,
-      ExecuteActionV2Error,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v2/actions/{actionId}/execute",
-    });
-  }
-
-  /**
-   * Get action inputs
-   * Get the inputs for an action with NLA
-   */
-  public static getActionInputsV2<ThrowOnError extends boolean = false>(
-    options: Options<GetActionInputsV2Data, ThrowOnError>
-  ) {
-    return (options?.client ?? client).post<
-      GetActionInputsV2Response,
-      GetActionInputsV2Error,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v2/actions/{actionId}/execute/get.inputs",
-    });
-  }
-
-  /**
-   * Get single action
-   * Get action details, including the input and response schema. This is very useful for setting upfunction/tool calling with composio actions.
-   */
-  public static getActionV2<ThrowOnError extends boolean = false>(
-    options: Options<GetActionV2Data, ThrowOnError>
-  ) {
-    return (options?.client ?? client).get<
-      GetActionV2Response,
-      GetActionV2Error,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v2/actions/{actionId}",
-    });
-  }
-
-  /**
-   * Execute with HTTP Client
-   * Use composio as a http client to make request to the connected account service on your behalf, without managing authentication on your side.
-   */
-  public static executeWithHttpClient<ThrowOnError extends boolean = false>(
-    options?: Options<ExecuteWithHttpClientData, ThrowOnError>
-  ) {
-    return (options?.client ?? client).post<
-      ExecuteWithHttpClientResponse,
-      ExecuteWithHttpClientError,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v2/actions/proxy",
-    });
-  }
-
-  /**
-   * Advanced use case search
-   * Perform use case search.
-   */
-  public static advancedUseCaseSearch<ThrowOnError extends boolean = false>(
-    options?: Options<AdvancedUseCaseSearchData, ThrowOnError>
-  ) {
-    return (options?.client ?? client).get<
-      AdvancedUseCaseSearchResponse2,
-      AdvancedUseCaseSearchError,
-      ThrowOnError
-    >({
-      ...options,
-      url: "/api/v2/actions/search/advanced",
-    });
-  }
-}
-
 export class ProjectsService {
   /**
    * Create new project
@@ -1135,6 +1243,77 @@ export class ProjectsService {
     >({
       ...options,
       url: "/api/v1/org/projects/{projectId}/rename",
+    });
+  }
+}
+
+export class IntegrationsV2Service {
+  /**
+   * Search connector
+   * Search for a connector
+   */
+  public static searchConnector<ThrowOnError extends boolean = false>(
+    options?: Options<SearchConnectorData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      SearchConnectorResponse,
+      SearchConnectorError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/integrations/search-by-filters",
+    });
+  }
+
+  /**
+   * Create connector
+   * Create a new connector
+   */
+  public static createConnectorV2<ThrowOnError extends boolean = false>(
+    options?: Options<CreateConnectorV2Data, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      CreateConnectorV2Response,
+      CreateConnectorV2Error,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/integrations/create",
+    });
+  }
+
+  /**
+   * Get or create connector
+   * Get or create a connector
+   */
+  public static getOrCreateConnector<ThrowOnError extends boolean = false>(
+    options?: Options<GetOrCreateConnectorData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      GetOrCreateConnectorResponse,
+      GetOrCreateConnectorError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/integrations/get-or-create",
+    });
+  }
+}
+
+export class Connectionsv2Service {
+  /**
+   * Initiate connection
+   */
+  public static initiateConnectionV2<ThrowOnError extends boolean = false>(
+    options?: Options<InitiateConnectionV2Data, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      InitiateConnectionV2Response,
+      InitiateConnectionV2Error,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/connectedAccounts/initiateConnection",
     });
   }
 }

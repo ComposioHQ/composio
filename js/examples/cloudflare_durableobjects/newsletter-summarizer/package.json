@@ -9,5 +9,9 @@
   },
   "devDependencies": {
     "wrangler": "^3.60.3"
+  },
+  "dependencies": {
+    "composio-core": "latest",
+    "hono": "^4.6.16"
   }
 }

@@ -1,5 +1,11 @@
 import axios from "axios";
 import { z } from "zod";
+import { COMPOSIO_VERSION } from "../constants";
+import {
+  ZGetExpectedParamsForUserParams,
+  ZGetExpectedParamsRes,
+} from "../types/composio";
+import { getUUID } from "../utils/common";
 import logger from "../utils/logger";
 import { Entity } from "./models/Entity";
 import { Actions } from "./models/actions";
@@ -9,21 +15,15 @@ import { BackendClient } from "./models/backendClient";
 import { ConnectedAccounts } from "./models/connectedAccounts";
 import { Integrations } from "./models/integrations";
 import { Triggers } from "./models/triggers";
+import { ZAuthMode } from "./types/integration";
 import ComposioSDKContext from "./utils/composioContext";
 import { getSDKConfig } from "./utils/config";
+import { IS_DEVELOPMENT_OR_CI } from "./utils/constants";
 import { CEG } from "./utils/error";
 import { COMPOSIO_SDK_ERROR_CODES } from "./utils/errors/src/constants";
 import { isNewerVersion } from "./utils/other";
-import { getPackageJsonDir } from "./utils/projectUtils";
 import { TELEMETRY_LOGGER } from "./utils/telemetry";
 import { TELEMETRY_EVENTS } from "./utils/telemetry/events";
-
-import {
-  ZGetExpectedParamsForUserParams,
-  ZGetExpectedParamsRes,
-} from "../types/composio";
-import { getUUID } from "../utils/common";
-import { ZAuthMode } from "./types/integration";
 
 export type ComposioInputFieldsParams = z.infer<
   typeof ZGetExpectedParamsForUserParams
@@ -63,15 +63,16 @@ export class Composio {
       config?.apiKey
     );
 
+    if (IS_DEVELOPMENT_OR_CI) {
+      logger.info(
+        `Initializing Composio w API Key: [REDACTED] and baseURL: ${baseURLParsed}`
+      );
+    }
     ComposioSDKContext.apiKey = apiKeyParsed;
     ComposioSDKContext.sessionId = getUUID();
     ComposioSDKContext.baseURL = baseURLParsed;
     ComposioSDKContext.frameworkRuntime = config?.runtime;
-
-    //eslint-disable-next-line @typescript-eslint/no-require-imports
-    ComposioSDKContext.composioVersion = require(
-      getPackageJsonDir() + "/package.json"
-    ).version;
+    ComposioSDKContext.composioVersion = COMPOSIO_VERSION;
 
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_INITIALIZED, {});
 
@@ -114,24 +115,22 @@ export class Composio {
    * Checks for the latest version of the Composio SDK from NPM.
    * If a newer version is available, it logs a warning to the console.
    */
-  async checkForLatestVersionFromNPM() {
+  private async checkForLatestVersionFromNPM() {
     try {
       const packageName = "composio-core";
-      const packageJsonDir = getPackageJsonDir();
-
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const currentVersionFromPackageJson = require(
-        packageJsonDir + "/package.json"
-      ).version;
+      const currentVersionFromPackageJson = COMPOSIO_VERSION;
 
       const response = await axios.get(
         `https://registry.npmjs.org/${packageName}/latest`
       );
       const latestVersion = response.data.version;
 
-      if (isNewerVersion(latestVersion, currentVersionFromPackageJson)) {
+      if (
+        isNewerVersion(latestVersion, currentVersionFromPackageJson) &&
+        !IS_DEVELOPMENT_OR_CI
+      ) {
         // eslint-disable-next-line no-console
-        console.warn(
+        logger.info(
           `🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`
         );
       }

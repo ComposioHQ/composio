@@ -10,12 +10,14 @@ export const ZAuthMode = z.enum([
   "GOOGLE_SERVICE_ACCOUNT",
   "NO_AUTH",
   "BASIC_WITH_JWT",
+  "COMPOSIO_LINK",
 ]);
 
 export const ZCreateIntegrationParams = z.object({
   name: z.string(),
   authScheme: ZAuthMode.optional(),
-  appId: z.string(),
+  appUniqueKey: z.string().optional(),
+  appId: z.string().optional(),
   forceNewIntegration: z.boolean().optional(),
   authConfig: z
     .union([
@@ -41,5 +43,6 @@ export const ZListIntegrationsParams = z.object({
   page: z.number().optional(),
   pageSize: z.number().optional(),
   appName: z.string().optional(),
+  appUniqueKey: z.string().optional(),
   showDisabled: z.boolean().optional(),
 });

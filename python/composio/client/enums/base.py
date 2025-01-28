@@ -6,7 +6,14 @@ import difflib
 import typing as t
 from pathlib import Path
 
-from composio.constants import LOCAL_CACHE_DIRECTORY
+from pydantic import Field
+
+from composio.constants import (
+    COMPOSIO_VERSIONING_POLICY,
+    LOCAL_CACHE_DIRECTORY,
+    VERSION_LATEST,
+    VERSION_LATEST_BASE,
+)
 from composio.exceptions import ComposioSDKError
 from composio.storage.base import LocalStorage
 
@@ -89,6 +96,17 @@ class ActionData(LocalStorage):
 
     replaced_by: t.Optional[str] = None
     "If set, the action is deprecated and replaced by the given action."
+
+    version: str = COMPOSIO_VERSIONING_POLICY
+    "Specify what version to use when executing action."
+
+    available_version: t.List[str] = Field(
+        default_factory=lambda: [
+            VERSION_LATEST,
+            VERSION_LATEST_BASE,
+        ]
+    )
+    "Specify what version to use when executing action."
 
 
 class TriggerData(LocalStorage):

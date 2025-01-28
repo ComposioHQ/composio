@@ -2,3 +2,5 @@ composio-llamaindex
 python-dotenv
 llama-index-llms-openai
 llama-index
+agentops
+llama-index-llms-groq

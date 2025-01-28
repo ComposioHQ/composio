@@ -8,9 +8,8 @@ dotenv.config();
 const toolset = new VercelAIToolSet({
   apiKey: process.env.COMPOSIO_API_KEY,
 });
-
 // Subscribe to triggers and perform actions
-await toolset.client.triggers.subscribe(async (data) => {
+await toolset.triggers.subscribe(async (data) => {
     console.log("trigger received", data);
     const payload = data.payload;
     const message = payload.messageText;
@@ -42,4 +41,4 @@ await toolset.client.triggers.subscribe(async (data) => {
     
       console.log("🎉Output from agent: ", output.text);
 
-});
+}, "GMAIL_NEW_GMAIL_MESSAGE");

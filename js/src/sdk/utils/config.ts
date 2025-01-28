@@ -1,6 +1,3 @@
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
 import {
   COMPOSIO_DIR,
   DEFAULT_BASE_URL,
@@ -22,11 +19,22 @@ declare module "axios" {
 }
 
 // File path helpers
-export const userDataPath = () =>
-  path.join(os.homedir(), COMPOSIO_DIR, USER_DATA_FILE_NAME);
+export const userDataPath = () => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const path = require("path");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const os = require("os");
+    return path.join(os.homedir(), COMPOSIO_DIR, USER_DATA_FILE_NAME);
+  } catch (_error) {
+    return null;
+  }
+};
 
 export const getUserDataJson = () => {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require("fs");
     const data = fs.readFileSync(userDataPath(), "utf8");
     return JSON.parse(data);
   } catch (_error) {
@@ -44,6 +52,7 @@ export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
       `API Req [${request.method?.toUpperCase()}] ${request.url}, x-request-id: ${request.headers["x-request-id"]}`,
       {
         ...(body && { body }),
+        query: request.params,
       }
     );
     request.metadata = { startTime: Date.now() };

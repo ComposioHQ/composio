@@ -6,11 +6,10 @@ import {
 } from "./constants";
 
 export interface ErrorResponseData {
-  error: {
-    type: string;
-    name: string;
-    message: string;
-  };
+  type: string;
+  name: string;
+  message: string;
+  details?: Record<string, unknown>[] | Record<string, unknown>;
 }
 
 interface ErrorDetails {
@@ -31,30 +30,49 @@ export const getAPIErrorDetails = (
 
   const defaultErrorDetails = {
     message: axiosError.message,
-    description:
-      axiosError.response?.data?.error?.message ||
-      axiosError.response?.data?.error ||
-      axiosError.message,
-    possibleFix:
-      "Please check the network connection, request parameters, and ensure the API endpoint is correct.",
+    description: axiosError?.response?.data?.message || axiosError.message,
+    possibleFix: "Please check the parameters you are passing to the API",
   };
 
   const metadata = generateMetadataFromAxiosError(axiosError);
 
-  const errorNameFromBE = axiosError.response?.data?.error?.name;
-  const errorTypeFromBE = axiosError.response?.data?.error?.type;
-  const errorMessage = axiosError.response?.data?.error?.message;
+  const errorNameFromBE = axiosError?.response?.data?.name;
+  const errorTypeFromBE = axiosError?.response?.data?.type;
+  const errorMessage = axiosError?.response?.data?.message;
 
-  const genericMessage = `${errorNameFromBE || predefinedError.message} ${errorTypeFromBE ? `- ${errorTypeFromBE}` : ""} on ${axiosError.config?.baseURL! + axiosError.config?.url!}`;
+  let genericMessage = "";
+
+  const hasNotReceivedResponseFromBE =
+    errorCode === COMPOSIO_SDK_ERROR_CODES.BACKEND.UNAUTHORIZED ||
+    errorCode === COMPOSIO_SDK_ERROR_CODES.BACKEND.RATE_LIMIT ||
+    errorCode === COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_UNAVAILABLE ||
+    errorCode === COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_UNREACHABLE;
+  if (hasNotReceivedResponseFromBE) {
+    genericMessage = predefinedError.message as string;
+  } else if (axiosError.config?.baseURL && axiosError.config?.url) {
+    genericMessage = `${errorNameFromBE || predefinedError.message} ${errorTypeFromBE ? `- ${errorTypeFromBE}` : ""} on ${axiosError.config?.baseURL! + axiosError.config?.url!}`;
+  }
 
   switch (errorCode) {
+    case COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST:
+      const validationErrors = axiosError.response?.data?.details;
+      const formattedErrors = Array.isArray(validationErrors)
+        ? validationErrors.map((err) => JSON.stringify(err)).join(", ")
+        : JSON.stringify(validationErrors);
+
+      return {
+        message: genericMessage,
+        description: `Validation Errors: ${formattedErrors}`,
+        possibleFix:
+          "Please check the request parameters and ensure they are correct.",
+        metadata,
+      };
     case COMPOSIO_SDK_ERROR_CODES.BACKEND.NOT_FOUND:
     case COMPOSIO_SDK_ERROR_CODES.BACKEND.UNAUTHORIZED:
     case COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_ERROR:
     case COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_UNAVAILABLE:
     case COMPOSIO_SDK_ERROR_CODES.BACKEND.RATE_LIMIT:
     case COMPOSIO_SDK_ERROR_CODES.BACKEND.UNKNOWN:
-    case COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST:
       return {
         message: genericMessage,
         description: errorMessage || (predefinedError.description as string),
@@ -67,9 +85,7 @@ export const getAPIErrorDetails = (
     default:
       const message = genericMessage || axiosError.message;
       const description =
-        errorMessage ||
-        (predefinedError.description as string) ||
-        axiosError.message;
+        errorMessage || (predefinedError.description as string);
       const possibleFix =
         predefinedError.possibleFix! ||
         (defaultErrorDetails.possibleFix as string) ||

@@ -31,12 +31,12 @@ export class LangchainToolSet extends BaseComposioToolSet {
       runtime?: string;
     } = {}
   ) {
-    super(
-      config.apiKey || null,
-      config.baseUrl || COMPOSIO_BASE_URL,
-      config?.runtime || LangchainToolSet.FRAMEWORK_NAME,
-      config.entityId || LangchainToolSet.DEFAULT_ENTITY_ID
-    );
+    super({
+      apiKey: config.apiKey || null,
+      baseUrl: config.baseUrl || COMPOSIO_BASE_URL,
+      runtime: config?.runtime || LangchainToolSet.FRAMEWORK_NAME,
+      entityId: config.entityId || LangchainToolSet.DEFAULT_ENTITY_ID,
+    });
   }
 
   private _wrapTool(
@@ -69,7 +69,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
   }
 
   async getTools(
-    filters: z.infer<typeof ZToolSchemaFilter>,
+    filters: z.infer<typeof ZToolSchemaFilter> = {},
     entityId: Optional<string> = null
   ): Promise<Sequence<DynamicStructuredTool>> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {

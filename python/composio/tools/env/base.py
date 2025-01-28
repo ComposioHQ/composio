@@ -159,26 +159,11 @@ class Workspace(WithLogger, ABC):
         super().__init__()
         self.id = generate_id()
         self.access_token = uuid4().hex.replace("-", "")
-        self.composio_api_key = _read_env_var(
-            name=ENV_COMPOSIO_API_KEY,
-            default=config.composio_api_key,
-        )
-        self.composio_base_url = _read_env_var(
-            name=ENV_COMPOSIO_BASE_URL,
-            default=config.composio_base_url,
-        )
-        self.github_access_token = config.github_access_token or os.environ.get(
-            ENV_GITHUB_ACCESS_TOKEN, "NO_VALUE"
-        )
+        self.persistent = config.persistent
         self.environment = {
             **(config.environment or {}),
-            ENV_COMPOSIO_API_KEY: self.composio_api_key,
-            ENV_COMPOSIO_BASE_URL: self.composio_base_url,
-            ENV_GITHUB_ACCESS_TOKEN: self.github_access_token,
-            f"_COMPOSIO_{ENV_GITHUB_ACCESS_TOKEN}": self.github_access_token,
             ENV_ACCESS_TOKEN: self.access_token,
         }
-        self.persistent = config.persistent
 
     def __str__(self) -> str:
         """String representation."""
@@ -219,6 +204,31 @@ class Workspace(WithLogger, ABC):
 
 class RemoteWorkspace(Workspace):
     """Remote workspace client."""
+
+    def __init__(self, config: WorkspaceConfigType):
+        super().__init__(config)
+        self.composio_api_key = _read_env_var(
+            name=ENV_COMPOSIO_API_KEY,
+            default=config.composio_api_key,
+        )
+        self.composio_base_url = _read_env_var(
+            name=ENV_COMPOSIO_BASE_URL,
+            default=config.composio_base_url,
+        )
+        self.github_access_token = (
+            config.github_access_token
+            if config.github_access_token is not None
+            else os.environ.get(ENV_GITHUB_ACCESS_TOKEN, "NO_VALUE")
+        )
+        self.environment.update(
+            {
+                ENV_COMPOSIO_API_KEY: self.composio_api_key,
+                ENV_COMPOSIO_BASE_URL: self.composio_base_url,
+                ENV_GITHUB_ACCESS_TOKEN: self.github_access_token,
+                f"_COMPOSIO_{ENV_GITHUB_ACCESS_TOKEN}": self.github_access_token,
+                ENV_ACCESS_TOKEN: self.access_token,
+            }
+        )
 
     def _request(
         self,
@@ -270,17 +280,20 @@ class RemoteWorkspace(Workspace):
                 "dependencies": obj.requires or [],
             },
         )
+        if request.status_code != 200:
+            raise ComposioSDKError(
+                message=f"Error uploading {action.slug}: {request.status_code=} {request.text}"
+            )
+
         response = request.json()
         if response["error"] is not None:
-            self.logger.error(
+            raise ComposioSDKError(
                 f"Error while uploading {action.slug}: " + response["error"]
             )
-            return
 
         self.logger.debug(
             f"Successfully uploaded: {action.slug} - {response}",
         )
-        return
 
     def check_for_missing_dependencies(
         self,
@@ -328,6 +341,11 @@ class RemoteWorkspace(Workspace):
                 "metadata": metadata,
             },
         )
+        if request.status_code != 200:
+            raise ComposioSDKError(
+                message=f"Error executing {action.slug}: {request.status_code=} {request.text}"
+            )
+
         response = request.json()
         if response["error"] is None:
             return response["data"]
