@@ -1495,8 +1495,14 @@ class ComposioToolSet(_IntegrationMixin):
 
         raise ComposioSDKError(message=f"Invalid connected accounts found: {invalid}")
 
-    def check_connected_account(self, action: ActionType) -> None:
-        """Check if connected account is required and if required it exists or not."""
+    def check_connected_account(
+        self, action: ActionType, entity_ids: t.Optional[t.List[str]] = None
+    ) -> None:
+        """Check if connected account is required and if required it exists or not.
+
+        :param action: The action to check connected account for.
+        :param entity_ids: The list of entity_ids to filter connected accounts by. If None, toolset's entity_id is picked up.
+        """
         action = Action(action)
         if action.no_auth or action.is_runtime:
             return
@@ -1504,10 +1510,11 @@ class ComposioToolSet(_IntegrationMixin):
         if self._custom_auth_helper.has_custom_auth(App(action.app)):
             return
 
+        _entity_ids = [self.entity_id] if entity_ids is None else entity_ids
         if self._connected_accounts is None:
             self._connected_accounts = t.cast(
                 t.List[ConnectedAccountModel],
-                self.client.connected_accounts.get(),
+                self.client.connected_accounts.get(entity_ids=_entity_ids),
             )
 
         if action.app not in [
@@ -1516,7 +1523,7 @@ class ComposioToolSet(_IntegrationMixin):
             for connection in self._connected_accounts
         ]:
             raise ComposioSDKError(
-                f"No connected account found for app `{action.app}`; "
+                f"No connected account found for app `{action.app}` for entity ids `{_entity_ids}`; "
                 f"Run `composio add {action.app.lower()}` to fix this"
             )
 
