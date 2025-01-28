@@ -23,6 +23,7 @@ from composio.tools.base.abs import (
 from composio.tools.base.local import LocalToolMixin
 from composio.tools.env.host.shell import Shell
 from composio.tools.env.host.workspace import Browsers, FileManagers, Shells
+from composio.utils import logging
 
 
 if t.TYPE_CHECKING:
@@ -283,6 +284,10 @@ def _get_auth_params(app: str, metadata: t.Dict) -> t.Dict:
             "query_params": connection_params.queryParams,
         }
     except ComposioClientError:
+        logging.get_logger().error(
+            f"Error fetching auth for runtime action of app {app!r}, "
+            "connected account for this account does not exist!"
+        )
         return {
             "entity_id": metadata["entity_id"],
             "subdomain": metadata.pop("subdomain", {}),
