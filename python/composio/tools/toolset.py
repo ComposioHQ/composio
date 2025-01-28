@@ -867,17 +867,11 @@ class _GetMixin(WithLogger):
 
     def get_apps(
         self,
-        name: t.Optional[str] = None,
         no_auth: t.Optional[bool] = None,
-        include_local: bool = False,
-        additional_fields: t.List[str] = ["auth_schemes"],
+        include_local: bool = True,
     ) -> t.List[AppModel]:
         # added type ignore since method overload was not being referenced
-        apps = self.client.apps.get(
-            name=str(name) if name else None,
-            include_local=include_local,
-            additional_fields=additional_fields,
-        )  # type: ignore
+        apps = self.client.apps.get()
         if no_auth is not None:
             apps = [a for a in apps if a.no_auth is no_auth]
 
@@ -1058,9 +1052,12 @@ class _IntegrationMixin(_GetMixin):
         # without user inputs to create an integratuib, if yes then create
         # an integration and return params from there.
         for scheme in app_data.auth_schemes or []:
-            if scheme.auth_mode is not None:
-                if auth_scheme is not None and auth_scheme != scheme.auth_mode.upper():
-                    continue
+            if scheme.auth_mode is None:
+                raise ComposioSDKError(
+                    message=f"No auth scheme found for app `{app_data.name}`"
+                )
+            if auth_scheme is not None and auth_scheme != scheme.auth_mode.upper():
+                continue
             if self._can_use_auth_scheme_without_user_input(
                 scheme=scheme, app=app_data
             ):
@@ -1091,9 +1088,12 @@ class _IntegrationMixin(_GetMixin):
     ) -> t.List[AuthSchemeField]:
         """Fetch expected integration params for creating an integration."""
         for scheme in app.auth_schemes or []:
-            if scheme.auth_mode is not None:
-                if auth_scheme != scheme.auth_mode.upper():
-                    continue
+            if scheme.auth_mode is None:
+                raise ComposioSDKError(
+                    message=f"No auth scheme found for app `{app.name}`"
+                )
+            if auth_scheme != scheme.auth_mode.upper():
+                continue
             return [f for f in scheme.fields if not f.expected_from_customer]
         raise ComposioSDKError(
             message=f"{app.name!r} does not support {auth_scheme!r} auth scheme"

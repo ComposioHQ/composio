@@ -347,15 +347,10 @@ class Apps(Collection[AppModel]):
     def get(
         self,
         name: t.Optional[str] = None,
-        include_local: bool = False,
-        additional_fields: t.Optional[t.List[str]] = None,
     ) -> t.Union[AppModel, t.List[AppModel]]:
         """Get apps."""
-        queries = {}
-        if include_local:
-            queries["includeLocal"] = "true"
-        if additional_fields is not None and len(additional_fields) > 0:
-            queries["additionalFields"] = ",".join(additional_fields)
+        queries = {"additionalFields": "auth_schemes,test_connectors"}
+
         if name is not None:
             return self.model(
                 **self._raise_if_required(
@@ -365,10 +360,10 @@ class Apps(Collection[AppModel]):
                 ).json()
             )
 
-        apps: t.Union[AppModel, t.List[AppModel]] = super().get(queries=queries)
+        apps = super().get(queries=queries)
         for app in apps:
-            if app.auth_schemes is not None:  # type: ignore
-                for auth_scheme in app.auth_schemes:  # type: ignore
+            if app.auth_schemes is not None:
+                for auth_scheme in app.auth_schemes:
                     if auth_scheme.mode is not None:
                         auth_scheme.auth_mode = t.cast(AuthSchemeType, auth_scheme.mode)
         return apps
