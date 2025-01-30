@@ -18,7 +18,7 @@ if te.TYPE_CHECKING:
     from composio.client import Composio
 
 
-_DEFAULT_CHUNK_SIZE = 1024 * 1024 * 100
+_DEFAULT_CHUNK_SIZE = 1024 * 1024
 
 
 def get_md5(file: Path):
@@ -34,7 +34,7 @@ def get_md5(file: Path):
 
 def upload(url: str, file: Path) -> bool:
     with file.open("rb") as data:
-        return requests.put(url=url, data=data).status_code == 200
+        return requests.put(url=url, data=data).status_code in (200, 403)
 
 
 class FileUploadable(BaseModel):
