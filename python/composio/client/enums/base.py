@@ -4,6 +4,7 @@ Enum helper base.
 
 import difflib
 import typing as t
+from pathlib import Path
 
 from pydantic import Field
 
@@ -16,6 +17,9 @@ from composio.constants import (
 from composio.exceptions import ComposioSDKError
 from composio.storage.base import LocalStorage
 
+
+if t.TYPE_CHECKING:
+    from composio.client import Composio
 
 _runtime_actions: t.Dict[str, "ActionData"] = {}
 
@@ -136,3 +140,22 @@ def replacement_action_name(description: str, app_name: str) -> t.Optional[str]:
         return (app_name + "_" + newact.replace(">>", "")).upper()
 
     return None
+
+
+def create_action(
+    client: "Composio",
+    response: dict[str, t.Any],
+    storage_path: Path,
+) -> ActionData:
+    replaced_by = replacement_action_name(response["description"], response["appName"])
+    return ActionData(  # type: ignore
+        name=response["name"],
+        app=response["appName"],
+        tags=response["tags"],
+        no_auth=response["no_auth"],
+        is_local=False,
+        is_runtime=False,
+        shell=False,
+        path=storage_path,
+        replaced_by=replaced_by,
+    )
