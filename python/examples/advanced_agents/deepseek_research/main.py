@@ -47,7 +47,7 @@ agent = FunctionCallingAgentWorker(
 def chatbot():
     print("🤖: Hi! I can help you research content based on the latest trends. Let’s start!")
     human_input = input("What do you want to research: ")
-    questions = deepseek_llm.complete("Suggest a list of questions to research on the topic: " + human_input)
+    questions = deepseek_llm.complete("Suggest a list of 5 most important questions to research on the topic: " + human_input)
     res = agent.chat(str(questions)+"\n These are the questions you need to research about, they are related to the topic: " + human_input+"\n After research is complete, create a google doc with all the information and share the link with me")
     print(res.response)
 
