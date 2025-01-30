@@ -4,15 +4,9 @@ import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { COMPOSIO_BASE_URL } from "../sdk/client/core/OpenAPI";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
-import { ZToolSchemaFilter } from "../types/base_toolset";
+import { RawActionData, ZToolSchemaFilter } from "../types/base_toolset";
 import type { Optional, Sequence } from "../types/util";
 import { jsonSchemaToModel } from "../utils/shared";
-
-type ToolSchema = {
-  name: string;
-  description: string;
-  parameters: Record<string, unknown>;
-};
 
 export class LangchainToolSet extends BaseComposioToolSet {
   /**
@@ -22,6 +16,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
   static FRAMEWORK_NAME = "langchain";
   static DEFAULT_ENTITY_ID = "default";
   fileName: string = "js/src/frameworks/langchain.ts";
+  private connectedAccountIds: Record<string, string> = {};
 
   constructor(
     config: {
@@ -29,6 +24,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
       baseUrl?: Optional<string>;
       entityId?: string;
       runtime?: string;
+      connectedAccountIds?: Record<string, string>;
     } = {}
   ) {
     super({
@@ -37,21 +33,25 @@ export class LangchainToolSet extends BaseComposioToolSet {
       runtime: config?.runtime || LangchainToolSet.FRAMEWORK_NAME,
       entityId: config.entityId || LangchainToolSet.DEFAULT_ENTITY_ID,
     });
+    this.connectedAccountIds = config.connectedAccountIds || {};
   }
 
   private _wrapTool(
-    schema: ToolSchema,
+    schema: RawActionData,
     entityId: Optional<string> = null
   ): DynamicStructuredTool {
     const action = schema["name"];
     const description = schema["description"];
+    const appName = schema["appName"]?.toLowerCase();
 
     const func = async (...kwargs: unknown[]): Promise<unknown> => {
+      const connectedAccountId = appName && this.connectedAccountIds?.[appName];
       return JSON.stringify(
         await this.executeAction({
           action,
           params: kwargs[0] as Record<string, unknown>,
           entityId: entityId || this.entityId,
+          connectedAccountId: connectedAccountId,
         })
       );
     };
@@ -80,7 +80,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
 
     const tools = await this.getToolsSchema(filters, entityId);
     return tools.map((tool) =>
-      this._wrapTool(tool as ToolSchema, entityId || this.entityId)
+      this._wrapTool(tool as RawActionData, entityId || this.entityId)
     );
   }
 }

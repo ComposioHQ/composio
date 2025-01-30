@@ -14,7 +14,7 @@ import { Optional, Sequence } from "../types/util";
 export class OpenAIToolSet extends BaseComposioToolSet {
   static FRAMEWORK_NAME = "openai";
   static DEFAULT_ENTITY_ID = "default";
-
+  private connectedAccountIds: Record<string, string> = {};
   fileName: string = "js/src/frameworks/openai.ts";
 
   /**
@@ -30,6 +30,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
       apiKey?: Optional<string>;
       baseUrl?: Optional<string>;
       entityId?: string;
+      connectedAccountIds?: Record<string, string>;
     } = {}
   ) {
     super({
@@ -38,6 +39,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
       runtime: OpenAIToolSet.FRAMEWORK_NAME,
       entityId: config.entityId || OpenAIToolSet.DEFAULT_ENTITY_ID,
     });
+    this.connectedAccountIds = config.connectedAccountIds || {};
   }
 
   async getTools(
@@ -76,11 +78,19 @@ export class OpenAIToolSet extends BaseComposioToolSet {
       file: this.fileName,
       params: { tool, entityId },
     });
+
+    const toolSchema = await this.getToolsSchema({
+      actions: [tool.function.name],
+    });
+    const appName = toolSchema[0]?.appName?.toLowerCase();
+    const connectedAccountId = appName && this.connectedAccountIds?.[appName];
+
     return JSON.stringify(
       await this.executeAction({
         action: tool.function.name,
         params: JSON.parse(tool.function.arguments),
         entityId: entityId || this.entityId,
+        connectedAccountId: connectedAccountId,
       })
     );
   }
