@@ -31,6 +31,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
       apiKey?: Optional<string>;
       baseUrl?: Optional<string>;
       entityId?: string;
+      connectedAccountIds?: Record<string, string>;
     } = {}
   ) {
     super({
@@ -38,6 +39,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
       baseUrl: config.baseUrl || COMPOSIO_BASE_URL,
       runtime: null,
       entityId: config.entityId || CloudflareToolSet.DEFAULT_ENTITY_ID,
+      connectedAccountIds: config.connectedAccountIds,
     });
   }
 
@@ -101,6 +103,13 @@ export class CloudflareToolSet extends BaseComposioToolSet {
       file: this.fileName,
       params: { tool, entityId },
     });
+
+    const toolSchema = await this.getToolsSchema({
+      actions: [tool.name],
+    });
+    const appName = toolSchema[0]?.appName?.toLowerCase();
+    const connectedAccountId = appName && this.connectedAccountIds?.[appName];
+
     return JSON.stringify(
       await this.executeAction({
         action: tool.name,
@@ -109,6 +118,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
             ? JSON.parse(tool.arguments)
             : tool.arguments,
         entityId: entityId || this.entityId,
+        connectedAccountId: connectedAccountId,
       })
     );
   }
