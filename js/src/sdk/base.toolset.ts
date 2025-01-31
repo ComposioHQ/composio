@@ -60,10 +60,10 @@ export class ComposioToolSet {
     post: TPostProcessor[];
     schema: TSchemaProcessor[];
   } = {
-      pre: [fileInputProcessor],
-      post: [fileResponseProcessor],
-      schema: [fileSchemaProcessor],
-    };
+    pre: [fileInputProcessor],
+    post: [fileResponseProcessor],
+    schema: [fileSchemaProcessor],
+  };
 
   private userDefinedProcessors: {
     pre?: TPreProcessor;
@@ -117,7 +117,9 @@ export class ComposioToolSet {
     this.userActionRegistry = new ActionRegistry(this.client);
 
     if (entityId && connectedAccountIds) {
-      logger.warn("When both entity and connectedAccountIds are provided, preference will be given to connectedAccountIds");
+      logger.warn(
+        "When both entity and connectedAccountIds are provided, preference will be given to connectedAccountIds"
+      );
     }
 
     if (connectedAccountIds) {
@@ -129,7 +131,9 @@ export class ComposioToolSet {
     }
   }
 
-  private async validateConnectedAccountIds(accountIds: Record<string, string>) {
+  private async validateConnectedAccountIds(
+    accountIds: Record<string, string>
+  ) {
     for (const [appName, accountId] of Object.entries(accountIds)) {
       try {
         await this.connectedAccounts.get({

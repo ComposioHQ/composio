@@ -37,7 +37,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
       baseUrl: config.baseUrl || COMPOSIO_BASE_URL,
       runtime: OpenAIToolSet.FRAMEWORK_NAME,
       entityId: config.entityId || OpenAIToolSet.DEFAULT_ENTITY_ID,
-      connectedAccountIds: config.connectedAccountIds
+      connectedAccountIds: config.connectedAccountIds,
     });
   }
 
