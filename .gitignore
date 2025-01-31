@@ -1,4 +1,5 @@
 .env
+python/examples/quickstarters/rag_agent/.env
 try.ipynb
 *pycache*
 user_data.json

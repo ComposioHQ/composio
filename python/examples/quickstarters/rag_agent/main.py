@@ -16,10 +16,10 @@ toolset = ComposioToolSet()
 # Get the RAG tool from the Composio ToolSet
 tools = toolset.get_tools(apps=[App.RAGTOOL])
 # print("Tools:", tools)
-print("Tool types:", [type(t) for t in tools])
-print("Is list?", isinstance(tools, list))
-if tools and len(tools) > 0:
-    print("First tool base classes:", type(tools[0]).__mro__)
+# print("Tool types:", [type(t) for t in tools])
+# print("Is list?", isinstance(tools, list))
+# if tools and len(tools) > 0:
+#     print("First tool base classes:", type(tools[0]).__mro__)
 
 
 # Initialize the ChatOpenAI model with GPT-4 and API key from environment variables
@@ -70,6 +70,7 @@ add_content_tasks = Task(
             Add the following content to the RAG tool to enrich its knowledge base: {total_content}"""
     ),
     expected_output="Content was added to the RAG tool",
+    # pydantic validation error is not recognizing that the StructuredTool class, of which the RAG tool from the composio toolset is an instance, is an extension of the required BaseTool class
     # tools=tools,
     agent=rag_agent,
     # allow_delegation=False,
@@ -82,7 +83,8 @@ query_task = Task(
         Retrieve relevant information using the RAG tool and return the results."""
     ),
     expected_output="Results of the RAG tool query were returned. Stop once the goal is achieved.",
-    # tools=[tools],
+    # pydantic validation error is not recognizing that the StructuredTool class, of which the RAG tool from the composio toolset is an instance, is an extension of the required BaseTool class
+    # tools=[tools], 
     agent=rag_agent,
     allow_delegation=False,
 )
