@@ -14,7 +14,6 @@ import { Optional, Sequence } from "../types/util";
 export class OpenAIToolSet extends BaseComposioToolSet {
   static FRAMEWORK_NAME = "openai";
   static DEFAULT_ENTITY_ID = "default";
-  private connectedAccountIds: Record<string, string> = {};
   fileName: string = "js/src/frameworks/openai.ts";
 
   /**
@@ -38,8 +37,8 @@ export class OpenAIToolSet extends BaseComposioToolSet {
       baseUrl: config.baseUrl || COMPOSIO_BASE_URL,
       runtime: OpenAIToolSet.FRAMEWORK_NAME,
       entityId: config.entityId || OpenAIToolSet.DEFAULT_ENTITY_ID,
+      connectedAccountIds: config.connectedAccountIds
     });
-    this.connectedAccountIds = config.connectedAccountIds || {};
   }
 
   async getTools(

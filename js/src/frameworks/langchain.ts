@@ -16,7 +16,6 @@ export class LangchainToolSet extends BaseComposioToolSet {
   static FRAMEWORK_NAME = "langchain";
   static DEFAULT_ENTITY_ID = "default";
   fileName: string = "js/src/frameworks/langchain.ts";
-  private connectedAccountIds: Record<string, string> = {};
 
   constructor(
     config: {
@@ -32,8 +31,8 @@ export class LangchainToolSet extends BaseComposioToolSet {
       baseUrl: config.baseUrl || COMPOSIO_BASE_URL,
       runtime: config?.runtime || LangchainToolSet.FRAMEWORK_NAME,
       entityId: config.entityId || LangchainToolSet.DEFAULT_ENTITY_ID,
+      connectedAccountIds: config.connectedAccountIds,
     });
-    this.connectedAccountIds = config.connectedAccountIds || {};
   }
 
   private _wrapTool(
