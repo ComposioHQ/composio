@@ -123,31 +123,11 @@ export class ComposioToolSet {
     }
 
     if (connectedAccountIds) {
-      this.validateConnectedAccountIds(connectedAccountIds);
+      this.connectedAccountIds = connectedAccountIds;
     }
 
     if (entityId) {
       this.entityId = entityId;
-    }
-  }
-
-  private async validateConnectedAccountIds(
-    accountIds: Record<string, string>
-  ) {
-    for (const [appName, accountId] of Object.entries(accountIds)) {
-      try {
-        await this.connectedAccounts.get({
-          connectedAccountId: accountId,
-        });
-      } catch (error: any) {
-        throw CEG.getCustomError(
-          COMPOSIO_SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
-          {
-            message: `Connected account not found for app ${appName}`,
-            description: "Please check and pass a valid connected account id",
-          }
-        );
-      }
     }
   }
 
