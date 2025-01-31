@@ -59,10 +59,10 @@ export class ComposioToolSet {
     post: TPostProcessor[];
     schema: TSchemaProcessor[];
   } = {
-    pre: [fileInputProcessor],
-    post: [fileResponseProcessor],
-    schema: [fileSchemaProcessor],
-  };
+      pre: [fileInputProcessor],
+      post: [fileResponseProcessor],
+      schema: [fileSchemaProcessor],
+    };
 
   private userDefinedProcessors: {
     pre?: TPreProcessor;
@@ -77,17 +77,20 @@ export class ComposioToolSet {
    * @param {string|null} config.baseUrl - Base URL for API requests
    * @param {string|null} config.runtime - Runtime environment
    * @param {string} config.entityId - Entity ID for operations
+   * @param {Record<string, string>} config.connectedAccountIds - Mapping of app names to their connected account IDs
    */
   constructor({
     apiKey,
     baseUrl,
     runtime,
     entityId,
+    connectedAccountIds,
   }: {
     apiKey?: string | null;
     baseUrl?: string | null;
     runtime?: string | null;
     entityId?: string;
+    connectedAccountIds?: Record<string, string>;
   } = {}) {
     const clientApiKey: string | undefined =
       apiKey ||
@@ -111,8 +114,60 @@ export class ComposioToolSet {
 
     this.userActionRegistry = new ActionRegistry(this.client);
 
+    if (entityId && connectedAccountIds) {
+      throw CEG.getCustomError(
+        COMPOSIO_SDK_ERROR_CODES.SDK.INVALID_PARAMETER,
+        {
+          message: "Cannot provide both entityId and connectedAccountIds",
+          description: "Please provide either entityId or connectedAccountIds, not both",
+        }
+      );
+    }
+
+    if (connectedAccountIds) {
+      this.validateConnectedAccountIds(connectedAccountIds);
+    }
+
     if (entityId) {
       this.entityId = entityId;
+    }
+  }
+
+  private async validateConnectedAccountIds(accountIds: Record<string, string>) {
+    for (const [appName, accountId] of Object.entries(accountIds)) {
+      try {
+        const connection = await this.connectedAccounts.get({
+          connectedAccountId: accountId,
+        });
+
+        if (connection.status !== "ACTIVE") {
+          throw CEG.getCustomError(
+            COMPOSIO_SDK_ERROR_CODES.SDK.INVALID_CONNECTED_ACCOUNT,
+            {
+              message: `Connected account ${accountId} for app ${appName} is not active`,
+              description: `Account status is ${connection.status}`,
+            }
+          );
+        }
+
+        if (connection.appName.toLowerCase() !== appName.toLowerCase()) {
+          throw CEG.getCustomError(
+            COMPOSIO_SDK_ERROR_CODES.SDK.INVALID_CONNECTED_ACCOUNT,
+            {
+              message: `Connected account ${accountId} does not belong to app ${appName}`,
+              description: `Account belongs to app ${connection.appName}`,
+            }
+          );
+        }
+      } catch (error: any) {
+        throw CEG.getCustomError(
+          COMPOSIO_SDK_ERROR_CODES.SDK.NO_CONNECTED_ACCOUNT_FOUND,
+          {
+            message: `Connected account not found for app ${appName}`,
+            description: "Please check and pass a valid connected account id",
+          }
+        );
+      }
     }
   }
 
