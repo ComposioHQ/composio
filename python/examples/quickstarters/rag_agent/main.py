@@ -15,6 +15,12 @@ toolset = ComposioToolSet()
 
 # Get the RAG tool from the Composio ToolSet
 tools = toolset.get_tools(apps=[App.RAGTOOL])
+# print("Tools:", tools)
+print("Tool types:", [type(t) for t in tools])
+print("Is list?", isinstance(tools, list))
+if tools and len(tools) > 0:
+    print("First tool base classes:", type(tools[0]).__mro__)
+
 
 # Initialize the ChatOpenAI model with GPT-4 and API key from environment variables
 llm = ChatOpenAI(model="gpt-4o")
@@ -48,7 +54,7 @@ rag_agent = Agent(
     ),
     llm=llm,
     allow_delegation=False,
-    # tools=tools,
+    tools=tools,
 )
 
 # Define the task for adding content to the RAG tool
@@ -64,9 +70,9 @@ add_content_tasks = Task(
             Add the following content to the RAG tool to enrich its knowledge base: {total_content}"""
     ),
     expected_output="Content was added to the RAG tool",
-    tools=tools,
+    # tools=tools,
     agent=rag_agent,
-    allow_delegation=False,
+    # allow_delegation=False,
 )
 # Define the task for executing the RAG tool query
 query_task = Task(
@@ -76,7 +82,7 @@ query_task = Task(
         Retrieve relevant information using the RAG tool and return the results."""
     ),
     expected_output="Results of the RAG tool query were returned. Stop once the goal is achieved.",
-    tools=tools,
+    # tools=[tools],
     agent=rag_agent,
     allow_delegation=False,
 )
