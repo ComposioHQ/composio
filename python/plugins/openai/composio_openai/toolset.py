@@ -218,6 +218,33 @@ class ComposioToolSet(
                         )
         return outputs
 
+    def handle_realtime_tool_call(
+        self,
+        function_name: str,
+        arguments_json: str,
+        entity_id: t.Optional[str] = None,
+    ) -> t.Dict:
+        """
+        Handle a tool call from the Realtime API.
+
+        :param function_name: Name of the function called by the assistant.
+        :param arguments_json: JSON string of the function arguments.
+        :param entity_id: Entity ID to use for executing the function call.
+        :return: Object containing output data from the tool call.
+        """
+        try:
+            action = Action(value=function_name)
+            params = json.loads(arguments_json)
+        except (ValueError, json.JSONDecodeError) as e:
+            raise ValueError(f"Invalid function call data: {e}") from e
+
+        result = self.execute_action(
+            action=action,
+            params=params,
+            entity_id=entity_id or self.entity_id,
+        )
+        return result
+
     def handle_assistant_tool_calls(
         self,
         run: Run,
