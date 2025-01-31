@@ -43,6 +43,7 @@ export class ComposioToolSet {
   apiKey: string;
   runtime: string | null;
   entityId: string = "default";
+  connectedAccountIds: Record<string, string> = {};
 
   backendClient: BackendClient;
   connectedAccounts: ConnectedAccounts;
@@ -77,17 +78,20 @@ export class ComposioToolSet {
    * @param {string|null} config.baseUrl - Base URL for API requests
    * @param {string|null} config.runtime - Runtime environment
    * @param {string} config.entityId - Entity ID for operations
+   * @param {Record<string, string>} config.connectedAccountIds - Map of app names to their connected account IDs
    */
   constructor({
     apiKey,
     baseUrl,
     runtime,
     entityId,
+    connectedAccountIds,
   }: {
     apiKey?: string | null;
     baseUrl?: string | null;
     runtime?: string | null;
     entityId?: string;
+    connectedAccountIds?: Record<string, string>;
   } = {}) {
     const clientApiKey: string | undefined =
       apiKey ||
@@ -108,8 +112,19 @@ export class ComposioToolSet {
     this.triggers = this.client.triggers;
     this.integrations = this.client.integrations;
     this.activeTriggers = this.client.activeTriggers;
+    this.connectedAccountIds = connectedAccountIds || {};
 
     this.userActionRegistry = new ActionRegistry(this.client);
+
+    if (entityId && connectedAccountIds) {
+      logger.warn(
+        "When both entity and connectedAccountIds are provided, preference will be given to connectedAccountIds"
+      );
+    }
+
+    if (connectedAccountIds) {
+      this.connectedAccountIds = connectedAccountIds;
+    }
 
     if (entityId) {
       this.entityId = entityId;
