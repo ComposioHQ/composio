@@ -156,6 +156,9 @@ export class Actions {
         path: {
           actionId: parsedData.actionName,
         },
+        query: {
+          version: parsedData.version,
+        },
       });
       return res!;
     } catch (error) {

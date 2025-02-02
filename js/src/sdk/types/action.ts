@@ -37,6 +37,7 @@ export const ZCustomAuthParams = z.object({
 
 export const ZExecuteParams = z.object({
   actionName: z.string(),
+  version: z.string().optional(),
   requestBody: z.object({
     connectedAccountId: z.string().optional(),
     input: z.record(z.unknown()).optional(),

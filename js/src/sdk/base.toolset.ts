@@ -56,6 +56,7 @@ export class ComposioToolSet {
   activeTriggers: ActiveTriggers;
 
   userActionRegistry: ActionRegistry;
+  actionVersionMap: Record<string, string>;
 
   lockFile: {
     path: string | null;
@@ -128,6 +129,7 @@ export class ComposioToolSet {
     this.integrations = this.client.integrations;
     this.activeTriggers = this.client.activeTriggers;
     this.connectedAccountIds = connectedAccountIds || {};
+    this.actionVersionMap = {};
 
     this.lockFile = lockFile || {
       path: ".composio.lock",
@@ -217,6 +219,10 @@ export class ComposioToolSet {
 
     return toolsActions.map((tool) => {
       let schema = tool as RawActionData;
+      if (schema?.version) {
+        // store the version in the map for execution
+        this.actionVersionMap[schema?.name.toUpperCase()] = schema?.version;
+      }
       allSchemaProcessor.forEach((processor) => {
         schema = processor({
           actionName: schema?.name,
@@ -312,11 +318,13 @@ export class ComposioToolSet {
       });
     }
 
+    const version = this.actionVersionMap[action.toUpperCase()];
     const data = await this.client.getEntity(entityId).execute({
       actionName: action,
       params: params,
       text: nlaText,
       connectedAccountId: connectedAccountId,
+      version: version,
     });
 
     return this.processResponse(data, {

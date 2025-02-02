@@ -6,6 +6,7 @@ export const ZExecuteActionParams = z.object({
   params: z.record(z.any()).optional(),
   text: z.string().optional(),
   connectedAccountId: z.string().optional(),
+  version: z.string().optional(),
 });
 
 export const ZInitiateConnectionParams = z.object({
