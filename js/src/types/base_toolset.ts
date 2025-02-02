@@ -27,6 +27,8 @@ export const ZRawActionSchema = z.object({
     name: z.string(),
     toolName: z.string().optional(),
   }),
+  version: z.string().optional(),
+  availableVersions: z.array(z.string()).optional(),
 });
 
 export type RawActionData = z.infer<typeof ZRawActionSchema>;

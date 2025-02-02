@@ -121,6 +121,7 @@ export class Actions {
           showEnabledOnly: data.showEnabledOnly,
           usecaseLimit: data.usecaseLimit || undefined,
           useCase: data.useCase as string,
+          actionVersions: data.actionVersions,
         },
         body: {
           useCase: data.useCase as string,

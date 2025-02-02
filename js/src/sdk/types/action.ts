@@ -20,6 +20,7 @@ export const ZGetListActionsParams = z.object({
     .boolean()
     .optional()
     .describe("Filter actions by available apps"),
+  actionVersions: z.record(z.string()).optional(),
 });
 
 export const ZParameter = z.object({
