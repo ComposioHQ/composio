@@ -1629,7 +1629,9 @@ class ComposioToolSet(_IntegrationMixin):
         if auth is None:
             self.check_connected_account(action=action)
 
-        output = self.client.get_entity(id=entity_id).execute(
+        output = self.client.get_entity(  # pylint: disable=protected-access
+            id=entity_id
+        )._execute(
             action=action,
             params=params,
             auth=auth,
