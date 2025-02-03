@@ -914,8 +914,11 @@ class _GetMixin(WithLogger):
             trigger_names=trigger_names,
         )
 
-    def delete_trigger(self, id: str) -> t.Dict:
-        return self.client.triggers.delete(id=id)
+    def delete_trigger(self, id: str) -> bool:
+        delete_status = self.client.triggers.delete(id=id).get("status", None)
+        if delete_status is None:
+            raise ComposioSDKError(message="Delete operation failed to return status.")
+        return delete_status == "success"
 
     def get_integration(self, id: str) -> IntegrationModel:
         return self.client.integrations.get(id=id)

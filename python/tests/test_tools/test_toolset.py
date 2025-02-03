@@ -65,9 +65,7 @@ def test_delete_trigger() -> None:
     )
 
     assert enabled_trigger["triggerId"] is not None
-    assert (
-        toolset.delete_trigger(id=enabled_trigger["triggerId"])["status"] == "success"
-    )
+    assert toolset.delete_trigger(id=enabled_trigger["triggerId"]) is True
 
 
 def test_find_actions_by_tags() -> None:
