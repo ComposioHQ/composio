@@ -152,13 +152,19 @@ export class ComposioToolSet {
     let actions = parsedFilters.actions;
 
     if (_integrationId) {
-      const integration = await this.integrations.get({ integrationId: _integrationId });
-      if(integration?.limitedActions) {
-        if(!actions) {
+      const integration = await this.integrations.get({
+        integrationId: _integrationId,
+      });
+      if (integration?.limitedActions) {
+        if (!actions) {
           actions = [...integration.limitedActions];
         } else {
-          const limitedActionsUppercase = integration.limitedActions.map((action) => action.toUpperCase());
-          actions = actions.filter((action) => limitedActionsUppercase.includes(action.toUpperCase()));
+          const limitedActionsUppercase = integration.limitedActions.map(
+            (action) => action.toUpperCase()
+          );
+          actions = actions.filter((action) =>
+            limitedActionsUppercase.includes(action.toUpperCase())
+          );
         }
       }
     }
