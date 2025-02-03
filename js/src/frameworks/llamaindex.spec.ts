@@ -60,6 +60,12 @@ describe("Apps class tests", () => {
     });
 
     await expect(tools.length).toBe(1);
+
+    const connectedAccount = await llamaindexToolSet.connectedAccounts.list({
+      appNames: "github",
+      showActiveOnly: true,
+    });
+
     const actionOuput = await llamaindexToolSet.executeAction({
       action: "starRepositoryCustomAction",
       params: {
@@ -67,7 +73,7 @@ describe("Apps class tests", () => {
         repo: "composio",
       },
       entityId: "default",
-      connectedAccountId: "9442cab3-d54f-4903-976c-ee67ef506c9b",
+      connectedAccountId: connectedAccount.items[0].id,
     });
 
     expect(actionOuput).toHaveProperty("successful", true);
