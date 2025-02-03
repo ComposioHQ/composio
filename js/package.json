@@ -38,6 +38,7 @@
     "@cloudflare/workers-types": "^4.20240718.0",
     "@langchain/core": "^0.2.18",
     "@langchain/openai": "^0.2.5",
+    "@llamaindex/core": "^0.4.20",
     "ai": "^3.2.22",
     "langchain": "^0.2.11",
     "llamaindex": "^0.8.31",
@@ -51,11 +52,11 @@
     "inquirer": "^10.2.2",
     "open": "^8.4.0",
     "pusher-js": "8.4.0-rc2",
+    "resolve-package-path": "^4.0.0",
     "rollup-plugin-visualizer": "^5.13.1",
     "uuid": "^10.0.0",
     "zod": "^3.23.8",
-    "zod-to-json-schema": "^3.23.2",
-    "resolve-package-path": "^4.0.0"
+    "zod-to-json-schema": "^3.23.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.16.0",
@@ -63,6 +64,7 @@
     "@hey-api/client-axios": "^0.2.3",
     "@hey-api/openapi-ts": "^0.52.4",
     "@jest/globals": "^29.7.0",
+    "@llamaindex/core": "^0.4.20",
     "@rollup/plugin-commonjs": "^25.0.8",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.2.3",
@@ -105,5 +107,6 @@
   "engineStrict": true,
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "packageManager": "pnpm@9.12.2+sha512.22721b3a11f81661ae1ec68ce1a7b879425a1ca5b991c975b074ac220b187ce56c708fe5db69f4c962c989452eee76c82877f4ee80f474cebd61ee13461b6228"
 }

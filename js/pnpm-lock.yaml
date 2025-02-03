@@ -81,6 +81,9 @@ importers:
       '@jest/globals':
         specifier: ^29.7.0
         version: 29.7.0
+      '@llamaindex/core':
+        specifier: ^0.4.20
+        version: 0.4.20(@aws-crypto/sha256-js@5.2.0)(@huggingface/transformers@3.3.1)(gpt-tokenizer@2.8.1)(js-tiktoken@1.0.16)(pathe@1.1.2)
       '@rollup/plugin-commonjs':
         specifier: ^25.0.8
         version: 25.0.8(rollup@4.28.1)
@@ -4069,10 +4072,6 @@ packages:
     peerDependenciesMeta:
       encoding:
         optional: true
-
-  node-gyp-build@4.8.1:
-    resolution: {integrity: sha512-OSs33Z9yWr148JZcbZd5WiAXhh/n9z8TxQcdMhIOlpN9AhWpLfvVFO73+m77bBABQMaY9XSvIa+qk0jlI7Gcaw==}
-    hasBin: true
 
   node-gyp-build@4.8.4:
     resolution: {integrity: sha512-LA4ZjwlnUblHVgq0oBF3Jl/6h/Nvs5fzBLwdEF4nuxnFdsfajde4WfxtJr3CaiH+F6ewcIB/q4jQ4UzPyid+CQ==}
@@ -8362,7 +8361,7 @@ snapshots:
 
   bufferutil@4.0.8:
     dependencies:
-      node-gyp-build: 4.8.1
+      node-gyp-build: 4.8.4
     optional: true
 
   c12@1.11.1:
@@ -10264,9 +10263,6 @@ snapshots:
     dependencies:
       whatwg-url: 5.0.0
 
-  node-gyp-build@4.8.1:
-    optional: true
-
   node-gyp-build@4.8.4: {}
 
   node-int64@0.4.0: {}
@@ -11414,7 +11410,7 @@ snapshots:
 
   utf-8-validate@6.0.4:
     dependencies:
-      node-gyp-build: 4.8.1
+      node-gyp-build: 4.8.4
     optional: true
 
   util-deprecate@1.0.2: {}
