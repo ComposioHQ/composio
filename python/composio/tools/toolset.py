@@ -662,7 +662,11 @@ class SchemaHelper(WithLogger):
             (schema,) = self.get_local_action_schemas(apps=[], actions=[action])
             return schema
 
-        (schema,) = self.get_remote_actions_schemas(apps=[], actions=[action])
+        (schema,) = self.get_remote_actions_schemas(
+            apps=[],
+            actions=[action],
+            check_connected_account=lambda action: action,
+        )
         return schema
 
     def _substitute_file_uploads_recursively(
