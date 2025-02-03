@@ -8,6 +8,8 @@ import warnings
 from inspect import Signature
 
 import typing_extensions as te
+from phi.tools.function import Function
+from phi.tools.tool import Tool
 from phi.tools.toolkit import Toolkit
 from pydantic import validate_call
 from typing_extensions import Protocol
@@ -83,6 +85,7 @@ class ComposioToolSet(
         # Apply the signature and annotations to the function
         func.__signature__ = sig
         func.__annotations__ = annotations
+        func.__setattr__("__name__", name.lower())
 
         # Format docstring in Phidata standard format
         docstring_parts = [description, "\nArgs:"]
@@ -103,7 +106,9 @@ class ComposioToolSet(
         return toolkit
 
     @te.deprecated("Use `ComposioToolSet.get_tools` instead.\n", category=None)
-    def get_actions(self, actions: t.Sequence[ActionType]) -> t.List[Toolkit]:
+    def get_actions(
+        self, actions: t.Sequence[ActionType]
+    ) -> t.List[t.Union[Tool, Toolkit, t.Callable, t.Dict, Function]]:
         """
         Get composio tools wrapped as Phidata `Toolkit` objects.
 
@@ -128,7 +133,7 @@ class ComposioToolSet(
         *,
         processors: t.Optional[ProcessorsType] = None,
         check_connected_accounts: bool = True,
-    ) -> t.List[Toolkit]:
+    ) -> t.List[t.Union[Tool, Toolkit, t.Callable, t.Dict, Function]]:
         """
         Get composio tools wrapped as Phidata `Toolkit` objects.
 
@@ -144,7 +149,7 @@ class ComposioToolSet(
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
         if processors is not None:
-            self._merge_processors(processors)
+            self._processor_helpers.merge_processors(processors)
         return [
             self._wrap_tool(
                 schema=schema.model_dump(

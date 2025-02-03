@@ -3,6 +3,7 @@ import warnings
 
 import typing_extensions as te
 
+from composio.exceptions import ComposioSDKError
 from composio.utils import help_msg
 
 
@@ -124,7 +125,7 @@ class ComposioToolSet(
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
         if processors is not None:
-            self._merge_processors(processors)
+            self._processor_helpers.merge_processors(processors)
         return [
             ToolParam(
                 **t.cast(
@@ -166,7 +167,7 @@ class ComposioToolSet(
 
     def handle_tool_calls(
         self,
-        llm_response: ToolsBetaMessage,
+        llm_response: t.Union[dict, ToolsBetaMessage],
         entity_id: t.Optional[str] = None,
     ) -> t.List[t.Dict]:
         """
@@ -177,6 +178,16 @@ class ComposioToolSet(
         :param entity_id: Entity ID to use for executing function calls.
         :return: A list of output objects from the function calls.
         """
+        # Since llm_response can also be a dictionary, we should only proceed
+        # towards action execution if we have the correct type of llm_response
+        if not isinstance(llm_response, (dict, ToolsBetaMessage)):
+            raise ComposioSDKError(
+                "llm_response should be of type `Message` or castable to type `Message`, "
+                f"received object {llm_response} of type {type(llm_response)}"
+            )
+        if isinstance(llm_response, dict):
+            llm_response = ToolsBetaMessage(**llm_response)
+
         outputs = []
         entity_id = self.validate_entity_id(entity_id or self.entity_id)
         for content in llm_response.content:

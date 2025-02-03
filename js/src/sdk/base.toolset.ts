@@ -9,6 +9,7 @@ import {
   ZToolSchemaFilter,
 } from "../types/base_toolset";
 import type { Optional, Sequence } from "../types/util";
+import logger from "../utils/logger";
 import { getEnvVariable } from "../utils/shared";
 import {
   ActionRegistry,
@@ -42,6 +43,7 @@ export class ComposioToolSet {
   apiKey: string;
   runtime: string | null;
   entityId: string = "default";
+  connectedAccountIds: Record<string, string> = {};
 
   backendClient: BackendClient;
   connectedAccounts: ConnectedAccounts;
@@ -76,17 +78,20 @@ export class ComposioToolSet {
    * @param {string|null} config.baseUrl - Base URL for API requests
    * @param {string|null} config.runtime - Runtime environment
    * @param {string} config.entityId - Entity ID for operations
+   * @param {Record<string, string>} config.connectedAccountIds - Map of app names to their connected account IDs
    */
   constructor({
     apiKey,
     baseUrl,
     runtime,
     entityId,
+    connectedAccountIds,
   }: {
     apiKey?: string | null;
     baseUrl?: string | null;
     runtime?: string | null;
     entityId?: string;
+    connectedAccountIds?: Record<string, string>;
   } = {}) {
     const clientApiKey: string | undefined =
       apiKey ||
@@ -107,8 +112,19 @@ export class ComposioToolSet {
     this.triggers = this.client.triggers;
     this.integrations = this.client.integrations;
     this.activeTriggers = this.client.activeTriggers;
+    this.connectedAccountIds = connectedAccountIds || {};
 
     this.userActionRegistry = new ActionRegistry(this.client);
+
+    if (entityId && connectedAccountIds) {
+      logger.warn(
+        "When both entity and connectedAccountIds are provided, preference will be given to connectedAccountIds"
+      );
+    }
+
+    if (connectedAccountIds) {
+      this.connectedAccountIds = connectedAccountIds;
+    }
 
     if (entityId) {
       this.entityId = entityId;
@@ -248,8 +264,11 @@ export class ComposioToolSet {
         accountId = connectedAccounts?.items[0]?.id;
       }
 
+      // allows the user to use custom actions and tools without a connected account
       if (!accountId) {
-        throw new Error("No connected account found for the user");
+        logger.warn(
+          "No connected account found for the user. If your custom action requires a connected account, please double check if you have active accounts connected to it."
+        );
       }
 
       return this.userActionRegistry.executeAction(action, params, {

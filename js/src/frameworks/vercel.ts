@@ -27,6 +27,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       apiKey?: Optional<string>;
       baseUrl?: Optional<string>;
       entityId?: string;
+      connectedAccountIds?: Record<string, string>;
     } = {}
   ) {
     super({
@@ -34,6 +35,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       baseUrl: config.baseUrl || null,
       runtime: "vercel-ai",
       entityId: config.entityId || "default",
+      connectedAccountIds: config.connectedAccountIds,
     });
   }
 
@@ -105,6 +107,12 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       params: { tool, entityId },
     });
 
+    const toolSchema = await this.getToolsSchema({
+      actions: [tool.name],
+    });
+    const appName = toolSchema[0]?.appName?.toLowerCase();
+    const connectedAccountId = appName && this.connectedAccountIds?.[appName];
+
     return JSON.stringify(
       await this.executeAction({
         action: tool.name,
@@ -113,6 +121,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
             ? JSON.parse(tool.arguments)
             : tool.arguments,
         entityId: entityId || this.entityId,
+        connectedAccountId: connectedAccountId,
       })
     );
   }

@@ -50,6 +50,9 @@ importers:
       pusher-js:
         specifier: 8.4.0-rc2
         version: 8.4.0-rc2
+      resolve-package-path:
+        specifier: ^4.0.0
+        version: 4.0.3
       rollup-plugin-visualizer:
         specifier: ^5.13.1
         version: 5.13.1(rollup@4.28.1)
@@ -150,9 +153,6 @@ importers:
       regenerator-runtime:
         specifier: ^0.14.1
         version: 0.14.1
-      resolve-package-path:
-        specifier: ^4.0.3
-        version: 4.0.3
       rollup:
         specifier: ^4.9.1
         version: 4.28.1

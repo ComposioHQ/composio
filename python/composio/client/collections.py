@@ -188,7 +188,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
     @t.overload
     def get(
         self,
-        connection_id: t.Optional[str] = None,
+        *,
         entity_ids: t.Optional[t.Sequence[str]] = None,
         active: bool = False,
     ) -> t.List[ConnectedAccountModel]:
@@ -203,6 +203,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
     def get(
         self,
         connection_id: t.Optional[str] = None,
+        *,
         entity_ids: t.Optional[t.Sequence[str]] = None,
         active: bool = False,
     ) -> t.Union[ConnectedAccountModel, t.List[ConnectedAccountModel]]:
@@ -229,7 +230,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
             )
             return self.model(**response.json())
 
-        queries = {}
+        queries = {"pageSize": "99999999"}
         if len(entity_ids) > 0:
             queries["user_uuid"] = ",".join(entity_ids)
 
@@ -1027,16 +1028,19 @@ class ActionModel(BaseModel):
     """Action data model."""
 
     name: str
-    display_name: t.Optional[str] = None
+    description: str
     parameters: ActionParametersModel
     response: ActionResponseModel
     appName: str
     appId: str
-    tags: t.List[str]
-    enabled: bool = False
+    version: str
+    available_versions: t.List[str]
 
+    tags: t.List[str]
     logo: t.Optional[str] = None
-    description: t.Optional[str] = None
+
+    display_name: t.Optional[str] = None
+    enabled: bool = False
 
 
 ParamPlacement = t.Literal["header", "path", "query", "subdomain", "metadata"]
@@ -1080,8 +1084,19 @@ class Actions(Collection[ActionModel]):
     model = ActionModel
     endpoint = v2.actions
 
-    # TODO: Overload
-    def get(  # type: ignore
+    def _get_action(self, action: ActionType) -> ActionModel:
+        return self.model(
+            **self._raise_if_required(
+                response=self.client.http.get(
+                    url=str(self.endpoint / str(action)),
+                    params={
+                        "version": Action(action).version,
+                    },
+                )
+            ).json()
+        )
+
+    def _get_actions(
         self,
         actions: t.Optional[t.Sequence[ActionType]] = None,
         apps: t.Optional[t.Sequence[AppType]] = None,
@@ -1090,18 +1105,6 @@ class Actions(Collection[ActionModel]):
         use_case: t.Optional[str] = None,
         allow_all: bool = False,
     ) -> t.List[ActionModel]:
-        """
-        Get a list of apps by the specified filters.
-
-        :param actions: Filter by the list of Actions.
-        :param apps: Filter by the list of Apps.
-        :param tags: Filter by the list of given Tags.
-        :param limit: Limit the number of actions to a specific number.
-        :param use_case: Filter by use case.
-        :param allow_all: Allow querying all of the actions for a specific
-                        app
-        :return: List of actions
-        """
 
         def is_action(obj):
             try:
@@ -1224,6 +1227,76 @@ class Actions(Collection[ActionModel]):
             items = [self.model(**item) for item in local_items] + items
         return items
 
+    @t.overload  # type: ignore
+    def get(self) -> t.List[ActionModel]: ...
+
+    @t.overload  # type: ignore
+    def get(self, action: t.Optional[ActionType] = None) -> ActionModel: ...
+
+    @t.overload  # type: ignore
+    def get(
+        self,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        tags: t.Optional[t.Sequence[TagType]] = None,
+        limit: t.Optional[int] = None,
+        use_case: t.Optional[str] = None,
+        allow_all: bool = False,
+    ) -> t.List[ActionModel]: ...
+
+    def get(  # type: ignore
+        self,
+        action: t.Optional[ActionType] = None,
+        *,
+        actions: t.Optional[t.Sequence[ActionType]] = None,
+        apps: t.Optional[t.Sequence[AppType]] = None,
+        tags: t.Optional[t.Sequence[TagType]] = None,
+        limit: t.Optional[int] = None,
+        use_case: t.Optional[str] = None,
+        allow_all: bool = False,
+    ) -> t.Union[ActionModel, t.List[ActionModel]]:
+        """
+        Get a list of apps by the specified filters.
+
+        :param actions: Filter by the list of Actions.
+        :param action: Get data for this action.
+        :param apps: Filter by the list of Apps.
+        :param tags: Filter by the list of given Tags.
+        :param limit: Limit the number of actions to a specific number.
+        :param use_case: Filter by use case.
+        :param allow_all: Allow querying all of the actions for a specific
+                        app
+        :return: List of actions
+        """
+        if action is not None:
+            return self._get_action(action=action)
+
+        return self._get_actions(
+            actions=actions,
+            apps=apps,
+            tags=tags,
+            limit=limit,
+            use_case=use_case,
+            allow_all=allow_all,
+        )
+
+    @staticmethod
+    def _serialize_auth(auth: t.Optional[CustomAuthObject]) -> t.Optional[t.Dict]:
+        if auth is None:
+            return None
+
+        data = auth.model_dump(exclude_none=True)
+        data["parameters"] = [
+            {"in": d["in_"], "name": d["name"], "value": d["value"]}
+            for d in data["parameters"]
+        ]
+        for param in data["parameters"]:
+            if param["in"] == "metadata":
+                raise ComposioClientError(
+                    f"Param placement cannot be 'metadata' for remote action execution: {param}"
+                )
+        return data
+
     def execute(
         self,
         action: Action,
@@ -1297,6 +1370,7 @@ class Actions(Collection[ActionModel]):
                         "appName": action.app,
                         "input": modified_params,
                         "text": text,
+                        "version": action.version,
                         "sessionInfo": {
                             "sessionId": session_id,
                         },
@@ -1319,6 +1393,7 @@ class Actions(Collection[ActionModel]):
                     "appName": action.app,
                     "input": modified_params,
                     "text": text,
+                    "version": action.version,
                     "authConfig": self._serialize_auth(auth=auth),
                     "sessionInfo": {
                         "sessionId": session_id,
@@ -1352,23 +1427,6 @@ class Actions(Collection[ActionModel]):
                 ],
             },
         ).json()
-
-    @staticmethod
-    def _serialize_auth(auth: t.Optional[CustomAuthObject]) -> t.Optional[t.Dict]:
-        if auth is None:
-            return None
-
-        data = auth.model_dump(exclude_none=True)
-        data["parameters"] = [
-            {"in": d["in_"], "name": d["name"], "value": d["value"]}
-            for d in data["parameters"]
-        ]
-        for param in data["parameters"]:
-            if param["in"] == "metadata":
-                raise ComposioClientError(
-                    f"Param placement cannot be 'metadata' for remote action execution: {param}"
-                )
-        return data
 
     def search_for_a_task(
         self,
