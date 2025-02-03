@@ -1233,6 +1233,10 @@ export type GetConnectorInfoResDTO = {
    * When true, indicates that this connector uses Composio's built-in authentication handling rather than custom authentication logic.
    */
   useComposioAuth: boolean;
+  /**
+   * List of actions that are limited to this connector, trying to execute any other action apart from these will throw an unauthorized error
+   */
+  limitedActions: string[];
 };
 
 /**
