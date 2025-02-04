@@ -2,10 +2,8 @@
 Composio server object collections
 """
 
-import base64
 import difflib
 import json
-import os
 import time
 import traceback
 import typing as t
@@ -989,39 +987,20 @@ class ActiveTriggers(Collection[ActiveTriggerModel]):
         return super().get(queries=queries)
 
 
-def _check_file_uploadable(param_field: dict) -> bool:
-    return (
-        isinstance(param_field, dict)
-        and (param_field.get("title") in ["File", "FileType"])
-        and all(
-            field_name in param_field.get("properties", {})
-            for field_name in ["name", "content"]
-        )
-    )
+class OpenAPISchema(BaseModel):
+    properties: t.Dict[str, t.Any]
+    title: str
+    type: str
+    required: t.Optional[t.List[str]] = None
+    examples: t.Optional[t.List[t.Any]] = None
 
 
-def _check_file_downloadable(param_field: dict) -> bool:
-    return set(param_field.keys()) == {"name", "content"}
-
-
-class ActionParametersModel(BaseModel):
+class ActionParametersModel(OpenAPISchema):
     """Action parameter data models."""
 
-    properties: t.Dict[str, t.Any]
-    title: str
-    type: str
 
-    required: t.Optional[t.List[str]] = None
-
-
-class ActionResponseModel(BaseModel):
+class ActionResponseModel(OpenAPISchema):
     """Action response data model."""
-
-    properties: t.Dict[str, t.Any]
-    title: str
-    type: str
-
-    required: t.Optional[t.List[str]] = None
 
 
 class ActionModel(BaseModel):
@@ -1076,6 +1055,12 @@ class SearchResultTask(BaseModel):
     order: int = Field(
         description="Order of the subtask, SHOULD START FROM 0",
     )
+
+
+class CreateUploadURLResponse(BaseModel):
+    id: str = Field(..., description="ID of the file")
+    url: str = Field(..., description="Onetime upload URL")
+    key: str = Field(..., description="S3 upload location")
 
 
 class Actions(Collection[ActionModel]):
@@ -1317,58 +1302,13 @@ class Actions(Collection[ActionModel]):
         :param session_id: ID of the current workspace session
         :return: A dictionary containing the response from the executed action.
         """
-        # TOFIX: Remvoe this
-        if action.is_local:
-            return self.client.local.execute_action(action=action, request_data=params)
-
-        actions = self.get(actions=[action])
-        if len(actions) == 0:
-            raise ComposioClientError(f"Action {action} not found")
-
-        (action_model,) = actions
-        action_req_schema = action_model.parameters.properties
-        modified_params: t.Dict[str, t.Union[str, t.Dict[str, str]]] = {}
-        for param, value in params.items():
-            request_param_schema = action_req_schema.get(param)
-            if request_param_schema is None:
-                # User has sent a parameter that is not used by this action,
-                # so we can ignore it.
-                continue
-
-            file_readable = request_param_schema.get("file_readable", False)
-            file_uploadable = _check_file_uploadable(request_param_schema)
-
-            if file_readable and isinstance(value, str) and os.path.isfile(value):
-                with open(value, "rb") as file:
-                    file_content = file.read()
-                    try:
-                        modified_params[param] = file_content.decode("utf-8")
-                    except UnicodeDecodeError:
-                        # If decoding fails, treat as binary and encode in base64
-                        modified_params[param] = base64.b64encode(file_content).decode(
-                            "utf-8"
-                        )
-            elif file_uploadable and isinstance(value, str):
-                if not os.path.isfile(value):
-                    raise ValueError(f"Attachment File with path `{value}` not found.")
-
-                with open(value, "rb") as file:
-                    file_content = file.read()
-
-                modified_params[param] = {
-                    "name": os.path.basename(value),
-                    "content": base64.b64encode(file_content).decode("utf-8"),
-                }
-            else:
-                modified_params[param] = value
-
         if action.no_auth:
             return self._raise_if_required(
                 self.client.long_timeout_http.post(
                     url=str(self.endpoint / action.slug / "execute"),
                     json={
                         "appName": action.app,
-                        "input": modified_params,
+                        "input": params,
                         "text": text,
                         "version": action.version,
                         "sessionInfo": {
@@ -1391,7 +1331,7 @@ class Actions(Collection[ActionModel]):
                     "connectedAccountId": connected_account,
                     "entityId": entity_id,
                     "appName": action.app,
-                    "input": modified_params,
+                    "input": params,
                     "text": text,
                     "version": action.version,
                     "authConfig": self._serialize_auth(auth=auth),
@@ -1460,6 +1400,29 @@ class Actions(Collection[ActionModel]):
             SearchResultTask.model_validate(task)
             for task in response.json().get("items", [])
         ]
+
+    def create_file_upload(
+        self,
+        app: str,
+        action: str,
+        filename: str,
+        mimetype: str,
+        md5: str,
+    ) -> CreateUploadURLResponse:
+        return CreateUploadURLResponse(
+            **self._raise_if_required(
+                response=self.client.http.post(
+                    url=str(self.endpoint / "files" / "upload" / "request"),
+                    json={
+                        "md5": md5,
+                        "app": app,
+                        "action": action,
+                        "filename": filename,
+                        "mimetype": mimetype,
+                    },
+                )
+            ).json()
+        )
 
 
 class ExpectedFieldInput(BaseModel):
