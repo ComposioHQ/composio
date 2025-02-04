@@ -13,6 +13,14 @@ type ErrorPayload = {
   message: string;
   possible_fix: string;
   current_stack: string[];
+  sdk_meta: {
+    apiKey: string;
+    baseURL: string;
+    composioVersion: string;
+    frameworkRuntime: string;
+    source: string;
+    isBrowser: boolean;
+  };
 };
 
 export async function logError(payload: ErrorPayload) {
