@@ -198,6 +198,7 @@
       "group": "Others",
       "pages": [
         "introduction/foundations/components/workspace",
+        "integrations/google",
         "faq/api_key/api_key",
         "faq/api_key/cli",
         "faq/integrations_and_connections/list_of_tools",
