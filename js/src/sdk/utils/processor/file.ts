@@ -14,53 +14,52 @@ type FileBasePropertySchema = {
   description: string;
 } & Record<string, unknown>;
 
-export const FILE_UPLOADABLE_SCHEMA = [
-  {
-    baseSchema: {
-      type: "object",
-      properties: {
-        name: { type: "string" },
-        mimeType: { type: "string" },
-        s3Key: { type: "string" },
-      },
-    },
-    converter: (propertyItem: FileBasePropertySchema) => {
-      if (propertyItem.file_uploadable) {
-        return {
-          [`${propertyItem.name}_schema_parsed_file_uploadable`]: true,
-          type: "string",
-          description: propertyItem.description,
-        };
-      }
-      return propertyItem;
-    },
-    deConvertValue: async (
-      responseData: Record<string, unknown>,
-      actionName: string
-    ) => {
-      for (const key of Object.keys(responseData)) {
-        if (key.endsWith("_schema_parsed_file_uploadable")) {
-          const keyWithoutSchemaParsed = key.replace(
-            "_schema_parsed_file_uploadable",
-            ""
-          );
-          const value = responseData[key];
-
-          const fileData = await getFileData(value as string, actionName);
-          responseData[keyWithoutSchemaParsed] = {
-            name: fileData.name,
-            mimeType: fileData.mimeType,
-            //TODO: add s3Key
-            s3Key: fileData.s3Key,
-          };
-
-          delete responseData[key];
-        }
-      }
-      return responseData;
+export const FILE_UPLOADABLE_SCHEMA = {
+  baseSchema: {
+    type: "object",
+    properties: {
+      name: { type: "string" },
+      mimeType: { type: "string" },
+      s3Key: { type: "string" },
     },
   },
-];
+  converter: (propertyItem: FileBasePropertySchema) => {
+    if (propertyItem.file_uploadable) {
+      return {
+        keyName: `${propertyItem.name}_schema_parsed_file_uploadable`,
+        type: "string",
+        description: propertyItem.description,
+      };
+    }
+    return propertyItem;
+  },
+  deConvertValue: async (
+    responseData: Record<string, unknown>,
+    actionName: string
+  ) => {
+    for (const key of Object.keys(responseData)) {
+      if (key.endsWith("_schema_parsed_file_uploadable")) {
+        const keyWithoutSchemaParsed = key.replace(
+          "_schema_parsed_file_uploadable",
+          ""
+        );
+        const value = responseData[key];
+
+        const fileData = await getFileData(value as string, actionName);
+        responseData[keyWithoutSchemaParsed] = {
+          name: fileData.name,
+          mimeType: fileData.mimeType,
+          //TODO: add s3Key
+          // @ts-ignore
+          s3Key: fileData.s3Key,
+        };
+
+        delete responseData[key];
+      }
+    }
+    return responseData;
+  },
+};
 
 const readFileContent = async (
   path: string
@@ -152,21 +151,39 @@ export const fileInputProcessor: TPreProcessor = ({ params, actionName }) => {
 };
 
 export const fileSchemaProcessor: TSchemaProcessor = ({ toolSchema }) => {
-  const { properties } = toolSchema.parameters;
-  const clonedProperties = JSON.parse(JSON.stringify(properties));
+  const toolParameters = toolSchema.parameters;
+  const { properties } = toolParameters;
+  let { required: requiredProperties } = toolParameters;
 
-  for (const propertyKey of Object.keys(clonedProperties)) {
-    const property = clonedProperties[propertyKey];
+  const clonedProperties = Object.assign({}, properties);
+
+  for (const originalKey of Object.keys(clonedProperties)) {
+    const property = clonedProperties[originalKey];
     const file_uploadable = property.file_uploadable;
 
-    if (file_uploadable) {
-      const newKey = `${propertyKey}_file_uri_path`;
-      clonedProperties[newKey] = {
-        type: "string",
-        title: "Name",
-        description: "Local absolute path to the file or http url to the file",
-      };
+    if (!file_uploadable) continue;
+
+    const { type, keyName, description } =
+      FILE_UPLOADABLE_SCHEMA.converter(property);
+
+    clonedProperties[keyName as string] = {
+      ...property,
+      type,
+      description,
+    };
+
+    const isKeyPartOfRequired = requiredProperties.includes(originalKey);
+
+    // Remove the original key from required properties and add the new key
+    if (isKeyPartOfRequired) {
+      requiredProperties = requiredProperties.filter(
+        (property) => property !== originalKey
+      );
+      requiredProperties.push(keyName as string);
     }
+
+    // Remove the original key from the properties
+    delete clonedProperties[originalKey];
   }
 
   return {

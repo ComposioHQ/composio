@@ -2,8 +2,6 @@ import { logError } from "..";
 import { getUUID } from "../../../../utils/common";
 import { getLogLevel } from "../../../../utils/logger";
 
-import ComposioSDKContext from "../../composioContext";
-
 /**
  * Custom error class for Composio that provides rich error details, tracking, and improved debugging
  */
@@ -93,14 +91,14 @@ export class ComposioError extends Error {
       message: this.message,
       possible_fix: this.possibleFix || "",
       current_stack: this.stack?.split("\n") || [],
-      sdk_meta: {
-        apiKey: ComposioSDKContext.apiKey || "",
-        baseURL: ComposioSDKContext.baseURL || "",
-        composioVersion: ComposioSDKContext.composioVersion || "",
-        frameworkRuntime: ComposioSDKContext.frameworkRuntime || "",
-        source: ComposioSDKContext.source || "",
-        isBrowser: typeof window !== "undefined",
-      },
+      // sdk_meta: {
+      //   apiKey: ComposioSDKContext.apiKey || "",
+      //   baseURL: ComposioSDKContext.baseURL || "",
+      //   composioVersion: ComposioSDKContext.composioVersion || "",
+      //   frameworkRuntime: ComposioSDKContext.frameworkRuntime || "",
+      //   source: ComposioSDKContext.source || "",
+      //   isBrowser: typeof window !== "undefined",
+      // },
     });
 
     // Capture stack trace, excluding constructor call
