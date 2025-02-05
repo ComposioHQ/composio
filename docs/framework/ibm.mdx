@@ -27,7 +27,7 @@ description: "Integrate Composio with IBM's Granite Models to let them seamlessl
 
 ### Install Packages & Connect a Tool
 
-Ensure you have the necessary packages installed and connect your GitHub account to allow your CAMEL-AI agents to utilize GitHub functionalities.
+Ensure you have the necessary packages installed and connect your GitHub account to allow your IBM agents to utilize GitHub functionalities.
 <CodeGroup>
     ``` bash Run command
     pip install composio-langchain
@@ -67,7 +67,7 @@ Prepare your environment by initializing necessary imports from Composio & IBM.
 This step involves fetching and integrating GitHub tools provided by Composio, enabling enhanced functionality for Agent operations.
 
 <CodeGroup>
-    ```python CAMEL Supported tools from Composio
+    ```python IBM Supported tools from Composio
     composio_toolset = ComposioToolSet()
     tools = composio_toolset.get_tools(
         actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
