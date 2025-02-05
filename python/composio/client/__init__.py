@@ -11,7 +11,7 @@ from pathlib import Path
 import requests
 
 from composio.client.collections import (
-    AUTH_SCHEMES,
+    AUTH_SCHEME_WITH_INITIATE,
     Actions,
     ActiveTriggerModel,
     ActiveTriggers,
@@ -446,9 +446,9 @@ class Entity:
         app = self.client.apps.get(name=app_name_str)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         if integration is None and auth_mode is not None:
-            if auth_mode not in AUTH_SCHEMES:
+            if auth_mode not in AUTH_SCHEME_WITH_INITIATE:
                 raise ComposioClientError(
-                    f"'auth_mode' should be one of {AUTH_SCHEMES}"
+                    f"'auth_mode' should be one of {AUTH_SCHEME_WITH_INITIATE}"
                 )
             auth_mode = t.cast(AuthSchemeType, auth_mode)
             if "OAUTH" not in auth_mode:
