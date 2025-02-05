@@ -26,6 +26,7 @@ from composio.client import Composio, Entity
 from composio.client.collections import (
     AUTH_SCHEMES,
     ActionModel,
+    ActiveTriggerModel,
     AppAuthScheme,
     AppModel,
     AuthSchemeField,
@@ -39,6 +40,7 @@ from composio.client.collections import (
     FileType,
     IntegrationModel,
     SuccessExecuteActionResponseModel,
+    TriggerConfigModel,
     TriggerModel,
     TriggerSubscription,
 )
@@ -1033,6 +1035,29 @@ class _GetMixin(WithLogger):
 
     def get_trigger(self, trigger: TriggerType) -> TriggerModel:
         return self.client.triggers.get(trigger_names=[trigger]).pop()
+
+    def get_trigger_config_scheme(self, trigger: TriggerType) -> TriggerConfigModel:
+        return self.get_trigger(trigger=trigger).config
+
+    def get_active_triggers(
+        self,
+        trigger_ids: t.Optional[t.List[str]] = None,
+        connected_account_ids: t.Optional[t.List[str]] = None,
+        integration_ids: t.Optional[t.List[str]] = None,
+        trigger_names: t.Optional[t.List[TriggerType]] = None,
+    ) -> t.List[ActiveTriggerModel]:
+        return self.client.active_triggers.get(
+            trigger_ids=trigger_ids,
+            connected_account_ids=connected_account_ids,
+            integration_ids=integration_ids,
+            trigger_names=trigger_names,
+        )
+
+    def delete_trigger(self, id: str) -> bool:
+        delete_status = self.client.triggers.delete(id=id).get("status", None)
+        if delete_status is None:
+            raise ComposioSDKError(message="Delete operation failed to return status.")
+        return delete_status == "success"
 
     def get_integration(self, id: str) -> IntegrationModel:
         return self.client.integrations.get(id=id)
