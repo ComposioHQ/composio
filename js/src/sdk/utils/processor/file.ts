@@ -1,10 +1,12 @@
+import axios from "axios";
+import crypto from "crypto";
 import {
   TPostProcessor,
   TPreProcessor,
   TSchemaProcessor,
 } from "../../../types/base_toolset";
+import apiClient from "../../client/client";
 import { saveFile } from "../fileUtils";
-
 type FileBasePropertySchema = {
   properties: Record<string, unknown>;
   required: string[];
@@ -49,13 +51,7 @@ export const FILE_UPLOADABLE_SCHEMA = {
           value as string,
           actionName
         );
-        responseData[keyWithoutSchemaParsed] = {
-          name: fileData.name,
-          mimeType: fileData.mimeType,
-          //TODO: add s3Key
-          // @ts-ignore
-          s3Key: fileData.s3Key,
-        };
+        responseData[keyWithoutSchemaParsed] = fileData;
 
         delete responseData[key];
       }
@@ -80,14 +76,35 @@ const readFileContentFromURL = async (
 ): Promise<{ content: string; mimeType: string }> => {
   const response = await fetch(path);
   const content = await response.text();
-  return { content, mimeType: "text/plain" };
+  const mimeType = response.headers.get("content-type") || "text/plain";
+  return { content, mimeType };
 };
 
 const uploadFileToS3 = async (
   content: string,
-  actionName: string
+  actionName: string,
+  appName: string,
+  mimeType: string
 ): Promise<string> => {
-  return content;
+  const { data } = await apiClient.actionsV2.createFileUploadUrl({
+    body: {
+      action: actionName,
+      app: appName,
+      filename: `${actionName}_${Date.now()}`,
+      mimetype: mimeType,
+      md5: crypto.createHash("md5").update(content).digest("hex"),
+    },
+    path: {
+      fileType: "request",
+    },
+  });
+
+  const signedURL = data!.url;
+
+  // Upload the file to the S3 bucket
+  await axios.put(signedURL, content);
+
+  return signedURL;
 };
 
 const getFileDataAfterUploadingToS3 = async (
@@ -96,21 +113,23 @@ const getFileDataAfterUploadingToS3 = async (
 ): Promise<{
   name: string;
   mimeType: string;
-  content: string;
+  s3Key: string;
 }> => {
   const isURL = path.startsWith("http");
   const fileData = isURL
     ? await readFileContentFromURL(path)
     : await readFileContent(path);
 
-  const content = await getFileDataAfterUploadingToS3(
+  const signedURL = await uploadFileToS3(
     fileData.content,
-    actionName
+    actionName,
+    actionName,
+    fileData.mimeType
   );
   return {
     name: path.split("/").pop() || `${actionName}_${Date.now()}`,
     mimeType: fileData.mimeType,
-    content: fileData.content,
+    s3Key: signedURL,
   };
 };
 

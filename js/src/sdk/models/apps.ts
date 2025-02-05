@@ -16,7 +16,7 @@ import {
   ZRequiredParamsFullResponse,
   ZRequiredParamsResponse,
 } from "../types/app";
-import { BackendClient } from "./backendClient";
+import { AxiosBackendClient } from "./backendClient";
 
 // schema types generated from zod
 export type AppGetRequiredParams = z.infer<typeof ZGetRequiredParams>;
@@ -42,9 +42,9 @@ export type AppListRes = AppListResDTO;
 export type AppItemListResponse = AppInfoResponseDto;
 
 export class Apps {
-  private backendClient: BackendClient;
+  private backendClient: AxiosBackendClient;
   private fileName: string = "js/src/sdk/models/apps.ts";
-  constructor(backendClient: BackendClient) {
+  constructor(backendClient: AxiosBackendClient) {
     this.backendClient = backendClient;
   }
 

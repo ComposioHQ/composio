@@ -20,7 +20,7 @@ import { ActionExecutionResDto } from "./client/types.gen";
 import { ActionExecuteResponse, Actions } from "./models/actions";
 import { ActiveTriggers } from "./models/activeTriggers";
 import { Apps } from "./models/apps";
-import { BackendClient } from "./models/backendClient";
+import { AxiosBackendClient } from "./models/backendClient";
 import { ConnectedAccounts } from "./models/connectedAccounts";
 import { Integrations } from "./models/integrations";
 import { Triggers } from "./models/triggers";
@@ -45,7 +45,7 @@ export class ComposioToolSet {
   entityId: string = "default";
   connectedAccountIds: Record<string, string> = {};
 
-  backendClient: BackendClient;
+  backendClient: AxiosBackendClient;
   connectedAccounts: ConnectedAccounts;
   apps: Apps;
   actions: Actions;

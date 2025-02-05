@@ -17,7 +17,7 @@ import { ZAuthMode } from "../types/integration";
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
-import { BackendClient } from "./backendClient";
+import { AxiosBackendClient } from "./backendClient";
 
 type ConnectedAccountsListData = z.infer<typeof ZListConnectionsData> & {
   /** @deprecated use appUniqueKeys field instead */
@@ -48,14 +48,14 @@ export type ConnectionItem = ConnectionParams;
  * Class representing connected accounts in the system.
  */
 export class ConnectedAccounts {
-  private backendClient: BackendClient;
+  private backendClient: AxiosBackendClient;
   private fileName: string = "js/src/sdk/models/connectedAccounts.ts";
 
   /**
    * Initializes a new instance of the ConnectedAccounts class.
-   * @param {BackendClient} backendClient - The backend client instance.
+   * @param {AxiosBackendClient} backendClient - The backend client instance.
    */
-  constructor(backendClient: BackendClient) {
+  constructor(backendClient: AxiosBackendClient) {
     this.backendClient = backendClient;
   }
 
