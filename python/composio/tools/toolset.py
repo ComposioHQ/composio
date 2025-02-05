@@ -471,12 +471,13 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
                 t.List[ConnectedAccountModel],
                 self.client.connected_accounts.get(),
             )
-
         if action.app not in [
             # Normalize app names/ids coming from API
             connection.appUniqueId.upper()
             for connection in self._connected_accounts
-            if connection.entityId == entity_id
+            # Checking with clientUniqueUserId since the API returns the  
+            # entityId in the connectedAccounts query in clientUniqueUserId
+            if connection.clientUniqueUserId == entity_id
         ]:
             raise ComposioSDKError(
                 f"No connected account found for app `{action.app}`; "
