@@ -79,6 +79,7 @@ export class Entity {
     params,
     text,
     connectedAccountId,
+    version,
   }: ExecuteActionParams): Promise<ActionExecuteResponse> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "execute",
@@ -91,6 +92,7 @@ export class Entity {
         params,
         text,
         connectedAccountId,
+        version,
       });
       const action = await this.actionsModel.get({
         actionName: actionName,
@@ -104,6 +106,7 @@ export class Entity {
       if (app.no_auth) {
         return this.actionsModel.execute({
           actionName: actionName,
+          version: version,
           requestBody: {
             input: params,
             appName: action.appKey,
@@ -126,6 +129,7 @@ export class Entity {
       }
       return this.actionsModel.execute({
         actionName: actionName,
+        version: version,
         requestBody: {
           // @ts-ignore
           connectedAccountId: connectedAccount?.id as unknown as string,

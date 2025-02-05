@@ -20,6 +20,7 @@ export const ZGetListActionsParams = z.object({
     .boolean()
     .optional()
     .describe("Filter actions by available apps"),
+  actionVersions: z.record(z.string()).optional(),
 });
 
 export const ZParameter = z.object({
@@ -36,6 +37,7 @@ export const ZCustomAuthParams = z.object({
 
 export const ZExecuteParams = z.object({
   actionName: z.string(),
+  version: z.string().optional(),
   requestBody: z.object({
     connectedAccountId: z.string().optional(),
     input: z.record(z.unknown()).optional(),
