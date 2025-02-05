@@ -190,7 +190,7 @@ describe("ComposioToolSet class tests", () => {
     const executionResult = await toolset.executeAction({
       action: ACTION_NAME,
       params: {
-        file_id: testConfig.drive.download_file_id,
+        file_id: testConfig.drive.downloadable_file_id,
       },
       entityId: "default",
     });

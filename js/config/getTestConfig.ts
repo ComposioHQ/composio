@@ -5,7 +5,7 @@ export type BACKEND_CONFIG = {
     COMPOSIO_API_KEY: string;
     BACKEND_HERMES_URL: string;
     drive: {
-        download_file_id: string;
+        downloadable_file_id: string;
     }
 }
 
