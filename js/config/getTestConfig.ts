@@ -4,6 +4,9 @@ const CURRENT_FILE_DIR = __dirname;
 export type BACKEND_CONFIG = {
     COMPOSIO_API_KEY: string;
     BACKEND_HERMES_URL: string;
+    drive: {
+        download_file_id: string;
+    }
 }
 
 export const getTestConfig = (): BACKEND_CONFIG => {

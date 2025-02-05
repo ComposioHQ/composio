@@ -28,9 +28,9 @@ import { getUserDataJson } from "./utils/config";
 import { CEG } from "./utils/error";
 import { COMPOSIO_SDK_ERROR_CODES } from "./utils/errors/src/constants";
 import {
-  fileInputProcessor,
-  fileResponseProcessor,
-  fileSchemaProcessor,
+  FILE_DOWNLOADABLE_PROCESSOR,
+  FILE_INPUT_PROCESSOR,
+  FILE_SCHEMA_PROCESSOR,
 } from "./utils/processor/file";
 
 export type ExecuteActionParams = z.infer<typeof ZExecuteActionParams> & {
@@ -60,9 +60,9 @@ export class ComposioToolSet {
     post: TPostProcessor[];
     schema: TSchemaProcessor[];
   } = {
-    pre: [fileInputProcessor],
-    post: [fileResponseProcessor],
-    schema: [fileSchemaProcessor],
+    pre: [FILE_INPUT_PROCESSOR],
+    post: [FILE_DOWNLOADABLE_PROCESSOR],
+    schema: [FILE_SCHEMA_PROCESSOR],
   };
 
   private userDefinedProcessors: {

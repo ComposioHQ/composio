@@ -185,6 +185,20 @@ describe("ComposioToolSet class tests", () => {
     expect(executionResult.data).toBeDefined();
   });
 
+  it("should execute downloadable file action", async () => {
+    const ACTION_NAME = "GOOGLEDRIVE_PARSE_FILE";
+    const executionResult = await toolset.executeAction({
+      action: ACTION_NAME,
+      params: {
+        file_id: testConfig.drive.download_file_id,
+      },
+      entityId: "default",
+    });
+
+    // @ts-ignore
+    expect(executionResult.data.file.uri.length).toBeGreaterThan(0);
+  });
+
   it("should get tools with usecase limit", async () => {
     const tools = await toolset.getToolsSchema({
       useCase: "follow user",

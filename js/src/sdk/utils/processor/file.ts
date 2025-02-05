@@ -1,222 +1,121 @@
-import axios from "axios";
-import crypto from "crypto";
 import {
   TPostProcessor,
   TPreProcessor,
   TSchemaProcessor,
 } from "../../../types/base_toolset";
-import apiClient from "../../client/client";
-import { saveFile } from "../fileUtils";
+import { downloadFileFromS3, getFileDataAfterUploadingToS3 } from "./fileUtils";
+
 type FileBasePropertySchema = {
-  properties: Record<string, unknown>;
-  required: string[];
   type: string;
   title: string;
   description: string;
+  file_uploadable?: boolean;
 } & Record<string, unknown>;
 
-export const FILE_UPLOADABLE_SCHEMA = {
-  suffix: "_schema_parsed_file",
-  baseSchema: {
-    type: "object",
-    properties: {
-      name: { type: "string" },
-      mimeType: { type: "string" },
-      s3Key: { type: "string" },
-    },
-  },
-  converter: (key: string, propertyItem: FileBasePropertySchema) => {
-    if (propertyItem.file_uploadable) {
-      return {
-        keyName: `${key}${FILE_UPLOADABLE_SCHEMA.suffix}`,
-        type: "string",
-        description: propertyItem.description,
-      };
-    }
-    return propertyItem;
-  },
-  deConvertValue: async (
-    responseData: Record<string, unknown>,
-    actionName: string
-  ) => {
-    for (const key of Object.keys(responseData)) {
-      if (key.endsWith(FILE_UPLOADABLE_SCHEMA.suffix)) {
-        const keyWithoutSchemaParsed = key.replace(
-          FILE_UPLOADABLE_SCHEMA.suffix,
-          ""
-        );
-        const value = responseData[key];
+const FILE_SUFFIX = "_schema_parsed_file";
 
-        const fileData = await getFileDataAfterUploadingToS3(
-          value as string,
-          actionName
-        );
-        responseData[keyWithoutSchemaParsed] = fileData;
-
-        delete responseData[key];
-      }
-    }
-    return responseData;
-  },
-};
-
-const readFileContent = async (
-  path: string
-): Promise<{ content: string; mimeType: string }> => {
-  try {
-    const content = require("fs").readFileSync(path, "utf-8");
-    return { content, mimeType: "text/plain" };
-  } catch (error) {
-    throw new Error(`Error reading file at ${path}: ${error}`);
+const convertFileSchemaProperty = (
+  key: string,
+  property: FileBasePropertySchema
+) => {
+  if (!property.file_uploadable) {
+    return property;
   }
+
+  return {
+    keyName: `${key}${FILE_SUFFIX}`,
+    type: "string",
+    description: property.description,
+  };
 };
 
-const readFileContentFromURL = async (
-  path: string
-): Promise<{ content: string; mimeType: string }> => {
-  const response = await fetch(path);
-  const content = await response.text();
-  const mimeType = response.headers.get("content-type") || "text/plain";
-  return { content, mimeType };
-};
-
-const uploadFileToS3 = async (
-  content: string,
-  actionName: string,
-  appName: string,
-  mimeType: string
-): Promise<string> => {
-  const { data } = await apiClient.actionsV2.createFileUploadUrl({
-    body: {
-      action: actionName,
-      app: appName,
-      filename: `${actionName}_${Date.now()}`,
-      mimetype: mimeType,
-      md5: crypto.createHash("md5").update(content).digest("hex"),
-    },
-    path: {
-      fileType: "request",
-    },
-  });
-
-  const signedURL = data!.url;
-
-  // Upload the file to the S3 bucket
-  await axios.put(signedURL, content);
-
-  return signedURL;
-};
-
-const getFileDataAfterUploadingToS3 = async (
-  path: string,
+const processFileUpload = async (
+  params: Record<string, unknown>,
   actionName: string
-): Promise<{
-  name: string;
-  mimeType: string;
-  s3Key: string;
-}> => {
-  const isURL = path.startsWith("http");
-  const fileData = isURL
-    ? await readFileContentFromURL(path)
-    : await readFileContent(path);
+) => {
+  const result = { ...params };
 
-  const signedURL = await uploadFileToS3(
-    fileData.content,
-    actionName,
-    actionName,
-    fileData.mimeType
-  );
-  return {
-    name: path.split("/").pop() || `${actionName}_${Date.now()}`,
-    mimeType: fileData.mimeType,
-    s3Key: signedURL,
-  };
+  for (const [key, value] of Object.entries(result)) {
+    if (!key.endsWith(FILE_SUFFIX)) continue;
+
+    const originalKey = key.replace(FILE_SUFFIX, "");
+    const fileData = await getFileDataAfterUploadingToS3(
+      value as string,
+      actionName
+    );
+
+    result[originalKey] = fileData;
+    delete result[key];
+  }
+
+  return result;
 };
 
-export const fileResponseProcessor: TPostProcessor = ({
-  actionName,
-  toolResponse,
-}) => {
-  const responseData =
-    (toolResponse.data.response_data as Record<string, unknown>) || {};
-  const fileData = responseData.file as
-    | { name: string; content: string }
-    | undefined;
-
-  if (!fileData) return toolResponse;
-
-  const fileNamePrefix = `${actionName}_${Date.now()}`;
-  const filePath = saveFile(fileNamePrefix, fileData.content, true);
-
-  delete responseData.file;
-
-  return {
-    ...toolResponse,
-    data: {
-      ...toolResponse.data,
-      file_uri_path: filePath,
-    },
-  };
-};
-
-export const fileInputProcessor: TPreProcessor = async ({
+export const FILE_INPUT_PROCESSOR: TPreProcessor = async ({
   params,
   actionName,
 }) => {
-  const updatedParams = await FILE_UPLOADABLE_SCHEMA.deConvertValue(
-    params,
-    actionName
-  );
-
-  return updatedParams;
+  return processFileUpload(params, actionName);
 };
 
-export const fileSchemaProcessor: TSchemaProcessor = ({ toolSchema }) => {
-  const toolParameters = toolSchema.parameters;
-  const { properties } = toolParameters;
-  let { required: requiredProperties } = toolParameters;
+export const FILE_DOWNLOADABLE_PROCESSOR: TPostProcessor = async ({
+  actionName,
+  toolResponse,
+}) => {
+  const result = JSON.parse(JSON.stringify(toolResponse));
 
-  const clonedProperties = Object.assign({}, properties);
+  for (const [key, value] of Object.entries(toolResponse.data)) {
+    const fileData = value as { s3url?: string; mimetype?: string };
 
-  for (const originalKey of Object.keys(clonedProperties)) {
-    const property = clonedProperties[originalKey];
-    const file_uploadable = property.file_uploadable;
+    if (!fileData?.s3url) continue;
 
-    if (!file_uploadable) continue;
+    const downloadedFile = await downloadFileFromS3({
+      actionName,
+      s3Url: fileData.s3url,
+      mimeType: fileData.mimetype || "application/txt",
+    });
 
-    const { type, keyName, description } = FILE_UPLOADABLE_SCHEMA.converter(
-      originalKey,
-      property
+    result.data[key] = {
+      uri: downloadedFile.filePath,
+      mimeType: downloadedFile.mimeType,
+    };
+  }
+
+  return result;
+};
+
+export const FILE_SCHEMA_PROCESSOR: TSchemaProcessor = ({ toolSchema }) => {
+  const { properties, required: requiredProps = [] } = toolSchema.parameters;
+  const newProperties = { ...properties };
+  const newRequired = [...requiredProps];
+
+  for (const [key, property] of Object.entries(newProperties)) {
+    if (!property.file_uploadable) continue;
+
+    const { type, keyName, description } = convertFileSchemaProperty(
+      key,
+      property as FileBasePropertySchema
     );
 
-    clonedProperties[keyName as string] = {
+    newProperties[keyName as string] = {
       title: property.title,
       type,
       description,
     };
 
-    const isKeyPartOfRequired = requiredProperties.includes(originalKey);
-
-    // Remove the original key from required properties and add the new key
-    if (isKeyPartOfRequired) {
-      requiredProperties = requiredProperties.filter(
-        (property) => property !== originalKey
-      );
-      requiredProperties.push(keyName as string);
+    if (requiredProps.includes(key)) {
+      newRequired[newRequired.indexOf(key)] = keyName as string;
     }
 
-    // Remove the original key from the properties
-    delete clonedProperties[originalKey];
+    delete newProperties[key];
   }
 
-  const updatedToolSchema = {
+  return {
     ...toolSchema,
     parameters: {
       ...toolSchema.parameters,
-      properties: clonedProperties,
-      required: requiredProperties,
+      properties: newProperties,
+      required: newRequired,
     },
   };
-
-  return updatedToolSchema;
 };
