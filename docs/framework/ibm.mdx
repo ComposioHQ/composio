@@ -54,6 +54,8 @@ Prepare your environment by initializing necessary imports from Composio & IBM.
     import os
 
     os.environ['WATSONX_API_KEY'] = '<ibm_api_key>' #add your ibm api key here
+    if not os.environ.get('WATSONX_API_KEY'):
+        raise ValueError("WATSONX_API_KEY environment variable is not set")
     ```
 
 </CodeGroup>
@@ -89,12 +91,17 @@ This step involves configuring and executing the agent to carry out actions, suc
     "top_k": 50,
     "top_p": 1,
     }
-
+    url = input('Add your IBM Cloud URL here: ')
+    project_id = input('Add your IBM Project ID here: ')
     watsonx_llm = ChatWatsonx(
     model_id = 'ibm/granite-3-8b-instruct',
-    url = '', #add your ibm cloud url here
-    project_id = '', #add your ibm project id here
+    url = url, 
+    project_id = project_id,
     )   
+
+    if not url or not project_id:
+        raise ValueError("IBM Cloud URL and Project ID must be provided")
+
     llm_with_tools = watsonx_llm.bind_tools(tools)
 
     
