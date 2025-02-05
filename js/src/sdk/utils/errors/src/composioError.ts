@@ -83,7 +83,7 @@ export class ComposioError extends Error {
           `⛔ [Info] If you need to debug this error, set env variable COMPOSIO_LOGGING_LEVEL=debug`
         );
       }
-   }
+    }
 
     logError({
       error_id: this.errorId,

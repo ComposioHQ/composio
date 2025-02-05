@@ -169,7 +169,7 @@ export class ComposioToolSet {
       }
     }
 
-    const apps = await this.client.actions.list({
+    const appActions = await this.client.actions.list({
       apps: parsedFilters.apps?.join(","),
       tags: parsedFilters.tags?.join(","),
       useCase: parsedFilters.useCase,
@@ -191,7 +191,10 @@ export class ComposioToolSet {
       );
     });
 
-    const toolsActions = [...(apps?.items || []), ...toolsWithCustomActions];
+    const toolsActions = [
+      ...(appActions?.items || []),
+      ...toolsWithCustomActions,
+    ];
 
     const allSchemaProcessor = [
       ...this.internalProcessors.schema,

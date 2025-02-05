@@ -4,3715 +4,3809 @@
  * Team Member information
  */
 export type MemberInfoResDTO = {
-    /**
-     * The ID/UUID of the member.
-     */
-    id: string;
-    /**
-     * The ID/UUID of the organization to which the member belongs.
-     */
-    orgId: string;
-    /**
-     * The email address of the member.
-     */
-    email: string;
-    /**
-     * The name of the member.
-     */
-    name: string;
-    /**
-     * The role of the member.
-     */
-    role: 'admin' | 'developer';
-    /**
-     * The metadata of the member. This store some additional information about the member.
-     */
-    metadata?: {
-        [key: string]: unknown;
-    };
-    /**
-     * The date and time when the member was created.
-     */
-    createdAt: string;
-    /**
-     * The date and time when the member was last updated.
-     */
-    updatedAt: string;
-    /**
-     * The date and time when the member was deleted.
-     */
-    deletedAt?: string;
+  /**
+   * The ID/UUID of the member.
+   */
+  id: string;
+  /**
+   * The ID/UUID of the organization to which the member belongs.
+   */
+  orgId: string;
+  /**
+   * The email address of the member.
+   */
+  email: string;
+  /**
+   * The name of the member.
+   */
+  name: string;
+  /**
+   * The role of the member.
+   */
+  role: "admin" | "developer";
+  /**
+   * The metadata of the member. This store some additional information about the member.
+   */
+  metadata?: {
+    [key: string]: unknown;
+  };
+  /**
+   * The date and time when the member was created.
+   */
+  createdAt: string;
+  /**
+   * The date and time when the member was last updated.
+   */
+  updatedAt: string;
+  /**
+   * The date and time when the member was deleted.
+   */
+  deletedAt?: string;
 };
 
 /**
  * The role of the member.
  */
-export type role = 'admin' | 'developer';
+export type role = "admin" | "developer";
 
 export type HttpError = {
-    /**
-     * HTTP status code
-     */
-    status: number;
-    /**
-     * Error message
-     */
-    message: string;
-    /**
-     * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
-     */
-    requestId: string;
+  /**
+   * HTTP status code
+   */
+  status: number;
+  /**
+   * Error message
+   */
+  message: string;
+  /**
+   * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
+   */
+  requestId: string;
 };
 
 export type BadRequestError = {
-    /**
-     * Additional arguments that caused the error
-     */
-    details: {
-        [key: string]: unknown;
-    };
-    /**
-     * The type of error
-     */
-    type: 'BadRequestError';
-    /**
-     * HTTP status code
-     */
-    status: number;
-    /**
-     * Error message
-     */
-    message: string;
-    /**
-     * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
-     */
-    requestId: string;
+  /**
+   * Additional arguments that caused the error
+   */
+  details: {
+    [key: string]: unknown;
+  };
+  /**
+   * The type of error
+   */
+  type: "BadRequestError";
+  /**
+   * HTTP status code
+   */
+  status: number;
+  /**
+   * Error message
+   */
+  message: string;
+  /**
+   * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
+   */
+  requestId: string;
 };
 
 /**
  * The type of error
  */
-export type type = 'BadRequestError';
+export type type = "BadRequestError";
 
 export type InternalServerError = {
-    /**
-     * The type of error
-     */
-    type: 'InternalServerError';
-    /**
-     * HTTP status code
-     */
-    status: number;
-    /**
-     * Error message
-     */
-    message: string;
-    /**
-     * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
-     */
-    requestId: string;
+  /**
+   * The type of error
+   */
+  type: "InternalServerError";
+  /**
+   * HTTP status code
+   */
+  status: number;
+  /**
+   * Error message
+   */
+  message: string;
+  /**
+   * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
+   */
+  requestId: string;
 };
 
 /**
  * The type of error
  */
-export type type2 = 'InternalServerError';
+export type type2 = "InternalServerError";
 
 export type NotFoundError = {
-    /**
-     * The name of the operation that caused the error
-     */
-    type: 'NotFoundError';
-    /**
-     * HTTP status code
-     */
-    status: number;
-    /**
-     * Error message
-     */
-    message: string;
-    /**
-     * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
-     */
-    requestId: string;
+  /**
+   * The name of the operation that caused the error
+   */
+  type: "NotFoundError";
+  /**
+   * HTTP status code
+   */
+  status: number;
+  /**
+   * Error message
+   */
+  message: string;
+  /**
+   * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
+   */
+  requestId: string;
 };
 
 /**
  * The name of the operation that caused the error
  */
-export type type3 = 'NotFoundError';
+export type type3 = "NotFoundError";
 
 export type NotFoundPlusSuggestionsError = {
-    /**
-     * Suggestions for the user to fix the error
-     */
-    suggestions: Array<(string)>;
-    /**
-     * HTTP status code
-     */
-    status: number;
-    /**
-     * Error message
-     */
-    message: string;
-    /**
-     * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
-     */
-    requestId: string;
-    /**
-     * The name of the operation that caused the error
-     */
-    type: 'NotFoundError';
+  /**
+   * Suggestions for the user to fix the error
+   */
+  suggestions: Array<string>;
+  /**
+   * HTTP status code
+   */
+  status: number;
+  /**
+   * Error message
+   */
+  message: string;
+  /**
+   * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
+   */
+  requestId: string;
+  /**
+   * The name of the operation that caused the error
+   */
+  type: "NotFoundError";
 };
 
 export type AppNotFoundError = {
-    /**
-     * The error name
-     */
-    name: 'AppNotFoundError';
-    /**
-     * HTTP status code
-     */
-    status: number;
-    /**
-     * Error message
-     */
-    message: string;
-    /**
-     * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
-     */
-    requestId: string;
-    /**
-     * The name of the operation that caused the error
-     */
-    type: 'NotFoundError';
+  /**
+   * The error name
+   */
+  name: "AppNotFoundError";
+  /**
+   * HTTP status code
+   */
+  status: number;
+  /**
+   * Error message
+   */
+  message: string;
+  /**
+   * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
+   */
+  requestId: string;
+  /**
+   * The name of the operation that caused the error
+   */
+  type: "NotFoundError";
 };
 
 /**
  * The error name
  */
-export type name = 'AppNotFoundError';
+export type name = "AppNotFoundError";
 
 export type ProjectAlreadyExistsError = {
-    /**
-     * The error name
-     */
-    name: 'ProjectAlreadyExistsError';
-    /**
-     * HTTP status code
-     */
-    status: number;
-    /**
-     * Error message
-     */
-    message: string;
-    /**
-     * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
-     */
-    requestId: string;
-    /**
-     * Additional arguments that caused the error
-     */
-    details: {
-        [key: string]: unknown;
-    };
-    /**
-     * The type of error
-     */
-    type: 'BadRequestError';
+  /**
+   * The error name
+   */
+  name: "ProjectAlreadyExistsError";
+  /**
+   * HTTP status code
+   */
+  status: number;
+  /**
+   * Error message
+   */
+  message: string;
+  /**
+   * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
+   */
+  requestId: string;
+  /**
+   * Additional arguments that caused the error
+   */
+  details: {
+    [key: string]: unknown;
+  };
+  /**
+   * The type of error
+   */
+  type: "BadRequestError";
 };
 
 /**
  * The error name
  */
-export type name2 = 'ProjectAlreadyExistsError';
+export type name2 = "ProjectAlreadyExistsError";
 
 export type ProjectIdNotFoundError = {
-    /**
-     * The error name
-     */
-    name: 'ProjectNotFoundError';
-    /**
-     * HTTP status code
-     */
-    status: number;
-    /**
-     * Error message
-     */
-    message: string;
-    /**
-     * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
-     */
-    requestId: string;
-    /**
-     * Additional arguments that caused the error
-     */
-    details: {
-        [key: string]: unknown;
-    };
-    /**
-     * The type of error
-     */
-    type: 'BadRequestError';
+  /**
+   * The error name
+   */
+  name: "ProjectNotFoundError";
+  /**
+   * HTTP status code
+   */
+  status: number;
+  /**
+   * Error message
+   */
+  message: string;
+  /**
+   * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
+   */
+  requestId: string;
+  /**
+   * Additional arguments that caused the error
+   */
+  details: {
+    [key: string]: unknown;
+  };
+  /**
+   * The type of error
+   */
+  type: "BadRequestError";
 };
 
 /**
  * The error name
  */
-export type name3 = 'ProjectNotFoundError';
+export type name3 = "ProjectNotFoundError";
 
 export type ApiKeyNotFoundError = {
-    /**
-     * The error name
-     */
-    name: 'ApiKeyNotFoundError';
-    /**
-     * HTTP status code
-     */
-    status: number;
-    /**
-     * Error message
-     */
-    message: string;
-    /**
-     * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
-     */
-    requestId: string;
+  /**
+   * The error name
+   */
+  name: "ApiKeyNotFoundError";
+  /**
+   * HTTP status code
+   */
+  status: number;
+  /**
+   * Error message
+   */
+  message: string;
+  /**
+   * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
+   */
+  requestId: string;
 };
 
 /**
  * The error name
  */
-export type name4 = 'ApiKeyNotFoundError';
+export type name4 = "ApiKeyNotFoundError";
 
 export type DeleteFailedError = {
-    /**
-     * The error name
-     */
-    name: 'DeleteFailedError';
-    /**
-     * HTTP status code
-     */
-    status: number;
-    /**
-     * Error message
-     */
-    message: string;
-    /**
-     * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
-     */
-    requestId: string;
-    /**
-     * The type of error
-     */
-    type: 'InternalServerError';
+  /**
+   * The error name
+   */
+  name: "DeleteFailedError";
+  /**
+   * HTTP status code
+   */
+  status: number;
+  /**
+   * Error message
+   */
+  message: string;
+  /**
+   * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
+   */
+  requestId: string;
+  /**
+   * The type of error
+   */
+  type: "InternalServerError";
 };
 
 /**
  * The error name
  */
-export type name5 = 'DeleteFailedError';
+export type name5 = "DeleteFailedError";
 
 export type InvalidMagicLinkTokenError = {
-    /**
-     * The error name
-     */
-    name: 'InvalidMagicLinkTokenError';
-    /**
-     * HTTP status code
-     */
-    status: number;
-    /**
-     * Error message
-     */
-    message: string;
-    /**
-     * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
-     */
-    requestId: string;
-    /**
-     * Additional arguments that caused the error
-     */
-    details: {
-        [key: string]: unknown;
-    };
-    /**
-     * The type of error
-     */
-    type: 'BadRequestError';
+  /**
+   * The error name
+   */
+  name: "InvalidMagicLinkTokenError";
+  /**
+   * HTTP status code
+   */
+  status: number;
+  /**
+   * Error message
+   */
+  message: string;
+  /**
+   * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
+   */
+  requestId: string;
+  /**
+   * Additional arguments that caused the error
+   */
+  details: {
+    [key: string]: unknown;
+  };
+  /**
+   * The type of error
+   */
+  type: "BadRequestError";
 };
 
 /**
  * The error name
  */
-export type name6 = 'InvalidMagicLinkTokenError';
+export type name6 = "InvalidMagicLinkTokenError";
 
 export type UserAlreadyExistError = {
-    /**
-     * The error name
-     */
-    name: 'UserAlreadyExistError';
-    /**
-     * HTTP status code
-     */
-    status: number;
-    /**
-     * Error message
-     */
-    message: string;
-    /**
-     * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
-     */
-    requestId: string;
-    /**
-     * Additional arguments that caused the error
-     */
-    details: {
-        [key: string]: unknown;
-    };
-    /**
-     * The type of error
-     */
-    type: 'BadRequestError';
+  /**
+   * The error name
+   */
+  name: "UserAlreadyExistError";
+  /**
+   * HTTP status code
+   */
+  status: number;
+  /**
+   * Error message
+   */
+  message: string;
+  /**
+   * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
+   */
+  requestId: string;
+  /**
+   * Additional arguments that caused the error
+   */
+  details: {
+    [key: string]: unknown;
+  };
+  /**
+   * The type of error
+   */
+  type: "BadRequestError";
 };
 
 /**
  * The error name
  */
-export type name7 = 'UserAlreadyExistError';
+export type name7 = "UserAlreadyExistError";
 
 export type FetchTokenError = {
-    /**
-     * The error name
-     */
-    name: 'FetchTokenError';
-    /**
-     * HTTP status code
-     */
-    status: number;
-    /**
-     * Error message
-     */
-    message: string;
-    /**
-     * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
-     */
-    requestId: string;
+  /**
+   * The error name
+   */
+  name: "FetchTokenError";
+  /**
+   * HTTP status code
+   */
+  status: number;
+  /**
+   * Error message
+   */
+  message: string;
+  /**
+   * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
+   */
+  requestId: string;
 };
 
 /**
  * The error name
  */
-export type name8 = 'FetchTokenError';
+export type name8 = "FetchTokenError";
 
 export type MagicLinkResDTO = {
-    status: string;
+  status: string;
 };
 
 export type MagicLinkReqDTO = {
-    /**
-     * The email of the user
-     */
-    email: string;
-    /**
-     * The frontend host of the user
-     */
-    verifyHost: string;
+  /**
+   * The email of the user
+   */
+  email: string;
+  /**
+   * The frontend host of the user
+   */
+  verifyHost: string;
 };
 
 export type LogoutResDTO = {
-    /**
-     * Message confirming the logout
-     */
-    message: string;
+  /**
+   * Message confirming the logout
+   */
+  message: string;
 };
 
 export type VerifyMagicLinkReqDTO = {
-    /**
-     * The magic link token
-     */
-    token: string;
+  /**
+   * The magic link token
+   */
+  token: string;
 };
 
 /**
  * Data containing client and token information if verification is successful
  */
 export type VerifyMagicLinkDataDTO = {
-    clientId: string;
-    isValid: boolean;
-    jwtToken: string;
-    email: string;
+  clientId: string;
+  isValid: boolean;
+  jwtToken: string;
+  email: string;
 };
 
 export type VerifyMagicLinkResDTO = {
-    /**
-     * Message indicating the result of the verification
-     */
-    message: string;
-    data?: VerifyMagicLinkDataDTO;
+  /**
+   * Message indicating the result of the verification
+   */
+  message: string;
+  data?: VerifyMagicLinkDataDTO;
 };
 
 export type IdentifyClientReqDTO = {
-    /**
-     * The hash of the client
-     */
-    hash: string;
-    /**
-     * The framework used by the client
-     */
-    framework?: string;
+  /**
+   * The hash of the client
+   */
+  hash: string;
+  /**
+   * The framework used by the client
+   */
+  framework?: string;
 };
 
 export type IdentifyClientResDTO = {
-    /**
-     * The client ID
-     */
-    clientId: string;
-    /**
-     * The API key associated with the client
-     */
-    apiKey: string;
-    /**
-     * The email associated with the client
-     */
-    email: string;
-    /**
-     * The organization ID associated with the client
-     */
-    orgId: string;
+  /**
+   * The client ID
+   */
+  clientId: string;
+  /**
+   * The API key associated with the client
+   */
+  apiKey: string;
+  /**
+   * The email associated with the client
+   */
+  email: string;
+  /**
+   * The organization ID associated with the client
+   */
+  orgId: string;
 };
 
 /**
  * User Git information
  */
 export type UserGitUserInfo = {
-    name?: string;
-    email: string;
+  name?: string;
+  email: string;
 };
 
 export type TrackClientReqDTO = {
-    /**
-     * The framework used by the client
-     */
-    framework: string;
-    /**
-     * The MAC address of the client device
-     */
-    mac_address?: string;
-    user_git_user_info?: UserGitUserInfo;
+  /**
+   * The framework used by the client
+   */
+  framework: string;
+  /**
+   * The MAC address of the client device
+   */
+  mac_address?: string;
+  user_git_user_info?: UserGitUserInfo;
 };
 
 export type TrackClientResDTO = {
-    /**
-     * Message indicating the result of the tracking operation
-     */
-    message: string;
+  /**
+   * Message indicating the result of the tracking operation
+   */
+  message: string;
 };
 
 export type DeleteRowAPIDTO = {
-    /**
-     * Status of the delete operation
-     */
-    status: 'success' | 'failed';
-    /**
-     * Number of records deleted
-     */
-    count: number;
+  /**
+   * Status of the delete operation
+   */
+  status: "success" | "failed";
+  /**
+   * Number of records deleted
+   */
+  count: number;
 };
 
 /**
  * Status of the delete operation
  */
-export type status = 'success' | 'failed';
+export type status = "success" | "failed";
 
 /**
  * Client information
  */
 export type ClientDTO = {
-    /**
-     * Auto-generated ID of the client
-     */
-    autoId: number;
-    /**
-     * Unique ID of the client
-     */
-    id: string;
-    /**
-     * Name of the client
-     */
-    name: string;
-    /**
-     * Email of the client
-     */
-    email: string;
-    /**
-     * Creation timestamp
-     */
-    createdAt: string;
-    /**
-     * Last update timestamp
-     */
-    updatedAt: string;
-    /**
-     * API key for the client
-     */
-    apiKey?: string;
-    /**
-     * Webhook URL for the client
-     */
-    webhookURL?: string;
-    /**
-     * Event webhook URL for the client
-     */
-    eventWebhookURL?: string;
-    /**
-     * Secret for webhook authentication
-     */
-    webhookSecret?: string;
-    /**
-     * Whether triggers are enabled for the client
-     */
-    triggersEnabled: boolean;
-    /**
-     * Last subscription timestamp
-     */
-    lastSubscribedAt?: string;
-    /**
-     * Client's subscription plan
-     */
-    plan: string;
-    /**
-     * Whether to use new webhook format
-     */
-    isNewWebhook: boolean;
+  /**
+   * Auto-generated ID of the client
+   */
+  autoId: number;
+  /**
+   * Unique ID of the client
+   */
+  id: string;
+  /**
+   * Name of the client
+   */
+  name: string;
+  /**
+   * Email of the client
+   */
+  email: string;
+  /**
+   * Creation timestamp
+   */
+  createdAt: string;
+  /**
+   * Last update timestamp
+   */
+  updatedAt: string;
+  /**
+   * API key for the client
+   */
+  apiKey?: string;
+  /**
+   * Webhook URL for the client
+   */
+  webhookURL?: string;
+  /**
+   * Event webhook URL for the client
+   */
+  eventWebhookURL?: string;
+  /**
+   * Secret for webhook authentication
+   */
+  webhookSecret?: string;
+  /**
+   * Whether triggers are enabled for the client
+   */
+  triggersEnabled: boolean;
+  /**
+   * Last subscription timestamp
+   */
+  lastSubscribedAt?: string;
+  /**
+   * Client's subscription plan
+   */
+  plan: string;
+  /**
+   * Whether to use new webhook format
+   */
+  isNewWebhook: boolean;
 };
 
 export type Metadata = {
-    /**
-     * Indicates if the member has completed onboarding
-     */
-    has_completed_onboarding?: boolean;
+  /**
+   * Indicates if the member has completed onboarding
+   */
+  has_completed_onboarding?: boolean;
 };
 
 export type Member = {
-    /**
-     * Unique identifier for the member
-     */
-    id: string;
-    /**
-     * Organization ID associated with the member
-     */
-    orgId: string;
-    /**
-     * Name of the member
-     */
-    name: string;
-    /**
-     * Role of the member
-     */
-    role: string;
-    /**
-     * Creation timestamp of the member
-     */
-    createdAt: string;
-    /**
-     * Last update timestamp of the member
-     */
-    updatedAt: string;
-    /**
-     * Deletion timestamp of the member, if applicable
-     */
-    deletedAt?: string;
+  /**
+   * Unique identifier for the member
+   */
+  id: string;
+  /**
+   * Organization ID associated with the member
+   */
+  orgId: string;
+  /**
+   * Name of the member
+   */
+  name: string;
+  /**
+   * Role of the member
+   */
+  role: string;
+  /**
+   * Creation timestamp of the member
+   */
+  createdAt: string;
+  /**
+   * Last update timestamp of the member
+   */
+  updatedAt: string;
+  /**
+   * Deletion timestamp of the member, if applicable
+   */
+  deletedAt?: string;
 };
 
 export type ClientInfoAPIKeyResDTO = {
-    /**
-     * Unique identifier for the API key
-     */
-    id: string;
-    /**
-     * Name of the API key
-     */
-    name: string;
-    /**
-     * Client ID associated with the API key
-     */
-    clientId: string;
-    /**
-     * Member ID associated with the API key
-     */
-    memberId: string;
-    /**
-     * Creation timestamp of the API key
-     */
-    createdAt: string;
-    /**
-     * Last update timestamp of the API key
-     */
-    updatedAt: string;
-    /**
-     * Deletion timestamp of the API key, if applicable
-     */
-    deletedAt?: string;
-    /**
-     * Key value of the API key
-     */
-    key: string;
-    /**
-     * Member associated with the API key
-     */
-    member: Member;
-    /**
-     * Last used timestamp of the API key
-     */
-    lastUsed: string;
-    /**
-     * API key of the client
-     */
-    apiKey: string;
+  /**
+   * Unique identifier for the API key
+   */
+  id: string;
+  /**
+   * Name of the API key
+   */
+  name: string;
+  /**
+   * Client ID associated with the API key
+   */
+  clientId: string;
+  /**
+   * Member ID associated with the API key
+   */
+  memberId: string;
+  /**
+   * Creation timestamp of the API key
+   */
+  createdAt: string;
+  /**
+   * Last update timestamp of the API key
+   */
+  updatedAt: string;
+  /**
+   * Deletion timestamp of the API key, if applicable
+   */
+  deletedAt?: string;
+  /**
+   * Key value of the API key
+   */
+  key: string;
+  /**
+   * Member associated with the API key
+   */
+  member: Member;
+  /**
+   * Last used timestamp of the API key
+   */
+  lastUsed: string;
+  /**
+   * API key of the client
+   */
+  apiKey: string;
 };
 
 export type ClientInfoResDTO = {
-    client: ClientDTO;
-    /**
-     * API key of the client
-     */
-    apiKey: ClientInfoAPIKeyResDTO;
+  client: ClientDTO;
+  /**
+   * API key of the client
+   */
+  apiKey: ClientInfoAPIKeyResDTO;
 };
 
 export type ProjectReqDTO = {
-    /**
-     * The name of the project
-     */
-    name: string;
+  /**
+   * The name of the project
+   */
+  name: string;
 };
 
 export type ProjectDeleteReqDTO = {
-    /**
-     * The ID of the project to delete
-     */
-    projectId: string;
+  /**
+   * The ID of the project to delete
+   */
+  projectId: string;
 };
 
 /**
  * The list of projects
  */
 export type ProjectResDTO = {
-    /**
-     * The ID or UUID of the project
-     */
-    id: string;
-    /**
-     * The name of the project
-     */
-    name: string;
-    createdAt: string;
-    primaryApiKey: string;
+  /**
+   * The ID or UUID of the project
+   */
+  id: string;
+  /**
+   * The name of the project
+   */
+  name: string;
+  createdAt: string;
+  primaryApiKey: string;
 };
 
 export type ProjectListResDTO = {
-    items: Array<ProjectResDTO>;
+  items: Array<ProjectResDTO>;
 };
 
 export type OrgApiKeyResDTO = {
-    /**
-     * The api key for organisation operations. Can be passed in the header as 'X-Org-Api-Key'
-     */
-    apiKey: string;
+  /**
+   * The api key for organisation operations. Can be passed in the header as 'X-Org-Api-Key'
+   */
+  apiKey: string;
 };
 
 export type OrgApiKeyRegenerateResDTO = {
-    /**
-     * Api key for organisation operations. Can be passed in the header as 'X-Org-Api-Key'
-     */
-    newApiKey: string;
+  /**
+   * Api key for organisation operations. Can be passed in the header as 'X-Org-Api-Key'
+   */
+  newApiKey: string;
 };
 
 export type InviteMemberReqDTO = {
-    /**
-     * The email of the member
-     */
-    email: string;
-    /**
-     * The name of the member
-     */
-    name: string;
-    /**
-     * The host to verify the member
-     */
-    verifyHost: string;
-    /**
-     * The role that will be assignied to the invited user
-     */
-    role?: 'admin' | 'developer';
+  /**
+   * The email of the member
+   */
+  email: string;
+  /**
+   * The name of the member
+   */
+  name: string;
+  /**
+   * The host to verify the member
+   */
+  verifyHost: string;
+  /**
+   * The role that will be assignied to the invited user
+   */
+  role?: "admin" | "developer";
 };
 
 export type MemberResDTO = {
-    /**
-     * The email of the member
-     */
-    email: string;
-    /**
-     * The uuid identifier for the member
-     */
-    id: string;
-    /**
-     * The name of the member
-     */
-    name: string;
-    /**
-     * The creation date of the member record
-     */
-    createdAt?: string;
-    /**
-     * The role that is assigned to the member
-     */
-    role: 'admin' | 'developer';
-    /**
-     * The last update date of the member record
-     */
-    updatedAt?: string;
+  /**
+   * The email of the member
+   */
+  email: string;
+  /**
+   * The uuid identifier for the member
+   */
+  id: string;
+  /**
+   * The name of the member
+   */
+  name: string;
+  /**
+   * The creation date of the member record
+   */
+  createdAt?: string;
+  /**
+   * The role that is assigned to the member
+   */
+  role: "admin" | "developer";
+  /**
+   * The last update date of the member record
+   */
+  updatedAt?: string;
 };
 
 export type UpdateMemberReqDTO = {
-    /**
-     * The uuid identifier for the member
-     */
-    memberId: string;
-    /**
-     * The role that is assigned to the member
-     */
-    role: 'admin' | 'developer';
+  /**
+   * The uuid identifier for the member
+   */
+  memberId: string;
+  /**
+   * The role that is assigned to the member
+   */
+  role: "admin" | "developer";
 };
 
 export type GenerateAPIKeyReqDTO = {
-    /**
-     * The name of the API key to be generated
-     */
-    name: string;
+  /**
+   * The name of the API key to be generated
+   */
+  name: string;
 };
 
 export type APIKeyResDTO = {
-    /**
-     * The ID of the API key
-     */
-    id: string;
-    /**
-     * The name of the API key
-     */
-    name: string;
-    /**
-     * The creation date of the API key
-     */
-    createdAt: string;
-    /**
-     * The last update date of the API key
-     */
-    updatedAt: string;
-    /**
-     * The generated API key
-     */
-    key: string;
-    /**
-     * Whether the API key is hidden
-     */
-    isHidden: boolean;
-    /**
-     * The last used date of the API key
-     */
-    lastUsed?: string;
-    /**
-     * The member of the API key
-     */
-    member: {
-        [key: string]: unknown;
-    };
+  /**
+   * The ID of the API key
+   */
+  id: string;
+  /**
+   * The name of the API key
+   */
+  name: string;
+  /**
+   * The creation date of the API key
+   */
+  createdAt: string;
+  /**
+   * The last update date of the API key
+   */
+  updatedAt: string;
+  /**
+   * The generated API key
+   */
+  key: string;
+  /**
+   * Whether the API key is hidden
+   */
+  isHidden: boolean;
+  /**
+   * The last used date of the API key
+   */
+  lastUsed?: string;
+  /**
+   * The member of the API key
+   */
+  member: {
+    [key: string]: unknown;
+  };
 };
 
 export type DeleteAPIKeyReqDTO = {
-    /**
-     * The ID of the API key to be deleted
-     */
-    id: string;
+  /**
+   * The ID of the API key to be deleted
+   */
+  id: string;
 };
 
 export type DeleteAPIKeyResponseDTO = {
-    /**
-     * The status of the delete operation
-     */
-    deleted: boolean;
+  /**
+   * The status of the delete operation
+   */
+  deleted: boolean;
 };
 
 export type SingleAppInfoResDTO = {
-    /**
-     * Unique identifier (UUID) for the app
-     */
-    appId: string;
-    /**
-     * Unique key/slug used to identify the app in URLs and API calls.
-     */
-    key: string;
-    /**
-     * Human-readable display name of the app
-     */
-    name: string;
-    /**
-     * Short description about the app
-     */
-    description: string;
-    /**
-     * URL to the app's logo image, used for UI display
-     */
-    logo?: string;
-    /**
-     * The categories of the app
-     */
-    categories?: Array<(string)>;
-    /**
-     * The documentation URL of the app, if available. Usually it's a link to the doc to setup and configure the app.
-     */
-    docs?: string;
-    /**
-     * The configuration documentation text of the app. This is deprecated and not used anywhere.
-     * @deprecated
-     */
-    configuration_docs_text?: string;
-    /**
-     * The status of the app. This is deprecated and not used anymore.
-     * @deprecated
-     */
-    status?: string;
-    /**
-     * The documentation text of the app. This is deprecated and not used anywhere.
-     * @deprecated
-     */
-    documentation_doc_text?: string;
-    /**
-     * The test connectors available for the app. If this is not empty, it means composio allows you to setup this app without configuring and setting up your own auth app.
-     */
-    testConnectors?: Array<{
-        [key: string]: unknown;
-    }>;
-    /**
-     * Indicates if the app is of `no_auth` type. If this is true, you can directly use the app without creating any integration.
-     */
-    no_auth?: boolean;
-    /**
-     * The authentication schemes supported by the app. This contains all the fields and details needed to setup and configure auth for this app.
-     */
-    auth_schemes?: Array<{
-        [key: string]: unknown;
-    }>;
-    /**
-     * The metadata of the app
-     */
-    meta?: unknown;
+  /**
+   * Unique identifier (UUID) for the app
+   */
+  appId: string;
+  /**
+   * Unique key/slug used to identify the app in URLs and API calls.
+   */
+  key: string;
+  /**
+   * Human-readable display name of the app
+   */
+  name: string;
+  /**
+   * Short description about the app
+   */
+  description: string;
+  /**
+   * URL to the app's logo image, used for UI display
+   */
+  logo?: string;
+  /**
+   * The categories of the app
+   */
+  categories?: Array<string>;
+  /**
+   * The documentation URL of the app, if available. Usually it's a link to the doc to setup and configure the app.
+   */
+  docs?: string;
+  /**
+   * The configuration documentation text of the app. This is deprecated and not used anywhere.
+   * @deprecated
+   */
+  configuration_docs_text?: string;
+  /**
+   * The status of the app. This is deprecated and not used anymore.
+   * @deprecated
+   */
+  status?: string;
+  /**
+   * The documentation text of the app. This is deprecated and not used anywhere.
+   * @deprecated
+   */
+  documentation_doc_text?: string;
+  /**
+   * The test connectors available for the app. If this is not empty, it means composio allows you to setup this app without configuring and setting up your own auth app.
+   */
+  testConnectors?: Array<{
+    [key: string]: unknown;
+  }>;
+  /**
+   * Indicates if the app is of `no_auth` type. If this is true, you can directly use the app without creating any integration.
+   */
+  no_auth?: boolean;
+  /**
+   * The authentication schemes supported by the app. This contains all the fields and details needed to setup and configure auth for this app.
+   */
+  auth_schemes?: Array<{
+    [key: string]: unknown;
+  }>;
+  /**
+   * The metadata of the app
+   */
+  meta?: unknown;
 };
 
 export type AddToolsReqDTO = {
-    /**
-     * The unique identifier name of the tool to be added. Must be URL-friendly and unique across the system
-     */
-    name: string;
-    /**
-     * The complete OpenAPI/Swagger specification in YAML format defining the tool's API endpoints, parameters, and responses
-     */
-    openApiSpecYaml: string;
-    /**
-     * YAML configuration specifying integration details including authentication, endpoints mapping, and other tool-specific settings
-     */
-    integrationYaml: string;
+  /**
+   * The unique identifier name of the tool to be added. Must be URL-friendly and unique across the system
+   */
+  name: string;
+  /**
+   * The complete OpenAPI/Swagger specification in YAML format defining the tool's API endpoints, parameters, and responses
+   */
+  openApiSpecYaml: string;
+  /**
+   * YAML configuration specifying integration details including authentication, endpoints mapping, and other tool-specific settings
+   */
+  integrationYaml: string;
 };
 
 export type OpenAPISpecListResDTO = {
-    /**
-     * Unique identifier (UUID) for the OpenAPI specification
-     */
-    id: string;
-    /**
-     * Human-readable name of the OpenAPI specification. Used for display and reference purposes
-     */
-    name: string;
-    /**
-     * Unique identifier of the client who owns this OpenAPI specification
-     */
-    clientId: string;
-    /**
-     * ISO 8601 timestamp of when the specification was last synchronized with the source
-     */
-    lastSyncAt: string;
-    /**
-     * Creation date and time
-     */
-    createdAt: string;
-    /**
-     * Last update date and time
-     */
-    updatedAt: string;
-    /**
-     * Current processing status of the OpenAPI specification in the pipeline. Indicates success, failure, or processing state
-     */
-    status?: 'initialized' | 'running' | 'caching' | 'cancelled' | 'finished' | 'exited';
-    /**
-     * Current state of the app FSM
-     */
-    state?: 'preprocess' | 'validate' | 'prepare' | 'build' | 'push' | 'load' | 'finish';
+  /**
+   * Unique identifier (UUID) for the OpenAPI specification
+   */
+  id: string;
+  /**
+   * Human-readable name of the OpenAPI specification. Used for display and reference purposes
+   */
+  name: string;
+  /**
+   * Unique identifier of the client who owns this OpenAPI specification
+   */
+  clientId: string;
+  /**
+   * ISO 8601 timestamp of when the specification was last synchronized with the source
+   */
+  lastSyncAt: string;
+  /**
+   * Creation date and time
+   */
+  createdAt: string;
+  /**
+   * Last update date and time
+   */
+  updatedAt: string;
+  /**
+   * Current processing status of the OpenAPI specification in the pipeline. Indicates success, failure, or processing state
+   */
+  status?:
+    | "initialized"
+    | "running"
+    | "caching"
+    | "cancelled"
+    | "finished"
+    | "exited";
+  /**
+   * Current state of the app FSM
+   */
+  state?:
+    | "preprocess"
+    | "validate"
+    | "prepare"
+    | "build"
+    | "push"
+    | "load"
+    | "finish";
 };
 
 /**
  * Current processing status of the OpenAPI specification in the pipeline. Indicates success, failure, or processing state
  */
-export type status2 = 'initialized' | 'running' | 'caching' | 'cancelled' | 'finished' | 'exited';
+export type status2 =
+  | "initialized"
+  | "running"
+  | "caching"
+  | "cancelled"
+  | "finished"
+  | "exited";
 
 /**
  * Current state of the app FSM
  */
-export type state = 'preprocess' | 'validate' | 'prepare' | 'build' | 'push' | 'load' | 'finish';
+export type state =
+  | "preprocess"
+  | "validate"
+  | "prepare"
+  | "build"
+  | "push"
+  | "load"
+  | "finish";
 
 export type AddRepoURLResDTO = {
-    /**
-     * Repository URL
-     */
-    repoUrl: string;
+  /**
+   * Repository URL
+   */
+  repoUrl: string;
 };
 
 export type DeleteToolsReqDTO = {
-    /**
-     * Name of the tool
-     */
-    name: string;
+  /**
+   * Name of the tool
+   */
+  name: string;
 };
 
 export type DeleteToolsResDTO = {
-    /**
-     * Message indicating successful deletion of tools
-     */
-    message: string;
+  /**
+   * Message indicating successful deletion of tools
+   */
+  message: string;
 };
 
 export type AddToolsRequestDTO = {
-    /**
-     * The name of the tool
-     */
-    name: string;
-    /**
-     * The OpenAPI specification in YAML format
-     */
-    open_api_spec_yaml: string;
-    /**
-     * The integration details in YAML format
-     */
-    integration_yaml: string;
+  /**
+   * The name of the tool
+   */
+  name: string;
+  /**
+   * The OpenAPI specification in YAML format
+   */
+  open_api_spec_yaml: string;
+  /**
+   * The integration details in YAML format
+   */
+  integration_yaml: string;
 };
 
 export type AddRepoURLReqDTO = {
-    /**
-     * Repository URL
-     */
-    repoUrl: string;
+  /**
+   * Repository URL
+   */
+  repoUrl: string;
 };
 
 export type AppQueryDTO = {
-    /**
-     * Filter apps by category. Used to retrieve apps belonging to a specific group or type.
-     * To get a list of available categories, see the [Get App Categories](#operation/getAppCategories) endpoint.
-     */
-    category?: string;
-    /**
-     * Comma-separated list of additional fields to include in the response. Allows customizing the response payload for app details. Supported fields: auth_schemes
-     */
-    additionalFields?: string;
-    /**
-     * Filter to include locally developed/testing apps in the response. Must be 'true' or 'false'
-     */
-    includeLocal?: 'true' | 'false';
-    /**
-     * Sort the apps by usage or alphabetically
-     */
-    sortBy?: 'alphabet' | 'usage' | 'no_sort';
+  /**
+   * Filter apps by category. Used to retrieve apps belonging to a specific group or type.
+   * To get a list of available categories, see the [Get App Categories](#operation/getAppCategories) endpoint.
+   */
+  category?: string;
+  /**
+   * Comma-separated list of additional fields to include in the response. Allows customizing the response payload for app details. Supported fields: auth_schemes
+   */
+  additionalFields?: string;
+  /**
+   * Filter to include locally developed/testing apps in the response. Must be 'true' or 'false'
+   */
+  includeLocal?: "true" | "false";
+  /**
+   * Sort the apps by usage or alphabetically
+   */
+  sortBy?: "alphabet" | "usage" | "no_sort";
 };
 
 /**
  * Filter to include locally developed/testing apps in the response. Must be 'true' or 'false'
  */
-export type includeLocal = 'true' | 'false';
+export type includeLocal = "true" | "false";
 
 /**
  * Sort the apps by usage or alphabetically
  */
-export type sortBy = 'alphabet' | 'usage' | 'no_sort';
+export type sortBy = "alphabet" | "usage" | "no_sort";
 
 export type TestConnector = {
-    /**
-     * The id of the test connector
-     */
-    id: string;
-    /**
-     * The name of the test connector
-     */
-    name: string;
-    /**
-     * The auth scheme of the test connector
-     */
-    authScheme: 'OAUTH2' | 'OAUTH1' | 'OAUTH1A' | 'API_KEY' | 'BASIC' | 'BEARER_TOKEN' | 'GOOGLE_SERVICE_ACCOUNT' | 'NO_AUTH' | 'BASIC_WITH_JWT' | 'COMPOSIO_LINK' | 'CALCOM_AUTH';
+  /**
+   * The id of the test connector
+   */
+  id: string;
+  /**
+   * The name of the test connector
+   */
+  name: string;
+  /**
+   * The auth scheme of the test connector
+   */
+  authScheme:
+    | "OAUTH2"
+    | "OAUTH1"
+    | "OAUTH1A"
+    | "API_KEY"
+    | "BASIC"
+    | "BEARER_TOKEN"
+    | "GOOGLE_SERVICE_ACCOUNT"
+    | "NO_AUTH"
+    | "BASIC_WITH_JWT"
+    | "COMPOSIO_LINK"
+    | "CALCOM_AUTH";
 };
 
 /**
  * The auth scheme of the test connector
  */
-export type authScheme = 'OAUTH2' | 'OAUTH1' | 'OAUTH1A' | 'API_KEY' | 'BASIC' | 'BEARER_TOKEN' | 'GOOGLE_SERVICE_ACCOUNT' | 'NO_AUTH' | 'BASIC_WITH_JWT' | 'COMPOSIO_LINK' | 'CALCOM_AUTH';
+export type authScheme =
+  | "OAUTH2"
+  | "OAUTH1"
+  | "OAUTH1A"
+  | "API_KEY"
+  | "BASIC"
+  | "BEARER_TOKEN"
+  | "GOOGLE_SERVICE_ACCOUNT"
+  | "NO_AUTH"
+  | "BASIC_WITH_JWT"
+  | "COMPOSIO_LINK"
+  | "CALCOM_AUTH";
 
 export type AppInfoResponseDto = {
-    /**
-     * Unique identifier (UUID) for the app
-     */
-    appId: string;
-    /**
-     * Unique key/slug for the app, used in URLs and API references
-     */
-    key: string;
-    /**
-     * The name of the app
-     */
-    name: string;
-    /**
-     * The description of the app
-     */
-    description: string;
-    /**
-     * The logo of the app
-     */
-    logo: string;
-    /**
-     * The categories of the app
-     */
-    categories: string;
-    /**
-     * The tags of the app
-     */
-    tags?: string;
-    /**
-     * The authentication schemes of the app
-     */
-    auth_schemes?: unknown;
-    /**
-     * The authentication schemes of the app
-     */
-    testConnectors?: TestConnector;
-    /**
-     * Indicates if the app is enabled
-     */
-    enabled: boolean;
-    /**
-     * Indicates if the app has no authentication
-     */
-    no_auth?: boolean;
-    /**
-     * The creation date of the app
-     */
-    createdAt: string;
-    /**
-     * The last update date of the app
-     */
-    updatedAt: string;
+  /**
+   * Unique identifier (UUID) for the app
+   */
+  appId: string;
+  /**
+   * Unique key/slug for the app, used in URLs and API references
+   */
+  key: string;
+  /**
+   * The name of the app
+   */
+  name: string;
+  /**
+   * The description of the app
+   */
+  description: string;
+  /**
+   * The logo of the app
+   */
+  logo: string;
+  /**
+   * The categories of the app
+   */
+  categories: string;
+  /**
+   * The tags of the app
+   */
+  tags?: string;
+  /**
+   * The authentication schemes of the app
+   */
+  auth_schemes?: unknown;
+  /**
+   * The authentication schemes of the app
+   */
+  testConnectors?: TestConnector;
+  /**
+   * Indicates if the app is enabled
+   */
+  enabled: boolean;
+  /**
+   * Indicates if the app has no authentication
+   */
+  no_auth?: boolean;
+  /**
+   * The creation date of the app
+   */
+  createdAt: string;
+  /**
+   * The last update date of the app
+   */
+  updatedAt: string;
 };
 
 export type AppListCategoriesResDTO = {
-    /**
-     * List of app categories
-     */
-    items: Array<(string)>;
+  /**
+   * List of app categories
+   */
+  items: Array<string>;
 };
 
 export type AppListResDTO = {
-    /**
-     * List of app details
-     */
-    items: Array<AppInfoResponseDto>;
-    /**
-     * Total number of pages
-     */
-    totalPages: number;
+  /**
+   * List of app details
+   */
+  items: Array<AppInfoResponseDto>;
+  /**
+   * Total number of pages
+   */
+  totalPages: number;
 };
 
 export type ExpectedInputFieldsDTO = {
-    /**
-     * The unique identifier/key for this input field that will be used when submitting values. Must be URL-safe.
-     */
-    name: string;
-    /**
-     * The data type of this field. Common types include 'string', 'number', 'boolean', etc.
-     */
-    type: string;
-    /**
-     * Detailed explanation of what this field is used for and any special requirements or formatting needed.
-     */
-    description: string;
-    /**
-     * Human-readable label that will be shown to users when they need to input this field.
-     */
-    display_name: string;
-    /**
-     * Default value for this field if none is provided. Set to null if no default exists.
-     */
-    default: {
-        [key: string]: unknown;
-    };
-    /**
-     * Indicates if this field must be provided for the connector to function properly.
-     */
-    required: boolean;
-    /**
-     * Indicates if this field needs to be provided by the end user rather than being automatically populated.
-     */
-    expected_from_customer: boolean;
-    /**
-     * If true, this field contains sensitive information and should be handled securely (e.g. passwords, API keys).
-     */
-    is_secret: boolean;
+  /**
+   * The unique identifier/key for this input field that will be used when submitting values. Must be URL-safe.
+   */
+  name: string;
+  /**
+   * The data type of this field. Common types include 'string', 'number', 'boolean', etc.
+   */
+  type: string;
+  /**
+   * Detailed explanation of what this field is used for and any special requirements or formatting needed.
+   */
+  description: string;
+  /**
+   * Human-readable label that will be shown to users when they need to input this field.
+   */
+  display_name: string;
+  /**
+   * Default value for this field if none is provided. Set to null if no default exists.
+   */
+  default: {
+    [key: string]: unknown;
+  };
+  /**
+   * Indicates if this field must be provided for the connector to function properly.
+   */
+  required: boolean;
+  /**
+   * Indicates if this field needs to be provided by the end user rather than being automatically populated.
+   */
+  expected_from_customer: boolean;
+  /**
+   * If true, this field contains sensitive information and should be handled securely (e.g. passwords, API keys).
+   */
+  is_secret: boolean;
 };
 
 export type GetConnectorInfoResDTO = {
-    /**
-     * Unique identifier for the connector. You can use this ID when calling endpoints like `POST /api/v1/connectedAccounts` to create connections.
-     */
-    id?: string;
-    /**
-     * The authentication method used by this connector. Refer to the API documentation for supported authentication schemes.
-     */
-    authScheme?: string;
-    /**
-     * The display name of this specific connector configuration.
-     */
-    name?: string;
-    /**
-     * ISO 8601 timestamp of when this connector was created.
-     */
-    createdAt?: string;
-    /**
-     * ISO 8601 timestamp of when this connector was last modified.
-     */
-    updatedAt?: string;
-    /**
-     * Whether this connector is currently active and can be used to create new connections. Can be toggled using the connector management endpoints.
-     */
-    enabled: boolean;
-    /**
-     * Soft deletion status of the connector. If true, the connector has been marked for deletion but may still exist in the system.
-     */
-    deleted?: boolean;
-    /**
-     * The ID of the application this connector belongs to. You can find available apps using the `GET /api/v1/apps` endpoint.
-     */
-    appId: string;
-    /**
-     * If this is a custom connector, this field may reference the original template connector it was based on.
-     */
-    defaultConnectorId?: string;
-    /**
-     * Configuration object containing authentication settings. Sensitive values will be redacted. The structure varies based on the authScheme.
-     */
-    authConfig: {
-        [key: string]: unknown;
-    };
-    /**
-     * List of fields that need to be collected from users to set up a connection using this connector. These fields should be included when calling `POST /api/v1/connectedAccounts`.
-     */
-    expectedInputFields: Array<ExpectedInputFieldsDTO>;
-    /**
-     * URL to the application's logo image that can be displayed in the UI.
-     */
-    logo: string;
-    /**
-     * The name of the application this connector integrates with.
-     */
-    appName: string;
-    /**
-     * When true, indicates that this connector uses Composio's built-in authentication handling rather than custom authentication logic.
-     */
-    useComposioAuth: boolean;
-    /**
-     * Array of action strings that this connector is limited to.
-     */
-    limitedActions: Array<(string)>;
+  /**
+   * Unique identifier for the connector. You can use this ID when calling endpoints like `POST /api/v1/connectedAccounts` to create connections.
+   */
+  id?: string;
+  /**
+   * The authentication method used by this connector. Refer to the API documentation for supported authentication schemes.
+   */
+  authScheme?: string;
+  /**
+   * The display name of this specific connector configuration.
+   */
+  name?: string;
+  /**
+   * ISO 8601 timestamp of when this connector was created.
+   */
+  createdAt?: string;
+  /**
+   * ISO 8601 timestamp of when this connector was last modified.
+   */
+  updatedAt?: string;
+  /**
+   * Whether this connector is currently active and can be used to create new connections. Can be toggled using the connector management endpoints.
+   */
+  enabled: boolean;
+  /**
+   * Soft deletion status of the connector. If true, the connector has been marked for deletion but may still exist in the system.
+   */
+  deleted?: boolean;
+  /**
+   * The ID of the application this connector belongs to. You can find available apps using the `GET /api/v1/apps` endpoint.
+   */
+  appId: string;
+  /**
+   * If this is a custom connector, this field may reference the original template connector it was based on.
+   */
+  defaultConnectorId?: string;
+  /**
+   * Configuration object containing authentication settings. Sensitive values will be redacted. The structure varies based on the authScheme.
+   */
+  authConfig: {
+    [key: string]: unknown;
+  };
+  /**
+   * List of fields that need to be collected from users to set up a connection using this connector. These fields should be included when calling `POST /api/v1/connectedAccounts`.
+   */
+  expectedInputFields: Array<ExpectedInputFieldsDTO>;
+  /**
+   * URL to the application's logo image that can be displayed in the UI.
+   */
+  logo: string;
+  /**
+   * The name of the application this connector integrates with.
+   */
+  appName: string;
+  /**
+   * When true, indicates that this connector uses Composio's built-in authentication handling rather than custom authentication logic.
+   */
+  useComposioAuth: boolean;
+  /**
+   * Array of action strings that this connector is limited to.
+   */
+  limitedActions: Array<string>;
 };
 
 /**
  * Authentication configuration for the connector
  */
 export type AuthConfigDTO = {
-    /**
-     * List of OAuth scopes to request during the OAuth flow. These scopes determine what permissions the connector will have on the target service.
-     */
-    scopes?: Array<(string)>;
-    /**
-     * List of user-specific OAuth scopes to request during the OAuth flow. Some APIs differentiate between app-level and user-level scopes.
-     */
-    user_scopes?: Array<(string)>;
+  /**
+   * List of OAuth scopes to request during the OAuth flow. These scopes determine what permissions the connector will have on the target service.
+   */
+  scopes?: Array<string>;
+  /**
+   * List of user-specific OAuth scopes to request during the OAuth flow. Some APIs differentiate between app-level and user-level scopes.
+   */
+  user_scopes?: Array<string>;
 };
 
 export type CreateConnectorPayloadDTO = {
-    /**
-     * A unique name for your connector. This will be used to identify the connector in the system.
-     */
-    name: string;
-    /**
-     * The authentication scheme used by the connector. Refer to the `/api/v1/apps` endpoint to see supported authentication schemes for each app.
-     */
-    authScheme?: string;
-    /**
-     * Configuration options for authentication. Required when using OAuth-based authentication schemes.
-     */
-    authConfig?: AuthConfigDTO;
-    /**
-     * When set to true, the connector will use Composio's built-in authentication system. Learn more in the Authentication section of the API documentation.
-     */
-    useComposioAuth?: boolean;
-    /**
-     * UUID of the Composio app to use for authentication. You can get this from the `id` field in the response of the `GET /api/v1/apps` endpoint. Either specify this or appName.
-     */
-    appId?: string;
-    /**
-     * Name of the Composio app to use for authentication. You can get this from the `name` field in the response of the `GET /api/v1/apps` endpoint. Either specify this or appId.
-     */
-    appName?: string;
-    /**
-     * When set to true, creates a new integration even if one already exists for the given app. This is useful when you need multiple integrations with the same service.
-     */
-    forceNewIntegration?: boolean;
-    /**
-     * List of actions to limit the connector to. If not provided, all actions will be enabled.
-     */
-    limitedActions?: Array<(string)>;
+  /**
+   * A unique name for your connector. This will be used to identify the connector in the system.
+   */
+  name: string;
+  /**
+   * The authentication scheme used by the connector. Refer to the `/api/v1/apps` endpoint to see supported authentication schemes for each app.
+   */
+  authScheme?: string;
+  /**
+   * Configuration options for authentication. Required when using OAuth-based authentication schemes.
+   */
+  authConfig?: AuthConfigDTO;
+  /**
+   * When set to true, the connector will use Composio's built-in authentication system. Learn more in the Authentication section of the API documentation.
+   */
+  useComposioAuth?: boolean;
+  /**
+   * UUID of the Composio app to use for authentication. You can get this from the `id` field in the response of the `GET /api/v1/apps` endpoint. Either specify this or appName.
+   */
+  appId?: string;
+  /**
+   * Name of the Composio app to use for authentication. You can get this from the `name` field in the response of the `GET /api/v1/apps` endpoint. Either specify this or appId.
+   */
+  appName?: string;
+  /**
+   * When set to true, creates a new integration even if one already exists for the given app. This is useful when you need multiple integrations with the same service.
+   */
+  forceNewIntegration?: boolean;
+  /**
+   * List of actions to limit the connector to. If not provided, all actions will be enabled.
+   */
+  limitedActions?: Array<string>;
 };
 
 export type PatchConnectorReqDTO = {
-    /**
-     * Authentication configuration for the connector. This object contains the necessary credentials and settings required to authenticate with the external service. You can get the required configuration fields from the `GET /api/v1/connectors/{connectorId}/config` endpoint.
-     */
-    authConfig?: {
-        [key: string]: unknown;
-    };
-    /**
-     * A list of actions that are limited or restricted for the connector. This can be used to specify which actions the connector is allowed or not allowed to perform. The list of possible actions can be found in the API documentation.
-     */
-    limitedActions?: Array<(string)>;
-    /**
-     * Flag to indicate if the connector is enabled. When set to false, the connector will not process any requests. You can toggle this value to temporarily disable the connector without deleting it. Default value can be found in the `GET /api/v1/connectors/{connectorId}` endpoint response.
-     */
-    enabled?: boolean;
+  /**
+   * Authentication configuration for the connector. This object contains the necessary credentials and settings required to authenticate with the external service. You can get the required configuration fields from the `GET /api/v1/connectors/{connectorId}/config` endpoint.
+   */
+  authConfig?: {
+    [key: string]: unknown;
+  };
+  /**
+   * A list of actions that are limited or restricted for the connector. This can be used to specify which actions the connector is allowed or not allowed to perform. The list of possible actions can be found in the API documentation.
+   */
+  limitedActions?: Array<string>;
+  /**
+   * Flag to indicate if the connector is enabled. When set to false, the connector will not process any requests. You can toggle this value to temporarily disable the connector without deleting it. Default value can be found in the `GET /api/v1/connectors/{connectorId}` endpoint response.
+   */
+  enabled?: boolean;
 };
 
 export type PatchConnectorResDTO = {
-    /**
-     * Status of the patch operation. Returns 'success' when the connector is successfully updated. For detailed information about possible status values, refer to the API documentation at `PATCH /api/v1/connectors/{connectorId}`.
-     */
-    status: string;
+  /**
+   * Status of the patch operation. Returns 'success' when the connector is successfully updated. For detailed information about possible status values, refer to the API documentation at `PATCH /api/v1/connectors/{connectorId}`.
+   */
+  status: string;
 };
 
 /**
  * List of connectors with their details and associated connections
  */
 export type ConnectorListItemDTO = {
-    /**
-     * Name of the application associated with this connector. You can find this in the response of the `GET /api/v1/apps` endpoint.
-     */
-    appName: string;
-    /**
-     * Aggregate count of connections associated with this connector. This helps track how many connected accounts are using this connector configuration.
-     */
-    _count: {
-        [key: string]: unknown;
-    };
-    /**
-     * List of connections associated with this connector, including their IDs and request log counts. Each connection represents a unique connected account using this connector configuration.
-     */
-    connections: Array<{
-        [key: string]: unknown;
-    }>;
-    /**
-     * Unique identifier (UUID) of the connector. You can use this ID when calling endpoints like `GET /api/v1/connectors/{id}` or `PUT /api/v1/connectors/{id}`.
-     */
-    id: string;
-    member: MemberInfoResDTO;
-    /**
-     * Display name of the connector. This name is used to identify the connector in the UI and API responses.
-     */
-    name: string;
-    /**
-     * Authentication scheme used by this connector. Determines how authentication is handled for connected accounts. See the Authentication Schemes section in the API documentation for more details.
-     */
-    authScheme: string;
-    /**
-     * Timestamp when this connector was created. Returned in ISO 8601 format.
-     */
-    createdAt: string;
-    /**
-     * Timestamp when this connector was last updated. Returned in ISO 8601 format.
-     */
-    updatedAt: string;
-    /**
-     * Indicates whether the connector is currently enabled. Disabled connectors cannot be used to create new connections.
-     */
-    enabled: boolean;
-    /**
-     * Soft deletion flag for the connector. When true, the connector is marked as deleted but remains in the database. You can filter deleted connectors using the `includeDeleted` query parameter in list endpoints.
-     */
-    deleted?: boolean;
-    /**
-     * Unique identifier (UUID) of the app this connector belongs to. You can use this ID to fetch app details via the `GET /api/v1/apps/{id}` endpoint.
-     */
-    appId: string;
-    /**
-     * ID of the default connector configuration. When present, this indicates that this connector inherits settings from the specified default connector. You can manage default connectors via the `/api/v1/defaultConnectors` endpoints.
-     */
-    defaultConnectorId?: string;
+  /**
+   * Name of the application associated with this connector. You can find this in the response of the `GET /api/v1/apps` endpoint.
+   */
+  appName: string;
+  /**
+   * Aggregate count of connections associated with this connector. This helps track how many connected accounts are using this connector configuration.
+   */
+  _count: {
+    [key: string]: unknown;
+  };
+  /**
+   * List of connections associated with this connector, including their IDs and request log counts. Each connection represents a unique connected account using this connector configuration.
+   */
+  connections: Array<{
+    [key: string]: unknown;
+  }>;
+  /**
+   * Unique identifier (UUID) of the connector. You can use this ID when calling endpoints like `GET /api/v1/connectors/{id}` or `PUT /api/v1/connectors/{id}`.
+   */
+  id: string;
+  member: MemberInfoResDTO;
+  /**
+   * Display name of the connector. This name is used to identify the connector in the UI and API responses.
+   */
+  name: string;
+  /**
+   * Authentication scheme used by this connector. Determines how authentication is handled for connected accounts. See the Authentication Schemes section in the API documentation for more details.
+   */
+  authScheme: string;
+  /**
+   * Timestamp when this connector was created. Returned in ISO 8601 format.
+   */
+  createdAt: string;
+  /**
+   * Timestamp when this connector was last updated. Returned in ISO 8601 format.
+   */
+  updatedAt: string;
+  /**
+   * Indicates whether the connector is currently enabled. Disabled connectors cannot be used to create new connections.
+   */
+  enabled: boolean;
+  /**
+   * Soft deletion flag for the connector. When true, the connector is marked as deleted but remains in the database. You can filter deleted connectors using the `includeDeleted` query parameter in list endpoints.
+   */
+  deleted?: boolean;
+  /**
+   * Unique identifier (UUID) of the app this connector belongs to. You can use this ID to fetch app details via the `GET /api/v1/apps/{id}` endpoint.
+   */
+  appId: string;
+  /**
+   * ID of the default connector configuration. When present, this indicates that this connector inherits settings from the specified default connector. You can manage default connectors via the `/api/v1/defaultConnectors` endpoints.
+   */
+  defaultConnectorId?: string;
 };
 
 export type GetConnectorListResDTO = {
-    /**
-     * Array of connector items matching the query parameters. Each item contains detailed information about a connector and its associated connections.
-     */
-    items: Array<ConnectorListItemDTO>;
-    /**
-     * Total number of pages available based on the current page size. Use this for implementing pagination controls.
-     */
-    totalPages: number;
-    /**
-     * Current page number (1-based). You can request different pages using the `page` query parameter in the `GET /api/v1/connectors` endpoint.
-     */
-    page: number;
+  /**
+   * Array of connector items matching the query parameters. Each item contains detailed information about a connector and its associated connections.
+   */
+  items: Array<ConnectorListItemDTO>;
+  /**
+   * Total number of pages available based on the current page size. Use this for implementing pagination controls.
+   */
+  totalPages: number;
+  /**
+   * Current page number (1-based). You can request different pages using the `page` query parameter in the `GET /api/v1/connectors` endpoint.
+   */
+  page: number;
 };
 
 export type PageInfo = {
-    total: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 };
 
 export type ConnectionWithAppData = {
-    id: string;
-    integrationId: string;
-    clientUniqueUserId?: string;
-    status: string;
-    data?: {
-        [key: string]: unknown;
-    };
-    deleted?: boolean;
-    enabled?: boolean;
-    createdAt: string;
-    updatedAt: string;
-    appUniqueId: string;
-    appName: string;
-    logo?: string;
-    authConfig?: {
-        [key: string]: unknown;
-    };
-    member: {
-        [key: string]: unknown;
-    };
-    labels?: Array<(string)>;
+  id: string;
+  integrationId: string;
+  clientUniqueUserId?: string;
+  status: string;
+  data?: {
+    [key: string]: unknown;
+  };
+  deleted?: boolean;
+  enabled?: boolean;
+  createdAt: string;
+  updatedAt: string;
+  appUniqueId: string;
+  appName: string;
+  logo?: string;
+  authConfig?: {
+    [key: string]: unknown;
+  };
+  member: {
+    [key: string]: unknown;
+  };
+  labels?: Array<string>;
 };
 
 export type GetConnectionsResult = {
-    connections: Array<ConnectionWithAppData>;
-    pageInfo: PageInfo;
+  connections: Array<ConnectionWithAppData>;
+  pageInfo: PageInfo;
 };
 
 export type GetConnectionInfoParams = {
-    /**
-     * UUID of the connected account you want to get auth credentials for. You can get this from the `id` field in the response of the [/api/v1/connectedAccounts](/api-reference/connections/list-connections) endpoint.
-     */
-    connectedAccountId: string;
+  /**
+   * UUID of the connected account you want to get auth credentials for. You can get this from the `id` field in the response of the [/api/v1/connectedAccounts](/api-reference/connections/list-connections) endpoint.
+   */
+  connectedAccountId: string;
 };
 
 export type ConnectionParams = {
-    /**
-     * The ID of the integration this connection belongs to. You can get this from the [/api/v1/integrations](/api-reference/integrations/list-integrations) endpoint.
-     */
-    integrationId: string;
-    /**
-     * Additional parameters specific to this connection. Structure varies by integration type.
-     */
-    connectionParams?: {
-        [key: string]: unknown;
-    };
-    /**
-     * Flag indicating if this connection is currently disabled.
-     */
-    isDisabled: boolean;
-    /**
-     * Number of times this connection has been invoked/used.
-     */
-    invocationCount: number;
-    id: string;
-    clientUniqueUserId?: string;
-    status: string;
-    data?: {
-        [key: string]: unknown;
-    };
-    deleted?: boolean;
-    enabled?: boolean;
-    createdAt: string;
-    updatedAt: string;
-    appUniqueId: string;
-    appName: string;
-    logo?: string;
-    authConfig?: {
-        [key: string]: unknown;
-    };
-    member: {
-        [key: string]: unknown;
-    };
-    labels?: Array<(string)>;
+  /**
+   * The ID of the integration this connection belongs to. You can get this from the [/api/v1/integrations](/api-reference/integrations/list-integrations) endpoint.
+   */
+  integrationId: string;
+  /**
+   * Additional parameters specific to this connection. Structure varies by integration type.
+   */
+  connectionParams?: {
+    [key: string]: unknown;
+  };
+  /**
+   * Flag indicating if this connection is currently disabled.
+   */
+  isDisabled: boolean;
+  /**
+   * Number of times this connection has been invoked/used.
+   */
+  invocationCount: number;
+  id: string;
+  clientUniqueUserId?: string;
+  status: string;
+  data?: {
+    [key: string]: unknown;
+  };
+  deleted?: boolean;
+  enabled?: boolean;
+  createdAt: string;
+  updatedAt: string;
+  appUniqueId: string;
+  appName: string;
+  logo?: string;
+  authConfig?: {
+    [key: string]: unknown;
+  };
+  member: {
+    [key: string]: unknown;
+  };
+  labels?: Array<string>;
 };
 
 export type ToggleConnectedAccountResponseDTO = {
-    /**
-     * The status of the toggle operation ('success' or 'failed').
-     */
-    status: string;
+  /**
+   * The status of the toggle operation ('success' or 'failed').
+   */
+  status: string;
 };
 
 /**
  * Headers to be included in API requests.
  */
 export type ConnectionParamsHeaders = {
-    /**
-     * Authorization header value used for API requests.
-     */
-    Authorization?: string;
-    /**
-     * Request ID header for tracing API calls.
-     */
-    'x-request-id'?: string;
+  /**
+   * Authorization header value used for API requests.
+   */
+  Authorization?: string;
+  /**
+   * Request ID header for tracing API calls.
+   */
+  "x-request-id"?: string;
 };
 
 export type ConnectionParamsForAccount = {
-    /**
-     * OAuth scope for the connection.
-     */
-    scope?: string;
-    /**
-     * Space-separated OAuth scopes for the connection.
-     */
-    scopes?: string;
-    /**
-     * OAuth ID token for authentication.
-     */
-    id_token?: string;
-    /**
-     * OAuth client ID for the application.
-     */
-    client_id?: string;
-    /**
-     * Token expiration time in seconds.
-     */
-    expires_in?: string;
-    /**
-     * Type of OAuth token (e.g. 'Bearer').
-     */
-    token_type?: string;
-    /**
-     * OAuth callback URL for the connection.
-     */
-    callback_url?: string;
-    /**
-     * OAuth client secret for the application.
-     */
-    client_secret?: string;
-    /**
-     * PKCE code verifier used in OAuth flow.
-     */
-    code_verifier?: string;
-    /**
-     * OAuth refresh token for obtaining new access tokens.
-     */
-    refresh_token?: string;
-    headers?: {
-        [key: string]: unknown;
-    };
-    /**
-     * Query parameters to be included in API requests.
-     */
-    queryParams?: {
-        [key: string]: unknown;
-    };
-    /**
-     * Base URL for API requests to the connected service.
-     */
-    base_url?: string;
+  /**
+   * OAuth scope for the connection.
+   */
+  scope?: string;
+  /**
+   * Space-separated OAuth scopes for the connection.
+   */
+  scopes?: string;
+  /**
+   * OAuth ID token for authentication.
+   */
+  id_token?: string;
+  /**
+   * OAuth client ID for the application.
+   */
+  client_id?: string;
+  /**
+   * Token expiration time in seconds.
+   */
+  expires_in?: string;
+  /**
+   * Type of OAuth token (e.g. 'Bearer').
+   */
+  token_type?: string;
+  /**
+   * OAuth callback URL for the connection.
+   */
+  callback_url?: string;
+  /**
+   * OAuth client secret for the application.
+   */
+  client_secret?: string;
+  /**
+   * PKCE code verifier used in OAuth flow.
+   */
+  code_verifier?: string;
+  /**
+   * OAuth refresh token for obtaining new access tokens.
+   */
+  refresh_token?: string;
+  headers?: {
+    [key: string]: unknown;
+  };
+  /**
+   * Query parameters to be included in API requests.
+   */
+  queryParams?: {
+    [key: string]: unknown;
+  };
+  /**
+   * Base URL for API requests to the connected service.
+   */
+  base_url?: string;
 };
 
 /**
  * Additional information related to the app.
  */
 export type MetaApp = {
-    /**
-     * Endpoint URL to fetch current user information from the connected service.
-     */
-    get_current_user_endpoint: string;
+  /**
+   * Endpoint URL to fetch current user information from the connected service.
+   */
+  get_current_user_endpoint: string;
 };
 
 /**
  * Additional information related to the connected account.
  */
 export type Meta = {
-    /**
-     * App-specific metadata.
-     */
-    app: {
-        [key: string]: unknown;
-    };
+  /**
+   * App-specific metadata.
+   */
+  app: {
+    [key: string]: unknown;
+  };
 };
 
 export type ConnectedAccountResponseDTO = {
-    /**
-     * The ID of the integration to which the connected account belongs. You can get this from the [/api/v1/integrations](/api-reference/integrations/list-integrations) endpoint.
-     */
-    integrationId: string;
-    /**
-     * The unique ID of the app to which the connected account belongs. To get the full app info, you can use the [/api/v1/apps](/api-reference/apps/get-single-app) endpoint.
-     */
-    appUniqueId: string;
-    memberInfo?: MemberInfoResDTO;
-    meta?: Meta;
-    /**
-     * Flag to indicate if the connected account is disabled. If this is true, the connected account will not be able to be used for any actions.
-     */
-    isDisabled?: boolean;
-    /**
-     * The unique identifier for this connected account.
-     */
-    id: string;
-    /**
-     * The entityId to which the connected account belongs. **Deprecated: ** Please use the `entityId` field instead.
-     * @deprecated
-     */
-    clientUniqueUserId: string;
-    /**
-     * The name of the app this account is connected to. You can get the list of available apps from the [/api/v1/apps](/api-reference/apps/list-apps) endpoint.
-     */
-    appName: string;
-    /**
-     * The entity ID associated with the connection. Learn more about entities [here](https://docs.composio.dev/patterns/Auth/connected_account#entities).
-     */
-    entityId: string;
-    /**
-     * The current status of the connection (e.g. 'active', 'inactive', 'pending').
-     */
-    status: 'INITIATED' | 'ACTIVE' | 'FAILED' | 'EXPIRED';
-    /**
-     * Flag to indicate if the connected account is enabled. This will be true if the connected account is active and can be used to perform actions.
-     */
-    enabled?: boolean;
-    /**
-     * The date and time when the connected account was created.
-     */
-    createdAt: string;
-    /**
-     * The date and time when the connected account was last updated.
-     */
-    updatedAt: string;
+  /**
+   * The ID of the integration to which the connected account belongs. You can get this from the [/api/v1/integrations](/api-reference/integrations/list-integrations) endpoint.
+   */
+  integrationId: string;
+  /**
+   * The unique ID of the app to which the connected account belongs. To get the full app info, you can use the [/api/v1/apps](/api-reference/apps/get-single-app) endpoint.
+   */
+  appUniqueId: string;
+  memberInfo?: MemberInfoResDTO;
+  meta?: Meta;
+  /**
+   * Flag to indicate if the connected account is disabled. If this is true, the connected account will not be able to be used for any actions.
+   */
+  isDisabled?: boolean;
+  /**
+   * The unique identifier for this connected account.
+   */
+  id: string;
+  /**
+   * The entityId to which the connected account belongs. **Deprecated: ** Please use the `entityId` field instead.
+   * @deprecated
+   */
+  clientUniqueUserId: string;
+  /**
+   * The name of the app this account is connected to. You can get the list of available apps from the [/api/v1/apps](/api-reference/apps/list-apps) endpoint.
+   */
+  appName: string;
+  /**
+   * The entity ID associated with the connection. Learn more about entities [here](https://docs.composio.dev/patterns/Auth/connected_account#entities).
+   */
+  entityId: string;
+  /**
+   * The current status of the connection (e.g. 'active', 'inactive', 'pending').
+   */
+  status: "INITIATED" | "ACTIVE" | "FAILED" | "EXPIRED";
+  /**
+   * Flag to indicate if the connected account is enabled. This will be true if the connected account is active and can be used to perform actions.
+   */
+  enabled?: boolean;
+  /**
+   * The date and time when the connected account was created.
+   */
+  createdAt: string;
+  /**
+   * The date and time when the connected account was last updated.
+   */
+  updatedAt: string;
 };
 
 /**
  * The current status of the connection (e.g. 'active', 'inactive', 'pending').
  */
-export type status3 = 'INITIATED' | 'ACTIVE' | 'FAILED' | 'EXPIRED';
+export type status3 = "INITIATED" | "ACTIVE" | "FAILED" | "EXPIRED";
 
 export type GetConnectionsResponseDto = {
-    /**
-     * Array of connection objects matching the query parameters.
-     */
-    items: Array<ConnectionParams>;
-    /**
-     * Total number of pages available based on the pageSize.
-     */
-    totalPages: number;
-    /**
-     * Current page number in the pagination.
-     */
-    page: number;
+  /**
+   * Array of connection objects matching the query parameters.
+   */
+  items: Array<ConnectionParams>;
+  /**
+   * Total number of pages available based on the pageSize.
+   */
+  totalPages: number;
+  /**
+   * Current page number in the pagination.
+   */
+  page: number;
 };
 
 export type GetConnectionInfoResponseDTO = {
-    /**
-     * The base URL of the connection. This is the starting part (or base part) of the URL that you need to send requests to. This is especially useful when you are working with apps that have dynamic urls (based on connection params) like Shopify.
-     */
-    base_url: string;
-    parameters: Array<Parameter>;
-    /**
-     * The body params to send with the request. Some apps require this to be sent in the body of the request for authentication.
-     */
-    body: {
-        [key: string]: unknown;
-    };
+  /**
+   * The base URL of the connection. This is the starting part (or base part) of the URL that you need to send requests to. This is especially useful when you are working with apps that have dynamic urls (based on connection params) like Shopify.
+   */
+  base_url: string;
+  parameters: Array<Parameter>;
+  /**
+   * The body params to send with the request. Some apps require this to be sent in the body of the request for authentication.
+   */
+  body: {
+    [key: string]: unknown;
+  };
 };
 
 /**
  * The parameters to send with the request. This contains all the headers, query params, etc. that are required to make requests to the third-party service directly.
  */
 export type Parameter = {
-    /**
-     * The name of the parameter. For example, 'x-api-key', 'Content-Type', etc.
-     */
-    name: string;
-    /**
-     * The location of the parameter. Can be 'query' or 'header'.
-     */
-    in: 'query' | 'header';
-    /**
-     * The value of the parameter. For example, '1234567890', 'application/json', etc.
-     */
-    value: string;
+  /**
+   * The name of the parameter. For example, 'x-api-key', 'Content-Type', etc.
+   */
+  name: string;
+  /**
+   * The location of the parameter. Can be 'query' or 'header'.
+   */
+  in: "query" | "header";
+  /**
+   * The value of the parameter. For example, '1234567890', 'application/json', etc.
+   */
+  value: string;
 };
 
 export type Data = {
-    /**
-     * First field of the data object.
-     */
-    field1: string;
-    /**
-     * Second field of the data object.
-     */
-    field2: string;
+  /**
+   * First field of the data object.
+   */
+  field1: string;
+  /**
+   * Second field of the data object.
+   */
+  field2: string;
 };
 
 export type AdditionalInfo = {
-    /**
-     * Metadata information.
-     */
-    meta: string;
+  /**
+   * Metadata information.
+   */
+  meta: string;
 };
 
 export type GetConnectionsQueryDto = {
-    /**
-     * The page number for pagination. Defaults to 1 if not specified.
-     */
-    page?: number;
-    /**
-     * The number of items per page for pagination. Defaults to 99999999 if not specified - this is a temporary fix to support backward compatibility issues. Please specify this value to avoid fetching all connections at once.
-     */
-    pageSize?: number;
-    /**
-     * Comma-separated list of app names to filter connections by. You can get the app names from the [/api/v1/apps](/api-reference/apps/list-apps) endpoint.
-     */
-    appNames?: string;
-    /**
-     * Comma-separated list of labels to filter connections by.
-     */
-    labels?: string;
-    /**
-     * Flag to show only active connections. Defaults to false if not specified.
-     */
-    showActiveOnly?: boolean;
-    /**
-     * Comma-separated list of connection statuses to filter by. The statuses are 'ACTIVE', 'EXPIRED', 'FAILED', 'INITIATED'.
-     */
-    status?: string;
-    /**
-     * The ID/UUID of the integration to filter connections by. You can get the integration ID from the [/api/v1/integrations](/api-reference/integrations/list-integrations) endpoint.
-     */
-    integrationId?: string;
-    /**
-     * UUID of the connected account you want to get auth credentials for. You can get this from the `id` field in the response of the [/api/v1/connectedAccounts](/api-reference/connections/list-connections) endpoint.
-     */
-    connectionId?: string;
-    /**
-     * Comma-separated list of entity IDs to filter connections by. This field is deprecated - please use entityId instead.
-     * @deprecated
-     */
-    user_uuid?: string;
-    /**
-     * Comma-separated list of entity ids of the user to filter connections by. Learn more about entities [here](https://docs.composio.dev/patterns/Auth/connected_account#entities).
-     */
-    entityId?: string;
-    /**
-     * Flag to include disabled connections in the results. Defaults to false if not specified.
-     */
-    showDisabled?: boolean;
+  /**
+   * The page number for pagination. Defaults to 1 if not specified.
+   */
+  page?: number;
+  /**
+   * The number of items per page for pagination. Defaults to 99999999 if not specified - this is a temporary fix to support backward compatibility issues. Please specify this value to avoid fetching all connections at once.
+   */
+  pageSize?: number;
+  /**
+   * Comma-separated list of app names to filter connections by. You can get the app names from the [/api/v1/apps](/api-reference/apps/list-apps) endpoint.
+   */
+  appNames?: string;
+  /**
+   * Comma-separated list of labels to filter connections by.
+   */
+  labels?: string;
+  /**
+   * Flag to show only active connections. Defaults to false if not specified.
+   */
+  showActiveOnly?: boolean;
+  /**
+   * Comma-separated list of connection statuses to filter by. The statuses are 'ACTIVE', 'EXPIRED', 'FAILED', 'INITIATED'.
+   */
+  status?: string;
+  /**
+   * The ID/UUID of the integration to filter connections by. You can get the integration ID from the [/api/v1/integrations](/api-reference/integrations/list-integrations) endpoint.
+   */
+  integrationId?: string;
+  /**
+   * UUID of the connected account you want to get auth credentials for. You can get this from the `id` field in the response of the [/api/v1/connectedAccounts](/api-reference/connections/list-connections) endpoint.
+   */
+  connectionId?: string;
+  /**
+   * Comma-separated list of entity IDs to filter connections by. This field is deprecated - please use entityId instead.
+   * @deprecated
+   */
+  user_uuid?: string;
+  /**
+   * Comma-separated list of entity ids of the user to filter connections by. Learn more about entities [here](https://docs.composio.dev/patterns/Auth/connected_account#entities).
+   */
+  entityId?: string;
+  /**
+   * Flag to include disabled connections in the results. Defaults to false if not specified.
+   */
+  showDisabled?: boolean;
 };
 
 export type GetSingleConnectionRequestDTO = {
-    /**
-     * The ID of the connected account to get details for. You can get this from the `id` field in the response of the [/api/v1/connectedAccounts](/api-reference/connections/list-connections) endpoint.
-     */
-    connectedAccountId: string;
+  /**
+   * The ID of the connected account to get details for. You can get this from the `id` field in the response of the [/api/v1/connectedAccounts](/api-reference/connections/list-connections) endpoint.
+   */
+  connectedAccountId: string;
 };
 
 export type GetConnectionsHeaderParamsDTO = {
-    /**
-     * The ID of the project to get the connections for. Defaults to the first project in the list of projects. You can get the project ID from the [/api/v1/projects](/api-reference/client/get-projects) endpoint.
-     */
-    'x-project-id'?: string;
+  /**
+   * The ID of the project to get the connections for. Defaults to the first project in the list of projects. You can get the project ID from the [/api/v1/projects](/api-reference/client/get-projects) endpoint.
+   */
+  "x-project-id"?: string;
 };
 
 export type InitiateConnectionPayloadDto = {
-    /**
-     * The data required to initiate a connection. Structure varies by integration type.
-     */
-    data: {
-        [key: string]: unknown;
-    };
-    /**
-     * The ID of the integration for which the connection is being initiated. You can get this from the [/api/v1/integrations](/api-reference/integrations/list-integrations) endpoint.
-     */
-    integrationId: string;
-    /**
-     * The URL to redirect to after the connection is successfully initiated.
-     */
-    redirectUri?: string;
-    /**
-     * Deprecated: UUID of the user initiating the connection.
-     */
-    userUuid?: string;
-    /**
-     * The entity ID to associate with the connection. Learn more about entities [here](https://docs.composio.dev/patterns/Auth/connected_account#entities).
-     */
-    entityId?: string;
-    /**
-     * Array of labels to associate with the connection for organization and filtering.
-     */
-    labels?: Array<(string)>;
+  /**
+   * The data required to initiate a connection. Structure varies by integration type.
+   */
+  data: {
+    [key: string]: unknown;
+  };
+  /**
+   * The ID of the integration for which the connection is being initiated. You can get this from the [/api/v1/integrations](/api-reference/integrations/list-integrations) endpoint.
+   */
+  integrationId: string;
+  /**
+   * The URL to redirect to after the connection is successfully initiated.
+   */
+  redirectUri?: string;
+  /**
+   * Deprecated: UUID of the user initiating the connection.
+   */
+  userUuid?: string;
+  /**
+   * The entity ID to associate with the connection. Learn more about entities [here](https://docs.composio.dev/patterns/Auth/connected_account#entities).
+   */
+  entityId?: string;
+  /**
+   * Array of labels to associate with the connection for organization and filtering.
+   */
+  labels?: Array<string>;
 };
 
 export type ReinitiateConnectionPayloadDto = {
-    /**
-     * The data required to initiate a connection. Structure varies by integration type.
-     */
-    data: {
-        [key: string]: unknown;
-    };
-    /**
-     * The URL to redirect to after the connection is successfully initiated.
-     */
-    redirectUri?: string;
+  /**
+   * The data required to initiate a connection. Structure varies by integration type.
+   */
+  data: {
+    [key: string]: unknown;
+  };
+  /**
+   * The URL to redirect to after the connection is successfully initiated.
+   */
+  redirectUri?: string;
 };
 
 export type UpdateConnectionLabelsPayloadDto = {
-    /**
-     * Array of new labels to assign to the connection.
-     */
-    labels: Array<(string)>;
+  /**
+   * Array of new labels to assign to the connection.
+   */
+  labels: Array<string>;
 };
 
 export type InitiateConnectionResponse = {
-    /**
-     * The current status of the initiated connection.
-     */
-    connectionStatus: string;
-    /**
-     * The ID of the newly created connected account.
-     */
-    connectedAccountId: string;
-    /**
-     * URL to redirect to for completing the connection process, if required.
-     */
-    redirectUrl?: string;
+  /**
+   * The current status of the initiated connection.
+   */
+  connectionStatus: string;
+  /**
+   * The ID of the newly created connected account.
+   */
+  connectedAccountId: string;
+  /**
+   * URL to redirect to for completing the connection process, if required.
+   */
+  redirectUrl?: string;
 };
 
 export type ConnectedAccountNotFoundError = {
-    /**
-     * The name of the error
-     */
-    name: 'ConnectedAccountNotFoundError';
-    /**
-     * HTTP status code
-     */
-    status: number;
-    /**
-     * Error message
-     */
-    message: string;
-    /**
-     * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
-     */
-    requestId: string;
-    /**
-     * The name of the operation that caused the error
-     */
-    type: 'NotFoundError';
+  /**
+   * The name of the error
+   */
+  name: "ConnectedAccountNotFoundError";
+  /**
+   * HTTP status code
+   */
+  status: number;
+  /**
+   * Error message
+   */
+  message: string;
+  /**
+   * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
+   */
+  requestId: string;
+  /**
+   * The name of the operation that caused the error
+   */
+  type: "NotFoundError";
 };
 
 /**
  * The name of the error
  */
-export type name9 = 'ConnectedAccountNotFoundError';
+export type name9 = "ConnectedAccountNotFoundError";
 
 export type ListTriggersQueryDTO = {
-    /**
-     * Comma-separated list of app names to filter connections by. You can get the app names from the `name` field in the response of the `GET /api/v1/apps` endpoint.
-     */
-    appNames?: string;
-    /**
-     * Comma-separated list of connected account IDs to filter triggers by. Returns all the possible triggers you can setup for these connected accounts. You can get the connected account IDs from the `id` field in the response of the `GET /api/v1/connections` endpoint.
-     */
-    connectedAccountIds?: string;
-    /**
-     * (Deprecated) Please use `triggerNames` instead. Comma-separated list of trigger names to filter triggers by. You can get the trigger names from the `name` field in the response of the `GET /api/v1/triggers` endpoint.
-     * @deprecated
-     */
-    triggerIds?: string;
-    /**
-     * Comma-separated list of trigger names to filter triggers by. You can get the trigger names from the `name` field in the response of the `GET /api/v1/triggers` endpoint.
-     */
-    triggerNames?: string;
-    /**
-     * Comma-separated list of integration IDs to filter triggers by. You can get the integration IDs from the `id` field in the response of the `GET /api/v1/integrations` endpoint.
-     */
-    integrationIds?: string;
-    /**
-     * When set to true, returns only enabled triggers. This field is deprecated and will be removed in future versions.
-     * @deprecated
-     */
-    showEnabledOnly?: boolean;
+  /**
+   * Comma-separated list of app names to filter connections by. You can get the app names from the `name` field in the response of the `GET /api/v1/apps` endpoint.
+   */
+  appNames?: string;
+  /**
+   * Comma-separated list of connected account IDs to filter triggers by. Returns all the possible triggers you can setup for these connected accounts. You can get the connected account IDs from the `id` field in the response of the `GET /api/v1/connections` endpoint.
+   */
+  connectedAccountIds?: string;
+  /**
+   * (Deprecated) Please use `triggerNames` instead. Comma-separated list of trigger names to filter triggers by. You can get the trigger names from the `name` field in the response of the `GET /api/v1/triggers` endpoint.
+   * @deprecated
+   */
+  triggerIds?: string;
+  /**
+   * Comma-separated list of trigger names to filter triggers by. You can get the trigger names from the `name` field in the response of the `GET /api/v1/triggers` endpoint.
+   */
+  triggerNames?: string;
+  /**
+   * Comma-separated list of integration IDs to filter triggers by. You can get the integration IDs from the `id` field in the response of the `GET /api/v1/integrations` endpoint.
+   */
+  integrationIds?: string;
+  /**
+   * When set to true, returns only enabled triggers. This field is deprecated and will be removed in future versions.
+   * @deprecated
+   */
+  showEnabledOnly?: boolean;
 };
 
 export type GetActiveTriggersQueryDTO = {
-    /**
-     * Comma-separated list of connected account IDs to filter triggers by. You can get these IDs from the `id` field in the response of the `GET /api/v1/connections` endpoint.
-     */
-    connectedAccountIds?: string;
-    /**
-     * Comma-separated list of integration IDs to filter triggers by. You can get these IDs from the `id` field in the response of the `GET /api/v1/integrations` endpoint.
-     */
-    integrationIds?: string;
-    /**
-     * Comma-separated list of trigger IDs to filter triggers by. You can get these IDs from the `id` field in the response of the `GET /api/v1/triggers` endpoint.
-     */
-    triggerIds?: string;
-    /**
-     * Comma-separated list of trigger names to filter triggers by. You can get these names from the `name` field in the response of the `GET /api/v1/triggers` endpoint.
-     */
-    triggerNames?: string;
-    /**
-     * Page number for pagination. Starts from 1.
-     */
-    page?: number;
-    /**
-     * Number of items to return per page.
-     */
-    limit?: number;
-    /**
-     * When set to true, includes disabled triggers in the response.
-     */
-    showDisabled?: boolean;
+  /**
+   * Comma-separated list of connected account IDs to filter triggers by. You can get these IDs from the `id` field in the response of the `GET /api/v1/connections` endpoint.
+   */
+  connectedAccountIds?: string;
+  /**
+   * Comma-separated list of integration IDs to filter triggers by. You can get these IDs from the `id` field in the response of the `GET /api/v1/integrations` endpoint.
+   */
+  integrationIds?: string;
+  /**
+   * Comma-separated list of trigger IDs to filter triggers by. You can get these IDs from the `id` field in the response of the `GET /api/v1/triggers` endpoint.
+   */
+  triggerIds?: string;
+  /**
+   * Comma-separated list of trigger names to filter triggers by. You can get these names from the `name` field in the response of the `GET /api/v1/triggers` endpoint.
+   */
+  triggerNames?: string;
+  /**
+   * Page number for pagination. Starts from 1.
+   */
+  page?: number;
+  /**
+   * Number of items to return per page.
+   */
+  limit?: number;
+  /**
+   * When set to true, includes disabled triggers in the response.
+   */
+  showDisabled?: boolean;
 };
 
 export type GetLogsQueryDTO = {
-    /**
-     * Filter logs by connection ID. You can get this from the `id` field in the response of the `GET /api/v1/connections` endpoint.
-     */
-    connectionId?: string;
-    /**
-     * Filter logs by integration ID. You can get this from the `id` field in the response of the `GET /api/v1/integrations` endpoint.
-     */
-    integrationId?: string;
-    /**
-     * Page number for pagination. Starts from 1.
-     */
-    page?: number;
-    /**
-     * Number of items to return per page.
-     */
-    limit?: number;
+  /**
+   * Filter logs by connection ID. You can get this from the `id` field in the response of the `GET /api/v1/connections` endpoint.
+   */
+  connectionId?: string;
+  /**
+   * Filter logs by integration ID. You can get this from the `id` field in the response of the `GET /api/v1/integrations` endpoint.
+   */
+  integrationId?: string;
+  /**
+   * Page number for pagination. Starts from 1.
+   */
+  page?: number;
+  /**
+   * Number of items to return per page.
+   */
+  limit?: number;
 };
 
 export type TriggerResDTO = {
-    /**
-     * Unique identifier of the trigger. This is used to reference the trigger in other API calls.
-     */
-    name: string;
-    /**
-     * Human-readable name of the trigger shown in the UI.
-     */
-    display_name: string;
-    /**
-     * Detailed description of what the trigger does.
-     */
-    description?: string;
-    /**
-     * Indicates whether the trigger is currently enabled.
-     */
-    enabled?: boolean;
-    /**
-     * Configuration parameters required for the trigger. Structure varies based on trigger type.
-     */
-    config?: {
-        [key: string]: unknown;
-    };
-    /**
-     * Sample payload that will be sent when the trigger fires.
-     */
-    payload?: {
-        [key: string]: unknown;
-    };
-    /**
-     * URL of the trigger's icon or logo.
-     */
-    logo?: string;
-    /**
-     * Number of times this trigger has been activated.
-     */
-    count?: number;
-    /**
-     * Unique key identifying the app this trigger belongs to.
-     */
-    appKey: string;
-    /**
-     * Unique identifier of the app this trigger belongs to. You can get this from the `id` field in the response of the `GET /api/v1/apps` endpoint.
-     */
-    appId: string;
-    /**
-     * Name of the app this trigger belongs to.
-     */
-    appName: string;
-    /**
-     * Step-by-step instructions on how to set up and use this trigger.
-     */
-    instructions?: string;
-    /**
-     * Classification or category of the trigger.
-     */
-    type?: string;
+  /**
+   * Unique identifier of the trigger. This is used to reference the trigger in other API calls.
+   */
+  name: string;
+  /**
+   * Human-readable name of the trigger shown in the UI.
+   */
+  display_name: string;
+  /**
+   * Detailed description of what the trigger does.
+   */
+  description?: string;
+  /**
+   * Indicates whether the trigger is currently enabled.
+   */
+  enabled?: boolean;
+  /**
+   * Configuration parameters required for the trigger. Structure varies based on trigger type.
+   */
+  config?: {
+    [key: string]: unknown;
+  };
+  /**
+   * Sample payload that will be sent when the trigger fires.
+   */
+  payload?: {
+    [key: string]: unknown;
+  };
+  /**
+   * URL of the trigger's icon or logo.
+   */
+  logo?: string;
+  /**
+   * Number of times this trigger has been activated.
+   */
+  count?: number;
+  /**
+   * Unique key identifying the app this trigger belongs to.
+   */
+  appKey: string;
+  /**
+   * Unique identifier of the app this trigger belongs to. You can get this from the `id` field in the response of the `GET /api/v1/apps` endpoint.
+   */
+  appId: string;
+  /**
+   * Name of the app this trigger belongs to.
+   */
+  appName: string;
+  /**
+   * Step-by-step instructions on how to set up and use this trigger.
+   */
+  instructions?: string;
+  /**
+   * Classification or category of the trigger.
+   */
+  type?: string;
 };
 
 export type SingleTriggerResDTO = {
-    /**
-     * Unique identifier of the trigger. Used to reference the trigger in other API calls.
-     */
-    name: string;
-    /**
-     * Human-readable name of the trigger shown in the UI.
-     */
-    displayName: string;
-    /**
-     * Detailed description of what the trigger does and when it fires.
-     */
-    description: string;
-    /**
-     * Classification or category of the trigger.
-     */
-    type: string;
-    /**
-     * Unique identifier of the app this trigger belongs to. You can get this from the `id` field in the response of the `GET /api/v1/apps` endpoint.
-     */
-    appId: string;
-    /**
-     * Name of the app this trigger belongs to.
-     */
-    appName: string;
-    /**
-     * Step-by-step instructions on how to set up and use this trigger.
-     */
-    instructions?: string;
-    /**
-     * Sample payload that will be sent when the trigger fires.
-     */
-    payload: {
-        [key: string]: unknown;
-    };
-    /**
-     * Configuration parameters required for the trigger. Structure varies based on trigger type.
-     */
-    config: {
-        [key: string]: unknown;
-    };
+  /**
+   * Unique identifier of the trigger. Used to reference the trigger in other API calls.
+   */
+  name: string;
+  /**
+   * Human-readable name of the trigger shown in the UI.
+   */
+  displayName: string;
+  /**
+   * Detailed description of what the trigger does and when it fires.
+   */
+  description: string;
+  /**
+   * Classification or category of the trigger.
+   */
+  type: string;
+  /**
+   * Unique identifier of the app this trigger belongs to. You can get this from the `id` field in the response of the `GET /api/v1/apps` endpoint.
+   */
+  appId: string;
+  /**
+   * Name of the app this trigger belongs to.
+   */
+  appName: string;
+  /**
+   * Step-by-step instructions on how to set up and use this trigger.
+   */
+  instructions?: string;
+  /**
+   * Sample payload that will be sent when the trigger fires.
+   */
+  payload: {
+    [key: string]: unknown;
+  };
+  /**
+   * Configuration parameters required for the trigger. Structure varies based on trigger type.
+   */
+  config: {
+    [key: string]: unknown;
+  };
 };
 
 /**
  * Configuration parameters for a trigger
  */
 export type TriggerConfig = {
-    /**
-     * Name of the repository to monitor.
-     */
-    repo: string;
-    /**
-     * Owner (user or organization) of the repository.
-     */
-    owner: string;
+  /**
+   * Name of the repository to monitor.
+   */
+  repo: string;
+  /**
+   * Owner (user or organization) of the repository.
+   */
+  owner: string;
 };
 
 export type ActiveTriggerInstance = {
-    /**
-     * Unique identifier of the trigger instance.
-     */
-    id?: string;
-    /**
-     * ID of the connected account this trigger is associated with. You can get this from the `id` field in the response of the `GET /api/v1/connections` endpoint.
-     */
-    connectionId: string;
-    /**
-     * Name of the trigger. You can get this from the `name` field in the response of the `GET /api/v1/triggers` endpoint.
-     */
-    triggerName: string;
-    /**
-     * Additional data associated with the trigger instance.
-     */
-    triggerData?: string;
-    triggerConfig: TriggerConfig;
-    /**
-     * ISO 8601 timestamp when the trigger instance was created.
-     */
-    createdAt: string;
-    /**
-     * ISO 8601 timestamp when the trigger instance was last updated.
-     */
-    updatedAt: string;
-    /**
-     * ISO 8601 timestamp when the trigger instance was disabled, if applicable.
-     */
-    disabledAt?: string | null;
+  /**
+   * Unique identifier of the trigger instance.
+   */
+  id?: string;
+  /**
+   * ID of the connected account this trigger is associated with. You can get this from the `id` field in the response of the `GET /api/v1/connections` endpoint.
+   */
+  connectionId: string;
+  /**
+   * Name of the trigger. You can get this from the `name` field in the response of the `GET /api/v1/triggers` endpoint.
+   */
+  triggerName: string;
+  /**
+   * Additional data associated with the trigger instance.
+   */
+  triggerData?: string;
+  triggerConfig: TriggerConfig;
+  /**
+   * ISO 8601 timestamp when the trigger instance was created.
+   */
+  createdAt: string;
+  /**
+   * ISO 8601 timestamp when the trigger instance was last updated.
+   */
+  updatedAt: string;
+  /**
+   * ISO 8601 timestamp when the trigger instance was disabled, if applicable.
+   */
+  disabledAt?: string | null;
 };
 
 export type PageInfoDTO = {
-    /**
-     * Current page number.
-     */
-    currentPage: number;
-    /**
-     * Number of items per page.
-     */
-    perPage: number;
-    /**
-     * Total number of pages available.
-     */
-    totalPages: number;
+  /**
+   * Current page number.
+   */
+  currentPage: number;
+  /**
+   * Number of items per page.
+   */
+  perPage: number;
+  /**
+   * Total number of pages available.
+   */
+  totalPages: number;
 };
 
 export type ActiveTriggersResDTO = {
-    /**
-     * List of active trigger instances.
-     */
-    triggers: Array<ActiveTriggerInstance>;
-    /**
-     * Pagination information for the response.
-     */
-    pageInfo: Array<PageInfoDTO>;
+  /**
+   * List of active trigger instances.
+   */
+  triggers: Array<ActiveTriggerInstance>;
+  /**
+   * Pagination information for the response.
+   */
+  pageInfo: Array<PageInfoDTO>;
 };
 
 export type TriggerLogsResDTO = {
-    /**
-     * List of trigger log entries.
-     */
-    data: Array<TriggerLogItemDTO>;
-    /**
-     * Pagination information for the response.
-     */
-    pageInfo: PageInfoDTO;
+  /**
+   * List of trigger log entries.
+   */
+  data: Array<TriggerLogItemDTO>;
+  /**
+   * Pagination information for the response.
+   */
+  pageInfo: PageInfoDTO;
 };
 
 export type TriggerLogItemDTO = {
-    /**
-     * Unique identifier of the client that initiated the trigger.
-     */
-    clientId: string;
-    /**
-     * ID of the connection associated with this log entry. You can get this from the `id` field in the response of the `GET /api/v1/connections` endpoint.
-     */
-    connectionId: string;
-    /**
-     * Type of the trigger.
-     */
-    triggerType?: 'poll' | 'webhook';
-    /**
-     * Error message if the trigger failed.
-     */
-    errorTrigger?: string | null;
-    /**
-     * Client-side error message if any occurred.
-     */
-    triggerClientError?: string | null;
-    /**
-     * Payload sent by the client when the trigger was activated.
-     */
-    triggerClientPayload?: string | null;
-    /**
-     * Payload sent by the client when the trigger was activated.
-     */
-    triggerClientResponse?: {
-        [key: string]: unknown;
-    } | null;
-    /**
-     * Payload received from the provider's API.
-     */
-    triggerProviderPayload?: string | null;
-    /**
-     * Name of the trigger that generated this log entry.
-     */
-    triggerName?: string | null;
-    /**
-     * Unique identifier for this log entry.
-     */
-    id: string;
-    /**
-     * Key identifying the app associated with this log entry.
-     */
-    appKey: string;
-    /**
-     * ISO 8601 timestamp when this log entry was created.
-     */
-    createdAt: string;
+  /**
+   * Unique identifier of the client that initiated the trigger.
+   */
+  clientId: string;
+  /**
+   * ID of the connection associated with this log entry. You can get this from the `id` field in the response of the `GET /api/v1/connections` endpoint.
+   */
+  connectionId: string;
+  /**
+   * Type of the trigger.
+   */
+  triggerType?: "poll" | "webhook";
+  /**
+   * Error message if the trigger failed.
+   */
+  errorTrigger?: string | null;
+  /**
+   * Client-side error message if any occurred.
+   */
+  triggerClientError?: string | null;
+  /**
+   * Payload sent by the client when the trigger was activated.
+   */
+  triggerClientPayload?: string | null;
+  /**
+   * Payload sent by the client when the trigger was activated.
+   */
+  triggerClientResponse?: {
+    [key: string]: unknown;
+  } | null;
+  /**
+   * Payload received from the provider's API.
+   */
+  triggerProviderPayload?: string | null;
+  /**
+   * Name of the trigger that generated this log entry.
+   */
+  triggerName?: string | null;
+  /**
+   * Unique identifier for this log entry.
+   */
+  id: string;
+  /**
+   * Key identifying the app associated with this log entry.
+   */
+  appKey: string;
+  /**
+   * ISO 8601 timestamp when this log entry was created.
+   */
+  createdAt: string;
 };
 
 /**
  * Type of the trigger.
  */
-export type triggerType = 'poll' | 'webhook';
+export type triggerType = "poll" | "webhook";
 
 export type HandleTriggerParamsDTO = {
-    /**
-     * Name of the app handling the trigger. You can get this from the `name` field in the response of the `GET /api/v1/apps` endpoint.
-     */
-    appName: string;
-    /**
-     * Unique identifier of the client initiating the trigger.
-     */
-    clientId: string;
+  /**
+   * Name of the app handling the trigger. You can get this from the `name` field in the response of the `GET /api/v1/apps` endpoint.
+   */
+  appName: string;
+  /**
+   * Unique identifier of the client initiating the trigger.
+   */
+  clientId: string;
 };
 
 export type HandleTriggerBodyDTO = {
-    /**
-     * Payload data to be processed by the trigger.
-     */
-    body: {
-        [key: string]: unknown;
-    };
+  /**
+   * Payload data to be processed by the trigger.
+   */
+  body: {
+    [key: string]: unknown;
+  };
 };
 
 export type EnableTriggerParamsDTO = {
-    /**
-     * ID of the connected account to enable the trigger for. You can get this from the `id` field in the response of the `GET /api/v1/connections` endpoint.
-     */
-    connectedAccountId: string;
-    /**
-     * Name of the trigger to enable. You can get this from the `name` field in the response of the `GET /api/v1/triggers` endpoint.
-     */
-    triggerName: string;
+  /**
+   * ID of the connected account to enable the trigger for. You can get this from the `id` field in the response of the `GET /api/v1/connections` endpoint.
+   */
+  connectedAccountId: string;
+  /**
+   * Name of the trigger to enable. You can get this from the `name` field in the response of the `GET /api/v1/triggers` endpoint.
+   */
+  triggerName: string;
 };
 
 export type GetTriggerParamsDTO = {
-    /**
-     * Unique identifier of the trigger to retrieve. You can get this from the `id` field in the response of the `GET /api/v1/triggers` endpoint.
-     */
-    triggerId: string;
+  /**
+   * Unique identifier of the trigger to retrieve. You can get this from the `id` field in the response of the `GET /api/v1/triggers` endpoint.
+   */
+  triggerId: string;
 };
 
 export type EnableTriggerBodyDTO = {
-    /**
-     * Configuration parameters for the trigger. Structure varies based on trigger type.
-     */
-    triggerConfig: {
-        [key: string]: unknown;
-    };
-    /**
-     * Host URL for webhook verification, if required.
-     */
-    verifyHost?: string;
+  /**
+   * Configuration parameters for the trigger. Structure varies based on trigger type.
+   */
+  triggerConfig: {
+    [key: string]: unknown;
+  };
+  /**
+   * Host URL for webhook verification, if required.
+   */
+  verifyHost?: string;
 };
 
 export type SwitchTriggerStatusParamsDTO = {
-    /**
-     * Unique identifier of the trigger instance to update. You can get this from the `id` field in the response of the `GET /api/v1/triggers/active` endpoint.
-     */
-    triggerId: string;
+  /**
+   * Unique identifier of the trigger instance to update. You can get this from the `id` field in the response of the `GET /api/v1/triggers/active` endpoint.
+   */
+  triggerId: string;
 };
 
 export type SwitchTriggerStatusBodyDTO = {
-    /**
-     * New enabled/disabled state for the trigger.
-     */
-    enabled: boolean;
+  /**
+   * New enabled/disabled state for the trigger.
+   */
+  enabled: boolean;
 };
 
 export type TriggerInstanceParamsDTO = {
-    /**
-     * Unique identifier of the trigger instance to modify. You can get this from the `id` field in the response of the `GET /api/v1/triggers/active` endpoint.
-     */
-    triggerInstanceId: string;
+  /**
+   * Unique identifier of the trigger instance to modify. You can get this from the `id` field in the response of the `GET /api/v1/triggers/active` endpoint.
+   */
+  triggerInstanceId: string;
 };
 
 export type SetCallbackUrlBodyDTO = {
-    /**
-     * URL where webhook notifications should be sent when the trigger fires.
-     */
-    callbackURL: string;
+  /**
+   * URL where webhook notifications should be sent when the trigger fires.
+   */
+  callbackURL: string;
 };
 
 export type TriggerResponseDTO = {
-    /**
-     * Status of the operation (success/error).
-     */
-    status: string;
-    /**
-     * Additional information about the operation result.
-     */
-    message?: string;
-    /**
-     * Unique identifier of the affected trigger.
-     */
-    triggerId?: string;
-    /**
-     * Indicates whether a new trigger was created (true) or an existing one was modified (false).
-     */
-    isNew?: boolean;
+  /**
+   * Status of the operation (success/error).
+   */
+  status: string;
+  /**
+   * Additional information about the operation result.
+   */
+  message?: string;
+  /**
+   * Unique identifier of the affected trigger.
+   */
+  triggerId?: string;
+  /**
+   * Indicates whether a new trigger was created (true) or an existing one was modified (false).
+   */
+  isNew?: boolean;
 };
 
 export type WebhookURLResponseDTO = {
-    /**
-     * Status of the operation (success/error).
-     */
-    status: string;
-    /**
-     * The currently configured webhook callback URL.
-     */
-    callbackURL?: string;
+  /**
+   * Status of the operation (success/error).
+   */
+  status: string;
+  /**
+   * The currently configured webhook callback URL.
+   */
+  callbackURL?: string;
 };
 
 /**
  * Detailed information about a trigger
  */
 export type TriggerMetadataDTO = {
-    /**
-     * Unique identifier of the trigger.
-     */
-    id: string;
-    /**
-     * ID of the connection this trigger is associated with. You can get this from the `id` field in the response of the `GET /api/v1/connections` endpoint.
-     */
-    connectionId: string;
-    /**
-     * Name of the trigger. You can get this from the `name` field in the response of the `GET /api/v1/triggers` endpoint.
-     */
-    triggerName: string;
-    /**
-     * Additional data associated with the trigger.
-     */
-    triggerData: string;
-    /**
-     * Configuration parameters for the trigger. Structure varies based on trigger type.
-     */
-    triggerConfig: {
-        [key: string]: unknown;
-    };
-    /**
-     * Current state of the trigger.
-     */
-    state: {
-        [key: string]: unknown;
-    };
-    /**
-     * ISO 8601 timestamp when the trigger was created.
-     */
-    createdAt: string;
-    /**
-     * ISO 8601 timestamp when the trigger was last updated.
-     */
-    updatedAt: string;
-    /**
-     * ISO 8601 timestamp when the trigger was disabled, if applicable.
-     */
-    disabledAt?: string | null;
-    /**
-     * Reason why the trigger was disabled, if applicable.
-     */
-    disabledReason?: string | null;
+  /**
+   * Unique identifier of the trigger.
+   */
+  id: string;
+  /**
+   * ID of the connection this trigger is associated with. You can get this from the `id` field in the response of the `GET /api/v1/connections` endpoint.
+   */
+  connectionId: string;
+  /**
+   * Name of the trigger. You can get this from the `name` field in the response of the `GET /api/v1/triggers` endpoint.
+   */
+  triggerName: string;
+  /**
+   * Additional data associated with the trigger.
+   */
+  triggerData: string;
+  /**
+   * Configuration parameters for the trigger. Structure varies based on trigger type.
+   */
+  triggerConfig: {
+    [key: string]: unknown;
+  };
+  /**
+   * Current state of the trigger.
+   */
+  state: {
+    [key: string]: unknown;
+  };
+  /**
+   * ISO 8601 timestamp when the trigger was created.
+   */
+  createdAt: string;
+  /**
+   * ISO 8601 timestamp when the trigger was last updated.
+   */
+  updatedAt: string;
+  /**
+   * ISO 8601 timestamp when the trigger was disabled, if applicable.
+   */
+  disabledAt?: string | null;
+  /**
+   * Reason why the trigger was disabled, if applicable.
+   */
+  disabledReason?: string | null;
 };
 
 export type GetTriggerResponseDTO = {
-    /**
-     * Status of the operation (success/error).
-     */
-    status: string;
-    trigger?: TriggerMetadataDTO;
+  /**
+   * Status of the operation (success/error).
+   */
+  status: string;
+  trigger?: TriggerMetadataDTO;
 };
 
 export type WehbookNewFormatDTO = {
-    /**
-     * Unique identifier of the project.
-     */
-    id: string;
-    /**
-     * Indicates whether this is a newly created webhook.
-     */
-    isNewWebhook: boolean;
+  /**
+   * Unique identifier of the project.
+   */
+  id: string;
+  /**
+   * Indicates whether this is a newly created webhook.
+   */
+  isNewWebhook: boolean;
 };
 
 export type TriggerNotFoundError = {
-    /**
-     * The name of the error
-     */
-    name: 'TriggerNotFoundError';
-    /**
-     * HTTP status code
-     */
-    status: number;
-    /**
-     * Error message
-     */
-    message: string;
-    /**
-     * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
-     */
-    requestId: string;
-    /**
-     * The name of the operation that caused the error
-     */
-    type: 'NotFoundError';
+  /**
+   * The name of the error
+   */
+  name: "TriggerNotFoundError";
+  /**
+   * HTTP status code
+   */
+  status: number;
+  /**
+   * Error message
+   */
+  message: string;
+  /**
+   * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
+   */
+  requestId: string;
+  /**
+   * The name of the operation that caused the error
+   */
+  type: "NotFoundError";
 };
 
 /**
  * The name of the error
  */
-export type name10 = 'TriggerNotFoundError';
+export type name10 = "TriggerNotFoundError";
 
 export type InvalidTriggerConfigError = {
-    /**
-     * The name of the error
-     */
-    name: 'InvalidTriggerConfigError';
-    /**
-     * HTTP status code
-     */
-    status: number;
-    /**
-     * Error message
-     */
-    message: string;
-    /**
-     * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
-     */
-    requestId: string;
-    /**
-     * Additional arguments that caused the error
-     */
-    details: {
-        [key: string]: unknown;
-    };
-    /**
-     * The type of error
-     */
-    type: 'BadRequestError';
+  /**
+   * The name of the error
+   */
+  name: "InvalidTriggerConfigError";
+  /**
+   * HTTP status code
+   */
+  status: number;
+  /**
+   * Error message
+   */
+  message: string;
+  /**
+   * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
+   */
+  requestId: string;
+  /**
+   * Additional arguments that caused the error
+   */
+  details: {
+    [key: string]: unknown;
+  };
+  /**
+   * The type of error
+   */
+  type: "BadRequestError";
 };
 
 /**
  * The name of the error
  */
-export type name11 = 'InvalidTriggerConfigError';
+export type name11 = "InvalidTriggerConfigError";
 
 export type ToolsExecuteReqDto = {
-    actionName: string;
-    runInSandbox: boolean;
-    input: {
-        [key: string]: unknown;
-    };
-    nlaInput?: string;
-    authorizationData?: {
-        [key: string]: unknown;
-    };
-    appSchema?: {
-        [key: string]: unknown;
-    };
-    customDescription?: string;
-    systemPrompt?: string;
-    version?: string;
+  actionName: string;
+  runInSandbox: boolean;
+  input: {
+    [key: string]: unknown;
+  };
+  nlaInput?: string;
+  authorizationData?: {
+    [key: string]: unknown;
+  };
+  appSchema?: {
+    [key: string]: unknown;
+  };
+  customDescription?: string;
+  systemPrompt?: string;
+  version?: string;
 };
 
 export type DirectExecuteReqDto = {
-    endpoint: string;
-    base_url: string;
-    headers: {
-        [key: string]: unknown;
-    };
-    queryParams: {
-        [key: string]: unknown;
-    };
-    body?: {
-        [key: string]: unknown;
-    };
+  endpoint: string;
+  base_url: string;
+  headers: {
+    [key: string]: unknown;
+  };
+  queryParams: {
+    [key: string]: unknown;
+  };
+  body?: {
+    [key: string]: unknown;
+  };
 };
 
 export type ActionExecutionResDto = {
-    /**
-     * The response data returned by the action execution.
-     */
-    data: {
-        [key: string]: unknown;
-    };
-    /**
-     * The error message, if the action failed to execute. If the action is successful, this will be null.
-     */
-    error?: string;
-    /**
-     * Whether the action execution was successfully executed or not. If this is false, error field will be populated with the error message.
-     * @deprecated
-     */
-    successfull?: boolean;
-    /**
-     * Whether the action execution was successfully executed or not. If this is false, error field will be populated with the error message.
-     */
-    successful: boolean;
+  /**
+   * The response data returned by the action execution.
+   */
+  data: {
+    [key: string]: unknown;
+  };
+  /**
+   * The error message, if the action failed to execute. If the action is successful, this will be null.
+   */
+  error?: string;
+  /**
+   * Whether the action execution was successfully executed or not. If this is false, error field will be populated with the error message.
+   * @deprecated
+   */
+  successfull?: boolean;
+  /**
+   * Whether the action execution was successfully executed or not. If this is false, error field will be populated with the error message.
+   */
+  successful: boolean;
 };
 
 /**
  * Custom authentication credentials to use while executing an action.
  */
 export type CustomAuthDTO = {
-    /**
-     * The base URL (root address) what you should use while making http requests to the connected account. For example, for gmail, it would be 'https://gmail.googleapis.com'
-     */
-    base_url?: string;
-    parameters: Array<Parameter>;
-    /**
-     * The body to be sent to the endpoint for authentication. This can either be a JSON field or a string. Note: This is very rarely neeed and is only required by very few apps.
-     */
-    body?: {
-        [key: string]: unknown;
-    };
+  /**
+   * The base URL (root address) what you should use while making http requests to the connected account. For example, for gmail, it would be 'https://gmail.googleapis.com'
+   */
+  base_url?: string;
+  parameters: Array<Parameter>;
+  /**
+   * The body to be sent to the endpoint for authentication. This can either be a JSON field or a string. Note: This is very rarely neeed and is only required by very few apps.
+   */
+  body?: {
+    [key: string]: unknown;
+  };
 };
 
 export type ActionProxyRequestMethodDTO = {
-    /**
-     * The type of request body to use for the action. Defaults to 'none'.
-     */
-    type?: 'formData' | 'urlEncoded' | 'raw' | 'binary' | 'graphql' | 'none';
-    /**
-     * The data to be sent to the endpoint. This will override the body set in the connected account.
-     */
-    data?: string;
+  /**
+   * The type of request body to use for the action. Defaults to 'none'.
+   */
+  type?: "formData" | "urlEncoded" | "raw" | "binary" | "graphql" | "none";
+  /**
+   * The data to be sent to the endpoint. This will override the body set in the connected account.
+   */
+  data?: string;
 };
 
 /**
  * The type of request body to use for the action. Defaults to 'none'.
  */
-export type type4 = 'formData' | 'urlEncoded' | 'raw' | 'binary' | 'graphql' | 'none';
+export type type4 =
+  | "formData"
+  | "urlEncoded"
+  | "raw"
+  | "binary"
+  | "graphql"
+  | "none";
 
 export type GetSingleActionReqDTO = {
-    /**
-     * The id of the action to get details for. This can be found in the id field in [/api/v2/actions](/api-reference/actions/list-actions) endpoint.
-     */
-    actionId: string;
+  /**
+   * The id of the action to get details for. This can be found in the id field in [/api/v2/actions](/api-reference/actions/list-actions) endpoint.
+   */
+  actionId: string;
 };
 
 export type GetSingleActionQueryDTO = {
-    /**
-     * Version for the action
-     */
-    version?: string;
+  /**
+   * Version for the action
+   */
+  version?: string;
 };
 
 export type ActionProxyRequestConfigDTO = {
-    /**
-     * The connected account uuid to use for the action.
-     */
-    connectedAccountId: string;
-    /**
-     * The endpoint to call for the action. If the given url is relative, it will be resolved relative to the base_url set in the connected account info.
-     */
-    endpoint: string;
-    /**
-     * The HTTP method to use for the action.
-     */
-    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-    parameters: Array<Parameter>;
-    /**
-     * The body to be sent to the endpoint. This can either be a JSON field or a string.
-     */
-    body?: {
-        [key: string]: unknown;
-    };
+  /**
+   * The connected account uuid to use for the action.
+   */
+  connectedAccountId: string;
+  /**
+   * The endpoint to call for the action. If the given url is relative, it will be resolved relative to the base_url set in the connected account info.
+   */
+  endpoint: string;
+  /**
+   * The HTTP method to use for the action.
+   */
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  parameters: Array<Parameter>;
+  /**
+   * The body to be sent to the endpoint. This can either be a JSON field or a string.
+   */
+  body?: {
+    [key: string]: unknown;
+  };
 };
 
 /**
  * The HTTP method to use for the action.
  */
-export type method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+export type method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 /**
  * Used internally by our SDK's to keep track of the source of execution, ignore it.
  */
 export type SessionInfoDTO = {
-    sessionId?: string;
-    metadata?: {
-        [key: string]: unknown;
-    };
+  sessionId?: string;
+  metadata?: {
+    [key: string]: unknown;
+  };
 };
 
 export type NLAArgumentsResponseDTO = {
-    /**
-     * The arguments for the action needed to execute the given task.
-     */
-    arguments?: {
-        [key: string]: unknown;
-    };
-    /**
-     * The error message if the arguments were not generated successfully.
-     */
-    error?: string;
+  /**
+   * The arguments for the action needed to execute the given task.
+   */
+  arguments?: {
+    [key: string]: unknown;
+  };
+  /**
+   * The error message if the arguments were not generated successfully.
+   */
+  error?: string;
 };
 
 export type ActionExecutionReqDTO = {
-    /**
-     * Connected account uuid for the account you want to run the action on. You can get this from the id field in [/api/v1/connectedAccounts](/api-reference/connections/list-connections) endpoint.
-     */
-    connectedAccountId?: string;
-    /**
-     * The name/id of the app that the action belongs to. To get the app name, you can use the [/api/v1/apps](/api-reference/apps/list-apps) endpoint.
-     */
-    appName?: string;
-    /**
-     * (Optional) EntityId that represents your users connections - if the required connection is availabe for the user, it'll be auto-picked. If you are passing this, there's no need to pass `connectedAccountId`. To know more about entityId, [click here](https://backend.composio.dev/patterns/Auth/connected_account#entities)
-     */
-    entityId?: string;
-    /**
-     * Action inputs or aguments to execute the action. This is a dict/map with key-value structure, depdning on the action schema you can find in [/api/v2/actions/{actionName}](/api-reference/actions/get-single-action) endpoint.
-     */
-    input?: {
-        [key: string]: unknown;
-    };
-    sessionInfo?: SessionInfoDTO;
-    authConfig?: CustomAuthDTO;
-    /**
-     * The use-case description for the action, this will give context to LLM to generate the correct inputs for the action.
-     */
-    text?: string;
-    /**
-     * The custom description for the action, use this to provide customised context about the action to the LLM to suit your use-case.
-     */
-    customDescription?: string;
-    /**
-     * The system prompt to be used by LLM, use this to control and guide the behaviour of the LLM.
-     */
-    systemPrompt?: string;
-    /**
-     * Version of the action you want to execute.
-     */
-    version?: string;
+  /**
+   * Connected account uuid for the account you want to run the action on. You can get this from the id field in [/api/v1/connectedAccounts](/api-reference/connections/list-connections) endpoint.
+   */
+  connectedAccountId?: string;
+  /**
+   * The name/id of the app that the action belongs to. To get the app name, you can use the [/api/v1/apps](/api-reference/apps/list-apps) endpoint.
+   */
+  appName?: string;
+  /**
+   * (Optional) EntityId that represents your users connections - if the required connection is availabe for the user, it'll be auto-picked. If you are passing this, there's no need to pass `connectedAccountId`. To know more about entityId, [click here](https://backend.composio.dev/patterns/Auth/connected_account#entities)
+   */
+  entityId?: string;
+  /**
+   * Action inputs or aguments to execute the action. This is a dict/map with key-value structure, depdning on the action schema you can find in [/api/v2/actions/{actionName}](/api-reference/actions/get-single-action) endpoint.
+   */
+  input?: {
+    [key: string]: unknown;
+  };
+  sessionInfo?: SessionInfoDTO;
+  authConfig?: CustomAuthDTO;
+  /**
+   * The use-case description for the action, this will give context to LLM to generate the correct inputs for the action.
+   */
+  text?: string;
+  /**
+   * The custom description for the action, use this to provide customised context about the action to the LLM to suit your use-case.
+   */
+  customDescription?: string;
+  /**
+   * The system prompt to be used by LLM, use this to control and guide the behaviour of the LLM.
+   */
+  systemPrompt?: string;
+  /**
+   * Version of the action you want to execute.
+   */
+  version?: string;
 };
 
 export type ActionGetNLAInputsReqDTO = {
-    /**
-     * The use-case description for the action, this will give context to LLM to generate the correct inputs for the action.
-     */
-    text: string;
-    /**
-     * The custom description for the action, use this to provide customised context about the action to the LLM to suit your use-case.
-     */
-    customDescription?: string;
-    /**
-     * The system prompt to be used by LLM, use this to control and guide the behaviour of the LLM.
-     */
-    systemPrompt?: string;
+  /**
+   * The use-case description for the action, this will give context to LLM to generate the correct inputs for the action.
+   */
+  text: string;
+  /**
+   * The custom description for the action, use this to provide customised context about the action to the LLM to suit your use-case.
+   */
+  customDescription?: string;
+  /**
+   * The system prompt to be used by LLM, use this to control and guide the behaviour of the LLM.
+   */
+  systemPrompt?: string;
 };
 
 export type ProxyExecutionReqDTO = {
-    endpoint: string;
-    connectedAccountId: string;
+  endpoint: string;
+  connectedAccountId: string;
 };
 
 export type ActionNotFoundError = {
-    /**
-     * The error name
-     */
-    name: 'ActionNotFoundError';
-    /**
-     * HTTP status code
-     */
-    status: number;
-    /**
-     * Error message
-     */
-    message: string;
-    /**
-     * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
-     */
-    requestId: string;
-    /**
-     * The name of the operation that caused the error
-     */
-    type: 'NotFoundError';
+  /**
+   * The error name
+   */
+  name: "ActionNotFoundError";
+  /**
+   * HTTP status code
+   */
+  status: number;
+  /**
+   * Error message
+   */
+  message: string;
+  /**
+   * Request ID, used for tracing the request. This is very helpful for internal teams to debug issues.
+   */
+  requestId: string;
+  /**
+   * The name of the operation that caused the error
+   */
+  type: "NotFoundError";
 };
 
 /**
  * The error name
  */
-export type name12 = 'ActionNotFoundError';
+export type name12 = "ActionNotFoundError";
 
 export type ActionDetailsMinimal = {
-    /**
-     * The description of the action, tailored to improve the LLM accuracy and reasoning. Use this a tool/function description.
-     */
-    description: string;
-    /**
-     * The display name of the action, used to identify the action in the UI.
-     */
-    displayName: string;
-    /**
-     * The logo of the app that the action belongs to.
-     */
-    logo: string;
-    /**
-     * The name of the action, used to identify the action in the UI.
-     */
-    name: string;
-    /**
-     * The tags of the action, used to categorize the action in the UI.
-     */
-    tags: Array<(string)>;
-    /**
-     * Whether the action is deprecated, if true, avoid using this action.
-     */
-    deprecated?: boolean;
+  /**
+   * The description of the action, tailored to improve the LLM accuracy and reasoning. Use this a tool/function description.
+   */
+  description: string;
+  /**
+   * The display name of the action, used to identify the action in the UI.
+   */
+  displayName: string;
+  /**
+   * The logo of the app that the action belongs to.
+   */
+  logo: string;
+  /**
+   * The name of the action, used to identify the action in the UI.
+   */
+  name: string;
+  /**
+   * The tags of the action, used to categorize the action in the UI.
+   */
+  tags: Array<string>;
+  /**
+   * Whether the action is deprecated, if true, avoid using this action.
+   */
+  deprecated?: boolean;
 };
 
 export type ActionsTagQueryReqDTO = {
-    /**
-     * Comma separated list of app names to filter the action tags by.
-     */
-    apps?: string;
+  /**
+   * Comma separated list of app names to filter the action tags by.
+   */
+  apps?: string;
 };
 
 export type ActionDetails = {
-    /**
-     * Required parameters for the action to execute. For example, if the action is GMAIL_SEND_EMAIL, the required parameters for actions execution would be the email address, subject, and body.
-     */
-    parameters: {
-        [key: string]: unknown;
-    };
-    /**
-     * Expected response structure after action execution. You can use this to quickly check what happened with the action execution.
-     */
-    response: {
-        [key: string]: unknown;
-    };
-    /**
-     * The name of the app that the action belongs to. This is same as appId.
-     */
-    appKey: string;
-    /**
-     * The name of the app that the action belongs to,
-     */
-    appName: string;
-    /**
-     * The id of the app that the action belongs to. This is same as the appKey. Please use appKey instead.
-     * @deprecated
-     */
-    appId: string;
-    /**
-     * Version of the action schema.
-     */
-    version: string;
-    /**
-     * List of availavle versions of the action.
-     */
-    available_versions: Array<{
-        [key: string]: unknown;
-    }>;
-    /**
-     * Whether or not the action requires auth or not
-     */
-    no_auth: boolean;
-    /**
-     * The description of the action, tailored to improve the LLM accuracy and reasoning. Use this a tool/function description.
-     */
-    description: string;
-    /**
-     * The display name of the action, used to identify the action in the UI.
-     */
-    displayName: string;
-    /**
-     * The logo of the app that the action belongs to.
-     */
-    logo: string;
-    /**
-     * The name of the action, used to identify the action in the UI.
-     */
-    name: string;
-    /**
-     * The tags of the action, used to categorize the action in the UI.
-     */
-    tags: Array<(string)>;
-    /**
-     * Whether the action is deprecated, if true, avoid using this action.
-     */
-    deprecated?: boolean;
+  /**
+   * Required parameters for the action to execute. For example, if the action is GMAIL_SEND_EMAIL, the required parameters for actions execution would be the email address, subject, and body.
+   */
+  parameters: {
+    [key: string]: unknown;
+  };
+  /**
+   * Expected response structure after action execution. You can use this to quickly check what happened with the action execution.
+   */
+  response: {
+    [key: string]: unknown;
+  };
+  /**
+   * The name of the app that the action belongs to. This is same as appId.
+   */
+  appKey: string;
+  /**
+   * The name of the app that the action belongs to,
+   */
+  appName: string;
+  /**
+   * The id of the app that the action belongs to. This is same as the appKey. Please use appKey instead.
+   * @deprecated
+   */
+  appId: string;
+  /**
+   * Version of the action schema.
+   */
+  version: string;
+  /**
+   * List of availavle versions of the action.
+   */
+  available_versions: Array<{
+    [key: string]: unknown;
+  }>;
+  /**
+   * Whether or not the action requires auth or not
+   */
+  no_auth: boolean;
+  /**
+   * The description of the action, tailored to improve the LLM accuracy and reasoning. Use this a tool/function description.
+   */
+  description: string;
+  /**
+   * The display name of the action, used to identify the action in the UI.
+   */
+  displayName: string;
+  /**
+   * The logo of the app that the action belongs to.
+   */
+  logo: string;
+  /**
+   * The name of the action, used to identify the action in the UI.
+   */
+  name: string;
+  /**
+   * The tags of the action, used to categorize the action in the UI.
+   */
+  tags: Array<string>;
+  /**
+   * Whether the action is deprecated, if true, avoid using this action.
+   */
+  deprecated?: boolean;
 };
 
 export type ActionsTagsResponseDTO = {
-    /**
-     * List of all the action tags available in composio
-     */
-    items: Array<(string)>;
+  /**
+   * List of all the action tags available in composio
+   */
+  items: Array<string>;
 };
 
 export type ActionsListResponseDTO = {
-    items: Array<ActionDetails>;
-    /**
-     * Current page number in the paginated response
-     */
-    page: number;
-    /**
-     * Total number of pages available
-     */
-    totalPages: number;
+  items: Array<ActionDetails>;
+  /**
+   * Current page number in the paginated response
+   */
+  page: number;
+  /**
+   * Total number of pages available
+   */
+  totalPages: number;
 };
 
 export type ActionsMinimalListResponseDTO = {
-    items: Array<ActionDetailsMinimal>;
-    page: number;
-    totalPages: number;
+  items: Array<ActionDetailsMinimal>;
+  page: number;
+  totalPages: number;
 };
 
 export type AdvancedUseCaseSearchBodyDTO = {
-    useCase?: string;
+  useCase?: string;
 };
 
 export type AdvancedUseCaseSearchQueryDTO = {
-    /**
-     * Use case is deprecated. Please provide this in the body instead to avoid max-uri-length error.
-     * @deprecated
-     */
-    useCase?: string;
-    limit?: number;
-    maxActionsPerTask?: number;
-    minActionsPerTask?: number;
-    apps?: string;
-    filterByAvailableApps?: boolean;
+  /**
+   * Use case is deprecated. Please provide this in the body instead to avoid max-uri-length error.
+   * @deprecated
+   */
+  useCase?: string;
+  limit?: number;
+  maxActionsPerTask?: number;
+  minActionsPerTask?: number;
+  apps?: string;
+  filterByAvailableApps?: boolean;
 };
 
 export type AdvancedUseCaseSearchTask = {
-    app: string;
-    actions: Array<(string)>;
-    description: string;
-    order: number;
+  app: string;
+  actions: Array<string>;
+  description: string;
+  order: number;
 };
 
 export type AdvancedUseCaseSearchResponse = {
-    items: Array<AdvancedUseCaseSearchTask>;
+  items: Array<AdvancedUseCaseSearchTask>;
 };
 
 export type ExecuteActionResDTO = {
-    /**
-     * Indicates if the action was executed successfully
-     */
-    response_data: boolean;
-    /**
-     * Details of the execution status
-     */
-    execution_details: {
-        [key: string]: unknown;
-    };
+  /**
+   * Indicates if the action was executed successfully
+   */
+  response_data: boolean;
+  /**
+   * Details of the execution status
+   */
+  execution_details: {
+    [key: string]: unknown;
+  };
 };
 
 export type ActionsQueryDTO = {
-    /**
-     * Names of the apps
-     */
-    appNames?: string;
-    /**
-     * Use case
-     */
-    useCase?: string;
-    /**
-     * Show enabled only
-     */
-    showEnabledOnly?: boolean;
-    /**
-     * Limit
-     */
-    limit?: number;
-    apps?: string;
-    actions?: string;
-    tags?: string;
-    usecaseLimit?: number;
-    filterImportantActions?: boolean;
-    showAll?: boolean;
-    page?: number;
+  /**
+   * Names of the apps
+   */
+  appNames?: string;
+  /**
+   * Use case
+   */
+  useCase?: string;
+  /**
+   * Show enabled only
+   */
+  showEnabledOnly?: boolean;
+  /**
+   * Limit
+   */
+  limit?: number;
+  apps?: string;
+  actions?: string;
+  tags?: string;
+  usecaseLimit?: number;
+  filterImportantActions?: boolean;
+  showAll?: boolean;
+  page?: number;
 };
 
 export type ActionsControllerV1 = {
-    getAction: Array<{
-        [key: string]: unknown;
-    }>;
+  getAction: Array<{
+    [key: string]: unknown;
+  }>;
 };
 
 export type OAuth2CallbackQueryDto = {
-    state: string;
+  state: string;
 };
 
 export type RedirectUriDTO = {
-    redirectUri?: string;
+  redirectUri?: string;
 };
 
 export type ReadOnlyQueryReqDTO = {
-    query: string;
+  query: string;
 };
 
 export type GenerateCLISessionReqDTO = {
-    /**
-     * The channel name for the CLI session
-     */
-    channel_name: string;
+  /**
+   * The channel name for the CLI session
+   */
+  channel_name: string;
 };
 
 export type GenerateCLISessionResDTO = {
-    /**
-     * The key for the CLI session
-     */
-    key: string;
+  /**
+   * The key for the CLI session
+   */
+  key: string;
 };
 
 export type GetCLISessionResDTO = {
-    /**
-     * The client ID
-     */
-    clientId: string;
-    /**
-     * The CLI code
-     */
-    cliCode: string;
+  /**
+   * The client ID
+   */
+  clientId: string;
+  /**
+   * The CLI code
+   */
+  cliCode: string;
 };
 
 export type VerifyCLICodeResDTO = {
-    /**
-     * The client ID
-     */
-    clientId: string;
-    /**
-     * The CLI code
-     */
-    cliCode: string;
-    /**
-     * The API key associated with the client
-     */
-    apiKey: string;
+  /**
+   * The client ID
+   */
+  clientId: string;
+  /**
+   * The CLI code
+   */
+  cliCode: string;
+  /**
+   * The API key associated with the client
+   */
+  apiKey: string;
 };
 
 export type CLIQueryDTO = {
-    /**
-     * Unique key for CLI session
-     */
-    key: string;
-    /**
-     * Code for CLI verification
-     */
-    code?: string;
+  /**
+   * Unique key for CLI session
+   */
+  key: string;
+  /**
+   * Code for CLI verification
+   */
+  code?: string;
 };
 
 export type MetadataReqDTO = {
-    /**
-     * The email associated with the metadata request
-     */
-    email: string;
-    /**
-     * Additional metadata as a key-value pair
-     */
-    metadata?: unknown;
+  /**
+   * The email associated with the metadata request
+   */
+  email: string;
+  /**
+   * Additional metadata as a key-value pair
+   */
+  metadata?: unknown;
 };
 
 export type TriggersEnabledToggleReqDTO = {
-    /**
-     * Flag to enable or disable triggers
-     */
-    enabled: boolean;
+  /**
+   * Flag to enable or disable triggers
+   */
+  enabled: boolean;
 };
 
 export type TriggersEnabledToggleResDTO = {
-    /**
-     * Message indicating the result of the toggle operation
-     */
-    message: string;
+  /**
+   * Message indicating the result of the toggle operation
+   */
+  message: string;
 };
 
 export type TriggerToggleInfoResponseDTO = {
-    /**
-     * Indicates if triggers are enabled
-     */
-    triggersEnabled: boolean;
+  /**
+   * Indicates if triggers are enabled
+   */
+  triggersEnabled: boolean;
 };
 
 export type ToggleTriggerStateResponseDTO = {
-    message: string;
+  message: string;
 };
 
 export type MetadataQueryDTO = {
-    /**
-     * Email of the client
-     */
-    email: string;
+  /**
+   * Email of the client
+   */
+  email: string;
 };
 
 /**
  * Metadata associated with the trigger log
  */
 export type TriggerMetadata = {
-    /**
-     * The unique id of the log
-     */
-    id: string;
-    /**
-     * The type of the log
-     */
-    type: 'trigger';
-    /**
-     * The date and time when the log was created
-     */
-    createdAt: string;
-    /**
-     * The date and time when the log was updated
-     */
-    updatedAt: string;
-    /**
-     * The provider of the log
-     */
-    provider: string;
-    /**
-     * The client uuid of the log
-     */
-    clientId: string;
-    /**
-     * The connection id of the log
-     */
-    connectionId: string;
-    /**
-     * The trigger provider payload of the log
-     */
-    triggerProviderPayload?: string;
-    triggerClientPayload?: string;
-    /**
-     * The trigger client error of the log
-     */
-    triggerClientError?: string;
-    /**
-     * The trigger name of the log
-     */
-    triggerName?: string;
-    /**
-     * The trigger client response of the log
-     */
-    triggerClientResponse?: string;
+  /**
+   * The unique id of the log
+   */
+  id: string;
+  /**
+   * The type of the log
+   */
+  type: "trigger";
+  /**
+   * The date and time when the log was created
+   */
+  createdAt: string;
+  /**
+   * The date and time when the log was updated
+   */
+  updatedAt: string;
+  /**
+   * The provider of the log
+   */
+  provider: string;
+  /**
+   * The client uuid of the log
+   */
+  clientId: string;
+  /**
+   * The connection id of the log
+   */
+  connectionId: string;
+  /**
+   * The trigger provider payload of the log
+   */
+  triggerProviderPayload?: string;
+  triggerClientPayload?: string;
+  /**
+   * The trigger client error of the log
+   */
+  triggerClientError?: string;
+  /**
+   * The trigger name of the log
+   */
+  triggerName?: string;
+  /**
+   * The trigger client response of the log
+   */
+  triggerClientResponse?: string;
 };
 
 export type ActionMetadata = {
-    /**
-     * The unique id of the log
-     */
-    id: string;
-    /**
-     * The request sent to the provider
-     */
-    request: string;
-    /**
-     * The response from the provider
-     */
-    response?: string;
-    /**
-     * The error request sent to the provider
-     */
-    errorRequest?: string;
-    /**
-     * The type of the log
-     */
-    type: 'action';
-    /**
-     * The date and time when the log was created
-     */
-    createdAt: string;
-    /**
-     * The date and time when the log was updated
-     */
-    updatedAt: string;
-    /**
-     * The provider of the log
-     */
-    provider: string;
-    /**
-     * The client uuid of the log
-     */
-    clientId: string;
-    /**
-     * The connection id of the log
-     */
-    connectionId: string;
-    /**
-     * The action name of the log
-     */
-    actionName: string;
+  /**
+   * The unique id of the log
+   */
+  id: string;
+  /**
+   * The request sent to the provider
+   */
+  request: string;
+  /**
+   * The response from the provider
+   */
+  response?: string;
+  /**
+   * The error request sent to the provider
+   */
+  errorRequest?: string;
+  /**
+   * The type of the log
+   */
+  type: "action";
+  /**
+   * The date and time when the log was created
+   */
+  createdAt: string;
+  /**
+   * The date and time when the log was updated
+   */
+  updatedAt: string;
+  /**
+   * The provider of the log
+   */
+  provider: string;
+  /**
+   * The client uuid of the log
+   */
+  clientId: string;
+  /**
+   * The connection id of the log
+   */
+  connectionId: string;
+  /**
+   * The action name of the log
+   */
+  actionName: string;
 };
 
 export type TriggerLogData = {
-    /**
-     * The unique identifier of the trigger log
-     */
-    id: string;
-    /**
-     * The connection identifier associated with the trigger log
-     */
-    connectionId: string;
-    /**
-     * The client identifier associated with the trigger log
-     */
-    clientId: string;
-    /**
-     * The status of the trigger log
-     */
-    status: string;
-    /**
-     * The name of the application associated with the trigger log
-     */
-    appName: string;
-    /**
-     * The creation date and time of the trigger log
-     */
-    createdAt: string;
-    /**
-     * The type of the log
-     */
-    type: 'trigger';
-    meta: TriggerMetadata;
+  /**
+   * The unique identifier of the trigger log
+   */
+  id: string;
+  /**
+   * The connection identifier associated with the trigger log
+   */
+  connectionId: string;
+  /**
+   * The client identifier associated with the trigger log
+   */
+  clientId: string;
+  /**
+   * The status of the trigger log
+   */
+  status: string;
+  /**
+   * The name of the application associated with the trigger log
+   */
+  appName: string;
+  /**
+   * The creation date and time of the trigger log
+   */
+  createdAt: string;
+  /**
+   * The type of the log
+   */
+  type: "trigger";
+  meta: TriggerMetadata;
 };
 
 export type ActionLogData = {
-    /**
-     * The unique identifier of the action log
-     */
-    id: string;
-    /**
-     * The connection identifier associated with the action log
-     */
-    connectionId: string;
-    /**
-     * The client identifier associated with the action log
-     */
-    clientId: string;
-    /**
-     * The status of the action log
-     */
-    status: string;
-    /**
-     * The name of the application associated with the action log
-     */
-    appName: string;
-    /**
-     * The creation date and time of the action log
-     */
-    createdAt: string;
-    /**
-     * The type of the log
-     */
-    type: 'action';
-    meta: ActionMetadata;
+  /**
+   * The unique identifier of the action log
+   */
+  id: string;
+  /**
+   * The connection identifier associated with the action log
+   */
+  connectionId: string;
+  /**
+   * The client identifier associated with the action log
+   */
+  clientId: string;
+  /**
+   * The status of the action log
+   */
+  status: string;
+  /**
+   * The name of the application associated with the action log
+   */
+  appName: string;
+  /**
+   * The creation date and time of the action log
+   */
+  createdAt: string;
+  /**
+   * The type of the log
+   */
+  type: "action";
+  meta: ActionMetadata;
 };
 
 export type LogsResDTO = {
-    /**
-     * The cursor to get the next page of logs
-     */
-    nextCursor?: string;
-    /**
-     * Logs data
-     */
-    data: Array<{
-        [key: string]: unknown;
-    }>;
+  /**
+   * The cursor to get the next page of logs
+   */
+  nextCursor?: string;
+  /**
+   * Logs data
+   */
+  data: Array<{
+    [key: string]: unknown;
+  }>;
 };
 
 export type GetLogsDTO = {
-    /**
-     * Return logs from the last N time units
-     */
-    time?: '5m' | '30m' | '6h' | '1d' | '1w' | '1month' | '1y';
-    /**
-     * Filter logs by their status level, defaults to all
-     */
-    status?: 'all' | 'success' | 'error';
-    /**
-     * Search term to filter logs by
-     */
-    search?: string;
-    /**
-     * The ID/UUID of the integration to filter connections by. You can get the integration ID from the [/api/v1/integrations](/api-reference/integrations/list-integrations) endpoint.
-     */
-    integrationId?: string;
-    /**
-     * Filter logs by entity Id, useful for debugging issues for your specific users. Learn more about entityId [here](https://docs.composio.dev/patterns/Auth/connected_account)
-     */
-    entityId?: string;
-    /**
-     * Maximum number of logs to return, defaults to 10
-     */
-    limit?: number;
-    /**
-     * Cursor for pagination, used to fetch next set of logs. You can get the cursor from the previous response of this endpoint.
-     */
-    cursor?: string;
-    /**
-     * Type of the log
-     */
-    logsType?: 'action' | 'trigger';
-    /**
-     * Session ID of the log, used to filter logs by session. Helpful in debugging issues with specific logs.
-     */
-    sessionId?: string;
+  /**
+   * Return logs from the last N time units
+   */
+  time?: "5m" | "30m" | "6h" | "1d" | "1w" | "1month" | "1y";
+  /**
+   * Filter logs by their status level, defaults to all
+   */
+  status?: "all" | "success" | "error";
+  /**
+   * Search term to filter logs by
+   */
+  search?: string;
+  /**
+   * The ID/UUID of the integration to filter connections by. You can get the integration ID from the [/api/v1/integrations](/api-reference/integrations/list-integrations) endpoint.
+   */
+  integrationId?: string;
+  /**
+   * Filter logs by entity Id, useful for debugging issues for your specific users. Learn more about entityId [here](https://docs.composio.dev/patterns/Auth/connected_account)
+   */
+  entityId?: string;
+  /**
+   * Maximum number of logs to return, defaults to 10
+   */
+  limit?: number;
+  /**
+   * Cursor for pagination, used to fetch next set of logs. You can get the cursor from the previous response of this endpoint.
+   */
+  cursor?: string;
+  /**
+   * Type of the log
+   */
+  logsType?: "action" | "trigger";
+  /**
+   * Session ID of the log, used to filter logs by session. Helpful in debugging issues with specific logs.
+   */
+  sessionId?: string;
 };
 
 /**
  * Return logs from the last N time units
  */
-export type time = '5m' | '30m' | '6h' | '1d' | '1w' | '1month' | '1y';
+export type time = "5m" | "30m" | "6h" | "1d" | "1w" | "1month" | "1y";
 
 /**
  * Filter logs by their status level, defaults to all
  */
-export type status4 = 'all' | 'success' | 'error';
+export type status4 = "all" | "success" | "error";
 
 /**
  * Type of the log
  */
-export type logsType = 'action' | 'trigger';
+export type logsType = "action" | "trigger";
 
 export type IngestDataDTO = {
-    /**
-     * Connection ID of the log
-     */
-    connectionId?: string;
-    /**
-     * Session ID of the log
-     */
-    sessionId?: string;
-    /**
-     * Type of the log
-     */
-    logsType?: string;
-    /**
-     * Entity ID of the log
-     */
-    entityId?: string;
-    /**
-     * Provider name of the log
-     */
-    providerName: string;
-    /**
-     * Action name of the log
-     */
-    actionName: string;
-    request: {
-        [key: string]: unknown;
-    };
-    response: {
-        [key: string]: unknown;
-    };
-    isError: boolean;
+  /**
+   * Connection ID of the log
+   */
+  connectionId?: string;
+  /**
+   * Session ID of the log
+   */
+  sessionId?: string;
+  /**
+   * Type of the log
+   */
+  logsType?: string;
+  /**
+   * Entity ID of the log
+   */
+  entityId?: string;
+  /**
+   * Provider name of the log
+   */
+  providerName: string;
+  /**
+   * Action name of the log
+   */
+  actionName: string;
+  request: {
+    [key: string]: unknown;
+  };
+  response: {
+    [key: string]: unknown;
+  };
+  isError: boolean;
 };
 
 export type IngestDataResponseDTO = {
-    isIngested: boolean;
+  isIngested: boolean;
 };
 
 export type ActionsQueryV2DTO = {
-    /**
-     * Comma separated list of composio apps to filter by. You can get the list of apps by using [/api/v1/apps](/api-reference/apps/list-apps) endpoint.
-     */
-    apps?: string;
-    /**
-     * Comma separated list of composio actions to filter by. You can get the list of actionIds from this API or you can get it by running `composio actions` command in your terminal.
-     */
-    actions?: string;
-    /**
-     * Comma separated list of composio action tags to filter by. You can get the list of action tags by using [/api/v2/actions/list/tags](/api-reference/actions/list-action-tags) endpoint.
-     */
-    tags?: string;
-    /**
-     * Smart use-case based search for actions needed to be performed as per the use-case. This uses AI to understand the use-case and then finally returns the list of actions. **Note:** If you are using this field, you can not use actions or tags fields.
-     */
-    useCase?: string;
-    /**
-     * Page number to be returned, default is 1
-     */
-    page?: number;
-    /**
-     * Limit the number of actions to be returned, default is 30
-     */
-    limit?: number;
-    /**
-     * Filter and return only important actions. This is equivalent to setting tags='important' in the query params mentioned above.
-     */
-    filterImportantActions?: boolean;
-    /**
-     * Sort the actions by usage or alphabetical
-     */
-    sortBy?: 'alphabet' | 'usage' | 'no_sort';
+  /**
+   * Comma separated list of composio apps to filter by. You can get the list of apps by using [/api/v1/apps](/api-reference/apps/list-apps) endpoint.
+   */
+  apps?: string;
+  /**
+   * Comma separated list of composio actions to filter by. You can get the list of actionIds from this API or you can get it by running `composio actions` command in your terminal.
+   */
+  actions?: string;
+  /**
+   * Comma separated list of composio action tags to filter by. You can get the list of action tags by using [/api/v2/actions/list/tags](/api-reference/actions/list-action-tags) endpoint.
+   */
+  tags?: string;
+  /**
+   * Smart use-case based search for actions needed to be performed as per the use-case. This uses AI to understand the use-case and then finally returns the list of actions. **Note:** If you are using this field, you can not use actions or tags fields.
+   */
+  useCase?: string;
+  /**
+   * Page number to be returned, default is 1
+   */
+  page?: number;
+  /**
+   * Limit the number of actions to be returned, default is 30
+   */
+  limit?: number;
+  /**
+   * Filter and return only important actions. This is equivalent to setting tags='important' in the query params mentioned above.
+   */
+  filterImportantActions?: boolean;
+  /**
+   * Sort the actions by usage or alphabetical
+   */
+  sortBy?: "alphabet" | "usage" | "no_sort";
 };
 
 export type FileInfoDTO = {
-    /**
-     * Name of the app where this file belongs to.
-     */
-    app: string;
-    /**
-     * Name of the action where this file belongs to.
-     */
-    action: string;
-    /**
-     * Name of the original file.
-     */
-    filename: string;
-    /**
-     * Mime type of the original file.
-     */
-    mimetype: string;
-    /**
-     * MD5 of a file.
-     */
-    md5: string;
+  /**
+   * Name of the app where this file belongs to.
+   */
+  app: string;
+  /**
+   * Name of the action where this file belongs to.
+   */
+  action: string;
+  /**
+   * Name of the original file.
+   */
+  filename: string;
+  /**
+   * Mime type of the original file.
+   */
+  mimetype: string;
+  /**
+   * MD5 of a file.
+   */
+  md5: string;
 };
 
 export type GetFilesResponseDTO = {
-    items: FileInfoDTO;
+  items: FileInfoDTO;
 };
 
 export type CreateUploadURLResponseDTO = {
-    /**
-     * ID of the file
-     */
-    id: string;
-    /**
-     * Onetime upload URL
-     */
-    url: string;
-    /**
-     * S3 upload location
-     */
-    key: string;
+  /**
+   * ID of the file
+   */
+  id: string;
+  /**
+   * Onetime upload URL
+   */
+  url: string;
+  /**
+   * S3 upload location
+   */
+  key: string;
 };
 
 export type TimePeriodReqDTO = {
-    /**
-     * Time period to get the data for
-     */
-    lastTimePeriod?: 'DAY' | 'WEEK' | 'MONTH' | 'SIX_MONTH' | 'YEAR' | 'FIVE_YEAR';
+  /**
+   * Time period to get the data for
+   */
+  lastTimePeriod?:
+    | "DAY"
+    | "WEEK"
+    | "MONTH"
+    | "SIX_MONTH"
+    | "YEAR"
+    | "FIVE_YEAR";
 };
 
 /**
  * Time period to get the data for
  */
-export type lastTimePeriod = 'DAY' | 'WEEK' | 'MONTH' | 'SIX_MONTH' | 'YEAR' | 'FIVE_YEAR';
+export type lastTimePeriod =
+  | "DAY"
+  | "WEEK"
+  | "MONTH"
+  | "SIX_MONTH"
+  | "YEAR"
+  | "FIVE_YEAR";
 
 /**
  * Action counts by app
  */
 export type ActionByAppDTO = {
-    /**
-     * Name of the app
-     */
-    appName: string;
-    /**
-     * Total count of actions for the app
-     */
-    totalCount: number;
+  /**
+   * Name of the app
+   */
+  appName: string;
+  /**
+   * Total count of actions for the app
+   */
+  totalCount: number;
 };
 
 /**
  * Action counts by status
  */
 export type ActionByStatusDTO = {
-    /**
-     * Count of failed actions
-     */
-    failed: number;
-    /**
-     * Count of successful actions
-     */
-    success: number;
+  /**
+   * Count of failed actions
+   */
+  failed: number;
+  /**
+   * Count of successful actions
+   */
+  success: number;
 };
 
 /**
  * Comprehensive trigger analytics data, presenting a breakdown by day, status, and provider for all triggers
  */
 export type ActionAnalyticsDTO = {
-    /**
-     * Date of the action
-     */
-    date: string;
-    byApp: ActionByAppDTO;
-    byStatus: ActionByStatusDTO;
+  /**
+   * Date of the action
+   */
+  date: string;
+  byApp: ActionByAppDTO;
+  byStatus: ActionByStatusDTO;
 };
 
 /**
  * Detailed integration analytics data, including a breakdown of connection count, trigger count, and request logs count for each integration
  */
 export type IntegrationsWithCountsDTO = {
-    /**
-     * Unique identifier for the integration
-     */
-    id: string;
-    /**
-     * Name of the app
-     */
-    appName: string;
-    /**
-     * Name of the integration
-     */
-    integrationName: string;
-    /**
-     * Count of connections for the integration
-     */
-    connectionCount: number;
-    /**
-     * Count of triggers for the integration
-     */
-    triggerCount: number;
-    /**
-     * Count of request logs for the integration
-     */
-    requestLogsCount: number;
+  /**
+   * Unique identifier for the integration
+   */
+  id: string;
+  /**
+   * Name of the app
+   */
+  appName: string;
+  /**
+   * Name of the integration
+   */
+  integrationName: string;
+  /**
+   * Count of connections for the integration
+   */
+  connectionCount: number;
+  /**
+   * Count of triggers for the integration
+   */
+  triggerCount: number;
+  /**
+   * Count of request logs for the integration
+   */
+  requestLogsCount: number;
 };
 
 /**
  * Comprehensive app-level analytics data, providing a breakdown of connection count, trigger count, and request logs count for each app
  */
 export type AppNameCountDTO = {
-    /**
-     * Name of the app
-     */
-    appName: string;
-    /**
-     * Count of connections for the app
-     */
-    connectionCount: number;
-    /**
-     * Count of triggers for the app
-     */
-    triggerCount: number;
-    /**
-     * Count of request logs for the app
-     */
-    requestLogsCount: number;
+  /**
+   * Name of the app
+   */
+  appName: string;
+  /**
+   * Count of connections for the app
+   */
+  connectionCount: number;
+  /**
+   * Count of triggers for the app
+   */
+  triggerCount: number;
+  /**
+   * Count of request logs for the app
+   */
+  requestLogsCount: number;
 };
 
 export type AnalyticsDataReqDTO = {
-    /**
-     * Time period to get the data for
-     */
-    lastTimePeriod?: 'DAY' | 'WEEK' | 'MONTH' | 'SIX_MONTH' | 'YEAR' | 'FIVE_YEAR';
+  /**
+   * Time period to get the data for
+   */
+  lastTimePeriod?:
+    | "DAY"
+    | "WEEK"
+    | "MONTH"
+    | "SIX_MONTH"
+    | "YEAR"
+    | "FIVE_YEAR";
 };
 
 /**
  * Connection counts by entity
  */
 export type ClientUniqueUserIdCountDTO = {
-    /**
-     * Client unique user id
-     */
-    clientUniqueUserId: string;
-    /**
-     * Count of connections for the client unique user id
-     */
-    count: number;
+  /**
+   * Client unique user id
+   */
+  clientUniqueUserId: string;
+  /**
+   * Count of connections for the client unique user id
+   */
+  count: number;
 };
 
 /**
  * Entity-related analytics data, providing a breakdown by connections, actions, and triggers for each entity. This is include all entity info.
  */
 export type AnalyticsEntityDataDTO = {
-    byConnections: Array<ClientUniqueUserIdCountDTO>;
-    /**
-     * Action counts by entity
-     */
-    byActions: Array<ClientUniqueUserIdCountDTO>;
-    /**
-     * Trigger counts by entity
-     */
-    byTriggers: Array<ClientUniqueUserIdCountDTO>;
+  byConnections: Array<ClientUniqueUserIdCountDTO>;
+  /**
+   * Action counts by entity
+   */
+  byActions: Array<ClientUniqueUserIdCountDTO>;
+  /**
+   * Trigger counts by entity
+   */
+  byTriggers: Array<ClientUniqueUserIdCountDTO>;
 };
 
 export type AnalyticsDataResDTO = {
-    entity: AnalyticsEntityDataDTO;
-    actions: Array<ActionAnalyticsDTO>;
-    trigger: Array<ActionAnalyticsDTO>;
-    integrations: Array<IntegrationsWithCountsDTO>;
-    app: AppNameCountDTO;
+  entity: AnalyticsEntityDataDTO;
+  actions: Array<ActionAnalyticsDTO>;
+  trigger: Array<ActionAnalyticsDTO>;
+  integrations: Array<IntegrationsWithCountsDTO>;
+  app: AppNameCountDTO;
 };
 
 export type TopEntitiesResDTO = {
-    /**
-     * Top entities by connection count
-     */
-    entities: Array<TConnectionCountDTO>;
+  /**
+   * Top entities by connection count
+   */
+  entities: Array<TConnectionCountDTO>;
 };
 
 export type TConnectionCountDTO = {
-    /**
-     * Name of the entity
-     */
-    clientUniqueUserId: string;
-    /**
-     * Count of connections for the entity
-     */
-    count: number;
+  /**
+   * Name of the entity
+   */
+  clientUniqueUserId: string;
+  /**
+   * Count of connections for the entity
+   */
+  count: number;
 };
 
 export type EntityQueryReqDTO = {
-    /**
-     * Query to get the data for
-     */
-    query?: string;
+  /**
+   * Query to get the data for
+   */
+  query?: string;
 };
 
 export type WebhookReqDTO = {
-    /**
-     * Event Webhook URL
-     */
-    eventWebhookURL: string;
+  /**
+   * Event Webhook URL
+   */
+  eventWebhookURL: string;
 };
 
 export type FetchQueryDTO = {
-    /**
-     * Start time of the event in ISO 8601 format
-     */
-    startTime: string;
-    /**
-     * End time of the event in ISO 8601 format
-     */
-    endTime: string;
+  /**
+   * Start time of the event in ISO 8601 format
+   */
+  startTime: string;
+  /**
+   * End time of the event in ISO 8601 format
+   */
+  endTime: string;
 };
 
 export type WebhookSecretResDTO = {
-    /**
-     * Webhook secret
-     */
-    webhookSecret: string;
+  /**
+   * Webhook secret
+   */
+  webhookSecret: string;
 };
 
 export type CreateCheckoutSessionReqDto = {
-    plan: 'HOBBY' | 'STARTER' | 'GROWTH' | 'ENTERPRISE' | 'STARTUP';
-    applyCoupon?: boolean;
+  plan: "HOBBY" | "STARTER" | "GROWTH" | "ENTERPRISE" | "STARTUP";
+  applyCoupon?: boolean;
 };
 
-export type plan = 'HOBBY' | 'STARTER' | 'GROWTH' | 'ENTERPRISE' | 'STARTUP';
+export type plan = "HOBBY" | "STARTER" | "GROWTH" | "ENTERPRISE" | "STARTUP";
 
 export type SDKErrorResDTO = {
-    /**
-     * The status of the SDK error
-     */
-    status: string;
+  /**
+   * The status of the SDK error
+   */
+  status: string;
 };
 
 export type OrgProjectListResDTO = {
-    projects: Array<ProjectResDTO>;
+  projects: Array<ProjectResDTO>;
 };
 
 export type UpdateRowAPIDTO = {
-    /**
-     * Status of the update operation
-     */
-    status: 'success' | 'failed';
-    /**
-     * Number of records updated
-     */
-    count: number;
+  /**
+   * Status of the update operation
+   */
+  status: "success" | "failed";
+  /**
+   * Number of records updated
+   */
+  count: number;
 };
 
 export type AppFilterDTO = {
-    /**
-     * List of app unique keys to filter by
-     */
-    uniqueKey?: string;
-    /**
-     * List of app unique keys to filter by
-     */
-    integrationId?: string;
+  /**
+   * List of app unique keys to filter by
+   */
+  uniqueKey?: string;
+  /**
+   * List of app unique keys to filter by
+   */
+  integrationId?: string;
 };
 
 export type ComposioSearchConfigDTO = {
-    /**
-     * Whether to use Composio authentication
-     */
-    useComposioAuth?: boolean;
-    /**
-     * Authentication scheme to use
-     */
-    authScheme: 'OAUTH2' | 'OAUTH1' | 'OAUTH1A' | 'API_KEY' | 'BASIC' | 'BEARER_TOKEN' | 'GOOGLE_SERVICE_ACCOUNT' | 'NO_AUTH' | 'BASIC_WITH_JWT' | 'COMPOSIO_LINK' | 'CALCOM_AUTH';
+  /**
+   * Whether to use Composio authentication
+   */
+  useComposioAuth?: boolean;
+  /**
+   * Authentication scheme to use
+   */
+  authScheme:
+    | "OAUTH2"
+    | "OAUTH1"
+    | "OAUTH1A"
+    | "API_KEY"
+    | "BASIC"
+    | "BEARER_TOKEN"
+    | "GOOGLE_SERVICE_ACCOUNT"
+    | "NO_AUTH"
+    | "BASIC_WITH_JWT"
+    | "COMPOSIO_LINK"
+    | "CALCOM_AUTH";
 };
 
 export type ConnectorSearchFilterDTOV2 = {
-    /**
-     * Filter options for the connector
-     */
-    app: AppFilterDTO;
-    /**
-     * Filter options for the connector
-     */
-    config: ComposioSearchConfigDTO;
+  /**
+   * Filter options for the connector
+   */
+  app: AppFilterDTO;
+  /**
+   * Filter options for the connector
+   */
+  config: ComposioSearchConfigDTO;
 };
 
 export type ConnectorSearchResDTO = {
-    /**
-     * List of matched integration ids
-     */
-    matchedIntegrationIds: Array<(string)>;
-    /**
-     * App info
-     */
-    appInfo: {
-        [key: string]: unknown;
-    };
+  /**
+   * List of matched integration ids
+   */
+  matchedIntegrationIds: Array<string>;
+  /**
+   * App info
+   */
+  appInfo: {
+    [key: string]: unknown;
+  };
 };
 
 export type AppInfoPayload = {
-    /**
-     * List of app unique keys to filter by
-     */
-    uniqueKey?: string;
+  /**
+   * List of app unique keys to filter by
+   */
+  uniqueKey?: string;
 };
 
 export type ComposioCreateConfigDTO = {
-    /**
-     * Name of the integration
-     */
-    name?: string;
-    /**
-     * Whether to use Composio authentication, default to true if no auth config is passed. Throws error we're not able to create integration.
-     */
-    useComposioAuth?: boolean;
-    /**
-     * Authentication scheme to use
-     */
-    authScheme?: 'OAUTH2' | 'OAUTH1' | 'OAUTH1A' | 'API_KEY' | 'BASIC' | 'BEARER_TOKEN' | 'GOOGLE_SERVICE_ACCOUNT' | 'NO_AUTH' | 'BASIC_WITH_JWT' | 'COMPOSIO_LINK' | 'CALCOM_AUTH';
-    /**
-     * Authentication configuration
-     */
-    integrationSecrets?: {
-        [key: string]: unknown;
-    };
+  /**
+   * Name of the integration
+   */
+  name?: string;
+  /**
+   * Whether to use Composio authentication, default to true if no auth config is passed. Throws error we're not able to create integration.
+   */
+  useComposioAuth?: boolean;
+  /**
+   * Authentication scheme to use
+   */
+  authScheme?:
+    | "OAUTH2"
+    | "OAUTH1"
+    | "OAUTH1A"
+    | "API_KEY"
+    | "BASIC"
+    | "BEARER_TOKEN"
+    | "GOOGLE_SERVICE_ACCOUNT"
+    | "NO_AUTH"
+    | "BASIC_WITH_JWT"
+    | "COMPOSIO_LINK"
+    | "CALCOM_AUTH";
+  /**
+   * Authentication configuration
+   */
+  integrationSecrets?: {
+    [key: string]: unknown;
+  };
 };
 
 export type ConnectorCreateReqDTO = {
-    /**
-     * Filter options for the connector
-     */
-    app: AppInfoPayload;
-    /**
-     * Filter options for the connector
-     */
-    config: ComposioCreateConfigDTO;
+  /**
+   * Filter options for the connector
+   */
+  app: AppInfoPayload;
+  /**
+   * Filter options for the connector
+   */
+  config: ComposioCreateConfigDTO;
 };
 
 export type CreateConnectorResDTO = {
-    /**
-     * List of matched integration IDs
-     */
-    integrationId: string;
+  /**
+   * List of matched integration IDs
+   */
+  integrationId: string;
 };
 
 export type GetOrCreateConnectorInfo = {
-    /**
-     * Filter options for the connector
-     */
-    app: AppFilterDTO;
-    /**
-     * Filter options for the connector
-     */
-    config: ComposioCreateConfigDTO;
+  /**
+   * Filter options for the connector
+   */
+  app: AppFilterDTO;
+  /**
+   * Filter options for the connector
+   */
+  config: ComposioCreateConfigDTO;
 };
 
 export type GetOrCreateConnectorResDTOV2 = {
-    /**
-     * Matched integration ID
-     */
-    integrationId: string;
-    /**
-     * Whether a new integration was created
-     */
-    isNewIntegration?: boolean;
+  /**
+   * Matched integration ID
+   */
+  integrationId: string;
+  /**
+   * Whether a new integration was created
+   */
+  isNewIntegration?: boolean;
 };
 
 export type ConnectionExtraData = {
-    /**
-     * The URL to redirect to after the connection is successfully initiated.
-     */
-    redirectURL?: string;
-    /**
-     * Array of labels to associate with the connection for organization and filtering.
-     */
-    labels?: Array<(string)>;
+  /**
+   * The URL to redirect to after the connection is successfully initiated.
+   */
+  redirectURL?: string;
+  /**
+   * Array of labels to associate with the connection for organization and filtering.
+   */
+  labels?: Array<string>;
 };
 
 export type ConnectionInitData = {
-    /**
-     * Data required to initiate the connection. The structure varies based on the integration type.
-     */
-    initiateData: {
-        [key: string]: unknown;
-    };
-    /**
-     * The entity ID to associate with the connection. Learn more about entities [here](https://docs.composio.dev/patterns/Auth/connected_account#entities).
-     */
-    entityId?: string;
-    /**
-     * The URL to redirect to after the connection is successfully initiated.
-     */
-    extra?: ConnectionExtraData;
+  /**
+   * Data required to initiate the connection. The structure varies based on the integration type.
+   */
+  initiateData: {
+    [key: string]: unknown;
+  };
+  /**
+   * The entity ID to associate with the connection. Learn more about entities [here](https://docs.composio.dev/patterns/Auth/connected_account#entities).
+   */
+  entityId?: string;
+  /**
+   * The URL to redirect to after the connection is successfully initiated.
+   */
+  extra?: ConnectionExtraData;
 };
 
 export type InitiateConnectionPayloadDtoV2 = {
-    /**
-     * Filter criteria to identify the app for which to create a connection.
-     */
-    app: AppFilterDTO;
-    /**
-     * Configuration options for the connection, including authentication scheme and settings.
-     */
-    config: ComposioCreateConfigDTO;
-    /**
-     * Additional metadata and configuration options for the connection.
-     */
-    connection: ConnectionInitData;
+  /**
+   * Filter criteria to identify the app for which to create a connection.
+   */
+  app: AppFilterDTO;
+  /**
+   * Configuration options for the connection, including authentication scheme and settings.
+   */
+  config: ComposioCreateConfigDTO;
+  /**
+   * Additional metadata and configuration options for the connection.
+   */
+  connection: ConnectionInitData;
 };
 
 export type IntegrationData = {
-    /**
-     * Unique identifier of the integration used for this connection.
-     */
-    id: string;
-    /**
-     * Indicates whether a new integration was created during this connection process.
-     */
-    isNewIntegration: boolean;
+  /**
+   * Unique identifier of the integration used for this connection.
+   */
+  id: string;
+  /**
+   * Indicates whether a new integration was created during this connection process.
+   */
+  isNewIntegration: boolean;
 };
 
 export type ConnectionResponseV2 = {
-    /**
-     * The URL to redirect to after the connection is successfully initiated.
-     */
-    redirectUrl?: string;
-    /**
-     * The current status of the connection.
-     */
-    connectionStatus: 'INITIATED' | 'ACTIVE' | 'FAILED' | 'EXPIRED';
-    /**
-     * The unique identifier of the connected account.
-     */
-    connectedAccountId: string;
+  /**
+   * The URL to redirect to after the connection is successfully initiated.
+   */
+  redirectUrl?: string;
+  /**
+   * The current status of the connection.
+   */
+  connectionStatus: "INITIATED" | "ACTIVE" | "FAILED" | "EXPIRED";
+  /**
+   * The unique identifier of the connected account.
+   */
+  connectedAccountId: string;
 };
 
 /**
  * The current status of the connection.
  */
-export type connectionStatus = 'INITIATED' | 'ACTIVE' | 'FAILED' | 'EXPIRED';
+export type connectionStatus = "INITIATED" | "ACTIVE" | "FAILED" | "EXPIRED";
 
 export type InitiateConnectionResponseV2 = {
-    /**
-     * Details about the integration associated with this connection.
-     */
-    integration: IntegrationData;
-    /**
-     * Response data containing connection details and status.
-     */
-    connectionResponse: ConnectionResponseV2;
+  /**
+   * Details about the integration associated with this connection.
+   */
+  integration: IntegrationData;
+  /**
+   * Response data containing connection details and status.
+   */
+  connectionResponse: ConnectionResponseV2;
 };
 
 export type GetUserInfoResponse = ClientInfoResDTO;
@@ -3720,10 +3814,10 @@ export type GetUserInfoResponse = ClientInfoResDTO;
 export type GetUserInfoError = unknown;
 
 export type AddProjectData = {
-    /**
-     * ProjectReqDTO
-     */
-    body?: ProjectReqDTO;
+  /**
+   * ProjectReqDTO
+   */
+  body?: ProjectReqDTO;
 };
 
 export type AddProjectResponse = ProjectResDTO;
@@ -3731,9 +3825,9 @@ export type AddProjectResponse = ProjectResDTO;
 export type AddProjectError = BadRequestError;
 
 export type DeleteProjectData = {
-    path: {
-        projectId: string;
-    };
+  path: {
+    projectId: string;
+  };
 };
 
 export type DeleteProjectResponse = DeleteRowAPIDTO;
@@ -3753,10 +3847,10 @@ export type RegenerateOrgApiKeyResponse = OrgApiKeyRegenerateResDTO;
 export type RegenerateOrgApiKeyError = unknown;
 
 export type InviteMemberData = {
-    /**
-     * InviteMemberReqDTO
-     */
-    body?: InviteMemberReqDTO;
+  /**
+   * InviteMemberReqDTO
+   */
+  body?: InviteMemberReqDTO;
 };
 
 export type InviteMemberResponse = MemberResDTO;
@@ -3768,10 +3862,10 @@ export type ListMembersResponse = Array<MemberResDTO>;
 export type ListMembersError = unknown;
 
 export type GenerateApiKeyData = {
-    /**
-     * GenerateAPIKeyReqDTO
-     */
-    body: GenerateAPIKeyReqDTO;
+  /**
+   * GenerateAPIKeyReqDTO
+   */
+  body: GenerateAPIKeyReqDTO;
 };
 
 export type GenerateApiKeyResponse = APIKeyResDTO;
@@ -3783,9 +3877,9 @@ export type ListApiKeysResponse = Array<APIKeyResDTO>;
 export type ListApiKeysError = unknown;
 
 export type DeleteApiKeyData = {
-    path: {
-        id: string;
-    };
+  path: {
+    id: string;
+  };
 };
 
 export type DeleteApiKeyResponse = DeleteAPIKeyResponseDTO;
@@ -3801,12 +3895,12 @@ export type ListAppEnumsResponse = unknown;
 export type ListAppEnumsError = unknown;
 
 export type GetAppsData = {
-    query?: {
-        additionalFields?: string;
-        category?: string;
-        includeLocal?: 'true' | 'false';
-        sortBy?: 'alphabet' | 'usage' | 'no_sort';
-    };
+  query?: {
+    additionalFields?: string;
+    category?: string;
+    includeLocal?: "true" | "false";
+    sortBy?: "alphabet" | "usage" | "no_sort";
+  };
 };
 
 export type GetAppsResponse = AppListResDTO;
@@ -3814,9 +3908,9 @@ export type GetAppsResponse = AppListResDTO;
 export type GetAppsError = unknown;
 
 export type GetAppData = {
-    path: {
-        appName: string;
-    };
+  path: {
+    appName: string;
+  };
 };
 
 export type GetAppResponse = SingleAppInfoResDTO;
@@ -3824,10 +3918,10 @@ export type GetAppResponse = SingleAppInfoResDTO;
 export type GetAppError = NotFoundError;
 
 export type CreateConnectorData = {
-    /**
-     * CreateConnectorPayloadDTO
-     */
-    body?: CreateConnectorPayloadDTO;
+  /**
+   * CreateConnectorPayloadDTO
+   */
+  body?: CreateConnectorPayloadDTO;
 };
 
 export type CreateConnectorResponse = GetConnectorInfoResDTO;
@@ -3839,9 +3933,9 @@ export type ListAllConnectorsResponse = GetConnectorListResDTO;
 export type ListAllConnectorsError = unknown;
 
 export type GetConnectorInfoData = {
-    path: {
-        integrationId: string;
-    };
+  path: {
+    integrationId: string;
+  };
 };
 
 export type GetConnectorInfoResponse = GetConnectorInfoResDTO;
@@ -3849,13 +3943,13 @@ export type GetConnectorInfoResponse = GetConnectorInfoResDTO;
 export type GetConnectorInfoError = unknown;
 
 export type ModifyConnectorData = {
-    /**
-     * PatchConnectorReqDTO
-     */
-    body?: PatchConnectorReqDTO;
-    path: {
-        integrationId: string;
-    };
+  /**
+   * PatchConnectorReqDTO
+   */
+  body?: PatchConnectorReqDTO;
+  path: {
+    integrationId: string;
+  };
 };
 
 export type ModifyConnectorResponse = PatchConnectorResDTO;
@@ -3863,9 +3957,9 @@ export type ModifyConnectorResponse = PatchConnectorResDTO;
 export type ModifyConnectorError = unknown;
 
 export type DeleteConnectorData = {
-    path: {
-        integrationId: string;
-    };
+  path: {
+    integrationId: string;
+  };
 };
 
 export type DeleteConnectorResponse = DeleteRowAPIDTO;
@@ -3877,9 +3971,9 @@ export type ListActionEnumsResponse = unknown;
 export type ListActionEnumsError = unknown;
 
 export type ListActionTagsData = {
-    query?: {
-        apps?: string;
-    };
+  query?: {
+    apps?: string;
+  };
 };
 
 export type ListActionTagsResponse = ActionsTagsResponseDTO;
@@ -3891,19 +3985,19 @@ export type ListActionEnums1Response = unknown;
 export type ListActionEnums1Error = unknown;
 
 export type ListActionsV2Data = {
-    query?: {
-        actions?: string;
-        appNames?: string;
-        apps?: string;
-        filterImportantActions?: boolean;
-        limit?: number;
-        page?: number;
-        showAll?: boolean;
-        showEnabledOnly?: boolean;
-        tags?: string;
-        useCase?: string;
-        usecaseLimit?: number;
-    };
+  query?: {
+    actions?: string;
+    appNames?: string;
+    apps?: string;
+    filterImportantActions?: boolean;
+    limit?: number;
+    page?: number;
+    showAll?: boolean;
+    showEnabledOnly?: boolean;
+    tags?: string;
+    useCase?: string;
+    usecaseLimit?: number;
+  };
 };
 
 export type ListActionsV2Response = ActionsListResponseDTO;
@@ -3911,16 +4005,16 @@ export type ListActionsV2Response = ActionsListResponseDTO;
 export type ListActionsV2Error = unknown;
 
 export type ListActionsMinimalV2Data = {
-    query?: {
-        actions?: string;
-        apps?: string;
-        filterImportantActions?: boolean;
-        limit?: number;
-        page?: number;
-        sortBy?: 'alphabet' | 'usage' | 'no_sort';
-        tags?: string;
-        useCase?: string;
-    };
+  query?: {
+    actions?: string;
+    apps?: string;
+    filterImportantActions?: boolean;
+    limit?: number;
+    page?: number;
+    sortBy?: "alphabet" | "usage" | "no_sort";
+    tags?: string;
+    useCase?: string;
+  };
 };
 
 export type ListActionsMinimalV2Response = ActionsListResponseDTO;
@@ -3928,13 +4022,13 @@ export type ListActionsMinimalV2Response = ActionsListResponseDTO;
 export type ListActionsMinimalV2Error = BadRequestError;
 
 export type ExecuteActionV2Data = {
-    /**
-     * ActionExecutionReqDTO
-     */
-    body?: ActionExecutionReqDTO;
-    path: {
-        actionId: string;
-    };
+  /**
+   * ActionExecutionReqDTO
+   */
+  body?: ActionExecutionReqDTO;
+  path: {
+    actionId: string;
+  };
 };
 
 export type ExecuteActionV2Response = ActionExecutionResDto;
@@ -3942,13 +4036,13 @@ export type ExecuteActionV2Response = ActionExecutionResDto;
 export type ExecuteActionV2Error = BadRequestError;
 
 export type GetActionInputsV2Data = {
-    /**
-     * ActionGetNLAInputsReqDTO
-     */
-    body?: ActionGetNLAInputsReqDTO;
-    path: {
-        actionId: string;
-    };
+  /**
+   * ActionGetNLAInputsReqDTO
+   */
+  body?: ActionGetNLAInputsReqDTO;
+  path: {
+    actionId: string;
+  };
 };
 
 export type GetActionInputsV2Response = NLAArgumentsResponseDTO;
@@ -3956,12 +4050,12 @@ export type GetActionInputsV2Response = NLAArgumentsResponseDTO;
 export type GetActionInputsV2Error = unknown;
 
 export type GetActionV2Data = {
-    path: {
-        actionId: string;
-    };
-    query?: {
-        version?: string;
-    };
+  path: {
+    actionId: string;
+  };
+  query?: {
+    version?: string;
+  };
 };
 
 export type GetActionV2Response = ActionDetails;
@@ -3969,10 +4063,10 @@ export type GetActionV2Response = ActionDetails;
 export type GetActionV2Error = ActionNotFoundError;
 
 export type ExecuteWithHttpClientData = {
-    /**
-     * ActionProxyRequestConfigDTO
-     */
-    body?: ActionProxyRequestConfigDTO;
+  /**
+   * ActionProxyRequestConfigDTO
+   */
+  body?: ActionProxyRequestConfigDTO;
 };
 
 export type ExecuteWithHttpClientResponse = ActionExecutionResDto;
@@ -3980,18 +4074,18 @@ export type ExecuteWithHttpClientResponse = ActionExecutionResDto;
 export type ExecuteWithHttpClientError = unknown;
 
 export type AdvancedUseCaseSearchData = {
-    /**
-     * AdvancedUseCaseSearchBodyDTO
-     */
-    body?: AdvancedUseCaseSearchBodyDTO;
-    query?: {
-        apps?: string;
-        filterByAvailableApps?: boolean;
-        limit?: number;
-        maxActionsPerTask?: number;
-        minActionsPerTask?: number;
-        useCase?: string;
-    };
+  /**
+   * AdvancedUseCaseSearchBodyDTO
+   */
+  body?: AdvancedUseCaseSearchBodyDTO;
+  query?: {
+    apps?: string;
+    filterByAvailableApps?: boolean;
+    limit?: number;
+    maxActionsPerTask?: number;
+    minActionsPerTask?: number;
+    useCase?: string;
+  };
 };
 
 export type AdvancedUseCaseSearchResponse2 = AdvancedUseCaseSearchResponse;
@@ -4003,13 +4097,13 @@ export type ActionsControllerV2ListUserFilesResponse = GetFilesResponseDTO;
 export type ActionsControllerV2ListUserFilesError = unknown;
 
 export type CreateFileUploadUrlData = {
-    /**
-     * FileInfoDTO
-     */
-    body?: FileInfoDTO;
-    path: {
-        fileType: unknown;
-    };
+  /**
+   * FileInfoDTO
+   */
+  body?: FileInfoDTO;
+  path: {
+    fileType: unknown;
+  };
 };
 
 export type CreateFileUploadUrlResponse = CreateUploadURLResponseDTO;
@@ -4017,19 +4111,19 @@ export type CreateFileUploadUrlResponse = CreateUploadURLResponseDTO;
 export type CreateFileUploadUrlError = unknown;
 
 export type ListConnectionsData = {
-    query?: {
-        appNames?: string;
-        connectionId?: string;
-        entityId?: string;
-        integrationId?: string;
-        labels?: string;
-        page?: number;
-        pageSize?: number;
-        showActiveOnly?: boolean;
-        showDisabled?: boolean;
-        status?: string;
-        user_uuid?: string;
-    };
+  query?: {
+    appNames?: string;
+    connectionId?: string;
+    entityId?: string;
+    integrationId?: string;
+    labels?: string;
+    page?: number;
+    pageSize?: number;
+    showActiveOnly?: boolean;
+    showDisabled?: boolean;
+    status?: string;
+    user_uuid?: string;
+  };
 };
 
 export type ListConnectionsResponse = GetConnectionsResponseDto;
@@ -4037,10 +4131,10 @@ export type ListConnectionsResponse = GetConnectionsResponseDto;
 export type ListConnectionsError = BadRequestError;
 
 export type InitiateConnectionData = {
-    /**
-     * InitiateConnectionPayloadDto
-     */
-    body?: InitiateConnectionPayloadDto;
+  /**
+   * InitiateConnectionPayloadDto
+   */
+  body?: InitiateConnectionPayloadDto;
 };
 
 export type InitiateConnectionResponse2 = InitiateConnectionResponse;
@@ -4048,13 +4142,13 @@ export type InitiateConnectionResponse2 = InitiateConnectionResponse;
 export type InitiateConnectionError = BadRequestError | NotFoundError;
 
 export type UpdateConnectionDataData = {
-    /**
-     * UpdateConnectionLabelsPayloadDto
-     */
-    body?: UpdateConnectionLabelsPayloadDto;
-    path: {
-        connectedAccountId: string;
-    };
+  /**
+   * UpdateConnectionLabelsPayloadDto
+   */
+  body?: UpdateConnectionLabelsPayloadDto;
+  path: {
+    connectedAccountId: string;
+  };
 };
 
 export type UpdateConnectionDataResponse = unknown;
@@ -4062,13 +4156,13 @@ export type UpdateConnectionDataResponse = unknown;
 export type UpdateConnectionDataError = unknown;
 
 export type ReinitiateConnectionData = {
-    /**
-     * ReinitiateConnectionPayloadDto
-     */
-    body?: ReinitiateConnectionPayloadDto;
-    path: {
-        connectedAccountId: string;
-    };
+  /**
+   * ReinitiateConnectionPayloadDto
+   */
+  body?: ReinitiateConnectionPayloadDto;
+  path: {
+    connectedAccountId: string;
+  };
 };
 
 export type ReinitiateConnectionResponse = InitiateConnectionResponse;
@@ -4076,9 +4170,9 @@ export type ReinitiateConnectionResponse = InitiateConnectionResponse;
 export type ReinitiateConnectionError = ConnectedAccountNotFoundError;
 
 export type GetConnectionData = {
-    path: {
-        connectedAccountId: string;
-    };
+  path: {
+    connectedAccountId: string;
+  };
 };
 
 export type GetConnectionResponse = ConnectedAccountResponseDTO;
@@ -4086,9 +4180,9 @@ export type GetConnectionResponse = ConnectedAccountResponseDTO;
 export type GetConnectionError = ConnectedAccountNotFoundError;
 
 export type DeleteConnectionData = {
-    path: {
-        connectedAccountId: string;
-    };
+  path: {
+    connectedAccountId: string;
+  };
 };
 
 export type DeleteConnectionResponse = DeleteRowAPIDTO;
@@ -4096,9 +4190,9 @@ export type DeleteConnectionResponse = DeleteRowAPIDTO;
 export type DeleteConnectionError = unknown;
 
 export type GetConnectionInfoData = {
-    path: {
-        connectedAccountId: string;
-    };
+  path: {
+    connectedAccountId: string;
+  };
 };
 
 export type GetConnectionInfoResponse = GetConnectionInfoResponseDTO;
@@ -4106,9 +4200,9 @@ export type GetConnectionInfoResponse = GetConnectionInfoResponseDTO;
 export type GetConnectionInfoError = unknown;
 
 export type DisableConnectionData = {
-    path: {
-        connectedAccountId: string;
-    };
+  path: {
+    connectedAccountId: string;
+  };
 };
 
 export type DisableConnectionResponse = ToggleConnectedAccountResponseDTO;
@@ -4116,9 +4210,9 @@ export type DisableConnectionResponse = ToggleConnectedAccountResponseDTO;
 export type DisableConnectionError = unknown;
 
 export type EnableConnectionData = {
-    path: {
-        connectedAccountId: string;
-    };
+  path: {
+    connectedAccountId: string;
+  };
 };
 
 export type EnableConnectionResponse = ToggleConnectedAccountResponseDTO;
@@ -4126,14 +4220,14 @@ export type EnableConnectionResponse = ToggleConnectedAccountResponseDTO;
 export type EnableConnectionError = unknown;
 
 export type ListTriggersData = {
-    query?: {
-        appNames?: string;
-        connectedAccountIds?: string;
-        integrationIds?: string;
-        showEnabledOnly?: boolean;
-        triggerIds?: string;
-        triggerNames?: string;
-    };
+  query?: {
+    appNames?: string;
+    connectedAccountIds?: string;
+    integrationIds?: string;
+    showEnabledOnly?: boolean;
+    triggerIds?: string;
+    triggerNames?: string;
+  };
 };
 
 export type ListTriggersResponse = Array<TriggerResDTO>;
@@ -4145,10 +4239,10 @@ export type ListTriggerEnumsResponse = unknown;
 export type ListTriggerEnumsError = unknown;
 
 export type UpdateNewWebhookData = {
-    /**
-     * WehbookNewFormatDTO
-     */
-    body?: WehbookNewFormatDTO;
+  /**
+   * WehbookNewFormatDTO
+   */
+  body?: WehbookNewFormatDTO;
 };
 
 export type UpdateNewWebhookResponse = unknown;
@@ -4156,14 +4250,14 @@ export type UpdateNewWebhookResponse = unknown;
 export type UpdateNewWebhookError = unknown;
 
 export type EnableTriggerData = {
-    /**
-     * EnableTriggerBodyDTO
-     */
-    body?: EnableTriggerBodyDTO;
-    path: {
-        connectedAccountId: string;
-        triggerName: string;
-    };
+  /**
+   * EnableTriggerBodyDTO
+   */
+  body?: EnableTriggerBodyDTO;
+  path: {
+    connectedAccountId: string;
+    triggerName: string;
+  };
 };
 
 export type EnableTriggerResponse = TriggerResponseDTO;
@@ -4171,15 +4265,15 @@ export type EnableTriggerResponse = TriggerResponseDTO;
 export type EnableTriggerError = unknown;
 
 export type GetActiveTriggersData = {
-    query?: {
-        connectedAccountIds?: string;
-        integrationIds?: string;
-        limit?: number;
-        page?: number;
-        showDisabled?: boolean;
-        triggerIds?: string;
-        triggerNames?: string;
-    };
+  query?: {
+    connectedAccountIds?: string;
+    integrationIds?: string;
+    limit?: number;
+    page?: number;
+    showDisabled?: boolean;
+    triggerIds?: string;
+    triggerNames?: string;
+  };
 };
 
 export type GetActiveTriggersResponse = ActiveTriggersResDTO;
@@ -4187,13 +4281,13 @@ export type GetActiveTriggersResponse = ActiveTriggersResDTO;
 export type GetActiveTriggersError = unknown;
 
 export type SwitchTriggerInstanceStatusData = {
-    /**
-     * SwitchTriggerStatusBodyDTO
-     */
-    body?: SwitchTriggerStatusBodyDTO;
-    path: {
-        triggerId: string;
-    };
+  /**
+   * SwitchTriggerStatusBodyDTO
+   */
+  body?: SwitchTriggerStatusBodyDTO;
+  path: {
+    triggerId: string;
+  };
 };
 
 export type SwitchTriggerInstanceStatusResponse = TriggerResponseDTO;
@@ -4201,9 +4295,9 @@ export type SwitchTriggerInstanceStatusResponse = TriggerResponseDTO;
 export type SwitchTriggerInstanceStatusError = unknown;
 
 export type DisableTriggerData = {
-    path: {
-        triggerInstanceId: string;
-    };
+  path: {
+    triggerInstanceId: string;
+  };
 };
 
 export type DisableTriggerResponse = TriggerResponseDTO;
@@ -4211,9 +4305,9 @@ export type DisableTriggerResponse = TriggerResponseDTO;
 export type DisableTriggerError = unknown;
 
 export type DeleteTriggerData = {
-    path: {
-        triggerInstanceId: string;
-    };
+  path: {
+    triggerInstanceId: string;
+  };
 };
 
 export type DeleteTriggerResponse = DeleteRowAPIDTO;
@@ -4221,10 +4315,10 @@ export type DeleteTriggerResponse = DeleteRowAPIDTO;
 export type DeleteTriggerError = unknown;
 
 export type SetCallbackUrlData = {
-    /**
-     * SetCallbackUrlBodyDTO
-     */
-    body?: SetCallbackUrlBodyDTO;
+  /**
+   * SetCallbackUrlBodyDTO
+   */
+  body?: SetCallbackUrlBodyDTO;
 };
 
 export type SetCallbackUrlResponse = TriggerResponseDTO;
@@ -4236,12 +4330,12 @@ export type GetWebhookUrlResponse = WebhookURLResponseDTO;
 export type GetWebhookUrlError = unknown;
 
 export type GetTriggerLogsData = {
-    query?: {
-        connectionId?: string;
-        integrationId?: string;
-        limit?: number;
-        page?: number;
-    };
+  query?: {
+    connectionId?: string;
+    integrationId?: string;
+    limit?: number;
+    page?: number;
+  };
 };
 
 export type GetTriggerLogsResponse = TriggerLogsResDTO;
@@ -4249,9 +4343,9 @@ export type GetTriggerLogsResponse = TriggerLogsResDTO;
 export type GetTriggerLogsError = unknown;
 
 export type GetTriggerInfoV2Data = {
-    path: {
-        triggerName: string;
-    };
+  path: {
+    triggerName: string;
+  };
 };
 
 export type GetTriggerInfoV2Response = Array<SingleTriggerResDTO>;
@@ -4263,10 +4357,10 @@ export type GenerateCliSessionResponse = GenerateCLISessionResDTO;
 export type GenerateCliSessionError = unknown;
 
 export type GetCliCodeData = {
-    query: {
-        code?: string;
-        key: string;
-    };
+  query: {
+    code?: string;
+    key: string;
+  };
 };
 
 export type GetCliCodeResponse = GetCLISessionResDTO;
@@ -4274,10 +4368,10 @@ export type GetCliCodeResponse = GetCLISessionResDTO;
 export type GetCliCodeError = unknown;
 
 export type VerifyCliCodeData = {
-    query: {
-        code?: string;
-        key: string;
-    };
+  query: {
+    code?: string;
+    key: string;
+  };
 };
 
 export type VerifyCliCodeResponse = VerifyCLICodeResDTO;
@@ -4285,17 +4379,17 @@ export type VerifyCliCodeResponse = VerifyCLICodeResDTO;
 export type VerifyCliCodeError = unknown;
 
 export type GetLogsData = {
-    query?: {
-        cursor?: string;
-        entityId?: string;
-        integrationId?: string;
-        limit?: number;
-        logsType?: 'action' | 'trigger';
-        search?: string;
-        sessionId?: string;
-        status?: 'all' | 'success' | 'error';
-        time?: '5m' | '30m' | '6h' | '1d' | '1w' | '1month' | '1y';
-    };
+  query?: {
+    cursor?: string;
+    entityId?: string;
+    integrationId?: string;
+    limit?: number;
+    logsType?: "action" | "trigger";
+    search?: string;
+    sessionId?: string;
+    status?: "all" | "success" | "error";
+    time?: "5m" | "30m" | "6h" | "1d" | "1w" | "1month" | "1y";
+  };
 };
 
 export type GetLogsResponse = LogsResDTO;
@@ -4303,10 +4397,10 @@ export type GetLogsResponse = LogsResDTO;
 export type GetLogsError = unknown;
 
 export type PostLogsData = {
-    /**
-     * IngestDataDTO
-     */
-    body?: IngestDataDTO;
+  /**
+   * IngestDataDTO
+   */
+  body?: IngestDataDTO;
 };
 
 export type PostLogsResponse = IngestDataResponseDTO;
@@ -4314,10 +4408,10 @@ export type PostLogsResponse = IngestDataResponseDTO;
 export type PostLogsError = unknown;
 
 export type CreateProjectData = {
-    /**
-     * ProjectReqDTO
-     */
-    body?: ProjectReqDTO;
+  /**
+   * ProjectReqDTO
+   */
+  body?: ProjectReqDTO;
 };
 
 export type CreateProjectResponse = ProjectResDTO;
@@ -4325,9 +4419,9 @@ export type CreateProjectResponse = ProjectResDTO;
 export type CreateProjectError = BadRequestError;
 
 export type RegenerateProjectApiKeyData = {
-    path: {
-        projectId: string;
-    };
+  path: {
+    projectId: string;
+  };
 };
 
 export type RegenerateProjectApiKeyResponse = ProjectResDTO;
@@ -4335,9 +4429,9 @@ export type RegenerateProjectApiKeyResponse = ProjectResDTO;
 export type RegenerateProjectApiKeyError = unknown;
 
 export type GetProjectData = {
-    path: {
-        projectId: string;
-    };
+  path: {
+    projectId: string;
+  };
 };
 
 export type GetProjectResponse = ProjectResDTO;
@@ -4345,16 +4439,16 @@ export type GetProjectResponse = ProjectResDTO;
 export type GetProjectError = unknown;
 
 export type RenameProjectData = {
-    /**
-     * ProjectReqDTO
-     */
-    body?: ProjectReqDTO;
-    headers?: {
-        'X-Org-API-Key'?: string;
-    };
-    path: {
-        projectId: string;
-    };
+  /**
+   * ProjectReqDTO
+   */
+  body?: ProjectReqDTO;
+  headers?: {
+    "X-Org-API-Key"?: string;
+  };
+  path: {
+    projectId: string;
+  };
 };
 
 export type RenameProjectResponse = UpdateRowAPIDTO;
@@ -4362,10 +4456,10 @@ export type RenameProjectResponse = UpdateRowAPIDTO;
 export type RenameProjectError = unknown;
 
 export type SearchConnectorData = {
-    /**
-     * ConnectorSearchFilterDTOV2
-     */
-    body?: ConnectorSearchFilterDTOV2;
+  /**
+   * ConnectorSearchFilterDTOV2
+   */
+  body?: ConnectorSearchFilterDTOV2;
 };
 
 export type SearchConnectorResponse = ConnectorSearchResDTO;
@@ -4373,10 +4467,10 @@ export type SearchConnectorResponse = ConnectorSearchResDTO;
 export type SearchConnectorError = unknown;
 
 export type CreateConnectorV2Data = {
-    /**
-     * ConnectorCreateReqDTO
-     */
-    body?: ConnectorCreateReqDTO;
+  /**
+   * ConnectorCreateReqDTO
+   */
+  body?: ConnectorCreateReqDTO;
 };
 
 export type CreateConnectorV2Response = CreateConnectorResDTO;
@@ -4384,10 +4478,10 @@ export type CreateConnectorV2Response = CreateConnectorResDTO;
 export type CreateConnectorV2Error = unknown;
 
 export type GetOrCreateConnectorData = {
-    /**
-     * GetOrCreateConnectorInfo
-     */
-    body?: GetOrCreateConnectorInfo;
+  /**
+   * GetOrCreateConnectorInfo
+   */
+  body?: GetOrCreateConnectorInfo;
 };
 
 export type GetOrCreateConnectorResponse = GetOrCreateConnectorResDTOV2;
@@ -4395,10 +4489,10 @@ export type GetOrCreateConnectorResponse = GetOrCreateConnectorResDTOV2;
 export type GetOrCreateConnectorError = unknown;
 
 export type InitiateConnectionV2Data = {
-    /**
-     * InitiateConnectionPayloadDtoV2
-     */
-    body?: InitiateConnectionPayloadDtoV2;
+  /**
+   * InitiateConnectionPayloadDtoV2
+   */
+  body?: InitiateConnectionPayloadDtoV2;
 };
 
 export type InitiateConnectionV2Response = InitiateConnectionResponseV2;
