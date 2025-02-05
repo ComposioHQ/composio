@@ -476,7 +476,7 @@ class ComposioToolSet(WithLogger):  # pylint: disable=too-many-public-methods
             connection.appUniqueId.upper()
             for connection in self._connected_accounts
             # Checking with clientUniqueUserId since the API returns the  
-            # entityId in the connectedAccounts query in clientUniqueUserId
+            # entityId as clientUniqueUserId
             if connection.clientUniqueUserId == entity_id
         ]:
             raise ComposioSDKError(
