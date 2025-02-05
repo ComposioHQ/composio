@@ -1669,11 +1669,6 @@ export type Parameter = {
     value: string;
 };
 
-/**
- * The location of the parameter. Can be 'query' or 'header'.
- */
-export type in = 'query' | 'header';
-
 export type Data = {
     /**
      * First field of the data object.

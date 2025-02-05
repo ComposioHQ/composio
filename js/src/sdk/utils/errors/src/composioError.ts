@@ -1,6 +1,6 @@
 import { logError } from "..";
 import { getUUID } from "../../../../utils/common";
-import { getLogLevel } from "../../../../utils/logger";
+import { getLogLevel, LOG_LEVELS } from "../../../../utils/logger";
 
 /**
  * Custom error class for Composio that provides rich error details, tracking, and improved debugging
@@ -67,20 +67,22 @@ export class ComposioError extends Error {
       }
     }
 
-    // eslint-disable-next-line no-console
-    console.log(
-      `🚀 [Info] Give Feedback / Get Help: https://dub.composio.dev/discord `
-    );
-    // eslint-disable-next-line no-console
-    console.log(
-      `🐛 [Info] Create a new issue: https://github.com/ComposioHQ/composio/issues `
-    );
-    if (getLogLevel() !== "debug") {
+    if (LOG_LEVELS[getLogLevel()] > 0) {
       // eslint-disable-next-line no-console
       console.log(
-        `⛔ [Info] If you need to debug this error, set env variable COMPOSIO_LOGGING_LEVEL=debug`
+        `🚀 [Info] Give Feedback / Get Help: https://dub.composio.dev/discord `
       );
-    }
+      // eslint-disable-next-line no-console
+      console.log(
+        `🐛 [Info] Create a new issue: https://github.com/ComposioHQ/composio/issues `
+      );
+      if (getLogLevel() !== "debug") {
+        // eslint-disable-next-line no-console
+        console.log(
+          `⛔ [Info] If you need to debug this error, set env variable COMPOSIO_LOGGING_LEVEL=debug`
+        );
+      }
+   }
 
     logError({
       error_id: this.errorId,
