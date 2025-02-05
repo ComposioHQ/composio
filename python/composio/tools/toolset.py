@@ -1297,6 +1297,10 @@ class _IntegrationMixin(_GetMixin):
         :return: (ConnectionRequestModel) Details of the connection request.
         """
         if auth_scheme is not None and auth_scheme not in AUTH_SCHEMES:
+            if auth_scheme is "NO_AUTH":
+                raise ComposioSDKError(
+                    "'NO_AUTH' does not require initiating a connection. Please use the `execute_action` method directly to execute actions for this app."
+                )
             raise ComposioSDKError(f"'auth_scheme' must be one of {AUTH_SCHEMES}")
 
         if integration_id is None:
@@ -1307,6 +1311,14 @@ class _IntegrationMixin(_GetMixin):
 
             if auth_scheme is None:
                 auth_scheme = self.get_auth_scheme_for_app(app).auth_mode
+
+            if auth_scheme is not None and auth_scheme not in AUTH_SCHEMES:
+                if auth_scheme is "NO_AUTH":
+                    raise ComposioSDKError(
+                        "'NO_AUTH' does not require initiating a connection. Please use the `execute_action` method directly to execute actions for this app."
+                    )
+
+                raise ComposioSDKError(f"'auth_scheme' must be one of {AUTH_SCHEMES}")
 
             try:
                 integration_id = self._get_integration_for_app(
