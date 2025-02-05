@@ -176,6 +176,7 @@ class ComposioToolSet(
         self,
         tool_call: ChatCompletionMessageToolCall,
         entity_id: t.Optional[str] = None,
+        check_requested_actions: bool = True,
     ) -> t.Dict:
         """
         Execute a tool call.
@@ -188,13 +189,14 @@ class ComposioToolSet(
             action=tool_call.function.name,
             params=json.loads(tool_call.function.arguments),
             entity_id=entity_id or self.entity_id,
-            _check_requested_actions=True,
+            _check_requested_actions=check_requested_actions,
         )
 
     def handle_tool_calls(
         self,
         response: ChatCompletion,
         entity_id: t.Optional[str] = None,
+        check_requested_actions: bool = True,
     ) -> t.List[t.Dict]:
         """
         Handle tool calls from OpenAI chat completion object.
@@ -214,6 +216,7 @@ class ComposioToolSet(
                             self.execute_tool_call(
                                 tool_call=tool_call,
                                 entity_id=entity_id or self.entity_id,
+                                check_requested_actions=check_requested_actions,
                             )
                         )
         return outputs
@@ -222,6 +225,7 @@ class ComposioToolSet(
         self,
         run: Run,
         entity_id: t.Optional[str] = None,
+        check_requested_actions: bool = True,
     ) -> t.List:
         """Wait and handle assistant function calls"""
         tool_outputs = []
@@ -231,6 +235,7 @@ class ComposioToolSet(
             tool_response = self.execute_tool_call(
                 tool_call=t.cast(ChatCompletionMessageToolCall, tool_call),
                 entity_id=entity_id or self.entity_id,
+                check_requested_actions=check_requested_actions,
             )
             tool_output = {
                 "tool_call_id": tool_call.id,
