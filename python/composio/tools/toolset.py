@@ -1112,8 +1112,6 @@ class _GetMixin(WithLogger):
         if auth_scheme is not None:
             return auth_schemes[auth_scheme]
 
-        is_no_auth = False
-
         for scheme in ALL_AUTH_SCHEMES:
             if scheme in auth_schemes:
                 scheme = t.cast(AuthSchemeType, scheme)
