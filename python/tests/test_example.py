@@ -229,7 +229,6 @@ def test_example(
 
     filepath.write_text(original_source, encoding="utf-8")
 
-    print(t.cast(t.IO[bytes], proc.stderr).read().decode(encoding="utf-8"))
     # Check if process exited with success
     assert proc.returncode == 0
 
