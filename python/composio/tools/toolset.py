@@ -399,6 +399,11 @@ class ProcessorHelper(WithLogger):
         metadata.update(self._get_metadata(key=action))
         return metadata
 
+    def add_local_action_metadata(self, action_type: ActionType, metadata: t.Optional[t.Dict]) -> t.Dict:
+        metadata = metadata or {}
+        metadata.update(self._get_metadata(key=action_type))
+        return metadata
+
 
 class FileIOHelper(WithLogger):
 
@@ -1858,6 +1863,7 @@ class ComposioToolSet(_IntegrationMixin):
         :param connected_account_id: Connection ID for executing the remote action
         :return: Output object from the function call
         """
+        original_action_type = action
         action = Action(action)
         if self._version_lock is not None:
             (action,) = self._version_lock.apply(actions=[action])
@@ -1877,6 +1883,12 @@ class ComposioToolSet(_IntegrationMixin):
             action=action,
             request=params,
         )
+
+        if action.is_local:
+            metadata = self._processor_helpers.add_local_action_metadata(
+                action_type=original_action_type, metadata=metadata
+            )
+
         if not action.is_runtime:
             params = self._processor_helpers.process_request(
                 action=action, request=params
