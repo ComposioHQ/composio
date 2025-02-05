@@ -45,7 +45,10 @@ export const FILE_UPLOADABLE_SCHEMA = {
         );
         const value = responseData[key];
 
-        const fileData = await getFileData(value as string, actionName);
+        const fileData = await getFileDataAfterUploadingToS3(
+          value as string,
+          actionName
+        );
         responseData[keyWithoutSchemaParsed] = {
           name: fileData.name,
           mimeType: fileData.mimeType,
@@ -71,8 +74,6 @@ const readFileContent = async (
     throw new Error(`Error reading file at ${path}: ${error}`);
   }
 };
-
-
 
 const readFileContentFromURL = async (
   path: string
@@ -102,7 +103,10 @@ const getFileDataAfterUploadingToS3 = async (
     ? await readFileContentFromURL(path)
     : await readFileContent(path);
 
-  const content = await getFileDataAfterUploadingToS3(fileData.content, actionName);
+  const content = await getFileDataAfterUploadingToS3(
+    fileData.content,
+    actionName
+  );
   return {
     name: path.split("/").pop() || `${actionName}_${Date.now()}`,
     mimeType: fileData.mimeType,
