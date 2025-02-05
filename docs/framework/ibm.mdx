@@ -4,7 +4,7 @@ sidebarTitle: "IBM"
 description: "Integrate Composio with IBM's Granite Models to let them seamlessly interact with external apps"
 ---
 
-**Composio enables** ** IBM's Granite Models ** to **connect** with many **tools**!
+**Composio enables** **IBM's Granite Models** to **connect** with many **tools**!
 
 <Tip>Goal: Star a repository on GitHub with natural language</Tip>
 
@@ -51,8 +51,9 @@ Prepare your environment by initializing necessary imports from Composio & IBM.
     ```python Default Imports
     from composio_langchain import ComposioToolSet, Action
     from langchain_ibm import ChatWatsonx
+    import os
 
-    os.environ['WATSONX_API_KEY'] = '' #add your ibm api key here
+    os.environ['WATSONX_API_KEY'] = '<ibm_api_key>' #add your ibm api key here
     ```
 
 </CodeGroup>
