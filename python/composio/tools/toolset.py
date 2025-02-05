@@ -1273,6 +1273,12 @@ class _IntegrationMixin(_GetMixin):
             force_new_integration=force_new_integration,
         )
 
+    def _validate_no_auth_scheme(self, auth_scheme):
+        if auth_scheme == "NO_AUTH":
+            raise ComposioSDKError(
+                "'NO_AUTH' does not require initiating a connection. Please use the `execute_action` method directly to execute actions for this app."
+            )
+
     def initiate_connection(
         self,
         integration_id: t.Optional[str] = None,
@@ -1297,10 +1303,7 @@ class _IntegrationMixin(_GetMixin):
         :return: (ConnectionRequestModel) Details of the connection request.
         """
         if auth_scheme is not None and auth_scheme not in AUTH_SCHEMES:
-            if auth_scheme is "NO_AUTH":
-                raise ComposioSDKError(
-                    "'NO_AUTH' does not require initiating a connection. Please use the `execute_action` method directly to execute actions for this app."
-                )
+            self._validate_no_auth_scheme(auth_scheme)
             raise ComposioSDKError(f"'auth_scheme' must be one of {AUTH_SCHEMES}")
 
         if integration_id is None:
@@ -1313,11 +1316,7 @@ class _IntegrationMixin(_GetMixin):
                 auth_scheme = self.get_auth_scheme_for_app(app).auth_mode
 
             if auth_scheme is not None and auth_scheme not in AUTH_SCHEMES:
-                if auth_scheme is "NO_AUTH":
-                    raise ComposioSDKError(
-                        "'NO_AUTH' does not require initiating a connection. Please use the `execute_action` method directly to execute actions for this app."
-                    )
-
+                self._validate_no_auth_scheme(auth_scheme)
                 raise ComposioSDKError(f"'auth_scheme' must be one of {AUTH_SCHEMES}")
 
             try:
