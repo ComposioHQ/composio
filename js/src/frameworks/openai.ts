@@ -43,8 +43,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
 
   async getTools(
     filters: z.infer<typeof ZToolSchemaFilter>,
-    entityId?: Optional<string>,
-    integrationId?: Optional<string>
+    entityId?: Optional<string>
   ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getTools",
