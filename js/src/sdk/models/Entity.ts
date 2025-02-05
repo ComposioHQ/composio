@@ -13,7 +13,7 @@ import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { ActionExecuteResponse, Actions } from "./actions";
 import { ActiveTriggers } from "./activeTriggers";
 import { Apps } from "./apps";
-import { BackendClient } from "./backendClient";
+import { AxiosBackendClient } from "./backendClient";
 import {
   ConnectedAccounts,
   ConnectionItem,
@@ -43,7 +43,7 @@ export type ConnectedAccountListRes = GetConnectionsResponseDto;
 
 export class Entity {
   id: string;
-  private backendClient: BackendClient;
+  private backendClient: AxiosBackendClient;
   private triggerModel: Triggers;
   private actionsModel: Actions;
   private apps: Apps;
@@ -53,7 +53,7 @@ export class Entity {
 
   private fileName: string = "js/src/sdk/models/Entity.ts";
 
-  constructor(backendClient: BackendClient, id: string = "default") {
+  constructor(backendClient: AxiosBackendClient, id: string = "default") {
     this.backendClient = backendClient;
     this.id = id;
     this.triggerModel = new Triggers(this.backendClient);

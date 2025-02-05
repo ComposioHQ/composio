@@ -11,7 +11,7 @@ import { Entity } from "./models/Entity";
 import { Actions } from "./models/actions";
 import { ActiveTriggers } from "./models/activeTriggers";
 import { Apps } from "./models/apps";
-import { BackendClient } from "./models/backendClient";
+import { AxiosBackendClient } from "./models/backendClient";
 import { ConnectedAccounts } from "./models/connectedAccounts";
 import { Integrations } from "./models/integrations";
 import { Triggers } from "./models/triggers";
@@ -36,7 +36,7 @@ export class Composio {
    * It provides access to various models that allow for operations on connected accounts, apps,
    * actions, triggers, integrations, and active triggers.
    */
-  backendClient: BackendClient;
+  backendClient: AxiosBackendClient;
   connectedAccounts: ConnectedAccounts;
   apps: Apps;
   actions: Actions;
@@ -94,7 +94,7 @@ export class Composio {
     );
 
     // Initialize the BackendClient with the parsed API key and base URL.
-    this.backendClient = new BackendClient(
+    this.backendClient = new AxiosBackendClient(
       apiKeyParsed,
       baseURLParsed,
       config?.runtime

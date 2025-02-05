@@ -1,6 +1,6 @@
 import logger from "../../utils/logger";
 import { PusherUtils, TriggerData } from "../utils/pusher";
-import { BackendClient } from "./backendClient";
+import { AxiosBackendClient } from "./backendClient";
 
 import apiClient from "../client/client";
 
@@ -58,9 +58,9 @@ export type SingleInstanceTriggerParam = z.infer<
 export class Triggers {
   trigger_to_client_event = "trigger_to_client";
 
-  private backendClient: BackendClient;
+  private backendClient: AxiosBackendClient;
   private fileName: string = "js/src/sdk/models/triggers.ts";
-  constructor(backendClient: BackendClient) {
+  constructor(backendClient: AxiosBackendClient) {
     this.backendClient = backendClient;
   }
 

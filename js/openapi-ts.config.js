@@ -3,7 +3,7 @@ import { defineConfig } from "@hey-api/openapi-ts";
 
 export default defineConfig({
     client: "@hey-api/client-axios",
-    input: "http://localhost:9900/openapi.json",
+    input: "https://backend.composio.dev/openapi.json",
     output: "src/sdk/client",
     services: {
         asClass: true,
