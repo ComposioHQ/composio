@@ -39,9 +39,10 @@ from composio.utils.shared import generate_request_id
 if t.TYPE_CHECKING:
     from composio.client import Composio
 
-AUTH_SCHEMES = ("OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN")
+ALL_AUTH_SCHEMES = ("OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN", "NO_AUTH")
+AUTH_SCHEME_WITH_INITIATE = ("OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN")
 AuthSchemeType = t.Literal[
-    "OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN", "BASIC_WITH_JWT"
+    "OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN", "BASIC_WITH_JWT", "NO_AUTH"
 ]
 
 
