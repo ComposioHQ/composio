@@ -1,6 +1,6 @@
 import { logError } from "..";
 import { getUUID } from "../../../../utils/common";
-import { getLogLevel, LOG_LEVELS } from "../../../../utils/logger";
+import logger, { getLogLevel, LOG_LEVELS } from "../../../../utils/logger";
 
 /**
  * Custom error class for Composio that provides rich error details, tracking, and improved debugging
@@ -67,18 +67,19 @@ export class ComposioError extends Error {
       }
     }
 
-    if (LOG_LEVELS[getLogLevel()] > 0) {
+    // Only in case of info or debug, we will log the error
+    if (LOG_LEVELS[getLogLevel()] >= 2) {
       // eslint-disable-next-line no-console
-      console.log(
+      logger.info(
         `🚀 [Info] Give Feedback / Get Help: https://dub.composio.dev/discord `
       );
       // eslint-disable-next-line no-console
-      console.log(
+      logger.info(
         `🐛 [Info] Create a new issue: https://github.com/ComposioHQ/composio/issues `
       );
       if (getLogLevel() !== "debug") {
         // eslint-disable-next-line no-console
-        console.log(
+        logger.info(
           `⛔ [Info] If you need to debug this error, set env variable COMPOSIO_LOGGING_LEVEL=debug`
         );
       }

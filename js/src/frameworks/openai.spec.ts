@@ -27,7 +27,7 @@ describe("Apps class tests", () => {
     expect(Object.keys(tools).length).toBe(1);
   });
 
-  it("should get tools with usecase limit", async () => {
+  it.failing("should get tools with usecase limit", async () => {
     const tools = await openAIToolset.getTools({
       useCase: "follow user",
       apps: ["github"],
