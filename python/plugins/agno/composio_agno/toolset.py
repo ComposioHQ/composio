@@ -4,10 +4,8 @@ Agno tool spec.
 
 import json
 import typing as t
-import warnings
 from inspect import Signature
 
-import typing_extensions as te
 from agno.tools.function import Function
 from agno.tools.toolkit import Toolkit
 from pydantic import validate_call
@@ -17,7 +15,7 @@ from composio import Action, ActionType, AppType
 from composio import ComposioToolSet as BaseComposioToolSet
 from composio import TagType
 from composio.tools.toolset import ProcessorsType
-from composio.utils import help_msg, shared
+from composio.utils import shared
 
 
 class ToolFunction(Protocol):
@@ -103,26 +101,6 @@ class ComposioToolSet(
         toolkit.register(func)
 
         return toolkit
-
-    @te.deprecated("Use `ComposioToolSet.get_tools` instead.\n", category=None)
-    def get_actions(
-        self, actions: t.Sequence[ActionType]
-    ) -> t.List[t.Union[Toolkit, t.Callable, t.Dict, Function]]:
-        """
-        Get composio tools wrapped as Agno `Toolkit` objects.
-
-        Args:
-            actions: List of actions to wrap
-
-        Returns:
-            List[Toolkit]: Composio tools wrapped as `Toolkit` objects
-        """
-        warnings.warn(
-            "Use `ComposioToolSet.get_tools` instead.\n" + help_msg(),
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.get_tools(actions=actions)
 
     def get_tools(
         self,
