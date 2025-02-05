@@ -160,16 +160,17 @@ describe("ComposioToolSet class tests", () => {
     const ACTION_NAME = "GMAIL_SEND_EMAIL";
     const actions = await toolset.getToolsSchema({ actions: [ACTION_NAME] });
 
+    const firstAction = actions[0]!;
     // Check if exist
     expect(
-      actions[0]!.parameters.properties["attachment_file_uri_path"]
+      firstAction.parameters.properties["attachment_schema_parsed_file"]
     ).toBeDefined();
 
     const requestBody = {
       recipient_email: "himanshu@composio.dev",
       subject: "Test email from himanshu",
       body: "This is a test email",
-      attachment_file_uri_path:
+      attachment_schema_parsed_file:
         "https://composio.dev/wp-content/uploads/2024/07/Composio-Logo.webp",
     };
 

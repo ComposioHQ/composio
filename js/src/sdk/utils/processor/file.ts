@@ -3,7 +3,6 @@ import {
   TPreProcessor,
   TSchemaProcessor,
 } from "../../../types/base_toolset";
-import logger from "../../../utils/logger";
 import { saveFile } from "../fileUtils";
 
 type FileBasePropertySchema = {
@@ -15,6 +14,7 @@ type FileBasePropertySchema = {
 } & Record<string, unknown>;
 
 export const FILE_UPLOADABLE_SCHEMA = {
+  suffix: "_schema_parsed_file",
   baseSchema: {
     type: "object",
     properties: {
@@ -23,10 +23,10 @@ export const FILE_UPLOADABLE_SCHEMA = {
       s3Key: { type: "string" },
     },
   },
-  converter: (propertyItem: FileBasePropertySchema) => {
+  converter: (key: string, propertyItem: FileBasePropertySchema) => {
     if (propertyItem.file_uploadable) {
       return {
-        keyName: `${propertyItem.name}_schema_parsed_file_uploadable`,
+        keyName: `${key}${FILE_UPLOADABLE_SCHEMA.suffix}`,
         type: "string",
         description: propertyItem.description,
       };
@@ -38,9 +38,9 @@ export const FILE_UPLOADABLE_SCHEMA = {
     actionName: string
   ) => {
     for (const key of Object.keys(responseData)) {
-      if (key.endsWith("_schema_parsed_file_uploadable")) {
+      if (key.endsWith(FILE_UPLOADABLE_SCHEMA.suffix)) {
         const keyWithoutSchemaParsed = key.replace(
-          "_schema_parsed_file_uploadable",
+          FILE_UPLOADABLE_SCHEMA.suffix,
           ""
         );
         const value = responseData[key];
@@ -72,6 +72,8 @@ const readFileContent = async (
   }
 };
 
+
+
 const readFileContentFromURL = async (
   path: string
 ): Promise<{ content: string; mimeType: string }> => {
@@ -80,7 +82,14 @@ const readFileContentFromURL = async (
   return { content, mimeType: "text/plain" };
 };
 
-const getFileData = async (
+const uploadFileToS3 = async (
+  content: string,
+  actionName: string
+): Promise<string> => {
+  return content;
+};
+
+const getFileDataAfterUploadingToS3 = async (
   path: string,
   actionName: string
 ): Promise<{
@@ -92,6 +101,8 @@ const getFileData = async (
   const fileData = isURL
     ? await readFileContentFromURL(path)
     : await readFileContent(path);
+
+  const content = await getFileDataAfterUploadingToS3(fileData.content, actionName);
   return {
     name: path.split("/").pop() || `${actionName}_${Date.now()}`,
     mimeType: fileData.mimeType,
@@ -125,29 +136,16 @@ export const fileResponseProcessor: TPostProcessor = ({
   };
 };
 
-export const fileInputProcessor: TPreProcessor = ({ params, actionName }) => {
-  const requestData = Object.entries(params).reduce(
-    (acc, [key, value]) => {
-      if (key === "file_uri_path" && typeof value === "string") {
-        try {
-          //eslint-disable-next-line @typescript-eslint/no-require-imports
-          const fileContent = require("fs").readFileSync(value, "utf-8");
-          const fileName =
-            value.split("/").pop() || `${actionName}_${Date.now()}`;
-          acc["file"] = { name: fileName, content: fileContent };
-        } catch (error) {
-          logger.error(`Error reading file at ${value}:`, error);
-          acc["file"] = { name: value, content: "" }; // Fallback to original value if reading fails
-        }
-      } else {
-        acc[key] = value;
-      }
-      return acc;
-    },
-    {} as Record<string, unknown>
+export const fileInputProcessor: TPreProcessor = async ({
+  params,
+  actionName,
+}) => {
+  const updatedParams = await FILE_UPLOADABLE_SCHEMA.deConvertValue(
+    params,
+    actionName
   );
 
-  return requestData;
+  return updatedParams;
 };
 
 export const fileSchemaProcessor: TSchemaProcessor = ({ toolSchema }) => {
@@ -163,11 +161,13 @@ export const fileSchemaProcessor: TSchemaProcessor = ({ toolSchema }) => {
 
     if (!file_uploadable) continue;
 
-    const { type, keyName, description } =
-      FILE_UPLOADABLE_SCHEMA.converter(property);
+    const { type, keyName, description } = FILE_UPLOADABLE_SCHEMA.converter(
+      originalKey,
+      property
+    );
 
     clonedProperties[keyName as string] = {
-      ...property,
+      title: property.title,
       type,
       description,
     };
@@ -186,11 +186,14 @@ export const fileSchemaProcessor: TSchemaProcessor = ({ toolSchema }) => {
     delete clonedProperties[originalKey];
   }
 
-  return {
+  const updatedToolSchema = {
     ...toolSchema,
     parameters: {
       ...toolSchema.parameters,
       properties: clonedProperties,
+      required: requiredProperties,
     },
   };
+
+  return updatedToolSchema;
 };

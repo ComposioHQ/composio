@@ -179,17 +179,20 @@ export class ComposioToolSet {
         ? [this.userDefinedProcessors.schema]
         : []),
     ];
-
-    return toolsActions.map((tool) => {
+    const processedTools = [];
+    // Iterate over the tools and process them
+    for (const tool of toolsActions) {
       let schema = tool as RawActionData;
-      allSchemaProcessor.forEach((processor) => {
-        schema = processor({
+      // Process the schema with all the processors
+      for (const processor of allSchemaProcessor) {
+        schema = await processor({
           actionName: schema?.name,
           toolSchema: schema,
         });
-      });
-      return schema;
-    });
+      }
+      processedTools.push(schema);
+    }
+    return processedTools;
   }
 
   async createAction<P extends Parameters = z.ZodObject<{}>>(
@@ -245,7 +248,7 @@ export class ComposioToolSet {
     ];
 
     for (const processor of allInputProcessor) {
-      params = processor({
+      params = await processor({
         params: params,
         actionName: action,
       });
@@ -304,9 +307,10 @@ export class ComposioToolSet {
         : []),
     ];
 
-    let dataToReturn = { ...data };
+    // Dirty way to avoid copy
+    let dataToReturn = JSON.parse(JSON.stringify(data));
     for (const processor of allOutputProcessor) {
-      dataToReturn = processor({
+      dataToReturn = await processor({
         actionName: meta.action,
         toolResponse: dataToReturn,
       });
