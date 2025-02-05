@@ -145,9 +145,29 @@ export class ComposioToolSet {
 
   async getToolsSchema(
     filters: z.infer<typeof ZToolSchemaFilter>,
-    _entityId?: Optional<string>
+    _entityId?: Optional<string>,
+    _integrationId?: Optional<string>
   ): Promise<RawActionData[]> {
     const parsedFilters = ZToolSchemaFilter.parse(filters);
+    let actions = parsedFilters.actions;
+
+    if (_integrationId) {
+      const integration = await this.integrations.get({
+        integrationId: _integrationId,
+      });
+      if (integration?.limitedActions) {
+        if (!actions) {
+          actions = [...integration.limitedActions];
+        } else {
+          const limitedActionsUppercase = integration.limitedActions.map(
+            (action) => action.toUpperCase()
+          );
+          actions = actions.filter((action) =>
+            limitedActionsUppercase.includes(action.toUpperCase())
+          );
+        }
+      }
+    }
 
     const apps = await this.client.actions.list({
       apps: parsedFilters.apps?.join(","),
