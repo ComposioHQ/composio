@@ -18,7 +18,7 @@ pip install composio-agno
 composio add github
 
 # View available applications you can connect with
-composio show-apps
+composio apps
 ```
 
 ### Usage Steps
