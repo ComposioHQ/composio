@@ -199,7 +199,7 @@ describe("ComposioToolSet class tests", () => {
     expect(executionResult.data.file.uri.length).toBeGreaterThan(0);
   });
 
-  it.failing("should get tools with usecase limit", async () => {
+  it("should get tools with usecase limit", async () => {
     const tools = await toolset.getToolsSchema({
       useCase: "follow user",
       apps: ["github"],
