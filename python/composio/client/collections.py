@@ -47,6 +47,7 @@ AuthSchemeType = t.Literal[
     "BASIC",
     "BEARER_TOKEN",
     "BASIC_WITH_JWT",
+    "NO_AUTH"
 ]
 
 
