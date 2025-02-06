@@ -29,7 +29,7 @@ const uploadFileToS3 = async (
   appName: string,
   mimeType: string
 ): Promise<string> => {
-  const { data } = await apiClient.actionsV2.createFileUploadUrl({
+  const response = await apiClient.actionsV2.createFileUploadUrl({
     body: {
       action: actionName,
       app: appName,
@@ -42,7 +42,9 @@ const uploadFileToS3 = async (
     },
   });
 
+  const data = response.data as unknown as { url: string; s3key: string };
   const signedURL = data!.url;
+  const s3key = data!.s3key;
 
   try {
     // Upload the file to the S3 bucket
@@ -56,7 +58,7 @@ const uploadFileToS3 = async (
     throw new Error(`Error uploading file to S3: ${error}`);
   }
 
-  return signedURL;
+  return s3key;
 };
 
 export const getFileDataAfterUploadingToS3 = async (
@@ -72,16 +74,17 @@ export const getFileDataAfterUploadingToS3 = async (
     ? await readFileContentFromURL(path)
     : await readFileContent(path);
 
-  const signedURL = await uploadFileToS3(
+  const s3key = await uploadFileToS3(
     fileData.content,
     actionName,
     actionName,
     fileData.mimeType
   );
+
   return {
     name: path.split("/").pop() || `${actionName}_${Date.now()}`,
     mimetype: fileData.mimeType,
-    s3key: signedURL,
+    s3key: s3key,
   };
 };
 
