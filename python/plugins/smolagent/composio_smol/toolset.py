@@ -56,39 +56,26 @@ class ComposioToolSet(
 
     Example:
     ```python
-        import os
-        import dotenv
+    from dotenv import load_dotenv
+    from composio import Action
+    from composio_smol import ComposioToolSet
+    from smolagents import HfApiModel, CodeAgent
 
-        from composio_langchain import App, ComposioToolSet
-        from langchain.agents import AgentExecutor, create_openai_functions_agent
-        from langchain_openai import ChatOpenAI
+    load_dotenv()
+    # Initialize toolset
+    composio_toolset = ComposioToolSet()
 
-        from langchain import hub
+    tools = composio_toolset.get_tools(
+        actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER],
+    )
+    # Create agent with Composio tools
+    agent = CodeAgent(
+        tools=list(tools),
+        model=HfApiModel()
+    )
 
+    agent.run("Star the composiohq/composio repo")
 
-        # Load environment variables from .env
-        dotenv.load_dotenv()
-
-
-        # Pull relevant agent model.
-        prompt = hub.pull("hwchase17/openai-functions-agent")
-
-        # Initialize tools.
-        openai_client = ChatOpenAI(api_key=os.environ["OPENAI_API_KEY"])
-        composio_toolset = ComposioToolSet()
-
-        # Get All the tools
-        tools = composio_toolset.get_tools(apps=[App.GITHUB])
-
-        # Define task
-        task = "Star a repo composiohq/docs on GitHub"
-
-        # Define agent
-        agent = create_openai_functions_agent(openai_client, tools, prompt)
-        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-
-        # Execute using agent_executor
-        agent_executor.invoke({"input": task})
     ```
     """
 
