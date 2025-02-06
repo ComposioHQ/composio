@@ -11,7 +11,7 @@ Streamline the integration of Composio with Google AI Python to enhance the capa
 Ensure you have the necessary packages installed and connect your GitHub account to allow your agents to utilize GitHub functionalities.
 
 ```bash
-# Install Composio LangChain package
+# Install Composio Gemini package
 pip install composio-gemini
 
 # Connect your GitHub account

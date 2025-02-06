@@ -1,5 +1,5 @@
 """
-Setup configuration for Composio CrewAI plugin
+Setup configuration for Composio Gemin plugin
 """
 
 from pathlib import Path
