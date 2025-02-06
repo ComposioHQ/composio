@@ -135,6 +135,7 @@
       "pages": [
         "framework/autogen",
         "framework/crewai",
+        "framework/gemini",
         "framework/langchain",
         "framework/langflow",
         "framework/langgraph",
