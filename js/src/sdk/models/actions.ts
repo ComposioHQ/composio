@@ -121,6 +121,7 @@ export class Actions {
           showEnabledOnly: data.showEnabledOnly,
           usecaseLimit: data.usecaseLimit || undefined,
           useCase: data.useCase as string,
+          actionVersions: data.actionVersions,
         },
         body: {
           useCase: data.useCase as string,
@@ -154,6 +155,9 @@ export class Actions {
         body: parsedData.requestBody as unknown as ActionExecutionReqDTO,
         path: {
           actionId: parsedData.actionName,
+        },
+        query: {
+          version: parsedData.version,
         },
       });
       return res!;

@@ -27,6 +27,8 @@ import { Triggers } from "./models/triggers";
 import { getUserDataJson } from "./utils/config";
 import { CEG } from "./utils/error";
 import { COMPOSIO_SDK_ERROR_CODES } from "./utils/errors/src/constants";
+import { getVersionsFromLockFileAsJson } from "./utils/lockFile";
+import { actionLockProcessor } from "./utils/processor/action_lock";
 import {
   fileInputProcessor,
   fileResponseProcessor,
@@ -54,6 +56,12 @@ export class ComposioToolSet {
   activeTriggers: ActiveTriggers;
 
   userActionRegistry: ActionRegistry;
+  actionVersionMap: Record<string, string>;
+
+  lockFile: {
+    path: string | null;
+    save: boolean;
+  };
 
   private internalProcessors: {
     pre: TPreProcessor[];
@@ -79,6 +87,9 @@ export class ComposioToolSet {
    * @param {string|null} config.runtime - Runtime environment
    * @param {string} config.entityId - Entity ID for operations
    * @param {Record<string, string>} config.connectedAccountIds - Map of app names to their connected account IDs
+   * @param {Object} config.lockFile - Lock file configuration
+   * @param {string} config.lockFile.path - Path to the lock file, Default: .composio.lock
+   * @param {boolean} config.lockFile.lock - Whether to lock the file
    */
   constructor({
     apiKey,
@@ -86,12 +97,17 @@ export class ComposioToolSet {
     runtime,
     entityId,
     connectedAccountIds,
+    lockFile,
   }: {
     apiKey?: string | null;
     baseUrl?: string | null;
     runtime?: string | null;
     entityId?: string;
     connectedAccountIds?: Record<string, string>;
+    lockFile?: {
+      path: string;
+      save: boolean;
+    };
   } = {}) {
     const clientApiKey: string | undefined =
       apiKey ||
@@ -113,6 +129,23 @@ export class ComposioToolSet {
     this.integrations = this.client.integrations;
     this.activeTriggers = this.client.activeTriggers;
     this.connectedAccountIds = connectedAccountIds || {};
+    this.actionVersionMap = {};
+
+    this.lockFile = lockFile || {
+      path: ".composio.lock",
+      save: false,
+    };
+
+    if (this.lockFile.save) {
+      if (!this.lockFile.path) {
+        CEG.getCustomError(COMPOSIO_SDK_ERROR_CODES.SDK.INVALID_PARAMETER, {
+          message: "Lock file path is required when save is true",
+          description: "Lock file path is required when save is true",
+        });
+      }
+      const actionLock = actionLockProcessor.bind(this, this.lockFile.path);
+      this.internalProcessors.schema.push(actionLock);
+    }
 
     this.userActionRegistry = new ActionRegistry(this.client);
 
@@ -169,13 +202,17 @@ export class ComposioToolSet {
       }
     }
 
-    const apps = await this.client.actions.list({
+    const actionVersions = this.lockFile.path
+      ? getVersionsFromLockFileAsJson(this.lockFile.path)
+      : {};
+    const actions = await this.client.actions.list({
       apps: parsedFilters.apps?.join(","),
       tags: parsedFilters.tags?.join(","),
       useCase: parsedFilters.useCase,
       actions: parsedFilters.actions?.join(","),
       usecaseLimit: parsedFilters.useCaseLimit,
       filterByAvailableApps: parsedFilters.filterByAvailableApps,
+      actionVersions: actionVersions,
     });
 
     const customActions = await this.userActionRegistry.getAllActions();
@@ -191,7 +228,7 @@ export class ComposioToolSet {
       );
     });
 
-    const toolsActions = [...(apps?.items || []), ...toolsWithCustomActions];
+    const toolsActions = [...(actions?.items || []), ...toolsWithCustomActions];
 
     const allSchemaProcessor = [
       ...this.internalProcessors.schema,
@@ -202,6 +239,10 @@ export class ComposioToolSet {
 
     return toolsActions.map((tool) => {
       let schema = tool as RawActionData;
+      if (schema?.version) {
+        // store the version in the map for execution
+        this.actionVersionMap[schema?.name.toUpperCase()] = schema?.version;
+      }
       allSchemaProcessor.forEach((processor) => {
         schema = processor({
           actionName: schema?.name,
@@ -297,11 +338,13 @@ export class ComposioToolSet {
       });
     }
 
+    const version = this.actionVersionMap[action.toUpperCase()];
     const data = await this.client.getEntity(entityId).execute({
       actionName: action,
       params: params,
       text: nlaText,
       connectedAccountId: connectedAccountId,
+      version: version,
     });
 
     return this.processResponse(data, {
