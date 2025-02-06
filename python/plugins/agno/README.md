@@ -28,7 +28,7 @@ composio apps
 Prepare your environment by initializing necessary imports from Agno.
 
 ```python
-from agno.agent.agent import Agent
+from agno.agent import Agent
 ```
 
 ### Step 2: Integrating GitHub Tools with Composio
