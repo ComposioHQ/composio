@@ -1,6 +1,6 @@
-## 🚀🔗 Leveraging PhiData with Composio
+## 🚀🔗 Leveraging Agno with Composio
 
-Facilitate the integration of PhiData with Composio to empower LLMs to directly interact with external applications & knowledge base, broadening their capabilities and application scope.
+Facilitate the integration of Agno with Composio to empower LLMs to directly interact with external applications & knowledge base, broadening their capabilities and application scope.
 
 ### Objective
 
@@ -25,7 +25,7 @@ composio apps
 
 #### 1. Import Base Packages
 
-Prepare your environment by initializing necessary imports from PhiData.
+Prepare your environment by initializing necessary imports from Agno.
 
 ```python
 from agno.agent.agent import Agent
@@ -35,7 +35,7 @@ from agno.agent.agent import Agent
 
 This step involves fetching and integrating GitHub tools provided by Composio, enabling enhanced functionality for LangChain operations.
 ```python
-from composio_phidata import ComposioToolSet, Action
+from composio_Agno import ComposioToolSet, Action
 
 toolset = ComposioToolSet()
 composio_tools = toolset.get_actions(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])

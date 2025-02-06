@@ -7,6 +7,8 @@ composio_tools = toolset.get_tools(
     actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER]
 )
 
+my_task = "Star a repo composiohq/composio on GitHub"
+
 agent = Agent(tools=composio_tools, show_tool_calls=True)
 
-agent.print_response("Can you fetch the latest mail?")
+agent.print_response("Can you star ComposioHQ/composio repo?")
