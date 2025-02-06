@@ -247,7 +247,6 @@ class Entity:
         self.client = client
         self.id = id
 
-    @deprecated(version="0.5.52", replacement="execute_action")
     def execute(
         self,
         action: Action,
