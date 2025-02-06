@@ -35,7 +35,7 @@ from agno.agent.agent import Agent
 
 This step involves fetching and integrating GitHub tools provided by Composio, enabling enhanced functionality for LangChain operations.
 ```python
-from composio_Agno import ComposioToolSet, Action
+from composio_agno import ComposioToolSet, Action
 
 toolset = ComposioToolSet()
 composio_tools = toolset.get_actions(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
@@ -46,7 +46,6 @@ composio_tools = toolset.get_actions(actions=[Action.GITHUB_STAR_A_REPOSITORY_FO
 This step involves configuring and executing the assistant to carry out actions, such as starring a GitHub repository.
 
 ```python
-my_task = "Star a repo composiohq/composio on GitHub"
 
 # Create a chat completion request to decide on the action
 agent = Agent(tools=composio_tools, show_tool_calls=True)

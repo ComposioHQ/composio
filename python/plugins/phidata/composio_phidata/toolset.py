@@ -31,6 +31,10 @@ class ToolFunction(Protocol):
     def __call__(self, *args: t.Any, **kwargs: t.Any) -> str: ...
 
 
+@te.deprecated(
+    "composio_phidata is deprecated and will be removed on v0.8.0."
+    "\nUse composio_agno instead."
+)
 class ComposioToolSet(
     BaseComposioToolSet,
     runtime="phidata",
