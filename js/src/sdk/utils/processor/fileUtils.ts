@@ -64,8 +64,8 @@ export const getFileDataAfterUploadingToS3 = async (
   actionName: string
 ): Promise<{
   name: string;
-  mimeType: string;
-  s3Key: string;
+  mimetype: string;
+  s3key: string;
 }> => {
   const isURL = path.startsWith("http");
   const fileData = isURL
@@ -80,8 +80,8 @@ export const getFileDataAfterUploadingToS3 = async (
   );
   return {
     name: path.split("/").pop() || `${actionName}_${Date.now()}`,
-    mimeType: fileData.mimeType,
-    s3Key: signedURL,
+    mimetype: fileData.mimeType,
+    s3key: signedURL,
   };
 };
 
