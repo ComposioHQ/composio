@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import crypto from "crypto";
 import apiClient from "../../client/client";
 import { saveFile } from "../fileUtils";
@@ -44,8 +44,17 @@ const uploadFileToS3 = async (
 
   const signedURL = data!.url;
 
-  // Upload the file to the S3 bucket
-  await axios.put(signedURL, content);
+  try {
+    // Upload the file to the S3 bucket
+    await axios.put(signedURL, content);
+  } catch (e) {
+    const error = e as AxiosError;
+    // if error is 403, then continue
+    if (error instanceof AxiosError && error.response?.status === 403) {
+      return signedURL;
+    }
+    throw new Error(`Error uploading file to S3: ${error}`);
+  }
 
   return signedURL;
 };
