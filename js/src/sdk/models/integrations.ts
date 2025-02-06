@@ -18,7 +18,7 @@ import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { Apps } from "./apps";
-import { BackendClient } from "./backendClient";
+import { AxiosBackendClient } from "./backendClient";
 
 // Types generated from zod schemas
 
@@ -48,11 +48,11 @@ export type IntegrationRequiredParamsRes = ExpectedInputFieldsDTO[];
 export type IntegrationDeleteRes = DeleteRowAPIDTO;
 
 export class Integrations {
-  private backendClient: BackendClient;
+  private backendClient: AxiosBackendClient;
   private fileName: string = "js/src/sdk/models/integrations.ts";
   private apps: Apps;
 
-  constructor(backendClient: BackendClient) {
+  constructor(backendClient: AxiosBackendClient) {
     this.backendClient = backendClient;
     this.apps = new Apps(backendClient);
   }

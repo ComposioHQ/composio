@@ -3,89 +3,119 @@ import {
   TPreProcessor,
   TSchemaProcessor,
 } from "../../../types/base_toolset";
-import logger from "../../../utils/logger";
-import { saveFile } from "../fileUtils";
+import { downloadFileFromS3, getFileDataAfterUploadingToS3 } from "./fileUtils";
 
-export const fileResponseProcessor: TPostProcessor = ({
-  actionName,
-  toolResponse,
-}) => {
-  const responseData =
-    (toolResponse.data.response_data as Record<string, unknown>) || {};
-  const fileData = responseData.file as
-    | { name: string; content: string }
-    | undefined;
+type FileBasePropertySchema = {
+  type: string;
+  title: string;
+  description: string;
+  file_uploadable?: boolean;
+} & Record<string, unknown>;
 
-  if (!fileData) return toolResponse;
+const FILE_SUFFIX = "_schema_parsed_file";
 
-  const fileNamePrefix = `${actionName}_${Date.now()}`;
-  const filePath = saveFile(fileNamePrefix, fileData.content, true);
-
-  delete responseData.file;
+const convertFileSchemaProperty = (
+  key: string,
+  property: FileBasePropertySchema
+) => {
+  if (!property.file_uploadable) {
+    return property;
+  }
 
   return {
-    ...toolResponse,
-    data: {
-      ...toolResponse.data,
-      file_uri_path: filePath,
-    },
+    keyName: `${key}${FILE_SUFFIX}`,
+    type: "string",
+    description: property.description,
   };
 };
 
-export const fileInputProcessor: TPreProcessor = ({ params, actionName }) => {
-  const requestData = Object.entries(params).reduce(
-    (acc, [key, value]) => {
-      if (key === "file_uri_path" && typeof value === "string") {
-        try {
-          //eslint-disable-next-line @typescript-eslint/no-require-imports
-          const fileContent = require("fs").readFileSync(value, "utf-8");
-          const fileName =
-            value.split("/").pop() || `${actionName}_${Date.now()}`;
-          acc["file"] = { name: fileName, content: fileContent };
-        } catch (error) {
-          logger.error(`Error reading file at ${value}:`, error);
-          acc["file"] = { name: value, content: "" }; // Fallback to original value if reading fails
-        }
-      } else {
-        acc[key] = value;
-      }
-      return acc;
-    },
-    {} as Record<string, unknown>
-  );
+const processFileUpload = async (
+  params: Record<string, unknown>,
+  actionName: string
+) => {
+  const result = { ...params };
 
-  return requestData;
+  for (const [key, value] of Object.entries(result)) {
+    if (!key.endsWith(FILE_SUFFIX)) continue;
+
+    const originalKey = key.replace(FILE_SUFFIX, "");
+    const fileData = await getFileDataAfterUploadingToS3(
+      value as string,
+      actionName
+    );
+
+    result[originalKey] = fileData;
+    delete result[key];
+  }
+
+  return result;
 };
 
-export const fileSchemaProcessor: TSchemaProcessor = ({ toolSchema }) => {
-  const { properties } = toolSchema.parameters;
-  const clonedProperties = JSON.parse(JSON.stringify(properties));
+export const FILE_INPUT_PROCESSOR: TPreProcessor = async ({
+  params,
+  actionName,
+}) => {
+  return processFileUpload(params, actionName);
+};
 
-  for (const propertyKey of Object.keys(clonedProperties)) {
-    const object = clonedProperties[propertyKey];
-    const isObject = typeof object === "object";
-    const isFile =
-      isObject &&
-      object?.required?.includes("name") &&
-      object?.required?.includes("content");
+export const FILE_DOWNLOADABLE_PROCESSOR: TPostProcessor = async ({
+  actionName,
+  toolResponse,
+}) => {
+  const result = JSON.parse(JSON.stringify(toolResponse));
 
-    if (isFile) {
-      const newKey = `${propertyKey}_file_uri_path`;
-      clonedProperties[newKey] = {
-        type: "string",
-        title: "Name",
-        description: "Local absolute path to the file or http url to the file",
-      };
+  for (const [key, value] of Object.entries(toolResponse.data)) {
+    const fileData = value as { s3url?: string; mimetype?: string };
 
-      delete clonedProperties[propertyKey];
+    if (!fileData?.s3url) continue;
+
+    const downloadedFile = await downloadFileFromS3({
+      actionName,
+      s3Url: fileData.s3url,
+      mimeType: fileData.mimetype || "application/txt",
+    });
+
+    result.data[key] = {
+      uri: downloadedFile.filePath,
+      mimeType: downloadedFile.mimeType,
+    };
+  }
+
+  return result;
+};
+
+export const FILE_SCHEMA_PROCESSOR: TSchemaProcessor = ({ toolSchema }) => {
+  const { properties, required: requiredProps = [] } = toolSchema.parameters;
+  const newProperties = { ...properties };
+  const newRequired = [...requiredProps];
+
+  for (const [key, property] of Object.entries(newProperties)) {
+    if (!property.file_uploadable) continue;
+
+    const { type, keyName, description } = convertFileSchemaProperty(
+      key,
+      property as FileBasePropertySchema
+    );
+
+    newProperties[keyName as string] = {
+      title: property.title,
+      type,
+      description,
+    };
+
+    if (requiredProps.includes(key)) {
+      newRequired[newRequired.indexOf(key)] = keyName as string;
     }
+
+    delete newProperties[key];
   }
 
   return {
     ...toolSchema,
     parameters: {
       ...toolSchema.parameters,
-      properties: clonedProperties,
+      properties: newProperties,
+      required: newRequired,
     },
   };
 };

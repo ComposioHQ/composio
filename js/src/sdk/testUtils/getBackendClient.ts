@@ -1,7 +1,7 @@
 import { getTestConfig } from "../../../config/getTestConfig";
-import { BackendClient } from "../models/backendClient";
+import { AxiosBackendClient } from "../models/backendClient";
 
-export const getBackendClient = (): BackendClient => {
+export const getBackendClient = (): AxiosBackendClient => {
   const testConfig = getTestConfig();
   if (testConfig["COMPOSIO_API_KEY"] === undefined) {
     throw new Error("COMPOSIO_API_KEY is not set in the test config");
@@ -11,5 +11,5 @@ export const getBackendClient = (): BackendClient => {
   }
   const COMPOSIO_API_KEY = testConfig["COMPOSIO_API_KEY"];
   const BACKEND_HERMES_URL = testConfig["BACKEND_HERMES_URL"];
-  return new BackendClient(COMPOSIO_API_KEY, BACKEND_HERMES_URL);
+  return new AxiosBackendClient(COMPOSIO_API_KEY, BACKEND_HERMES_URL);
 };

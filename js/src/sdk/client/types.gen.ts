@@ -1068,6 +1068,48 @@ export type includeLocal = "true" | "false";
  */
 export type sortBy = "alphabet" | "usage" | "no_sort";
 
+export type TestConnector = {
+  /**
+   * The id of the test connector
+   */
+  id: string;
+  /**
+   * The name of the test connector
+   */
+  name: string;
+  /**
+   * The auth scheme of the test connector
+   */
+  authScheme:
+    | "OAUTH2"
+    | "OAUTH1"
+    | "OAUTH1A"
+    | "API_KEY"
+    | "BASIC"
+    | "BEARER_TOKEN"
+    | "GOOGLE_SERVICE_ACCOUNT"
+    | "NO_AUTH"
+    | "BASIC_WITH_JWT"
+    | "COMPOSIO_LINK"
+    | "CALCOM_AUTH";
+};
+
+/**
+ * The auth scheme of the test connector
+ */
+export type authScheme =
+  | "OAUTH2"
+  | "OAUTH1"
+  | "OAUTH1A"
+  | "API_KEY"
+  | "BASIC"
+  | "BEARER_TOKEN"
+  | "GOOGLE_SERVICE_ACCOUNT"
+  | "NO_AUTH"
+  | "BASIC_WITH_JWT"
+  | "COMPOSIO_LINK"
+  | "CALCOM_AUTH";
+
 export type AppInfoResponseDto = {
   /**
    * Unique identifier (UUID) for the app
@@ -1101,6 +1143,10 @@ export type AppInfoResponseDto = {
    * The authentication schemes of the app
    */
   auth_schemes?: unknown;
+  /**
+   * The authentication schemes of the app
+   */
+  testConnectors?: TestConnector;
   /**
    * Indicates if the app is enabled
    */
@@ -1234,9 +1280,9 @@ export type GetConnectorInfoResDTO = {
    */
   useComposioAuth: boolean;
   /**
-   * List of actions that are limited to this connector, trying to execute any other action apart from these will throw an unauthorized error
+   * Array of action strings that this connector is limited to.
    */
-  limitedActions: string[];
+  limitedActions: Array<string>;
 };
 
 /**
@@ -1282,6 +1328,10 @@ export type CreateConnectorPayloadDTO = {
    * When set to true, creates a new integration even if one already exists for the given app. This is useful when you need multiple integrations with the same service.
    */
   forceNewIntegration?: boolean;
+  /**
+   * List of actions to limit the connector to. If not provided, all actions will be enabled.
+   */
+  limitedActions?: Array<string>;
 };
 
 export type PatchConnectorReqDTO = {
@@ -1291,6 +1341,10 @@ export type PatchConnectorReqDTO = {
   authConfig?: {
     [key: string]: unknown;
   };
+  /**
+   * A list of actions that are limited or restricted for the connector. This can be used to specify which actions the connector is allowed or not allowed to perform. The list of possible actions can be found in the API documentation.
+   */
+  limitedActions?: Array<string>;
   /**
    * Flag to indicate if the connector is enabled. When set to false, the connector will not process any requests. You can toggle this value to temporarily disable the connector without deleting it. Default value can be found in the `GET /api/v1/connectors/{connectorId}` endpoint response.
    */
@@ -1662,10 +1716,6 @@ export type Parameter = {
    */
   value: string;
 };
-
-/**
- * The location of the parameter. Can be 'query' or 'header'.
- */
 
 export type Data = {
   /**
@@ -3251,6 +3301,48 @@ export type ActionsQueryV2DTO = {
   sortBy?: "alphabet" | "usage" | "no_sort";
 };
 
+export type FileInfoDTO = {
+  /**
+   * Name of the app where this file belongs to.
+   */
+  app: string;
+  /**
+   * Name of the action where this file belongs to.
+   */
+  action: string;
+  /**
+   * Name of the original file.
+   */
+  filename: string;
+  /**
+   * Mime type of the original file.
+   */
+  mimetype: string;
+  /**
+   * MD5 of a file.
+   */
+  md5: string;
+};
+
+export type GetFilesResponseDTO = {
+  items: FileInfoDTO;
+};
+
+export type CreateUploadURLResponseDTO = {
+  /**
+   * ID of the file
+   */
+  id: string;
+  /**
+   * Onetime upload URL
+   */
+  url: string;
+  /**
+   * S3 upload location
+   */
+  key: string;
+};
+
 export type TimePeriodReqDTO = {
   /**
    * Time period to get the data for
@@ -3529,22 +3621,6 @@ export type ComposioSearchConfigDTO = {
     | "CALCOM_AUTH";
 };
 
-/**
- * Authentication scheme to use
- */
-export type authScheme =
-  | "OAUTH2"
-  | "OAUTH1"
-  | "OAUTH1A"
-  | "API_KEY"
-  | "BASIC"
-  | "BEARER_TOKEN"
-  | "GOOGLE_SERVICE_ACCOUNT"
-  | "NO_AUTH"
-  | "BASIC_WITH_JWT"
-  | "COMPOSIO_LINK"
-  | "CALCOM_AUTH";
-
 export type ConnectorSearchFilterDTOV2 = {
   /**
    * Filter options for the connector
@@ -3582,13 +3658,13 @@ export type ComposioCreateConfigDTO = {
    */
   name?: string;
   /**
-   * Whether to use Composio authentication
+   * Whether to use Composio authentication, default to true if no auth config is passed. Throws error we're not able to create integration.
    */
   useComposioAuth?: boolean;
   /**
    * Authentication scheme to use
    */
-  authScheme:
+  authScheme?:
     | "OAUTH2"
     | "OAUTH1"
     | "OAUTH1A"
@@ -4015,6 +4091,24 @@ export type AdvancedUseCaseSearchData = {
 export type AdvancedUseCaseSearchResponse2 = AdvancedUseCaseSearchResponse;
 
 export type AdvancedUseCaseSearchError = unknown;
+
+export type ActionsControllerV2ListUserFilesResponse = GetFilesResponseDTO;
+
+export type ActionsControllerV2ListUserFilesError = unknown;
+
+export type CreateFileUploadUrlData = {
+  /**
+   * FileInfoDTO
+   */
+  body?: FileInfoDTO;
+  path: {
+    fileType: unknown;
+  };
+};
+
+export type CreateFileUploadUrlResponse = CreateUploadURLResponseDTO;
+
+export type CreateFileUploadUrlError = unknown;
 
 export type ListConnectionsData = {
   query?: {

@@ -18,7 +18,7 @@ import {
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
-import { BackendClient } from "./backendClient";
+import { AxiosBackendClient } from "./backendClient";
 
 /**
  * Request types inferred from zod schemas
@@ -43,10 +43,10 @@ export type ActionFindActionEnumsByUseCaseRes = Array<string>;
 
 export class Actions {
   // Remove this as we might not need it
-  private backendClient: BackendClient;
+  private backendClient: AxiosBackendClient;
   fileName: string = "js/src/sdk/models/actions.ts";
 
-  constructor(backendClient: BackendClient) {
+  constructor(backendClient: AxiosBackendClient) {
     this.backendClient = backendClient;
   }
 
