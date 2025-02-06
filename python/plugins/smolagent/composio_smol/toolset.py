@@ -1,43 +1,35 @@
 import types
 import typing as t
-import warnings
 from inspect import Signature
+from typing import Callable, Dict
 
-from altair import param
-from git import Object
 import pydantic
 import pydantic.error_wrappers
-from sqlalchemy import func
-import typing_extensions as te
 from smolagents.tools import Tool
+
 from composio import ActionType, AppType, TagType
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.toolset import ProcessorsType
-from composio.utils import help_msg
 from composio.utils.pydantic import parse_pydantic_error
-from composio.utils.shared import (
-    get_signature_format_from_schema_params,
-    json_schema_to_model,
-)
-from typing import Dict, Callable
+from composio.utils.shared import get_signature_format_from_schema_params
 
 
 class StructuredTool(Tool):
     def __init__(
-            self,
-            name: str,
-            description: str,
-            params: Dict[str, Dict[str, str | type | bool]],
-            output_type: str,
-            function: Callable,
-        ):
-            self.name = name
-            self.description = description
-            self.inputs = params
-            self.output_type = output_type
-            self.forward = function
-            self.is_initialized = True
-    
+        self,
+        name: str,
+        description: str,
+        params: Dict[str, Dict[str, str | type | bool]],
+        output_type: str,
+        function: Callable,
+    ):
+        self.name = name
+        self.description = description
+        self.inputs = params
+        self.output_type = output_type
+        self.forward = function
+        self.is_initialized = True
+
     def run(self, *args, **kwargs):
         try:
             return self.forward(*args, **kwargs)
@@ -137,16 +129,19 @@ class ComposioToolSet(
                 # Convert array type to match AUTHORIZED_TYPES
                 if param_type == "array":
                     param_type = "object"
-                
+
                 param_dict = {
                     "type": param_type,
                     "description": param_info.get("description", ""),
                 }
-                
+
                 # Parameter is nullable if it has a default value or is not in required list
-                if param_info.get("default") is not None or param_name not in required_params:
+                if (
+                    param_info.get("default") is not None
+                    or param_name not in required_params
+                ):
                     param_dict["nullable"] = True
-                
+
                 params[param_name] = param_dict
 
         tool = StructuredTool(
@@ -154,7 +149,7 @@ class ComposioToolSet(
             description=description,
             params=params,
             output_type="object",
-            function=action_func
+            function=action_func,
         )
         return tool
 
