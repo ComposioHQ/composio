@@ -1,10 +1,9 @@
 from dotenv import load_dotenv
-import os
-
 from composio import Action
 from composio_smol import ComposioToolSet
 from smolagents import HfApiModel, CodeAgent
 
+load_dotenv()
 # Initialize toolset
 composio_toolset = ComposioToolSet()
 
