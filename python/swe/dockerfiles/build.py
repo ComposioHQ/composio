@@ -1,6 +1,5 @@
 import signal
 import subprocess
-import sys
 import threading
 import typing as t
 from concurrent.futures import ThreadPoolExecutor
