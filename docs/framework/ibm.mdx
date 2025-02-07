@@ -1,0 +1,125 @@
+---
+title: "Using Composio With IBM"
+sidebarTitle: "IBM"
+description: "Integrate Composio with IBM's Granite Models to let them seamlessly interact with external apps"
+---
+
+**Composio enables** **IBM's Granite Models** to **connect** with many **tools**!
+
+<Tip>Goal: Star a repository on GitHub with natural language</Tip>
+
+## Video Guide
+<iframe 
+    width="560" 
+    height="315" 
+    src="https://www.youtube.com/embed/d3-UIp1MOXg?si=qLxkmst9cg-_Lkqb" 
+    title="YouTube video player" 
+    frameborder="0" 
+    allow="accelerometer; 
+    autoplay; 
+    clipboard-write; 
+    encrypted-media; 
+    gyroscope; 
+    picture-in-picture; 
+    web-share" 
+    referrerpolicy="strict-origin-when-cross-origin" allowfullscreen>
+</iframe>
+
+### Install Packages & Connect a Tool
+
+Ensure you have the necessary packages installed and connect your GitHub account to allow your IBM agents to utilize GitHub functionalities.
+<CodeGroup>
+    ``` bash Run command
+    pip install composio-langchain
+    pip install langchain-ibm
+
+    #  Connect your GitHub so agents can use it. 
+    composio add github
+    #  Check all different apps which you can connect with
+    composio apps
+    ```
+</CodeGroup>
+
+### Goal: Prepare your environment by initializing necessary imports from Composio & IBM.
+
+<Steps>
+<Step title="Import Base Packages">
+
+Prepare your environment by initializing necessary imports from Composio & IBM.
+
+<CodeGroup>
+    ```python Default Imports
+    from composio_langchain import ComposioToolSet, Action
+    from langchain_ibm import ChatWatsonx
+    import os
+
+    os.environ['WATSONX_API_KEY'] = '<ibm_api_key>' #add your ibm api key here
+    if not os.environ.get('WATSONX_API_KEY'):
+        raise ValueError("WATSONX_API_KEY environment variable is not set")
+    ```
+
+</CodeGroup>
+
+</Step>
+
+<Step title="Integrating GitHub Tools with Composio">
+
+This step involves fetching and integrating GitHub tools provided by Composio, enabling enhanced functionality for Agent operations.
+
+<CodeGroup>
+    ```python IBM Supported tools from Composio
+    composio_toolset = ComposioToolSet()
+    tools = composio_toolset.get_tools(
+        actions=[Action.GITHUB_ACTIVITY_STAR_REPO_FOR_AUTHENTICATED_USER]
+    )
+    ```
+</CodeGroup>
+
+</Step>
+
+<Step title="IBM Agent Setup">
+
+This step involves configuring and executing the agent to carry out actions, such as starring a GitHub repository.
+
+<CodeGroup>
+    ```python IBM Agent Setup
+    parameters = {
+    "decoding_method": "sample",
+    "max_new_tokens": 100,
+    "min_new_tokens": 1,
+    "temperature": 0.5,
+    "top_k": 50,
+    "top_p": 1,
+    }
+    url = input('Add your IBM Cloud URL here: ')
+    project_id = input('Add your IBM Project ID here: ')
+    watsonx_llm = ChatWatsonx(
+    model_id = 'ibm/granite-3-8b-instruct',
+    url = url, 
+    project_id = project_id,
+    )   
+
+    if not url or not project_id:
+        raise ValueError("IBM Cloud URL and Project ID must be provided")
+
+    llm_with_tools = watsonx_llm.bind_tools(tools)
+
+    
+    ```
+</CodeGroup>
+
+</Step>
+
+<Step title="Execute with your prompt/task.">
+
+Execute the following code to execute the agent, ensuring that the intended task has been successfully completed.
+
+<CodeGroup>
+    ```python Agent Execution
+    response = llm_with_tools.invoke("Star the composiohq/composio repository")
+    print(response)
+    ```
+</CodeGroup>
+
+</Step>
+</Steps>

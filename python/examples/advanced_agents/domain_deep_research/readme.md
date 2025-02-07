@@ -25,6 +25,6 @@ Now, fill in the `.env` file with your secrets.
 
 ### 2. Run the Python Script
 ```shell
-python cookbook/python-examples/advanced_agents/deepseek_research/main.py
+python cookbook/python-examples/advanced_agents/domain_deep_research/main.py
 ```
 
