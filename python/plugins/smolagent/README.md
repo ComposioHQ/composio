@@ -58,7 +58,7 @@ Create and configure a Smol agent with the Composio tools:
 ```python
 # Create an agent with the tools
 agent = CodeAgent(
-    tools=list(composio_tools),
+    tools=tools,
     model=HfApiModel()
 )
 ```
@@ -83,24 +83,11 @@ tools = composio_toolset.get_tools(
         Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER,
         Action.GITHUB_CREATE_REPOSITORY
     ],
-    max_retries={
-        Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER: 5,
-        Action.GITHUB_CREATE_REPOSITORY: 2
-    }
-)
-
-# Filtering tools by tags
-tools = composio_toolset.get_tools(
-    tags=["github", "repository"],
-    default_max_retries=3
 )
 
 # Using app-specific tools
 tools = composio_toolset.get_tools(
     apps=[App.GITHUB],
-    max_retries={
-        Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER: 5
-    }
 )
 ```
 

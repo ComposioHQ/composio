@@ -9,8 +9,8 @@ from setuptools import setup
 
 setup(
     name="composio_smol",
-    version="0.7.0",
-    author="Prathit",
+    version="0.7.1",
+    author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get array of strongly typed tools for Smol Agents",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),

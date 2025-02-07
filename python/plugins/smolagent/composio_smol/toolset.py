@@ -44,7 +44,7 @@ class ComposioToolSet(
     action_name_char_limit=64,
 ):
     """
-    Composio toolset for Langchain framework.
+    Composio toolset for Smolagents framework.
 
     Example:
     ```python
@@ -119,31 +119,8 @@ class ComposioToolSet(
             schema_params=schema_params,
             entity_id=entity_id,
         )
-
         # Flatten and format the parameters structure
-        params = {}
-        if "properties" in schema_params:
-            required_params = schema_params.get("required", [])
-            for param_name, param_info in schema_params["properties"].items():
-                param_type = param_info.get("type", "string")
-                # Convert array type to match AUTHORIZED_TYPES
-                if param_type == "array":
-                    param_type = "object"
-
-                param_dict = {
-                    "type": param_type,
-                    "description": param_info.get("description", ""),
-                }
-
-                # Parameter is nullable if it has a default value or is not in required list
-                if (
-                    param_info.get("default") is not None
-                    or param_name not in required_params
-                ):
-                    param_dict["nullable"] = True
-
-                params[param_name] = param_dict
-
+        params = schema_params["properties"]
         tool = StructuredTool(
             name=action,
             description=description,
@@ -170,7 +147,8 @@ class ComposioToolSet(
         :param apps: List of apps to wrap
         :param tags: Filter the apps by given tags
         :param entity_id: Entity ID for the function wrapper
-
+        :param processors: Optional processors to apply to the tools
+        :param check_connected_accounts: Whether to check for connected accounts
         :return: Composio tools wrapped as `StructuredTool` objects
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
