@@ -42,9 +42,9 @@ const uploadFileToS3 = async (
     },
   });
 
-  const data = response.data as unknown as { url: string; s3key: string };
+  const data = response.data as unknown as { url: string; key: string };
   const signedURL = data!.url;
-  const s3key = data!.s3key;
+  const s3key = data!.key;
 
   try {
     // Upload the file to the S3 bucket
