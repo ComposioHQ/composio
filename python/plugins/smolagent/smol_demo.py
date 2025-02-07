@@ -13,6 +13,6 @@ tools = composio_toolset.get_tools(
     actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER],
 )
 # Create agent with Composio tools
-agent = CodeAgent(tools=list(tools), model=HfApiModel())
+agent = CodeAgent(tools=tools, model=HfApiModel())
 
 agent.run("Star the composiohq/composio repo")
