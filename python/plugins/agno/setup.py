@@ -1,5 +1,5 @@
 """
-Setup configuration for Composio Pydantic AI plugin
+Setup configuration for Composio Agno plugin.
 """
 
 from pathlib import Path
@@ -8,11 +8,11 @@ from setuptools import setup
 
 
 setup(
-    name="composio_pydanticai",
+    name="composio_agno",
     version="0.7.1",
-    author="Siddharth",
+    author="Devanshu",
     author_email="tech@composio.dev",
-    description="Use Composio to get array of strongly typed tools for Pydantic AI",
+    description="Use Composio to get an array of tools with your Agno Plugin.",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
     url="https://github.com/ComposioHQ/composio",
@@ -21,10 +21,9 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.9,<4",
     install_requires=[
         "composio_core>=0.7.0,<0.8.0",
-        "pydantic-ai",
+        "agno",
     ],
     include_package_data=True,
 )
