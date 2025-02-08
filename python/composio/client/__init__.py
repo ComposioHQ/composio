@@ -424,7 +424,7 @@ class Entity:
         redirect_url: t.Optional[str] = None,
         integration: t.Optional[IntegrationModel] = None,
         use_composio_auth: bool = True,
-        force_new_integration: bool = False,
+        force_new_integration: bool = False,  # pylint: disable=unused-argument
         connected_account_params: t.Optional[t.Dict] = None,
         labels: t.Optional[t.List] = None,
     ) -> ConnectionRequestModel:
@@ -454,21 +454,19 @@ class Entity:
             if "OAUTH" not in auth_mode:
                 use_composio_auth = False
             integration = self.client.integrations.create(
-                app_id=app.appId,
+                app_unique_key=app.name,
                 name=f"{app_name}_{timestamp}",
                 auth_mode=auth_mode,
                 auth_config=auth_config,
                 use_composio_auth=use_composio_auth,
-                force_new_integration=force_new_integration,
             )
 
         if integration is None and auth_mode is None:
             integration = self.client.integrations.create(
-                app_id=app.appId,
+                app_unique_key=app.appId,
                 auth_config=auth_config,
                 name=f"{app_name}_{timestamp}",
                 use_composio_auth=use_composio_auth,
-                force_new_integration=force_new_integration,
             )
 
         return self.client.connected_accounts.initiate(

@@ -160,6 +160,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
 
     model = ConnectedAccountModel
     endpoint = v1 / "connectedAccounts"
+    endpoint_v2 = v2 / "connectedAccounts"
 
     @t.overload  # type: ignore
     def get(self) -> t.List[ConnectedAccountModel]:
@@ -240,6 +241,7 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
     def initiate(
         self,
         integration_id: str,
+        app_unique_key: t.Optional[str] = None,
         entity_id: t.Optional[str] = None,
         params: t.Optional[t.Dict] = None,
         labels: t.Optional[t.List] = None,
@@ -248,17 +250,21 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
         """Initiate a new connected account."""
         response = self._raise_if_required(
             response=self.client.http.post(
-                url=str(self.endpoint),
+                url=str(self.endpoint_v2 / "initiateConnection"),
                 json={
-                    "integrationId": integration_id,
-                    "userUuid": entity_id,
-                    "data": params or {},
-                    "labels": labels or [],
-                    "redirectUri": redirect_url,
+                    "app": {
+                        "integrationId": integration_id,
+                        "uniqueKey": app_unique_key,
+                    },
+                    "connection": {
+                        "entityId": entity_id,
+                        "initiateData": params or {},
+                        "extra": {"redirectUrl": redirect_url, "labels": labels or []},
+                    },
                 },
             )
         )
-        return ConnectionRequestModel(**response.json())
+        return ConnectionRequestModel(**response.json().get("connectionResponse"))
 
     def info(self, connection_id: str) -> ConnectionParams:
         response = self._raise_if_required(
@@ -1474,19 +1480,22 @@ class Integrations(Collection[IntegrationModel]):
 
     model = IntegrationModel
     endpoint = v1.integrations
+    endpoint_v2 = v2.integrations
 
     def create(
         self,
-        app_id: str,
+        app_unique_key: str,
+        app_id: t.Optional[str] = None,  # pylint: disable=unused-argument
         name: t.Optional[str] = None,
         auth_mode: t.Optional["AuthSchemeType"] = None,
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
         use_composio_auth: bool = False,
-        force_new_integration: bool = False,
+        force_new_integration: bool = False,  # pylint: disable=unused-argument
     ) -> IntegrationModel:
         """
         Create a new integration
 
+        :param app_unique_key: App unique key string.
         :param app_id: App ID string.
         :param name: Name of the integration.
         :param auth_param: Auth mode string.
@@ -1494,30 +1503,28 @@ class Integrations(Collection[IntegrationModel]):
         :param use_composio_auth: Whether to use default composio auth or not
         :return: Integration model created by the request.
         """
-        request = {
-            "appId": app_id,
-            "useComposioAuth": use_composio_auth,
+        request: t.Dict[str, t.Any] = {
+            "app": {"uniqueKey": app_unique_key.lower()},
+            "config": {},
         }
 
+        if use_composio_auth is not None:
+            request["config"]["useComposioAuth"] = use_composio_auth
         if name is not None:
-            request["name"] = name
-
+            request["config"]["name"] = name
         if auth_mode is not None:
-            request["authScheme"] = auth_mode
-
+            request["config"]["authScheme"] = auth_mode
         if auth_config is not None:
-            request["authConfig"] = auth_config or {}
-
-        if force_new_integration:
-            request["forceNewIntegration"] = force_new_integration
+            request["config"]["integrationSecrets"] = auth_config
 
         response = self._raise_if_required(
             response=self.client.http.post(
-                url=str(self.endpoint),
+                url=str(self.endpoint_v2 / "create"),
                 json=request,
             )
         )
-        return IntegrationModel(**response.json())
+
+        return self.model(**response.json())
 
     def remove(self, id: str) -> None:
         self.client.http.delete(url=str(self.endpoint / id))

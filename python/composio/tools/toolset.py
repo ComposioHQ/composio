@@ -1260,17 +1260,17 @@ class _IntegrationMixin(_GetMixin):
         auth_mode: t.Optional[AuthSchemeType] = None,
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
         use_composio_oauth_app: bool = True,
-        force_new_integration: bool = False,
+        force_new_integration: bool = False,  # pylint: disable=unused-argument
     ) -> IntegrationModel:
         app_data = self.client.apps.get(name=str(app))
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         return self.client.integrations.create(
+            app_unique_key=app_data.name,
             app_id=app_data.appId,
             name=f"{app}_{timestamp}",
             auth_mode=auth_mode,
             auth_config=auth_config,
             use_composio_auth=use_composio_oauth_app,
-            force_new_integration=force_new_integration,
         )
 
     def initiate_connection(
