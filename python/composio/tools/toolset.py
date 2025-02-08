@@ -1266,7 +1266,6 @@ class _IntegrationMixin(_GetMixin):
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         return self.client.integrations.create(
             app_unique_key=app_data.name,
-            app_id=app_data.appId,
             name=f"{app}_{timestamp}",
             auth_mode=auth_mode,
             auth_config=auth_config,

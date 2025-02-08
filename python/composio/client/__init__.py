@@ -445,36 +445,23 @@ class Entity:
 
         app = self.client.apps.get(name=app_name_str)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        if integration is None and auth_mode is not None:
-            if auth_mode not in AUTH_SCHEMES:
-                raise ComposioClientError(
-                    f"'auth_mode' should be one of {AUTH_SCHEMES}"
-                )
-            auth_mode = t.cast(AuthSchemeType, auth_mode)
-            if "OAUTH" not in auth_mode:
-                use_composio_auth = False
-            integration = self.client.integrations.create(
-                app_unique_key=app.name,
-                name=f"{app_name}_{timestamp}",
-                auth_mode=auth_mode,
-                auth_config=auth_config,
-                use_composio_auth=use_composio_auth,
-            )
 
-        if integration is None and auth_mode is None:
-            integration = self.client.integrations.create(
-                app_unique_key=app.appId,
-                auth_config=auth_config,
-                name=f"{app_name}_{timestamp}",
-                use_composio_auth=use_composio_auth,
-            )
+        if auth_mode is None:
+            raise ComposioClientError(f"'auth_mode' should be one of {AUTH_SCHEMES}")
+
+        auth_mode = t.cast(AuthSchemeType, auth_mode)
 
         return self.client.connected_accounts.initiate(
-            integration_id=t.cast(IntegrationModel, integration).id,
+            integration_id=integration.id if integration is not None else None,
             entity_id=self.id,
             params=connected_account_params,
             labels=labels,
             redirect_url=redirect_url,
+            app_unique_key=app.name,
+            name=f"{app_name}_{timestamp}",
+            auth_mode=auth_mode,
+            auth_config=auth_config,
+            use_composio_auth=use_composio_auth,
         )
 
 

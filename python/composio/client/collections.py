@@ -240,12 +240,16 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
 
     def initiate(
         self,
-        integration_id: str,
+        integration_id: t.Optional[str] = None,
         app_unique_key: t.Optional[str] = None,
         entity_id: t.Optional[str] = None,
         params: t.Optional[t.Dict] = None,
         labels: t.Optional[t.List] = None,
         redirect_url: t.Optional[str] = None,
+        name: t.Optional[str] = None,
+        auth_mode: t.Optional["AuthSchemeType"] = None,
+        auth_config: t.Optional[t.Dict[str, t.Any]] = None,
+        use_composio_auth: bool = False,
     ) -> ConnectionRequestModel:
         """Initiate a new connected account."""
         response = self._raise_if_required(
@@ -254,7 +258,15 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
                 json={
                     "app": {
                         "integrationId": integration_id,
-                        "uniqueKey": app_unique_key,
+                        "uniqueKey": (
+                            app_unique_key.lower() if app_unique_key else app_unique_key
+                        ),
+                    },
+                    "config": {
+                        "name": name,
+                        "authScheme": auth_mode,
+                        "integrationSecrets": auth_config or {},
+                        "useComposioAuth": use_composio_auth,
                     },
                     "connection": {
                         "entityId": entity_id,
@@ -1485,12 +1497,10 @@ class Integrations(Collection[IntegrationModel]):
     def create(
         self,
         app_unique_key: str,
-        app_id: t.Optional[str] = None,  # pylint: disable=unused-argument
         name: t.Optional[str] = None,
         auth_mode: t.Optional["AuthSchemeType"] = None,
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
         use_composio_auth: bool = False,
-        force_new_integration: bool = False,  # pylint: disable=unused-argument
     ) -> IntegrationModel:
         """
         Create a new integration
