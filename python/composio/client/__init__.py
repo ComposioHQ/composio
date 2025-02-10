@@ -5,6 +5,7 @@ Composio SDK client.
 import os
 import sys
 import typing as t
+import warnings
 from datetime import datetime
 from pathlib import Path
 
@@ -424,7 +425,7 @@ class Entity:
         redirect_url: t.Optional[str] = None,
         integration: t.Optional[IntegrationModel] = None,
         use_composio_auth: bool = True,
-        force_new_integration: bool = False,  # pylint: disable=unused-argument
+        force_new_integration: t.Optional[bool] = None,
         connected_account_params: t.Optional[t.Dict] = None,
         labels: t.Optional[t.List] = None,
     ) -> ConnectionRequestModel:
@@ -438,6 +439,12 @@ class Entity:
         :param integration: Optional existing IntegrationModel instance to be used.
         :return: A ConnectionRequestModel instance representing the initiated connection.
         """
+        if force_new_integration is not None:
+            warnings.warn(
+                "`force_new_integration` parameter has been deprecated "
+                "and will be removed in v0.9.0."
+            )
+
         if isinstance(app_name, App):
             app_name_str = app_name.slug
         else:
