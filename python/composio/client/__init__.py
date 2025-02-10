@@ -5,6 +5,7 @@ Composio SDK client.
 import os
 import sys
 import typing as t
+import warnings
 from datetime import datetime
 from pathlib import Path
 
@@ -424,7 +425,7 @@ class Entity:
         redirect_url: t.Optional[str] = None,
         integration: t.Optional[IntegrationModel] = None,
         use_composio_auth: bool = True,
-        force_new_integration: bool = False,
+        force_new_integration: t.Optional[bool] = None,
         connected_account_params: t.Optional[t.Dict] = None,
         labels: t.Optional[t.List] = None,
     ) -> ConnectionRequestModel:
@@ -438,6 +439,12 @@ class Entity:
         :param integration: Optional existing IntegrationModel instance to be used.
         :return: A ConnectionRequestModel instance representing the initiated connection.
         """
+        if force_new_integration is not None:
+            warnings.warn(
+                "`force_new_integration` parameter has been deprecated "
+                "and will be removed in v0.9.0."
+            )
+
         if isinstance(app_name, App):
             app_name_str = app_name.slug
         else:
@@ -445,38 +452,25 @@ class Entity:
 
         app = self.client.apps.get(name=app_name_str)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        if integration is None and auth_mode is not None:
-            if auth_mode not in AUTH_SCHEME_WITH_INITIATE:
-                raise ComposioClientError(
-                    f"'auth_mode' should be one of {AUTH_SCHEME_WITH_INITIATE}"
-                )
-            auth_mode = t.cast(AuthSchemeType, auth_mode)
-            if "OAUTH" not in auth_mode:
-                use_composio_auth = False
-            integration = self.client.integrations.create(
-                app_id=app.appId,
-                name=f"{app_name}_{timestamp}",
-                auth_mode=auth_mode,
-                auth_config=auth_config,
-                use_composio_auth=use_composio_auth,
-                force_new_integration=force_new_integration,
+
+        if auth_mode is None:
+            raise ComposioClientError(
+                f"'auth_mode' should be one of {AUTH_SCHEME_WITH_INITIATE}"
             )
 
-        if integration is None and auth_mode is None:
-            integration = self.client.integrations.create(
-                app_id=app.appId,
-                auth_config=auth_config,
-                name=f"{app_name}_{timestamp}",
-                use_composio_auth=use_composio_auth,
-                force_new_integration=force_new_integration,
-            )
+        auth_mode = t.cast(AuthSchemeType, auth_mode)
 
         return self.client.connected_accounts.initiate(
-            integration_id=t.cast(IntegrationModel, integration).id,
+            integration_id=integration.id if integration is not None else None,
             entity_id=self.id,
             params=connected_account_params,
             labels=labels,
             redirect_url=redirect_url,
+            app_unique_key=app.name,
+            name=f"{app_name}_{timestamp}",
+            auth_mode=auth_mode,
+            auth_config=auth_config,
+            use_composio_auth=use_composio_auth,
         )
 
 
