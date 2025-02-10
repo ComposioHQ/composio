@@ -454,7 +454,9 @@ class Entity:
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
         if auth_mode is None:
-            raise ComposioClientError(f"'auth_mode' should be one of {AUTH_SCHEME_WITH_INITIATE}")
+            raise ComposioClientError(
+                f"'auth_mode' should be one of {AUTH_SCHEME_WITH_INITIATE}"
+            )
 
         auth_mode = t.cast(AuthSchemeType, auth_mode)
 
