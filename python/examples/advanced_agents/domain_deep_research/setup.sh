@@ -2,11 +2,11 @@
 
 # Create a virtual environment
 echo "Creating virtual environment..."
-python3 -m venv ~/.venvs/finance_researcher 
+python3 -m venv ~/.venvs/domain_researcher 
 
 # Activate the virtual environment
 echo "Activating virtual environment..."
-source ~/.venvs/finance_researcher/bin/activate
+source ~/.venvs/domain_researcher/bin/activate
 
 # Install libraries from requirements.txt 
 echo "Installing libraries from requirements.txt..."

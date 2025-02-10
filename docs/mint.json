@@ -135,6 +135,7 @@
       "pages": [
         "framework/autogen",
         "framework/crewai",
+        "framework/gemini",
         "framework/langchain",
         "framework/langflow",
         "framework/langgraph",
@@ -151,10 +152,11 @@
             "framework/groq",
             "framework/julep",
             "framework/lyzr",
-            "framework/phidata",
+            "framework/agno",
             "framework/praisonai",
             "javascript/vercel",
-            "framework/google"
+            "framework/google",
+            "framework/ibm"
           ]
         }
       ]

@@ -1,22 +1,22 @@
 ---
-title: "Using Composio With Phidata"
-sidebarTitle: "Phidata"
-description: "Integrate Composio with Phidata agents to let them seamlessly interact with external apps"
+title: "Using Composio With Agno"
+sidebarTitle: "Agno"
+description: "Integrate Composio with Agno agents to let them seamlessly interact with external apps"
 ---
 
-## Star A Repository on Github
-In this example, we will use Phidata Agent to star a repository on Github using Composio Tools
+## Star A Repository on GitHub
+In this example, we will use Agno Agent to star a repository on GitHub using Composio Tools
 
 <Steps>
 <Step title="Install Packages">
 ```bash Python
-pip install composio-phidata
+pip install composio-agno openai
 ```
 </Step>
 <Step title="Import Libraries & Initialize ComposioToolSet & LLM">
 ```python Python
-from phi.assistant import Assistant
-from composio_phidata import Action, App, ComposioToolSet
+from agno.agent.agent import Agent
+from composio_agno import Action, App, ComposioToolSet
 
 toolset = ComposioToolSet()
 ```
@@ -39,20 +39,20 @@ Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environ
 </Tip>
 </Step>
 
-<Step title="Get All Github Tools">
+<Step title="Get All GitHub Tools">
 You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
 ```python Python
-composio_tools = toolset.get_tools(apps=[App.GITHUB])
+tools = toolset.get_tools(apps=[App.GITHUB])
 ```
 </Step>
 <Step title="Define the Assistant">
 ```python Python
-assistant = Assistant(tools=composio_tools, show_tool_calls=True)
+agent = Agent(tools=tools, show_tool_calls=True)
 ```
 </Step>
 <Step title="Execute the Agent">
 ```python Python
-assistant.print_response("Can you star composiohq/composio repo?")
+agent.print_response("Can you star ComposioHQ/composio repo?")
 ```
 </Step>
 </Steps>
