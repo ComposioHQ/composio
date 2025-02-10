@@ -146,6 +146,7 @@
         {
           "group": "Other Frameworks",
           "pages": [
+            "framework/smolagents",
             "framework/camelai",
             "javascript/cloudflare",
             "framework/griptape",

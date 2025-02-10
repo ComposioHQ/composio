@@ -1,8 +1,6 @@
-from composio_smol import ComposioToolSet
+from composio_smol import Action, ComposioToolSet
 from dotenv import load_dotenv
 from smolagents import CodeAgent, HfApiModel
-
-from composio import Action
 
 
 load_dotenv()
