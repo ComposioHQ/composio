@@ -36,7 +36,6 @@ class ComposioToolSet(
         :param apps: List of apps to wrap
         :param actions: List of actions to wrap
         :param tags: Filter the apps by given tags
-        :param entity_id: Entity ID for the function wrapper
         :param entity_id: Entity ID to use for executing function calls.
         """
         super().register_tools(
@@ -61,16 +60,12 @@ class ComposioToolSet(
         """
         Get composio tools as Ag2 FunctionTool objects.
 
-        Args:
-            actions: List of actions to wrap
-            apps: List of apps to wrap
-            tags: Filter apps by given tags
-            entity_id: Entity ID for function wrapper
-            processors: Optional dict of processors to merge
-            check_connected_accounts: Whether to check for connected accounts
-
-        Returns:
-            List of Ag2 FunctionTool objects
+        :param actions: List of actions to wrap
+        :param apps: List of apps to wrap
+        :param tags: Filter apps by given tags
+        :param entity_id: Entity ID for function wrapper
+        :param processors: Optional dict of processors to merge
+        :param check_connected_accounts: Whether to check for connected accounts
         """
         return super().get_tools(
             actions=actions,
