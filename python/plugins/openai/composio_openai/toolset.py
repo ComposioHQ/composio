@@ -19,6 +19,7 @@ from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 
 from composio import ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
+from composio.exceptions import InvalidEntityIdError
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import OpenAISchema, SchemaType
 from composio.tools.toolset import ProcessorsType
@@ -80,7 +81,7 @@ class ComposioToolSet(
             and entity_id != DEFAULT_ENTITY_ID
             and self.entity_id != entity_id
         ):
-            raise ValueError(
+            raise InvalidEntityIdError(
                 "separate `entity_id` can not be provided during "
                 "initialization and handelling tool calls"
             )

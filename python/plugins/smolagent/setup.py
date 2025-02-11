@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_smol",
-    version="0.7.1",
+    version="0.7.2",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get array of strongly typed tools for Smol Agents",
