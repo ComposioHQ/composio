@@ -9,6 +9,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
+from composio.exceptions import NotFoundError
 from composio.tools.base.abs import (
     Action,
     ActionRequest,
@@ -157,7 +158,7 @@ class LocalToolMixin(Tool):
         """
         actcls = self._actions.get(action)
         if actcls is None:
-            raise ValueError(f"No action found with name `{action}`")
+            raise NotFoundError(f"No action found with name `{action}`")
 
         try:
             metadata = metadata or {}

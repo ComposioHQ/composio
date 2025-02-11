@@ -4,13 +4,9 @@ import warnings
 from composio.client.enums.base import ActionData, replacement_action_name
 from composio.client.enums.enum import Enum, EnumGenerator
 from composio.constants import VERSION_LATEST, VERSION_LATEST_BASE
-from composio.exceptions import ComposioSDKError
+from composio.exceptions import InvalidVersionString
 
 _ACTION_CACHE: t.Dict[str, "Action"] = {}
-
-class InvalidVersionString(ComposioSDKError):
-    def __init__(self, message: str, *args: t.Any, delegate: bool = False) -> None:
-        super().__init__(message, *args, delegate=delegate)
 
 def clean_version_string(version: str) -> str:
     version = version.lower()

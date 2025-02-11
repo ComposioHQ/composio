@@ -4,16 +4,10 @@ import warnings
 from composio.client.enums.base import ActionData, replacement_action_name
 from composio.client.enums.enum import Enum, EnumGenerator
 from composio.constants import VERSION_LATEST, VERSION_LATEST_BASE
-from composio.exceptions import ComposioSDKError
+from composio.exceptions import EnumMetadataNotFound, InvalidVersionString, VersionError
 
 
 _ACTION_CACHE: t.Dict[str, "Action"] = {}
-
-
-class InvalidVersionString(ComposioSDKError):
-
-    def __init__(self, message: str, *args: t.Any, delegate: bool = False) -> None:
-        super().__init__(message, *args, delegate=delegate)
 
 
 def clean_version_string(version: str) -> str:
@@ -80,7 +74,7 @@ class Action(Enum[ActionData], metaclass=EnumGenerator):
             response, *_ = response
 
         if request.status_code == 404 or "Not Found" in response.get("message", ""):
-            raise ComposioSDKError(
+            raise EnumMetadataNotFound(
                 message=(
                     f"No metadata found for enum `{self.slug}`, "
                     "You might be trying to use an app or action "
@@ -158,14 +152,13 @@ class Action(Enum[ActionData], metaclass=EnumGenerator):
         return self.load().available_version
 
     def with_version(self, version: str) -> "Action":
+        # pylint: disable=protected-access
         if self.is_local:
-            raise RuntimeError("Versioning is not allowed for local tools")
+            raise VersionError("Versioning is not allowed for local tools")
 
         action = Action(self.slug, cache=False)
-        action._data = self.load()  # pylint: disable=protected-access
-        action._version = clean_version_string(  # pylint: disable=protected-access
-            version=version
-        )
+        action._data = self.load()
+        action._version = clean_version_string(version=version)
         return action
 
     def latest(self) -> "Action":
