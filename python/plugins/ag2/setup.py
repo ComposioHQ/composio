@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="composio_ag2",
-    version="0.7.2",
+    version="0.7.3",
     author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your Ag2 Plugin.",
@@ -22,8 +22,8 @@ setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        "composio_autogen>=0.7.1",
-        "composio_core>=0.7.1,<0.8.0",
+        "composio_autogen>=0.7.2",
+        "composio_core>=0.7.2,<0.8.0",
         "ag2>=0.7.3",
     ],
     include_package_data=True,
