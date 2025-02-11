@@ -179,10 +179,6 @@ export class Entity {
         user_uuid: this.id!,
       });
 
-      if (!connectedAccounts.items || connectedAccounts.items.length === 0) {
-        return null;
-      }
-
       for (const account of connectedAccounts.items!) {
         if (account?.labels && account?.labels.includes(LABELS.PRIMARY)) {
           latestAccount = account;
