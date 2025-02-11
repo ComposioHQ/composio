@@ -6,6 +6,7 @@ import traceback
 import typing as t
 from pathlib import Path
 
+from composio.constants import LOCAL_CACHE_DIRECTORY
 from pydantic import BaseModel, Field
 from swebench.harness.test_spec import make_test_spec
 from tqdm import tqdm
@@ -26,8 +27,7 @@ from swekit.config.store import IssueConfig
 def _get_logs_dir() -> Path:
     """Logs dir factory."""
     return (
-        Path.home()
-        / LOCAL_CACHE_DIRECTORY_NAME
+        LOCAL_CACHE_DIRECTORY
         / LOGS_DIR
         / (
             str(int(datetime.datetime.now().timestamp()))

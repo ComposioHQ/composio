@@ -5,6 +5,7 @@ import typing as t
 from pathlib import Path
 
 import click
+from composio.constants import LOCAL_CACHE_DIRECTORY
 from swebench import get_eval_refs
 
 from composio import Action, ComposioToolSet
@@ -81,7 +82,7 @@ class IndexGenerator(WithLogger):
             action=Action.CODE_ANALYSIS_TOOL_CREATE_CODE_MAP,
             params={"dir_to_index_path": str(outdir / outname)},
         )
-        with open(f"{Path.home()}/.composio/tmp/{outname}/fqdn_cache.json") as f:
+        with open(f"{LOCAL_CACHE_DIRECTORY}/tmp/{outname}/fqdn_cache.json") as f:
             fqdn_index = json.load(f)
             for k, v in fqdn_index.items():
                 if len(v) >= 1:
@@ -103,7 +104,7 @@ class IndexGenerator(WithLogger):
         # DEEPLAKE_PATH.mkdir(exist_ok=True, parents=True)
         if not DEEPLAKE_PATH.exists():
             shutil.copytree(
-                f"{Path.home()}/.composio/tmp/{outname}/deeplake",
+                f"{LOCAL_CACHE_DIRECTORY}/tmp/{outname}/deeplake",
                 DEEPLAKE_PATH,
             )
 

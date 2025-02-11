@@ -7,6 +7,7 @@ from functools import update_wrapper
 from pathlib import Path
 
 import click
+from composio.constants import LOCAL_CACHE_DIRECTORY
 import typing_extensions as te
 from click.globals import get_current_context as get_click_context
 from rich.console import Console
@@ -57,7 +58,7 @@ class Context:
     def cache_dir(self) -> Path:
         """Cache directory."""
         if self._cache_dir is None:
-            self._cache_dir = Path.home() / LOCAL_CACHE_DIRECTORY_NAME
+            self._cache_dir = LOCAL_CACHE_DIRECTORY
         if not self._cache_dir.exists():
             self._cache_dir.mkdir(parents=True)
         return self._cache_dir

@@ -9,6 +9,7 @@ import typing as t
 from functools import cache
 from pathlib import Path
 
+from composio.constants import LOCAL_CACHE_DIRECTORY
 import requests
 import sentry_sdk
 import sentry_sdk.integrations.argv
@@ -35,7 +36,7 @@ def fetch_dsn() -> t.Optional[str]:
 
 
 def get_sentry_config() -> t.Optional[t.Dict]:
-    user_file = Path.home() / ".composio" / "user_data.json"
+    user_file = LOCAL_CACHE_DIRECTORY / "user_data.json"
     if not user_file.exists():
         update_dsn()
 
@@ -110,7 +111,7 @@ def init():
 
 @atexit.register
 def update_dsn() -> None:
-    user_file = Path.home() / ".composio" / "user_data.json"
+    user_file = LOCAL_CACHE_DIRECTORY / "user_data.json"
     if user_file.exists():
         try:
             data = json.loads(user_file.read_text(encoding="utf-8"))

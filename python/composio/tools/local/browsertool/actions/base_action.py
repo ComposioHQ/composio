@@ -5,6 +5,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Dict, Optional
 
+from composio.constants import COMPOSIO_HOME_DIRECTORY
 from pydantic import BaseModel, Field
 
 from composio.tools.base.local import ActionRequest, ActionResponse, LocalAction
@@ -174,7 +175,7 @@ class BaseBrowserAction(LocalAction[ActionRequest, ActionResponse], abs=True):
             )
 
     def _take_screenshot(self, browser_manager: BrowserManager, prefix: str) -> str:
-        home_dir = Path.home()
+        home_dir = COMPOSIO_HOME_DIRECTORY
         browser_media_dir = home_dir / ".browser_media"
         browser_media_dir.mkdir(parents=True, exist_ok=True)
         random_string = "".join(random.choices(string.ascii_lowercase, k=6))

@@ -9,6 +9,7 @@ import typing as t
 from dataclasses import dataclass
 from pathlib import Path
 
+from composio.constants import LOCAL_CACHE_DIRECTORY
 from composio.exceptions import ComposioSDKError
 from composio.tools.env.base import RemoteWorkspace, WorkspaceConfigType
 from composio.tools.env.constants import (
@@ -35,7 +36,7 @@ except ImportError:
 
 
 COMPOSIO_PATH = Path(__file__).parent.parent.parent.parent.parent.resolve()
-COMPOSIO_CACHE = Path.home() / ".composio"
+COMPOSIO_CACHE = LOCAL_CACHE_DIRECTORY
 CONTAINER_DEV_VOLUMES = {
     COMPOSIO_PATH: {
         "bind": "/opt/composio-core",

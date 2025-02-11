@@ -26,9 +26,14 @@ LOCAL_CACHE_DIRECTORY_NAME = ".composio"
 Local cache directory name for composio CLI
 """
 
-LOCAL_CACHE_DIRECTORY = (
-    Path.home() if Path.home().exists() else Path.cwd()
-) / LOCAL_CACHE_DIRECTORY_NAME
+COMPOSIO_HOME_DIRECTORY = (
+    Path(str(os.environ.get("COMPOSIO_HOME")))
+    if os.environ.get("COMPOSIO_HOME")
+    else (Path.home() if Path.home().exists() else Path.cwd())
+)
+
+LOCAL_CACHE_DIRECTORY = COMPOSIO_HOME_DIRECTORY / LOCAL_CACHE_DIRECTORY_NAME
+
 """
 Path to local caching directory.
 """

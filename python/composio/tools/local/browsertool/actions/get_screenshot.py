@@ -6,6 +6,7 @@ import random
 import string
 from pathlib import Path
 
+from composio.constants import COMPOSIO_HOME_DIRECTORY
 from pydantic import Field
 
 from composio.tools.env.browsermanager.manager import BrowserManager
@@ -65,7 +66,7 @@ class GetScreenshot(BaseBrowserAction[GetScreenshotRequest, GetScreenshotRespons
         """Execute the screenshot action."""
         try:
             if not request.output_path or request.output_path == "":
-                home_dir = Path.home()
+                home_dir = COMPOSIO_HOME_DIRECTORY
                 browser_media_dir = home_dir / ".browser_media"
                 browser_media_dir.mkdir(parents=True, exist_ok=True)
                 random_string = "".join(random.choices(string.ascii_lowercase, k=6))
