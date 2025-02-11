@@ -109,7 +109,7 @@ class ComposioToolSet(
         schema: t.Dict[str, t.Any],
         entity_id: t.Optional[str] = None,
     ) -> StructuredTool:
-        """Wraps composio tool as Langchain StructuredTool object."""
+        """Wraps composio tool as StructuredTool object."""
         action = schema["name"]
         description = schema["description"]
         schema_params = schema["parameters"]
@@ -141,7 +141,7 @@ class ComposioToolSet(
         check_connected_accounts: bool = True,
     ) -> t.Sequence[StructuredTool]:
         """
-        Get composio tools wrapped as Langchain StructuredTool objects.
+        Get composio tools wrapped as StructuredTool objects.
 
         :param actions: List of actions to wrap
         :param apps: List of apps to wrap
