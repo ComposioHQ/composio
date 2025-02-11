@@ -10,6 +10,7 @@ The test suite is designed to run across multiple environments. Before running t
    - GitHub integration is enabled and active
    - Gmail integration is enabled and active 
    - CodeInterpreter is configured for the default entity
+   - Github drive and file_id is configured for the default entity
 
 3. Trigger Configuration
    - At least one trigger must be active in the system
