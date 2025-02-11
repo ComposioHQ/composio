@@ -7,9 +7,7 @@ import traceback
 import types
 import typing as t
 from functools import cache
-from pathlib import Path
 
-from composio.constants import LOCAL_CACHE_DIRECTORY
 import requests
 import sentry_sdk
 import sentry_sdk.integrations.argv
@@ -22,6 +20,8 @@ import sentry_sdk.integrations.modules
 import sentry_sdk.integrations.stdlib
 import sentry_sdk.integrations.threading
 import sentry_sdk.types
+
+from composio.constants import LOCAL_CACHE_DIRECTORY
 
 
 @cache

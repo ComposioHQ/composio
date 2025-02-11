@@ -6,9 +6,9 @@ import random
 import string
 from pathlib import Path
 
-from composio.constants import COMPOSIO_HOME_DIRECTORY
 from pydantic import Field
 
+from composio.constants import COMPOSIO_HOME_DIRECTORY
 from composio.tools.env.browsermanager.manager import BrowserManager
 from composio.tools.local.browsertool.actions.base_action import (
     BaseBrowserAction,

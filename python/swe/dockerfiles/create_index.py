@@ -5,10 +5,10 @@ import typing as t
 from pathlib import Path
 
 import click
-from composio.constants import LOCAL_CACHE_DIRECTORY
 from swebench import get_eval_refs
 
 from composio import Action, ComposioToolSet
+from composio.constants import LOCAL_CACHE_DIRECTORY
 from composio.utils.logging import WithLogger
 
 

@@ -6,12 +6,12 @@ import traceback
 import typing as t
 from pathlib import Path
 
-from composio.constants import LOCAL_CACHE_DIRECTORY
 from pydantic import BaseModel, Field
 from swebench.harness.test_spec import make_test_spec
 from tqdm import tqdm
 
 from composio import WorkspaceConfigType, WorkspaceFactory, WorkspaceType
+from composio.constants import LOCAL_CACHE_DIRECTORY
 from composio.utils.logging import WithLogger
 
 from swekit.benchmark.utils import (
@@ -20,7 +20,7 @@ from swekit.benchmark.utils import (
     get_score,
     setup_workspace,
 )
-from swekit.config.constants import LOCAL_CACHE_DIRECTORY_NAME, LOGS_DIR
+from swekit.config.constants import LOGS_DIR
 from swekit.config.store import IssueConfig
 
 

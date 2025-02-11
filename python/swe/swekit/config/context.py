@@ -7,17 +7,17 @@ from functools import update_wrapper
 from pathlib import Path
 
 import click
-from composio.constants import LOCAL_CACHE_DIRECTORY
 import typing_extensions as te
 from click.globals import get_current_context as get_click_context
 from rich.console import Console
+
+from composio.constants import LOCAL_CACHE_DIRECTORY
 
 from swekit.config.constants import (
     ISSUE_CONFIG_PATH,
     KEY_API_KEY,
     KEY_AZURE_ENDPOINT,
     KEY_MODEL_ENV,
-    LOCAL_CACHE_DIRECTORY_NAME,
     LOGS_DIR,
     MODEL_ENV_AZURE,
     MODEL_ENV_OPENAI,

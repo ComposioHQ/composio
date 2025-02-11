@@ -2,12 +2,11 @@ import random
 import string
 from abc import abstractmethod
 from enum import Enum
-from pathlib import Path
 from typing import Dict, Optional
 
-from composio.constants import COMPOSIO_HOME_DIRECTORY
 from pydantic import BaseModel, Field
 
+from composio.constants import COMPOSIO_HOME_DIRECTORY
 from composio.tools.base.local import ActionRequest, ActionResponse, LocalAction
 from composio.tools.env.browsermanager.manager import BrowserManager
 

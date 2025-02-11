@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 
 from composio.constants import LOCAL_CACHE_DIRECTORY
 

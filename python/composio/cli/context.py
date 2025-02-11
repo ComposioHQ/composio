@@ -17,7 +17,6 @@ from composio.client import Composio
 from composio.constants import (
     ENV_COMPOSIO_API_KEY,
     LOCAL_CACHE_DIRECTORY,
-    LOCAL_CACHE_DIRECTORY_NAME,
     USER_DATA_FILE_NAME,
 )
 from composio.storage.user import UserData
