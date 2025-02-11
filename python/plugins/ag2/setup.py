@@ -10,7 +10,7 @@ from setuptools import setup
 setup(
     name="composio_ag2",
     version="0.7.2",
-    author="Devanshu",
+    author="Composio",
     author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your Ag2 Plugin.",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
