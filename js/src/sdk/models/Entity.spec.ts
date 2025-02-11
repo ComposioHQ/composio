@@ -43,6 +43,18 @@ describe("Entity class tests", () => {
     expect(connection?.appUniqueId).toBe(app);
   });
 
+  it("get connection for rand", async () => {
+    const entity2 = new Entity(backendClient, "ckemvy" + Date.now());
+    let hasError = false;
+    try {
+      const connection = await entity2.getConnection({ app: "gmail" });
+      expect(connection?.appUniqueId).toBe("gmail");
+    } catch (error) {
+      hasError = true;
+    }
+    expect(hasError).toBe(true);
+  });
+
   it("execute action", async () => {
     const connectedAccount = await entity.getConnection({ app: "github" });
 

@@ -7,8 +7,11 @@ const readFileContent = async (
   path: string
 ): Promise<{ content: string; mimeType: string }> => {
   try {
-    const content = require("fs").readFileSync(path, "utf-8");
-    return { content, mimeType: "text/plain" };
+    const content = require("fs").readFileSync(path);
+    return {
+      content: content.toString("base64"),
+      mimeType: "application/octet-stream",
+    };
   } catch (error) {
     throw new Error(`Error reading file at ${path}: ${error}`);
   }
@@ -17,10 +20,16 @@ const readFileContent = async (
 const readFileContentFromURL = async (
   path: string
 ): Promise<{ content: string; mimeType: string }> => {
-  const response = await fetch(path);
-  const content = await response.text();
-  const mimeType = response.headers.get("content-type") || "text/plain";
-  return { content, mimeType };
+  const response = await axios.get(path, {
+    responseType: "arraybuffer",
+  });
+  const content = Buffer.from(response.data);
+  const mimeType =
+    response.headers["content-type"] || "application/octet-stream";
+  return {
+    content: content.toString("base64"),
+    mimeType,
+  };
 };
 
 const uploadFileToS3 = async (
@@ -29,13 +38,17 @@ const uploadFileToS3 = async (
   appName: string,
   mimeType: string
 ): Promise<string> => {
+  const extension = mimeType.split("/")[1] || "bin";
   const response = await apiClient.actionsV2.createFileUploadUrl({
     body: {
       action: actionName,
       app: appName,
-      filename: `${actionName}_${Date.now()}`,
+      filename: `${actionName}_${Date.now()}.${extension}`,
       mimetype: mimeType,
-      md5: crypto.createHash("md5").update(content).digest("hex"),
+      md5: crypto
+        .createHash("md5")
+        .update(Buffer.from(content, "base64"))
+        .digest("hex"),
     },
     path: {
       fileType: "request",
@@ -47,11 +60,15 @@ const uploadFileToS3 = async (
   const s3key = data!.key;
 
   try {
-    // Upload the file to the S3 bucket
-    await axios.put(signedURL, content);
+    const buffer = Buffer.from(content, "base64");
+    await axios.put(signedURL, buffer, {
+      headers: {
+        "Content-Type": mimeType,
+        "Content-Length": buffer.length,
+      },
+    });
   } catch (e) {
     const error = e as AxiosError;
-    // if error is 403, then continue
     if (error instanceof AxiosError && error.response?.status === 403) {
       return signedURL;
     }
