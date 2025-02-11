@@ -9,21 +9,34 @@ In this example, we will use Letta Agent to star a repository on GitHub using Co
 
 <Steps>
 <Step title="Install Packages">
+<CodeGroup>
 ```bash Python
-pip install composio_langchain letta
+pip install letta-client composio_langchain
 ```
+```bash JavaScript
+npm i composio-core @letta-ai/letta-client
+```
+</CodeGroup>
 </Step>
 <Step title="Import Libraries & Configure Client">
-```bash Python
-from letta import EmbeddingConfig, LLMConfig, create_client
+<CodeGroup>
+```python Python
+from letta_client import Letta
 from composio_langchain import Action, ComposioToolSet
 
-client = create_client()
-
-# set automatic defaults for LLM/embedding config
-client.set_default_llm_config(LLMConfig.default_config(model_name="gpt-4"))
-client.set_default_embedding_config(EmbeddingConfig.default_config(model_name="text-embedding-ada-002"))
+client = Letta(base_url="http://localhost:8283")
 ```
+```javascript JavaScript
+import { LettaClient } from '@letta-ai/letta-client'
+import { ComposioToolSet } from "composio-core"
+
+const client = new LettaClient({
+    baseUrl: "http://localhost:8283",
+});
+
+const toolset = new ComposioToolSet()
+```
+</CodeGroup>
 </Step>
 
 <Step title="Connect Your GitHub Account">
@@ -38,30 +51,83 @@ toolset = ComposioToolSet()
 request = toolset.initiate_connection(app=App.GITHUB)
 print(f"Open this URL to authenticate: {request.redirectUrl}")
 ```
+```javascript JavaScript
+const connection = await toolset.connectedAccounts.initiate({appName: "github"})
+console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
+```
 </CodeGroup>
-<Tip>
-Don't forget to set your `COMPOSIO_API_KEY` and `OPENAI_API_KEY` in your environment variables.
-</Tip>
 </Step>
-
 <Step title="Add GitHub action to Client">
-You can get all the tools for a given app or specific actions as shown below. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
+Adding tools to the client
 <CodeGroup>
 ```python Python
-composio_tool = client.load_composio_tool(Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER)
-agent_state = client.create_agent()
-client.add_tool_to_agent(
-    agent_id=agent_state.id,
-    tool_id=composio_tool.id
+tool = client.tools.add_composio_tool(composio_action_name=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER.name)
+```
+```javascript JavaScript
+const tool = await client.tools.addComposioTool(
+    "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
 )
 ```
 </CodeGroup>
-
+</Step>
+<Step title="Create the agent">
+<CodeGroup>
+```python Python
+agent = client.agents.create(
+    name="GitHub Agent",
+    memory_blocks=[
+        {"label": "persona", "value": "I am a helpful assistant"}
+    ],
+    model="openai/gpt-4o",
+    embedding="openai/text-embedding-ada-002", 
+    tool_ids=[tool.id]
+)
+```
+```javascript JavaScript
+const agent = await client.agents.create({
+    name: "GitHub Agent",
+    memoryBlocks: [
+        {
+            value: "I am a helpful assistant",
+            label: "persona",
+        },
+    ],
+    model: "openai/gpt-4o",
+    embedding: "openai/text-embedding-ada-002",
+    toolIds: [tool.id],
+});
+```
+</CodeGroup>
 </Step>
 <Step title="Execute the Agent">
+<CodeGroup>
 ```python Python
-response = client.send_message(agent_id=agent_state.id, role="user", message="Star the repo composiohq/composio")
-print(response)
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[
+        {
+            "role": "user",
+            "content": "Star the github repo composioHQ/composio/"
+        }
+    ]
+)
+for message in response.messages:
+    print(message)
 ```
+```javascript JavaScript
+const response = await client.agents.messages.create(agent.id, {
+    messages: [
+        {
+            role: "user",
+            content: "Star the github repo composiohq/composio",
+        },
+    ],
+});
+
+for (const message of response.messages) {
+    console.log(message);
+}
+```
+</CodeGroup>
 </Step>
 </Steps>
