@@ -1068,6 +1068,7 @@ class CreateUploadURLResponse(BaseModel):
     id: str = Field(..., description="ID of the file")
     url: str = Field(..., description="Onetime upload URL")
     key: str = Field(..., description="S3 upload location")
+    exists: bool = Field(False, description="If the file already exists on S3")
 
 
 class Actions(Collection[ActionModel]):

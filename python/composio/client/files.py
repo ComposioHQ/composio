@@ -64,7 +64,7 @@ class FileUploadable(BaseModel):
             mimetype=mimetype,
             md5=get_md5(file=file),
         )
-        if not upload(url=s3meta.url, file=file):
+        if not s3meta.exists and not upload(url=s3meta.url, file=file):
             raise ComposioSDKError(f"Error uploading file: {file}")
 
         return cls(
