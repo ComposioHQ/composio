@@ -16,7 +16,7 @@ from rich.console import Console
 from composio.client import Composio
 from composio.constants import (
     ENV_COMPOSIO_API_KEY,
-    LOCAL_CACHE_DIRECTORY_NAME,
+    LOCAL_CACHE_DIRECTORY,
     USER_DATA_FILE_NAME,
 )
 from composio.storage.user import UserData
@@ -57,7 +57,7 @@ class Context(logging.WithLogger):
     def cache_dir(self) -> Path:
         """Cache directory."""
         if self._cache_dir is None:
-            self._cache_dir = Path.home() / LOCAL_CACHE_DIRECTORY_NAME
+            self._cache_dir = LOCAL_CACHE_DIRECTORY
         if not self._cache_dir.exists():
             self._cache_dir.mkdir(parents=True)
         return self._cache_dir

@@ -536,7 +536,7 @@ class Tool(WithLogger, _Attributes):
         :param params: Execution parameters.
         :param metadata: A dictionary containing metadata for action.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @classmethod
     def register(cls: t.Type["Tool"]) -> None:

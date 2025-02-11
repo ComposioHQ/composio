@@ -5,10 +5,10 @@ from pathlib import Path
 import typing_extensions as te
 
 from composio.constants import LOCAL_CACHE_DIRECTORY
-from composio.exceptions import ComposioSDKError
+from composio.exceptions import EnumStringNotFound, InvalidEnum
 from composio.storage.base import LocalStorage
 
-from .base import ActionData, EnumStringNotFound, SentinalObject
+from .base import ActionData, SentinalObject
 
 
 DataT = t.TypeVar("DataT", bound=LocalStorage)
@@ -72,7 +72,8 @@ class Enum(t.Generic[DataT]):
         if hasattr(value, "sentinel"):  # TODO: get rid of SentinalObject
             slug = value.enum  # type: ignore
             if not isinstance(slug, str):
-                raise ComposioSDKError(f"Invalid enum type: {slug!r}, expected str")
+                raise InvalidEnum(f"Invalid enum type: {slug!r}, expected str")
+
         else:
             slug = str(value)
 

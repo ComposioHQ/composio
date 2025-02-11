@@ -4,6 +4,7 @@ from typing import List, Optional, Type
 
 from pydantic import BaseModel, Field
 
+from composio.constants import LOCAL_CACHE_DIRECTORY
 from composio.tools.base.local import LocalAction
 
 
@@ -56,7 +57,7 @@ class CreateImageVectorStore(
         from chromadb.utils import embedding_functions  # pylint: disable=C0415
 
         image_collection_name = Path(request.folder_path).name + "_images"
-        index_storage_path = Path.home() / ".composio" / "image_index_storage"
+        index_storage_path = LOCAL_CACHE_DIRECTORY / "image_index_storage"
         index_storage_path.mkdir(parents=True, exist_ok=True)
 
         # Initialize Chroma client

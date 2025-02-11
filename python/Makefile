@@ -83,7 +83,7 @@ fmt: format-code
 
 .PHONY: check-code
 check-code:
-	tox run-parallel -e isort-check,black-check,flake8,mypy,pylint
+	tox run-parallel -e isort-check,black-check,flake8,mypy,pylint --parallel-no-spinner
 
 .PHONY: chk
 chk: check-code
