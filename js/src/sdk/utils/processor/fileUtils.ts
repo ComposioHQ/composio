@@ -117,7 +117,7 @@ export const downloadFileFromS3 = async ({
   const response = await axios.get(s3Url);
 
   const extension = mimeType.split("/")[1] || "txt";
-  const fileName = `${actionName}_${Date.now()}`;
+  const fileName = `${actionName}_${Date.now()}.${extension}`;
   const filePath = saveFile(fileName, response.data, true);
   return {
     name: fileName,
