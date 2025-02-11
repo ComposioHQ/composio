@@ -8,7 +8,11 @@ import requests
 import typing_extensions as te
 from pydantic import BaseModel, ConfigDict, Field
 
-from composio.exceptions import ComposioSDKError
+from composio.exceptions import (
+    ErrorDownloadingFile,
+    ErrorUploadingFile,
+    SDKFileNotFoundError,
+)
 from composio.utils import mimetypes
 
 
@@ -54,7 +58,7 @@ class FileUploadable(BaseModel):
     ) -> te.Self:
         file = Path(file)
         if not file.exists():
-            raise ComposioSDKError(f"File not found: {file}")
+            raise SDKFileNotFoundError(f"File not found: {file}")
 
         mimetype = mimetypes.guess(file=file)
         s3meta = client.actions.create_file_upload(
@@ -65,7 +69,7 @@ class FileUploadable(BaseModel):
             md5=get_md5(file=file),
         )
         if not upload(url=s3meta.url, file=file):
-            raise ComposioSDKError(f"Error uploading file: {file}")
+            raise ErrorUploadingFile(f"Error uploading file: {file}")
 
         return cls(
             name=file.name,
@@ -86,7 +90,7 @@ class FileDownloadable(BaseModel):
         outdir.mkdir(exist_ok=True, parents=True)
         response = requests.get(url=self.s3url, stream=True)
         if response.status_code != 200:
-            raise ComposioSDKError(f"Error downloading file: {self.s3url}")
+            raise ErrorDownloadingFile(f"Error downloading file: {self.s3url}")
 
         with outfile.open("wb") as fd:
             for chunk in response.iter_content(chunk_size=chunk_size):
