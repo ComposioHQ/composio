@@ -2,7 +2,6 @@ import os
 
 import dotenv
 from autogen import AssistantAgent, UserProxyAgent
-
 from composio_ag2 import App, ComposioToolSet
 
 
