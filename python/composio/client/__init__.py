@@ -6,7 +6,6 @@ import os
 import sys
 import typing as t
 from datetime import datetime
-from pathlib import Path
 
 import requests
 
@@ -41,7 +40,7 @@ from composio.client.http import HttpClient
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
-    LOCAL_CACHE_DIRECTORY_NAME,
+    LOCAL_CACHE_DIRECTORY,
     USER_DATA_FILE_NAME,
 )
 from composio.exceptions import ApiKeyError, ApiKeyNotProvidedError, InvalidParams
@@ -99,8 +98,7 @@ class Composio:
     @property
     def api_key(self) -> str:
         if self._api_key is None:
-            cache_dir = Path.home() / LOCAL_CACHE_DIRECTORY_NAME
-            user_data_path = cache_dir / USER_DATA_FILE_NAME
+            user_data_path = LOCAL_CACHE_DIRECTORY / USER_DATA_FILE_NAME
             user_data = (
                 UserData.load(path=user_data_path) if user_data_path.exists() else None
             )
