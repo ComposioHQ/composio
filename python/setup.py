@@ -52,6 +52,7 @@ core_requirements = [
     # Tooling server dependencies
     "fastapi",
     "uvicorn",
+    "pyyaml>=6.0.2",
 ]
 
 e2b_workspace_requirements = [
@@ -88,7 +89,7 @@ all_requirements = (
 
 setup(
     name="composio_core",
-    version="0.6.12",
+    version="0.7.2",
     author="Utkarsh",
     author_email="utkarsh@composio.dev",
     description="Core package to act as a bridge between composio platform and other services.",

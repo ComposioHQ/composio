@@ -2,6 +2,7 @@
 Global constants for Composio SDK
 """
 
+import os
 from pathlib import Path
 
 
@@ -15,15 +16,48 @@ ENV_COMPOSIO_LOGGING_LEVEL = "COMPOSIO_LOGGING_LEVEL"
 Environment variable for specifying logging level
 """
 
+ENV_COMPOSIO_VERSIONING_POLICY = "COMPOSIO_VERSIONING_POLICY"
+"""
+Environment variable for specifying default versioning policy.
+"""
+
 LOCAL_CACHE_DIRECTORY_NAME = ".composio"
 """
 Local cache directory name for composio CLI
 """
 
-LOCAL_CACHE_DIRECTORY = Path.home() / LOCAL_CACHE_DIRECTORY_NAME
+LOCAL_CACHE_DIRECTORY_NAME = ".composio"
+"""
+Local cache directory name for composio CLI
+"""
+
+ENV_LOCAL_CACHE_DIRECTORY = "COMPOSIO_CACHE_DIR"
+"""
+Environment to set the composio caching directory.
+"""
+
+_cache_dir = os.environ.get(ENV_LOCAL_CACHE_DIRECTORY)
+
+LOCAL_CACHE_DIRECTORY = (
+    Path(_cache_dir)
+    if _cache_dir is not None
+    else (Path.home() / LOCAL_CACHE_DIRECTORY_NAME)
+)
 """
 Path to local caching directory.
 """
+
+try:
+    LOCAL_CACHE_DIRECTORY.mkdir(parents=True, exist_ok=True)
+    if not os.access(LOCAL_CACHE_DIRECTORY, os.W_OK):
+        raise OSError
+except OSError as e:
+    raise RuntimeError(
+        f"Cache directory {LOCAL_CACHE_DIRECTORY} is not writable please "
+        f"provide a path that is writable using {ENV_LOCAL_CACHE_DIRECTORY} "
+        "environment variable."
+    ) from e
+
 
 LOCAL_OUTPUT_FILE_DIRECTORY_NAME = "output"
 """
@@ -98,3 +132,19 @@ PUSHER_CLUSTER = "mt1"
 """
 Name of the pusher cluster.
 """
+
+LOCKFILE_PATH = Path("./.composio.lock")
+"""
+Path to the .composio.lock file.
+"""
+
+VERSION_LATEST = "latest"
+"""Latest version specifier."""
+
+VERSION_LATEST_BASE = "latest:base"
+"""Latest none-breaking version specifier."""
+
+COMPOSIO_VERSIONING_POLICY = os.environ.get(
+    ENV_COMPOSIO_VERSIONING_POLICY,
+    VERSION_LATEST_BASE,
+)

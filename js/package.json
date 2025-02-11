@@ -14,7 +14,7 @@
     "test:watch": "jest --testMatch=\"**/*.spec.ts\" --watch",
     "test:coverage": "jest --coverage --testMatch=\"**/*.spec.ts\"",
     "type-docs": "typedoc",
-    "openapispec:generate": "npx @hey-api/openapi-ts",
+    "openapispec:generate": "npx @hey-api/openapi-ts ",
     "run:cli": "ts-node src/cli/index.ts",
     "run:sample": "ts-node sample.ts",
     "prettier": "prettier --write 'src/**/*.{ts,js,cjs}'",
@@ -53,7 +53,8 @@
     "rollup-plugin-visualizer": "^5.13.1",
     "uuid": "^10.0.0",
     "zod": "^3.23.8",
-    "zod-to-json-schema": "^3.23.2"
+    "zod-to-json-schema": "^3.23.2",
+    "resolve-package-path": "^4.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.16.0",
@@ -84,7 +85,6 @@
     "prettier": "^3.4.2",
     "prettier-plugin-organize-imports": "^4.1.0",
     "regenerator-runtime": "^0.14.1",
-    "resolve-package-path": "^4.0.3",
     "rollup": "^4.9.1",
     "rollup-plugin-dts": "^6.1.0",
     "rollup-plugin-ignore": "^1.0.10",
@@ -99,5 +99,9 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "engineStrict": true,
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

@@ -29,5 +29,5 @@ Now, Fill in the `.env` file with your secrets.
 
 ### 2. Run the python script
 ```shell
-python cookbook/examples/quickstarters/customer_support/swarm/main.py
+python python/examples/quickstarters/customer_support/swarm/main.py
 ```

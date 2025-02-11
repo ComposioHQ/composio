@@ -12,6 +12,7 @@ from camel.toolkits import OpenAIFunction
 
 from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
+from composio.exceptions import InvalidEntityIdError
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.schema import OpenAISchema, SchemaType
 from composio.tools.toolset import ProcessorsType
@@ -102,7 +103,7 @@ class ComposioToolSet(
             and entity_id != DEFAULT_ENTITY_ID
             and self.entity_id != entity_id
         ):
-            raise ValueError(
+            raise InvalidEntityIdError(
                 "Separate `entity_id` can not be provided during "
                 "initialization and handling tool calls"
             )
@@ -177,7 +178,7 @@ class ComposioToolSet(
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
         if processors is not None:
-            self._merge_processors(processors)
+            self._processor_helpers.merge_processors(processors)
         return [
             self._wrap_tool(  # type: ignore
                 t.cast(

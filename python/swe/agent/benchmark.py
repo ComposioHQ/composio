@@ -7,7 +7,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List
 
-from langchain_aws import BedrockChat
+from langchain_aws import ChatBedrock
 from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 from langgraph.errors import GraphRecursionError
@@ -41,7 +41,7 @@ def retry_with_exponential_backoff(func, *args, **kwargs):
 def get_llm_response(system_prompt: str, human_prompt: str) -> str:
     try:
         if MODEL == "claude":
-            client = BedrockChat(
+            client = ChatBedrock(
                 credentials_profile_name="default",
                 model_id="anthropic.claude-3-5-sonnet-20240620-v1:0",
                 region_name="us-west-2",

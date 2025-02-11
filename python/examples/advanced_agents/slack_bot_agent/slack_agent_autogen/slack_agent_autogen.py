@@ -1,4 +1,5 @@
 # Import necessary libraries
+import json
 import os
 from dotenv import load_dotenv
 from autogen.agentchat import AssistantAgent, UserProxyAgent
@@ -50,7 +51,7 @@ RESPOND_ONLY_IF_TAGGED = (
 composio_toolset = ComposioToolSet()
 
 composio_toolset.register_tools(
-    tools=[App.CODEINTERPRETER, App.EXA, App.FIRECRAWL, App.TAVILY],
+    apps=[App.CODEINTERPRETER, App.EXA, App.FIRECRAWL, App.TAVILY],
     caller=chatbot,
     executor=user_proxy,
 )
@@ -68,7 +69,7 @@ def callback_new_message(event: TriggerEventData) -> None:
 
     # Ignore messages from the bot itself to prevent self-responses
     if user_id == BOT_USER_ID:
-        return "Bot ignored"
+        return "Bot ignored" # type: ignore
 
     message = payload.get("text", "")
 
@@ -77,7 +78,7 @@ def callback_new_message(event: TriggerEventData) -> None:
         print(f"Bot not tagged, ignoring message - {message} - {BOT_USER_ID}")
         return (
             f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}"
-        )
+        ) # type: ignore
 
     # Extract channel and timestamp information from the event payload
     channel_id = payload.get("channel", "")
@@ -98,4 +99,4 @@ def callback_new_message(event: TriggerEventData) -> None:
     )
 
 
-listener.listen()
+listener.wait_forever()

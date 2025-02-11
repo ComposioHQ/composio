@@ -8,6 +8,7 @@ from requests import ReadTimeout
 from requests import Session as SyncSession
 
 from composio.__version__ import __version__
+from composio.exceptions import SDKTimeoutError
 from composio.utils import logging
 from composio.utils.shared import generate_request_id
 
@@ -53,8 +54,9 @@ class HttpClient(SyncSession, logging.WithLogger):
 
         def request(url: str, **kwargs: t.Any) -> t.Any:
             """Perform HTTP request."""
+            rid = generate_request_id()
             self._logger.debug(
-                f"{method.__name__.upper()} {self.base_url}{url} - {kwargs}"
+                f"[{rid}] {method.__name__.upper()} {self.base_url}{url} - {kwargs}"
             )
             retries = 0
             while retries < 3:
@@ -64,13 +66,13 @@ class HttpClient(SyncSession, logging.WithLogger):
                         timeout=self.timeout,
                         headers={
                             **kwargs.pop("headers", {}),
-                            "x-request-id": generate_request_id(),
+                            "x-request-id": rid,
                         },
                         **kwargs,
                     )
                 except ReadTimeout:
                     retries += 1
-            raise TimeoutError("Timed out while waiting for request to complete")
+            raise SDKTimeoutError("Timed out while waiting for request to complete")
 
         return request
 

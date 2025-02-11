@@ -25,7 +25,7 @@ prefix_messages = [
 ]
 
 agent = FunctionCallingAgentWorker(
-    tools=tools,
+    tools=tools, # type: ignore
     llm=llm,
     prefix_messages=prefix_messages,
     max_function_calls=10,

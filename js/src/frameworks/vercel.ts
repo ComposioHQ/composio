@@ -1,4 +1,4 @@
-import { jsonSchema, tool } from "ai";
+import { CoreTool, jsonSchema, tool } from "ai";
 import { z } from "zod";
 import { ComposioToolSet as BaseComposioToolSet } from "../sdk/base.toolset";
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
@@ -27,6 +27,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       apiKey?: Optional<string>;
       baseUrl?: Optional<string>;
       entityId?: string;
+      connectedAccountIds?: Record<string, string>;
     } = {}
   ) {
     super({
@@ -34,6 +35,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       baseUrl: config.baseUrl || null,
       runtime: "vercel-ai",
       entityId: config.entityId || "default",
+      connectedAccountIds: config.connectedAccountIds,
     });
   }
 
@@ -62,7 +64,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     useCase?: Optional<string>;
     usecaseLimit?: Optional<number>;
     filterByAvailableApps?: Optional<boolean>;
-  }): Promise<{ [key: string]: RawActionData }> {
+  }): Promise<{ [key: string]: CoreTool }> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getTools",
       file: this.fileName,
@@ -78,22 +80,18 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       actions,
     } = ZExecuteToolCallParams.parse(filters);
 
-    const actionsList = await this.client.actions.list({
-      ...(apps && { apps: apps?.join(",") }),
-      ...(tags && { tags: tags?.join(",") }),
-      ...(useCase && { useCase: useCase }),
-      ...(actions && { actions: actions?.join(",") }),
-      ...(usecaseLimit && { usecaseLimit: usecaseLimit }),
-      filterByAvailableApps: filterByAvailableApps ?? undefined,
+    const actionsList = await this.getToolsSchema({
+      apps,
+      actions,
+      tags,
+      useCase,
+      useCaseLimit: usecaseLimit,
+      filterByAvailableApps,
     });
 
-    const tools = {};
-    actionsList.items?.forEach((actionSchema) => {
-      // @ts-ignore
-      tools[actionSchema.name!] = this.generateVercelTool(
-        // @ts-ignore
-        actionSchema as ActionData
-      );
+    const tools: { [key: string]: CoreTool } = {};
+    actionsList.forEach((actionSchema) => {
+      tools[actionSchema.name!] = this.generateVercelTool(actionSchema);
     });
 
     return tools;
@@ -109,6 +107,12 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       params: { tool, entityId },
     });
 
+    const toolSchema = await this.getToolsSchema({
+      actions: [tool.name],
+    });
+    const appName = toolSchema[0]?.appName?.toLowerCase();
+    const connectedAccountId = appName && this.connectedAccountIds?.[appName];
+
     return JSON.stringify(
       await this.executeAction({
         action: tool.name,
@@ -117,6 +121,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
             ? JSON.parse(tool.arguments)
             : tool.arguments,
         entityId: entityId || this.entityId,
+        connectedAccountId: connectedAccountId,
       })
     );
   }

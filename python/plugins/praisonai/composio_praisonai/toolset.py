@@ -7,6 +7,7 @@ import typing_extensions as te
 from composio import Action, ActionType, AppType
 from composio import ComposioToolSet as BaseComposioToolSet
 from composio import TagType
+from composio.exceptions import InvalidSchemaError
 from composio.tools.toolset import ProcessorsType
 from composio.utils import help_msg
 
@@ -64,8 +65,9 @@ class ComposioToolSet(
                     f"list[{schema_array_dtype}]" if schema_array_dtype else "list"
                 )
             else:
-                raise TypeError(
-                    f"Some dtype of current schema are not handled yet. Current Schema: {param_body}"
+                raise InvalidSchemaError(
+                    "Some dtype of current schema are not handled yet. "
+                    f"Current Schema: {param_body}"
                 )
 
             input_model_lines.append(
@@ -213,7 +215,7 @@ class ComposioToolSet(
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
         if processors is not None:
-            self._merge_processors(processors)
+            self._processor_helpers.merge_processors(processors)
         return [
             self._write_tool(
                 schema=tool.model_dump(exclude_none=True),

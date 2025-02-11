@@ -27,7 +27,7 @@ def call_model(state: MessagesState):
 def should_continue(state: MessagesState) -> Literal["tools", "__end__"]:
     messages = state["messages"]
     last_message = messages[-1]
-    if last_message.tool_calls:
+    if last_message.tool_calls: # type: ignore
         return "tools"
     return "__end__"
 

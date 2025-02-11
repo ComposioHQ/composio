@@ -1,3 +1,4 @@
 composio-autogen
 autogen
 langchain-openai
+python-dotenv

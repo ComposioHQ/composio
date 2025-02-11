@@ -5,10 +5,10 @@ from pathlib import Path
 import typing_extensions as te
 
 from composio.constants import LOCAL_CACHE_DIRECTORY
-from composio.exceptions import ComposioSDKError
+from composio.exceptions import EnumStringNotFound, InvalidEnum
 from composio.storage.base import LocalStorage
 
-from .base import ActionData, EnumStringNotFound, SentinalObject
+from .base import ActionData, SentinalObject
 
 
 DataT = t.TypeVar("DataT", bound=LocalStorage)
@@ -24,7 +24,11 @@ class Enum(t.Generic[DataT]):
     cache: t.Dict[str, "te.Self"]
     storage: t.Type[DataT]
 
-    def __new__(cls, value: t.Union[str, te.Self, t.Type[SentinalObject]]) -> "te.Self":
+    def __new__(
+        cls,
+        value: t.Union[str, te.Self, t.Type[SentinalObject]],
+        cache: bool = True,
+    ) -> "te.Self":
         """Cache the enum singleton."""
         # No caching for runtime actions
         if hasattr(value, "sentinel"):  # TODO: get rid of SentinalObject
@@ -41,14 +45,19 @@ class Enum(t.Generic[DataT]):
         value = value.upper()
 
         cached_enum = cls.cache.get(value)
-        if cached_enum is not None:
+        if cache and cached_enum is not None:
             return cached_enum  # type: ignore[return-value]
 
         enum = super().__new__(cls)
-        cls.cache[value] = enum
+        if cache:
+            cls.cache[value] = enum
         return enum
 
-    def __init__(self, value: t.Union[str, te.Self, t.Type[SentinalObject]]) -> None:
+    def __init__(
+        self,
+        value: t.Union[str, te.Self, t.Type[SentinalObject]],
+        cache: bool = True,  # pylint: disable=unused-argument
+    ) -> None:
         if hasattr(self, "_data"):
             # Object was pulled from cache and is already initialized
             return
@@ -63,7 +72,8 @@ class Enum(t.Generic[DataT]):
         if hasattr(value, "sentinel"):  # TODO: get rid of SentinalObject
             slug = value.enum  # type: ignore
             if not isinstance(slug, str):
-                raise ComposioSDKError(f"Invalid enum type: {slug!r}, expected str")
+                raise InvalidEnum(f"Invalid enum type: {slug!r}, expected str")
+
         else:
             slug = str(value)
 

@@ -16,13 +16,14 @@ pip install -r requirements.txt
 echo "Login to your Composio acount"
 composio login
 
-# Add trello tool
+
 
 echo "Add slackbot tool. Finish the flow"
 composio add twitter
 composio add linkedin
 composio add firecrawl
 composio add tavily
+composio add googlesheets
 
 # Copy env backup to .env file
 if [ -f ".env.example" ]; then

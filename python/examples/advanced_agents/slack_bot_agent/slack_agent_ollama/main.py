@@ -1,15 +1,15 @@
 # Import necessary libraries
+import json
 import os
 from dotenv import load_dotenv
 from composio_langchain import Action, App, ComposioToolSet
 from langchain import hub
 from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
+from langchain_ollama import ChatOllama
 from composio.client.collections import TriggerEventData
 
 load_dotenv()
-# LangChain supports many other chat models. Here, we're using Ollama
-from langchain.chat_models import ChatOllama
 
 llm = ChatOllama(model="mistral")
 bot_id = os.getenv("SLACK_BOT_ID", "")
@@ -50,14 +50,14 @@ def main(inputs):
 
         # Ignore messages from the bot itself to prevent self-responses
         if user_id == BOT_USER_ID:
-            return "Bot ignored"
+            return "Bot ignored" # type: ignore
 
         message = payload.get("text", "")
 
         # Respond only if the bot is tagged in the message, if configured to do so
         if RESPOND_ONLY_IF_TAGGED and f"<@{BOT_USER_ID}>" not in message:
             print(f"Bot not tagged, ignoring message - {message} - {BOT_USER_ID}")
-            return f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}"
+            return f"Bot not tagged, ignoring message - {json.dumps(payload)} - {BOT_USER_ID}" # type: ignore
 
         # Extract channel and timestamp information from the event payload
         channel_id = payload.get("channel", "")
@@ -82,6 +82,6 @@ def main(inputs):
 
 if __name__ == "__main__":
     inputs = {
-        "entityId": "hellll",
+        "entityId": "default",
     }
     main(inputs)

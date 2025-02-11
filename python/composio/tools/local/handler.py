@@ -55,7 +55,6 @@ class LocalClient(WithLogger):
 
         for schema in action_schemas:
             schema["name"] = schema["enum"]
-
         return action_schemas
 
 

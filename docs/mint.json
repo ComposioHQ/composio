@@ -135,6 +135,7 @@
       "pages": [
         "framework/autogen",
         "framework/crewai",
+        "framework/gemini",
         "framework/langchain",
         "framework/langflow",
         "framework/langgraph",
@@ -145,16 +146,18 @@
         {
           "group": "Other Frameworks",
           "pages": [
+            "framework/smolagents",
             "framework/camelai",
             "javascript/cloudflare",
             "framework/griptape",
             "framework/groq",
             "framework/julep",
             "framework/lyzr",
-            "framework/phidata",
+            "framework/agno",
             "framework/praisonai",
             "javascript/vercel",
-            "framework/google"
+            "framework/google",
+            "framework/ibm"
           ]
         }
       ]
@@ -181,6 +184,16 @@
             "sdrkit/ai-market-research-agent",
             "sdrkit/ai-scheduling-agent"  
           ]
+        },
+        {
+          "group": "Crypto Kit",
+          "pages": [
+            "cryptokit/tools",
+            "cryptokit/community_reward_agent",
+            "cryptokit/github_contributor_reward_agent",
+            "cryptokit/coinbase_agent",
+            "cryptokit/trading_agent"
+          ]
         }
       ]
     },
@@ -188,10 +201,12 @@
       "group": "Others",
       "pages": [
         "introduction/foundations/components/workspace",
+        "integrations/google",
         "faq/api_key/api_key",
         "faq/api_key/cli",
         "faq/integrations_and_connections/list_of_tools",
         "faq/supported_llms/supported_llm",
+        "monitoring-docs",
         "changelog"
       ]
     },

@@ -18,13 +18,23 @@ type RawExecuteRequestParam = {
   };
 };
 
-export type CreateActionOptions = {
+type ValidParameters = ZodObject<{
+  [key: string]: ZodString | ZodOptional<ZodString>;
+}>;
+export type Parameters = ValidParameters | z.ZodObject<{}>;
+
+type inferParameters<PARAMETERS extends Parameters> =
+  PARAMETERS extends ValidParameters
+    ? z.infer<PARAMETERS>
+    : z.infer<z.ZodObject<{}>>;
+
+export type CreateActionOptions<P extends Parameters = z.ZodObject<{}>> = {
   actionName?: string;
   toolName?: string;
   description?: string;
-  inputParams: ZodObject<{ [key: string]: ZodString | ZodOptional<ZodString> }>;
+  inputParams?: P;
   callback: (
-    inputParams: Record<string, string>,
+    inputParams: inferParameters<P>,
     authCredentials: Record<string, string> | undefined,
     executeRequest: (
       data: RawExecuteRequestParam
@@ -50,7 +60,10 @@ export class ActionRegistry {
   client: Composio;
   customActions: Map<
     string,
-    { metadata: CreateActionOptions; schema: Record<string, unknown> }
+    {
+      metadata: CreateActionOptions;
+      schema: Record<string, unknown>;
+    }
   >;
 
   constructor(client: Composio) {
@@ -58,7 +71,9 @@ export class ActionRegistry {
     this.customActions = new Map();
   }
 
-  async createAction(options: CreateActionOptions): Promise<RawActionData> {
+  async createAction<P extends Parameters = z.ZodObject<{}>>(
+    options: CreateActionOptions<P>
+  ): Promise<RawActionData> {
     const { callback } = options;
     if (typeof callback !== "function") {
       throw new Error("Callback must be a function");
@@ -67,7 +82,7 @@ export class ActionRegistry {
       throw new Error("You must provide actionName for this action");
     }
     if (!options.inputParams) {
-      options.inputParams = z.object({});
+      options.inputParams = z.object({}) as P;
     }
     const params = options.inputParams;
     const actionName = options.actionName || callback.name || "";

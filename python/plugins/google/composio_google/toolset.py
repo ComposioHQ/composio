@@ -17,6 +17,7 @@ from vertexai.generative_models import (
 
 from composio import Action, ActionType, AppType, TagType
 from composio.constants import DEFAULT_ENTITY_ID
+from composio.exceptions import InvalidEntityIdError
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.utils import help_msg
 from composio.utils.shared import json_schema_to_model
@@ -75,7 +76,7 @@ class ComposioToolset(
             and entity_id != DEFAULT_ENTITY_ID
             and self.entity_id != entity_id
         ):
-            raise ValueError(
+            raise InvalidEntityIdError(
                 "separate `entity_id` can not be provided during "
                 "initialization and handling tool calls"
             )

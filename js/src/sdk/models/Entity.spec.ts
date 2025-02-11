@@ -25,7 +25,9 @@ describe("Entity class tests", () => {
   it("should create for different entities", async () => {
     const entityId = "test-entity";
     const entity2 = new Entity(backendClient, entityId);
-    const connection = await entity2.initiateConnection({ appName: "github" });
+    const connection = await entity2.initiateConnection({
+      appName: "github",
+    });
     expect(connection.connectionStatus).toBe("INITIATED");
 
     const connection2 = await connectedAccounts.get({
@@ -61,7 +63,26 @@ describe("Entity class tests", () => {
 
   it("should have an Id of a connected account with label - primary", async () => {
     const entityW2Connection = new Entity(backendClient, "ckemvy");
-    const getConnection = await entityW2Connection.getConnection({
+
+    const entity = new Entity(backendClient, "ckemvy");
+
+    // Remove test with normal app where reinitiate connection is not needed
+    // await entity.initiateConnection({
+    //   appName: "github",
+    // });
+    // const getConnection = await entity.getConnection({
+    //   app: "github",
+
+    // });
+    // expect(getConnection).toHaveProperty("id");
+  });
+
+  it("should have an Id of a connected account with default - primary", async () => {
+    const entityW2Connection = new Entity(backendClient, "default");
+
+    const entity = new Entity(backendClient, "default");
+
+    const getConnection = await entity.getConnection({
       app: "github",
     });
     expect(getConnection).toHaveProperty("id");
@@ -90,7 +111,10 @@ describe("Entity class tests", () => {
   });
 
   it("initiate connection", async () => {
-    const connection = await entity.initiateConnection({ appName: "github" });
+    const connection = await entity.initiateConnection({
+      appName: "github",
+      authMode: "OAUTH2",
+    });
     expect(connection.connectionStatus).toBe("INITIATED");
   });
 });

@@ -8,6 +8,7 @@ from griptape.utils.decorators import activity
 from schema import Literal, Schema
 
 from composio import Action, ActionType, AppType, TagType
+from composio.exceptions import InvalidSchemaError
 from composio.tools import ComposioToolSet as BaseComposioToolSet
 from composio.tools.toolset import ProcessorsType
 from composio.utils import help_msg
@@ -74,8 +75,9 @@ class ComposioToolSet(
                 )
                 schema_dtype = list[schema_array_dtype] if schema_array_dtype else list  # type: ignore
             else:
-                raise TypeError(
-                    f"Some dtype of current schema are not handled yet. Current Schema: {param_body}"
+                raise InvalidSchemaError(
+                    "Some dtype of current schema are not handled yet. "
+                    f"Current Schema: {param_body}"
                 )
 
             schema_dict[schema_key] = schema_dtype
@@ -161,7 +163,7 @@ class ComposioToolSet(
         """
         self.validate_tools(apps=apps, actions=actions, tags=tags)
         if processors is not None:
-            self._merge_processors(processors)
+            self._processor_helpers.merge_processors(processors)
         return [
             self._wrap_tool(
                 schema=tool.model_dump(
