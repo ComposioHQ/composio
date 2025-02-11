@@ -3,7 +3,7 @@ import os
 import dotenv
 from autogen import AssistantAgent, UserProxyAgent
 
-from composio_autogen import App, ComposioToolSet
+from composio_ag2 import App, ComposioToolSet
 
 
 # Load environment variables from .env

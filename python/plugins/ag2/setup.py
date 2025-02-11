@@ -22,6 +22,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
+        "composio_autogen>=0.7.1",
         "composio_core>=0.7.0,<0.8.0",
         "ag2>=0.7.3",
     ],
