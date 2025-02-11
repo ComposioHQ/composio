@@ -2,7 +2,6 @@
 Enum helper base.
 """
 
-import difflib
 import typing as t
 
 from pydantic import Field
@@ -13,7 +12,6 @@ from composio.constants import (
     VERSION_LATEST,
     VERSION_LATEST_BASE,
 )
-from composio.exceptions import ComposioSDKError
 from composio.storage.base import LocalStorage
 
 
@@ -25,19 +23,6 @@ TAGS_CACHE = LOCAL_CACHE_DIRECTORY / "tags"
 APPS_CACHE = LOCAL_CACHE_DIRECTORY / "apps"
 ACTIONS_CACHE = LOCAL_CACHE_DIRECTORY / "actions"
 TRIGGERS_CACHE = LOCAL_CACHE_DIRECTORY / "triggers"
-
-
-class EnumStringNotFound(ComposioSDKError):
-    """Raise when user provides invalid enum string."""
-
-    def __init__(self, value: str, enum: str, possible_values: t.List[str]) -> None:
-        error_message = f"Invalid value `{value}` for enum class `{enum}`"
-        matches = difflib.get_close_matches(value, possible_values, n=1)
-        if matches:
-            (match,) = matches
-            error_message += f". Did you mean {match!r}?"
-
-        super().__init__(message=error_message)
 
 
 class SentinalObject:
