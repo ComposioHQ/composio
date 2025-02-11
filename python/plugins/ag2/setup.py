@@ -24,7 +24,7 @@ setup(
     install_requires=[
         "composio_autogen>=0.7.0",
         "composio_core>=0.7.0,<0.8.0",
-        "ag2>=0.7.3",
+        "ag2>=0.7.0",
     ],
     include_package_data=True,
 )
