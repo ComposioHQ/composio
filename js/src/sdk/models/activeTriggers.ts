@@ -8,7 +8,7 @@ import {
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
-import { BackendClient } from "./backendClient";
+import { AxiosBackendClient } from "./backendClient";
 
 export type TriggerItemParam = z.infer<typeof ZTriggerItemParam>;
 export type GetActiveTriggersData = z.infer<typeof ZActiveTriggersQuery>;
@@ -16,9 +16,9 @@ export type TriggerItemRes = z.infer<typeof ZActiveTriggerItemRes>;
 export type TriggerChangeResponse = { status: string };
 export class ActiveTriggers {
   // Remove this as we might not need it
-  private backendClient: BackendClient;
+  private backendClient: AxiosBackendClient;
   private fileName: string = "js/src/sdk/models/activeTriggers.ts";
-  constructor(backendClient: BackendClient) {
+  constructor(backendClient: AxiosBackendClient) {
     this.backendClient = backendClient;
   }
 

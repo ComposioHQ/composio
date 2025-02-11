@@ -1492,6 +1492,38 @@ export const $AppQueryDTO = {
   type: "object",
 } as const;
 
+export const $TestConnector = {
+  properties: {
+    id: {
+      type: "string",
+      description: "The id of the test connector",
+    },
+    name: {
+      type: "string",
+      description: "The name of the test connector",
+    },
+    authScheme: {
+      enum: [
+        "OAUTH2",
+        "OAUTH1",
+        "OAUTH1A",
+        "API_KEY",
+        "BASIC",
+        "BEARER_TOKEN",
+        "GOOGLE_SERVICE_ACCOUNT",
+        "NO_AUTH",
+        "BASIC_WITH_JWT",
+        "COMPOSIO_LINK",
+        "CALCOM_AUTH",
+      ],
+      type: "string",
+      description: "The auth scheme of the test connector",
+    },
+  },
+  type: "object",
+  required: ["id", "name", "authScheme"],
+} as const;
+
 export const $AppInfoResponseDto = {
   properties: {
     appId: {
@@ -1532,6 +1564,14 @@ export const $AppInfoResponseDto = {
       description: "The tags of the app",
     },
     auth_schemes: {
+      description: "The authentication schemes of the app",
+    },
+    testConnectors: {
+      items: {
+        type: "object",
+      },
+      type: "array",
+      $ref: "#/components/schemas/TestConnector",
       description: "The authentication schemes of the app",
     },
     enabled: {
@@ -1746,6 +1786,13 @@ export const $GetConnectorInfoResDTO = {
       description:
         "When true, indicates that this connector uses Composio's built-in authentication handling rather than custom authentication logic.",
     },
+    limitedActions: {
+      items: {
+        type: "string",
+      },
+      type: "array",
+      description: "Array of action strings that this connector is limited to.",
+    },
   },
   type: "object",
   required: [
@@ -1756,6 +1803,7 @@ export const $GetConnectorInfoResDTO = {
     "logo",
     "appName",
     "useComposioAuth",
+    "limitedActions",
   ],
 } as const;
 
@@ -1824,6 +1872,14 @@ export const $CreateConnectorPayloadDTO = {
       description:
         "When set to true, creates a new integration even if one already exists for the given app. This is useful when you need multiple integrations with the same service.",
     },
+    limitedActions: {
+      items: {
+        type: "string",
+      },
+      type: "array",
+      description:
+        "List of actions to limit the connector to. If not provided, all actions will be enabled.",
+    },
   },
   type: "object",
   required: ["name"],
@@ -1835,6 +1891,14 @@ export const $PatchConnectorReqDTO = {
       type: "object",
       description:
         "Authentication configuration for the connector. This object contains the necessary credentials and settings required to authenticate with the external service. You can get the required configuration fields from the `GET /api/v1/connectors/{connectorId}/config` endpoint.",
+    },
+    limitedActions: {
+      items: {
+        type: "string",
+      },
+      type: "array",
+      description:
+        "A list of actions that are limited or restricted for the connector. This can be used to specify which actions the connector is allowed or not allowed to perform. The list of possible actions can be found in the API documentation.",
     },
     enabled: {
       type: "boolean",
@@ -4725,6 +4789,66 @@ export const $ActionsQueryV2DTO = {
   type: "object",
 } as const;
 
+export const $FileInfoDTO = {
+  properties: {
+    app: {
+      type: "string",
+      description: "Name of the app where this file belongs to.",
+    },
+    action: {
+      type: "string",
+      description: "Name of the action where this file belongs to.",
+    },
+    filename: {
+      type: "string",
+      description: "Name of the original file.",
+    },
+    mimetype: {
+      type: "string",
+      description: "Mime type of the original file.",
+    },
+    md5: {
+      type: "string",
+      description: "MD5 of a file.",
+    },
+  },
+  type: "object",
+  required: ["app", "action", "filename", "mimetype", "md5"],
+} as const;
+
+export const $GetFilesResponseDTO = {
+  properties: {
+    items: {
+      $ref: "#/components/schemas/FileInfoDTO",
+      items: {
+        type: "object",
+      },
+      type: "array",
+    },
+  },
+  type: "object",
+  required: ["items"],
+} as const;
+
+export const $CreateUploadURLResponseDTO = {
+  properties: {
+    id: {
+      type: "string",
+      description: "ID of the file",
+    },
+    url: {
+      type: "string",
+      description: "Onetime upload URL",
+    },
+    key: {
+      type: "string",
+      description: "S3 upload location",
+    },
+  },
+  type: "object",
+  required: ["id", "url", "key"],
+} as const;
+
 export const $TimePeriodReqDTO = {
   properties: {
     lastTimePeriod: {
@@ -5165,7 +5289,8 @@ export const $ComposioCreateConfigDTO = {
     },
     useComposioAuth: {
       type: "boolean",
-      description: "Whether to use Composio authentication",
+      description:
+        "Whether to use Composio authentication, default to true if no auth config is passed. Throws error we're not able to create integration.",
     },
     authScheme: {
       type: "string",
@@ -5190,7 +5315,6 @@ export const $ComposioCreateConfigDTO = {
     },
   },
   type: "object",
-  required: ["authScheme"],
 } as const;
 
 export const $ConnectorCreateReqDTO = {
