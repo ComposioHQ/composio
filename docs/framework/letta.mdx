@@ -1,7 +1,7 @@
 ---
 title: "Using Composio With Letta"
 sidebarTitle: "Letta"
-description: "Integrate Composio with Letta to let them seamlessly interact with external apps"
+description: "Integrate Composio with Letta agents to let them seamlessly interact with external apps"
 ---
 
 ## Star A Repository on GitHub
@@ -22,7 +22,7 @@ npm i composio-core @letta-ai/letta-client
 <CodeGroup>
 ```python Python
 from letta_client import Letta
-from composio_langchain import Action, ComposioToolSet
+from composio_langchain import Action, ComposioToolSet, App
 
 client = Letta(base_url="http://localhost:8283")
 ```
