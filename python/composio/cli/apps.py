@@ -7,11 +7,9 @@ Usage:
 
 import ast
 import os.path
-import shutil
 
 import click
 
-from composio import constants
 from composio.cli.context import Context, pass_context
 from composio.cli.utils.decorators import handle_exceptions
 from composio.cli.utils.helpfulcmd import HelpfulCmdBase
@@ -80,12 +78,17 @@ def _update(context: Context) -> None:
 
 @_apps.command(name="generate-types")
 @click.help_option("--help", "-h", "-help")
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Forcefully update the type stubs.",
+)
 @handle_exceptions()
 @pass_context
-def _generate_types(context: Context) -> None:
+def _generate_types(context: Context, force: bool = False) -> None:
     """Updates the local type stubs with the latest app data."""
     context.console.print("Fetching latest data from Composio API...")
-    generate_type_stubs(context.client)
+    generate_type_stubs(context.client, force=force)
     context.console.print(
         "[green]Successfully updated type stubs for Apps, Actions, and Triggers[/green]"
     )
@@ -134,16 +137,10 @@ def generate_type_stub(enum_file: str, cache_folder: os.PathLike) -> None:
         f.write(ast.unparse(tree))
 
 
-def generate_type_stubs(client: Composio) -> None:
-    # Update local cache first
-    for cache_folder in ["apps", "actions", "triggers", "tags"]:
-        shutil.rmtree(
-            constants.LOCAL_CACHE_DIRECTORY / cache_folder,
-            ignore_errors=True,
-        )
-    apps = update_apps(client)
-    update_actions(client, apps)
-    update_triggers(client, apps)
+def generate_type_stubs(client: Composio, force: bool = False) -> None:
+    update_apps(client=client, force=force)
+    update_actions(client=client, force=force)
+    update_triggers(client=client, force=force)
 
     enums_folder = os.path.join(os.path.dirname(__file__), "..", "client", "enums")
     apps_enum = os.path.join(enums_folder, "app.py")

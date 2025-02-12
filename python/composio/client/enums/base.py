@@ -16,9 +16,6 @@ from composio.constants import (
 from composio.storage.base import LocalStorage
 
 
-if t.TYPE_CHECKING:
-    from composio.client import Composio
-
 _runtime_actions: t.Dict[str, "ActionData"] = {}
 
 EntityType = t.TypeVar("EntityType", bound=LocalStorage)
@@ -27,6 +24,12 @@ TAGS_CACHE = LOCAL_CACHE_DIRECTORY / "tags"
 APPS_CACHE = LOCAL_CACHE_DIRECTORY / "apps"
 ACTIONS_CACHE = LOCAL_CACHE_DIRECTORY / "actions"
 TRIGGERS_CACHE = LOCAL_CACHE_DIRECTORY / "triggers"
+
+APPS_ETAG = LOCAL_CACHE_DIRECTORY / "apps.etag"
+ACTIONS_ETAG = LOCAL_CACHE_DIRECTORY / "actions.etag"
+TRIGGERS_ETAG = LOCAL_CACHE_DIRECTORY / "triggers.etag"
+
+DEPRECATED_MARKER = "<<DEPRECATED use "
 
 
 class SentinalObject:
@@ -115,9 +118,6 @@ def get_runtime_actions() -> t.List:
     return list(_runtime_actions)
 
 
-DEPRECATED_MARKER = "<<DEPRECATED use "
-
-
 def replacement_action_name(description: str, app_name: str) -> t.Optional[str]:
     """If the action is deprecated, get the replacement action name."""
     if description is not None and DEPRECATED_MARKER in description:
@@ -127,13 +127,8 @@ def replacement_action_name(description: str, app_name: str) -> t.Optional[str]:
     return None
 
 
-def create_action(
-    client: "Composio",
-    response: dict[str, t.Any],
-    storage_path: Path,
-) -> ActionData:
-    replaced_by = replacement_action_name(response["description"], response["appName"])
-    return ActionData(  # type: ignore
+def create_action(response: dict[str, t.Any], storage_path: Path) -> ActionData:
+    return ActionData(
         name=response["name"],
         app=response["appName"],
         tags=response["tags"],
@@ -142,5 +137,7 @@ def create_action(
         is_runtime=False,
         shell=False,
         path=storage_path,
-        replaced_by=replaced_by,
+        replaced_by=replacement_action_name(
+            response["description"], response["appName"]
+        ),
     )

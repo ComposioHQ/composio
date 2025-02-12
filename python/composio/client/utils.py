@@ -1,11 +1,25 @@
 import json
 import os
+import shutil
+import threading
 import time
 import typing as t
+from pathlib import Path
 
 from composio.client import Composio, enums
 from composio.client.collections import ActionModel, AppModel, TriggerModel
-from composio.client.enums.base import AppData, create_action, replacement_action_name
+from composio.client.enums.base import (
+    ACTIONS_CACHE,
+    ACTIONS_ETAG,
+    APPS_CACHE,
+    APPS_ETAG,
+    TAGS_CACHE,
+    TRIGGERS_CACHE,
+    TRIGGERS_ETAG,
+    AppData,
+    create_action,
+    replacement_action_name,
+)
 from composio.tools.local import load_local_tools
 from composio.utils import get_enum_key
 from composio.utils.logging import get_logger
@@ -13,10 +27,24 @@ from composio.utils.logging import get_logger
 
 EnumModels = t.Union[AppModel, ActionModel, TriggerModel]
 
-
 logger = get_logger(__name__)
 
+_cache_checked = False
+
 NO_CACHE_REFRESH = os.getenv("COMPOSIO_NO_CACHE_REFRESH", "false") == "true"
+
+
+def _is_update_is_required(file: Path, etag: t.Callable[[], str]) -> bool:
+    _etag = etag()
+    if not file.exists():
+        file.write_text(_etag)
+        return True
+
+    if file.read_text() == _etag:
+        return False
+
+    file.write_text(_etag)
+    return True
 
 
 def filter_non_beta_items(items: t.Sequence[EnumModels]) -> t.List:
@@ -35,23 +63,41 @@ def filter_non_beta_items(items: t.Sequence[EnumModels]) -> t.List:
     return unique_items
 
 
-def update_apps(client: Composio, beta: bool = False) -> t.List[AppModel]:
+def update_apps(
+    client: Composio,
+    beta: bool = False,
+    force: bool = False,
+) -> None:
     """Update apps."""
-    apps = sorted(
-        client.apps.get(),
-        key=lambda x: x.key,
-    )
+    if not force and not _is_update_is_required(
+        file=APPS_ETAG,
+        etag=client.apps.get_etag,
+    ):
+        logger.info("Apps cache does not require update!")
+        return
+
+    logger.info("Updating apps cache...")
+    shutil.rmtree(APPS_CACHE, ignore_errors=True)
+    apps = sorted(client.apps.get(), key=lambda x: x.key)
     if not beta:
         apps = filter_non_beta_items(apps)
-
-    _update_apps(apps=apps)
-    return apps
+    _update_apps_cache(apps=apps)
 
 
 def update_actions(
-    client: Composio, apps: t.List[AppModel], beta: bool = False
+    client: Composio,
+    beta: bool = False,
+    force: bool = False,
 ) -> None:
     """Update actions and tags."""
+    if not force and not _is_update_is_required(
+        file=ACTIONS_ETAG,
+        etag=client.actions.get_etag,
+    ):
+        logger.info("Actions cache does not require update!")
+        return
+
+    logger.info("Updating actions cache...")
     actions = sorted(
         client.actions.get(allow_all=True),
         key=lambda x: f"{x.appName}_{x.name}",
@@ -59,25 +105,36 @@ def update_actions(
     if not beta:
         actions = filter_non_beta_items(actions)
 
-    _update_tags(apps=apps, actions=actions)
-    _update_actions(apps=apps, actions=actions)
+    shutil.rmtree(TAGS_CACHE, ignore_errors=True)
+    _update_tags_cache(actions=actions)
+
+    shutil.rmtree(ACTIONS_CACHE, ignore_errors=True)
+    _update_actions_cache(actions=actions)
 
 
 def update_triggers(
-    client: Composio, apps: t.List[AppModel], beta: bool = False
+    client: Composio,
+    beta: bool = False,
+    force: bool = False,
 ) -> None:
     """Update triggers."""
-    triggers = sorted(
-        client.triggers.get(),
-        key=lambda x: f"{x.appKey}_{x.name}",
-    )
+    if not force and not _is_update_is_required(
+        file=TRIGGERS_ETAG,
+        etag=client.triggers.get_etag,
+    ):
+        logger.info("Triggers cache does not require update!")
+        return
+
+    logger.info("Updating triggers cache...")
+    triggers = sorted(client.triggers.get(), key=lambda x: f"{x.appKey}_{x.name}")
     if not beta:
         triggers = filter_non_beta_items(triggers)
 
-    _update_triggers(apps=apps, triggers=triggers)
+    shutil.rmtree(TRIGGERS_CACHE, ignore_errors=True)
+    _update_triggers_cache(triggers=triggers)
 
 
-def _update_apps(apps: t.List[AppModel]) -> None:
+def _update_apps_cache(apps: t.List[AppModel]) -> None:
     """Create App enum class."""
     app_names = []
     enums.base.APPS_CACHE.mkdir(
@@ -108,38 +165,34 @@ def _update_apps(apps: t.List[AppModel]) -> None:
         ).store()
 
 
-def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
+def _update_actions_cache(actions: t.List[ActionModel]) -> None:
     """Get Action enum."""
     enums.base.ACTIONS_CACHE.mkdir(parents=True, exist_ok=True)
     deprecated = {}
     action_names = []
-    for app in sorted(apps, key=lambda x: x.key):
-        for action in actions:
-            if action.appName != app.key:
-                continue
 
-            new_action_name = replacement_action_name(
-                action.description or "", action.appName
-            )
-            if new_action_name is not None:
-                replaced_by = deprecated[get_enum_key(name=action.name)] = (
-                    new_action_name
-                )
-            else:
-                action_names.append(get_enum_key(name=action.name))
-                replaced_by = None
+    for action in actions:
+        new_action_name = replacement_action_name(
+            action.description or "",
+            action.appName,
+        )
+        if new_action_name is not None:
+            replaced_by = deprecated[get_enum_key(name=action.name)] = new_action_name
+        else:
+            action_names.append(get_enum_key(name=action.name))
+            replaced_by = None
 
-            # TODO: there is duplicate ActionData creation code in
-            # `load_from_runtime` and `fetch_and_cache` in client/enums/action.py
-            enums.base.ActionData(
-                name=action.name,
-                app=app.key,
-                tags=action.tags,
-                no_auth=app.no_auth,
-                is_local=False,
-                path=enums.base.ACTIONS_CACHE / get_enum_key(name=action.name),
-                replaced_by=replaced_by,
-            ).store()
+        # TODO: there is duplicate ActionData creation code in
+        # `load_from_runtime` and `fetch_and_cache` in client/enums/action.py
+        enums.base.ActionData(
+            name=action.name,
+            app=action.appName,
+            tags=action.tags,
+            no_auth=action.no_auth,
+            is_local=False,
+            path=enums.base.ACTIONS_CACHE / get_enum_key(name=action.name),
+            replaced_by=replaced_by,
+        ).store()
 
     processed = []
     for tool in load_local_tools()["local"].values():
@@ -160,16 +213,14 @@ def _update_actions(apps: t.List[AppModel], actions: t.List[ActionModel]) -> Non
             ).store()
 
 
-def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
+def _update_tags_cache(actions: t.List[ActionModel]) -> None:
     """Create Tag enum class."""
     enums.base.TAGS_CACHE.mkdir(parents=True, exist_ok=True)
     tag_map: t.Dict[str, t.Set[str]] = {}
-    for app in apps:
-        app_name = app.key
-        for action in [action for action in actions if action.appName == app_name]:
-            if app_name not in tag_map:
-                tag_map[app_name] = set()
-            tag_map[app_name].update(action.tags or [])
+    for action in actions:
+        if action.appName not in tag_map:
+            tag_map[action.appName] = set()
+        tag_map[action.appName].update(action.tags or [])
 
     tag_names = ["DEFAULT"]
     for app_name in sorted(tag_map):
@@ -189,27 +240,74 @@ def _update_tags(apps: t.List[AppModel], actions: t.List[ActionModel]) -> None:
     )
 
 
-def _update_triggers(
-    apps: t.List[AppModel],
-    triggers: t.List[TriggerModel],
-) -> None:
+def _update_triggers_cache(triggers: t.List[TriggerModel]) -> None:
     """Get Trigger enum."""
-    trigger_names = []
     enums.base.TRIGGERS_CACHE.mkdir(exist_ok=True)
-    for app in apps:
-        for trigger in triggers:
-            if trigger.appKey != app.key:
+    for trigger in triggers:
+        enums.base.TriggerData(
+            name=trigger.name,
+            app=trigger.appKey,
+            path=enums.base.TRIGGERS_CACHE / get_enum_key(name=trigger.name),
+        ).store()
+
+
+def _check_and_refresh_actions(client: Composio):
+    local_actions = set()
+    if enums.base.ACTIONS_CACHE.exists():
+        for action in enums.base.ACTIONS_CACHE.iterdir():
+            action_data = json.loads(action.read_text())
+            # The action file could be old. If it doesn't have a
+            # replaced_by field, we want to overwrite it.
+            if "replaced_by" not in action_data:
+                action.unlink()
                 continue
+            local_actions.add(action.stem.upper())
 
-            trigger_names.append(get_enum_key(name=trigger.name).upper())
-            enums.base.TriggerData(
-                name=trigger.name,
-                app=app.key,
-                path=enums.base.TRIGGERS_CACHE / trigger_names[-1],
-            ).store()
+    api_actions = client.actions.list_enums()
+    actions_to_update = set(api_actions) - set(local_actions)
+    actions_to_delete = set(local_actions) - set(api_actions)
+    if actions_to_delete:
+        logger.debug("Stale actions: %s", actions_to_delete)
+
+    for action_name in actions_to_delete:
+        (enums.base.ACTIONS_CACHE / action_name).unlink()
+
+    if not actions_to_update:
+        return
+
+    logger.debug("Actions to fetch: %s", actions_to_update)
+    queries = {"actions": ",".join(actions_to_update)}
+    actions_data = client.http.get(url=str(client.actions.endpoint(queries))).json()
+    for action_data in actions_data["items"]:
+        create_action(
+            response=action_data,
+            storage_path=enums.base.ACTIONS_CACHE / action_data["name"],
+        ).store()
 
 
-_cache_checked = False
+def _check_and_refresh_apps(client: Composio):
+    local_apps = set()
+    if enums.base.APPS_CACHE.exists():
+        local_apps = set(map(lambda x: x.stem.upper(), enums.base.APPS_CACHE.iterdir()))
+
+    api_apps = set(client.apps.list_enums())
+    apps_to_update = api_apps - local_apps
+    apps_to_delete = local_apps - api_apps
+    if apps_to_delete:
+        logger.debug("Stale apps: %s", apps_to_delete)
+
+    for app_name in apps_to_delete:
+        (enums.base.APPS_CACHE / app_name).unlink()
+
+    if not apps_to_update:
+        return
+
+    logger.debug("Apps to fetch: %s", apps_to_update)
+    queries = {"apps": ",".join(apps_to_update)}
+    apps_data = client.http.get(str(client.apps.endpoint(queries))).json()
+    for app_data in apps_data["items"]:
+        storage_path = enums.base.APPS_CACHE / app_data["name"]
+        AppData(name=app_data["name"], path=storage_path, is_local=False).store()
 
 
 def check_cache_refresh(client: Composio) -> None:
@@ -222,79 +320,22 @@ def check_cache_refresh(client: Composio) -> None:
     SDK version, and didn't come from the API. We need to start storing the data
     from the API and invalidate the cache if the data is not already stored.
     """
-    global _cache_checked
-    if _cache_checked:
-        return
-
-    _cache_checked = True
-
-    t0 = time.monotonic()
     if NO_CACHE_REFRESH:
         return
 
-    local_actions = []
-    if enums.base.ACTIONS_CACHE.exists():
-        actions = list(enums.base.ACTIONS_CACHE.iterdir())
-        for action in actions:
-            action_data = json.loads(action.read_text())
-            # The action file could be old. If it doesn't have a
-            # replaced_by field, we want to overwrite it.
-            if "replaced_by" not in action_data:
-                action.unlink()
-                continue
-
-            local_actions.append(action.stem)
-
-    api_actions = client.actions.list_enums()
-    actions_to_update = set(api_actions) - set(local_actions)
-    actions_to_delete = set(local_actions) - set(api_actions)
-    logger.debug("Actions to fetch: %s", actions_to_update)
-    logger.debug("Stale actions: %s", actions_to_delete)
-
-    for action_name in actions_to_delete:
-        (enums.base.ACTIONS_CACHE / action_name).unlink()
-
-    if len(actions_to_update) > 50:
-        # Major update, refresh everything
-        apps = update_apps(client)
-        update_actions(client, apps)
-        update_triggers(client, apps)
+    global _cache_checked
+    if _cache_checked:
         return
+    _cache_checked = True
 
-    local_apps = []
-    if enums.base.ACTIONS_CACHE.exists():
-        local_apps = list(path.stem for path in enums.base.APPS_CACHE.iterdir())
+    start = time.monotonic()
+    ap_thread = threading.Thread(target=_check_and_refresh_apps, args=(client,))
+    ac_thread = threading.Thread(target=_check_and_refresh_actions, args=(client,))
 
-    api_apps = client.apps.list_enums()
-    breakpoint()
-    apps_to_update = set(api_apps) - set(local_apps)
-    apps_to_delete = set(local_apps) - set(api_apps)
-    logger.debug("Apps to fetch: %s", apps_to_update)
-    logger.debug("Stale apps: %s", apps_to_delete)
+    ac_thread.start()
+    ap_thread.start()
 
-    # for app_name in apps_to_delete:
-    #     (enums.base.APPS_CACHE / app_name).unlink()
+    ap_thread.join()
+    ac_thread.join()
 
-    # if apps_to_update:
-    #     apps_data = client.http.get(
-    #         str(client.apps.endpoint(queries={"apps": ",".join(apps_to_update)}))
-    #     ).json()
-    #     for app_data in apps_data["items"]:
-    #         storage_path = enums.base.APPS_CACHE / app_data["name"]
-    #         AppData(name=app_data["name"], path=storage_path, is_local=False).store()
-
-    # if actions_to_update:
-    #     actions_data = client.http.get(
-    #         str(
-    #             client.actions.endpoint(
-    #                 queries={"actions": ",".join(actions_to_update)}
-    #             )
-    #         )
-    #     ).json()
-    #     for action_data in actions_data["items"]:
-    #         storage_path = enums.base.ACTIONS_CACHE / action_data["name"]
-    #         create_action(
-    #             client, response=action_data, storage_path=storage_path
-    #         ).store()
-
-    logger.debug("Time taken to update cache: %.2f seconds", time.monotonic() - t0)
+    logger.debug("Time taken to update cache: %.2f seconds", time.monotonic() - start)

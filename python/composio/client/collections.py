@@ -367,6 +367,13 @@ class Apps(Collection[AppModel]):
         )
         return response.text.split("\n")
 
+    def get_etag(self) -> str:
+        return self._raise_if_required(
+            response=self.client.http.head(
+                str(self.endpoint / "list" / "enums"),
+            )
+        ).headers["ETag"]
+
 
 class TypeModel(BaseModel):
     type: str
@@ -967,6 +974,13 @@ class Triggers(Collection[TriggerModel]):
             timeout=timeout,
         )
 
+    def get_etag(self) -> str:
+        return self._raise_if_required(
+            response=self.client.http.head(
+                str(self.endpoint / "list" / "enums"),
+            )
+        ).headers["ETag"]
+
 
 class ActiveTriggerModel(BaseModel):
     """Active trigger data model."""
@@ -1036,6 +1050,7 @@ class ActionModel(BaseModel):
     appId: str
     version: str
     available_versions: t.List[str]
+    no_auth: bool
 
     tags: t.List[str]
     logo: t.Optional[str] = None
@@ -1427,13 +1442,19 @@ class Actions(Collection[ActionModel]):
 
     def list_enums(self) -> list[str]:
         """Get just the action names on the server"""
-        response = self._raise_if_required(
+        return self._raise_if_required(
             response=self.client.http.get(
                 str(self.endpoint / "list" / "enums"),
             )
-        )
-        return response.text.split("\n")
-    
+        ).text.split("\n")
+
+    def get_etag(self) -> str:
+        return self._raise_if_required(
+            response=self.client.http.head(
+                str(self.endpoint / "list" / "enums"),
+            )
+        ).headers["ETag"]
+
     def create_file_upload(
         self,
         app: str,

@@ -86,7 +86,7 @@ class Action(Enum[ActionData], metaclass=EnumGenerator):
         if "appName" not in response:
             return None
 
-        return create_action(client, response, self.storage_path)
+        return create_action(response, self.storage_path)
 
     @property
     def name(self) -> str:
