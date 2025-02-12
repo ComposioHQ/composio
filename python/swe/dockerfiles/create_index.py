@@ -5,13 +5,14 @@ import typing as t
 from pathlib import Path
 
 import click
-from swebench import get_eval_refs
+from swebench.harness.constants import SWEbenchInstance
+from swebench.harness.utils import load_swebench_dataset
 
 from composio import Action, ComposioToolSet
 from composio.utils.logging import WithLogger
 
 
-def group_task_instances(task_instances):
+def group_task_instances(task_instances: list[SWEbenchInstance]):
     groups = {}
     for instance in task_instances:
         repo = instance["repo"]
@@ -43,11 +44,25 @@ class IndexGenerator(WithLogger):
             self.outdir.mkdir()
 
     def generate(self):
-        task_instances = get_eval_refs(data_path_or_name=self.dataset)
-        task_instance_groups = group_task_instances(task_instances.values())
+        task_instances = load_swebench_dataset(name=self.dataset)
+        task_instance_groups = group_task_instances(task_instances)
         for repo, versions in task_instance_groups.items():
             self.logger.info(f"Repo {repo} with {set(versions.keys())} versions")
             for version, instances in versions.items():
+                outname = _repo_name(repo)
+                docker_outdir = Path("generated") / outname / version
+
+                # Check if files in generated directory are complete
+                if (
+                    docker_outdir.exists()
+                    and (docker_outdir / "deeplake").exists()
+                    and (docker_outdir / "fqdn_cache.json").exists()
+                ):
+                    self.logger.info(
+                        f"Skipping {repo} {version} - files already exist in generated directory"
+                    )
+                    continue
+
                 self.logger.info(f"\tGenerating for version - {version}")
                 self.create_index(
                     repository=repo, version=version, setup_ref_instance=instances[0]
@@ -58,8 +73,8 @@ class IndexGenerator(WithLogger):
     ):
         outname = _repo_name(repository)
         outdir = self.outdir / outname / version
-        if outdir.exists():
-            return
+        docker_outdir = Path("generated") / outname / version
+
         repo_url = f"https://github.com/{repository}.git"
         base_commit = setup_ref_instance["base_commit"]
         if not (outdir / outname).exists():
@@ -76,10 +91,16 @@ class IndexGenerator(WithLogger):
                 ["git", "checkout", base_commit], cwd=outdir / outname, check=True
             )
 
-        composio_toolset = ComposioToolSet()
+        composio_toolset = ComposioToolSet(
+            metadata={
+                Action.CODE_ANALYSIS_TOOL_CREATE_CODE_MAP: {
+                    "dir_to_index_path": str(outdir / outname),
+                },
+            },
+        )
         composio_toolset.execute_action(
             action=Action.CODE_ANALYSIS_TOOL_CREATE_CODE_MAP,
-            params={"dir_to_index_path": str(outdir / outname)},
+            params={},
         )
         with open(f"{Path.home()}/.composio/tmp/{outname}/fqdn_cache.json") as f:
             fqdn_index = json.load(f)
@@ -91,8 +112,6 @@ class IndexGenerator(WithLogger):
                         )
                     fqdn_index[k] = v
 
-        docker_outdir = Path("generated") / outname / version
-        # docker_outdir.mkdir(exist_ok=True, parents=True)
         with open(
             docker_outdir / "fqdn_cache.json",
             "w",
@@ -100,7 +119,6 @@ class IndexGenerator(WithLogger):
             json.dump(fqdn_index, f, indent=4)
 
         DEEPLAKE_PATH = docker_outdir / "deeplake"
-        # DEEPLAKE_PATH.mkdir(exist_ok=True, parents=True)
         if not DEEPLAKE_PATH.exists():
             shutil.copytree(
                 f"{Path.home()}/.composio/tmp/{outname}/deeplake",

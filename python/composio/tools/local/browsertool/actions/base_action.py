@@ -2,11 +2,11 @@ import random
 import string
 from abc import abstractmethod
 from enum import Enum
-from pathlib import Path
 from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 
+from composio.constants import LOCAL_CACHE_DIRECTORY
 from composio.tools.base.local import ActionRequest, ActionResponse, LocalAction
 from composio.tools.env.browsermanager.manager import BrowserManager
 
@@ -174,8 +174,7 @@ class BaseBrowserAction(LocalAction[ActionRequest, ActionResponse], abs=True):
             )
 
     def _take_screenshot(self, browser_manager: BrowserManager, prefix: str) -> str:
-        home_dir = Path.home()
-        browser_media_dir = home_dir / ".browser_media"
+        browser_media_dir = LOCAL_CACHE_DIRECTORY / "browser_media"
         browser_media_dir.mkdir(parents=True, exist_ok=True)
         random_string = "".join(random.choices(string.ascii_lowercase, k=6))
         output_path = browser_media_dir / f"{prefix}_screenshot_{random_string}.png"

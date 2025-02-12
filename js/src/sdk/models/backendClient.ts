@@ -9,7 +9,7 @@ import { removeTrailingSlashIfExists } from "../utils/string";
 /**
  * Class representing the details required to initialize and configure the API client.
  */
-export class BackendClient {
+export class AxiosBackendClient {
   /**
    * The API key used for authenticating requests.
    */

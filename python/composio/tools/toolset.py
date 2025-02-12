@@ -24,8 +24,10 @@ from pydantic import BaseModel
 from composio import Action, ActionType, App, AppType, TagType
 from composio.client import Composio, Entity
 from composio.client.collections import (
-    AUTH_SCHEMES,
+    ALL_AUTH_SCHEMES,
+    AUTH_SCHEME_WITH_INITIATE,
     ActionModel,
+    ActiveTriggerModel,
     AppAuthScheme,
     AppModel,
     AuthSchemeField,
@@ -39,12 +41,13 @@ from composio.client.collections import (
     FileType,
     IntegrationModel,
     SuccessExecuteActionResponseModel,
+    TriggerConfigModel,
     TriggerModel,
     TriggerSubscription,
 )
 from composio.client.enums import TriggerType
-from composio.client.enums.base import EnumStringNotFound
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
+from composio.client.files import FileDownloadable, FileUploadable
 from composio.client.utils import check_cache_refresh
 from composio.constants import (
     DEFAULT_ENTITY_ID,
@@ -55,7 +58,20 @@ from composio.constants import (
     USER_DATA_FILE_NAME,
     VERSION_LATEST,
 )
-from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
+from composio.exceptions import (
+    ApiKeyNotProvidedError,
+    ComposioSDKError,
+    ConnectedAccountNotFoundError,
+    EnumStringNotFound,
+    ErrorFetchingResource,
+    IntegrationError,
+    InvalidConnectedAccount,
+    InvalidLockFile,
+    InvalidParams,
+    ProcessorError,
+    ResourceError,
+    VersionSelectionError,
+)
 from composio.storage.user import UserData
 from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.env.base import (
@@ -145,31 +161,6 @@ class _Retry:
 RETRY = _Retry()
 
 
-class VersionError(ComposioSDKError):
-    pass
-
-
-class VersionSelectionError(VersionError):
-
-    def __init__(
-        self,
-        action: str,
-        requested: str,
-        locked: str,
-        delegate: bool = False,
-    ) -> None:
-        self.action = action
-        self.requested = requested
-        self.locked = locked
-        super().__init__(
-            message=(
-                f"Error selecting version for action: {action!r}, "
-                f"requested: {requested!r}, locked: {locked!r}"
-            ),
-            delegate=delegate,
-        )
-
-
 class VersionLock:
     """Lock file representing action->version mapping"""
 
@@ -195,13 +186,13 @@ class VersionLock:
             versions = yaml.safe_load(file)
 
         if not isinstance(versions, dict):
-            raise ComposioSDKError(
+            raise InvalidLockFile(
                 f"Invalid lockfile format, expected dict, got {type(versions)}"
             )
 
         for tool in versions.values():
             if not isinstance(tool, str):
-                raise ComposioSDKError(
+                raise InvalidLockFile(
                     f"Invalid lockfile format, expected version to be string, got {tool!r}"
                 )
 
@@ -316,7 +307,7 @@ class ProcessorHelper(WithLogger):
             type_="pre",
         )
         if isinstance(processed, _Retry):
-            raise ComposioSDKError(
+            raise ProcessorError(
                 "Received RETRY from App preprocessor function."
                 " Preprocessors cannot be retried."
             )
@@ -327,7 +318,7 @@ class ProcessorHelper(WithLogger):
             type_="pre",
         )
         if isinstance(processed, _Retry):
-            raise ComposioSDKError(
+            raise ProcessorError(
                 "Received RETRY from Action preprocessor function."
                 " Preprocessors cannot be retried."
             )
@@ -362,7 +353,7 @@ class ProcessorHelper(WithLogger):
             type_="schema",
         )
         if isinstance(processed, _Retry):
-            raise ComposioSDKError(
+            raise ProcessorError(
                 "Received RETRY from App schema processor function."
                 " Schema pprocessors cannot be retried."
             )
@@ -373,7 +364,7 @@ class ProcessorHelper(WithLogger):
             type_="schema",
         )
         if isinstance(processed, _Retry):
-            raise ComposioSDKError(
+            raise ProcessorError(
                 "Received RETRY from Action preprocessor function."
                 " Schema processors cannot be retried."
             )
@@ -468,8 +459,9 @@ class SchemaHelper(WithLogger):
 
     def __init__(self, client: t.Callable[[], Composio]):
         super().__init__()
-        self._local_client = LocalClient()
         self._client = client
+        self._local_client = LocalClient()
+        self._schema_cache: dict[str, ActionModel] = {}
 
     @property
     def client(self) -> Composio:
@@ -493,6 +485,7 @@ class SchemaHelper(WithLogger):
                     available_versions=[VERSION_LATEST],
                 ).model_copy(deep=True)
             )
+        self._schema_cache.update({item.name: item.model_copy() for item in items})
         return items
 
     def get_local_action_schemas(
@@ -505,20 +498,23 @@ class SchemaHelper(WithLogger):
             action for action in actions if action.is_local and not action.is_runtime
         ]
         apps = [app for app in apps if app.is_local]
-        if len(actions) > 0 or len(apps) > 0:
-            return [
-                ActionModel(
-                    **item,
-                    version=VERSION_LATEST,
-                    available_versions=[VERSION_LATEST],
-                )
-                for item in self._local_client.get_action_schemas(
-                    apps=apps,
-                    actions=actions,
-                    tags=tags,
-                )
-            ]
-        return []
+        if len(actions) == 0 and len(apps) == 0:
+            return []
+
+        items = [
+            ActionModel(
+                **item,
+                version=VERSION_LATEST,
+                available_versions=[VERSION_LATEST],
+            )
+            for item in self._local_client.get_action_schemas(
+                apps=apps,
+                actions=actions,
+                tags=tags,
+            )
+        ]
+        self._schema_cache.update({item.name: item.model_copy() for item in items})
+        return items
 
     def get_remote_actions_schemas(
         self,
@@ -527,31 +523,79 @@ class SchemaHelper(WithLogger):
         tags: t.Optional[t.Sequence[TagType]] = None,
         check_connected_account: t.Optional[t.Callable] = None,
     ) -> t.List[ActionModel]:
-        remote_actions = [action for action in actions if not action.is_local]
-        remote_apps = [app for app in apps if not app.is_local]
-        if len(remote_actions) > 0 or len(remote_apps) > 0:
-            versioned_actions = [a for a in remote_actions if a.is_version_set]
-            none_versioned_actions = [a for a in remote_actions if not a.is_version_set]
-            items = [self.client.actions.get(a) for a in versioned_actions]
-            if len(none_versioned_actions) > 0 or len(apps) > 0:
-                items += self.client.actions.get(
-                    apps=remote_apps,
-                    actions=none_versioned_actions,
-                    tags=tags,
-                )
+        actions = [action for action in actions if not action.is_local]
+        apps = [app for app in apps if not app.is_local]
+        if len(actions) == 0 and len(apps) == 0:
+            return []
 
-            if check_connected_account is not None:
-                for item in items:
-                    check_connected_account(action=item.name)
+        versioned_actions = [a for a in actions if a.is_version_set]
+        none_versioned_actions = [a for a in actions if not a.is_version_set]
+        items = [self.client.actions.get(a) for a in versioned_actions]
+        if len(none_versioned_actions) > 0 or len(apps) > 0:
+            items += self.client.actions.get(
+                apps=apps,
+                actions=none_versioned_actions,
+                tags=tags,
+            )
 
-            else:
-                warnings.warn(
-                    "Not verifying connected accounts for apps."
-                    " Actions may fail when the Agent tries to use them.",
-                    UserWarning,
-                )
+        self._schema_cache.update({item.name: item.model_copy() for item in items})
+        if check_connected_account is None:
+            warnings.warn(
+                "Not verifying connected accounts for apps."
+                " Actions may fail when the Agent tries to use them.",
+                UserWarning,
+            )
             return items
-        return []
+
+        for item in items:
+            check_connected_account(action=item.name)
+
+        return items
+
+    def _file_uploadable(self, schema: t.Dict):
+        if "allOf" in schema:
+            return any(
+                (
+                    _schema.get("file_uploadable", False)
+                    if isinstance(_schema, dict)
+                    else False
+                )
+                for _schema in schema["allOf"]
+            )
+        return schema.get("file_uploadable", False)
+
+    def _process_file_uploadable(self, schema: t.Dict):
+        return {
+            "type": "string",
+            "format": "path",
+            "description": schema.get("description", "Path to file."),
+            "title": schema.get("title"),
+        }
+
+    def _process_schema_recursively(self, schema: t.Dict) -> t.Dict:
+        required = schema.get("required") or []
+        for _param, _schema in schema["properties"].items():
+            if self._file_uploadable(schema=_schema):
+                schema["properties"][_param] = self._process_file_uploadable(
+                    schema=_schema
+                )
+
+            if _schema.get("type") in ["string", "integer", "number", "boolean"]:
+                ext = f'Please provide a value of type {_schema["type"]}.'
+                description = _schema.get("description", "").rstrip(".")
+                _schema["description"] = f"{description}. {ext}" if description else ext
+
+            if _param in required:
+                description = _schema.get("description", "")
+                if description:
+                    _schema["description"] = (
+                        f"{description.rstrip('.')}. This parameter is required."
+                    )
+
+                else:
+                    _schema["description"] = "This parameter is required."
+
+        return schema
 
     def process_schema(
         self,
@@ -560,59 +604,25 @@ class SchemaHelper(WithLogger):
         description_char_limit: int,
         action_name_char_limit: t.Optional[int] = None,
     ) -> ActionModel:
-        required_params = action.parameters.required or []
-        for param_name, param_details in action.parameters.properties.items():
-            if param_details.get("title") == "FileType" and all(
-                fprop in param_details.get("properties", {})
-                for fprop in ("name", "content")
-            ):
-                action.parameters.properties[param_name].pop("properties")
-                action.parameters.properties[param_name] = {
-                    "default": param_details.get("default"),
-                    "type": "string",
-                    "format": "file-path",
-                    "description": f"File path to {param_details.get('description', '')}",
-                }
-            elif param_details.get("allOf", [{}])[0].get("title") == "FileType" and all(
-                fprop in param_details.get("allOf", [{}])[0].get("properties", {})
-                for fprop in ("name", "content")
-            ):
-                action.parameters.properties[param_name].pop("allOf")
-                action.parameters.properties[param_name].update(
-                    {
-                        "default": param_details.get("default"),
-                        "type": "string",
-                        "format": "file-path",
-                        "description": f"File path to {param_details.get('description', '')}",
-                    }
-                )
-            elif param_details.get("type") in [
-                "string",
-                "integer",
-                "number",
-                "boolean",
-            ]:
-                ext = f'Please provide a value of type {param_details["type"]}.'
-                description = param_details.get("description", "").rstrip(".")
-                param_details["description"] = (
-                    f"{description}. {ext}" if description else ext
-                )
-
-            if param_name in required_params:
-                description = param_details.get("description", "")
-                if description:
-                    param_details["description"] = (
-                        f"{description.rstrip('.')}. This parameter is required."
-                    )
-                else:
-                    param_details["description"] = "This parameter is required."
+        action.parameters = action.parameters.model_validate(
+            obj=self._process_schema_recursively(
+                schema=action.parameters.model_dump(),
+            )
+        )
+        action.response = action.response.model_validate(
+            obj=self._process_schema_recursively(
+                schema=action.response.model_dump(),
+            )
+        )
 
         if action.description is not None:
             action.description = action.description[:description_char_limit]
+
         action.parameters.properties = processor_helper.process_schema_properties(
             action=Action(action.name.upper()),
             properties=action.parameters.properties,
         )
+
         if action_name_char_limit is not None:
             action.name = action.name[:action_name_char_limit]
 
@@ -627,6 +637,125 @@ class SchemaHelper(WithLogger):
             action.name = "str_replace_editor"
 
         return action
+
+    def _get_single_action_schema(self, action: Action) -> ActionModel:
+        if action.slug in self._schema_cache:
+            return self._schema_cache[action.slug]
+
+        if action.is_runtime:
+            (schema,) = (  # pylint: disable=unbalanced-tuple-unpacking
+                self.get_runtime_action_schemas(actions=[action])
+            )
+            return schema
+
+        if action.is_local:
+            (schema,) = self.get_local_action_schemas(apps=[], actions=[action])
+            return schema
+
+        (schema,) = self.get_remote_actions_schemas(
+            apps=[],
+            actions=[action],
+            check_connected_account=lambda action: action,
+        )
+        return schema
+
+    def _substitute_file_uploads_recursively(
+        self,
+        schema: t.Dict,
+        request: t.Dict,
+        action: Action,
+    ) -> t.Dict:
+        params = schema["properties"]
+        for _param in request:
+            if _param not in params:
+                continue
+
+            if self._file_uploadable(schema=params[_param]):
+                request[_param] = FileUploadable.from_path(
+                    file=request[_param],
+                    client=self._client(),
+                    action=action.slug,
+                    app=action.app,
+                ).model_dump()
+                continue
+
+            if isinstance(request[_param], dict) and params[_param]["type"] == "object":
+                request[_param] = self._substitute_file_uploads_recursively(
+                    schema=params[_param],
+                    request=request[_param],
+                    action=action,
+                )
+                continue
+
+        return request
+
+    def substitute_file_uploads(self, action: Action, request: t.Dict) -> t.Dict:
+        model = self._get_single_action_schema(action=action)
+        return self._substitute_file_uploads_recursively(
+            schema=model.parameters.model_dump(),
+            request=request,
+            action=action,
+        )
+
+    def _file_downloadable(self, schema: t.Dict) -> bool:
+        if "allOf" in schema:
+            return any(
+                (
+                    _schema.get("file_downloadable", False)
+                    if isinstance(_schema, dict)
+                    else False
+                )
+                for _schema in schema["allOf"]
+            )
+        return schema.get("file_downloadable", False)
+
+    def _substitute_file_downloads_recursively(
+        self,
+        schema: t.Dict,
+        request: t.Dict,
+        action: Action,
+        file_helper: FileIOHelper,
+    ) -> t.Dict:
+        if "properties" not in schema:
+            return request
+
+        params = schema["properties"]
+        for _param in request:
+            if _param not in params:
+                continue
+
+            if self._file_downloadable(schema=params[_param]):
+                request[_param] = str(
+                    FileDownloadable(**request[_param]).download(
+                        file_helper.outdir / action.app / action.slug
+                    )
+                )
+                continue
+
+            if isinstance(request[_param], dict) and params[_param]["type"] == "object":
+                request[_param] = self._substitute_file_downloads_recursively(
+                    schema=params[_param],
+                    request=request[_param],
+                    action=action,
+                    file_helper=file_helper,
+                )
+                continue
+
+        return request
+
+    def substitute_file_downloads(
+        self,
+        action: Action,
+        request: t.Dict,
+        file_helper: FileIOHelper,
+    ) -> t.Dict:
+        model = self._get_single_action_schema(action=action)
+        return self._substitute_file_downloads_recursively(
+            schema=model.response.model_dump(),
+            request=request,
+            action=action,
+            file_helper=file_helper,
+        )
 
 
 class CustomAuthHelper(WithLogger):
@@ -763,9 +892,7 @@ class _GetMixin(WithLogger):
         :return: A list of actions matching the relevant use case.
         """
         if len(tags) == 0:
-            raise ComposioClientError(
-                "Please provide at least one tag to perform search"
-            )
+            raise InvalidParams("Please provide at least one tag to perform search")
 
         if len(apps) > 0:
             return list(
@@ -845,7 +972,7 @@ class _GetMixin(WithLogger):
     ) -> t.Optional[ConnectionParams]:
         """Get authentication parameters for given app."""
         if app is None and connection_id is None:
-            raise ComposioSDKError("Both `app` and `connection_id` cannot be `None`")
+            raise InvalidParams("Both `app` and `connection_id` cannot be `None`")
 
         try:
             connection_id = (
@@ -895,6 +1022,29 @@ class _GetMixin(WithLogger):
     def get_trigger(self, trigger: TriggerType) -> TriggerModel:
         return self.client.triggers.get(trigger_names=[trigger]).pop()
 
+    def get_trigger_config_scheme(self, trigger: TriggerType) -> TriggerConfigModel:
+        return self.get_trigger(trigger=trigger).config
+
+    def get_active_triggers(
+        self,
+        trigger_ids: t.Optional[t.List[str]] = None,
+        connected_account_ids: t.Optional[t.List[str]] = None,
+        integration_ids: t.Optional[t.List[str]] = None,
+        trigger_names: t.Optional[t.List[TriggerType]] = None,
+    ) -> t.List[ActiveTriggerModel]:
+        return self.client.active_triggers.get(
+            trigger_ids=trigger_ids,
+            connected_account_ids=connected_account_ids,
+            integration_ids=integration_ids,
+            trigger_names=trigger_names,
+        )
+
+    def delete_trigger(self, id: str) -> bool:
+        delete_status = self.client.triggers.delete(id=id).get("status", None)
+        if delete_status is None:
+            raise ResourceError("Delete operation failed to return status.")
+        return delete_status == "success"
+
     def get_integration(self, id: str) -> IntegrationModel:
         return self.client.integrations.get(id=id)
 
@@ -940,19 +1090,19 @@ class _GetMixin(WithLogger):
         }
 
         if auth_scheme is not None and auth_scheme not in auth_schemes:
-            raise ComposioSDKError(
+            raise InvalidParams(
                 message=f"Auth scheme `{auth_scheme}` not found for app `{app}`"
             )
 
         if auth_scheme is not None:
             return auth_schemes[auth_scheme]
 
-        for scheme in AUTH_SCHEMES:
+        for scheme in ALL_AUTH_SCHEMES:
             if scheme in auth_schemes:
                 scheme = t.cast(AuthSchemeType, scheme)
                 return auth_schemes[scheme]
 
-        raise ComposioSDKError(
+        raise ErrorFetchingResource(
             message=(
                 f"Error getting expected params for {app=}, {auth_scheme=}, "
                 f"available_schems={list(auth_schemes)}"
@@ -1025,7 +1175,7 @@ class _IntegrationMixin(_GetMixin):
         if integration_id is not None:
             response = self._get_expected_params_from_integration_id(id=integration_id)
             if auth_scheme is not None and response["auth_scheme"] != auth_scheme:
-                raise ComposioSDKError(
+                raise InvalidParams(
                     message=(
                         "Auth scheme does not match provided integration ID, "
                         f"auth scheme associated with integration ID {response['auth_scheme']} "
@@ -1035,9 +1185,7 @@ class _IntegrationMixin(_GetMixin):
             return response
 
         if app is None:
-            raise ComposioSDKError(
-                message="Both `integration_id` and `app` cannot be None"
-            )
+            raise InvalidParams("Both `integration_id` and `app` cannot be None")
 
         try:
             # Check if integration is available for an app, and if available
@@ -1068,7 +1216,7 @@ class _IntegrationMixin(_GetMixin):
                     "expected_params": integration.expectedInputFields,
                 }
 
-        raise ComposioSDKError(
+        raise IntegrationError(
             message=(
                 f"No existing integration found for `{str(app)}`, with auth "
                 f"scheme {auth_scheme} Please create an integration and use the"
@@ -1086,7 +1234,8 @@ class _IntegrationMixin(_GetMixin):
             if auth_scheme != scheme.auth_mode.upper():
                 continue
             return [f for f in scheme.fields if not f.expected_from_customer]
-        raise ComposioSDKError(
+
+        raise InvalidParams(
             message=f"{app.name!r} does not support {auth_scheme!r} auth scheme"
         )
 
@@ -1108,6 +1257,13 @@ class _IntegrationMixin(_GetMixin):
             use_composio_auth=use_composio_oauth_app,
             force_new_integration=force_new_integration,
         )
+
+    def _validate_no_auth_scheme(self, auth_scheme):
+        if auth_scheme == "NO_AUTH":
+            raise InvalidParams(
+                "'NO_AUTH' does not require initiating a connection. Please use "
+                "the `execute_action` method directly to execute actions for this app."
+            )
 
     def initiate_connection(
         self,
@@ -1132,17 +1288,26 @@ class _IntegrationMixin(_GetMixin):
         :param auth_scheme: (Optional[AuthSchemeType]): Authentication scheme to use
         :return: (ConnectionRequestModel) Details of the connection request.
         """
-        if auth_scheme is not None and auth_scheme not in AUTH_SCHEMES:
-            raise ComposioSDKError(f"'auth_scheme' must be one of {AUTH_SCHEMES}")
+        if auth_scheme is not None and auth_scheme not in AUTH_SCHEME_WITH_INITIATE:
+            self._validate_no_auth_scheme(auth_scheme)
+            raise InvalidParams(
+                f"'auth_scheme' must be one of {AUTH_SCHEME_WITH_INITIATE}"
+            )
 
         if integration_id is None:
             if app is None:
-                raise ComposioSDKError(
+                raise InvalidParams(
                     message="Both `integration_id` and `app` cannot be None"
                 )
 
             if auth_scheme is None:
                 auth_scheme = self.get_auth_scheme_for_app(app).auth_mode
+
+            if auth_scheme is not None and auth_scheme not in AUTH_SCHEME_WITH_INITIATE:
+                self._validate_no_auth_scheme(auth_scheme)
+                raise InvalidParams(
+                    f"'auth_scheme' must be one of {AUTH_SCHEME_WITH_INITIATE}"
+                )
 
             try:
                 integration_id = self._get_integration_for_app(
@@ -1175,7 +1340,7 @@ class _IntegrationMixin(_GetMixin):
             if param.name not in connected_account_params
         ]
         if unavailable_params:
-            raise ComposioSDKError(
+            raise InvalidParams(
                 f"Expected 'connected_account_params' to provide these params: {unavailable_params}"
             )
 
@@ -1214,7 +1379,7 @@ class _IntegrationMixin(_GetMixin):
             field.name for field in required_fields if field.name not in auth_config
         ]
         if unavailable_fields:
-            raise ComposioSDKError(
+            raise InvalidParams(
                 f"Expected 'auth_config' to provide these fields: {unavailable_fields}"
             ) from None
 
@@ -1401,7 +1566,7 @@ class ComposioToolSet(_IntegrationMixin):
         self.logger.debug("Loading local tools")
         load_local_tools()
 
-        self._connected_account_ids = self.__validating_connection_ids(
+        self._connected_account_ids = self._validate_connection_ids(
             connected_account_ids=connected_account_ids or {}
         )
         self.max_retries = max_retries
@@ -1419,7 +1584,7 @@ class ComposioToolSet(_IntegrationMixin):
     @property
     def api_key(self) -> str:
         if self._api_key is None:
-            raise ApiKeyNotProvidedError()
+            raise ApiKeyNotProvidedError
         return self._api_key
 
     def _init_client(self) -> Composio:
@@ -1471,7 +1636,7 @@ class ComposioToolSet(_IntegrationMixin):
         self._workspace = WorkspaceFactory.new(config=workspace_config)
         return self._workspace
 
-    def __validating_connection_ids(
+    def _validate_connection_ids(
         self,
         connected_account_ids: t.Dict[AppType, str],
     ) -> t.Dict[App, str]:
@@ -1492,8 +1657,7 @@ class ComposioToolSet(_IntegrationMixin):
 
         if len(invalid) == 0:
             return valid
-
-        raise ComposioSDKError(message=f"Invalid connected accounts found: {invalid}")
+        raise InvalidConnectedAccount(f"Invalid connected accounts found: {invalid}")
 
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
@@ -1511,11 +1675,10 @@ class ComposioToolSet(_IntegrationMixin):
             )
 
         if action.app not in [
-            # Normalize app names/ids coming from API
-            connection.appUniqueId.upper()
+            connection.appUniqueId.upper()  # Normalize app names/ids coming from API
             for connection in self._connected_accounts
         ]:
-            raise ComposioSDKError(
+            raise ConnectedAccountNotFoundError(
                 f"No connected account found for app `{action.app}`; "
                 f"Run `composio add {action.app.lower()}` to fix this"
             )
@@ -1629,7 +1792,9 @@ class ComposioToolSet(_IntegrationMixin):
         if auth is None:
             self.check_connected_account(action=action)
 
-        output = self.client.get_entity(id=entity_id).execute(
+        output = self.client.get_entity(  # pylint: disable=protected-access
+            id=entity_id
+        )._execute(
             action=action,
             params=params,
             auth=auth,
@@ -1637,26 +1802,19 @@ class ComposioToolSet(_IntegrationMixin):
             session_id=session_id,
             connected_account_id=connected_account_id,
         )
+        output = self._schema_helper.substitute_file_downloads(
+            action=action,
+            request=output,
+            file_helper=self._file_io_helper,
+        )
 
-        if self.output_in_file:
-            return self._file_io_helper.write_output(
-                action=action,
-                output=output,
-                entity_id=entity_id,
-            )
-
-        try:
-            self.logger.debug("Trying to validate success response model")
-            success_response_model = SuccessExecuteActionResponseModel.model_validate(
-                output
-            )
-        except Exception:
-            self.logger.debug("Failed to validate success response model")
+        if not self.output_in_file:
             return output
 
-        return self._file_io_helper.write_downloadable(
-            prefix=f"{action.name}_{entity_id}_{time.time()}",
-            response_model=success_response_model,
+        return self._file_io_helper.write_output(
+            action=action,
+            output=output,
+            entity_id=entity_id,
         )
 
     @_record_action_if_available
@@ -1688,7 +1846,7 @@ class ComposioToolSet(_IntegrationMixin):
             (action,) = self._version_lock.apply(actions=[action])
 
         if _check_requested_actions and action.slug not in self._requested_actions:
-            raise ComposioSDKError(
+            raise InvalidParams(
                 f"Action {action.slug} is being called, but was never requested by the toolset. "
                 "Make sure that the actions you are trying to execute are requested in your "
                 "`get_tools()` call."
@@ -1698,6 +1856,10 @@ class ComposioToolSet(_IntegrationMixin):
         if processors is not None:
             self._processor_helpers.merge_processors(processors)
 
+        params = self._schema_helper.substitute_file_uploads(
+            action=action,
+            request=params,
+        )
         if not action.is_runtime:
             params = self._processor_helpers.process_request(
                 action=action, request=params
@@ -1804,7 +1966,7 @@ class ComposioToolSet(_IntegrationMixin):
         :param app: App type to use for connection lookup
 
         :returns: Response from the proxy request
-        :raises: ComposioSDKError: If neither connection_id nor app is provided
+        :raises: InvalidParams: If neither connection_id nor app is provided
         """
         if app is not None and connection_id is None:
             connection_id = (
@@ -1812,7 +1974,7 @@ class ComposioToolSet(_IntegrationMixin):
             )
 
         if connection_id is None:
-            raise ComposioSDKError(
+            raise InvalidParams(
                 "Please provide connection id or app name to execute a request"
             )
 

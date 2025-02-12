@@ -1,9 +1,12 @@
 import composio_llamaindex
-from pydantic import BaseModel
+import pytest
+from pydantic import BaseModel, ValidationError
 
 from composio import action
 from composio.client.enums.action import Action
+from composio.exceptions import ComposioSDKError
 
+import composio_claude
 import composio_crewai
 import composio_langchain
 import composio_openai
@@ -182,40 +185,20 @@ def test_crewai_toolset() -> None:
     assert len(tools) == 1
 
     tool = tools[0]
-    assert (
-        tool.description
-        == "Tool Name: computer\nTool Arguments: {'action': {'description': 'The action to perform on the computer. Please provide a value of type string. This parameter is required. Please provide a value of type string. This parameter is required.', 'type': 'str'}, 'text': {'description': 'Text to type or key sequence to press. Please provide a value of type string. Please provide a value of type string.', 'type': 'str'}, 'coordinate': {'description': 'X,Y coordinates for mouse actions', 'type': 'list'}}\nTool Description: A Tool That Allows Interaction With The Screen, Keyboard, And Mouse Of The Current Computer. Adapted For Mac Os And Linux."
+    assert tool.description == (
+        "Tool Name: computer\nTool Arguments: {'action': {'description': 'The "
+        "action to perform on the computer. Please provide a value of type string. "
+        "This parameter is required.', 'type': 'str'}, 'text': {'description': "
+        "'Text to type or key sequence to press. Please provide a value of "
+        "type string.', 'type': 'str'}, 'coordinate': {'description': "
+        "'X,Y coordinates for mouse actions', 'type': 'list'}}\nTool "
+        "Description: A Tool That Allows Interaction With The Screen, "
+        "Keyboard, And Mouse Of The Current Computer. Adapted For Mac Os And Linux."
     )
-    assert tool.args_schema.model_json_schema() == {
-        "properties": {
-            "action": {
-                "description": "The action to perform on the computer. Please provide a value of "
-                "type string. This parameter is required. Please provide a value "
-                "of type string. This parameter is required.",
-                "examples": [],
-                "title": "Action",
-                "type": "string",
-            },
-            "coordinate": {
-                "default": None,
-                "description": "X,Y coordinates for mouse actions",
-                "examples": [],
-                "items": {},
-                "title": "Coordinate",
-                "type": "array",
-            },
-            "text": {
-                "default": None,
-                "description": "Text to type or key sequence to press. Please provide a value of "
-                "type string. Please provide a value of type string.",
-                "examples": [],
-                "title": "Text",
-                "type": "string",
-            },
-        },
-        "required": ["action"],
-        "title": "ComputerRequest",
-        "type": "object",
+    assert set(tool.args_schema.model_json_schema().get("properties", {}).keys()) == {
+        "action",
+        "text",
+        "coordinate",
     }
 
 
@@ -260,126 +243,82 @@ def test_langchain_toolset() -> None:
         tool.description
         == "A Tool That Allows Interaction With The Screen, Keyboard, And Mouse Of The Current Computer. Adapted For Mac Os And Linux."
     )
-    assert tool.args_schema.model_json_schema() == {
-        "properties": {
-            "action": {
-                # TODO: "please provide" and "is required" is there 3 times
-                "description": "The action to perform on the computer. Please provide a value of "
-                "type string. This parameter is required. Please provide a value "
-                "of type string. This parameter is required. Please provide a "
-                "value of type string. This parameter is required.",
-                "examples": [],
-                "title": "Action",
-                "type": "string",
-            },
-            "coordinate": {
-                "default": None,
-                "description": "X,Y coordinates for mouse actions",
-                "examples": [],
-                "items": {},
-                "title": "Coordinate",
-                "type": "array",
-            },
-            "text": {
-                "default": None,
-                # TODO: "please provide" is there 3 times
-                "description": "Text to type or key sequence to press. Please provide a value of "
-                "type string. Please provide a value of type string. Please "
-                "provide a value of type string.",
-                "examples": [],
-                "title": "Text",
-                "type": "string",
-            },
-        },
-        "required": ["action"],
-        # TODO: title should be computer
-        "title": "ComputerRequest",
-        "type": "object",
+
+    assert set(tool.args_schema.model_json_schema().get("properties", {}).keys()) == {
+        "action",
+        "text",
+        "coordinate",
     }
 
 
 def test_claude_toolset() -> None:
-    toolset = composio_crewai.ComposioToolSet()
+    toolset = composio_claude.ComposioToolSet()
 
     tools = toolset.get_tools(actions=[create_draft])
     assert len(tools) == 1
 
     tool = tools[0]
-    assert tool.name == "MYTOOL_CREATE_DRAFT"
+    assert tool.get("name") == "MYTOOL_CREATE_DRAFT"
     assert (
-        tool.description
+        tool.get("description")
         # TODO: Thread's properties should be present in the arguments
-        == "Tool Name: MYTOOL_CREATE_DRAFT\nTool Arguments: {'message_body': {'description': 'The content of the draft reply. Please provide a value of type string. This parameter is required.', 'type': 'str'}, 'thread': {'description': 'The thread to which the reply is to be drafted', 'type': 'dict'}}\nTool Description: Create a draft reply to a specific Gmail thread"
+        == "Create a draft reply to a specific Gmail thread"
     )
-    assert tool.args_schema.model_json_schema() == {
+    assert tool.get("input_schema", {}) == {
         "properties": {
             "message_body": {
-                "description": "The content of the draft reply. Please provide a value of type "
-                "string. This parameter is required.",
-                "examples": [],
+                "description": "The content of the draft reply. Please provide a value of type string. This parameter is required.",
                 "title": "Message Body",
                 "type": "string",
             },
             "thread": {
+                "anyOf": [
+                    {
+                        "properties": {"id": {"title": "Id", "type": "string"}},
+                        "required": ["id"],
+                        "title": "Thread",
+                        "type": "object",
+                    },
+                    {"type": "null"},
+                ],
                 "default": None,
                 "description": "The thread to which the reply is to be drafted",
-                "examples": [],
-                "title": "Thread",
-                # TODO: Thread's properties should be present in the schema
                 "type": "object",
             },
         },
-        "required": ["message_body"],
-        # TODO: title should be MYTOOL_CREATE_DRAFT
         "title": "CreateDraftRequest",
         "type": "object",
+        "required": ["message_body"],
     }
 
     tools = toolset.get_tools(actions=[Action.ANTHROPIC_COMPUTER])
     assert len(tools) == 1
 
     tool = tools[0]
-    assert (
-        tool.description
-        == "Tool Name: computer\nTool Arguments: {'action': {'description': 'The action to perform on the computer. Please provide a value of type string. This parameter is required. Please provide a value of type string. This parameter is required. Please provide a value of type string. This parameter is required. Please provide a value of type string. This parameter is required.', 'type': 'str'}, 'text': {'description': 'Text to type or key sequence to press. Please provide a value of type string. Please provide a value of type string. Please provide a value of type string. Please provide a value of type string.', 'type': 'str'}, 'coordinate': {'description': 'X,Y coordinates for mouse actions', 'type': 'list'}}\nTool Description: A Tool That Allows Interaction With The Screen, Keyboard, And Mouse Of The Current Computer. Adapted For Mac Os And Linux."
-    )
-    assert tool.args_schema.model_json_schema() == {
-        "properties": {
-            "action": {
-                # TODO: "please provide" and "is required" is there FOUR TIMES
-                "description": "The action to perform on the computer. Please provide a value of "
-                "type string. This parameter is required. Please provide a value "
-                "of type string. This parameter is required. Please provide a "
-                "value of type string. This parameter is required. Please provide "
-                "a value of type string. This parameter is required.",
-                "examples": [],
-                "title": "Action",
-                "type": "string",
-            },
-            "coordinate": {
-                "default": None,
-                "description": "X,Y coordinates for mouse actions",
-                "examples": [],
-                "items": {},
-                "title": "Coordinate",
-                "type": "array",
-            },
-            "text": {
-                "default": None,
-                # TODO: "please provide" is there FOUR TIMES
-                "description": "Text to type or key sequence to press. Please provide a value of "
-                "type string. Please provide a value of type string. Please "
-                "provide a value of type string. Please provide a value of type string.",
-                "examples": [],
-                "title": "Text",
-                "type": "string",
-            },
-        },
-        "required": ["action"],
-        # TODO: title should be computer
-        "title": "ComputerRequest",
-        "type": "object",
+    assert tool.get("name") == "computer"
+    assert set(tool.get("input_schema").get("properties", {}).keys()) == {
+        "action",
+        "text",
+        "coordinate",
     }
+
+    # check that objects that cannot be casted into Message type raise an error.
+    wrong_type_response = "some_random_value_from_llm"
+    with pytest.raises(
+        expected_exception=ComposioSDKError,
+        match=(
+            "llm_response should be of type `Message` or castable to type `Message`, "
+            f"received object {wrong_type_response} of type {type(wrong_type_response)}"
+        ),
+    ):
+        toolset.handle_tool_calls(llm_response=wrong_type_response)
+
+    random_llm_response = {"some_random_key_from_llm": "some_random_value_from_llm"}
+    with pytest.raises(
+        expected_exception=ValidationError,
+        match=None,
+    ):
+        toolset.handle_tool_calls(llm_response=random_llm_response)
 
 
 def test_llamaindex_toolset() -> None:

@@ -1,0 +1,23 @@
+{
+  "name": "lead-generator-agent",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@ai-sdk/openai": "^1.0.10",
+    "ai": "^3.2.24",
+    "chalk": "^5.4.1",
+    "composio-core": "0.5.3",
+    "dotenv": "^16.4.7",
+    "figlet": "^1.8.0",
+    "gradient-string": "^3.0.0",
+    "ora": "^8.2.0",
+    "zod": "^3.23.8"
+  }
+}

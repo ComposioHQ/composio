@@ -1,0 +1,74 @@
+---
+title: "Using Composio With Smol Agents"
+sidebarTitle: "Smol Agents"
+description: "Integrate Composio with Smol agents to let them seamlessly interact with external apps"
+---
+
+## Star A Repository on GitHub
+In this example, we will use SmolAgent's Code Agent to star a repository on GitHub using Composio Tools
+
+<Steps>
+<Step title="Install Packages">
+<CodeGroup>
+```bash Python
+pip install composio-smol smolagents
+```
+</CodeGroup>
+</Step>
+<Step title="Import Libraries & Initialize ComposioToolSet">
+<CodeGroup>
+```python Python
+from composio_smol import ComposioToolSet, Action, App
+from smolagents import CodeAgent, HfApiModel
+from dotenv import load_dotenv
+
+load_dotenv()
+
+composio_toolset = ComposioToolSet()
+```
+</CodeGroup>
+</Step>
+
+<Step title="Connect Your GitHub Account">
+    <Info>You need to have an active GitHub Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
+    <CodeGroup>
+        ```shell CLI
+        composio login
+        composio add github
+        ```
+        ```python Python
+        request = composio_toolset.initiate_connection(app=App.GITHUB)
+        print(f"Open this URL to authenticate: {request.redirectUrl}")
+        ```
+    </CodeGroup>
+    <Tip>
+        Don't forget to set your `COMPOSIO_API_KEY` in your environment variables.
+    </Tip>
+</Step>
+
+<Step title="Get All GitHub Tools">
+You can get all the tools for a given app as shown below, but you can get **specific actions** and filter actions using **usecase** & **tags**. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
+<CodeGroup>
+```python Python
+tools = composio_toolset.get_tools(actions=[Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER])
+```
+</CodeGroup>
+
+</Step>
+<Step title="Define the Agent">
+<CodeGroup>
+```python Python
+agent = CodeAgent(tools=tools, model=HfApiModel())
+```
+</CodeGroup>
+</Step>
+
+<Step title="Execute the Agent">
+<CodeGroup>
+```python Python
+task = "Star a repo composiohq/composio on GitHub"
+agent.run(task)
+```
+</CodeGroup>
+</Step>
+</Steps>

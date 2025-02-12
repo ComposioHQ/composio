@@ -6,6 +6,8 @@ import {
   type Options,
 } from "@hey-api/client-axios";
 import type {
+  ActionsControllerV2ListUserFilesError,
+  ActionsControllerV2ListUserFilesResponse,
   AddProjectData,
   AddProjectError,
   AddProjectResponse,
@@ -18,6 +20,9 @@ import type {
   CreateConnectorV2Data,
   CreateConnectorV2Error,
   CreateConnectorV2Response,
+  CreateFileUploadUrlData,
+  CreateFileUploadUrlError,
+  CreateFileUploadUrlResponse,
   CreateProjectData,
   CreateProjectError,
   CreateProjectResponse,
@@ -698,6 +703,39 @@ export class ActionsService {
     >({
       ...options,
       url: "/api/v2/actions/search/advanced",
+    });
+  }
+
+  /**
+   * List user files
+   */
+  public static v2ListUserFiles<ThrowOnError extends boolean = false>(
+    options?: Options<unknown, ThrowOnError>
+  ) {
+    return (options?.client ?? client).get<
+      ActionsControllerV2ListUserFilesResponse,
+      ActionsControllerV2ListUserFilesError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/actions/files/list",
+    });
+  }
+
+  /**
+   * Create file upload url
+   * Create file upload URL for action execution.
+   */
+  public static createFileUploadUrl<ThrowOnError extends boolean = false>(
+    options: Options<CreateFileUploadUrlData, ThrowOnError>
+  ) {
+    return (options?.client ?? client).post<
+      CreateFileUploadUrlResponse,
+      CreateFileUploadUrlError,
+      ThrowOnError
+    >({
+      ...options,
+      url: "/api/v2/actions/files/upload/{fileType}",
     });
   }
 }
