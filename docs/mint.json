@@ -110,7 +110,8 @@
               ]
             },
             "patterns/tools/custom-integration",
-            "patterns/tools/serve-tools"
+            "patterns/tools/serve-tools",
+            "patterns/tools/versioning"
       ]
     },
     {
