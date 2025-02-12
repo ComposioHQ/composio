@@ -104,7 +104,6 @@ export const getFileDataAfterUploadingToS3 = async (
     s3key: s3key,
   };
 };
-
 export const downloadFileFromS3 = async ({
   actionName,
   s3Url,
@@ -114,7 +113,9 @@ export const downloadFileFromS3 = async ({
   s3Url: string;
   mimeType: string;
 }) => {
-  const response = await axios.get(s3Url);
+  const response = await axios.get(s3Url, {
+    responseType: "arraybuffer",
+  });
 
   const extension = mimeType.split("/")[1] || "txt";
   const fileName = `${actionName}_${Date.now()}.${extension}`;

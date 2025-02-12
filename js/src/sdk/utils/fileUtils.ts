@@ -65,7 +65,6 @@ export const saveFile = (
   isTempFile: boolean = false
 ) => {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const path = require("path");
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const fs = require("fs");
@@ -73,7 +72,12 @@ export const saveFile = (
       ? getComposioTempFilesDir(true)
       : getComposioDir(true);
     const filePath = path.join(composioFilesDir, path.basename(file));
-    fs.writeFileSync(filePath, content);
+
+    if (Buffer.isBuffer(content)) {
+      fs.writeFileSync(filePath, content);
+    } else {
+      fs.writeFileSync(filePath, content, "utf8");
+    }
 
     return filePath;
   } catch (_error) {
