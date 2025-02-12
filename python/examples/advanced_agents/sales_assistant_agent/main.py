@@ -22,7 +22,9 @@ from composio_llamaindex import ComposioToolSet, App, Action
 from llama_index.core.agent import FunctionCallingAgentWorker
 from llama_index.core.llms import ChatMessage
 from llama_index.llms.openai import OpenAI
+from llama_index.llms.groq import Groq
 from dotenv import load_dotenv
+
 
 load_dotenv()
 
@@ -34,6 +36,7 @@ tools = toolset.get_tools(apps=[
     App.EXA
 ])
 
+llm = Groq(model='llama-3.3-70b')
 llm = OpenAI(model="gpt-4o")
 
 name = input('Enter name: ')
