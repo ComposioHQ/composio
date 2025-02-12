@@ -6,7 +6,6 @@ import os
 import sys
 import typing as t
 from datetime import datetime
-from pathlib import Path
 
 import requests
 
@@ -41,10 +40,10 @@ from composio.client.http import HttpClient
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
-    LOCAL_CACHE_DIRECTORY_NAME,
+    LOCAL_CACHE_DIRECTORY,
     USER_DATA_FILE_NAME,
 )
-from composio.exceptions import ApiKeyNotProvidedError
+from composio.exceptions import ApiKeyError, ApiKeyNotProvidedError, InvalidParams
 from composio.storage.user import UserData
 from composio.utils.decorators import deprecated
 from composio.utils.shared import generate_request_id
@@ -99,8 +98,7 @@ class Composio:
     @property
     def api_key(self) -> str:
         if self._api_key is None:
-            cache_dir = Path.home() / LOCAL_CACHE_DIRECTORY_NAME
-            user_data_path = cache_dir / USER_DATA_FILE_NAME
+            user_data_path = LOCAL_CACHE_DIRECTORY / USER_DATA_FILE_NAME
             user_data = (
                 UserData.load(path=user_data_path) if user_data_path.exists() else None
             )
@@ -113,7 +111,7 @@ class Composio:
                 self._api_key = env_api_key
 
         if self._api_key is None:
-            raise ApiKeyNotProvidedError()
+            raise ApiKeyNotProvidedError
 
         self._api_key = self.validate_api_key(
             key=t.cast(str, self._api_key),
@@ -171,10 +169,10 @@ class Composio:
             timeout=60,
         )
         if response.status_code in (401, 403):
-            raise ComposioClientError("API Key is not valid!")
+            raise ApiKeyError("API Key is not valid!")
 
         if response.status_code != 200:
-            raise ComposioClientError(f"Unexpected error: HTTP {response.status_code}")
+            raise ApiKeyError(f"Unexpected error: HTTP {response.status_code}")
 
         _valid_keys.add(key)
         return key
@@ -438,21 +436,18 @@ class Entity:
         :param integration: Optional existing IntegrationModel instance to be used.
         :return: A ConnectionRequestModel instance representing the initiated connection.
         """
-        if isinstance(app_name, App):
-            app_name_str = app_name.slug
-        else:
-            app_name_str = app_name
-
-        app = self.client.apps.get(name=app_name_str)
+        app = self.client.apps.get(name=App(app_name).slug)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         if integration is None and auth_mode is not None:
             if auth_mode not in AUTH_SCHEME_WITH_INITIATE:
-                raise ComposioClientError(
+                raise InvalidParams(
                     f"'auth_mode' should be one of {AUTH_SCHEME_WITH_INITIATE}"
                 )
+
             auth_mode = t.cast(AuthSchemeType, auth_mode)
             if "OAUTH" not in auth_mode:
                 use_composio_auth = False
+
             integration = self.client.integrations.create(
                 app_id=app.appId,
                 name=f"{app_name}_{timestamp}",
