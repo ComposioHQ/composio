@@ -154,7 +154,25 @@ class _Response(t.Generic[ModelType]):
 
     @classmethod
     def wrap(cls, model: t.Type[ModelType]) -> t.Type[BaseModel]:
-        class wrapper(model):  # type: ignore
+        if "data" not in model.__annotations__:
+
+            class wrapper(BaseModel):  # type: ignore
+                data: model = Field(  # type: ignore
+                    ...,
+                    description="Data from the action execution",
+                )
+                successful: bool = Field(
+                    ...,
+                    description="Whether or not the action execution was successful or not",
+                )
+                error: t.Optional[str] = Field(
+                    None,
+                    description="Error if any occurred during the execution of the action",
+                )
+
+            return t.cast(t.Type[BaseModel], wrapper)
+
+        class wrapper(model):  # type: ignore # pylint: disable=function-redefined
             successful: bool = Field(
                 ...,
                 description="Whether or not the action execution was successful or not",
@@ -199,7 +217,7 @@ class _Response(t.Generic[ModelType]):
                     ] += f" Note: choose value only from following options - {prop['enum']}"
 
         schema["properties"] = properties
-        schema["title"] = self.model.__name__
+        schema["title"] = f"{self.model.__name__}Wrapper"
         return remove_json_ref(schema)
 
 
@@ -518,7 +536,7 @@ class Tool(WithLogger, _Attributes):
         :param params: Execution parameters.
         :param metadata: A dictionary containing metadata for action.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @classmethod
     def register(cls: t.Type["Tool"]) -> None:

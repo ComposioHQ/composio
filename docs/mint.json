@@ -110,7 +110,8 @@
               ]
             },
             "patterns/tools/custom-integration",
-            "patterns/tools/serve-tools"
+            "patterns/tools/serve-tools",
+            "patterns/tools/versioning"
       ]
     },
     {
@@ -135,6 +136,7 @@
       "pages": [
         "framework/autogen",
         "framework/crewai",
+        "framework/gemini",
         "framework/langchain",
         "framework/langflow",
         "framework/langgraph",
@@ -145,16 +147,18 @@
         {
           "group": "Other Frameworks",
           "pages": [
+            "framework/smolagents",
             "framework/camelai",
             "javascript/cloudflare",
             "framework/griptape",
             "framework/groq",
             "framework/julep",
             "framework/lyzr",
-            "framework/phidata",
+            "framework/agno",
             "framework/praisonai",
             "javascript/vercel",
-            "framework/google"
+            "framework/google",
+            "framework/ibm"
           ]
         }
       ]
@@ -198,6 +202,7 @@
       "group": "Others",
       "pages": [
         "introduction/foundations/components/workspace",
+        "integrations/google",
         "faq/api_key/api_key",
         "faq/api_key/cli",
         "faq/integrations_and_connections/list_of_tools",

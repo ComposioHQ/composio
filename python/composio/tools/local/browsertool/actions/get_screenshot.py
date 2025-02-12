@@ -8,6 +8,7 @@ from pathlib import Path
 
 from pydantic import Field
 
+from composio.constants import LOCAL_CACHE_DIRECTORY
 from composio.tools.env.browsermanager.manager import BrowserManager
 from composio.tools.local.browsertool.actions.base_action import (
     BaseBrowserAction,
@@ -65,8 +66,7 @@ class GetScreenshot(BaseBrowserAction[GetScreenshotRequest, GetScreenshotRespons
         """Execute the screenshot action."""
         try:
             if not request.output_path or request.output_path == "":
-                home_dir = Path.home()
-                browser_media_dir = home_dir / ".browser_media"
+                browser_media_dir = LOCAL_CACHE_DIRECTORY / "browser_media"
                 browser_media_dir.mkdir(parents=True, exist_ok=True)
                 random_string = "".join(random.choices(string.ascii_lowercase, k=6))
                 output_path = browser_media_dir / f"screenshot_{random_string}.png"

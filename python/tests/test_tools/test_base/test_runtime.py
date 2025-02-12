@@ -80,7 +80,7 @@ def test_annotated_args() -> None:
         "type": "object",
     }
 
-    assert square.response.schema().get("properties").get("result") == {  # type: ignore
+    assert square.response.schema().get("properties").get("data").get("properties").get("result") == {  # type: ignore
         "default": None,
         "description": "Square of a number",
         "title": "Result",

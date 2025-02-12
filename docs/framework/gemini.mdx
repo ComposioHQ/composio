@@ -1,0 +1,66 @@
+---
+title: "Using Composio With Gemini"
+sidebarTitle: "Gemini"
+description: "Integrate Composio with Gemini to let them seamlessly interact with external Apps"
+---
+
+## Star A Repository on GitHub
+In this example, we will use Gemini to star a repository on GitHub using Composio Tools
+
+<Steps>
+<Step title="Install Packages">
+```bash Python
+pip install composio-gemini
+```
+</Step>
+<Step title="Import Libraries & Initialize ComposioToolSet & Gemini">
+```bash Python
+from google.genai import types
+from google import genai
+from composio_gemini import Action, ComposioToolSet, App
+
+client = genai.Client(api_key="<gemini-api-key>")
+toolset = ComposioToolSet(api_key="<composio-api-key>")
+```
+</Step>
+<Step title="Connect Your GitHub Account">
+<Info>You need to have an active GitHub Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
+<CodeGroup>
+```shell CLI
+composio login 
+composio add github
+```
+```python Python
+request = toolset.initiate_connection(app=App.GITHUB)
+print(f"Open this URL to authenticate: {request.redirectUrl}")
+```
+</CodeGroup>
+<Tip>
+Don't forget to set your `COMPOSIO_API_KEY` and `GEMINI_API_KEY` in your environment variables.
+</Tip>
+</Step>
+
+<Step title="Get All GitHub Tools & Create Config">
+You can get all the tools for a given app or specific actions as shown below. Learn more [here](../../patterns/tools/use-tools/use-specific-actions)
+```python Python
+tools = toolset.get_tools(
+    apps=[
+        App.GITHUB
+    ]
+)
+
+config = types.GenerateContentConfig(tools=tools)
+```
+</Step>
+<Step title="Execute the Agent">
+```python Python
+chat = client.chats.create(model="gemini-2.0-flash", config=config)
+
+response = chat.send_message(
+    "Can you star composiohq/composio repository on github",
+)
+
+print(response.text)
+```
+</Step>
+</Steps>
