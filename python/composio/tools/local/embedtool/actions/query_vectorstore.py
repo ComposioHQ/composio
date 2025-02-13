@@ -2,6 +2,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
+from composio.constants import LOCAL_CACHE_DIRECTORY
 from composio.tools.base.local import LocalAction
 
 
@@ -46,7 +47,7 @@ class QueryImageVectorStore(
         from chromadb.utils import embedding_functions  # pylint: disable=C0415
 
         image_collection_name = Path(request.indexed_directory).name + "_images"
-        index_storage_path = Path.home() / ".composio" / "image_index_storage"
+        index_storage_path = LOCAL_CACHE_DIRECTORY / "image_index_storage"
         chroma_client = chromadb.PersistentClient(path=str(index_storage_path))
         chroma_collection = chroma_client.get_collection(image_collection_name)
 

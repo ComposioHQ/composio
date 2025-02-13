@@ -160,16 +160,17 @@ describe("ComposioToolSet class tests", () => {
     const ACTION_NAME = "GMAIL_SEND_EMAIL";
     const actions = await toolset.getToolsSchema({ actions: [ACTION_NAME] });
 
+    const firstAction = actions[0]!;
     // Check if exist
     expect(
-      actions[0]!.parameters.properties["attachment_file_uri_path"]
+      firstAction.parameters.properties["attachment_schema_parsed_file"]
     ).toBeDefined();
 
     const requestBody = {
       recipient_email: "himanshu@composio.dev",
       subject: "Test email from himanshu",
       body: "This is a test email",
-      attachment_file_uri_path:
+      attachment_schema_parsed_file:
         "https://composio.dev/wp-content/uploads/2024/07/Composio-Logo.webp",
     };
 
@@ -182,6 +183,20 @@ describe("ComposioToolSet class tests", () => {
     // @ts-ignore
     expect(executionResult).toHaveProperty("successfull", true);
     expect(executionResult.data).toBeDefined();
+  });
+
+  it("should execute downloadable file action", async () => {
+    const ACTION_NAME = "GOOGLEDRIVE_PARSE_FILE";
+    const executionResult = await toolset.executeAction({
+      action: ACTION_NAME,
+      params: {
+        file_id: testConfig.drive.downloadable_file_id,
+      },
+      entityId: "default",
+    });
+
+    // @ts-ignore
+    expect(executionResult.data.file.uri.length).toBeGreaterThan(0);
   });
 
   it("should get tools with usecase limit", async () => {
