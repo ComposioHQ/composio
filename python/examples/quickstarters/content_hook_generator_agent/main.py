@@ -12,10 +12,7 @@ tools = composio_toolset.get_tools(apps=[App.GOOGLESHEETS])
 
 sheet_id = '1fVAkbBVeocPIPRMgaH-rO2kkswXWLUBVSZ8jf-xputs'
 #llm = Groq(model="llama3-70b-8192", api_key=os.environ['GROQ_API_KEY'])
-llm = Groq(
-    
-)
-
+llm = OpenAI(model='gpt-4o')
 prefix_messages = [
     ChatMessage(
         role="system",
