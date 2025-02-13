@@ -48,7 +48,6 @@ from composio.client.collections import (
 from composio.client.enums import TriggerType
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.files import FileDownloadable, FileUploadable
-from composio.client.utils import check_cache_refresh
 from composio.constants import (
     DEFAULT_ENTITY_ID,
     ENV_COMPOSIO_API_KEY,
@@ -1596,7 +1595,6 @@ class ComposioToolSet(_IntegrationMixin):
                 base_url=self._base_url,
                 runtime=self._runtime,
             )
-            check_cache_refresh(self._remote_client)
 
         self._remote_client.local = self._local_client
         return self._remote_client

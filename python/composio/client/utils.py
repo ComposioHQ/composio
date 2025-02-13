@@ -275,9 +275,17 @@ def _check_and_refresh_actions(client: Composio):
     if not actions_to_update:
         return
 
-    logger.debug("Actions to fetch: %s", actions_to_update)
+    logger.debug(
+        "Actions to fetch: %s %s...",
+        str(len(actions_to_update)),
+        str(actions_to_update)[:64],
+    )
     queries = {"actions": ",".join(actions_to_update)}
-    actions_data = client.http.get(url=str(client.actions.endpoint(queries))).json()
+    actions_request = client.http.get(url=str(client.actions.endpoint(queries)))
+    if actions_request.status_code == 414:
+        actions_request = client.http.get(url=str(client.actions.endpoint({})))
+
+    actions_data = actions_request.json()
     for action_data in actions_data["items"]:
         create_action(
             response=action_data,
@@ -328,6 +336,7 @@ def check_cache_refresh(client: Composio) -> None:
         return
     _cache_checked = True
 
+    logger.debug("Checking cache...")
     start = time.monotonic()
     ap_thread = threading.Thread(target=_check_and_refresh_apps, args=(client,))
     ac_thread = threading.Thread(target=_check_and_refresh_actions, args=(client,))
@@ -337,5 +346,4 @@ def check_cache_refresh(client: Composio) -> None:
 
     ap_thread.join()
     ac_thread.join()
-
     logger.debug("Time taken to update cache: %.2f seconds", time.monotonic() - start)
