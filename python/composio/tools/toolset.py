@@ -481,6 +481,7 @@ class SchemaHelper(WithLogger):
             items.append(
                 ActionModel(
                     **schema,
+                    no_auth=True,
                     version=VERSION_LATEST,
                     available_versions=[VERSION_LATEST],
                 ).model_copy(deep=True)
@@ -504,6 +505,7 @@ class SchemaHelper(WithLogger):
         items = [
             ActionModel(
                 **item,
+                no_auth=True,
                 version=VERSION_LATEST,
                 available_versions=[VERSION_LATEST],
             )
