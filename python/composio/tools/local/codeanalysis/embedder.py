@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from typing import TYPE_CHECKING, Any, Dict, List
 
@@ -30,7 +32,9 @@ def get_vector_store(repo_name: str, overwrite: bool = True) -> DeepLakeVectorSt
     if not repo_name:
         raise ValueError("Repository path cannot be empty or None")
 
-    from deeplake.core.vectorstore.deeplake_vectorstore import DeepLakeVectorStore
+    from deeplake.core.vectorstore.deeplake_vectorstore import (  # pylint: disable=import-outside-toplevel
+        DeepLakeVectorStore,
+    )
 
     try:
         repo_name = os.path.basename(repo_name)
