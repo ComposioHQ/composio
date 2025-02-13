@@ -1,6 +1,6 @@
-# Perplexity for Hackernews Agent Guide
+# Content Hook Agent Guide
 
-This guide provides detailed steps to create an agent that searches relevant hackernews posts, it leverages LlamaIndex, Composio, and Groq to perform searches. Ensure you have Python 3.8 or higher installed.
+This guide provides detailed steps to create an agent that suggests the best hookline for your content, it leverages LlamaIndex, Composio, and Groq. Ensure you have Python 3.8 or higher installed.
 
 ## Steps to Run
 **Navigate to the Project Directory:**
@@ -23,8 +23,12 @@ add necessary tools:
 Now, Fill in the .env file with your secrets.
 ### 2. Run the python script
 ```shell
-python cookbook/examples/quickstarters/perplexity_for_hackernews/main.py
+python cookbook/examples/quickstarters/content_hook_generator_agent/main.py
 ```
+
+
+
+
 
 
 
