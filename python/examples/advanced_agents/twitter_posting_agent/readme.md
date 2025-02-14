@@ -1,6 +1,6 @@
-# Resume Matching Agent Guide
+# Twitter Posting Agent Guide
 
-This guide provides detailed steps to create Resume Matching Agent that leverages Composio, ChatGPT to analyse a resume and match it the right job listing.
+This guide provides detailed steps to create Twitter Posting Agent that leverages Composio, ChatGPT to automate content posting on twitter
 
 ## Steps to Run
 **Navigate to the Project Directory:**
@@ -23,7 +23,7 @@ add necessary tools:
 Now, Fill in the .env file with your secrets.
 ### 2. Run the python script
 ```shell
-python python/examples/advanced_agents/resume_matching/main.py
+python python/examples/advanced_agents/twitter_posting_agent/main.py
 ```
 
 

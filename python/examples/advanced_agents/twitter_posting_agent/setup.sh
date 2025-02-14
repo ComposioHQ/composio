@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Create a virtual environment named sqlagent
 echo "Creating virtual environment..."
 python3 -m venv twitter_posting
 
