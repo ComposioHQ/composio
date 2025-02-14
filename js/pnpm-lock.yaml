@@ -9,20 +9,20 @@ importers:
   .:
     dependencies:
       '@ai-sdk/openai':
-        specifier: ^0.0.36
+        specifier: '>=0.0.36'
         version: 0.0.36(zod@3.23.8)
       '@cloudflare/workers-types':
-        specifier: ^4.20240718.0
+        specifier: '>=4.20240718.0'
         version: 4.20240806.0
       '@langchain/core':
-        specifier: ^0.2.18
-        version: 0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.51.0)
+        specifier: '>=0.2.18'
+        version: 0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8))
       '@langchain/openai':
-        specifier: ^0.2.5
-        version: 0.2.6(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))
+        specifier: '>=0.2.5'
+        version: 0.2.6(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))
       ai:
-        specifier: ^3.2.22
-        version: 3.3.3(openai@4.51.0)(react@18.3.1)(sswr@2.1.0(svelte@4.2.18))(svelte@4.2.18)(vue@3.4.36(typescript@5.4.5))(zod@3.23.8)
+        specifier: '>=3.2.22'
+        version: 3.3.3(openai@4.55.1(zod@3.23.8))(react@18.3.1)(sswr@2.1.0(svelte@4.2.18))(svelte@4.2.18)(vue@3.4.36(typescript@5.4.5))(zod@3.23.8)
       axios:
         specifier: ^1.7.2
         version: 1.7.2
@@ -39,14 +39,14 @@ importers:
         specifier: ^10.2.2
         version: 10.2.2
       langchain:
-        specifier: ^0.2.11
-        version: 0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))
+        specifier: '>=0.2.11'
+        version: 0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))
       open:
         specifier: ^8.4.0
         version: 8.4.2
       openai:
-        specifier: ^4.50.0
-        version: 4.51.0
+        specifier: '>=4.50.0'
+        version: 4.55.1(zod@3.23.8)
       pusher-js:
         specifier: 8.4.0-rc2
         version: 8.4.0-rc2
@@ -2720,10 +2720,6 @@ packages:
     resolution: {integrity: sha512-7x81NCL719oNbsq/3mh+hVrAWmFuEYUqrq/Iw3kUzH8ReypT9QQ0BLoJS7/G9k6N81XjW4qHWtjWwe/9eLy1EQ==}
     engines: {node: '>=12'}
 
-  openai@4.51.0:
-    resolution: {integrity: sha512-UKuWc3/qQyklqhHM8CbdXCv0Z0obap6T0ECdcO5oATQxAbKE5Ky3YCXFQY207z+eGG6ez4U9wvAcuMygxhmStg==}
-    hasBin: true
-
   openai@4.55.1:
     resolution: {integrity: sha512-FziYJcWl+SAGbt5AcRIzVzNcnKohpEMQdtzVOmHFbBp/if7x2+ACqgxF2XUbyi2PcKONPcVpmtG5h9qoDAEXwQ==}
     hasBin: true
@@ -3382,10 +3378,6 @@ packages:
   watchpack@2.4.1:
     resolution: {integrity: sha512-8wrBCMtVhqcXP2Sup1ctSkga6uc2Bx0IIvKyT7yTFier5AXHooSI+QyQQAtTb7+E0IUCCKyTFmXqdqgum2XWGg==}
     engines: {node: '>=10.13.0'}
-
-  web-streams-polyfill@3.3.3:
-    resolution: {integrity: sha512-d2JWLCivmZYTSIoge9MsgFCZrt571BikcWGYkjC1khllbTeDlGqZ2D8vD8E/lJa8WGWbb7Plm8/XJYV7IJHZZw==}
-    engines: {node: '>= 8'}
 
   web-streams-polyfill@4.0.0-beta.3:
     resolution: {integrity: sha512-QW95TCTaHmsYfHDybGMwO5IJIM93I/6vTRk+daHTWFPhwh+C8Cg7j7XyKrwrj8Ib6vYXe0ocYNrmzY4xAAN6ug==}
@@ -4180,13 +4172,13 @@ snapshots:
 
   '@jsdevtools/ono@7.1.3': {}
 
-  '@langchain/core@0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.51.0)':
+  '@langchain/core@0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8))':
     dependencies:
       ansi-styles: 5.2.0
       camelcase: 6.3.0
       decamelize: 1.2.0
       js-tiktoken: 1.0.12
-      langsmith: 0.1.41(@langchain/core@0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.51.0))(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.51.0)
+      langsmith: 0.1.41(@langchain/core@0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8)))(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8))
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -4197,26 +4189,9 @@ snapshots:
       - langchain
       - openai
 
-  '@langchain/core@0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8))':
+  '@langchain/openai@0.2.6(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))':
     dependencies:
-      ansi-styles: 5.2.0
-      camelcase: 6.3.0
-      decamelize: 1.2.0
-      js-tiktoken: 1.0.12
-      langsmith: 0.1.41(@langchain/core@0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.51.0))(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8))
-      mustache: 4.2.0
-      p-queue: 6.6.2
-      p-retry: 4.6.2
-      uuid: 10.0.0
-      zod: 3.23.8
-      zod-to-json-schema: 3.23.2(zod@3.23.8)
-    transitivePeerDependencies:
-      - langchain
-      - openai
-
-  '@langchain/openai@0.2.6(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))':
-    dependencies:
-      '@langchain/core': 0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8))
+      '@langchain/core': 0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8))
       js-tiktoken: 1.0.12
       openai: 4.55.1(zod@3.23.8)
       zod: 3.23.8
@@ -4225,9 +4200,9 @@ snapshots:
       - encoding
       - langchain
 
-  '@langchain/textsplitters@0.0.3(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.51.0)':
+  '@langchain/textsplitters@0.0.3(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8))':
     dependencies:
-      '@langchain/core': 0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.51.0)
+      '@langchain/core': 0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8))
       js-tiktoken: 1.0.12
     transitivePeerDependencies:
       - langchain
@@ -4796,7 +4771,7 @@ snapshots:
     dependencies:
       humanize-ms: 1.2.1
 
-  ai@3.3.3(openai@4.51.0)(react@18.3.1)(sswr@2.1.0(svelte@4.2.18))(svelte@4.2.18)(vue@3.4.36(typescript@5.4.5))(zod@3.23.8):
+  ai@3.3.3(openai@4.55.1(zod@3.23.8))(react@18.3.1)(sswr@2.1.0(svelte@4.2.18))(svelte@4.2.18)(vue@3.4.36(typescript@5.4.5))(zod@3.23.8):
     dependencies:
       '@ai-sdk/provider': 0.0.16
       '@ai-sdk/provider-utils': 1.0.8(zod@3.23.8)
@@ -4813,7 +4788,7 @@ snapshots:
       secure-json-parse: 2.7.0
       zod-to-json-schema: 3.22.5(zod@3.23.8)
     optionalDependencies:
-      openai: 4.51.0
+      openai: 4.55.1(zod@3.23.8)
       react: 18.3.1
       sswr: 2.1.0(svelte@4.2.18)
       svelte: 4.2.18
@@ -6044,16 +6019,16 @@ snapshots:
 
   kuler@2.0.0: {}
 
-  langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)):
+  langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)):
     dependencies:
-      '@langchain/core': 0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.51.0)
-      '@langchain/openai': 0.2.6(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))
-      '@langchain/textsplitters': 0.0.3(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.51.0)
+      '@langchain/core': 0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8))
+      '@langchain/openai': 0.2.6(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))
+      '@langchain/textsplitters': 0.0.3(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8))
       binary-extensions: 2.3.0
       js-tiktoken: 1.0.12
       js-yaml: 4.1.0
       jsonpointer: 5.0.1
-      langsmith: 0.1.41(@langchain/core@0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.51.0))(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.51.0)
+      langsmith: 0.1.41(@langchain/core@0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8)))(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8))
       openapi-types: 12.1.3
       p-retry: 4.6.2
       uuid: 10.0.0
@@ -6069,7 +6044,7 @@ snapshots:
       - encoding
       - openai
 
-  langsmith@0.1.41(@langchain/core@0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.51.0))(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.51.0):
+  langsmith@0.1.41(@langchain/core@0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8)))(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8)):
     dependencies:
       '@types/uuid': 9.0.8
       commander: 10.0.1
@@ -6078,21 +6053,8 @@ snapshots:
       semver: 7.6.3
       uuid: 9.0.1
     optionalDependencies:
-      '@langchain/core': 0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.51.0)
-      langchain: 0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))
-      openai: 4.51.0
-
-  langsmith@0.1.41(@langchain/core@0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.51.0))(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8)):
-    dependencies:
-      '@types/uuid': 9.0.8
-      commander: 10.0.1
-      p-queue: 6.6.2
-      p-retry: 4.6.2
-      semver: 7.6.3
-      uuid: 9.0.1
-    optionalDependencies:
-      '@langchain/core': 0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.51.0)
-      langchain: 0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.51.0)(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))
+      '@langchain/core': 0.2.21(langchain@0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)))(openai@4.55.1(zod@3.23.8))
+      langchain: 0.2.13(axios@1.7.2)(handlebars@4.7.8)(ignore@5.3.2)(openai@4.55.1(zod@3.23.8))(ws@8.18.0(bufferutil@4.0.8)(utf-8-validate@6.0.4))
       openai: 4.55.1(zod@3.23.8)
 
   leven@3.1.0: {}
@@ -6282,19 +6244,6 @@ snapshots:
       define-lazy-prop: 2.0.0
       is-docker: 2.2.1
       is-wsl: 2.2.0
-
-  openai@4.51.0:
-    dependencies:
-      '@types/node': 18.19.34
-      '@types/node-fetch': 2.6.11
-      abort-controller: 3.0.0
-      agentkeepalive: 4.5.0
-      form-data-encoder: 1.7.2
-      formdata-node: 4.4.1
-      node-fetch: 2.7.0
-      web-streams-polyfill: 3.3.3
-    transitivePeerDependencies:
-      - encoding
 
   openai@4.55.1(zod@3.23.8):
     dependencies:
@@ -6922,8 +6871,6 @@ snapshots:
     dependencies:
       glob-to-regexp: 0.4.1
       graceful-fs: 4.2.11
-
-  web-streams-polyfill@3.3.3: {}
 
   web-streams-polyfill@4.0.0-beta.3: {}
 
