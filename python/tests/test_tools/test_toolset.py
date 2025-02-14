@@ -3,7 +3,6 @@ Test composio toolset.
 """
 
 import logging
-import os
 import re
 import typing as t
 from unittest import mock
@@ -49,9 +48,7 @@ def test_get_trigger_config_scheme() -> None:
 
 def test_delete_trigger() -> None:
     """Test `ComposioToolSet.delete_trigger` method."""
-    api_key = os.getenv("COMPOSIO_API_KEY")
-    toolset = ComposioToolSet(api_key=api_key)
-
+    toolset = ComposioToolSet()
     connected_account_id: str
     for account in toolset.get_connected_accounts():
         if account.appName == "gmail":
@@ -61,9 +58,12 @@ def test_delete_trigger() -> None:
     enabled_trigger = toolset.client.triggers.enable(
         name="GMAIL_NEW_GMAIL_MESSAGE",
         connected_account_id=connected_account_id,
-        config={"interval": 1, "userId": "me", "labelIds": "INBOX"},
+        config={
+            "interval": 1,
+            "userId": "me",
+            "labelIds": "INBOX",
+        },
     )
-
     assert enabled_trigger["triggerId"] is not None
     assert toolset.delete_trigger(id=enabled_trigger["triggerId"]) is True
 
@@ -75,7 +75,9 @@ def test_find_actions_by_tags() -> None:
         assert "important" in action.tags
 
     for action in toolset.find_actions_by_tags(
-        App.SLACK, App.GITHUB, tags=["important"]
+        App.SLACK,
+        App.GITHUB,
+        tags=["important"],
     ):
         assert "important" in action.tags
         assert action.app in ("GITHUB", "SLACK", "SLACKBOT")

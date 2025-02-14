@@ -1,7 +1,7 @@
 import typing as t
 import warnings
 
-from composio.client.enums.base import ActionData, replacement_action_name
+from composio.client.enums.base import ActionData, create_action
 from composio.client.enums.enum import Enum, EnumGenerator
 from composio.constants import VERSION_LATEST, VERSION_LATEST_BASE
 from composio.exceptions import EnumMetadataNotFound, InvalidVersionString, VersionError
@@ -86,24 +86,7 @@ class Action(Enum[ActionData], metaclass=EnumGenerator):
         if "appName" not in response:
             return None
 
-        replaced_by = replacement_action_name(
-            response["description"], response["appName"]
-        )
-        return ActionData(  # type: ignore
-            name=response["name"],
-            app=response["appName"],
-            tags=response["tags"],
-            no_auth=(
-                client.http.get(url=str(client.apps.endpoint / response["appName"]))
-                .json()
-                .get("no_auth", False)
-            ),
-            is_local=False,
-            is_runtime=False,
-            shell=False,
-            path=self.storage_path,
-            replaced_by=replaced_by,
-        )
+        return create_action(response, self.storage_path)
 
     @property
     def name(self) -> str:
