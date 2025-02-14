@@ -1,13 +1,17 @@
-import os
-from typing import Any, Dict, List
+from __future__ import annotations
 
-from deeplake.core.vectorstore.deeplake_vectorstore import DeepLakeVectorStore
+import os
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from composio.tools.local.codeanalysis.constants import (
     CODE_MAP_CACHE,
     DEEPLAKE_FOLDER,
     EMBEDDER,
 )
+
+
+if TYPE_CHECKING:
+    from deeplake.core.vectorstore.deeplake_vectorstore import DeepLakeVectorStore
 
 
 def get_vector_store(repo_name: str, overwrite: bool = True) -> DeepLakeVectorStore:
@@ -28,18 +32,19 @@ def get_vector_store(repo_name: str, overwrite: bool = True) -> DeepLakeVectorSt
     if not repo_name:
         raise ValueError("Repository path cannot be empty or None")
 
+    from deeplake.core.vectorstore.deeplake_vectorstore import (  # pylint: disable=import-outside-toplevel
+        DeepLakeVectorStore,
+    )
+
     try:
         repo_name = os.path.basename(repo_name)
-
         deeplake_repo_path = os.path.join(CODE_MAP_CACHE, repo_name, DEEPLAKE_FOLDER)
-
         deeplake_vector_store = DeepLakeVectorStore(
             path=deeplake_repo_path,
             overwrite=overwrite,
             read_only=False,
             ingestion_batch_size=1000,
         )
-
         return deeplake_vector_store
 
     except OSError as e:
@@ -73,7 +78,7 @@ class Embedding:
             embeddings = self.model.encode(
                 texts, batch_size=64, show_progress_bar=True, convert_to_numpy=True
             )
-            return embeddings.tolist()
+            return embeddings.tolist()  # type: ignore
         except Exception as e:
             raise RuntimeError(f"Failed to compute embeddings: {str(e)}") from e
 
@@ -149,6 +154,6 @@ def get_topn_chunks_from_query(
         embed_model = Embedding()
         query_embedding = embed_model.compute([query])[0]
         results = vector_store.search(embedding=query_embedding, k=top_n)
-        return results
+        return results  # type: ignore
     except Exception as e:
         raise RuntimeError(f"Error during vector store search: {str(e)}") from e
