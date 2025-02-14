@@ -104,7 +104,7 @@ export const generateMetadataFromAxiosError = (
     metadata?: Record<string, unknown>;
   }
 ): Record<string, unknown> => {
-  const requestId = axiosError.request?.headers["x-request-id"];
+  const requestId = axiosError.response?.headers?.["x-request-id"] || axiosError?.request?.headers?.["x-request-id"];
   return {
     fullUrl:
       (axiosError.config?.baseURL ?? "") + (axiosError.config?.url ?? ""),
