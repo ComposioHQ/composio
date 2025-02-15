@@ -104,13 +104,13 @@ export const generateMetadataFromAxiosError = (
     metadata?: Record<string, unknown>;
   }
 ): Record<string, unknown> => {
-  const {requestId,...restMetadata} = axiosError.metadata || {};
+  const { requestId, ...restMetadata } = axiosError.metadata || {};
   return {
     fullUrl:
       (axiosError.config?.baseURL ?? "") + (axiosError.config?.url ?? ""),
     method: (axiosError.config?.method ?? "").toUpperCase(),
     statusCode: axiosError.response?.status,
     requestId: requestId ? `${requestId}` : undefined,
-    metadata: axiosError.metadata,
+    metadata: restMetadata,
   };
 };

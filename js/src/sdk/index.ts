@@ -129,7 +129,7 @@ export class Composio {
         isNewerVersion(latestVersion, currentVersionFromPackageJson) &&
         !IS_DEVELOPMENT_OR_CI
       ) {
-        // eslint-disable-next-line no-console
+         
         logger.info(
           `🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`
         );

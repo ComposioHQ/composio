@@ -16,6 +16,7 @@ import { getEnvVariable } from "../../utils/shared";
 import apiClient from "../client/client";
 import { client as axiosClient } from "../client/services.gen";
 
+
 declare module "axios" {
   export interface InternalAxiosRequestConfig {
     metadata?: {
@@ -88,6 +89,7 @@ export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
         response.headers["x-request-id"] ||
         (response.config as InternalAxiosRequestConfig).metadata?.requestId;
 
+      // @ts-expect-error Error with metadata type
       response["metadata"] = {
         responseTime,
         responseSize,
@@ -98,7 +100,7 @@ export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
       );
       return response;
     },
-    (error: AxiosError) => {
+    (error: AxiosError<unknown>) => {
       const requestStartTime = (error.config as InternalAxiosRequestConfig)
         ?.metadata?.startTime;
       const requestStartTimeId = (error.config as InternalAxiosRequestConfig)
@@ -110,11 +112,14 @@ export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
       const requestId =
         error.response?.headers?.["x-request-id"] || requestStartTimeId;
 
-      error["metadata"] = {
+      const metadata = {
         responseTime,
         responseSize,
         requestId,
       };
+      // @ts-expect-error Error with metadata type
+      (error).metadata = metadata;
+      
       logger.debug(
         `API Error [${status}] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${status} - ${responseTime}ms, x-request-id: ${requestId}`,
         {
