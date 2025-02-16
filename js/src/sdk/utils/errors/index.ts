@@ -39,7 +39,6 @@ export async function logError(payload: ErrorPayload) {
       await sendProcessReq(reqPayload);
     }
   } catch (error) {
-     
     logger.debug("Error sending error to telemetry", error);
     // DO NOTHING
   }

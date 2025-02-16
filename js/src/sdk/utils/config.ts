@@ -16,7 +16,6 @@ import { getEnvVariable } from "../../utils/shared";
 import apiClient from "../client/client";
 import { client as axiosClient } from "../client/services.gen";
 
-
 declare module "axios" {
   export interface InternalAxiosRequestConfig {
     metadata?: {
@@ -118,8 +117,8 @@ export const setAxiosClientConfig = (axiosClientInstance: AxiosInstance) => {
         requestId,
       };
       // @ts-expect-error Error with metadata type
-      (error).metadata = metadata;
-      
+      error.metadata = metadata;
+
       logger.debug(
         `API Error [${status}] ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${status} - ${responseTime}ms, x-request-id: ${requestId}`,
         {

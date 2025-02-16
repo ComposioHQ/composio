@@ -23,7 +23,6 @@ export function sendProcessReq(info: {
   data: AcceptableJSONValue;
 }) {
   if (IS_DEVELOPMENT_OR_CI) {
-     
     logger.debug(
       `Hitting ${info.url}[${info.method}] with ${serializeValue(info.data)}`
     );

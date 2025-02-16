@@ -129,7 +129,6 @@ export class Composio {
         isNewerVersion(latestVersion, currentVersionFromPackageJson) &&
         !IS_DEVELOPMENT_OR_CI
       ) {
-         
         logger.info(
           `🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`
         );
