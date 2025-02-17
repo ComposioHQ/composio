@@ -43,7 +43,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
 
   async getTools(
     filters: z.infer<typeof ZToolSchemaFilter>,
-    entityId?: Optional<string>,
+    entityId?: Optional<string>
   ): Promise<Sequence<OpenAI.ChatCompletionTool>> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getTools",
@@ -51,7 +51,11 @@ export class OpenAIToolSet extends BaseComposioToolSet {
       params: filters,
     });
 
-    const mainActions = await this.getToolsSchema(filters, entityId, filters.integrationId);
+    const mainActions = await this.getToolsSchema(
+      filters,
+      entityId,
+      filters.integrationId
+    );
     return (
       mainActions.map((action) => {
         const formattedSchema: OpenAI.FunctionDefinition = {

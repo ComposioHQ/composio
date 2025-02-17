@@ -168,7 +168,7 @@ export class ComposioToolSet {
         }
       }
     }
-    
+
     const appActions = await this.client.actions.list({
       apps: parsedFilters.apps?.join(","),
       tags: parsedFilters.tags?.join(","),
