@@ -148,6 +148,10 @@ def get_topn_chunks_from_query(
         ValueError: If the input parameters are invalid.
         RuntimeError: If there's an error during the search process.
     """
+    from deeplake.core.vectorstore.deeplake_vectorstore import (  # pylint: disable=import-outside-toplevel
+        DeepLakeVectorStore,
+    )
+
     if not isinstance(vector_store, DeepLakeVectorStore):
         raise ValueError("vector_store must be an instance of DeepLakeVectorStore")
     try:
