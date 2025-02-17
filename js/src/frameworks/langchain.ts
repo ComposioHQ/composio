@@ -77,7 +77,7 @@ export class LangchainToolSet extends BaseComposioToolSet {
       params: { filters, entityId },
     });
 
-    const tools = await this.getToolsSchema(filters, entityId);
+    const tools = await this.getToolsSchema(filters, entityId, filters.integrationId);
     return tools.map((tool) =>
       this._wrapTool(tool as RawActionData, entityId || this.entityId)
     );
