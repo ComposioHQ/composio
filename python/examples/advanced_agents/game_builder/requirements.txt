@@ -1,3 +1,4 @@
 composio-llamaindex
 python-dotenv
 llama-index-llms-groq
+pygame
