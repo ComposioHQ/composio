@@ -665,6 +665,9 @@ class SchemaHelper(WithLogger):
         request: t.Dict,
         action: Action,
     ) -> t.Dict:
+        if "properties" not in schema:
+            return request
+        
         params = schema["properties"]
         for _param in request:
             if _param not in params:
