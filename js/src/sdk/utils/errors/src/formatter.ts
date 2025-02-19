@@ -57,12 +57,9 @@ export const getAPIErrorDetails = (
     case COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST:
       const messageFromResponse = axiosError.response?.data?.message;
       const validationErrors = axiosError.response?.data?.details;
-      const formattedErrors =
-        validationErrors && Object.keys(validationErrors).length > 1
-          ? Object.values(validationErrors || {})
-              .map((err) => JSON.stringify(err))
-              .join(", ")
-          : messageFromResponse;
+      const formattedErrors = Array.isArray(validationErrors)
+        ? validationErrors.map((err) => JSON.stringify(err)).join(", ")
+        : messageFromResponse;
 
       return {
         message:
