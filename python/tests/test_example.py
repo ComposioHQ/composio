@@ -218,7 +218,6 @@ def test_example(
         ), f"Please provide value for `{key}` for testing `{example['file']}`"
 
     filepath = Path(example["file"])
-    original_source = filepath.read_text(encoding="utf-8")
     code = filepath.read_text(encoding="utf-8")
 
     if plugin_to_test != "lyzr":
@@ -236,8 +235,6 @@ def test_example(
 
     # Wait for 2 minutes for example to run
     proc.wait(timeout=180)
-
-    filepath.write_text(original_source, encoding="utf-8")
 
     # Check if process exited with success
     assert proc.returncode == 0, (
