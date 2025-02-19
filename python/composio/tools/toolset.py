@@ -1679,7 +1679,7 @@ class ComposioToolSet(_IntegrationMixin):
         if action.app not in [
             connection.appUniqueId.upper()  # Normalize app names/ids coming from API
             for connection in self._connected_accounts
-            if connection.clientUniqueUserId == entity_id
+            if entity_id is None or connection.clientUniqueUserId == entity_id
         ]:
             raise ConnectedAccountNotFoundError(
                 f"No connected account found for app `{action.app}`; "
