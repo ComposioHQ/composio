@@ -7,7 +7,7 @@ from pathlib import Path
 import requests
 import typing_extensions as te
 from pydantic import BaseModel, ConfigDict, Field
-
+import os
 from composio.exceptions import (
     ErrorDownloadingFile,
     ErrorUploadingFile,
@@ -56,9 +56,16 @@ class FileUploadable(BaseModel):
         action: str,
         app: str,
     ) -> te.Self:
+        
         file = Path(file)
         if not file.exists():
             raise SDKFileNotFoundError(f"File not found: {file}")
+
+        if not file.is_file():
+            raise SDKFileNotFoundError(f"Not a file: {file}")
+            
+        if not os.access(file, os.R_OK):
+            raise SDKFileNotFoundError(f"File not readable: {file}")
 
         mimetype = mimetypes.guess(file=file)
         s3meta = client.actions.create_file_upload(
