@@ -57,14 +57,18 @@ export class VercelAIToolSet extends BaseComposioToolSet {
   }
 
   // change this implementation
-  async getTools(filters: {
-    actions?: Array<string>;
-    apps?: Array<string>;
-    tags?: Optional<Array<string>>;
-    useCase?: Optional<string>;
-    usecaseLimit?: Optional<number>;
-    filterByAvailableApps?: Optional<boolean>;
-  }): Promise<{ [key: string]: CoreTool }> {
+  async getTools(
+    filters: {
+      actions?: Array<string>;
+      apps?: Array<string>;
+      tags?: Optional<Array<string>>;
+      useCase?: Optional<string>;
+      usecaseLimit?: Optional<number>;
+      filterByAvailableApps?: Optional<boolean>;
+      integrationId?: Optional<string>;
+    },
+    entityId: Optional<string> = null
+  ): Promise<{ [key: string]: CoreTool }> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getTools",
       file: this.fileName,
@@ -80,14 +84,18 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       actions,
     } = ZExecuteToolCallParams.parse(filters);
 
-    const actionsList = await this.getToolsSchema({
-      apps,
-      actions,
-      tags,
-      useCase,
-      useCaseLimit: usecaseLimit,
-      filterByAvailableApps,
-    });
+    const actionsList = await this.getToolsSchema(
+      {
+        apps,
+        actions,
+        tags,
+        useCase,
+        useCaseLimit: usecaseLimit,
+        filterByAvailableApps,
+      },
+      entityId,
+      filters.integrationId
+    );
 
     const tools: { [key: string]: CoreTool } = {};
     actionsList.forEach((actionSchema) => {

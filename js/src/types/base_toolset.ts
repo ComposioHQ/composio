@@ -77,6 +77,7 @@ export const ZToolSchemaFilter = z.object({
   useCase: z.string().optional(),
   useCaseLimit: z.number().optional(),
   filterByAvailableApps: z.boolean().optional(),
+  integrationId: z.string().optional(),
 });
 
 export type TToolSchemaFilter = z.infer<typeof ZToolSchemaFilter>;

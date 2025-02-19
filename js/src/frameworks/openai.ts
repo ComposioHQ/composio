@@ -51,7 +51,11 @@ export class OpenAIToolSet extends BaseComposioToolSet {
       params: filters,
     });
 
-    const mainActions = await this.getToolsSchema(filters, entityId);
+    const mainActions = await this.getToolsSchema(
+      filters,
+      entityId,
+      filters.integrationId
+    );
     return (
       mainActions.map((action) => {
         const formattedSchema: OpenAI.FunctionDefinition = {
