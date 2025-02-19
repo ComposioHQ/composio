@@ -70,7 +70,6 @@ from composio.exceptions import (
     InvalidParams,
     ProcessorError,
     ResourceError,
-    SDKFileNotFoundError,
     VersionSelectionError,
 )
 from composio.storage.user import UserData
@@ -672,6 +671,7 @@ class SchemaHelper(WithLogger):
                 continue
 
             if self._file_uploadable(schema=params[_param]):
+                # skip if the file is not provided
                 if request[_param] is None or request[_param] == "":
                     continue
 
