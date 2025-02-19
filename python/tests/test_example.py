@@ -200,7 +200,7 @@ EXAMPLES = {
 
 
 @pytest.mark.skipif(
-    condition=os.environ.get("CI", "false") == "true",
+    condition=os.environ.get("CI", "true") == "false",
     reason="Testing in CI will lead to too much LLM API usage",
 )
 @pytest.mark.parametrize("example_name, example", EXAMPLES.items())
