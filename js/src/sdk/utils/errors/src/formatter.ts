@@ -63,7 +63,7 @@ export const getAPIErrorDetails = (
 
       return {
         message:
-          genericMessage + "Please check description property for more info.",
+          genericMessage + "Check .description for info.",
         description: `Validation Errors: ${formattedErrors}`,
         possibleFix:
           "Please check the request parameters and ensure they are correct.",
