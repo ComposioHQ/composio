@@ -165,17 +165,6 @@ EXAMPLES = {
             "PDL_API_KEY": PDL_API_KEY,
         },
     },
-    # "praisonai": {
-    #     "plugin": "praisonai",
-    #     "file": PLUGINS / "praisonai" / "praisonai_demo.py",
-    #     "match": {
-    #         "type": "stdout",
-    #         "values": [
-    #             "Action executed successfully"
-    #         ],
-    #     },
-    #     "env": {"OPENAI_API_KEY": OPENAI_API_KEY, "COMPOSIO_API_KEY": COMPOSIO_API_KEY},
-    # },
     # TODO(@kaavee): Add Anthropic API key
     # "claude": {
     #     "plugin": "claude",
