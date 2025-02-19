@@ -1675,19 +1675,12 @@ class ComposioToolSet(_IntegrationMixin):
                 t.List[ConnectedAccountModel],
                 self.client.connected_accounts.get(),
             )
-        if entity_id is not None:
-            _conns = [
-                connection.appUniqueId.upper()  # Normalize app names/ids coming from API
-                for connection in self._connected_accounts
-                if connection.clientUniqueUserId == entity_id
-            ]
-        else:
-            _conns = [
-                connection.appUniqueId.upper()  # Normalize app names/ids coming from API
-                for connection in self._connected_accounts
-            ]
 
-        if action.app not in _conns:
+        if action.app not in [
+            connection.appUniqueId.upper()  # Normalize app names/ids coming from API
+            for connection in self._connected_accounts
+            if entity_id is None or connection.clientUniqueUserId == entity_id
+        ]:
             raise ConnectedAccountNotFoundError(
                 f"No connected account found for app `{action.app}`; "
                 f"Run `composio add {action.app.lower()}` to fix this"
