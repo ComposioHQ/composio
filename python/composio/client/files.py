@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import typing as t
 from pathlib import Path
 
 import requests
 import typing_extensions as te
 from pydantic import BaseModel, ConfigDict, Field
-import os
+
 from composio.exceptions import (
     ErrorDownloadingFile,
     ErrorUploadingFile,
@@ -56,16 +57,22 @@ class FileUploadable(BaseModel):
         action: str,
         app: str,
     ) -> te.Self:
-        
+
         file = Path(file)
         if not file.exists():
-            raise SDKFileNotFoundError(f"File not found: {file}. Please provide a valid file path.")
+            raise SDKFileNotFoundError(
+                f"File not found: {file}. Please provide a valid file path."
+            )
 
         if not file.is_file():
-            raise SDKFileNotFoundError(f"Not a file: {file}. Please provide a valid file path.")
-            
+            raise SDKFileNotFoundError(
+                f"Not a file: {file}. Please provide a valid file path."
+            )
+
         if not os.access(file, os.R_OK):
-            raise SDKFileNotFoundError(f"File not readable: {file}. Please check the file permissions.")
+            raise SDKFileNotFoundError(
+                f"File not readable: {file}. Please check the file permissions."
+            )
 
         mimetype = mimetypes.guess(file=file)
         s3meta = client.actions.create_file_upload(
