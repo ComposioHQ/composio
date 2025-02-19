@@ -33,7 +33,7 @@ export const BASE_ERROR_CODE_INFO = {
       "Ensure the resource id or resource identifier is correct and valid as backend returned 404",
   },
   [COMPOSIO_SDK_ERROR_CODES.BACKEND.BAD_REQUEST]: {
-    message: "🚫 Bad Request. The request was malformed or incorrect",
+    message: "🚫 Bad Request",
     description: null,
     possibleFix:
       "Check your parameters and request format, as the backend returned a 400 error.",
