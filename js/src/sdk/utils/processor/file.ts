@@ -127,9 +127,9 @@ export const FILE_SCHEMA_PROCESSOR: TSchemaProcessor = ({ toolSchema }) => {
       newKeyName = keyName as string;
 
       return {
-        title: property.title,
+        title: key,
         type,
-        description,
+        description: property.description,
       };
     });
 
