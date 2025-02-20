@@ -290,7 +290,7 @@ class ActionBuilder:
                 .strip()
             ),
         )
-        description =  " ".join(description.split())
+        description = " ".join(description.split())
         description, separator, enum = description.partition(DEPRECATED_MARKER)
         return inflection.humanize(description) + separator + enum
 
