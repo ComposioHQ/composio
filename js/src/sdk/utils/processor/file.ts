@@ -89,9 +89,7 @@ export const FILE_SCHEMA_PROCESSOR: TSchemaProcessor = ({ toolSchema }) => {
   const newProperties = { ...properties };
   const newRequired = [...requiredProps];
 
-  for (const [key, property] of Object.entries(newProperties)) {
-    if (!property.file_uploadable) continue;
-
+  const updateSingleProperty = (key: string, property: any) => {
     const { type, keyName, description } = convertFileSchemaProperty(
       key,
       property as FileBasePropertySchema
@@ -108,6 +106,44 @@ export const FILE_SCHEMA_PROCESSOR: TSchemaProcessor = ({ toolSchema }) => {
     }
 
     delete newProperties[key];
+  };
+
+  const updateAnyOfProperties = (key: string, property: any) => {
+    let newKeyName = key;
+    const newAnyOf = property.anyOf.map((schema: any) => {
+      if (!schema.file_uploadable) return schema;
+
+      const { type, keyName, description } = convertFileSchemaProperty(
+        key,
+        schema as FileBasePropertySchema
+      );
+
+      newKeyName = keyName as string;
+
+      return {
+        title: property.title,
+        type,
+        description,
+      };
+    });
+
+    newProperties[newKeyName] = {
+      ...property,
+      anyOf: newAnyOf,
+    };
+    delete newProperties[key];
+
+    if (requiredProps.includes(key)) {
+      newRequired[newRequired.indexOf(key)] = newKeyName as string;
+    }
+  };
+
+  for (const [key, property] of Object.entries(newProperties)) {
+    if (Array.isArray(property.anyOf)) {
+      updateAnyOfProperties(key, property);
+    } else if (property.file_uploadable) {
+      updateSingleProperty(key, property);
+    }
   }
 
   return {
