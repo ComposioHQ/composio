@@ -38,6 +38,12 @@ const processFileUpload = async (
   for (const [key, value] of Object.entries(result)) {
     if (!key.endsWith(FILE_SUFFIX)) continue;
 
+    const isEmpty = value === "" || !value;
+    if (isEmpty) {
+      delete result[key];
+      continue;
+    }
+
     const originalKey = key.replace(FILE_SUFFIX, "");
     const fileData = await getFileDataAfterUploadingToS3(
       value as string,
