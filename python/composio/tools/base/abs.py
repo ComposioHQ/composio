@@ -34,14 +34,25 @@ tool_registry: ToolRegistry = {"runtime": {}, "local": {}, "api": {}}
 action_registry: ActionsRegistry = {"runtime": {}, "local": {}, "api": {}}
 trigger_registry: TriggersRegistry = {"runtime": {}, "local": {}, "api": {}}
 
+def convert_json_ref_to_dict(obj):
+    """ Recursively convert jsonref.JsonRef objects to plain dicts. """
+    if isinstance(obj, jsonref.JsonRef):
+        obj = dict(obj)  # Convert JsonRef to dict
+    elif isinstance(obj, dict):
+        obj = {key: convert_json_ref_to_dict(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        obj = [convert_json_ref_to_dict(item) for item in obj]
+    return obj
 
 def remove_json_ref(data: t.Dict) -> t.Dict:
     return json.loads(
-        jsonref.dumps(
-            jsonref.replace_refs(
-                obj=data,
-                lazy_load=False,
-                merge_props=True,
+        json.dumps(
+            convert_json_ref_to_dict(
+                jsonref.replace_refs(
+                    obj=data,
+                    lazy_load=False,
+                    merge_props=True,
+                )
             ),
             indent=2,
         )
