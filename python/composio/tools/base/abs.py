@@ -48,11 +48,20 @@ def convert_json_ref_to_dict(obj: t.Any) -> t.Any:
 
 def remove_json_ref(data: t.Dict) -> t.Dict:
     try:
-        return convert_json_ref_to_dict(
-            jsonref.replace_refs(
-                obj=data,
-                lazy_load=False,
-                merge_props=True,
+        # Fix potential double deserialization
+        # Challenges: Can't use jsonref.dumps as it is adding back refs
+        # Also can't use json.dumps as it can't work on some objects
+        # Can potentially just do convert_json_ref_to_dict but it can miss some native edge cases
+        return json.loads(
+            json.dumps(
+                convert_json_ref_to_dict(
+                    jsonref.replace_refs(
+                        obj=data,
+                        lazy_load=False,
+                        merge_props=True,
+                    )
+                ),
+                indent=2,
             )
         )
     except (json.JSONDecodeError, TypeError) as e:
