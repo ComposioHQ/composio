@@ -2,6 +2,7 @@ import { getEnvVariable } from "./shared";
 
 // Define log levels with corresponding priorities
 export const LOG_LEVELS = {
+  silent: -1, // No logs
   error: 0, // Highest priority - critical errors
   warn: 1, // Warning messages
   info: 2, // General information
