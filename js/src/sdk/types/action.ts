@@ -42,6 +42,7 @@ export const ZExecuteParams = z.object({
     appName: z.string().optional(),
     text: z.string().optional(),
     authConfig: ZCustomAuthParams.optional(),
+    allowTracing: z.boolean().optional().default(false),
     sessionInfo: z
       .object({
         sessionId: z.string().optional(),
