@@ -156,9 +156,13 @@ export class Actions {
           ...parsedData.requestBody,
           sessionInfo: {
             ...(parsedData.requestBody?.sessionInfo || {}),
-            sessionId:
-              parsedData.requestBody?.sessionInfo?.sessionId ||
-              ComposioSDKContext.sessionId,
+            ...(parsedData.requestBody?.allowTracing
+              ? {
+                  sessionId:
+                    parsedData.requestBody?.sessionInfo?.sessionId ||
+                    ComposioSDKContext.sessionId,
+                }
+              : {}),
           },
         } as ActionExecutionReqDTO,
         path: {
