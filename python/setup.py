@@ -43,10 +43,10 @@ core_requirements = [
     "jsonref>=1.1.0",
     "inflection>=0.5.1",
     "semver>=2.13.0",
-    # CLI dependencies
-    "click",
-    "rich>=13.7.1,<14",
-    "pyperclip>=1.8.2,<2",
+    # Removing CLI dependencies
+    # "click",
+    # "rich>=13.7.1,<14",
+    # "pyperclip>=1.8.2,<2",
     # Workspace dependencies
     "paramiko>=3.4.1",  # Host workspace
     # Tooling server dependencies
@@ -103,11 +103,12 @@ setup(
     ],
     python_requires=">=3.9,<4",
     packages=find_packages(include=["composio*"]),
-    entry_points={
-        "console_scripts": [
-            "composio=composio.cli:composio",
-        ],
-    },
+    # Removing CLI entry point
+    # entry_points={
+    #     "console_scripts": [
+    #         "composio=composio.cli:composio",
+    #     ],
+    # },
     install_requires=core_requirements,
     extras_require={
         "all": all_requirements,
