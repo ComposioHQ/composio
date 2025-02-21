@@ -156,7 +156,7 @@ export class Actions {
           ...parsedData.requestBody,
           sessionInfo: {
             ...(parsedData.requestBody?.sessionInfo || {}),
-            ...(parsedData.requestBody.allowTracing
+            ...(parsedData.requestBody?.allowTracing
               ? {
                   sessionId:
                     parsedData.requestBody?.sessionInfo?.sessionId ||
