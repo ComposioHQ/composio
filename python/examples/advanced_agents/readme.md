@@ -4,7 +4,7 @@ This README provides an in-depth guide for advanced developers on how to leverag
 
 ## Overview of Composio
 
-Composio is a versatile platform that allows developers to create AI agents using a variety of frameworks such as Langchain, LlamaIndex, CrewAI, Autogen, and OpenAI. With Composio, you can build agents that can handle complex workflows, interact with multiple APIs, and provide intelligent responses based on user input.
+Composio is a versatile platform that allows developers to create AI agents using a variety of frameworks such as Langchain, LlamaIndex, CrewAI, AG2 (Formerly AutoGen), and OpenAI. With Composio, you can build agents that can handle complex workflows, interact with multiple APIs, and provide intelligent responses based on user input.
 
 ## Use Cases
 
