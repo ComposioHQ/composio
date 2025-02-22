@@ -82,8 +82,8 @@ def test_openai_toolset() -> None:
     assert tools == [
         {
             "function": {
-                "description": "A Tool That Allows Interaction With The Screen, Keyboard, And "
-                "Mouse Of The Current Computer. Adapted For Mac Os And Linux.",
+                "description": "A tool that allows interaction with the screen, keyboard, and "
+                "mouse of the current computer. adapted for macos and linux.",
                 "name": "computer",
                 "parameters": {
                     "properties": {
@@ -192,8 +192,8 @@ def test_crewai_toolset() -> None:
         "'Text to type or key sequence to press. Please provide a value of "
         "type string.', 'type': 'str'}, 'coordinate': {'description': "
         "'X,Y coordinates for mouse actions', 'type': 'list'}}\nTool "
-        "Description: A Tool That Allows Interaction With The Screen, "
-        "Keyboard, And Mouse Of The Current Computer. Adapted For Mac Os And Linux."
+        "Description: A tool that allows interaction with the screen, "
+        "keyboard, and mouse of the current computer. adapted for macos and linux."
     )
     assert set(tool.args_schema.model_json_schema().get("properties", {}).keys()) == {
         "action",
@@ -241,7 +241,7 @@ def test_langchain_toolset() -> None:
     tool = tools[0]
     assert (
         tool.description
-        == "A Tool That Allows Interaction With The Screen, Keyboard, And Mouse Of The Current Computer. Adapted For Mac Os And Linux."
+        == "A tool that allows interaction with the screen, keyboard, and mouse of the current computer. adapted for macos and linux."
     )
 
     assert set(tool.args_schema.model_json_schema().get("properties", {}).keys()) == {
@@ -358,7 +358,7 @@ def test_llamaindex_toolset() -> None:
     tool = tools[0]
     assert (
         tool.metadata.description
-        == "A Tool That Allows Interaction With The Screen, Keyboard, And Mouse Of The Current Computer. Adapted For Mac Os And Linux."
+        == "A tool that allows interaction with the screen, keyboard, and mouse of the current computer. adapted for macos and linux."
     )
     assert tool.metadata.fn_schema is not None
     assert tool.metadata.fn_schema.model_json_schema() == {

@@ -58,7 +58,7 @@ class TestActionBuilder:
         assert SomeAction.name == "some_action"
         assert SomeAction.enum == "SOME_ACTION"
         assert SomeAction.display_name == "Some action"
-        assert SomeAction.description == "Some Action"
+        assert SomeAction.description == "Some action"
         assert str(SomeAction.file) == __file__
 
     def test_deprecated_marker(self) -> None:
@@ -76,7 +76,7 @@ class TestActionBuilder:
                 return Response()
 
         assert (
-            SomeAction.description == "Some Action <<DEPRECATED use some_other_action>>"
+            SomeAction.description == "Some action <<DEPRECATED use some_other_action>>"
         )
         assert DEPRECATED_MARKER in SomeAction.description
 
