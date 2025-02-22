@@ -6,12 +6,12 @@ import { ConnectedAccounts } from "./connectedAccounts";
 describe("Actions class tests", () => {
   let backendClient;
   let actions: Actions;
-  let connectedAccouns: ConnectedAccounts;
+  let connectedAccounts: ConnectedAccounts;
 
   beforeAll(() => {
     backendClient = getBackendClient();
     actions = new Actions(backendClient);
-    connectedAccouns = new ConnectedAccounts(backendClient);
+    connectedAccounts = new ConnectedAccounts(backendClient);
   });
 
   it("should get a specific action", async () => {
@@ -36,7 +36,7 @@ describe("Actions class tests", () => {
 
   it("should execute an action with a connected account for GitHub", async () => {
     const actionName = "GITHUB_GITHUB_API_ROOT".toLowerCase();
-    const connectedAccountsResult = await connectedAccouns.list({
+    const connectedAccountsResult = await connectedAccounts.list({
       appNames: "github",
       status: "ACTIVE",
     });
