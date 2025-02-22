@@ -1,4 +1,4 @@
-# Twitter Posting Agent Guide
+# Hacker news emailer guide
 
 This guide provides detailed steps to fetch hacker news frontpage posts and send an email to a given email id.
 
