@@ -9,7 +9,7 @@ composio_toolset = ComposioToolSet()
 
 tools = composio_toolset.get_tools(actions=[Action.HACKERNEWS_GET_FRONTPAGE, Action.GMAIL_SEND_EMAIL])
 
-receiver = "lingalarahul7@gmail.com"
+receiver = input("Enter receiver's email: ")
 task = "You are a Search Agent for Hackernews. Get the frontpage posts from hackernews and then send an email about it to " + receiver
 
 assistant_instruction = "You are a super intelligent assistant"
