@@ -665,12 +665,21 @@ class SchemaHelper(WithLogger):
         request: t.Dict,
         action: Action,
     ) -> t.Dict:
+        if "properties" not in schema:
+            return request
+
         params = schema["properties"]
-        for _param in request:
+        params_to_process = list(request.keys())
+        for _param in params_to_process:
             if _param not in params:
                 continue
 
             if self._file_uploadable(schema=params[_param]):
+                # skip if the file is not provided
+                if request[_param] is None or request[_param] == "":
+                    del request[_param]
+                    continue
+
                 request[_param] = FileUploadable.from_path(
                     file=request[_param],
                     client=self._client(),
