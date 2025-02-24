@@ -18,14 +18,18 @@ class Trigger(Enum[TriggerData], metaclass=EnumGenerator):
     @property
     def app(self) -> str: ...
     ASANA_TASK_TRIGGER: "Trigger"
+    DISCORDBOT_DISCORD_NEW_MESSAGE_TRIGGER: "Trigger"
+    DISCORD_DISCORD_NEW_MESSAGE_TRIGGER: "Trigger"
     GITHUB_COMMIT_EVENT: "Trigger"
     GITHUB_FOLLOWER_EVENT: "Trigger"
     GITHUB_ISSUE_ADDED_EVENT: "Trigger"
     GITHUB_LABEL_ADDED_EVENT: "Trigger"
     GITHUB_PULL_REQUEST_EVENT: "Trigger"
     GITHUB_STAR_ADDED_EVENT: "Trigger"
+    GMAIL_BETA_NEW_GMAIL_MESSAGE: "Trigger"
     GMAIL_NEW_GMAIL_MESSAGE: "Trigger"
     GOOGLEDRIVE_GOOGLE_DRIVE_CHANGES: "Trigger"
+    GOOGLE_DRIVE_BETA_GOOGLE_DRIVE_CHANGES: "Trigger"
     HUBSPOT_CONTACT_CREATED_TRIGGER: "Trigger"
     HUBSPOT_DEAL_STAGE_UPDATED_TRIGGER: "Trigger"
     HUBSPOT_FORM_SUBMITTED: "Trigger"
