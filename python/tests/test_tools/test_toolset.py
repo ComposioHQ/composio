@@ -294,7 +294,7 @@ class TestProcessors:
 
 
 def test_entity_id_validation_in_check_connected_accounts() -> None:
-    """Test wether check_connected_account raises error with invalid entity_id"""
+    """Test whether check_connected_account raises error with invalid entity_id"""
     toolset = ComposioToolSet()
     with pytest.raises(
         ConnectedAccountNotFoundError,
