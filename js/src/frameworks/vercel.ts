@@ -39,7 +39,10 @@ export class VercelAIToolSet extends BaseComposioToolSet {
     });
   }
 
-  private generateVercelTool(schema: RawActionData) {
+  private generateVercelTool(
+    schema: RawActionData,
+    entityId: Optional<string> = null
+  ) {
     return tool({
       description: schema.description,
       // @ts-ignore the type are JSONSchemV7. Internally it's resolved
@@ -50,7 +53,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
             name: schema.name,
             arguments: JSON.stringify(params),
           },
-          this.entityId
+          entityId || this.entityId
         );
       },
     });
@@ -99,7 +102,10 @@ export class VercelAIToolSet extends BaseComposioToolSet {
 
     const tools: { [key: string]: CoreTool } = {};
     actionsList.forEach((actionSchema) => {
-      tools[actionSchema.name!] = this.generateVercelTool(actionSchema);
+      tools[actionSchema.name!] = this.generateVercelTool(
+        actionSchema,
+        entityId
+      );
     });
 
     return tools;
