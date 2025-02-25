@@ -608,7 +608,7 @@ def test_invalid_handle_tool_calls() -> None:
 
 
 @E2E
-class IntegrationsConnectionsTest:
+class TestIntegrationsConnections:
     integration_id: str
     toolset: LangchainToolSet
     app: App
