@@ -447,10 +447,13 @@ class Entity:
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
         if auth_mode is None:
-            raise ComposioClientError(
+            raise InvalidParams(
                 f"'auth_mode' should be one of {AUTH_SCHEME_WITH_INITIATE}"
             )
 
+        # Casting here because mypy throws an error,
+        # here `auth_mode` can't be either None or
+        # outside AUTH_SCHEME_WITH_INITIATE
         auth_mode = t.cast(AuthSchemeType, auth_mode)
 
         return self.client.connected_accounts.initiate(
