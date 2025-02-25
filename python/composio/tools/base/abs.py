@@ -290,8 +290,9 @@ class ActionBuilder:
                 .strip()
             ),
         )
+        description = " ".join(description.split())
         description, separator, enum = description.partition(DEPRECATED_MARKER)
-        return inflection.titleize(description) + separator + enum
+        return inflection.humanize(description) + separator + enum
 
 
 class ActionMeta(type):
@@ -536,7 +537,7 @@ class Tool(WithLogger, _Attributes):
         :param params: Execution parameters.
         :param metadata: A dictionary containing metadata for action.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @classmethod
     def register(cls: t.Type["Tool"]) -> None:

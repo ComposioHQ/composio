@@ -15,10 +15,11 @@ import {
   ZGetListActionsParams,
   ZParameter,
 } from "../types/action";
+import ComposioSDKContext from "../utils/composioContext";
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
-import { BackendClient } from "./backendClient";
+import { AxiosBackendClient } from "./backendClient";
 
 /**
  * Request types inferred from zod schemas
@@ -43,10 +44,10 @@ export type ActionFindActionEnumsByUseCaseRes = Array<string>;
 
 export class Actions {
   // Remove this as we might not need it
-  private backendClient: BackendClient;
+  private backendClient: AxiosBackendClient;
   fileName: string = "js/src/sdk/models/actions.ts";
 
-  constructor(backendClient: BackendClient) {
+  constructor(backendClient: AxiosBackendClient) {
     this.backendClient = backendClient;
   }
 
@@ -151,7 +152,19 @@ export class Actions {
     try {
       const parsedData = ZExecuteParams.parse(data);
       const { data: res } = await apiClient.actionsV2.executeActionV2({
-        body: parsedData.requestBody as unknown as ActionExecutionReqDTO,
+        body: {
+          ...parsedData.requestBody,
+          sessionInfo: {
+            ...(parsedData.requestBody?.sessionInfo || {}),
+            ...(parsedData.requestBody?.allowTracing
+              ? {
+                  sessionId:
+                    parsedData.requestBody?.sessionInfo?.sessionId ||
+                    ComposioSDKContext.sessionId,
+                }
+              : {}),
+          },
+        } as ActionExecutionReqDTO,
         path: {
           actionId: parsedData.actionName,
         },

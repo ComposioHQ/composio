@@ -46,7 +46,6 @@ from composio.client.collections import (
     TriggerSubscription,
 )
 from composio.client.enums import TriggerType
-from composio.client.enums.base import EnumStringNotFound
 from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
 from composio.client.files import FileDownloadable, FileUploadable
 from composio.client.utils import check_cache_refresh
@@ -59,7 +58,20 @@ from composio.constants import (
     USER_DATA_FILE_NAME,
     VERSION_LATEST,
 )
-from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
+from composio.exceptions import (
+    ApiKeyNotProvidedError,
+    ComposioSDKError,
+    ConnectedAccountNotFoundError,
+    EnumStringNotFound,
+    ErrorFetchingResource,
+    IntegrationError,
+    InvalidConnectedAccount,
+    InvalidLockFile,
+    InvalidParams,
+    ProcessorError,
+    ResourceError,
+    VersionSelectionError,
+)
 from composio.storage.user import UserData
 from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.env.base import (
@@ -149,31 +161,6 @@ class _Retry:
 RETRY = _Retry()
 
 
-class VersionError(ComposioSDKError):
-    pass
-
-
-class VersionSelectionError(VersionError):
-
-    def __init__(
-        self,
-        action: str,
-        requested: str,
-        locked: str,
-        delegate: bool = False,
-    ) -> None:
-        self.action = action
-        self.requested = requested
-        self.locked = locked
-        super().__init__(
-            message=(
-                f"Error selecting version for action: {action!r}, "
-                f"requested: {requested!r}, locked: {locked!r}"
-            ),
-            delegate=delegate,
-        )
-
-
 class VersionLock:
     """Lock file representing action->version mapping"""
 
@@ -199,13 +186,13 @@ class VersionLock:
             versions = yaml.safe_load(file)
 
         if not isinstance(versions, dict):
-            raise ComposioSDKError(
+            raise InvalidLockFile(
                 f"Invalid lockfile format, expected dict, got {type(versions)}"
             )
 
         for tool in versions.values():
             if not isinstance(tool, str):
-                raise ComposioSDKError(
+                raise InvalidLockFile(
                     f"Invalid lockfile format, expected version to be string, got {tool!r}"
                 )
 
@@ -320,7 +307,7 @@ class ProcessorHelper(WithLogger):
             type_="pre",
         )
         if isinstance(processed, _Retry):
-            raise ComposioSDKError(
+            raise ProcessorError(
                 "Received RETRY from App preprocessor function."
                 " Preprocessors cannot be retried."
             )
@@ -331,7 +318,7 @@ class ProcessorHelper(WithLogger):
             type_="pre",
         )
         if isinstance(processed, _Retry):
-            raise ComposioSDKError(
+            raise ProcessorError(
                 "Received RETRY from Action preprocessor function."
                 " Preprocessors cannot be retried."
             )
@@ -366,7 +353,7 @@ class ProcessorHelper(WithLogger):
             type_="schema",
         )
         if isinstance(processed, _Retry):
-            raise ComposioSDKError(
+            raise ProcessorError(
                 "Received RETRY from App schema processor function."
                 " Schema pprocessors cannot be retried."
             )
@@ -377,7 +364,7 @@ class ProcessorHelper(WithLogger):
             type_="schema",
         )
         if isinstance(processed, _Retry):
-            raise ComposioSDKError(
+            raise ProcessorError(
                 "Received RETRY from Action preprocessor function."
                 " Schema processors cannot be retried."
             )
@@ -678,12 +665,21 @@ class SchemaHelper(WithLogger):
         request: t.Dict,
         action: Action,
     ) -> t.Dict:
+        if "properties" not in schema:
+            return request
+
         params = schema["properties"]
-        for _param in request:
+        params_to_process = list(request.keys())
+        for _param in params_to_process:
             if _param not in params:
                 continue
 
             if self._file_uploadable(schema=params[_param]):
+                # skip if the file is not provided
+                if request[_param] is None or request[_param] == "":
+                    del request[_param]
+                    continue
+
                 request[_param] = FileUploadable.from_path(
                     file=request[_param],
                     client=self._client(),
@@ -905,9 +901,7 @@ class _GetMixin(WithLogger):
         :return: A list of actions matching the relevant use case.
         """
         if len(tags) == 0:
-            raise ComposioClientError(
-                "Please provide at least one tag to perform search"
-            )
+            raise InvalidParams("Please provide at least one tag to perform search")
 
         if len(apps) > 0:
             return list(
@@ -987,7 +981,7 @@ class _GetMixin(WithLogger):
     ) -> t.Optional[ConnectionParams]:
         """Get authentication parameters for given app."""
         if app is None and connection_id is None:
-            raise ComposioSDKError("Both `app` and `connection_id` cannot be `None`")
+            raise InvalidParams("Both `app` and `connection_id` cannot be `None`")
 
         try:
             connection_id = (
@@ -1057,7 +1051,7 @@ class _GetMixin(WithLogger):
     def delete_trigger(self, id: str) -> bool:
         delete_status = self.client.triggers.delete(id=id).get("status", None)
         if delete_status is None:
-            raise ComposioSDKError(message="Delete operation failed to return status.")
+            raise ResourceError("Delete operation failed to return status.")
         return delete_status == "success"
 
     def get_integration(self, id: str) -> IntegrationModel:
@@ -1105,7 +1099,7 @@ class _GetMixin(WithLogger):
         }
 
         if auth_scheme is not None and auth_scheme not in auth_schemes:
-            raise ComposioSDKError(
+            raise InvalidParams(
                 message=f"Auth scheme `{auth_scheme}` not found for app `{app}`"
             )
 
@@ -1117,7 +1111,7 @@ class _GetMixin(WithLogger):
                 scheme = t.cast(AuthSchemeType, scheme)
                 return auth_schemes[scheme]
 
-        raise ComposioSDKError(
+        raise ErrorFetchingResource(
             message=(
                 f"Error getting expected params for {app=}, {auth_scheme=}, "
                 f"available_schems={list(auth_schemes)}"
@@ -1190,7 +1184,7 @@ class _IntegrationMixin(_GetMixin):
         if integration_id is not None:
             response = self._get_expected_params_from_integration_id(id=integration_id)
             if auth_scheme is not None and response["auth_scheme"] != auth_scheme:
-                raise ComposioSDKError(
+                raise InvalidParams(
                     message=(
                         "Auth scheme does not match provided integration ID, "
                         f"auth scheme associated with integration ID {response['auth_scheme']} "
@@ -1200,9 +1194,7 @@ class _IntegrationMixin(_GetMixin):
             return response
 
         if app is None:
-            raise ComposioSDKError(
-                message="Both `integration_id` and `app` cannot be None"
-            )
+            raise InvalidParams("Both `integration_id` and `app` cannot be None")
 
         try:
             # Check if integration is available for an app, and if available
@@ -1233,7 +1225,7 @@ class _IntegrationMixin(_GetMixin):
                     "expected_params": integration.expectedInputFields,
                 }
 
-        raise ComposioSDKError(
+        raise IntegrationError(
             message=(
                 f"No existing integration found for `{str(app)}`, with auth "
                 f"scheme {auth_scheme} Please create an integration and use the"
@@ -1251,7 +1243,8 @@ class _IntegrationMixin(_GetMixin):
             if auth_scheme != scheme.auth_mode.upper():
                 continue
             return [f for f in scheme.fields if not f.expected_from_customer]
-        raise ComposioSDKError(
+
+        raise InvalidParams(
             message=f"{app.name!r} does not support {auth_scheme!r} auth scheme"
         )
 
@@ -1275,8 +1268,9 @@ class _IntegrationMixin(_GetMixin):
 
     def _validate_no_auth_scheme(self, auth_scheme):
         if auth_scheme == "NO_AUTH":
-            raise ComposioSDKError(
-                "'NO_AUTH' does not require initiating a connection. Please use the `execute_action` method directly to execute actions for this app."
+            raise InvalidParams(
+                "'NO_AUTH' does not require initiating a connection. Please use "
+                "the `execute_action` method directly to execute actions for this app."
             )
 
     def initiate_connection(
@@ -1304,13 +1298,13 @@ class _IntegrationMixin(_GetMixin):
         """
         if auth_scheme is not None and auth_scheme not in AUTH_SCHEME_WITH_INITIATE:
             self._validate_no_auth_scheme(auth_scheme)
-            raise ComposioSDKError(
+            raise InvalidParams(
                 f"'auth_scheme' must be one of {AUTH_SCHEME_WITH_INITIATE}"
             )
 
         if integration_id is None:
             if app is None:
-                raise ComposioSDKError(
+                raise InvalidParams(
                     message="Both `integration_id` and `app` cannot be None"
                 )
 
@@ -1319,7 +1313,7 @@ class _IntegrationMixin(_GetMixin):
 
             if auth_scheme is not None and auth_scheme not in AUTH_SCHEME_WITH_INITIATE:
                 self._validate_no_auth_scheme(auth_scheme)
-                raise ComposioSDKError(
+                raise InvalidParams(
                     f"'auth_scheme' must be one of {AUTH_SCHEME_WITH_INITIATE}"
                 )
 
@@ -1354,7 +1348,7 @@ class _IntegrationMixin(_GetMixin):
             if param.name not in connected_account_params
         ]
         if unavailable_params:
-            raise ComposioSDKError(
+            raise InvalidParams(
                 f"Expected 'connected_account_params' to provide these params: {unavailable_params}"
             )
 
@@ -1393,7 +1387,7 @@ class _IntegrationMixin(_GetMixin):
             field.name for field in required_fields if field.name not in auth_config
         ]
         if unavailable_fields:
-            raise ComposioSDKError(
+            raise InvalidParams(
                 f"Expected 'auth_config' to provide these fields: {unavailable_fields}"
             ) from None
 
@@ -1598,7 +1592,7 @@ class ComposioToolSet(_IntegrationMixin):
     @property
     def api_key(self) -> str:
         if self._api_key is None:
-            raise ApiKeyNotProvidedError()
+            raise ApiKeyNotProvidedError
         return self._api_key
 
     def _init_client(self) -> Composio:
@@ -1671,8 +1665,7 @@ class ComposioToolSet(_IntegrationMixin):
 
         if len(invalid) == 0:
             return valid
-
-        raise ComposioSDKError(message=f"Invalid connected accounts found: {invalid}")
+        raise InvalidConnectedAccount(f"Invalid connected accounts found: {invalid}")
 
     def check_connected_account(self, action: ActionType) -> None:
         """Check if connected account is required and if required it exists or not."""
@@ -1690,11 +1683,10 @@ class ComposioToolSet(_IntegrationMixin):
             )
 
         if action.app not in [
-            # Normalize app names/ids coming from API
-            connection.appUniqueId.upper()
+            connection.appUniqueId.upper()  # Normalize app names/ids coming from API
             for connection in self._connected_accounts
         ]:
-            raise ComposioSDKError(
+            raise ConnectedAccountNotFoundError(
                 f"No connected account found for app `{action.app}`; "
                 f"Run `composio add {action.app.lower()}` to fix this"
             )
@@ -1862,7 +1854,7 @@ class ComposioToolSet(_IntegrationMixin):
             (action,) = self._version_lock.apply(actions=[action])
 
         if _check_requested_actions and action.slug not in self._requested_actions:
-            raise ComposioSDKError(
+            raise InvalidParams(
                 f"Action {action.slug} is being called, but was never requested by the toolset. "
                 "Make sure that the actions you are trying to execute are requested in your "
                 "`get_tools()` call."
@@ -1982,7 +1974,7 @@ class ComposioToolSet(_IntegrationMixin):
         :param app: App type to use for connection lookup
 
         :returns: Response from the proxy request
-        :raises: ComposioSDKError: If neither connection_id nor app is provided
+        :raises: InvalidParams: If neither connection_id nor app is provided
         """
         if app is not None and connection_id is None:
             connection_id = (
@@ -1990,7 +1982,7 @@ class ComposioToolSet(_IntegrationMixin):
             )
 
         if connection_id is None:
-            raise ComposioSDKError(
+            raise InvalidParams(
                 "Please provide connection id or app name to execute a request"
             )
 

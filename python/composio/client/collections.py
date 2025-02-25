@@ -30,8 +30,14 @@ from composio.client.enums import (
     Trigger,
     TriggerType,
 )
-from composio.client.exceptions import ComposioClientError, ComposioSDKError
 from composio.constants import PUSHER_CLUSTER, PUSHER_KEY
+from composio.exceptions import (
+    ErrorFetchingResource,
+    InvalidParams,
+    InvalidTriggerFilters,
+    SDKTimeoutError,
+    TriggerSubscriptionError,
+)
 from composio.utils import help_msg, logging
 from composio.utils.shared import generate_request_id
 
@@ -127,7 +133,7 @@ class ConnectionRequestModel(BaseModel):
     def wait_until_active(
         self,
         client: "Composio",
-        timeout=60,
+        timeout: float = 60.0,
     ) -> "ConnectedAccountModel":
         start_time = time.time()
         while time.time() - start_time < timeout:
@@ -138,8 +144,7 @@ class ConnectionRequestModel(BaseModel):
                 return connection
             time.sleep(1)
 
-        # TODO: Replace with timeout error.
-        raise ComposioClientError(
+        raise SDKTimeoutError(
             "Connection did not become active within the timeout period."
         )
 
@@ -213,8 +218,11 @@ class ConnectedAccounts(Collection[ConnectedAccountModel]):
         """
         entity_ids = entity_ids or ()
         if connection_id is not None and len(entity_ids) > 0:
-            raise ComposioClientError(
-                message="Cannot use both `connection_id` and `entity_ids` parameters as filter"
+            raise InvalidParams(
+                message=(
+                    "Cannot use both `connection_id` and `entity_ids` "
+                    "parameters as filter"
+                )
             )
 
         if connection_id is not None:
@@ -550,9 +558,7 @@ class TriggerSubscription(logging.WithLogger):
     def validate_filters(self, filters: _TriggerEventFilters):
         docs_link_msg = "\nRead more here: https://docs.composio.dev/introduction/intro/quickstart_3"
         if not isinstance(filters, dict):
-            raise ComposioSDKError(
-                "Expected filters to be a dictionary" + docs_link_msg
-            )
+            raise InvalidParams("Expected filters to be a dictionary" + docs_link_msg)
 
         expected_filters = list(_TriggerEventFilters.__annotations__)
         for filter, value in filters.items():
@@ -564,7 +570,7 @@ class TriggerSubscription(logging.WithLogger):
                 if possible_values:
                     (possible_value,) = possible_values
                     error_msg += f" Did you mean {possible_value!r}?"
-                raise ComposioSDKError(error_msg + docs_link_msg)
+                raise InvalidTriggerFilters(error_msg + docs_link_msg)
 
             # Validate app name
             if filter == "app_name":
@@ -573,7 +579,7 @@ class TriggerSubscription(logging.WithLogger):
                 elif isinstance(value, str):
                     slug = value
                 else:
-                    raise ComposioSDKError(
+                    raise InvalidTriggerFilters(
                         f"Expected 'app_name' to be App or str, found {value!r}"
                         + docs_link_msg
                     )
@@ -590,7 +596,7 @@ class TriggerSubscription(logging.WithLogger):
                         (possible_value,) = possible_values
                         error_msg += f" Did you mean {possible_value!r}?"
 
-                    raise ComposioSDKError(error_msg + docs_link_msg)
+                    raise InvalidTriggerFilters(error_msg + docs_link_msg)
 
                 # Ensure at least one of the app's triggers are enabled on the account.
                 active_triggers = [
@@ -604,7 +610,7 @@ class TriggerSubscription(logging.WithLogger):
                         f"App {slug!r} has no triggers enabled on your account.\n"
                         "Find the possible triggers by running `composio triggers`."
                     )
-                    raise ComposioSDKError(error_msg + docs_link_msg)
+                    raise InvalidTriggerFilters(error_msg + docs_link_msg)
 
             # Validate trigger name
             if filter == "trigger_name":
@@ -613,7 +619,7 @@ class TriggerSubscription(logging.WithLogger):
                 elif isinstance(value, str):
                     slug = value
                 else:
-                    raise ComposioSDKError(
+                    raise InvalidTriggerFilters(
                         f"Expected 'trigger_name' to be Trigger or str, found {value!r}"
                         + docs_link_msg
                     )
@@ -632,7 +638,7 @@ class TriggerSubscription(logging.WithLogger):
                         (possible_value,) = possible_values
                         error_msg += f" Did you mean {possible_value!r}?"
 
-                    raise ComposioSDKError(error_msg + docs_link_msg)
+                    raise InvalidTriggerFilters(error_msg + docs_link_msg)
 
                 # Ensure the trigger is added on your account
                 active_triggers = [
@@ -643,7 +649,7 @@ class TriggerSubscription(logging.WithLogger):
                         f"Trigger {slug!r} is not enabled on your account.\nEnable"
                         f" the trigger by doing `composio triggers enable {slug}`."
                     )
-                    raise ComposioSDKError(error_msg + docs_link_msg)
+                    raise InvalidTriggerFilters(error_msg + docs_link_msg)
 
     def callback(
         self,
@@ -867,7 +873,7 @@ class _PusherClient(logging.WithLogger):
                 return self.subscription
             time.sleep(0.5)
 
-        raise TimeoutError(
+        raise SDKTimeoutError(
             "Timed out while waiting for trigger listener to be established"
         )
 
@@ -960,7 +966,7 @@ class Triggers(Collection[TriggerModel]):
         )
         client_id = response.json().get("client", {}).get("id")
         if client_id is None:
-            raise ComposioClientError("Error fetching client ID")
+            raise TriggerSubscriptionError("Error fetching client ID")
 
         pusher = _PusherClient(
             client_id=client_id,
@@ -1086,6 +1092,7 @@ class CreateUploadURLResponse(BaseModel):
     id: str = Field(..., description="ID of the file")
     url: str = Field(..., description="Onetime upload URL")
     key: str = Field(..., description="S3 upload location")
+    exists: bool = Field(False, description="If the file already exists on S3")
 
 
 class Actions(Collection[ActionModel]):
@@ -1151,13 +1158,13 @@ class Actions(Collection[ActionModel]):
             return [self.model(**item) for item in local_items]
 
         if len(actions) > 0 and len(apps) > 0:
-            raise ComposioClientError(
+            raise ErrorFetchingResource(
                 "Error retrieving Actions, Both actions and apps "
                 "cannot be used as filters at the same time."
             )
 
         if len(actions) > 0 and len(tags) > 0:
-            raise ComposioClientError(
+            raise ErrorFetchingResource(
                 "Error retrieving Actions, Both actions and tags "
                 "cannot be used as filters at the same time."
             )
@@ -1302,8 +1309,9 @@ class Actions(Collection[ActionModel]):
         ]
         for param in data["parameters"]:
             if param["in"] == "metadata":
-                raise ComposioClientError(
-                    f"Param placement cannot be 'metadata' for remote action execution: {param}"
+                raise InvalidParams(
+                    "Param placement cannot be 'metadata' for remote "
+                    f"action execution: {param}"
                 )
         return data
 
@@ -1344,7 +1352,7 @@ class Actions(Collection[ActionModel]):
             ).json()
 
         if connected_account is None and auth is None:
-            raise ComposioClientError(
+            raise InvalidParams(
                 "`connected_account` cannot be `None` when executing "
                 "an app which requires authentication"
             )

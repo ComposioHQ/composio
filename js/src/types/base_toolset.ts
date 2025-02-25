@@ -52,7 +52,7 @@ export type TPreProcessor = ({
 }: {
   params: Record<string, unknown>;
   actionName: string;
-}) => Record<string, unknown>;
+}) => Promise<Record<string, unknown>> | Record<string, unknown>;
 
 export type TPostProcessor = ({
   actionName,
@@ -60,7 +60,7 @@ export type TPostProcessor = ({
 }: {
   actionName: string;
   toolResponse: ActionExecutionResDto;
-}) => ActionExecutionResDto;
+}) => Promise<ActionExecutionResDto> | ActionExecutionResDto;
 
 export type TSchemaProcessor = ({
   actionName,
@@ -68,7 +68,7 @@ export type TSchemaProcessor = ({
 }: {
   actionName: string;
   toolSchema: RawActionData;
-}) => RawActionData;
+}) => Promise<RawActionData> | RawActionData;
 
 export const ZToolSchemaFilter = z.object({
   actions: z.array(z.string()).optional(),
@@ -77,6 +77,7 @@ export const ZToolSchemaFilter = z.object({
   useCase: z.string().optional(),
   useCaseLimit: z.number().optional(),
   filterByAvailableApps: z.boolean().optional(),
+  integrationId: z.string().optional(),
 });
 
 export type TToolSchemaFilter = z.infer<typeof ZToolSchemaFilter>;

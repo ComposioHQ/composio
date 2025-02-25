@@ -78,7 +78,9 @@ class ComposioToolSet(
             closure=_execute.__closure__,
         )
         parameters = get_signature_format_from_schema_params(
-            schema_params=schema.parameters.model_dump(),
+            schema_params=schema.parameters.model_dump(
+                exclude_none=True,
+            ),
         )
         setattr(function, "__signature__", Signature(parameters=parameters))
         setattr(
@@ -95,6 +97,7 @@ class ComposioToolSet(
         apps: t.Optional[t.Sequence[AppType]] = None,
         tags: t.Optional[t.List[TagType]] = None,
         entity_id: t.Optional[str] = None,
+        check_connected_accounts: bool = True,
     ) -> t.List[t.Callable]:
         """
         Get composio tools wrapped as Google Genai SDK compatible function calling object.
@@ -114,5 +117,6 @@ class ComposioToolSet(
                 apps=apps,
                 tags=tags,
                 _populate_requested=True,
+                check_connected_accounts=check_connected_accounts,
             )
         ]

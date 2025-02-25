@@ -20,7 +20,7 @@ import { ActionExecutionResDto } from "./client/types.gen";
 import { ActionExecuteResponse, Actions } from "./models/actions";
 import { ActiveTriggers } from "./models/activeTriggers";
 import { Apps } from "./models/apps";
-import { BackendClient } from "./models/backendClient";
+import { AxiosBackendClient } from "./models/backendClient";
 import { ConnectedAccounts } from "./models/connectedAccounts";
 import { Integrations } from "./models/integrations";
 import { Triggers } from "./models/triggers";
@@ -28,9 +28,9 @@ import { getUserDataJson } from "./utils/config";
 import { CEG } from "./utils/error";
 import { COMPOSIO_SDK_ERROR_CODES } from "./utils/errors/src/constants";
 import {
-  fileInputProcessor,
-  fileResponseProcessor,
-  fileSchemaProcessor,
+  FILE_DOWNLOADABLE_PROCESSOR,
+  FILE_INPUT_PROCESSOR,
+  FILE_SCHEMA_PROCESSOR,
 } from "./utils/processor/file";
 
 export type ExecuteActionParams = z.infer<typeof ZExecuteActionParams> & {
@@ -45,7 +45,7 @@ export class ComposioToolSet {
   entityId: string = "default";
   connectedAccountIds: Record<string, string> = {};
 
-  backendClient: BackendClient;
+  backendClient: AxiosBackendClient;
   connectedAccounts: ConnectedAccounts;
   apps: Apps;
   actions: Actions;
@@ -60,9 +60,9 @@ export class ComposioToolSet {
     post: TPostProcessor[];
     schema: TSchemaProcessor[];
   } = {
-    pre: [fileInputProcessor],
-    post: [fileResponseProcessor],
-    schema: [fileSchemaProcessor],
+    pre: [FILE_INPUT_PROCESSOR],
+    post: [FILE_DOWNLOADABLE_PROCESSOR],
+    schema: [FILE_SCHEMA_PROCESSOR],
   };
 
   private userDefinedProcessors: {
@@ -169,11 +169,11 @@ export class ComposioToolSet {
       }
     }
 
-    const apps = await this.client.actions.list({
+    const appActions = await this.client.actions.list({
       apps: parsedFilters.apps?.join(","),
       tags: parsedFilters.tags?.join(","),
       useCase: parsedFilters.useCase,
-      actions: parsedFilters.actions?.join(","),
+      actions: actions?.join(","),
       usecaseLimit: parsedFilters.useCaseLimit,
       filterByAvailableApps: parsedFilters.filterByAvailableApps,
     });
@@ -191,7 +191,10 @@ export class ComposioToolSet {
       );
     });
 
-    const toolsActions = [...(apps?.items || []), ...toolsWithCustomActions];
+    const toolsActions = [
+      ...(appActions?.items || []),
+      ...toolsWithCustomActions,
+    ];
 
     const allSchemaProcessor = [
       ...this.internalProcessors.schema,
@@ -199,17 +202,20 @@ export class ComposioToolSet {
         ? [this.userDefinedProcessors.schema]
         : []),
     ];
-
-    return toolsActions.map((tool) => {
+    const processedTools = [];
+    // Iterate over the tools and process them
+    for (const tool of toolsActions) {
       let schema = tool as RawActionData;
-      allSchemaProcessor.forEach((processor) => {
-        schema = processor({
+      // Process the schema with all the processors
+      for (const processor of allSchemaProcessor) {
+        schema = await processor({
           actionName: schema?.name,
           toolSchema: schema,
         });
-      });
-      return schema;
-    });
+      }
+      processedTools.push(schema);
+    }
+    return processedTools;
   }
 
   async createAction<P extends Parameters = z.ZodObject<{}>>(
@@ -265,7 +271,7 @@ export class ComposioToolSet {
     ];
 
     for (const processor of allInputProcessor) {
-      params = processor({
+      params = await processor({
         params: params,
         actionName: action,
       });
@@ -324,9 +330,10 @@ export class ComposioToolSet {
         : []),
     ];
 
-    let dataToReturn = { ...data };
+    // Dirty way to avoid copy
+    let dataToReturn = JSON.parse(JSON.stringify(data));
     for (const processor of allOutputProcessor) {
-      dataToReturn = processor({
+      dataToReturn = await processor({
         actionName: meta.action,
         toolResponse: dataToReturn,
       });
