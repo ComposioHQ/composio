@@ -26,6 +26,7 @@ def initialize_peopledatalabs(entity_id: str, toolset: ComposioToolSet, peopleda
             connection_request = entity.initiate_connection(
                 app_name=App.PEOPLEDATALABS,
                 auth_mode="API_KEY",
+                use_composio_auth=False,
                 auth_config=auth_config,
             )
             print("Connection request initiated")
