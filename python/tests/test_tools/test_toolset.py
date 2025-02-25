@@ -21,6 +21,8 @@ from composio.utils.pypi import reset_installed_list
 
 from composio_langchain.toolset import ComposioToolSet as LangchainToolSet
 
+from tests.conftest import E2E
+
 
 def test_get_schemas() -> None:
     """Test `ComposioToolSet.find_actions_by_tags` method."""
@@ -603,3 +605,35 @@ def test_invalid_handle_tool_calls() -> None:
     toolset.get_tools(actions=[Action.GMAIL_FETCH_EMAILS])
     with mock.patch.object(toolset, "_execute_remote"):
         toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})
+
+
+@E2E
+class IntegrationsConnectionsTest:
+    integration_id: str
+    toolset: LangchainToolSet
+    app: App
+
+    @classmethod
+    def setup_class(cls) -> None:
+        cls.integration_id = ""
+        cls.toolset = LangchainToolSet()
+        cls.app = App.GMAIL
+
+    @classmethod
+    def teardown_class(cls) -> None:
+        cls.toolset.client.integrations.remove(id=cls.integration_id)
+
+    def test_create_integration_with_composio_auth(self) -> None:
+        integration = self.toolset.create_integration(
+            app=self.app, auth_mode="OAUTH2", use_composio_oauth_app=True
+        )
+        assert len(integration.id) > 0
+        self.integration_id = integration.id
+
+    def test_initiate_connection(
+        self,
+    ) -> None:
+        connection = self.toolset.initiate_connection(
+            integration_id=self.integration_id,
+        )
+        assert connection.connectionStatus == "INITIATED"
