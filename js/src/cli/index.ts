@@ -18,6 +18,7 @@ import whoami from "./whoami";
 // SDK Imports
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
+import mcpCommand from "./server";
 
 const program = new Command().name("composio").description("Composio CLI");
 
@@ -32,6 +33,7 @@ new triggers(program);
 new add(program);
 new actions(program);
 new execute(program);
+new mcpCommand(program);
 
 function formatLine(content: string): string {
   return `${content}`;
