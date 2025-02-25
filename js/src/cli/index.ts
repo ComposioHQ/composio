@@ -18,7 +18,7 @@ import whoami from "./whoami";
 // SDK Imports
 import { TELEMETRY_LOGGER } from "../sdk/utils/telemetry";
 import { TELEMETRY_EVENTS } from "../sdk/utils/telemetry/events";
-import mcpCommand from "./server";
+import mcpCommand from "./mcp";
 
 const program = new Command().name("composio").description("Composio CLI");
 
