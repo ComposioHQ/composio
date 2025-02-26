@@ -1254,8 +1254,16 @@ class _IntegrationMixin(_GetMixin):
         auth_mode: t.Optional[AuthSchemeType] = None,
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
         use_composio_oauth_app: bool = True,
-        force_new_integration: bool = False,  # pylint: disable=unused-argument
+        force_new_integration: t.Optional[
+            bool
+        ] = None,  # pylint: disable=unused-argument
     ) -> IntegrationModel:
+        if force_new_integration is not None:
+            warnings.warn(
+                category=DeprecationWarning,
+                message="`force_new_integration` parameter has been deprecated "
+                "and will be removed in v0.9.0.",
+            )
         app_data = self.client.apps.get(name=str(app))
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         return self.client.integrations.create(

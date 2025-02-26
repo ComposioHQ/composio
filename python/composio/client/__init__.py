@@ -36,7 +36,7 @@ from composio.client.enums import (
     Trigger,
     TriggerType,
 )
-from composio.client.exceptions import ComposioClientError, HTTPError, NoItemsFound
+from composio.client.exceptions import HTTPError, NoItemsFound
 from composio.client.http import HttpClient
 from composio.constants import (
     DEFAULT_ENTITY_ID,
@@ -418,7 +418,7 @@ class Entity:
         self,
         # TODO: Rename this parameter to 'app'
         app_name: t.Union[str, App],
-        auth_mode: t.Optional[str] = None,
+        auth_mode: str,
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
         redirect_url: t.Optional[str] = None,
         integration: t.Optional[IntegrationModel] = None,
@@ -439,16 +439,17 @@ class Entity:
         """
         if force_new_integration is not None:
             warnings.warn(
-                "`force_new_integration` parameter has been deprecated "
-                "and will be removed in v0.9.0."
+                category=DeprecationWarning,
+                message="`force_new_integration` parameter has been deprecated "
+                "and will be removed in v0.9.0.",
             )
 
         app = self.client.apps.get(name=App(app_name).slug)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
-        if auth_mode is None:
+        if auth_mode not in AUTH_SCHEME_WITH_INITIATE:
             raise InvalidParams(
-                f"'auth_mode' should be one of {AUTH_SCHEME_WITH_INITIATE}"
+                f"'auth_mode' should be one of the following strings {AUTH_SCHEME_WITH_INITIATE}"
             )
 
         # Casting here because mypy throws an error,
