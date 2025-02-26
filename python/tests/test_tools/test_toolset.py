@@ -609,31 +609,38 @@ def test_invalid_handle_tool_calls() -> None:
 
 @E2E
 class TestIntegrationsConnections:
-    integration_id: str
+    integration_ids: t.List
     toolset: LangchainToolSet
     app: App
 
     @classmethod
     def setup_class(cls) -> None:
-        cls.integration_id = ""
+        cls.integration_ids = []
         cls.toolset = LangchainToolSet()
         cls.app = App.GMAIL
 
     @classmethod
     def teardown_class(cls) -> None:
-        cls.toolset.client.integrations.remove(id=cls.integration_id)
+        for integration_id in cls.integration_ids:
+            cls.toolset.client.integrations.remove(id=integration_id)
 
     def test_create_integration_with_composio_auth(self) -> None:
         integration = self.toolset.create_integration(
             app=self.app, auth_mode="OAUTH2", use_composio_oauth_app=True
         )
         assert len(integration.id) > 0
-        self.integration_id = integration.id
+        self.integration_ids.append(integration.id)
 
     def test_initiate_connection(
         self,
     ) -> None:
+        integration = self.toolset.create_integration(
+            app=self.app, auth_mode="OAUTH2", use_composio_oauth_app=True
+        )
+        assert len(integration.id) > 0
+        self.integration_ids.append(integration.id)
+
         connection = self.toolset.initiate_connection(
-            integration_id=self.integration_id,
+            integration_id=integration.id,
         )
         assert connection.connectionStatus == "INITIATED"
