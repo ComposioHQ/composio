@@ -2,10 +2,9 @@
 import chalk from "chalk";
 import { Command } from "commander";
 import fs from "fs";
-import path from "path";
 import os from "os";
+import path from "path";
 
-import client from "../sdk/client/client";
 import { getOpenAPIClient } from "../sdk/utils/config";
 
 type ErrorWithMessage = {
@@ -31,15 +30,12 @@ export default class MCPCommand {
     url: string,
     options: { client: string }
   ): Promise<void> {
-    
     getOpenAPIClient();
     const clientType = options.client;
 
     // Validate client type
     if (!["claude", "windsurf"].includes(clientType)) {
-      console.log(
-        chalk.red("❌ Error: Invalid client type specified")
-      );
+      console.log(chalk.red("❌ Error: Invalid client type specified"));
       console.log(chalk.yellow("Please use one of these supported clients:"));
       console.log(chalk.yellow("- claude"));
       console.log(chalk.yellow("- windsurf"));
@@ -53,30 +49,37 @@ export default class MCPCommand {
 
       const mcpUrl = url;
       const command = `npx -y supergateway --sse "${mcpUrl}"`;
-      
+
       console.log(chalk.cyan("💾 Saving configurations..."));
-      
+
       this.saveMcpConfig(url, clientType, mcpUrl, command);
-      
-      console.log(chalk.cyan(`\n🚀 All done! Please restart ${clientType} for changes to take effect\n`));
-      
+
+      console.log(
+        chalk.cyan(
+          `\n🚀 All done! Please restart ${clientType} for changes to take effect\n`
+        )
+      );
     } catch (error) {
       console.log(chalk.red("\n❌ Error occurred while setting up MCP:"));
       console.log(chalk.red(`   ${(error as ErrorWithMessage).message}`));
-      console.log(chalk.yellow("\nPlease try again or contact support if the issue persists.\n"));
+      console.log(
+        chalk.yellow(
+          "\nPlease try again or contact support if the issue persists.\n"
+        )
+      );
       return;
     }
   }
-  
+
   private saveMcpConfig(
-    url: string, 
-    clientType: string, 
+    url: string,
+    clientType: string,
     mcpUrl: string,
     command: string
   ): void {
     const config = {
       command: "npx",
-      args: ["-y", "supergateway", "--sse", mcpUrl]
+      args: ["-y", "supergateway", "--sse", mcpUrl],
     };
 
     if (clientType === "claude") {
@@ -84,13 +87,22 @@ export default class MCPCommand {
       let configPath;
 
       if (os.platform() === "darwin") {
-        configDir = path.join(os.homedir(), 'Library', 'Application Support', 'Claude');
-        configPath = path.join(configDir, 'claude_desktop_config.json');
+        configDir = path.join(
+          os.homedir(),
+          "Library",
+          "Application Support",
+          "Claude"
+        );
+        configPath = path.join(configDir, "claude_desktop_config.json");
       } else if (os.platform() === "win32") {
-        configDir = path.join(process.env.APPDATA || '', 'Claude');
-        configPath = path.join(configDir, 'claude_desktop_config.json');
+        configDir = path.join(process.env.APPDATA || "", "Claude");
+        configPath = path.join(configDir, "claude_desktop_config.json");
       } else {
-        console.log(chalk.yellow("\n⚠️  Claude Desktop is not supported on this platform."));
+        console.log(
+          chalk.yellow(
+            "\n⚠️  Claude Desktop is not supported on this platform."
+          )
+        );
         return;
       }
 
@@ -98,15 +110,21 @@ export default class MCPCommand {
         fs.mkdirSync(configDir, { recursive: true });
       }
 
-      fs.writeFileSync(configPath, JSON.stringify({
-        mcpServers: { [url]: config }
-      }, null, 2));
-      
-      console.log(chalk.green(`✅ Configuration saved to: ${configPath}`));
+      fs.writeFileSync(
+        configPath,
+        JSON.stringify(
+          {
+            mcpServers: { [url]: config },
+          },
+          null,
+          2
+        )
+      );
 
+      console.log(chalk.green(`✅ Configuration saved to: ${configPath}`));
     } else if (clientType === "windsurf") {
-      const configDir = path.join(os.homedir(), '.codeium', 'windsurf');
-      const configPath = path.join(configDir, 'mcp_config.json');
+      const configDir = path.join(os.homedir(), ".codeium", "windsurf");
+      const configPath = path.join(configDir, "mcp_config.json");
 
       if (!fs.existsSync(configDir)) {
         fs.mkdirSync(configDir, { recursive: true });
@@ -115,7 +133,7 @@ export default class MCPCommand {
       let windsurfConfig = { mcpServers: {} };
       if (fs.existsSync(configPath)) {
         try {
-          windsurfConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+          windsurfConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
           if (!windsurfConfig.mcpServers) windsurfConfig.mcpServers = {};
         } catch (error) {
           console.log(chalk.yellow("⚠️  Creating new config file"));
