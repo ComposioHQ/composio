@@ -666,12 +666,21 @@ class SchemaHelper(WithLogger):
         request: t.Dict,
         action: Action,
     ) -> t.Dict:
+        if "properties" not in schema:
+            return request
+
         params = schema["properties"]
-        for _param in request:
+        params_to_process = list(request.keys())
+        for _param in params_to_process:
             if _param not in params:
                 continue
 
             if self._file_uploadable(schema=params[_param]):
+                # skip if the file is not provided
+                if request[_param] is None or request[_param] == "":
+                    del request[_param]
+                    continue
+
                 request[_param] = FileUploadable.from_path(
                     file=request[_param],
                     client=self._client(),
@@ -1659,7 +1668,9 @@ class ComposioToolSet(_IntegrationMixin):
             return valid
         raise InvalidConnectedAccount(f"Invalid connected accounts found: {invalid}")
 
-    def check_connected_account(self, action: ActionType) -> None:
+    def check_connected_account(
+        self, action: ActionType, entity_id: t.Optional[str] = None
+    ) -> None:
         """Check if connected account is required and if required it exists or not."""
         action = Action(action)
         if action.no_auth or action.is_runtime:
@@ -1677,6 +1688,7 @@ class ComposioToolSet(_IntegrationMixin):
         if action.app not in [
             connection.appUniqueId.upper()  # Normalize app names/ids coming from API
             for connection in self._connected_accounts
+            if entity_id is None or connection.clientUniqueUserId == entity_id
         ]:
             raise ConnectedAccountNotFoundError(
                 f"No connected account found for app `{action.app}`; "
@@ -1790,7 +1802,7 @@ class ComposioToolSet(_IntegrationMixin):
             action=action
         )
         if auth is None:
-            self.check_connected_account(action=action)
+            self.check_connected_account(action=action, entity_id=entity_id)
 
         output = self.client.get_entity(  # pylint: disable=protected-access
             id=entity_id

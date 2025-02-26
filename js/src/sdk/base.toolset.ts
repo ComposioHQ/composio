@@ -173,7 +173,7 @@ export class ComposioToolSet {
       apps: parsedFilters.apps?.join(","),
       tags: parsedFilters.tags?.join(","),
       useCase: parsedFilters.useCase,
-      actions: parsedFilters.actions?.join(","),
+      actions: actions?.join(","),
       usecaseLimit: parsedFilters.useCaseLimit,
       filterByAvailableApps: parsedFilters.filterByAvailableApps,
     });

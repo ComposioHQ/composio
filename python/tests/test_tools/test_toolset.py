@@ -11,7 +11,11 @@ import pytest
 from pydantic import BaseModel, Field
 
 from composio import Action, App, Trigger
-from composio.exceptions import ApiKeyNotProvidedError, ComposioSDKError
+from composio.exceptions import (
+    ApiKeyNotProvidedError,
+    ComposioSDKError,
+    ConnectedAccountNotFoundError,
+)
 from composio.tools.base.abs import action_registry, tool_registry
 from composio.tools.base.runtime import action as custom_action
 from composio.tools.local.filetool.tool import Filetool, FindFile
@@ -289,6 +293,22 @@ class TestProcessors:
         )
         toolset.execute_action(Action.COMPOSIO_ENABLE_TRIGGER, {})
         assert postprocessor_called
+
+
+def test_entity_id_validation_in_check_connected_accounts() -> None:
+    """Test whether check_connected_account raises error with invalid entity_id"""
+    toolset = ComposioToolSet()
+    with pytest.raises(
+        ConnectedAccountNotFoundError,
+        match=(
+            "No connected account found for app `GMAIL`; "
+            "Run `composio add gmail` to fix this"
+        ),
+    ):
+        toolset.check_connected_account(
+            action=Action.GMAIL_FETCH_EMAILS,
+            entity_id="some_very_random_obviously_wrong_entity_id",
+        )
 
 
 def test_check_connected_accounts_flag() -> None:
