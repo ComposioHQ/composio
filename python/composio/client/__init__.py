@@ -350,7 +350,7 @@ class Entity:
                 creation_date = datetime.fromisoformat(
                     connected_account.createdAt.replace("Z", "+00:00")
                 )
-                if latest_account is None or creation_date > latest_creation_date:
+                if latest_account is None or creation_date < latest_creation_date:
                     latest_creation_date = creation_date
                     latest_account = connected_account
 
