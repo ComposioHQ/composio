@@ -1,6 +1,7 @@
 import typing as t
 
 from composio.client.enums.enum import Enum, EnumGenerator
+from composio.constants import LOCAL_CACHE_DIRECTORY
 
 from .base import TriggerData
 
@@ -11,6 +12,8 @@ class Trigger(Enum[TriggerData], metaclass=EnumGenerator):
     cache = _TRIGGER_CACHE
     storage = TriggerData
 
+    @classmethod
+    def iter(cls) -> t.Iterable[str]: ...
     def load_from_runtime(self) -> t.Optional[TriggerData]: ...
     def fetch_and_cache(self) -> t.Optional[TriggerData]: ...
     @property

@@ -17,6 +17,7 @@ from composio.client.enums.base import (
     TRIGGERS_CACHE,
     TRIGGERS_ETAG,
     AppData,
+    TriggerData,
     create_action,
     replacement_action_name,
 )
@@ -306,6 +307,37 @@ def _check_and_refresh_actions(client: Composio):
 
 
 @_handle_exceptions
+def _check_and_refresh_triggers(client: Composio):
+    local_triggers = set()
+    if enums.base.TRIGGERS_CACHE.exists():
+        local_triggers = set(
+            map(lambda x: x.stem.upper(), enums.base.TRIGGERS_CACHE.iterdir())
+        )
+
+    api_triggers = set(client.triggers.list_enums())
+    triggers_to_update = api_triggers - local_triggers
+    triggers_to_delete = local_triggers - api_triggers
+    if triggers_to_delete:
+        logger.debug("Stale triggers: %s", triggers_to_delete)
+
+    for trigger_name in triggers_to_delete:
+        (enums.base.TRIGGERS_CACHE / trigger_name).unlink()
+
+    if not triggers_to_update:
+        return
+
+    logger.debug("triggers to fetch: %s", triggers_to_update)
+    queries = {"triggers": ",".join(triggers_to_update)}
+    triggers_data = client.http.get(str(client.triggers.endpoint(queries))).json()
+    for trigger_data in triggers_data:
+        TriggerData(
+            name=trigger_data["name"],
+            app=trigger_data["appName"],
+            path=enums.base.TRIGGERS_CACHE / trigger_data["name"],
+        ).store()
+
+
+@_handle_exceptions
 def _check_and_refresh_apps(client: Composio):
     local_apps = set()
     if enums.base.APPS_CACHE.exists():
@@ -327,8 +359,11 @@ def _check_and_refresh_apps(client: Composio):
     queries = {"apps": ",".join(apps_to_update)}
     apps_data = client.http.get(str(client.apps.endpoint(queries))).json()
     for app_data in apps_data["items"]:
-        storage_path = enums.base.APPS_CACHE / app_data["name"]
-        AppData(name=app_data["name"], path=storage_path, is_local=False).store()
+        AppData(
+            name=app_data["name"],
+            path=enums.base.APPS_CACHE / app_data["name"],
+            is_local=False,
+        ).store()
 
 
 def check_cache_refresh(client: Composio) -> None:
@@ -353,10 +388,13 @@ def check_cache_refresh(client: Composio) -> None:
     start = time.monotonic()
     ap_thread = threading.Thread(target=_check_and_refresh_apps, args=(client,))
     ac_thread = threading.Thread(target=_check_and_refresh_actions, args=(client,))
+    tr_thread = threading.Thread(target=_check_and_refresh_triggers, args=(client,))
 
     ac_thread.start()
     ap_thread.start()
+    tr_thread.start()
 
     ap_thread.join()
     ac_thread.join()
+    tr_thread.join()
     logger.debug("Time taken to update cache: %.2f seconds", time.monotonic() - start)

@@ -974,6 +974,14 @@ class Triggers(Collection[TriggerModel]):
             timeout=timeout,
         )
 
+    def list_enums(self) -> list[str]:
+        """Get just the action names on the server"""
+        return self._raise_if_required(
+            response=self.client.http.get(
+                str(self.endpoint / "list" / "enums"),
+            )
+        ).text.split("\n")
+
     def get_etag(self) -> str:
         return self._raise_if_required(
             response=self.client.http.head(

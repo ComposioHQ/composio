@@ -51,7 +51,7 @@ class TestUpdate(BaseCliTest):
 
     def test_update_consistency(self) -> None:
         """Test app enums update."""
-        self.run("apps", "update")
+        self.run("apps", "generate-types")
 
         from composio import (  # pylint: disable=import-outside-toplevel
             Action,
