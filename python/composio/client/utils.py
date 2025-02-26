@@ -253,7 +253,7 @@ def _update_triggers_cache(triggers: t.List[TriggerModel]) -> None:
 def _handle_exceptions(f):
     def _wrapper(*args, **kwargs):
         try:
-            f(*args, *kwargs)
+            f(*args, **kwargs)
         except ApiKeyNotProvidedError:
             logger.warning("API Key not provided, skipping cache refresh")
     return _wrapper
