@@ -20,10 +20,11 @@ from composio.client.enums.base import (
     create_action,
     replacement_action_name,
 )
+from composio.exceptions import ApiKeyNotProvidedError
 from composio.tools.local import load_local_tools
 from composio.utils import get_enum_key
 from composio.utils.logging import get_logger
-from composio.exceptions import ApiKeyNotProvidedError
+
 
 EnumModels = t.Union[AppModel, ActionModel, TriggerModel]
 
@@ -250,13 +251,16 @@ def _update_triggers_cache(triggers: t.List[TriggerModel]) -> None:
             path=enums.base.TRIGGERS_CACHE / get_enum_key(name=trigger.name),
         ).store()
 
+
 def _handle_exceptions(f):
     def _wrapper(*args, **kwargs):
         try:
             f(*args, **kwargs)
         except ApiKeyNotProvidedError:
             logger.warning("API Key not provided, skipping cache refresh")
+
     return _wrapper
+
 
 @_handle_exceptions
 def _check_and_refresh_actions(client: Composio):
@@ -299,6 +303,7 @@ def _check_and_refresh_actions(client: Composio):
             response=action_data,
             storage_path=enums.base.ACTIONS_CACHE / action_data["name"],
         ).store()
+
 
 @_handle_exceptions
 def _check_and_refresh_apps(client: Composio):
