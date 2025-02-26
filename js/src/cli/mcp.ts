@@ -11,6 +11,17 @@ type ErrorWithMessage = {
   message: string;
 };
 
+interface MCPConfig {
+  command: string;
+  args: string[];
+}
+
+interface WindsurfConfig {
+  mcpServers: {
+    [key: string]: MCPConfig;
+  };
+}
+
 export default class MCPCommand {
   private program: Command;
 
@@ -77,7 +88,7 @@ export default class MCPCommand {
     mcpUrl: string,
     command: string
   ): void {
-    const config = {
+    const config: MCPConfig = {
       command: "npx",
       args: ["-y", "supergateway", "--sse", mcpUrl],
     };
@@ -130,7 +141,7 @@ export default class MCPCommand {
         fs.mkdirSync(configDir, { recursive: true });
       }
 
-      let windsurfConfig = { mcpServers: {} };
+      let windsurfConfig: WindsurfConfig = { mcpServers: {} };
       if (fs.existsSync(configPath)) {
         try {
           windsurfConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
