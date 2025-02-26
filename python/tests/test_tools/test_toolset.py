@@ -25,6 +25,8 @@ from composio.utils.pypi import reset_installed_list
 
 from composio_langchain.toolset import ComposioToolSet as LangchainToolSet
 
+from tests.conftest import E2E
+
 
 def test_get_schemas() -> None:
     """Test `ComposioToolSet.find_actions_by_tags` method."""
