@@ -607,7 +607,6 @@ def test_invalid_handle_tool_calls() -> None:
         toolset.execute_action(Action.HACKERNEWS_GET_FRONTPAGE, {})
 
 
-@E2E
 class TestIntegrationsConnections:
     integration_ids: t.List
     toolset: LangchainToolSet
