@@ -1667,7 +1667,9 @@ class ComposioToolSet(_IntegrationMixin):
             return valid
         raise InvalidConnectedAccount(f"Invalid connected accounts found: {invalid}")
 
-    def check_connected_account(self, action: ActionType) -> None:
+    def check_connected_account(
+        self, action: ActionType, entity_id: t.Optional[str] = None
+    ) -> None:
         """Check if connected account is required and if required it exists or not."""
         action = Action(action)
         if action.no_auth or action.is_runtime:
@@ -1685,6 +1687,7 @@ class ComposioToolSet(_IntegrationMixin):
         if action.app not in [
             connection.appUniqueId.upper()  # Normalize app names/ids coming from API
             for connection in self._connected_accounts
+            if entity_id is None or connection.clientUniqueUserId == entity_id
         ]:
             raise ConnectedAccountNotFoundError(
                 f"No connected account found for app `{action.app}`; "
@@ -1798,7 +1801,7 @@ class ComposioToolSet(_IntegrationMixin):
             action=action
         )
         if auth is None:
-            self.check_connected_account(action=action)
+            self.check_connected_account(action=action, entity_id=entity_id)
 
         output = self.client.get_entity(  # pylint: disable=protected-access
             id=entity_id
