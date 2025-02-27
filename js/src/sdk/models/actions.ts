@@ -160,7 +160,7 @@ export class Actions {
               parsedData.requestBody?.sessionInfo?.sessionId ||
               ComposioSDKContext.sessionId,
           },
-          allowTracing: parsedData.requestBody?.allowTracing || false,
+          allowTracing: Boolean(ComposioSDKContext?.allowTracing),
         } as ActionExecutionReqDTO,
         path: {
           actionId: parsedData.actionName,

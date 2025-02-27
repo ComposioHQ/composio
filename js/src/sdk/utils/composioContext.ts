@@ -12,6 +12,7 @@ class ComposioSDKContext {
   static source?: string = "javascript";
   static composioVersion?: string;
   static sessionId?: string;
+  static allowTracing?: boolean;
 }
 
 export default ComposioSDKContext;
