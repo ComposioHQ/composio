@@ -28,14 +28,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Pipenv install requirements and check it can be locked
+      - name: Install uv and check requirements
         run: |
-          pip install pipenv
-          pipenv --clear
-          time pipenv install --verbose --dev --skip-lock
-          time pipenv run pip install -e .[all]
-          time pipenv lock
-          time pipenv run composio --help
+          pip install uv
+          uv pip install -r requirements.txt
+          uv pip install -r requirements-dev.txt
+          uv pip install -e .[all]
+          uv pip freeze
+          uv pip run composio --help
 
   linter_checks:
     defaults:

@@ -98,25 +98,24 @@ format-and-check:
 env: clean
 	if [ -z "$$VIRTUAL_ENV"];\
 	then\
-		pipenv --rm;\
-		pipenv --clear;\
-		pipenv --python 3.10;\
-		pipenv install --skip-lock;\
-		pipenv install --dev --skip-lock;\
-		pipenv run pip install -e swe;\
-		pipenv run pip install -e plugins/autogen;\
-		pipenv run pip install -e plugins/claude;\
-		pipenv run pip install -e plugins/crew_ai;\
-		pipenv run pip install -e plugins/griptape;\
-		pipenv run pip install -e plugins/julep;\
-		pipenv run pip install -e plugins/langchain;\
-		pipenv run pip install -e plugins/llamaindex;\
-		pipenv run pip install -e plugins/lyzr;\
-		pipenv run pip install -e plugins/openai;\
-		pipenv run pip install -e .;\
-		echo "Enter virtual environment with all development dependencies now: 'pipenv shell'.";\
+		python -m venv .venv;\
+		. .venv/bin/activate;\
+		uv pip install -r requirements.txt;\
+		uv pip install -r requirements-dev.txt;\
+		uv pip install -e swe;\
+		uv pip install -e plugins/autogen;\
+		uv pip install -e plugins/claude;\
+		uv pip install -e plugins/crew_ai;\
+		uv pip install -e plugins/griptape;\
+		uv pip install -e plugins/julep;\
+		uv pip install -e plugins/langchain;\
+		uv pip install -e plugins/llamaindex;\
+		uv pip install -e plugins/lyzr;\
+		uv pip install -e plugins/openai;\
+		uv pip install -e .;\
+		echo "Enter virtual environment with all development dependencies now: '. .venv/bin/activate'.";\
 	else\
-		echo "In a virtual environment! Exit first: 'exit'.";\
+		echo "In a virtual environment! Exit first: 'deactivate'.";\
 	fi
 
 .PHONY: login
