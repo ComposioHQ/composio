@@ -358,6 +358,22 @@ class Apps(Collection[AppModel]):
 
         return super().get(queries={})
 
+    def list_enums(self) -> list[str]:
+        """Get just the app names on the server."""
+        response = self._raise_if_required(
+            response=self.client.http.get(
+                str(self.endpoint / "list" / "enums"),
+            )
+        )
+        return response.text.split("\n")
+
+    def get_etag(self) -> str:
+        return self._raise_if_required(
+            response=self.client.http.head(
+                str(self.endpoint / "list" / "enums"),
+            )
+        ).headers["ETag"]
+
 
 class TypeModel(BaseModel):
     type: str
@@ -958,6 +974,21 @@ class Triggers(Collection[TriggerModel]):
             timeout=timeout,
         )
 
+    def list_enums(self) -> list[str]:
+        """Get just the action names on the server"""
+        return self._raise_if_required(
+            response=self.client.http.get(
+                str(self.endpoint / "list" / "enums"),
+            )
+        ).text.split("\n")
+
+    def get_etag(self) -> str:
+        return self._raise_if_required(
+            response=self.client.http.head(
+                str(self.endpoint / "list" / "enums"),
+            )
+        ).headers["ETag"]
+
 
 class ActiveTriggerModel(BaseModel):
     """Active trigger data model."""
@@ -1027,6 +1058,7 @@ class ActionModel(BaseModel):
     appId: str
     version: str
     available_versions: t.List[str]
+    no_auth: bool
 
     tags: t.List[str]
     logo: t.Optional[str] = None
@@ -1097,9 +1129,9 @@ class Actions(Collection[ActionModel]):
 
     def _get_actions(
         self,
-        actions: t.Optional[t.Sequence[ActionType]] = None,
-        apps: t.Optional[t.Sequence[AppType]] = None,
-        tags: t.Optional[t.Sequence[TagType]] = None,
+        actions: t.Optional[t.Collection[ActionType]] = None,
+        apps: t.Optional[t.Collection[AppType]] = None,
+        tags: t.Optional[t.Collection[TagType]] = None,
         limit: t.Optional[int] = None,
         use_case: t.Optional[str] = None,
         allow_all: bool = False,
@@ -1418,6 +1450,21 @@ class Actions(Collection[ActionModel]):
             SearchResultTask.model_validate(task)
             for task in response.json().get("items", [])
         ]
+
+    def list_enums(self) -> list[str]:
+        """Get just the action names on the server"""
+        return self._raise_if_required(
+            response=self.client.http.get(
+                str(self.endpoint / "list" / "enums"),
+            )
+        ).text.split("\n")
+
+    def get_etag(self) -> str:
+        return self._raise_if_required(
+            response=self.client.http.head(
+                str(self.endpoint / "list" / "enums"),
+            )
+        ).headers["ETag"]
 
     def create_file_upload(
         self,
