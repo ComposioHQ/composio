@@ -642,7 +642,7 @@ class TestIntegrationsConnections:
         for integration_id in cls.integration_ids:
             status = cls.toolset.client.integrations.remove(id=integration_id)
             if status != 204:
-                raise pytest.fail(reason="Unable to perform teardown successfully.")
+                raise ComposioSDKError("Unable to perform teardown successfully.")
 
     def test_create_integration_with_composio_auth(self) -> None:
         integration = self.toolset.create_integration(
