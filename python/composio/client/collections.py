@@ -1528,8 +1528,9 @@ class Integrations(Collection[IntegrationModel]):
         )
         return IntegrationModel(**response.json())
 
-    def remove(self, id: str) -> None:
-        self.client.http.delete(url=str(self.endpoint / id))
+    def remove(self, id: str) -> int:
+        response = self.client.http.delete(url=str(self.endpoint / id))
+        return response.status_code
 
     @t.overload  # type: ignore
     def get(
