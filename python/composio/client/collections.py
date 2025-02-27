@@ -1324,6 +1324,7 @@ class Actions(Collection[ActionModel]):
         session_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
         auth: t.Optional[CustomAuthObject] = None,
+        allow_tracing: bool = False,
     ) -> t.Dict:
         """
         Execute an action on the specified entity with optional connected account.
@@ -1347,6 +1348,7 @@ class Actions(Collection[ActionModel]):
                         "sessionInfo": {
                             "sessionId": session_id,
                         },
+                        "allowTracing": allow_tracing,
                     },
                 )
             ).json()
@@ -1371,6 +1373,7 @@ class Actions(Collection[ActionModel]):
                     "sessionInfo": {
                         "sessionId": session_id,
                     },
+                    "allowTracing": allow_tracing,
                 },
             )
         ).json()

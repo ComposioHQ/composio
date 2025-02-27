@@ -1461,6 +1461,7 @@ class ComposioToolSet(_IntegrationMixin):
         output_dir: t.Optional[Path] = None,
         output_in_file: bool = False,
         verbosity_level: t.Optional[int] = None,
+        allow_tracing: bool = False,
         connected_account_ids: t.Optional[t.Dict[AppType, str]] = None,
         *,
         max_retries: int = 3,
@@ -1587,7 +1588,7 @@ class ComposioToolSet(_IntegrationMixin):
         )
         self.max_retries = max_retries
         self.add_auth = self._custom_auth_helper.add
-
+        self.allow_tracing = allow_tracing
         # To be populated by get_tools(), from within subclasses like composio_openai's Toolset.
         self._requested_actions: t.List[str] = []
 
@@ -1803,6 +1804,7 @@ class ComposioToolSet(_IntegrationMixin):
         connected_account_id: t.Optional[str] = None,
         session_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
+        allow_tracing: bool = False,
     ) -> t.Dict:
         """Execute a remote action."""
         auth = self._custom_auth_helper.get_custom_params_for_remote_execution(
@@ -1820,6 +1822,7 @@ class ComposioToolSet(_IntegrationMixin):
             text=text,
             session_id=session_id,
             connected_account_id=connected_account_id,
+            allow_tracing=allow_tracing,
         )
         output = self._schema_helper.substitute_file_downloads(
             action=action,
@@ -1913,6 +1916,7 @@ class ComposioToolSet(_IntegrationMixin):
                     connected_account_id=connected_account_id,
                     text=text,
                     session_id=self.session_id,
+                    allow_tracing=self.allow_tracing,
                 )
             )
             processed_response = (

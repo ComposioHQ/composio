@@ -79,6 +79,7 @@ export class ComposioToolSet {
    * @param {string|null} config.runtime - Runtime environment
    * @param {string} config.entityId - Entity ID for operations
    * @param {Record<string, string>} config.connectedAccountIds - Map of app names to their connected account IDs
+   * @param {boolean} config.allowTracing - Whether to allow tracing for the SDK
    */
   constructor({
     apiKey,
@@ -86,12 +87,14 @@ export class ComposioToolSet {
     runtime,
     entityId,
     connectedAccountIds,
+    allowTracing,
   }: {
     apiKey?: string | null;
     baseUrl?: string | null;
     runtime?: string | null;
     entityId?: string;
     connectedAccountIds?: Record<string, string>;
+    allowTracing?: boolean;
   } = {}) {
     const clientApiKey: string | undefined =
       apiKey ||
@@ -102,6 +105,7 @@ export class ComposioToolSet {
       apiKey: this.apiKey,
       baseUrl: baseUrl || undefined,
       runtime: runtime as string,
+      allowTracing: allowTracing || false,
     });
 
     this.runtime = runtime || null;

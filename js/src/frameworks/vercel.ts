@@ -28,6 +28,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       baseUrl?: Optional<string>;
       entityId?: string;
       connectedAccountIds?: Record<string, string>;
+      allowTracing?: boolean;
     } = {}
   ) {
     super({
@@ -36,6 +37,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       runtime: "vercel-ai",
       entityId: config.entityId || "default",
       connectedAccountIds: config.connectedAccountIds,
+      allowTracing: config.allowTracing || false,
     });
   }
 
