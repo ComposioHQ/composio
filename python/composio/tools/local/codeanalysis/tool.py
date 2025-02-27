@@ -16,9 +16,10 @@ class CodeAnalysisTool(LocalTool, autoload=True):
 
     requires = [
         "tree_sitter>=0.22.0",
-        "deeplake>3.9,<4",
+        "deeplake>3.9,<3.9.39",
         "sentence-transformers",
         "tree_sitter_python>=0.22.0",
+        "tokenizers>=0.19,<0.20",
         "git+https://github.com/DataDog/jedi.git@92d0c807b0dcd115b1ffd0a4ed21e44db127c2fb#egg=jedi",
         "PyJWT",  # deeplake/client/client.py:41
     ]
