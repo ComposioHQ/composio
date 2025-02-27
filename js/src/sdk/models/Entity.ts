@@ -56,12 +56,12 @@ export class Entity {
   constructor(backendClient: AxiosBackendClient, id: string = "default") {
     this.backendClient = backendClient;
     this.id = id;
-    this.triggerModel = new Triggers(this.backendClient);
-    this.actionsModel = new Actions(this.backendClient);
-    this.apps = new Apps(this.backendClient);
-    this.connectedAccounts = new ConnectedAccounts(this.backendClient);
-    this.integrations = new Integrations(this.backendClient);
-    this.activeTriggers = new ActiveTriggers(this.backendClient);
+    this.triggerModel = new Triggers(this.backendClient, this.backendClient.instance);
+    this.actionsModel = new Actions(this.backendClient, this.backendClient.instance);
+    this.apps = new Apps(this.backendClient, this.backendClient.instance);
+    this.connectedAccounts = new ConnectedAccounts(this.backendClient, this.backendClient.instance);
+    this.integrations = new Integrations(this.backendClient, this.backendClient.instance);
+    this.activeTriggers = new ActiveTriggers(this.backendClient, this.backendClient.instance);
   }
 
   /**

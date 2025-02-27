@@ -20,6 +20,7 @@ import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { AxiosBackendClient } from "./backendClient";
+import { Client } from "@hey-api/client-axios";
 
 /**
  * Request types inferred from zod schemas
@@ -45,10 +46,12 @@ export type ActionFindActionEnumsByUseCaseRes = Array<string>;
 export class Actions {
   // Remove this as we might not need it
   private backendClient: AxiosBackendClient;
+  private client: Client;
   fileName: string = "js/src/sdk/models/actions.ts";
 
-  constructor(backendClient: AxiosBackendClient) {
+  constructor(backendClient: AxiosBackendClient, client: Client) {
     this.backendClient = backendClient;
+    this.client = client;
   }
 
   /**
@@ -69,6 +72,7 @@ export class Actions {
     try {
       const parsedData = ZActionGetParams.parse(data);
       const actions = await apiClient.actionsV2.getActionV2({
+        client: this.client,
         path: {
           actionId: parsedData.actionName,
         },
@@ -113,6 +117,7 @@ export class Actions {
       }
 
       const response = await apiClient.actionsV2.listActionsV2({
+        client: this.client,
         query: {
           actions: data.actions,
           apps: apps,
@@ -152,6 +157,7 @@ export class Actions {
     try {
       const parsedData = ZExecuteParams.parse(data);
       const { data: res } = await apiClient.actionsV2.executeActionV2({
+        client: this.client,
         body: {
           ...parsedData.requestBody,
           sessionInfo: {
@@ -190,6 +196,7 @@ export class Actions {
     try {
       const parsedData = ZFindActionEnumsByUseCaseParams.parse(data);
       const { data: res } = await apiClient.actionsV2.advancedUseCaseSearch({
+        client: this.client,
         query: {
           apps: parsedData.apps?.join(","),
           limit: parsedData.limit || undefined,
@@ -225,6 +232,7 @@ export class Actions {
     try {
       const parsedData = ZExecuteRequestParams.parse(data);
       const { data: res } = await apiClient.actionsV2.executeWithHttpClient({
+        client: this.client,
         body: {
           connectedAccountId: parsedData.connectedAccountId,
           endpoint: parsedData.endpoint,

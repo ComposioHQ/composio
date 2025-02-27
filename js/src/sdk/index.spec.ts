@@ -36,6 +36,33 @@ describe("Basic SDK spec suite", () => {
     process.exit = originalExit;
   });
 
+  it("should handle multiple clients with different API keys in the same process", async () => {
+    const client1 = new Composio({
+      apiKey: "api_key_1",
+      baseUrl: getTestConfig().BACKEND_HERMES_URL,
+    });
+    
+    const client2 = new Composio({
+      apiKey: "api_key_2",
+      baseUrl: getTestConfig().BACKEND_HERMES_URL,
+    });
+    
+    // Get axios instances to verify they are different
+    const axiosInstance1 = client1.backendClient.getAxiosInstance();
+    const axiosInstance2 = client2.backendClient.getAxiosInstance();
+    
+    // Check that the instances are different objects
+    expect(axiosInstance1).not.toBe(axiosInstance2);
+    
+    // Check that the API keys are set correctly in the headers
+    expect(axiosInstance1.defaults.headers.common["X-API-KEY"]).toBe("api_key_1");
+    expect(axiosInstance2.defaults.headers.common["X-API-KEY"]).toBe("api_key_2");
+    
+    // Verify that using client1 again returns the same instance
+    const axiosInstanceAgain = client1.backendClient.getAxiosInstance();
+    expect(axiosInstanceAgain).toBe(axiosInstance1);
+  });
+
   it("should handle 404 error gracefully", async () => {
     const mockError = {
       type: "NotFoundError",

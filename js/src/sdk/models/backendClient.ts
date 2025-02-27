@@ -5,6 +5,7 @@ import { setAxiosClientConfig } from "../utils/config";
 import { CEG } from "../utils/error";
 import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { removeTrailingSlashIfExists } from "../utils/string";
+import { Client, createClient, createConfig } from "@hey-api/client-axios";
 
 /**
  * Class representing the details required to initialize and configure the API client.
@@ -24,7 +25,7 @@ export class AxiosBackendClient {
    * The runtime environment where the client is being used.
    */
   public runtime: string;
-  public instance: AxiosInstance;
+  public instance: Client;
 
   /**
    * Creates an instance of apiClientDetails.
@@ -37,8 +38,14 @@ export class AxiosBackendClient {
     this.runtime = runtime || "";
     this.apiKey = apiKey;
     this.baseUrl = removeTrailingSlashIfExists(baseUrl);
-    this.instance = axiosClient.instance;
-
+    this.instance = createClient(createConfig({
+      baseURL: this.baseUrl,
+      headers: {
+        "X-API-KEY": `${this.apiKey}`,
+        "X-SOURCE": "js_sdk",
+        "X-RUNTIME": this.runtime,
+      },
+    }));
     if (!apiKey) {
       throw CEG.getCustomError(
         COMPOSIO_SDK_ERROR_CODES.COMMON.API_KEY_UNAVAILABLE,
@@ -62,7 +69,6 @@ export class AxiosBackendClient {
       );
     }
 
-    this.initializeApiClient();
   }
 
   /**
@@ -72,33 +78,16 @@ export class AxiosBackendClient {
    */
   public async getClientId(): Promise<string> {
     try {
-      const { data } = await apiClient.clientAuth.getUserInfo();
+      const { data } = await apiClient.clientAuth.getUserInfo({
+        client: this.instance,
+      });
       return data?.client?.id || "";
     } catch (error) {
       throw CEG.handleAllError(error);
     }
   }
 
-  /**
-   * Initializes the API client with the provided configuration.
-   * @private
-   */
-  private initializeApiClient() {
-    axiosClient.setConfig({
-      baseURL: removeTrailingSlashIfExists(this.baseUrl),
-      headers: {
-        "X-API-KEY": `${this.apiKey}`,
-        "X-SOURCE": "js_sdk",
-        "X-RUNTIME": this.runtime,
-      },
-      throwOnError: true,
-    });
-
-    setAxiosClientConfig(axiosClient.instance);
-    this.instance = axiosClient.instance;
-  }
-
   getAxiosInstance() {
-    return axiosClient.instance;
+    return this.instance.instance;
   }
 }

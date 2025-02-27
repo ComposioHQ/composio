@@ -18,6 +18,7 @@ import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { AxiosBackendClient } from "./backendClient";
+import { Client } from "@hey-api/client-axios";
 
 type ConnectedAccountsListData = z.infer<typeof ZListConnectionsData> & {
   /** @deprecated use appUniqueKeys field instead */
@@ -50,13 +51,14 @@ export type ConnectionItem = ConnectionParams;
 export class ConnectedAccounts {
   private backendClient: AxiosBackendClient;
   private fileName: string = "js/src/sdk/models/connectedAccounts.ts";
-
+  private client: Client;
   /**
    * Initializes a new instance of the ConnectedAccounts class.
    * @param {AxiosBackendClient} backendClient - The backend client instance.
    */
-  constructor(backendClient: AxiosBackendClient) {
+  constructor(backendClient: AxiosBackendClient, client: Client) {
     this.backendClient = backendClient;
+    this.client = client;
   }
 
   /**
@@ -76,6 +78,7 @@ export class ConnectedAccounts {
       const { appNames, appUniqueKeys } = ZListConnectionsData.parse(data);
       const finalAppNames = appNames || appUniqueKeys?.join(",");
       const res = await apiClient.connections.listConnections({
+        client: this.client,
         query: {
           ...data,
           appNames: finalAppNames,
@@ -103,6 +106,7 @@ export class ConnectedAccounts {
     try {
       ZSingleConnectionParams.parse(data);
       const res = await apiClient.connections.getConnection({
+        client: this.client,
         path: data,
         throwOnError: true,
       });
@@ -126,6 +130,7 @@ export class ConnectedAccounts {
     try {
       ZSingleConnectionParams.parse(data);
       const res = await apiClient.connections.deleteConnection({
+        client: this.client,
         path: data,
         throwOnError: true,
       });
@@ -151,6 +156,7 @@ export class ConnectedAccounts {
     try {
       ZSingleConnectionParams.parse(data);
       const res = await apiClient.connections.disableConnection({
+        client: this.client,
         path: data,
         throwOnError: true,
       });
@@ -177,6 +183,7 @@ export class ConnectedAccounts {
     try {
       ZSingleConnectionParams.parse(data);
       await apiClient.connections.enableConnection({
+        client: this.client,
         path: {
           connectedAccountId: data.connectedAccountId,
         },
@@ -206,6 +213,7 @@ export class ConnectedAccounts {
     });
     try {
       const connection = await apiClient.connectionsV2.initiateConnectionV2({
+        client: this.client,
         body: {
           app: {
             uniqueKey: payload.appName!,
@@ -235,6 +243,7 @@ export class ConnectedAccounts {
         connectionStatus: connectionResponse?.connectionStatus!,
         connectedAccountId: connectionResponse?.connectedAccountId!,
         redirectUri: connectionResponse?.redirectUrl!,
+        client: this.client,
       });
     } catch (error) {
       throw CEG.handleAllError(error);
@@ -255,6 +264,7 @@ export class ConnectedAccounts {
     try {
       ZReinitiateConnectionPayloadDto.parse(data);
       const connection = await apiClient.connections.reinitiateConnection({
+        client: this.client,
         path: {
           connectedAccountId: data.connectedAccountId,
         },
@@ -270,6 +280,7 @@ export class ConnectedAccounts {
         connectionStatus: res?.connectionStatus!,
         connectedAccountId: res?.connectedAccountId!,
         redirectUri: res?.redirectUrl!,
+        client: this.client,
       });
     } catch (error) {
       throw CEG.handleAllError(error);
@@ -281,19 +292,22 @@ export class ConnectionRequest {
   connectionStatus: string;
   connectedAccountId: string;
   redirectUrl: string | null;
-
+  private client: Client;
   constructor({
     connectionStatus,
     connectedAccountId,
     redirectUri,
+    client,
   }: {
     connectionStatus: string;
     connectedAccountId: string;
     redirectUri: string | null;
+    client: Client;
   }) {
     this.connectionStatus = connectionStatus;
     this.connectedAccountId = connectedAccountId;
     this.redirectUrl = redirectUri;
+    this.client = client;
   }
 
   async saveUserAccessData(data: SaveUserAccessDataParam) {
@@ -301,10 +315,12 @@ export class ConnectionRequest {
       ZSaveUserAccessDataParam.parse(data);
       const { data: connectedAccount } =
         await apiClient.connections.getConnection({
+          client: this.client,
           path: { connectedAccountId: this.connectedAccountId },
         });
       if (!connectedAccount) throw new Error("Connected account not found");
       return await apiClient.connections.initiateConnection({
+        client: this.client,
         body: {
           integrationId: connectedAccount.integrationId,
           //@ts-ignore
@@ -330,6 +346,7 @@ export class ConnectionRequest {
       while (Date.now() - startTime < timeout * 1000) {
         const connection = await apiClient.connections
           .getConnection({
+            client: this.client,
             path: { connectedAccountId: this.connectedAccountId },
           })
           .then((res) => res.data);

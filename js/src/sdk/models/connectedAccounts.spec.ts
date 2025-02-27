@@ -8,7 +8,7 @@ describe("ConnectedAccounts class tests", () => {
 
   beforeAll(() => {
     backendClient = getBackendClient();
-    connectedAccounts = new ConnectedAccounts(backendClient);
+    connectedAccounts = new ConnectedAccounts(backendClient, backendClient.instance);
   });
 
   it("should create a ConnectedAccounts instance and retrieve connections list", async () => {
