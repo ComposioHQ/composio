@@ -382,6 +382,7 @@ def test_execute_action_param_serialization() -> None:
         connected_account_id=None,
         text=None,
         session_id=mock.ANY,
+        allow_tracing=False,
     )
 
 
