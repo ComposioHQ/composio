@@ -156,14 +156,11 @@ export class Actions {
           ...parsedData.requestBody,
           sessionInfo: {
             ...(parsedData.requestBody?.sessionInfo || {}),
-            ...(parsedData.requestBody?.allowTracing
-              ? {
-                  sessionId:
-                    parsedData.requestBody?.sessionInfo?.sessionId ||
-                    ComposioSDKContext.sessionId,
-                }
-              : {}),
+            sessionId:
+              parsedData.requestBody?.sessionInfo?.sessionId ||
+              ComposioSDKContext.sessionId,
           },
+          allowTracing: parsedData.requestBody?.allowTracing || false,
         } as ActionExecutionReqDTO,
         path: {
           actionId: parsedData.actionName,
