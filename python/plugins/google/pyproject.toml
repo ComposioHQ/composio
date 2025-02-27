@@ -1,0 +1,23 @@
+[project]
+name = "composio_google"
+version = "0.7.4"
+description = "Use Composio to get an array of tools with your google agent."
+authors = [
+    {name = "Composio", email = "tech@composio.dev"}
+]
+readme = "README.md"
+requires-python = ">=3.10,<4"
+license = {text = "Apache-2.0"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "composio_core>=0.7.0,<0.8.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
