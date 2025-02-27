@@ -109,10 +109,8 @@ class Enum(t.Generic[DataT]):
             # pylint: disable=import-outside-toplevel
             from composio.client import Composio
 
-            # pylint: disable=import-outside-toplevel
-            from composio.client.utils import check_cache_refresh
-
-            check_cache_refresh(Composio.get_latest())
+            # Creating an client instance that will perform fast cache refresh
+            _ = Composio()
             if not path.exists():
                 return
 
@@ -131,6 +129,12 @@ class Enum(t.Generic[DataT]):
     def load(self) -> DataT:
         if self._data is not None:
             return self._data
+
+        from composio.client import Composio  # pylint: disable=import-outside-toplevel
+
+        if not self.storage_path.exists():
+            # Creating an client instance that will perform fast cache refresh
+            _ = Composio()
 
         if self.storage_path.exists():
             data = self.storage.load(self.storage_path)

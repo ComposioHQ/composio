@@ -22,7 +22,7 @@ from composio.client.enums.base import (
     replacement_action_name,
 )
 from composio.exceptions import ApiKeyNotProvidedError
-from composio.tools.local import load_local_tools
+from composio.tools.local import ToolRegistry, load_local_tools
 from composio.utils import get_enum_key
 from composio.utils.logging import get_logger
 
@@ -136,6 +136,20 @@ def update_triggers(
     _update_triggers_cache(triggers=triggers)
 
 
+def _create_local_apps_cache(registry: ToolRegistry):
+    processed = []
+    for tool in registry["local"].values():
+        if tool.enum in processed:
+            continue
+
+        processed.append(tool.enum)
+        enums.base.AppData(
+            name=tool.name,
+            path=enums.base.APPS_CACHE / tool.enum,
+            is_local=True,
+        ).store()
+
+
 def _update_apps_cache(apps: t.List[AppModel]) -> None:
     """Create App enum class."""
     app_names = []
@@ -155,16 +169,26 @@ def _update_apps_cache(apps: t.List[AppModel]) -> None:
             is_local=False,
         ).store()
 
-    for tool in load_local_tools()["local"].values():
-        if tool.enum in app_names:
+    _create_local_apps_cache(registry=load_local_tools())
+
+
+def _create_local_actions_cache(registry: ToolRegistry):
+    processed = []
+    for tool in registry["local"].values():
+        if tool.name in processed:
             continue
 
-        app_names.append(tool.enum)
-        enums.base.AppData(
-            name=tool.name,
-            path=enums.base.APPS_CACHE / app_names[-1],
-            is_local=True,
-        ).store()
+        processed.append(tool.name)
+        for actcls in tool.actions():
+            enums.base.ActionData(
+                name=actcls.enum,
+                app=tool.name,
+                tags=actcls.tags(),
+                no_auth=True,
+                is_local=True,
+                path=enums.base.ACTIONS_CACHE / actcls.enum,
+                shell=False,
+            ).store()
 
 
 def _update_actions_cache(actions: t.List[ActionModel]) -> None:
@@ -196,23 +220,7 @@ def _update_actions_cache(actions: t.List[ActionModel]) -> None:
             replaced_by=replaced_by,
         ).store()
 
-    processed = []
-    for tool in load_local_tools()["local"].values():
-        if tool.name in processed:
-            continue
-
-        processed.append(tool.name)
-        for actcls in tool.actions():
-            action_names.append(actcls.enum)
-            enums.base.ActionData(
-                name=actcls.enum,
-                app=tool.name,
-                tags=actcls.tags(),
-                no_auth=True,
-                is_local=True,
-                path=enums.base.ACTIONS_CACHE / action_names[-1],
-                shell=False,
-            ).store()
+    _create_local_actions_cache(registry=load_local_tools())
 
 
 def _update_tags_cache(actions: t.List[ActionModel]) -> None:
@@ -269,6 +277,9 @@ def _check_and_refresh_actions(client: Composio):
     if enums.base.ACTIONS_CACHE.exists():
         for action in enums.base.ACTIONS_CACHE.iterdir():
             action_data = json.loads(action.read_text())
+            if action_data["is_local"]:
+                continue
+
             # The action file could be old. If it doesn't have a
             # replaced_by field, we want to overwrite it.
             if "replaced_by" not in action_data:
@@ -386,6 +397,7 @@ def check_cache_refresh(client: Composio) -> None:
 
     logger.debug("Checking cache...")
     start = time.monotonic()
+
     ap_thread = threading.Thread(target=_check_and_refresh_apps, args=(client,))
     ac_thread = threading.Thread(target=_check_and_refresh_actions, args=(client,))
     tr_thread = threading.Thread(target=_check_and_refresh_triggers, args=(client,))
@@ -394,7 +406,13 @@ def check_cache_refresh(client: Composio) -> None:
     ap_thread.start()
     tr_thread.start()
 
+    # Load in between threads
+    registry = load_local_tools()
+
     ap_thread.join()
     ac_thread.join()
     tr_thread.join()
+
+    _create_local_actions_cache(registry=registry)
+    _create_local_apps_cache(registry=registry)
     logger.debug("Time taken to update cache: %.2f seconds", time.monotonic() - start)
