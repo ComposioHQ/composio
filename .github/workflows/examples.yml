@@ -94,7 +94,7 @@ jobs:
           python -m uv pip install plugins/${{ matrix.package }}
           python -m uv pip install '.[all]'
           python -m uv pip install 'numpy<2' python-dotenv
-          python -m uv pip install unstructured
+          python -m uv pip unstructured ag2[openai] 'langgraph-prebuilt>=0.1.0'
 
           COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' CI=false PLUGIN_TO_TEST=${{ matrix.package }} python -m uv run pytest -vv tests/test_example.py
           COMPOSIO_BASE_URL=${{ env.COMPOSIO_BASE_URL }} COMPOSIO_API_KEY=${{ env.COMPOSIO_API_KEY }} COMPOSIO_LOGGING_LEVEL='debug' CI=false PLUGIN_TO_TEST=${{ matrix.package }} python -m uv run pytest -vv tests/test_load_tools.py
