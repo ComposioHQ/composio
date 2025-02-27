@@ -32,6 +32,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
       baseUrl?: Optional<string>;
       entityId?: string;
       connectedAccountIds?: Record<string, string>;
+      allowTracing?: boolean;
     } = {}
   ) {
     super({
@@ -40,6 +41,7 @@ export class CloudflareToolSet extends BaseComposioToolSet {
       runtime: null,
       entityId: config.entityId || CloudflareToolSet.DEFAULT_ENTITY_ID,
       connectedAccountIds: config.connectedAccountIds,
+      allowTracing: config.allowTracing || false,
     });
   }
 
