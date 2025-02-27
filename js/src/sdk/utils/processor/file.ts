@@ -95,7 +95,10 @@ export const FILE_SCHEMA_PROCESSOR: TSchemaProcessor = ({ toolSchema }) => {
   const newProperties = { ...properties };
   const newRequired = [...requiredProps];
 
-  const updateSingleProperty = (key: string, property: Record<string, unknown>) => {
+  const updateSingleProperty = (
+    key: string,
+    property: Record<string, unknown>
+  ) => {
     const { type, keyName, description } = convertFileSchemaProperty(
       key,
       property as FileBasePropertySchema
@@ -114,7 +117,10 @@ export const FILE_SCHEMA_PROCESSOR: TSchemaProcessor = ({ toolSchema }) => {
     delete newProperties[key];
   };
 
-  const updateAnyOfProperties = (key: string, property: Record<string, unknown>) => {
+  const updateAnyOfProperties = (
+    key: string,
+    property: Record<string, unknown>
+  ) => {
     let newKeyName = key;
     const newAnyOf = property.anyOf.map((schema: Record<string, unknown>) => {
       if (!schema.file_uploadable) return schema;
