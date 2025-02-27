@@ -16,6 +16,9 @@ classifiers = [
 
 dependencies = [
     "composio_core>=0.7.0,<0.8.0",
+    "autogen>=0.2.0",
+    "autogen_core>=0.2.0",
+    "python-dotenv>=0.0.5",
 ]
 
 [build-system]
