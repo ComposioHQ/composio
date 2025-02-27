@@ -6,7 +6,7 @@ authors = [
     {name = "Composio", email = "tech@composio.dev"}
 ]
 readme = "README.md"
-requires-python = ">=3.9,<4"
+requires-python = ">=3.10,<4"
 license = {text = "Apache-2.0"}
 classifiers = [
     "Programming Language :: Python :: 3",
