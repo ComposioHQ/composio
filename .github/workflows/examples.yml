@@ -87,7 +87,6 @@ jobs:
           PDL_API_KEY: ${{secrets.PDL_API_KEY}}
           COMPOSIO_API_KEY: ${{ inputs.api_key || secrets.COMPOSIO_API_KEY_PROD }}
           COMPOSIO_BASE_URL: ${{ inputs.base_url || secrets.COMPOSIO_BASE_URL || 'https://backend.composio.dev/api' }}
-          COMPOSIO_NO_CACHE_REFRESH: "true"
           # TODO(@kaavee): Add Anthropic API key
         run: |
           python -m pip install uv
