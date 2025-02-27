@@ -30,9 +30,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install uv and check requirements
         run: |
-          pip install uv
-          uv pip install -r requirements.txt
-          uv pip install -r requirements-dev.txt
+          # Install uv with error handling
+          if ! pip install uv; then
+            echo "Failed to install UV package manager"
+            exit 1
+          fi
           uv pip install -e .[all]
           uv pip freeze
           uv pip run composio --help

@@ -1,0 +1,77 @@
+[project]
+name = "composio"
+version = "0.7.4"  # Match current version
+description = "Composio SDK for LLM tool management"
+authors = [
+    {name = "Composio", email = "tech@composio.dev"}
+]
+readme = "README.md"
+requires-python = ">=3.9,<4"
+license = {text = "Apache-2.0"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+
+# Core dependencies from requirements.txt
+dependencies = [
+    "requests>=2.31.0,<3",
+    "jsonschema>=4.21.1,<5",
+    "beaupy>=3.7.2,<4",
+    "termcolor>=2.4.0,<3",
+    "pydantic>=2.6.4,<3",
+    "openai>=1.3.0",
+    "rich>=13.7.1,<14",
+    "importlib-metadata>=4.8.1",
+    "cloup>=3.0.0",
+    "pyperclip>=1.8.2,<2",
+    "simple-parsing>=0.1.5",
+    "docker>=7.1.0",
+    "gymnasium>=0.29.1",
+    "pyyaml>=6.0.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=24.1.1",
+    "isort>=5.13.2",
+    "pytest==7.4.2",
+    "tox==4.6.3",
+    "build>=1.2.1",
+    "twine>=5.0.0",
+    "semver>=3.0.2",
+    "setuptools>=69.5.1",
+    "sentry-sdk>=2.0.0",
+    "ipykernel",
+]
+all = ["composio[dev]"]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv.workspace]
+members = ["plugins/*", "swe"]
+
+[tool.uv.sources]
+# Define workspace sources for each plugin
+composio_agno = {workspace = true}
+composio_autogen = {workspace = true}
+composio_camel = {workspace = true}
+composio_claude = {workspace = true}
+composio_crew_ai = {workspace = true}
+composio_gemini = {workspace = true}
+composio_google = {workspace = true}
+composio_griptape = {workspace = true}
+composio_julep = {workspace = true}
+composio_langchain = {workspace = true}
+composio_langgraph = {workspace = true}
+composio_llamaindex = {workspace = true}
+composio_lyzr = {workspace = true}
+composio_openai = {workspace = true}
+composio_phidata = {workspace = true}
+composio_praisonai = {workspace = true}
+composio_pydanticai = {workspace = true}
+composio_smolagent = {workspace = true}
+swekit = {workspace = true}
