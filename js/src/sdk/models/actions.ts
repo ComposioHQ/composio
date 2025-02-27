@@ -15,6 +15,7 @@ import {
   ZGetListActionsParams,
   ZParameter,
 } from "../types/action";
+import ComposioSDKContext from "../utils/composioContext";
 import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
@@ -151,7 +152,16 @@ export class Actions {
     try {
       const parsedData = ZExecuteParams.parse(data);
       const { data: res } = await apiClient.actionsV2.executeActionV2({
-        body: parsedData.requestBody as unknown as ActionExecutionReqDTO,
+        body: {
+          ...parsedData.requestBody,
+          sessionInfo: {
+            ...(parsedData.requestBody?.sessionInfo || {}),
+            sessionId:
+              parsedData.requestBody?.sessionInfo?.sessionId ||
+              ComposioSDKContext.sessionId,
+          },
+          allowTracing: Boolean(ComposioSDKContext?.allowTracing),
+        } as ActionExecutionReqDTO,
         path: {
           actionId: parsedData.actionName,
         },

@@ -20,6 +20,7 @@ export class TELEMETRY_LOGGER {
           composioVersion: ComposioSDKContext.composioVersion,
           frameworkRuntime: ComposioSDKContext.frameworkRuntime,
           source: ComposioSDKContext.source,
+          sessionId: ComposioSDKContext.sessionId,
           isBrowser: typeof window !== "undefined",
         },
       };
