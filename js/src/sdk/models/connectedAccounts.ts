@@ -1,3 +1,4 @@
+import { Client } from "@hey-api/client-axios";
 import { z } from "zod";
 import {
   ConnectedAccountResponseDTO,
@@ -18,7 +19,6 @@ import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { AxiosBackendClient } from "./backendClient";
-import { Client } from "@hey-api/client-axios";
 
 type ConnectedAccountsListData = z.infer<typeof ZListConnectionsData> & {
   /** @deprecated use appUniqueKeys field instead */

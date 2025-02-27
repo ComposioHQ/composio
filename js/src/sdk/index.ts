@@ -112,7 +112,10 @@ export class Composio {
       this.backendClient,
       this.backendClient.instance
     );
-    this.triggers = new Triggers(this.backendClient, this.backendClient.instance);
+    this.triggers = new Triggers(
+      this.backendClient,
+      this.backendClient.instance
+    );
     this.apps = new Apps(this.backendClient, this.backendClient.instance);
     this.actions = new Actions(this.backendClient, this.backendClient.instance);
     this.integrations = new Integrations(

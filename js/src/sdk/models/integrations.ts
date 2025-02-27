@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { Client } from "@hey-api/client-axios";
 import {
   DeleteRowAPIDTO,
   ExpectedInputFieldsDTO,
@@ -17,9 +18,7 @@ import { CEG } from "../utils/error";
 import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
-import { Apps } from "./apps";
 import { AxiosBackendClient } from "./backendClient";
-import { Client } from "@hey-api/client-axios";
 
 // Types generated from zod schemas
 

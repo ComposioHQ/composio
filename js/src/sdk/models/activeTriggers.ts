@@ -1,3 +1,4 @@
+import { Client } from "@hey-api/client-axios";
 import { z } from "zod";
 import apiClient from "../client/client";
 import {
@@ -9,7 +10,6 @@ import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { AxiosBackendClient } from "./backendClient";
-import { Client } from "@hey-api/client-axios";
 
 export type TriggerItemParam = z.infer<typeof ZTriggerItemParam>;
 export type GetActiveTriggersData = z.infer<typeof ZActiveTriggersQuery>;

@@ -11,7 +11,10 @@ describe("Actions class tests", () => {
   beforeAll(() => {
     backendClient = getBackendClient();
     actions = new Actions(backendClient, backendClient.instance);
-    connectedAccouns = new ConnectedAccounts(backendClient, backendClient.instance);
+    connectedAccouns = new ConnectedAccounts(
+      backendClient,
+      backendClient.instance
+    );
   });
 
   it("should get a specific action", async () => {

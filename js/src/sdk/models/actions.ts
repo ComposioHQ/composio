@@ -1,3 +1,4 @@
+import { Client } from "@hey-api/client-axios";
 import { z } from "zod";
 import {
   ActionDetails,
@@ -20,7 +21,6 @@ import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 import { AxiosBackendClient } from "./backendClient";
-import { Client } from "@hey-api/client-axios";
 
 /**
  * Request types inferred from zod schemas

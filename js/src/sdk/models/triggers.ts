@@ -9,6 +9,7 @@ import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 
+import { Client } from "@hey-api/client-axios";
 import { ListTriggersResponse } from "../client";
 import {
   TriggerSingleParam,
@@ -21,7 +22,6 @@ import {
   ZTriggerSubscribeParam,
 } from "../types/trigger";
 import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
-import { Client } from "@hey-api/client-axios";
 
 // Types inferred from zod schemas
 export type TriggerListParam = z.infer<typeof ZTriggerQuery> & {

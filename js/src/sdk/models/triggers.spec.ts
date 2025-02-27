@@ -17,9 +17,15 @@ describe("Apps class tests", () => {
   beforeAll(() => {
     backendClient = getBackendClient();
     triggers = new Triggers(backendClient, backendClient.instance);
-    _connectedAccounts = new ConnectedAccounts(backendClient, backendClient.instance);
+    _connectedAccounts = new ConnectedAccounts(
+      backendClient,
+      backendClient.instance
+    );
     _entity = new Entity(backendClient, "default");
-    _connectedAccounts = new ConnectedAccounts(backendClient, backendClient.instance);
+    _connectedAccounts = new ConnectedAccounts(
+      backendClient,
+      backendClient.instance
+    );
     _actions = new Actions(backendClient, backendClient.instance);
   });
 
@@ -50,7 +56,10 @@ describe("Apps class tests subscribe", () => {
   beforeAll(() => {
     backendClient = getBackendClient();
     triggers = new Triggers(backendClient, backendClient.instance);
-    connectedAccounts = new ConnectedAccounts(backendClient, backendClient.instance);
+    connectedAccounts = new ConnectedAccounts(
+      backendClient,
+      backendClient.instance
+    );
     _entity = new Entity(backendClient, "default");
     _actions = new Actions(backendClient, backendClient.instance);
   });

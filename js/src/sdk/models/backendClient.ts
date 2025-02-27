@@ -1,11 +1,8 @@
-import { AxiosInstance } from "axios";
+import { Client, createClient, createConfig } from "@hey-api/client-axios";
 import apiClient from "../client/client";
-import { client as axiosClient } from "../client/services.gen";
-import { setAxiosClientConfig } from "../utils/config";
 import { CEG } from "../utils/error";
 import { COMPOSIO_SDK_ERROR_CODES } from "../utils/errors/src/constants";
 import { removeTrailingSlashIfExists } from "../utils/string";
-import { Client, createClient, createConfig } from "@hey-api/client-axios";
 
 /**
  * Class representing the details required to initialize and configure the API client.
@@ -38,14 +35,16 @@ export class AxiosBackendClient {
     this.runtime = runtime || "";
     this.apiKey = apiKey;
     this.baseUrl = removeTrailingSlashIfExists(baseUrl);
-    this.instance = createClient(createConfig({
-      baseURL: this.baseUrl,
-      headers: {
-        "X-API-KEY": `${this.apiKey}`,
-        "X-SOURCE": "js_sdk",
-        "X-RUNTIME": this.runtime,
-      },
-    }));
+    this.instance = createClient(
+      createConfig({
+        baseURL: this.baseUrl,
+        headers: {
+          "X-API-KEY": `${this.apiKey}`,
+          "X-SOURCE": "js_sdk",
+          "X-RUNTIME": this.runtime,
+        },
+      })
+    );
     if (!apiKey) {
       throw CEG.getCustomError(
         COMPOSIO_SDK_ERROR_CODES.COMMON.API_KEY_UNAVAILABLE,
@@ -68,7 +67,6 @@ export class AxiosBackendClient {
         }
       );
     }
-
   }
 
   /**

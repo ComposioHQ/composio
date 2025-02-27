@@ -8,6 +8,7 @@ import { CEG } from "../utils/error";
 import { TELEMETRY_LOGGER } from "../utils/telemetry";
 import { TELEMETRY_EVENTS } from "../utils/telemetry/events";
 
+import { Client } from "@hey-api/client-axios";
 import { z } from "zod";
 import {
   ZGetAppParams,
@@ -17,7 +18,6 @@ import {
   ZRequiredParamsResponse,
 } from "../types/app";
 import { AxiosBackendClient } from "./backendClient";
-import { Client } from "@hey-api/client-axios";
 
 // schema types generated from zod
 export type AppGetRequiredParams = z.infer<typeof ZGetRequiredParams>;
