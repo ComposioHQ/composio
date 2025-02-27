@@ -46,8 +46,8 @@ def test_load_tools(plugin: str) -> None:
         try:
             action.load()
             actions.append(action)
-        except ComposioSDKError:
-            continue
+        except ComposioSDKError as e:
+            pytest.fail(f"Error loading {action!r}: {e}")
 
     with (
         mock.patch.object(toolset, "check_connected_account"),
