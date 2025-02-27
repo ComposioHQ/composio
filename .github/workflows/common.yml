@@ -96,6 +96,11 @@ jobs:
         run: |
           pip install tox
       - name: Run tests
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_STAGING }}
+          COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          E2B_API_KEY: ${{ secrets.E2B_API_KEY_STAGING }}
         run: |
           cd swe && tox -e py
 
@@ -107,7 +112,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.9, 3.10, 3.11]
+        python-version: [3.10, 3.11]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -117,6 +122,11 @@ jobs:
         run: |
           pip install tox
       - name: Run tests
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_STAGING }}
+          COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          E2B_API_KEY: ${{ secrets.E2B_API_KEY_STAGING }}
         run: |
           tox -e py
 
@@ -131,6 +141,16 @@ jobs:
         python-version: [3.10]
     steps:
       - uses: actions/checkout@v4
+      - name: Install Docker Engine
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+          sudo apt-get update
+          sudo apt-get install -y docker-ce docker-ce-cli
+          sudo systemctl start docker
+          sudo systemctl enable docker
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -138,5 +158,10 @@ jobs:
         run: |
           pip install tox
       - name: Run tests
+        env:
+          COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY_STAGING }}
+          COMPOSIO_BASE_URL: ${{ secrets.COMPOSIO_BASE_URL_STAGING }}
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          E2B_API_KEY: ${{ secrets.E2B_API_KEY_STAGING }}
         run: |
           tox -e e2e
