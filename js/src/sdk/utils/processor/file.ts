@@ -38,6 +38,12 @@ const processFileUpload = async (
   for (const [key, value] of Object.entries(result)) {
     if (!key.endsWith(FILE_SUFFIX)) continue;
 
+    const isEmpty = value === "" || !value;
+    if (isEmpty) {
+      delete result[key];
+      continue;
+    }
+
     const originalKey = key.replace(FILE_SUFFIX, "");
     const fileData = await getFileDataAfterUploadingToS3(
       value as string,
@@ -89,9 +95,10 @@ export const FILE_SCHEMA_PROCESSOR: TSchemaProcessor = ({ toolSchema }) => {
   const newProperties = { ...properties };
   const newRequired = [...requiredProps];
 
-  for (const [key, property] of Object.entries(newProperties)) {
-    if (!property.file_uploadable) continue;
-
+  const updateSingleProperty = (
+    key: string,
+    property: Record<string, unknown>
+  ) => {
     const { type, keyName, description } = convertFileSchemaProperty(
       key,
       property as FileBasePropertySchema
@@ -108,6 +115,47 @@ export const FILE_SCHEMA_PROCESSOR: TSchemaProcessor = ({ toolSchema }) => {
     }
 
     delete newProperties[key];
+  };
+
+  const updateAnyOfProperties = (
+    key: string,
+    property: Record<string, unknown>
+  ) => {
+    let newKeyName = key;
+    const newAnyOf = property.anyOf.map((schema: Record<string, unknown>) => {
+      if (!schema.file_uploadable) return schema;
+
+      const { type, keyName, description } = convertFileSchemaProperty(
+        key,
+        schema as FileBasePropertySchema
+      );
+
+      newKeyName = keyName as string;
+
+      return {
+        title: key,
+        type,
+        description: property.description,
+      };
+    });
+
+    newProperties[newKeyName] = {
+      ...property,
+      anyOf: newAnyOf,
+    };
+    delete newProperties[key];
+
+    if (requiredProps.includes(key)) {
+      newRequired[newRequired.indexOf(key)] = newKeyName as string;
+    }
+  };
+
+  for (const [key, property] of Object.entries(newProperties)) {
+    if (Array.isArray(property.anyOf)) {
+      updateAnyOfProperties(key, property);
+    } else if (property.file_uploadable) {
+      updateSingleProperty(key, property);
+    }
   }
 
   return {
