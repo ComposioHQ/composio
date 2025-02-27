@@ -277,6 +277,7 @@ class Entity:
         session_id: t.Optional[str] = None,
         text: t.Optional[str] = None,
         auth: t.Optional[CustomAuthObject] = None,
+        allow_tracing: bool = False,
     ) -> t.Dict:
         if action.no_auth:
             return self.client.actions.execute(
@@ -285,6 +286,7 @@ class Entity:
                 entity_id=self.id,
                 session_id=session_id,
                 text=text,
+                allow_tracing=allow_tracing,
             )
 
         if auth is not None:
@@ -295,6 +297,7 @@ class Entity:
                 session_id=session_id,
                 text=text,
                 auth=auth,
+                allow_tracing=allow_tracing,
             )
 
         connected_account = self.get_connection(
@@ -310,6 +313,7 @@ class Entity:
             session_id=session_id,
             text=text,
             auth=auth,
+            allow_tracing=allow_tracing,
         )
 
     def get_connection(
