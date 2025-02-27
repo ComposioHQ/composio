@@ -241,7 +241,11 @@ def test_example(
 
     # Check if process exited with success
     assert proc.returncode == 0, (
-        proc.stdout.read() + b"\n" + "=" * 64 + b"\n" + proc.stderr.read()  # type: ignore
+        t.cast(t.IO[bytes], proc.stdout).read()
+        + b"\n"
+        + b"=" * 64
+        + b"\n"
+        + t.cast(t.IO[bytes], proc.stderr).read()
     )
 
     # Validate output
