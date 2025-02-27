@@ -102,7 +102,10 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           E2B_API_KEY: ${{ secrets.E2B_API_KEY_STAGING }}
         run: |
-          cd swe && tox -e py
+          if ! cd swe && tox -e py; then
+            echo "Failed to run swe tests"
+            exit 1
+          fi
 
   test:
     defaults:
@@ -128,7 +131,10 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           E2B_API_KEY: ${{ secrets.E2B_API_KEY_STAGING }}
         run: |
-          tox -e py
+          if ! tox -e py; then
+            echo "Failed to run tests"
+            exit 1
+          fi
 
   e2e:
     defaults:
@@ -145,8 +151,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
           sudo apt-get update
           sudo apt-get install -y docker-ce docker-ce-cli
           sudo systemctl start docker
@@ -164,4 +170,7 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           E2B_API_KEY: ${{ secrets.E2B_API_KEY_STAGING }}
         run: |
-          tox -e e2e
+          if ! tox -e e2e; then
+            echo "Failed to run e2e tests"
+            exit 1
+          fi
