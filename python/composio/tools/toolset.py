@@ -1292,6 +1292,7 @@ class _IntegrationMixin(_GetMixin):
         *,
         auth_scheme: t.Optional[AuthSchemeType] = None,
         auth_config: t.Optional[t.Dict[str, t.Any]] = None,
+        use_composio_auth: bool = True,
     ) -> ConnectionRequestModel:
         """
         Initiates a connection with the specified integration.
@@ -1310,67 +1311,21 @@ class _IntegrationMixin(_GetMixin):
                 f"'auth_scheme' must be one of {AUTH_SCHEME_WITH_INITIATE}"
             )
 
-        if integration_id is None:
-            if app is None:
-                raise InvalidParams(
-                    message="Both `integration_id` and `app` cannot be None"
-                )
+        if app is not None:
+            app_name = app if isinstance(app, str) else app.name
 
-            if auth_scheme is None:
-                auth_scheme = self.get_auth_scheme_for_app(app).auth_mode
-
-            if auth_scheme is not None and auth_scheme not in AUTH_SCHEME_WITH_INITIATE:
-                self._validate_no_auth_scheme(auth_scheme)
-                raise InvalidParams(
-                    f"'auth_scheme' must be one of {AUTH_SCHEME_WITH_INITIATE}"
-                )
-
-            try:
-                integration_id = self._get_integration_for_app(
-                    app=t.cast(
-                        AppType,
-                        app,
-                    ),
-                    auth_scheme=auth_scheme,
-                ).id
-            except NoItemsFound:
-                auth_config, use_composio_auth = self._validate_auth_config(
-                    app, auth_scheme, auth_config
-                )
-                integration = self.create_integration(
-                    app=app,
-                    auth_mode=auth_scheme,
-                    auth_config=auth_config,
-                    use_composio_oauth_app=use_composio_auth,
-                )
-                integration_id = integration.id
-
-        connected_account_params = connected_account_params or {}
-        expected_params = self.get_expected_params_for_user(
-            auth_scheme=auth_scheme, integration_id=integration_id
-        )["expected_params"]
-        required_params = [param for param in expected_params if param.required]
-        unavailable_params = [
-            param.name
-            for param in required_params
-            if param.name not in connected_account_params
-        ]
-        if unavailable_params:
-            raise InvalidParams(
-                f"Expected 'connected_account_params' to provide these params: {unavailable_params}"
-            )
-
-        # Populate defaults in the connected_account_params
-        for param in expected_params:
-            if param.default is not None and param.name not in connected_account_params:
-                connected_account_params[param.name] = param.default
-
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         return self.client.connected_accounts.initiate(
             integration_id=integration_id,
             entity_id=entity_id or self.entity_id,
             params=connected_account_params,
             labels=labels,
             redirect_url=redirect_url,
+            app_unique_key=app_name,  # pylint: disable=E0606
+            name=f"{app_name}_{timestamp}",
+            auth_mode=auth_scheme,
+            auth_config=auth_config,
+            use_composio_auth=use_composio_auth,
         )
 
     def _validate_auth_config(
