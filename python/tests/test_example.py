@@ -240,7 +240,9 @@ def test_example(
     filepath.write_text(original_source, encoding="utf-8")
 
     # Check if process exited with success
-    assert proc.returncode == 0
+    assert proc.returncode == 0, (
+        proc.stdout.read() + b"\n" + "=" * 64 + b"\n" + proc.stderr.read()  # type: ignore
+    )
 
     # Validate output
     output = (
