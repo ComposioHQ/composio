@@ -1,0 +1,98 @@
+---
+title: Installation
+subtitle: Let's learn how to use Composio's SDK to build with LLMs
+---
+
+## Prerequisites
+
+Before installing Composio, ensure you have:
+
+- A Composio [account](https://app.composio.dev) and
+  [API key](https://app.composio.dev/settings)
+- Python 3.8+ or Node.js 16+
+
+Composio provides Python and TypeScript SDKs as well as plugins with major
+Agentic frameworks.
+
+## Install the SDK
+
+<Tabs>
+  <Tip>
+  For Python installations, we recommend using `uv` for better dependency management and faster installations.
+  </Tip>
+  <Tab title="Python">
+    ### Installation
+    Using `uv` (recommended)
+    ```bash
+    uv add composio_core
+    ```
+
+    Using pip
+    ```bash
+    pip install composio_core
+    ```
+
+    ### Plugins
+    Depending on what LLM framework you're using, you'll need to install the relevant plugin.
+    ```bash
+    uv add composio_openai      # For OpenAI
+    uv add composio_langchain   # For LangChain
+    ```
+    <Card
+      title="Plugins"
+      icon="puzzle-piece"
+      href="https://docs.composio.dev"
+    >
+    Choose from 19 and counting frameworks to select and use with Composio!
+    </Card>
+
+  </Tab>
+  <Tab title="JavaScript">
+    ### Installation
+    Using npm
+    ```bash
+    npm install composio
+    ```
+    Using yarn
+    ```bash
+    yarn add composio
+    ```
+    Using pnpm
+    ```bash
+    pnpm add composio
+    ```
+    > The package includes TypeScript type definitions out of the box.
+
+    ### Plugins
+    The TS package comes installed with support for:
+    - [LangChain JS](https://github.com/langchain-ai/langchainjs)
+    - [LangGraph JS](https://github.com/langchain-ai/langgraphjs)
+    - [Cloudflare Worker AI](https://developers.cloudflare.com/workers-ai/)
+    - [Vercel AI SDK](https://github.com/vercel/ai)
+
+  </Tab>
+</Tabs>
+
+## Authentication
+
+<Tabs title="">
+  <Tab title="Environment Variable">
+    You can store your API key in a `.env` file. ```env
+    COMPOSIO_API_KEY=your_api_key ```
+  </Tab>
+  <Tab title="Configuration File">
+    You can create a `.composio` file to store your API key along with other
+    Composio configuration. ```yaml api_key: your_api_key ```
+  </Tab>
+</Tabs>
+
+## Start Building!
+
+<CardGroup cols={2}>
+  <Card title="Tool Calling 0-100" icon="code" href="/">
+    Learn about tool calling in LLMs.
+  </Card>
+  <Card title="Composio Quickstart" icon="graduation-cap" href="/">
+    Integrate external tool with your LLM pipeline and Agents.
+  </Card>
+</CardGroup>

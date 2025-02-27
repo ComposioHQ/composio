@@ -1,0 +1,130 @@
+# yaml-language-server: $schema=https://schema.buildwithfern.dev/docs-yml.json
+
+instances:
+  - url: https://composio.docs.buildwithfern.com
+    custom-domain: docs.composio.dev
+    edit-this-page: 
+      github: 
+        owner: ComposioHQ
+        repo: composio
+        branch: main
+title: Composio
+favicon: favicon1.png
+logo:
+  light: logo/light.svg
+  dark: logo/dark.svg
+  height: 30
+colors:                              
+  accent-primary:
+    light: "#635BFF"                 # Stripe's primary purple
+    dark: "#9B90FF"                  # Lighter purple for dark mode
+  background:
+    light: "#FFFFFF" 
+    dark: "#0A2540"
+
+layout: 
+  tabs-placement: header
+  searchbar-placement: header
+navbar-links:
+  - type: minimal
+    text: Discord
+    href: https://dub.composio.dev/discord
+  - type: filled
+    text: Get your API Key
+    href: https://app.composio.dev/settings
+css: styles.css
+tabs:
+  docs:
+    display-name: Docs
+    skip-slug: true
+  tutorials:
+    display-name: Tutorials
+    slug: tutorials
+  guides:
+    display-name: Guides
+    slug: guides
+  sdk-reference:
+    display-name: SDK Reference
+    slug: sdk-reference
+  api-reference:
+    display-name: API Reference
+    slug: api-reference
+navigation:
+  - tab: docs
+    layout:
+      - section: Getting Started
+        contents:
+          - page: Welcome
+            path: getting-started/welcome.mdx
+          - page: Installation
+            path: getting-started/installation.mdx
+          - page: Quickstart
+            path: getting-started/quickstart.mdx
+
+      - section: Concepts
+        contents:
+          - section: Tool Calling
+            contents:
+              - page: LLMs and Tool Calling
+                path: tool-calling/llms-and-tool-calling.mdx
+              - page: Advanced
+                path: tool-calling/advanced.mdx
+          - page: Triggers
+            path: triggers/triggers.mdx
+          - section: Authentication
+            contents:
+              - page: Overview
+                path: authentication/overview.mdx
+              - page: White-Labelling
+                path: authentication/white-labelling.mdx
+          - page: Workspace Environments
+            path: workspace-environments/workspace-environments.mdx
+
+      - section: Resources
+        contents:
+          - page: Glossary
+            path: resources/glossary.mdx
+          - page: FAQs
+            path: resources/faqs.mdx
+
+  # - tab: tutorials
+  #   layout:
+  #     - section: Getting Started Tutorials
+  #       contents:
+  #         - page: Basic Tool Creation
+  #           path: tutorials/getting-started/basic-tool-creation.mdx
+  #         - page: Authentication Setup
+  #           path: tutorials/getting-started/authentication-setup.mdx
+
+  # - tab: guides
+  #   layout:
+  #     - section: Best Practices
+  #       contents:
+  #         - page: Tool Design Patterns
+  #           path: guides/best-practices/tool-design-patterns.mdx
+  #         - page: Security Guidelines
+  #           path: guides/best-practices/security-guidelines.mdx
+
+  - tab: sdk-reference
+    layout:
+      - section: Python SDK
+        contents:
+          - page: Overview
+            path: sdk/python/overview.mdx
+          - page: Client Reference
+            path: sdk/python/client-reference.mdx
+      - section: JavaScript SDK
+        contents:
+          - page: Overview
+            path: sdk/javascript/overview.mdx
+          - page: Client Reference
+            path: sdk/javascript/client-reference.mdx
+
+  # - tab: api-reference
+  #   layout:
+  #     - api: API Reference
+  #       paginated: true
+        # snippets: 
+        #   python: composio
+        #   typescript: composio
+  

@@ -1,0 +1,159 @@
+---
+title: Tool Calling in Practice
+subtitle: Learn how to implement tool calling in your applications
+---
+
+# Tool Calling in Practice
+
+This guide demonstrates practical implementations of tool calling in Composio.
+
+## Basic Implementation
+
+### 1. Define a Tool
+
+```python
+from composio import Tool, ToolInput
+
+class SearchTool(Tool):
+    name = "search"
+    description = "Search for information on a given topic"
+
+    class Inputs(ToolInput):
+        query: str
+        max_results: int = 5
+
+    def execute(self, inputs):
+        # Implementation
+        return search_results
+```
+
+### 2. Register the Tool
+
+```python
+from composio import register_tool
+
+register_tool(SearchTool())
+```
+
+### 3. Use with LLM
+
+```python
+from composio import LLM
+
+llm = LLM()
+response = llm.run("Find information about AI tools", tools=[SearchTool])
+```
+
+## Advanced Patterns
+
+### Chaining Tools
+
+```python
+from composio import Chain
+
+chain = Chain([
+    SearchTool(),
+    SummarizeTool(),
+    TranslateTool()
+])
+
+result = chain.run("Find and summarize AI news in Spanish")
+```
+
+### Tool Authentication
+
+```python
+from composio import Tool, auth
+
+@auth.requires_api_key
+class GmailTool(Tool):
+    name = "gmail"
+
+    def execute(self, inputs):
+        # Authenticated execution
+        pass
+```
+
+### Error Handling
+
+```python
+from composio import Tool, ToolError
+
+class RobustTool(Tool):
+    def execute(self, inputs):
+        try:
+            # Main execution
+            pass
+        except Exception as e:
+            raise ToolError(f"Tool failed: {str(e)}")
+```
+
+## Integration Examples
+
+### With LangChain
+
+```python
+from composio.integrations import ComposioToolkit
+from langchain.agents import initialize_agent
+
+toolkit = ComposioToolkit()
+agent = initialize_agent(toolkit.get_tools())
+```
+
+### With LlamaIndex
+
+```python
+from composio.integrations import ComposioToolset
+from llama_index import GPTSimpleVectorIndex
+
+toolset = ComposioToolset()
+index = GPTSimpleVectorIndex.from_documents(toolset.as_documents())
+```
+
+## Monitoring and Debugging
+
+### Logging
+
+```python
+import composio
+
+composio.set_debug(True)
+composio.set_log_level("DEBUG")
+```
+
+### Performance Tracking
+
+```python
+from composio import metrics
+
+with metrics.track_execution("my_tool"):
+    result = tool.execute(inputs)
+
+print(metrics.get_statistics("my_tool"))
+```
+
+## Best Practices
+
+1. **Tool Design**
+
+   - Keep tools focused and single-purpose
+   - Provide clear error messages
+   - Include usage examples
+
+2. **Performance**
+
+   - Implement caching where appropriate
+   - Use async execution for I/O-bound operations
+   - Batch operations when possible
+
+3. **Security**
+   - Validate inputs
+   - Handle sensitive data properly
+   - Implement proper authentication
+
+## Next Steps
+
+- Review our [Best Practices](./best-practices)
+- Learn about [Authentication](/introduction/concepts/authentication)
+- Explore
+  [Workspace Environments](/introduction/concepts/workspace-environments)
