@@ -92,17 +92,17 @@ export class AxiosBackendClient {
    * @private
    */
   private initializeApiClient() {
-    // this.instance.setConfig({
-    //   baseURL: removeTrailingSlashIfExists(this.baseUrl),
-    //   headers: {
-    //     common: {
-    //       "X-API-KEY": `${this.apiKey}`,
-    //       "X-SOURCE": "js_sdk",
-    //       "X-RUNTIME": this.runtime,
-    //     }
-    //   },
-    //   throwOnError: true,
-    // });
+    this.instance.setConfig({
+      baseURL: removeTrailingSlashIfExists(this.baseUrl),
+      headers: {
+        common: {
+          "X-API-KEY": `${this.apiKey}`,
+          "X-SOURCE": "js_sdk",
+          "X-RUNTIME": this.runtime,
+        }
+      },
+      throwOnError: true,
+    });
 
     // setAxiosClientConfig(this.instance.instance);
   }
