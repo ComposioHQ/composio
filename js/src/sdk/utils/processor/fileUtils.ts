@@ -2,6 +2,7 @@ import axios, { AxiosError } from "axios";
 import crypto from "crypto";
 import apiClient from "../../client/client";
 import { saveFile } from "../fileUtils";
+import { Client } from "@hey-api/client-axios";
 
 const readFileContent = async (
   path: string
@@ -36,10 +37,12 @@ const uploadFileToS3 = async (
   content: string,
   actionName: string,
   appName: string,
-  mimeType: string
+  mimeType: string,
+  client: Client
 ): Promise<string> => {
   const extension = mimeType.split("/")[1] || "bin";
   const response = await apiClient.actionsV2.createFileUploadUrl({
+    client: client,
     body: {
       action: actionName,
       app: appName,
@@ -80,7 +83,8 @@ const uploadFileToS3 = async (
 
 export const getFileDataAfterUploadingToS3 = async (
   path: string,
-  actionName: string
+  actionName: string,
+  client: Client
 ): Promise<{
   name: string;
   mimetype: string;
@@ -95,7 +99,8 @@ export const getFileDataAfterUploadingToS3 = async (
     fileData.content,
     actionName,
     actionName,
-    fileData.mimeType
+    fileData.mimeType,
+    client
   );
 
   return {

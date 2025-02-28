@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ActionExecutionResDto } from "../sdk/client";
+import { Client } from "@hey-api/client-axios";
 
 /*
     This is the schema for the raw action to be stored locally
@@ -52,6 +53,7 @@ export type TPreProcessor = ({
 }: {
   params: Record<string, unknown>;
   actionName: string;
+  client: Client;
 }) => Promise<Record<string, unknown>> | Record<string, unknown>;
 
 export type TPostProcessor = ({

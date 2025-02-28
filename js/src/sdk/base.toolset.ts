@@ -278,6 +278,7 @@ export class ComposioToolSet {
       params = await processor({
         params: params,
         actionName: action,
+        client: this.client.backendClient.instance,
       });
     }
 

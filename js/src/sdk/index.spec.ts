@@ -73,13 +73,15 @@ describe("Basic SDK spec suite", () => {
       name: "AppNotFoundError",
       message: "Not found",
     };
-    mock.onGet(/.*\/api\/v1\/apps/).reply(404, mockError);
 
     const client = new Composio({
       apiKey: COMPOSIO_API_KEY,
       baseUrl: getTestConfig().BACKEND_HERMES_URL,
     });
+  
+    const mock = new AxiosMockAdapter(client.backendClient.getAxiosInstance());
 
+    mock.onGet(/.*\/api\/v1\/apps/).reply(404, mockError);
     let errorWasThrown = false;
     try {
       await client.apps.list();
@@ -98,9 +100,19 @@ describe("Basic SDK spec suite", () => {
       }
     }
     expect(errorWasThrown).toBe(true);
+    mock.reset();
   });
 
   it("should handle 400 error gracefully", async () => {
+
+
+    let errorWasThrown = false;
+    const client = new Composio({
+      apiKey: COMPOSIO_API_KEY,
+      baseUrl: getTestConfig().BACKEND_HERMES_URL,
+    });
+
+    const mock = new AxiosMockAdapter(client.backendClient.getAxiosInstance());
     mock.onGet(/.*\/api\/v1\/apps/).reply(400, {
       type: "BadRequestError",
       name: "InvalidRequestError",
@@ -115,12 +127,6 @@ describe("Basic SDK spec suite", () => {
         },
       ],
     });
-
-    let errorWasThrown = false;
-    const client = new Composio({
-      apiKey: COMPOSIO_API_KEY,
-      baseUrl: getTestConfig().BACKEND_HERMES_URL,
-    });
     try {
       await client.apps.list();
     } catch (e) {
@@ -134,18 +140,20 @@ describe("Basic SDK spec suite", () => {
       );
     }
     expect(errorWasThrown).toBe(true);
+    mock.reset();
   });
 
   it("should handle 500 and 502 error gracefully, and without backend fix", async () => {
-    mock.onGet(/.*\/api\/v1\/apps/).reply(500, {
-      type: "InternalServerError",
-      name: "ServerError",
-      message: "Internal Server Error",
-    });
     let errorWasThrown = false;
     const client = new Composio({
       apiKey: COMPOSIO_API_KEY,
       baseUrl: getTestConfig().BACKEND_HERMES_URL,
+    });
+    const mock = new AxiosMockAdapter(client.backendClient.getAxiosInstance());
+    mock.onGet(/.*\/api\/v1\/apps/).reply(500, {
+      type: "InternalServerError",
+      name: "ServerError",
+      message: "Internal Server Error",
     });
     try {
       await client.apps.list();
@@ -195,6 +203,7 @@ describe("Basic SDK spec suite", () => {
       const error = e as ComposioError;
       expect(error.errCode).toBe(COMPOSIO_SDK_ERROR_CODES.BACKEND.SERVER_ERROR);
     }
+    mock.reset();
   });
 
   it("should give request timeout error", async () => {
@@ -202,6 +211,7 @@ describe("Basic SDK spec suite", () => {
       apiKey: COMPOSIO_API_KEY,
       baseUrl: getTestConfig().BACKEND_HERMES_URL,
     });
+    const mock = new AxiosMockAdapter(client.backendClient.getAxiosInstance());
 
     mock.onGet(/.*\/api\/v1\/apps/).reply(408, {
       error: {
@@ -225,6 +235,7 @@ describe("Basic SDK spec suite", () => {
     }
 
     expect(errorWasThrown).toBe(true);
+    mock.reset()
   });
 
   it("syntax error handling", async () => {
