@@ -39,9 +39,11 @@ export class AxiosBackendClient {
     this.instance = createClient(createConfig({
       baseURL: this.baseUrl,
       headers: {
-        "X-API-KEY": `${this.apiKey}`,
-        "X-SOURCE": "js_sdk",
-        "X-RUNTIME": this.runtime,
+        // common: {
+          "X-API-KEY": `${this.apiKey}`,
+          "X-SOURCE": "js_sdk",
+          "X-RUNTIME": this.runtime,
+        // }
       },
     }));
     if (!apiKey) {
@@ -90,17 +92,19 @@ export class AxiosBackendClient {
    * @private
    */
   private initializeApiClient() {
-    this.instance.setConfig({
-      baseURL: removeTrailingSlashIfExists(this.baseUrl),
-      headers: {
-        "X-API-KEY": `${this.apiKey}`,
-        "X-SOURCE": "js_sdk",
-        "X-RUNTIME": this.runtime,
-      },
-      throwOnError: true,
-    });
+    // this.instance.setConfig({
+    //   baseURL: removeTrailingSlashIfExists(this.baseUrl),
+    //   headers: {
+    //     common: {
+    //       "X-API-KEY": `${this.apiKey}`,
+    //       "X-SOURCE": "js_sdk",
+    //       "X-RUNTIME": this.runtime,
+    //     }
+    //   },
+    //   throwOnError: true,
+    // });
 
-    setAxiosClientConfig(this.instance.instance);
+    // setAxiosClientConfig(this.instance.instance);
   }
   
   getAxiosInstance() {

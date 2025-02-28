@@ -55,10 +55,10 @@ describe("Basic SDK spec suite", () => {
     expect(axiosInstance1).not.toBe(axiosInstance2);
 
     // Check that the API keys are set correctly in the headers
-    expect(axiosInstance1.defaults.headers.common["X-API-KEY"]).toBe(
+    expect(axiosInstance1.defaults.headers["X-API-KEY"]).toBe(
       "api_key_1"
     );
-    expect(axiosInstance2.defaults.headers.common["X-API-KEY"]).toBe(
+    expect(axiosInstance2.defaults.headers["X-API-KEY"]).toBe(
       "api_key_2"
     );
 
