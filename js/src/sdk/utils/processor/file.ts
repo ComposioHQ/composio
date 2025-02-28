@@ -57,7 +57,7 @@ const processFileUpload = async (
 export const FILE_INPUT_PROCESSOR: TPreProcessor = async ({
   params,
   actionName,
-  client
+  client,
 }) => {
   return processFileUpload(params, actionName, client);
 };

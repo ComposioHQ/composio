@@ -55,12 +55,8 @@ describe("Basic SDK spec suite", () => {
     expect(axiosInstance1).not.toBe(axiosInstance2);
 
     // Check that the API keys are set correctly in the headers
-    expect(axiosInstance1.defaults.headers["X-API-KEY"]).toBe(
-      "api_key_1"
-    );
-    expect(axiosInstance2.defaults.headers["X-API-KEY"]).toBe(
-      "api_key_2"
-    );
+    expect(axiosInstance1.defaults.headers["X-API-KEY"]).toBe("api_key_1");
+    expect(axiosInstance2.defaults.headers["X-API-KEY"]).toBe("api_key_2");
 
     // Verify that using client1 again returns the same instance
     const axiosInstanceAgain = client1.backendClient.getAxiosInstance();
@@ -78,7 +74,7 @@ describe("Basic SDK spec suite", () => {
       apiKey: COMPOSIO_API_KEY,
       baseUrl: getTestConfig().BACKEND_HERMES_URL,
     });
-  
+
     const mock = new AxiosMockAdapter(client.backendClient.getAxiosInstance());
 
     mock.onGet(/.*\/api\/v1\/apps/).reply(404, mockError);
@@ -104,8 +100,6 @@ describe("Basic SDK spec suite", () => {
   });
 
   it("should handle 400 error gracefully", async () => {
-
-
     let errorWasThrown = false;
     const client = new Composio({
       apiKey: COMPOSIO_API_KEY,
@@ -235,7 +229,7 @@ describe("Basic SDK spec suite", () => {
     }
 
     expect(errorWasThrown).toBe(true);
-    mock.reset()
+    mock.reset();
   });
 
   it("syntax error handling", async () => {

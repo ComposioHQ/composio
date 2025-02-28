@@ -1,8 +1,8 @@
+import { Client } from "@hey-api/client-axios";
 import axios, { AxiosError } from "axios";
 import crypto from "crypto";
 import apiClient from "../../client/client";
 import { saveFile } from "../fileUtils";
-import { Client } from "@hey-api/client-axios";
 
 const readFileContent = async (
   path: string
