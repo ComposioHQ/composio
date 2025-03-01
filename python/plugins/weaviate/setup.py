@@ -10,8 +10,8 @@ from setuptools import setup
 setup(
     name="composio_weaviate",
     version="0.7.4",
-    author="Sawradip",
-    author_email="sawradip@composio.dev",
+    author="CShorten",
+    author_email="connor@weaviate.io",
     description="Use Composio to get an array of tools with your Weaviate agent.",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
