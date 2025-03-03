@@ -34,13 +34,13 @@
   "author": "Utkarsh Dixit <utkarsh@composio.dev>",
   "license": "ISC",
   "peerDependencies": {
-    "@ai-sdk/openai": "^0.0.36",
-    "@cloudflare/workers-types": "^4.20240718.0",
-    "@langchain/core": "^0.2.18",
-    "@langchain/openai": "^0.2.5",
-    "ai": "^3.2.22",
-    "langchain": "^0.2.11",
-    "openai": "^4.50.0"
+    "ai": ">=3.2.22",
+    "@ai-sdk/openai": ">=0.0.36",
+    "@cloudflare/workers-types": ">=4.20240718.0",
+    "@langchain/core": ">=0.2.18",
+    "@langchain/openai": ">=0.2.5",
+    "langchain": ">=0.2.11",
+    "openai": ">=4.50.0"
   },
   "dependencies": {
     "axios": "^1.7.2",

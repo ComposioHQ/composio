@@ -28,6 +28,7 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       baseUrl?: Optional<string>;
       entityId?: string;
       connectedAccountIds?: Record<string, string>;
+      allowTracing?: boolean;
     } = {}
   ) {
     super({
@@ -36,10 +37,14 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       runtime: "vercel-ai",
       entityId: config.entityId || "default",
       connectedAccountIds: config.connectedAccountIds,
+      allowTracing: config.allowTracing || false,
     });
   }
 
-  private generateVercelTool(schema: RawActionData) {
+  private generateVercelTool(
+    schema: RawActionData,
+    entityId: Optional<string> = null
+  ) {
     return tool({
       description: schema.description,
       // @ts-ignore the type are JSONSchemV7. Internally it's resolved
@@ -50,21 +55,25 @@ export class VercelAIToolSet extends BaseComposioToolSet {
             name: schema.name,
             arguments: JSON.stringify(params),
           },
-          this.entityId
+          entityId || this.entityId
         );
       },
     });
   }
 
   // change this implementation
-  async getTools(filters: {
-    actions?: Array<string>;
-    apps?: Array<string>;
-    tags?: Optional<Array<string>>;
-    useCase?: Optional<string>;
-    usecaseLimit?: Optional<number>;
-    filterByAvailableApps?: Optional<boolean>;
-  }): Promise<{ [key: string]: CoreTool }> {
+  async getTools(
+    filters: {
+      actions?: Array<string>;
+      apps?: Array<string>;
+      tags?: Optional<Array<string>>;
+      useCase?: Optional<string>;
+      usecaseLimit?: Optional<number>;
+      filterByAvailableApps?: Optional<boolean>;
+      integrationId?: Optional<string>;
+    },
+    entityId: Optional<string> = null
+  ): Promise<{ [key: string]: CoreTool }> {
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_METHOD_INVOKED, {
       method: "getTools",
       file: this.fileName,
@@ -80,18 +89,25 @@ export class VercelAIToolSet extends BaseComposioToolSet {
       actions,
     } = ZExecuteToolCallParams.parse(filters);
 
-    const actionsList = await this.getToolsSchema({
-      apps,
-      actions,
-      tags,
-      useCase,
-      useCaseLimit: usecaseLimit,
-      filterByAvailableApps,
-    });
+    const actionsList = await this.getToolsSchema(
+      {
+        apps,
+        actions,
+        tags,
+        useCase,
+        useCaseLimit: usecaseLimit,
+        filterByAvailableApps,
+      },
+      entityId,
+      filters.integrationId
+    );
 
     const tools: { [key: string]: CoreTool } = {};
     actionsList.forEach((actionSchema) => {
-      tools[actionSchema.name!] = this.generateVercelTool(actionSchema);
+      tools[actionSchema.name!] = this.generateVercelTool(
+        actionSchema,
+        entityId
+      );
     });
 
     return tools;

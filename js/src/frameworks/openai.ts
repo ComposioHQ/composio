@@ -30,6 +30,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
       baseUrl?: Optional<string>;
       entityId?: string;
       connectedAccountIds?: Record<string, string>;
+      allowTracing?: boolean;
     } = {}
   ) {
     super({
@@ -38,6 +39,7 @@ export class OpenAIToolSet extends BaseComposioToolSet {
       runtime: OpenAIToolSet.FRAMEWORK_NAME,
       entityId: config.entityId || OpenAIToolSet.DEFAULT_ENTITY_ID,
       connectedAccountIds: config.connectedAccountIds,
+      allowTracing: config.allowTracing || false,
     });
   }
 
@@ -51,7 +53,11 @@ export class OpenAIToolSet extends BaseComposioToolSet {
       params: filters,
     });
 
-    const mainActions = await this.getToolsSchema(filters, entityId);
+    const mainActions = await this.getToolsSchema(
+      filters,
+      entityId,
+      filters.integrationId
+    );
     return (
       mainActions.map((action) => {
         const formattedSchema: OpenAI.FunctionDefinition = {

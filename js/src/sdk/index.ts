@@ -53,9 +53,15 @@ export class Composio {
    * @param {string} [config.apiKey] - The API key for authenticating with the Composio backend. Can also be set locally in an environment variable.
    * @param {string} [config.baseUrl] - The base URL for the Composio backend. By default, it is set to the production URL.
    * @param {string} [config.runtime] - The runtime environment for the SDK.
+   * @param {boolean} [config.allowTracing] - Whether to allow tracing for the SDK.
    */
   constructor(
-    config: { apiKey?: string; baseUrl?: string; runtime?: string } = {}
+    config: {
+      apiKey?: string;
+      baseUrl?: string;
+      runtime?: string;
+      allowTracing?: boolean;
+    } = {}
   ) {
     // Parse the base URL and API key, falling back to environment variables or defaults if not provided
     const { baseURL: baseURLParsed, apiKey: apiKeyParsed } = getSDKConfig(
@@ -73,6 +79,7 @@ export class Composio {
     ComposioSDKContext.baseURL = baseURLParsed;
     ComposioSDKContext.frameworkRuntime = config?.runtime;
     ComposioSDKContext.composioVersion = COMPOSIO_VERSION;
+    ComposioSDKContext.allowTracing = config?.allowTracing;
 
     TELEMETRY_LOGGER.manualTelemetry(TELEMETRY_EVENTS.SDK_INITIALIZED, {});
 
@@ -129,7 +136,6 @@ export class Composio {
         isNewerVersion(latestVersion, currentVersionFromPackageJson) &&
         !IS_DEVELOPMENT_OR_CI
       ) {
-        // eslint-disable-next-line no-console
         logger.info(
           `🚀 Upgrade available! Your composio-core version (${currentVersionFromPackageJson}) is behind. Latest version: ${latestVersion}.`
         );
