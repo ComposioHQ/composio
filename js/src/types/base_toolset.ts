@@ -1,3 +1,4 @@
+import { Client } from "@hey-api/client-axios";
 import { z } from "zod";
 import { ActionExecutionResDto } from "../sdk/client";
 
@@ -52,6 +53,7 @@ export type TPreProcessor = ({
 }: {
   params: Record<string, unknown>;
   actionName: string;
+  client: Client;
 }) => Promise<Record<string, unknown>> | Record<string, unknown>;
 
 export type TPostProcessor = ({

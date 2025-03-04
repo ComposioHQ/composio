@@ -11,8 +11,8 @@ describe("Integrations class tests", () => {
 
   beforeAll(() => {
     const backendClient = getBackendClient();
-    integrations = new Integrations(backendClient);
-    apps = new Apps(backendClient);
+    integrations = new Integrations(backendClient, backendClient.instance);
+    apps = new Apps(backendClient, backendClient.instance);
   });
 
   it("Retrieve integrations list", async () => {
