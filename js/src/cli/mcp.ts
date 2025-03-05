@@ -22,6 +22,12 @@ interface WindsurfConfig {
   };
 }
 
+interface ClaudeConfig {
+  mcpServers: {
+    [key: string]: MCPConfig;
+  };
+}
+
 export default class MCPCommand {
   private program: Command;
 
@@ -120,16 +126,24 @@ export default class MCPCommand {
       if (!fs.existsSync(configDir)) {
         fs.mkdirSync(configDir, { recursive: true });
       }
+      let claudeConfig: ClaudeConfig = { mcpServers: {} };
+      if (fs.existsSync(configPath)) {
+        try {
+          claudeConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+        } catch (error) {
+          console.log(chalk.yellow("⚠️  Creating new config file"));
+        }
+      }
 
+      // Ensure mcpServers exists
+      if (!claudeConfig.mcpServers) claudeConfig.mcpServers = {};
+      
+      // Update only the mcpServers entry
+      claudeConfig.mcpServers[url] = config;
+      
       fs.writeFileSync(
         configPath,
-        JSON.stringify(
-          {
-            mcpServers: { [url]: config },
-          },
-          null,
-          2
-        )
+        JSON.stringify(claudeConfig, null, 2)
       );
 
       console.log(chalk.green(`✅ Configuration saved to: ${configPath}`));
