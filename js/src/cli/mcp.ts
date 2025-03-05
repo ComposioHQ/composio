@@ -95,7 +95,7 @@ export default class MCPCommand {
     command: string
   ): void {
     const config: MCPConfig = {
-      command: "npx -y @composio-core@latest",
+      command: "npx -y @composio-core@mcp",
       args: ["transport", "--sse", mcpUrl],
     };
 
