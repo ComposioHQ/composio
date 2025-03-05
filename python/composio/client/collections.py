@@ -44,11 +44,20 @@ from composio.utils.shared import generate_request_id
 
 if t.TYPE_CHECKING:
     from composio.client import Composio
-
-ALL_AUTH_SCHEMES = ("OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN", "NO_AUTH")
-AUTH_SCHEME_WITH_INITIATE = ("OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN")
+ALL_AUTH_SCHEMES = (
+    "OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN", 
+    "BASIC_WITH_JWT", "GOOGLE_SERVICE_ACCOUNT", "GOOGLEADS_AUTH", 
+    "NO_AUTH", "COMPOSIO_LINK", "CALCOM_AUTH"
+)
+AUTH_SCHEME_WITH_INITIATE = (
+    "OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN", 
+    "BASIC_WITH_JWT", "GOOGLE_SERVICE_ACCOUNT", "GOOGLEADS_AUTH", 
+    "COMPOSIO_LINK", "CALCOM_AUTH"
+)
 AuthSchemeType = t.Literal[
-    "OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN", "BASIC_WITH_JWT", "NO_AUTH"
+    "OAUTH2", "OAUTH1", "API_KEY", "BASIC", "BEARER_TOKEN", 
+    "BASIC_WITH_JWT", "GOOGLE_SERVICE_ACCOUNT", "GOOGLEADS_AUTH", 
+    "NO_AUTH", "COMPOSIO_LINK", "CALCOM_AUTH"
 ]
 
 
@@ -354,7 +363,6 @@ class Apps(Collection[AppModel]):
                         url=str(self.endpoint / name),
                     )
                 ).json()
-            )
 
         return super().get(queries={})
 
@@ -1563,7 +1571,6 @@ class Integrations(Collection[IntegrationModel]):
                 **self._raise_if_required(
                     self.client.http.get(url=str(self.endpoint / id))
                 ).json()
-            )
 
         quries = {}
         if page_size is not None:
