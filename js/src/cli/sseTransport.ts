@@ -10,12 +10,9 @@
  */
 
 /* eslint-disable no-console */
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { Command } from "commander";
 import { z } from "zod";
-// Use dynamic import for SSEClientTransport to avoid ESM issues
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+// All imports are lazy loaded to prevent issues in serverless environments
 import {
   JSONRPCMessage,
   JSONRPCRequest,
@@ -39,10 +36,14 @@ async function sseToStdio(sseUrl: string): Promise<void> {
   logStderr(`  - sse: ${sseUrl}`);
   logStderr("Connecting to SSE...");
 
-  // @fix: this does not work in dev CLI environment because of esm module.
+  // Lazy load all imports to prevent issues in serverless environments
+  const { Server } = await import("@modelcontextprotocol/sdk/server/index.js");
+  const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
+  const { StdioServerTransport } = await import("@modelcontextprotocol/sdk/server/stdio.js");
   const { SSEClientTransport } = await import(
     "@modelcontextprotocol/sdk/client/sse.js"
   );
+  
   const sseTransport = new SSEClientTransport(new URL(sseUrl));
   const sseClient = new Client(
     { name: "mcp-transport", version: getVersion() },
