@@ -99,33 +99,57 @@ export default class MCPCommand {
       args: ["-y", "composio-core@rc", "transport", "--sse", mcpUrl],
     };
 
+    const homeDir = os.homedir();
+    
+    const platformPaths = {
+      win32: {
+        baseDir: process.env.APPDATA || path.join(homeDir, "AppData", "Roaming"),
+        vscodePath: path.join("Code", "User", "globalStorage"),
+      },
+      darwin: {
+        baseDir: path.join(homeDir, "Library", "Application Support"),
+        vscodePath: path.join("Code", "User", "globalStorage"),
+      },
+      linux: {
+        baseDir: process.env.XDG_CONFIG_HOME || path.join(homeDir, ".config"),
+        vscodePath: path.join("Code/User/globalStorage"),
+      },
+    };
+    
+    const platform = process.platform as keyof typeof platformPaths;
+    
+    // Check if platform is supported
+    if (!platformPaths[platform]) {
+      console.log(chalk.yellow(`\n⚠️ Platform ${platform} is not supported.`));
+      return;
+    }
+    
+    const { baseDir } = platformPaths[platform];
+    
+    // Define client paths using the platform-specific base directories
+    const clientPaths: { [key: string]: { configDir: string; configPath: string } } = {
+      claude: {
+        configDir: path.join(baseDir, "Claude"),
+        configPath: path.join(baseDir, "Claude", "claude_desktop_config.json"),
+      },
+      windsurf: {
+        configDir: path.join(homeDir, ".codeium", "windsurf"),
+        configPath: path.join(homeDir, ".codeium", "windsurf", "mcp_config.json"),
+      }
+    };
+    
+    if (!clientPaths[clientType]) {
+      console.log(chalk.yellow(`\n⚠️ Client ${clientType} is not supported.`));
+      return;
+    }
+    
+    const { configDir, configPath } = clientPaths[clientType];
+
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+    }
+
     if (clientType === "claude") {
-      let configDir;
-      let configPath;
-
-      if (os.platform() === "darwin") {
-        configDir = path.join(
-          os.homedir(),
-          "Library",
-          "Application Support",
-          "Claude"
-        );
-        configPath = path.join(configDir, "claude_desktop_config.json");
-      } else if (os.platform() === "win32") {
-        configDir = path.join(process.env.APPDATA || "", "Claude");
-        configPath = path.join(configDir, "claude_desktop_config.json");
-      } else {
-        console.log(
-          chalk.yellow(
-            "\n⚠️  Claude Desktop is not supported on this platform."
-          )
-        );
-        return;
-      }
-
-      if (!fs.existsSync(configDir)) {
-        fs.mkdirSync(configDir, { recursive: true });
-      }
       let claudeConfig: ClaudeConfig = { mcpServers: {} };
       if (fs.existsSync(configPath)) {
         try {
@@ -145,13 +169,6 @@ export default class MCPCommand {
 
       console.log(chalk.green(`✅ Configuration saved to: ${configPath}`));
     } else if (clientType === "windsurf") {
-      const configDir = path.join(os.homedir(), ".codeium", "windsurf");
-      const configPath = path.join(configDir, "mcp_config.json");
-
-      if (!fs.existsSync(configDir)) {
-        fs.mkdirSync(configDir, { recursive: true });
-      }
-
       let windsurfConfig: WindsurfConfig = { mcpServers: {} };
       if (fs.existsSync(configPath)) {
         try {
