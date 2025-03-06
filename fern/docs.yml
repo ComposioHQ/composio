@@ -1,4 +1,6 @@
 # yaml-language-server: $schema=https://schema.buildwithfern.dev/docs-yml.json
+announcement:
+    message: "🚀 New feature: Announcements are available! (<a href=\"https://buildwithfern.com/learn/docs/building-your-docs/announcements\" target=\"_blank\">Learn more</a>) 🚀"
 
 instances:
   - url: https://composio.docs.buildwithfern.com
@@ -59,10 +61,11 @@ tabs:
   frameworks:
     display-name: Frameworks
     slug: frameworks
+    skip-slug: true
   examples:
     display-name: Examples
     slug: examples
-
+    skip-slug: true
 navigation:
   - tab: docs
     layout:
