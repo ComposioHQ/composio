@@ -140,6 +140,7 @@
 {
       "group": "Supported Frameworks",
       "pages": [
+        "framework/agno",
         "framework/autogen",
         "framework/crewai",
         "framework/gemini",
@@ -160,7 +161,6 @@
             "framework/groq",
             "framework/julep",
             "framework/lyzr",
-            "framework/agno",
             "framework/praisonai",
             "javascript/vercel",
             "framework/google",
