@@ -136,8 +136,8 @@
           "pages": [
             "mcp/overview.md"
           ]
-    }
-    {
+},
+{
       "group": "Supported Frameworks",
       "pages": [
         "framework/autogen",
