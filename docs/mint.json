@@ -133,9 +133,9 @@
     },
     {
       "group": "Composio MCP",
-      "pages": [
-        "mcp/overview.md",
-      ]
+          "pages": [
+            "mcp/overview.md"
+          ]
     }
     {
       "group": "Supported Frameworks",
