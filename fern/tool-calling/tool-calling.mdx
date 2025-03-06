@@ -22,7 +22,7 @@ experience.
 Here's the above example in code:
 
 <CodeGroup>
-```python maxLines=100 wordWrap {9-20, 36}
+```python maxLines=100 wordWrap {9-20, 36} llm-with-calculator.py
 from composio_openai import ComposioToolSet, action
 from typing import Annotated
 from openai import OpenAI
@@ -149,16 +149,6 @@ Composio supports three main ways to use tool calling:
   hosted anywhere.
 </Card>
 
-Here's a quick comparison:
-
-| Type   | Description                            | Best For                                       |
-| ------ | -------------------------------------- | ---------------------------------------------- |
-| Hosted | Pre-built tools maintained by Composio | Quick integration with popular services        |
-| Local  | Tools that run in your environment     | File operations, system access, sensitive data |
-| Custom | Your own tool definitions              | Unique business logic, internal services       |
-
-Let's look at examples of each type:
-
 ### Using Composio's Hosted Tools
 
 Composio hosts a growing list of tools from various popular apps like _Gmail_,
@@ -172,7 +162,7 @@ scrape a webpage.
 
 <Tip>You will need to add a Firecrawl integration. Learn how to do it [here](https://app.composio.dev/app/firecrawl?addConnectorWizard=false)</Tip>
 <CodeGroup>
-```python Python
+```python Python {7}
 from composio_openai import ComposioToolSet
 from openai import OpenAI
 
@@ -221,7 +211,7 @@ Composio ships with a host of tools that are executed on a system locally for pe
 
 These don't require any integration or authentication.
 
-<Info>Local tools are currently only supported on our Python SDK!</Info>
+<Info>Local tools are currently only supported on our [Python SDK](https://github.com/ComposioHQ/composio/tree/master/python/composio/tools/local)!</Info>
 
 These tools run directly on the defined workspace while maintaining security through
 permission controls.
@@ -236,9 +226,7 @@ permission controls.
   system.
 </Accordion>
 
-- [ ] Anthropic TS SDK to be made
-
-```python
+```python {7}
 from composio_claude import ComposioToolSet, action
 from anthropic import Anthropic
 

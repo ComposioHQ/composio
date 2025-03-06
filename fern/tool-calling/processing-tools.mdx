@@ -3,8 +3,6 @@ title: 'Processing Tools'
 subtitle: 'Enhancing tool reliability with schema, input, and output transformations'
 ---
 
-- [ ] Better code guided examples to explain this
-
 ## Schema Processing and Preprocessing
 There may be scenarios where you want to control how the LLM calls a tool and how Composio executes it.
 You may want to remove some parameters from the schema, inject some values into the tool call or process the response from the tool call.
@@ -173,7 +171,7 @@ Developers looking to improve agent reliability should analyze both the schema a
 </Tip>
 
 ### Schema Processing
-Say our system already infers the `recipient_email` parameter and you don't want to send an`attachment`.
+Say your system already infers the `recipient_email` parameter and you don't want to send an`attachment`.
 You wouldn't want the LLM to generate it in the tool call.
 You can simply modify the schema processor to do so:
 

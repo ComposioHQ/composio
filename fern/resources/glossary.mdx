@@ -1,72 +1,160 @@
 ---
 title: Glossary
-subtitle: Key terms and concepts in Composio
+subtitle: Essential terms and concepts in the Composio ecosystem
+description: A comprehensive reference of terminology used throughout Composio's documentation
 ---
 
 # Glossary
 
-This glossary provides definitions for key terms and concepts used throughout
-the Composio documentation.
+This glossary provides clear definitions for key terms and concepts used throughout
+the Composio documentation. Understanding these terms will help you better navigate
+our platform and documentation.
 
 ## A
 
 ### Action
+A specific operation or function within a tool that accomplishes a defined task. Actions are the
+fundamental building blocks of tool functionality in Composio. For example, sending an email
+or creating a GitHub issue would be actions.
 
-A discrete operation or task that can be performed by a tool. Actions are the
-building blocks of tool functionality.
+### Advanced Search
+A powerful feature of the `find_actions_by_use_case` method that enables sophisticated searching 
+for multiple tools needed to accomplish complex tasks. This mode helps AI agents identify 
+combinations of tools that might be required for multi-step operations.
 
 ### API Key
+A secure authentication token used to identify and authorize requests to the Composio API.
+Keep this key confidential as it grants access to your Composio resources.
 
-A unique identifier used to authenticate requests to the Composio API.
+### Apps
+Third-party services or platforms that Composio integrates with, such as GitHub, Gmail, 
+Slack, or Notion. Each app provides specific functionality that can be accessed through 
+Composio's tools and actions.
+
+## C
+
+### Connection
+An authenticated link between an entity (user) and a specific external service through
+an integration. Connections represent successful authorization to access a service on 
+behalf of a user and store necessary credentials securely.
+
+### Custom Tools
+User-defined tools created within the Composio platform that extend functionality beyond
+the pre-built tools. These can be created using the `@action` decorator in Python,
+`createAction` in JavaScript, or by uploading OpenAPI specifications.
+
+## E
+
+### Entity
+A representation of a unique user or service account in the Composio ecosystem. An entity 
+serves as a secure container that holds all the third-party service connections and 
+permissions for a single user.
+
+## H
+
+### Hosted Tools
+Pre-built, maintained tools that Composio provides out-of-the-box, giving developers 
+instant access to thousands of actions across hundreds of integrated apps. These tools 
+are regularly updated and managed by the Composio team.
+
+## I
+
+### Integration
+A configuration object that defines how Composio connects to an external service. 
+It encapsulates authentication methods, permission scopes, and API specifications
+that determine how an AI agent can interact with the service.
 
 ## L
 
 ### LLM (Large Language Model)
-
-An AI model trained on vast amounts of text data, capable of understanding and
-generating human-like text. Examples include GPT-4 and Claude.
+An artificial intelligence model trained on vast amounts of text data, capable of 
+understanding and generating human-like text. Composio enhances LLMs with tool-calling 
+capabilities, allowing them to perform real-world actions.
 
 ### LLM Framework
+A software framework designed to work with large language models. Composio provides
+seamless integration with popular frameworks including:
+- LangChain
+- Autogen
+- OpenAI
+- CrewAI
 
-A software framework designed to work with large language models, providing
-interfaces and utilities for model interaction.
+### Local Tools
+Tools that execute within a developer's environment, such as file operations or custom
+business logic, without requiring external API calls. These tools run in isolated
+workspaces for security and consistency.
+
+## P
+
+### Postprocessing
+A powerful feature that transforms tool outputs after execution but before returning 
+results to the LLM. This enables data filtering, formatting, and optimization to reduce 
+token usage and improve response quality.
+
+### Preprocessing
+A handler that modifies or validates parameters before a tool call is executed. This
+improves reliability by ensuring correct input formatting and reduces LLM hallucination
+by validating parameters.
+
+## S
+
+### Schema Processing
+A sophisticated handler that customizes how tools are presented to LLMs by modifying 
+the tool schema, description, or parameters. This gives developers fine-grained control 
+over how LLMs interact with tools.
 
 ## T
 
 ### Tool
-
 A modular component in Composio that provides specific functionality through a
-defined interface. Tools can be called by LLMs to perform actions.
+defined interface. Tools can be:
+- Hosted (pre-built by Composio)
+- Local (run in your environment)
+- Custom (created by developers)
 
 ### Tool Calling
-
-The process where an LLM selects and uses appropriate tools to accomplish tasks.
-This includes tool selection, parameter preparation, and result handling.
+The process where an LLM intelligently selects and uses appropriate tools to accomplish 
+tasks. This includes:
+- Tool selection based on task requirements
+- Parameter preparation and validation
+- Result handling and processing
 
 ### Tool Registry
-
 A centralized repository where tools are registered, versioned, and managed
-within Composio.
+within Composio. The registry ensures tool discoverability and version control.
+
+### Toolset
+A collection of tools managed through the ComposioToolSet class in the SDK. Toolsets
+can combine multiple types of tools (hosted, local, and custom) into a unified interface.
 
 ### Trigger
+An event-based mechanism that monitors specific activities in connected apps and notifies
+your AI agents in real-time via webhooks or websockets. Triggers enable reactive
+automation based on external events.
 
-An event-based mechanism that initiates tool execution based on specific
-conditions or schedules.
+## U
+
+### Use Case Search
+An intuitive method in Composio for discovering tools based on the task you want to 
+accomplish. This natural language search helps developers find relevant tools without 
+knowing exact tool names or specifications.
 
 ## W
 
 ### Webhook
-
-An HTTP callback that delivers real-time notifications about events in Composio
-to external systems.
+A real-time HTTP callback mechanism that delivers notifications about events in Composio
+to external systems. Webhooks enable asynchronous communication and event-driven
+architectures.
 
 ### White-Labelling
-
-The ability to customize Composio's appearance and branding to match your
-application's look and feel.
+The ability to customize Composio's appearance, branding, and user interface elements
+to match your application's look and feel, creating a seamless user experience.
 
 ### Workspace
+An isolated execution environment for local tools. Composio supports multiple workspace types:
+- Host: Direct machine execution
+- Docker: Containerized environments
+- E2B: Serverless execution
+- Fly.io: Edge computing deployment
 
-An isolated environment where tools, configurations, and resources are managed.
-Workspaces can be used to separate development, staging, and production
-environments.
+Each workspace type offers different benefits for security, scalability, and deployment.

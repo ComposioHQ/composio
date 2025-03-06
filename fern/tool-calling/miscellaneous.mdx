@@ -7,11 +7,42 @@ description: 'Optimize your LLM applications with advanced tool configuration an
 ## Fetching Tools
 While you can find and specify tools from the [dashboard](https://app.composio.dev), Composio also offers programmatic methods to retrieve tools for your LLM applications. This gives you greater flexibility when building dynamic systems.
 
+
+### Specifying Apps and Tags
+You can also retrieve tools by specifying apps and tags, allowing for more targeted tool selection based on your specific needs. This approach helps you filter the available tools to only those relevant to your application.
+
+<CodeGroup>
+```python Python
+from composio_openai import ComposioToolSet, Action, App
+toolset = ComposioToolSet()
+
+tools = toolset.get_tools(
+    apps=[App.JIRA],
+    tags=["Issues"]
+)
+```
+
+```javascript JavaScript
+import { OpenAIToolSet } from "composio-core";
+
+const toolset = new OpenAIToolSet();
+
+const tools = await toolset.getTools({
+  apps: ["JIRA"],
+  tags: ["Issues"]
+});
+```
+</CodeGroup>
+
+
+When working with tools from specific apps, it's important to consider the number of tools being loaded into your LLM's context window.
+
+<Warning>When fetching by specifying the `App`, the Toolset returns only the tools with an `important` tag and not all the tools!</Warning>
+
 ### Use Case Search
 
 Finding tools based on what you're trying to accomplish is often the most intuitive approach.
 
-<Tip>Use the `advanced` flag if your use case needs multiple tools working together</Tip>
 
 <Tabs>
 <Tab title="Search with code">
@@ -41,22 +72,8 @@ NOTION_CREATE_DATABASE
 </Tab>
 </Tabs>
 
-### Tag-Based Filtering
 
-You can also retrieve tools using predefined tags, which allows for more targeted tool selection.
-
-```python
-from composio_openai import ComposioToolSet, App
-
-toolset = ComposioToolSet()
-tools = toolset.find_actions_by_tags(
-    App.CALENDLY,
-    tags=["important"],
-)
-print(tools)
-```
-
-This approach is particularly useful when you need tools with specific capabilities or characteristics within an app's ecosystem.
+<Tip>Use the `advanced` flag if your use case needs multiple tools working together</Tip>
 
 ## Using tools directly
 It is possible to use custom logic to execute the tools instead of relying on `handle_tool_calls`.

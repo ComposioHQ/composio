@@ -59,6 +59,9 @@ tabs:
   frameworks:
     display-name: Frameworks
     slug: frameworks
+  examples:
+    display-name: Examples
+    slug: examples
 
 navigation:
   - tab: docs
@@ -102,114 +105,135 @@ navigation:
     layout:
       - section: Frameworks
         contents:
-          - page: Agno
-            path: frameworks/agno.mdx
           - page: Autogen
             path: frameworks/autogen.mdx
-          - page: CamelAI
-            path: frameworks/camelai.mdx
           - page: CrewAI
             path: frameworks/crewai.mdx
-          - page: Gemini
-            path: frameworks/gemini.mdx
-          - page: Google
-            path: frameworks/google.mdx
-          - page: Griptape
-            path: frameworks/griptape.mdx
-          - page: Groq
-            path: frameworks/groq.mdx
-          - page: IBM
-            path: frameworks/ibm.mdx
-          - page: Julep
-            path: frameworks/julep.mdx
           - page: LangChain
             path: frameworks/langchain.mdx
           - page: LangFlow
             path: frameworks/langflow.mdx
           - page: LangGraph
             path: frameworks/langgraph.mdx
-          - page: Letta
-            path: frameworks/letta.mdx
-          - page: LiteLLM
-            path: frameworks/litellm.mdx
           - page: LlamaIndex
             path: frameworks/llamaindex.mdx
-          - page: Lyzr
-            path: frameworks/lyzr.mdx
-          - page: OpenAI
-            path: frameworks/openai.mdx
-          - page: PraisonAI
-            path: frameworks/praisonai.mdx
-          - page: SmolAgents
-            path: frameworks/smolagents.mdx
+
+
+          - section: Other Frameworks
+            contents:
+              - page: CamelAI
+                path: frameworks/camelai.mdx
+              - page: Gemini
+                path: frameworks/gemini.mdx
+              - page: Google
+                path: frameworks/google.mdx
+              - page: Griptape
+                path: frameworks/griptape.mdx
+              - page: Groq
+                path: frameworks/groq.mdx
+              - page: IBM
+                path: frameworks/ibm.mdx
+              - page: Julep
+                path: frameworks/julep.mdx
+              - page: Letta
+                path: frameworks/letta.mdx
+              - page: LiteLLM
+                path: frameworks/litellm.mdx
+              - page: Lyzr
+                path: frameworks/lyzr.mdx
+              - page: OpenAI
+                path: frameworks/openai.mdx
+              - page: PraisonAI
+                path: frameworks/praisonai.mdx
+              - page: SmolAgents
+                path: frameworks/smolagents.mdx
+
+  - tab: examples
+    layout:
+      - section: Agent Examples
+        contents:
+          - page: Calendar Agent
+            path: examples/calendar-agent.mdx
+          - page: Code Execution Agent
+            path: examples/code-execution-agent.mdx
+          - page: Newsletter Summarizer
+            path: examples/newsletter-summarizer.mdx
+          - page: RAG Agent
+            path: examples/rag-agent.mdx
+          - page: Research Agent
+            path: examples/research-agent.mdx
+          - page: SQL Agent
+            path: examples/sql-agent.mdx
+
+
   - tab: api-reference
     layout:
       - api: API Reference
         paginated: true
 
-  - tab: sdk-reference
-    layout:
-      - section: Python SDK
-        contents:
-          - page: Constants
-            path: sdk/python/composio/constants.mdx
-          - page: Exceptions
-            path: sdk/python/composio/exceptions.mdx
-          - section: Client
-            contents:
-              - page: Overview
-                path: sdk/python/composio/client/index.mdx
-              - page: Base Client
-                path: sdk/python/composio/client/base.mdx
-              # - page: Endpoints
-              #   path: sdk/python/composio/client/endpoints.mdx
-              - page: HTTP Client
-                path: sdk/python/composio/client/http.mdx
-              - page: Collections
-                path: sdk/python/composio/client/collections.mdx
-              - page: Files
-                path: sdk/python/composio/client/files.mdx
-              - page: Utils
-                path: sdk/python/composio/client/utils.mdx
-          - section: Tools
-            contents:
-              - page: Overview
-                path: sdk/python/composio/tools/index.mdx
-              - page: Schema
-                path: sdk/python/composio/tools/schema.mdx
-              - page: Toolset
-                path: sdk/python/composio/tools/toolset.mdx
-          - section: Storage
-            contents:
-              - page: Overview
-                path: sdk/python/composio/storage/index.mdx
-              - page: Base Storage
-                path: sdk/python/composio/storage/base.mdx
-              - page: User Storage
-                path: sdk/python/composio/storage/user.mdx
-          - section: Utils
-            contents:
-              - page: Overview
-                path: sdk/python/composio/utils/index.mdx
-              - page: Decorators
-                path: sdk/python/composio/utils/decorators.mdx
-              - page: Enums
-                path: sdk/python/composio/utils/enums.mdx
-              - page: Git
-                path: sdk/python/composio/utils/git.mdx
-              - page: Logging
-                path: sdk/python/composio/utils/logging.mdx
-              - page: Mimetypes
-                path: sdk/python/composio/utils/mimetypes.mdx
-              - page: PyPI
-                path: sdk/python/composio/utils/pypi.mdx
-              - page: Pydantic
-                path: sdk/python/composio/utils/pydantic.mdx
-              - page: Sentry
-                path: sdk/python/composio/utils/sentry.mdx
-              - page: Shared
-                path: sdk/python/composio/utils/shared.mdx
-              - page: URL
-                path: sdk/python/composio/utils/url.mdx
-              - page: Warnings
-                path: sdk/python/composio/utils/warnings.mdx
+  # - tab: sdk-reference
+  #   layout:
+  #     - section: Python SDK
+  #       contents:
+  #         - page: Constants
+  #           path: sdk/python/composio/constants.mdx
+  #         - page: Exceptions
+  #           path: sdk/python/composio/exceptions.mdx
+  #         - section: Client
+  #           contents:
+  #             - page: Overview
+  #               path: sdk/python/composio/client/index.mdx
+  #             - page: Base Client
+  #               path: sdk/python/composio/client/base.mdx
+  #             # - page: Endpoints
+  #             #   path: sdk/python/composio/client/endpoints.mdx
+  #             - page: HTTP Client
+  #               path: sdk/python/composio/client/http.mdx
+  #             - page: Collections
+  #               path: sdk/python/composio/client/collections.mdx
+  #             - page: Files
+  #               path: sdk/python/composio/client/files.mdx
+  #             - page: Utils
+  #               path: sdk/python/composio/client/utils.mdx
+  #         - section: Tools
+  #           contents:
+  #             - page: Overview
+  #               path: sdk/python/composio/tools/index.mdx
+  #             - page: Schema
+  #               path: sdk/python/composio/tools/schema.mdx
+  #             - page: Toolset
+  #               path: sdk/python/composio/tools/toolset.mdx
+  #         - section: Storage
+  #           contents:
+  #             - page: Overview
+  #               path: sdk/python/composio/storage/index.mdx
+  #             - page: Base Storage
+  #               path: sdk/python/composio/storage/base.mdx
+  #             - page: User Storage
+  #               path: sdk/python/composio/storage/user.mdx
+  #         - section: Utils
+  #           contents:
+  #             - page: Overview
+  #               path: sdk/python/composio/utils/index.mdx
+  #             - page: Decorators
+  #               path: sdk/python/composio/utils/decorators.mdx
+  #             - page: Enums
+  #               path: sdk/python/composio/utils/enums.mdx
+  #             - page: Git
+  #               path: sdk/python/composio/utils/git.mdx
+  #             - page: Logging
+  #               path: sdk/python/composio/utils/logging.mdx
+  #             - page: Mimetypes
+  #               path: sdk/python/composio/utils/mimetypes.mdx
+  #             - page: PyPI
+  #               path: sdk/python/composio/utils/pypi.mdx
+  #             - page: Pydantic
+  #               path: sdk/python/composio/utils/pydantic.mdx
+  #             - page: Sentry
+  #               path: sdk/python/composio/utils/sentry.mdx
+  #             - page: Shared
+  #               path: sdk/python/composio/utils/shared.mdx
+  #             - page: URL
+  #               path: sdk/python/composio/utils/url.mdx
+  #             - page: Warnings
+  #               path: sdk/python/composio/utils/warnings.mdx
