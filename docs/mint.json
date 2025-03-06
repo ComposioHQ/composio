@@ -132,6 +132,12 @@
       ]
     },
     {
+      "group": "Composio MCP",
+          "pages": [
+            "mcp/overview"
+          ]
+},
+{
       "group": "Supported Frameworks",
       "pages": [
         "framework/autogen",
