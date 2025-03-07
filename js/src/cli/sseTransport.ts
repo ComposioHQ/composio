@@ -12,11 +12,8 @@
 /* eslint-disable no-console */
 import { Command } from "commander";
 import { z } from "zod";
-// All imports are lazy loaded to prevent issues in serverless environments
-import {
-  JSONRPCMessage,
-  JSONRPCRequest,
-} from "@modelcontextprotocol/sdk/types.js";
+// Use dynamic import for SSEClientTransport to avoid ESM issues
+import { JSONRPCMessage, JSONRPCRequest } from "composiohq-modelcontextprotocol-typescript-sdk/types.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const log = (...args: any[]): void => console.log("[mcp-transport]", ...args);
@@ -36,14 +33,15 @@ async function sseToStdio(sseUrl: string): Promise<void> {
   logStderr(`  - sse: ${sseUrl}`);
   logStderr("Connecting to SSE...");
 
-  // Lazy load all imports to prevent issues in serverless environments
-  const { Server } = await import("@modelcontextprotocol/sdk/server/index.js");
-  const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
-  const { StdioServerTransport } = await import("@modelcontextprotocol/sdk/server/stdio.js");
-  const { SSEClientTransport } = await import(
-    "@modelcontextprotocol/sdk/client/sse.js"
-  );
   
+  // @fix: this does not work in dev CLI environment because of esm module.
+  const { SSEClientTransport } = await import(
+    "composiohq-modelcontextprotocol-typescript-sdk/client/sse.js"
+  );
+  // Lazy import Client and StdioServerTransport to avoid ESM issues
+  const { Client } = await import("composiohq-modelcontextprotocol-typescript-sdk/client/index.js");
+  const { StdioServerTransport } = await import("composiohq-modelcontextprotocol-typescript-sdk/server/stdio.js");
+  const { Server } = await import("composiohq-modelcontextprotocol-typescript-sdk/server/index.js");
   const sseTransport = new SSEClientTransport(new URL(sseUrl));
   const sseClient = new Client(
     { name: "mcp-transport", version: getVersion() },

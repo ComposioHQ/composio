@@ -40,7 +40,9 @@
     "open": "^8.4.0",
     "@hey-api/client-axios": "^0.2.3",
     "resolve-package-path": "^4.0.0",
-    "@modelcontextprotocol/sdk": "^1.6.1"
+    "@modelcontextprotocol/sdk": "^1.6.1",
+    "isomorphic-unfetch": "^4.0.2"
+    
   },
   "devDependencies": {},
   "publishConfig": {
