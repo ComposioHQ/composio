@@ -2,9 +2,7 @@ from composio_togetherai import Action, ComposioToolSet
 from together import Together
 
 
-client = Together(
-    api_key="TOGETHER_API_KEY"
-)
+client = Together(api_key="TOGETHER_API_KEY")
 toolset = ComposioToolSet()
 tools = toolset.get_tools(actions=[Action.GMAIL_SEND_EMAIL])
 

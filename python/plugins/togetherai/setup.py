@@ -10,8 +10,8 @@ from setuptools import setup
 setup(
     name="composio_togetherai",
     version="0.7.6",
-    author="Abhishek",
-    author_email="abhishek@composio.dev",
+    author="Composio",
+    author_email="tech@composio.dev",
     description="Use Composio to get an array of tools with your Together AI Function Call.",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
@@ -25,7 +25,7 @@ setup(
     install_requires=[
         "composio_core>=0.7.0,<0.8.0",
         "together",
-        "composio_openai>=0.7.0,<0.8.0",
+        "openai",
     ],
     include_package_data=True,
 )
