@@ -11,7 +11,7 @@ Facilitate the integration of Together AI with Composio to empower open source m
 Ensure you have the necessary packages installed and connect your GitHub account to allow your agents to utilize GitHub functionalities.
 
 ```bash
-# Install Composio LangChain package
+# Install Composio Togetherai package
 pip install composio-togetherai
 
 # Connect your GitHub account
@@ -19,6 +19,7 @@ composio add github
 
 # View available applications you can connect with
 composio apps
+```
 
 ### Usage Steps
 
@@ -52,7 +53,7 @@ This step involves configuring and executing the agent to carry out actions, suc
 my_task = "Star a repo composiohq/composio on GitHub"
 
 # Create a chat completion request to decide on the action
-response = client.chat.completions.create(model="gpt-4o",
+response = client.chat.completions.create(
     tools=actions, # Passing actions we fetched earlier.
     messages=[
             {"role": "system", "content": "You are a helpful assistant."},

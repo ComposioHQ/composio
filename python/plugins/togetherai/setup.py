@@ -25,7 +25,6 @@ setup(
     install_requires=[
         "composio_core>=0.7.0,<0.8.0",
         "together",
-        "openai",
     ],
     include_package_data=True,
 )
