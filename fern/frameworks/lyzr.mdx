@@ -1,0 +1,89 @@
+---
+title: "Using Composio With Lyzr"
+sidebarTitle: "Lyzr"
+description: "Integrate Composio with Lyzr agents to let them seamlessly interact with external apps"
+---
+
+**Composio enables** your **Lyzr agents** to **connect** with many **tools**!
+
+<Tip>Goal: Star a repository on GitHub with natural language & Lyzr Agent</Tip>
+
+### Install Packages & Connect a Tool
+
+These commands prepare your environment for seamless interaction between Lyzr and Github.
+
+<CodeGroup>
+    ``` bash Run command
+        pip install lyzr-automata -q
+        pip install composio_lyzr
+        #Connect your Github so agents can use it. 
+        composio add github
+        #Check all different apps which you can connect with
+        composio apps
+
+    ```
+</CodeGroup>
+
+### Goal: Use Lyzr Agent to Interact with Github using Composio
+
+<Steps>
+<Step title="Import Base Packages">
+
+<CodeGroup>
+    ```python Default Imports
+
+        from lyzr_automata import Task, Agent
+        from lyzr_automata.ai_models.openai import OpenAIModel
+        from composio_lyzr import ComposioToolSet, App, Action
+        from lyzr_automata.pipelines.linear_sync_pipeline import LinearSyncPipeline
+
+
+        open_ai_text_completion_model = OpenAIModel( api_key="sk-...", parameters={"model": "gpt-4-turbo"})
+
+    ```
+
+</CodeGroup>
+
+</Step>
+
+<Step title="Execute the Agent">
+
+<CodeGroup>
+    ```python Lyzr Agent Executes Task
+        lyzr_agent = Agent(
+            role="Github Agent",
+            prompt_persona="You are AI agent that is responsible for taking actions on Github on users behalf. You need to take action on Github using Github APIs",
+        )
+
+        composio_toolset = ComposioToolSet().get_lyzr_tool(Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER)
+
+        task = Task(
+            name="Github Starring",
+            agent=lyzr_agent,
+            tool=composio_toolset,
+            model=open_ai_text_completion_model,
+            instructions="Star a repo composiohq/composio on GitHub",
+        )
+
+        LinearSyncPipeline(name="Composio Lyzr", completion_message="Task completed",tasks=[task]).run()
+    ```
+</CodeGroup>
+
+</Step>
+
+<Step title="Check Response">
+
+<CodeGroup>
+    ```bash Lyzr agent output
+        START PIPELINE Composio Lyzr :: start time : 1713439069.754745
+        START TASK Github Starring :: start time : 1713439069.7548192
+        output : {'execution_details': {'executed': True}, 'response_data': ''}
+        END TASK Github Starring :: end time :  1713439073.961327 :: execution time : 4.206507921218872
+        END PIPELINE Composio Lyzr :: end time :  1713439073.961421 :: execution time : 4.206676006317139
+        Task completed
+        [{'task_id': UUID('d0280a9d-89ef-4f8b-8145-58588aebcb6c'), 'task_output': {'execution_details': {'executed': True}, 'response_data': ''}}]
+    ```
+</CodeGroup>
+
+</Step>
+</Steps>

@@ -1,0 +1,388 @@
+---
+title: "RAG Tool Agent"
+sidebarTitle: "RAG Tool Agent"
+description: "This project involves setting up and running a system of agents to add content to a RAG (Retrieval-Augmented Generation) tool, perform queries, and return relevant information. We use Composio to setup this Local Tool and OpenAI GPT-4o to power the agents."
+---
+
+<Card color="#7bee0c" title="RAG Agent GitHub Repository" icon="fa-brands fa-github" href="https://github.com/ComposioHQ/composio">
+  Explore the complete source code for the RAG Agent project. This repository contains all the necessary files and scripts to set up and run the RAG Agent using Composio.
+</Card>
+
+<Steps>
+  <Step title="Install the required packages">
+    <CodeGroup>
+      ```python Python
+      pip install composio-crewai langchain-openai
+      ```
+      
+      ```javascript JavaScript
+      pnpm add composio-core dotenv @langchain/openai langchain
+      ```
+    </CodeGroup>
+    Create a .env file and add your OpenAI API Key.
+  </Step>
+
+  <Step title="Import base packages">
+    Next, we'll import the essential libraries for our project.
+    <CodeGroup>
+      ```python Python
+      import os
+      import textwrap
+
+      from composio_crewai import Action, App, ComposioToolSet
+      from crewai import Agent, Crew, Process, Task
+      from dotenv import load_dotenv
+      from langchain_openai import ChatOpenAI
+      ```
+      
+      ```javascript JavaScript
+      import dotenv from 'dotenv';
+      import { LangchainToolSet } from "composio-core";
+      import { ChatOpenAI } from "@langchain/openai";
+      import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
+      import { pull } from "langchain/hub";
+      
+      dotenv.config();
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Initialize Language Model and Define Tools">
+    Set up the language model and the RAG tools.
+    <CodeGroup>
+      ```python Python
+      load_dotenv()
+
+      # Initialize the language model
+      llm = ChatOpenAI(model="gpt-4o")
+
+      # Set up Composio tools
+      composio_toolset = ComposioToolSet()
+      
+      # Get tools for RAG operations
+      rag_tools = composio_toolset.get_tools(apps=[App.RAG])
+      ```
+      
+      ```javascript JavaScript
+      // Initialize the language model
+      const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
+
+      // Setup Composio tools with workspace environment
+      const composioToolset = new LangchainToolSet({
+          apiKey: process.env.COMPOSIO_API_KEY,
+          workspace: {
+              type: "docker"
+          }
+      });
+      
+      // Get tools for RAG operations
+      const getTools = async () => {
+          return await composioToolset.getTools({
+              actions: ["rag_add_content", "rag_get_content", "rag_query"]
+          });
+      };
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Define the RAG Agent">
+    Create the agent that will work with the RAG system.
+    <CodeGroup>
+      ```python Python
+      # Define the RAG Agent
+      rag_agent = Agent(
+          role="RAG Knowledge Base Manager",
+          goal="Manage a knowledge base using RAG tools",
+          backstory="""You are an expert in managing knowledge bases and retrieving information.
+          Your job is to add content to the knowledge base and retrieve answers to user queries.
+          You use RAG (Retrieval-Augmented Generation) tools to efficiently store and retrieve information.""",
+          verbose=True,
+          allow_delegation=False,
+          tools=rag_tools,
+          llm=llm
+      )
+      ```
+      
+      ```javascript JavaScript
+      // Create the agent
+      const createAgent = async (tools) => {
+          const prompt = await pull("hwchase17/openai-functions-agent");
+          const agent = await createOpenAIFunctionsAgent({
+              llm,
+              tools,
+              prompt
+          });
+          
+          // Set up the agent executor
+          return new AgentExecutor({
+              agent,
+              tools,
+              verbose: true
+          });
+      };
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Add Content to the RAG System">
+    Add sample content to the knowledge base.
+    <CodeGroup>
+      ```python Python
+      # Define task for adding content
+      add_content_task = Task(
+          description="""Add the following information to the knowledge base:
+          
+          1. Paris is the capital city of France.
+          2. London is the capital city of the United Kingdom.
+          3. Washington D.C. is the capital city of the United States.
+          4. Tokyo is the capital city of Japan.
+          5. Berlin is the capital city of Germany.
+          
+          Make sure to confirm that each piece of information is successfully added.""",
+          expected_output="Confirmation that all information was added to the knowledge base",
+          agent=rag_agent
+      )
+      ```
+      
+      ```javascript JavaScript
+      // Function to add content to the knowledge base
+      const addContent = async (agentExecutor) => {
+          const content = `
+              1. Paris is the capital city of France.
+              2. London is the capital city of the United Kingdom.
+              3. Washington D.C. is the capital city of the United States.
+              4. Tokyo is the capital city of Japan.
+              5. Berlin is the capital city of Germany.
+          `;
+          
+          const result = await agentExecutor.invoke({
+              input: `Add the following information to the knowledge base: ${content}`
+          });
+          
+          console.log("Content Added:", result.output);
+          return result;
+      };
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Query the RAG System">
+    Retrieve information from the knowledge base.
+    <CodeGroup>
+      ```python Python
+      # Define task for querying
+      query_task = Task(
+          description="""Query the knowledge base to answer the following question:
+          "What is the capital of France?"
+          
+          Return the answer with any supporting information from the knowledge base.""",
+          expected_output="The answer to the question based on the knowledge base",
+          agent=rag_agent,
+          context=[add_content_task]  # This task depends on content being added first
+      )
+      ```
+      
+      ```javascript JavaScript
+      // Function to query the knowledge base
+      const queryKnowledgeBase = async (agentExecutor) => {
+          const query = "What is the capital of France?";
+          
+          const result = await agentExecutor.invoke({
+              input: `Query the knowledge base to answer the following question: "${query}"`
+          });
+          
+          console.log("Query Result:", result.output);
+          return result;
+      };
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Execute the Workflow">
+    Run the complete RAG workflow.
+    <CodeGroup>
+      ```python Python
+      # Create a crew with the agent and tasks
+      crew = Crew(
+          agents=[rag_agent],
+          tasks=[add_content_task, query_task],
+          verbose=2,
+          process=Process.sequential  # Tasks must run in order
+      )
+
+      # Execute the workflow
+      result = crew.kickoff()
+      print(textwrap.fill(f"Final Result: {result}", width=80))
+      ```
+      
+      ```javascript JavaScript
+      // Main function to run the RAG workflow
+      (async () => {
+          try {
+              const tools = await getTools();
+              const agentExecutor = await createAgent(tools);
+              
+              // Add content first
+              await addContent(agentExecutor);
+              
+              // Then query the knowledge base
+              await queryKnowledgeBase(agentExecutor);
+              
+              console.log("RAG workflow completed successfully");
+          } catch (error) {
+              console.error("Error:", error);
+          }
+      })();
+      ```
+    </CodeGroup>
+  </Step>
+</Steps>
+
+## Complete Code 
+<CodeGroup>
+  ```python Python
+  import os
+  import textwrap
+
+  from composio_crewai import Action, App, ComposioToolSet
+  from crewai import Agent, Crew, Process, Task
+  from dotenv import load_dotenv
+  from langchain_openai import ChatOpenAI
+
+  # Load environment variables
+  load_dotenv()
+
+  # Initialize the language model
+  llm = ChatOpenAI(model="gpt-4o")
+
+  # Set up Composio tools
+  composio_toolset = ComposioToolSet()
+  
+  # Get tools for RAG operations
+  rag_tools = composio_toolset.get_tools(apps=[App.RAG])
+
+  # Define the RAG Agent
+  rag_agent = Agent(
+      role="RAG Knowledge Base Manager",
+      goal="Manage a knowledge base using RAG tools",
+      backstory="""You are an expert in managing knowledge bases and retrieving information.
+      Your job is to add content to the knowledge base and retrieve answers to user queries.
+      You use RAG (Retrieval-Augmented Generation) tools to efficiently store and retrieve information.""",
+      verbose=True,
+      allow_delegation=False,
+      tools=rag_tools,
+      llm=llm
+  )
+
+  # Define task for adding content
+  add_content_task = Task(
+      description="""Add the following information to the knowledge base:
+      
+      1. Paris is the capital city of France.
+      2. London is the capital city of the United Kingdom.
+      3. Washington D.C. is the capital city of the United States.
+      4. Tokyo is the capital city of Japan.
+      5. Berlin is the capital city of Germany.
+      
+      Make sure to confirm that each piece of information is successfully added.""",
+      expected_output="Confirmation that all information was added to the knowledge base",
+      agent=rag_agent
+  )
+
+  # Define task for querying
+  query_task = Task(
+      description="""Query the knowledge base to answer the following question:
+      "What is the capital of France?"
+      
+      Return the answer with any supporting information from the knowledge base.""",
+      expected_output="The answer to the question based on the knowledge base",
+      agent=rag_agent,
+      context=[add_content_task]  # This task depends on content being added first
+  )
+
+  # Create a crew with the agent and tasks
+  crew = Crew(
+      agents=[rag_agent],
+      tasks=[add_content_task, query_task],
+      verbose=2,
+      process=Process.sequential  # Tasks must run in order
+  )
+
+  # Execute the workflow
+  result = crew.kickoff()
+  print(textwrap.fill(f"Final Result: {result}", width=80))
+  ```
+
+  ```javascript JavaScript
+  import dotenv from 'dotenv';
+  import { LangchainToolSet } from "composio-core";
+  import { ChatOpenAI } from "@langchain/openai";
+  import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
+  import { pull } from "langchain/hub";
+
+  dotenv.config();
+
+  // Initialize the language model
+  const llm = new ChatOpenAI({ model: "gpt-4-turbo" });
+
+  // Setup Composio tools with workspace environment
+  const composioToolset = new LangchainToolSet({
+      apiKey: process.env.COMPOSIO_API_KEY,
+      workspace: {
+          type: "docker"
+      }
+  });
+
+  // Main function to run the RAG workflow
+  (async () => {
+      try {
+          // Get tools for RAG operations
+          const tools = await composioToolset.getTools({
+              actions: ["rag_add_content", "rag_get_content", "rag_query"]
+          });
+          
+          // Create the agent
+          const prompt = await pull("hwchase17/openai-functions-agent");
+          const agent = await createOpenAIFunctionsAgent({
+              llm,
+              tools,
+              prompt
+          });
+          
+          // Set up the agent executor
+          const agentExecutor = new AgentExecutor({
+              agent,
+              tools,
+              verbose: true
+          });
+          
+          // Add content to the knowledge base
+          const content = `
+              1. Paris is the capital city of France.
+              2. London is the capital city of the United Kingdom.
+              3. Washington D.C. is the capital city of the United States.
+              4. Tokyo is the capital city of Japan.
+              5. Berlin is the capital city of Germany.
+          `;
+          
+          const addResult = await agentExecutor.invoke({
+              input: `Add the following information to the knowledge base: ${content}`
+          });
+          
+          console.log("Content Added:", addResult.output);
+          
+          // Query the knowledge base
+          const query = "What is the capital of France?";
+          
+          const queryResult = await agentExecutor.invoke({
+              input: `Query the knowledge base to answer the following question: "${query}"`
+          });
+          
+          console.log("Query Result:", queryResult.output);
+          console.log("RAG workflow completed successfully");
+      } catch (error) {
+          console.error("Error:", error);
+      }
+  })();
+  ```
+</CodeGroup>

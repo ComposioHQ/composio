@@ -1,0 +1,398 @@
+---
+title: "Research Agent"
+sidebarTitle: "Research Agent"
+description: "This guide provides detailed steps to create a Research Agent using Composio and OpenAI. You will build a system capable of performing research on ArXiv or via search engines and creating GitHub issues with the findings."
+---
+
+<Card color="#7bee0c" title="Research Agent GitHub Repository" icon="fa-brands fa-github" href="https://github.com/ComposioHQ/composio">
+  Explore the complete source code for the Research Agent project. This repository contains all the necessary files and scripts to set up and run the Research Agent using Composio.
+</Card>
+
+<Steps>
+  <Step title="Install the required packages">
+    <CodeGroup>
+      ```python Python
+      pip install composio-llamaindex llama-index-readers-arxiv
+      ```
+      
+      ```javascript JavaScript
+      pnpm add express openai composio-core dotenv
+      ```
+    </CodeGroup>
+    Create a .env file and add your API keys.
+  </Step>
+
+  <Step title="Import base packages">
+    Next, we'll import the essential libraries for our project.
+    <CodeGroup>
+      ```python Python
+      import os
+      import dotenv
+
+      from composio_llamaindex import Action, ComposioToolSet
+      from llama_index.core.llms import ChatMessage
+      from llama_index.llms.openai import OpenAI
+      from llama_index.agent.openai import OpenAIAgent
+      from llama_index.tools.arxiv.base import ArxivToolSpec
+      ```
+      
+      ```javascript JavaScript
+      import express from 'express';
+      import { OpenAI } from "openai";
+      import { OpenAIToolSet, Action } from "composio-core";
+      import dotenv from 'dotenv';
+
+      dotenv.config();
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Configure environments and parameters">
+    Set up the necessary configurations for our agent.
+    <CodeGroup>
+      ```python Python
+      # Load environment variables
+      dotenv.load_dotenv()
+
+      # Initialize the language model
+      llm = OpenAI(model="gpt-4o")
+
+      # Set research parameters
+      research_topic = "LLM agents function calling"
+      target_repo = "composiohq/composio"
+      n_issues = 3
+      ```
+      
+      ```javascript JavaScript
+      // Create Express app
+      const app = express();
+      const PORT = process.env.PORT || 2001;
+      
+      // Set research parameters
+      const researchTopic = "LLM agents function calling";
+      const targetRepo = "composiohq/composio";
+      const nIssues = 3;
+      
+      // Configure Express
+      app.use(express.json());
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Set up Composio tools">
+    Initialize the tools that our agent will use.
+    <CodeGroup>
+      ```python Python
+      # Get Composio toolset and add ArXiv tools
+      composio_toolset = ComposioToolSet()
+      github_tools = composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_AN_ISSUE])
+      arxiv_tool = ArxivToolSpec()
+      
+      # Define system message
+      prefix_messages = [
+          ChatMessage(
+              role="system",
+              content=(
+                  "You are now a research agent, and whatever you are "
+                  "requested, you will try to execute utilizing your tools."
+              ),
+          )
+      ]
+      ```
+      
+      ```javascript JavaScript
+      // Initialize the Composio toolset
+      const toolset = new OpenAIToolSet({
+          apiKey: process.env.COMPOSIO_API_KEY,
+      });
+      
+      // Get the necessary tools for research and GitHub interaction
+      const getTools = async () => {
+          return await toolset.get_actions([
+              Action.SERPAPI_SEARCH,
+              Action.GITHUB_USERS_GET_AUTHENTICATED,
+              Action.GITHUB_ISSUES_CREATE
+          ]);
+      };
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Create the agent">
+    Set up the agent with the tools and capabilities it needs.
+    <CodeGroup>
+      ```python Python
+      # Create the agent with tools
+      agent = OpenAIAgent.from_tools(
+          tools=github_tools + arxiv_tool.to_tool_list(),
+          llm=llm,
+          prefix_messages=prefix_messages,
+          max_function_calls=10,
+          allow_parallel_tool_calls=False,
+          verbose=True,
+      )
+      ```
+      
+      ```javascript JavaScript
+      // Initialize OpenAI client
+      const client = new OpenAI({
+          apiKey: process.env.OPENAI_API_KEY
+      });
+      
+      // Create an OpenAI Assistant with the tools
+      const createAssistant = async (tools) => {
+          return await client.beta.assistants.create({
+              model: "gpt-4-turbo",
+              description: "Research Agent that interacts with GitHub",
+              instructions: "You are a helpful assistant that researches topics and creates GitHub issues",
+              tools: tools,
+          });
+      };
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Implement the research functionality">
+    Create the main logic for the research agent.
+    <CodeGroup>
+      ```python Python
+      # Define main function to run the agent
+      def main():
+          # Create the research prompt
+          prompt = (
+              f"Please research on Arxiv about `{research_topic}`, Organize "
+              f"the top {n_issues} results as {n_issues} issues for "
+              f"a github repository, finally raise those issues with proper, "
+              f"title, body, implementation guidance and reference in "
+              f"{target_repo} repo, as well as relevant tags and assignee as "
+              "the repo owner."
+          )
+          
+          # Execute the agent
+          response = agent.chat(prompt)
+          
+          # Print the result
+          print("Response:", response)
+          
+      # Run the main function
+      if __name__ == "__main__":
+          main()
+      ```
+      
+      ```javascript JavaScript
+      // Create endpoint to trigger the research
+      app.get('/research', async (req, res) => {
+          try {
+              // Get the tools
+              const tools = await getTools();
+              
+              // Create assistant
+              const assistant = await createAssistant(tools);
+              
+              // Create the research prompt
+              const prompt = `Please research about \`${researchTopic}\`, organize 
+                  the top ${nIssues} results as ${nIssues} issues for 
+                  a GitHub repository, and finally raise those issues with proper 
+                  title, body, implementation guidance, and references in 
+                  the ${targetRepo} repo, as well as relevant tags and assignees as 
+                  the repo owner.`;
+              
+              // Create a thread with the user's request
+              const thread = await client.beta.threads.create({
+                  messages: [{
+                      role: "user",
+                      content: prompt
+                  }]
+              });
+              
+              // Start the assistant run
+              let run = await client.beta.threads.runs.create(thread.id, {
+                  assistant_id: assistant.id,
+              });
+              
+              // Handle tool calls and wait for completion
+              run = await toolset.wait_and_handle_assistant_tool_calls(client, run, thread);
+              
+              // Check if the run completed successfully
+              if (run.status === "completed") {
+                  const messages = await client.beta.threads.messages.list(thread.id);
+                  res.json({ status: 'success', messages: messages.data });
+              } else {
+                  res.status(500).json({ status: 'error', message: 'Run did not complete', run });
+              }
+          } catch (error) {
+              console.error(error);
+              res.status(500).json({ status: 'error', message: error.message });
+          }
+      });
+      
+      // Start the Express server
+      app.listen(PORT, () => {
+          console.log(`Research Agent server is running on port ${PORT}`);
+      });
+      ```
+    </CodeGroup>
+  </Step>
+</Steps>
+
+## Complete Code 
+<CodeGroup>
+  ```python Python
+  import os
+  import dotenv
+
+  from composio_llamaindex import Action, ComposioToolSet
+  from llama_index.core.llms import ChatMessage
+  from llama_index.llms.openai import OpenAI
+  from llama_index.agent.openai import OpenAIAgent
+  from llama_index.tools.arxiv.base import ArxivToolSpec
+
+  # Load environment variables
+  dotenv.load_dotenv()
+
+  # Initialize the language model
+  llm = OpenAI(model="gpt-4o")
+
+  # Set research parameters
+  research_topic = "LLM agents function calling"
+  target_repo = "composiohq/composio"
+  n_issues = 3
+
+  def main():
+      # Get Composio toolset and add ArXiv tools
+      composio_toolset = ComposioToolSet()
+      github_tools = composio_toolset.get_actions(actions=[Action.GITHUB_CREATE_AN_ISSUE])
+      arxiv_tool = ArxivToolSpec()
+      
+      # Define system message
+      prefix_messages = [
+          ChatMessage(
+              role="system",
+              content=(
+                  "You are now a research agent, and whatever you are "
+                  "requested, you will try to execute utilizing your tools."
+              ),
+          )
+      ]
+      
+      # Create the agent with tools
+      agent = OpenAIAgent.from_tools(
+          tools=github_tools + arxiv_tool.to_tool_list(),
+          llm=llm,
+          prefix_messages=prefix_messages,
+          max_function_calls=10,
+          allow_parallel_tool_calls=False,
+          verbose=True,
+      )
+      
+      # Create the research prompt
+      prompt = (
+          f"Please research on Arxiv about `{research_topic}`, Organize "
+          f"the top {n_issues} results as {n_issues} issues for "
+          f"a github repository, finally raise those issues with proper, "
+          f"title, body, implementation guidance and reference in "
+          f"{target_repo} repo, as well as relevant tags and assignee as "
+          "the repo owner."
+      )
+      
+      # Execute the agent
+      response = agent.chat(prompt)
+      
+      # Print the result
+      print("Response:", response)
+
+  if __name__ == "__main__":
+      main()
+  ```
+
+  ```javascript JavaScript
+  import express from 'express';
+  import { OpenAI } from "openai";
+  import { OpenAIToolSet, Action } from "composio-core";
+  import dotenv from 'dotenv';
+
+  dotenv.config();
+
+  // Create Express app
+  const app = express();
+  const PORT = process.env.PORT || 2001;
+
+  // Set research parameters
+  const researchTopic = "LLM agents function calling";
+  const targetRepo = "composiohq/composio";
+  const nIssues = 3;
+
+  // Configure Express
+  app.use(express.json());
+
+  // Initialize the Composio toolset
+  const toolset = new OpenAIToolSet({
+      apiKey: process.env.COMPOSIO_API_KEY,
+  });
+
+  // Initialize OpenAI client
+  const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+  });
+
+  // Create endpoint to trigger the research
+  app.get('/research', async (req, res) => {
+      try {
+          // Get the necessary tools for research and GitHub interaction
+          const tools = await toolset.get_actions([
+              Action.SERPAPI_SEARCH,
+              Action.GITHUB_USERS_GET_AUTHENTICATED,
+              Action.GITHUB_ISSUES_CREATE
+          ]);
+          
+          // Create assistant
+          const assistant = await client.beta.assistants.create({
+              model: "gpt-4-turbo",
+              description: "Research Agent that interacts with GitHub",
+              instructions: "You are a helpful assistant that researches topics and creates GitHub issues",
+              tools: tools,
+          });
+          
+          // Create the research prompt
+          const prompt = `Please research about \`${researchTopic}\`, organize 
+              the top ${nIssues} results as ${nIssues} issues for 
+              a GitHub repository, and finally raise those issues with proper 
+              title, body, implementation guidance, and references in 
+              the ${targetRepo} repo, as well as relevant tags and assignees as 
+              the repo owner.`;
+          
+          // Create a thread with the user's request
+          const thread = await client.beta.threads.create({
+              messages: [{
+                  role: "user",
+                  content: prompt
+              }]
+          });
+          
+          // Start the assistant run
+          let run = await client.beta.threads.runs.create(thread.id, {
+              assistant_id: assistant.id,
+          });
+          
+          // Handle tool calls and wait for completion
+          run = await toolset.wait_and_handle_assistant_tool_calls(client, run, thread);
+          
+          // Check if the run completed successfully
+          if (run.status === "completed") {
+              const messages = await client.beta.threads.messages.list(thread.id);
+              res.json({ status: 'success', messages: messages.data });
+          } else {
+              res.status(500).json({ status: 'error', message: 'Run did not complete', run });
+          }
+      } catch (error) {
+          console.error(error);
+          res.status(500).json({ status: 'error', message: error.message });
+      }
+  });
+
+  // Start the Express server
+  app.listen(PORT, () => {
+      console.log(`Research Agent server is running on port ${PORT}`);
+  });
+  ```
+</CodeGroup>

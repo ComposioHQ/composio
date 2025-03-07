@@ -1,0 +1,133 @@
+---
+title: "Using Composio With Letta"
+sidebarTitle: "Letta"
+description: "Integrate Composio with Letta agents to let them seamlessly interact with external apps"
+---
+
+## Star A Repository on GitHub
+In this example, we will use Letta Agent to star a repository on GitHub using Composio Tools
+
+<Steps>
+<Step title="Install Packages">
+<CodeGroup>
+```bash Python
+pip install letta-client composio_langchain
+```
+```bash JavaScript
+npm i composio-core @letta-ai/letta-client
+```
+</CodeGroup>
+</Step>
+<Step title="Import Libraries & Configure Client">
+<CodeGroup>
+```python Python
+from letta_client import Letta
+from composio_langchain import Action, ComposioToolSet, App
+
+client = Letta(base_url="http://localhost:8283")
+```
+```javascript JavaScript
+import { LettaClient } from '@letta-ai/letta-client'
+import { ComposioToolSet } from "composio-core"
+
+const client = new LettaClient({
+    baseUrl: "http://localhost:8283",
+});
+
+const toolset = new ComposioToolSet()
+```
+</CodeGroup>
+</Step>
+
+<Step title="Connect Your GitHub Account">
+<Info>You need to have an active GitHub Integration. Learn how to do this [here](https://youtu.be/LmyWy4LiedQ?si=u5uFArlNL0tew0Wf)</Info>
+<CodeGroup>
+```shell CLI
+composio login 
+composio add github
+```
+```python Python
+toolset = ComposioToolSet()
+request = toolset.initiate_connection(app=App.GITHUB)
+print(f"Open this URL to authenticate: {request.redirectUrl}")
+```
+```javascript JavaScript
+const connection = await toolset.connectedAccounts.initiate({appName: "github"})
+console.log(`Open this URL to authenticate: ${connection.redirectUrl}`);
+```
+</CodeGroup>
+</Step>
+<Step title="Add GitHub action to Client">
+Adding tools to the client
+<CodeGroup>
+```python Python
+tool = client.tools.add_composio_tool(composio_action_name=Action.GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER.name)
+```
+```javascript JavaScript
+const tool = await client.tools.addComposioTool(
+    "GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER",
+)
+```
+</CodeGroup>
+</Step>
+<Step title="Create the agent">
+<CodeGroup>
+```python Python
+agent = client.agents.create(
+    name="GitHub Agent",
+    memory_blocks=[
+        {"label": "persona", "value": "I am a helpful assistant"}
+    ],
+    model="openai/gpt-4o",
+    embedding="openai/text-embedding-ada-002", 
+    tool_ids=[tool.id]
+)
+```
+```javascript JavaScript
+const agent = await client.agents.create({
+    name: "GitHub Agent",
+    memoryBlocks: [
+        {
+            value: "I am a helpful assistant",
+            label: "persona",
+        },
+    ],
+    model: "openai/gpt-4o",
+    embedding: "openai/text-embedding-ada-002",
+    toolIds: [tool.id],
+});
+```
+</CodeGroup>
+</Step>
+<Step title="Execute the Agent">
+<CodeGroup>
+```python Python
+response = client.agents.messages.create(
+    agent_id=agent.id,
+    messages=[
+        {
+            "role": "user",
+            "content": "Star the github repo composioHQ/composio/"
+        }
+    ]
+)
+for message in response.messages:
+    print(message)
+```
+```javascript JavaScript
+const response = await client.agents.messages.create(agent.id, {
+    messages: [
+        {
+            role: "user",
+            content: "Star the github repo composiohq/composio",
+        },
+    ],
+});
+
+for (const message of response.messages) {
+    console.log(message);
+}
+```
+</CodeGroup>
+</Step>
+</Steps>
