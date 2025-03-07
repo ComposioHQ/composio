@@ -44,7 +44,7 @@ navbar-links:
     href: https://dub.composio.dev/discord
   - type: filled
     text: Get your API Key
-    href: https://app.composio.dev/settings
+    href: https://app.composio.dev/developers
 css: styles.css
 
 redirects:
@@ -72,6 +72,15 @@ redirects:
     destination: "/"
   - source: "/sdrkit/:slug"
     destination: "/"
+  - source: "/javascript/cloudflare"
+    destination: "/frameworks/javascript/cloudflare"
+  - source: "/javascript/vercel"
+    destination: "/frameworks/javascript/vercel"
+  - source: "/javascript/langchain"
+    destination: "/frameworks/javascript/langchain-js"
+  - source: "/javascript/openai"
+    destination: "/frameworks/javascript/openai-js"
+
 tabs:
   docs:
     display-name: Docs
@@ -168,6 +177,21 @@ navigation:
             path: frameworks/llamaindex.mdx
             slug: llamaindex
 
+          - section: JavaScript Frameworks
+            slug: javascript
+            contents:
+              - page: OpenAI (JS)
+                path: frameworks/openai-js.mdx
+                slug: openai
+              - page: LangChain (JS)
+                path: frameworks/langchain-js.mdx
+                slug: langchain
+              - page: Cloudflare Worker AI
+                path: frameworks/cloudflare.mdx
+                slug: cloudflare
+              - page: Vercel AI
+                path: frameworks/vercel.mdx
+                slug: vercel
 
           - section: Other Frameworks
             slug: others
