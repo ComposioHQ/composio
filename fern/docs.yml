@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://schema.buildwithfern.dev/docs-yml.json
 
 instances:
-  - url: https://composio.docs.buildwithfern.com
+  - url: composio.docs.buildwithfern.com
     custom-domain: docs.composio.dev
     edit-this-page: 
       github: 
@@ -146,6 +146,9 @@ navigation:
           - page: OpenAI
             path: frameworks/openai.mdx
             slug: openai
+          - page: Agno
+            path: frameworks/agno.mdx
+            slug: agno
           - page: Autogen
             path: frameworks/autogen.mdx
             slug: autogen
