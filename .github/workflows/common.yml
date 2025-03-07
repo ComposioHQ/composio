@@ -6,7 +6,15 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - 'fern/**'
+      - 'docs/**'
+      - '**/*.md'
   pull_request:
+    paths-ignore:
+      - 'fern/**'
+      - 'docs/**'
+      - '**/*.md'
 
 jobs:
   lock_check:
@@ -131,6 +139,10 @@ jobs:
         working-directory: ./python
     continue-on-error: False
     runs-on: ${{ matrix.os }}
+    if: >
+      github.event_name == 'schedule' ||
+      (github.event_name == 'push' && contains(join(github.event.commits.*.modified, github.event.commits.*.added, github.event.commits.*.removed), 'python/swe/')) ||
+      (github.event_name == 'pull_request' && contains(toJSON(github.event.pull_request.files.*.filename), 'python/swe/'))
     strategy:
       matrix:
         os: [ubuntu-latest]
