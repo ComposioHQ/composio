@@ -49,3 +49,22 @@ python/swe/dockerfiles/generated*
 fern/sdk/
 
 .cursor/*
+
+.github/styles/*
+# !.github/styles/config/
+
+.github/styles/config/*
+# !.github/styles/config/vocabularies/
+
+.github/styles/config/vocabularies/*
+# !.github/styles/config/vocabularies/Base
+
+
+styles/*
+# !styles/config/
+
+styles/config/*
+# !styles/config/vocabularies/
+
+styles/config/vocabularies/*
+# !styles/config/vocabularies/Composio
