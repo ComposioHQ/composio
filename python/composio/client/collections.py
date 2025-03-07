@@ -398,7 +398,7 @@ class TriggerPayloadPropertyModel(BaseModel):
     """Trigger payload property data model."""
 
     description: str
-    title: str
+    title: t.Optional[str] = None
     type: t.Optional[str] = None
     anyOf: t.Optional[t.List[TypeModel]] = None
 
@@ -409,7 +409,7 @@ class TriggerPayloadModel(BaseModel):
     """Trigger payload data model."""
 
     properties: t.Dict[str, TriggerPayloadPropertyModel]
-    title: str
+    title: t.Optional[str] = None
     type: t.Optional[str] = None
     anyOf: t.Optional[t.List[TypeModel]] = None
 
