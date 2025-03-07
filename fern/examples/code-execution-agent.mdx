@@ -1,0 +1,284 @@
+---
+title: "Code Execution Agent"
+sidebarTitle: "Code Execution Agent"
+description: "This project generates and executes code based on user-defined problems. It utilizes Composio and connects your AI Agent to E2B's Code Interpreter to facilitate code execution, allowing users to input a problem statement and receive executable code as output. The agent is designed to operate in a sandbox environment, ensuring safe execution and accurate results."
+---
+
+<Card color="#7bee0c" title="Code Execution Agent GitHub Repository" icon="fa-brands fa-github" href="https://github.com/ComposioHQ/composio">
+  Explore the complete source code for the Code Execution Agent project. This repository contains all the necessary files and scripts to set up and run the Code Execution Agent using Composio.
+</Card>
+
+<Steps>
+  <Step title="Install the required packages">
+    <CodeGroup>
+      ```python Python
+      pip install composio-crewai langchain-openai
+      ```
+      
+      ```javascript JavaScript
+      pnpm add composio-core dotenv @langchain/openai langchain
+      ```
+    </CodeGroup>
+    Create a .env file and add your OpenAI API Key.
+  </Step>
+
+  <Step title="Import base packages">
+    Next, we'll import the essential libraries for our project.
+    <CodeGroup>
+      ```python Python
+      import os
+
+      from composio_crewai import Action, App, ComposioToolSet
+      from crewai import Agent, Crew, Process, Task
+      from dotenv import load_dotenv
+      from langchain_openai import ChatOpenAI
+      ```
+      
+      ```javascript JavaScript
+      import dotenv from 'dotenv';
+      import { ChatOpenAI } from "@langchain/openai";
+      import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
+      import { pull } from "langchain/hub";
+      import { LangchainToolSet } from "composio-core";
+      
+      dotenv.config();
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Initialize Composio Toolset">
+    We'll set up the Composio toolset to access the code interpreter functionality.
+    <CodeGroup>
+      ```python Python
+      load_dotenv()
+
+      # Set up Composio tools
+      composio_toolset = ComposioToolSet()
+      
+      # Get tools from the Code Interpreter app
+      tools = composio_toolset.get_tools(apps=[App.CODEINTERPRETER])
+      ```
+      
+      ```javascript JavaScript
+      // Set up Composio tools
+      const composioToolset = new LangchainToolSet({
+          apiKey: process.env.COMPOSIO_API_KEY
+      });
+      
+      // Get specific tools for code execution
+      const tools = await composioToolset.getTools({
+          actions: ["codeinterpreter_execute_code"]
+      });
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Set up AI Model">
+    Initialize the language model that will power our agent.
+    <CodeGroup>
+      ```python Python
+      # Initialize the language model
+      llm = ChatOpenAI(model="gpt-4o")
+      ```
+      
+      ```javascript JavaScript
+      // Initialize the language model
+      const llm = new ChatOpenAI({ model: "gpt-4o" });
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Create AI Agent">
+    Define the AI agent that will generate and execute code.
+    <CodeGroup>
+      ```python Python
+      # Define the Python executor agent
+      python_executor_agent = Agent(
+          role="Python Executor",
+          goal="Execute Python code to solve problems",
+          backstory="""You are an expert Python developer specializing in executing code to solve various problems.
+          Your job is to analyze problems, write efficient Python code to solve them, and execute the code to ensure it works correctly.""",
+          verbose=True,
+          allow_delegation=False,
+          tools=tools,
+          llm=llm
+      )
+      ```
+      
+      ```javascript JavaScript
+      // Create the agent
+      const prompt = await pull("hwchase17/openai-functions-agent");
+      const agent = await createOpenAIFunctionsAgent({
+          llm,
+          tools,
+          prompt
+      });
+      
+      // Set up the agent executor
+      const agentExecutor = new AgentExecutor({
+          agent,
+          tools,
+          verbose: true
+      });
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Define Task and Execution">
+    Create a task for the agent and set up the execution function.
+    <CodeGroup>
+      ```python Python
+      # Define a task for the agent
+      task = Task(
+          description="""Write a Python function to calculate the Fibonacci sequence up to the 10th number.
+                      Then, execute the code and return the result.""",
+          expected_output="The Fibonacci sequence and the execution result",
+          agent=python_executor_agent
+      )
+      
+      # Create a crew with the agent and task
+      crew = Crew(
+          agents=[python_executor_agent],
+          tasks=[task],
+          verbose=2,
+          process=Process.sequential
+      )
+      
+      # Execute the task
+      result = crew.kickoff()
+      print(f"Result: {result}")
+      ```
+      
+      ```javascript JavaScript
+      // Define the code execution function
+      async function executeCodeAgent(problem) {
+          const result = await agentExecutor.invoke({
+              input: `Write code to solve the following problem and execute it: ${problem}`
+          });
+          
+          return result.output;
+      }
+      
+      // Run the agent with a sample problem
+      const problem = "Write a function to calculate the Fibonacci sequence up to the 10th number and display the result.";
+      
+      executeCodeAgent(problem)
+          .then(result => console.log("Result:", result))
+          .catch(error => console.error("Error:", error));
+      ```
+    </CodeGroup>
+  </Step>
+</Steps>
+
+## Complete Code 
+<CodeGroup>
+  ```python Python
+  import os
+
+  from composio_crewai import Action, App, ComposioToolSet
+  from crewai import Agent, Crew, Process, Task
+  from dotenv import load_dotenv
+  from langchain_openai import ChatOpenAI
+
+  # Load environment variables
+  load_dotenv()
+
+  # Set up Composio tools
+  composio_toolset = ComposioToolSet()
+  
+  # Get tools from the Code Interpreter app
+  tools = composio_toolset.get_tools(apps=[App.CODEINTERPRETER])
+
+  # Initialize the language model
+  llm = ChatOpenAI(model="gpt-4o")
+
+  # Define the Python executor agent
+  python_executor_agent = Agent(
+      role="Python Executor",
+      goal="Execute Python code to solve problems",
+      backstory="""You are an expert Python developer specializing in executing code to solve various problems.
+      Your job is to analyze problems, write efficient Python code to solve them, and execute the code to ensure it works correctly.""",
+      verbose=True,
+      allow_delegation=False,
+      tools=tools,
+      llm=llm
+  )
+
+  # Define a task for the agent
+  task = Task(
+      description="""Write a Python function to calculate the Fibonacci sequence up to the 10th number.
+                  Then, execute the code and return the result.""",
+      expected_output="The Fibonacci sequence and the execution result",
+      agent=python_executor_agent
+  )
+
+  # Create a crew with the agent and task
+  crew = Crew(
+      agents=[python_executor_agent],
+      tasks=[task],
+      verbose=2,
+      process=Process.sequential
+  )
+
+  # Execute the task
+  result = crew.kickoff()
+  print(f"Result: {result}")
+  ```
+
+  ```javascript JavaScript
+  import dotenv from 'dotenv';
+  import { ChatOpenAI } from "@langchain/openai";
+  import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents";
+  import { pull } from "langchain/hub";
+  import { LangchainToolSet } from "composio-core";
+
+  dotenv.config();
+
+  // Set up Composio tools
+  const composioToolset = new LangchainToolSet({
+      apiKey: process.env.COMPOSIO_API_KEY
+  });
+
+  async function main() {
+      // Get specific tools for code execution
+      const tools = await composioToolset.getTools({
+          actions: ["codeinterpreter_execute_code"]
+      });
+
+      // Initialize the language model
+      const llm = new ChatOpenAI({ model: "gpt-4o" });
+
+      // Create the agent
+      const prompt = await pull("hwchase17/openai-functions-agent");
+      const agent = await createOpenAIFunctionsAgent({
+          llm,
+          tools,
+          prompt
+      });
+      
+      // Set up the agent executor
+      const agentExecutor = new AgentExecutor({
+          agent,
+          tools,
+          verbose: true
+      });
+
+      // Define the code execution function
+      async function executeCodeAgent(problem) {
+          const result = await agentExecutor.invoke({
+              input: `Write code to solve the following problem and execute it: ${problem}`
+          });
+          
+          return result.output;
+      }
+      
+      // Run the agent with a sample problem
+      const problem = "Write a function to calculate the Fibonacci sequence up to the 10th number and display the result.";
+      
+      const result = await executeCodeAgent(problem);
+      console.log("Result:", result);
+  }
+
+  main().catch(console.error);
+  ```
+</CodeGroup>

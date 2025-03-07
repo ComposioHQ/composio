@@ -1,0 +1,157 @@
+---
+title: "Using Composio With Groq"
+sidebarTitle: "Groq"
+description: "Integrate Composio with Groq to seamlessly interact with external apps"
+---
+
+**Composio enables** your **Groq based assistants** to **connect** with many **tools**!
+
+<Tip>
+  Goal: Star a repository on GitHub with natural language & Groq
+</Tip>
+
+### Install Packages & Connect a Tool
+
+These commands prepare your environment for seamless interaction between Groq and GitHub.
+  
+<CodeGroup> 
+  ```bash python 
+  pip install composio-langchain
+  pip install langchain-groq
+
+  #Connect your GitHub so agents can use it
+  composio add github
+
+  #Check all different apps which you can connect with
+  composio apps
+  ```
+  ```javascript javascript
+  npm install composio-core
+  npm install langchain
+
+  // Connect your GitHub so agents can use it
+  composio add github
+
+  // Check all different apps which you can connect with
+  composio apps
+  ```
+</CodeGroup>
+
+<Steps>
+<Step title="Import Base Packages">
+<CodeGroup>
+  ```python python 
+  # Initialise imports
+  from langchain.agents import AgentExecutor
+  from langchain import hub
+  from langchain_groq import ChatGroq
+  from langgraph.prebuilt import create_react_agent
+
+  llm = ChatGroq(model="mixtral-8x7b-32768", temperature=0)
+
+  prompt = hub.pull("hwchase17/react")
+  ```
+  ```javascript javascript
+  // Importing necessary modules from langchain and composio-core packages
+  import dotenv from 'dotenv';
+  dotenv.config();
+
+  import { ChatGroq } from "@langchain/groq";
+  import { AgentExecutor, createReactAgent } from "langchain/agents";
+  import { LangchainToolSet } from "composio-core";
+  import { pull } from "langchain/hub";
+  
+
+  // Creating an instance of ChatGroq with specific model and temperature settings
+  const llm = new ChatGroq({
+    model: "mixtral-8x7b-32768",
+    temperature: 0,
+  });
+
+  // Pulling a chat prompt template asynchronously using the pull function
+  const prompt = await pull<ChatPromptTemplate>(
+  "hwchase17/react"
+  );
+  ```
+</CodeGroup>
+</Step>
+<Step title="Fetch all GitHub Langchain Tools via Composio">
+<CodeGroup>
+  ```python python 
+  # Import from composio_langchain
+  from composio_langchain import ComposioToolSet, Action, App
+
+  # Get All the tools
+
+  composio_toolset = ComposioToolSet()
+  tools = composio_toolset.get_tools(apps=[App.GITHUB])
+  ```
+
+  ```javascript javascript
+  // Initialize the LangchainToolSet with the API key from environment variables
+  const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY});
+  
+  // Fetch tools configured for GitHub applications
+  const tools = await toolset.getTools({ apps: ["github"] });
+  ```
+</CodeGroup>
+</Step>
+<Step title="Execute the Agent">
+Create an agent, set up an executor, and invoke tasks to perform GitHub API calls using Composio.
+<CodeGroup>
+  ```python python
+  task = "Star a repo composiohq/composio on GitHub"
+
+  agent = create_react_agent(llm, tools)
+  agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+  # Execute using agent_executor
+  inputs = {"messages": [("user",  task)]}
+  agent_executor.invoke(input=inputs)
+  ```
+  ```javascript javascript
+  // Create an OpenAI functions agent with the provided LLM, tools, and prompt
+  const agent = await createReactAgent({
+        llm,
+        tools: tools,
+    });
+
+  // Initialize the agent executor with verbosity enabled
+  const agentExecutor = new AgentExecutor({ agent, tools, verbose: true });
+
+  // Invoke the agent to perform the task of starring a GitHub repository
+  const response = await agentExecutor.invoke({"messages": [("user",  task)]});
+
+  // Output the response from the agent execution
+  console.log(response);
+  ```
+</CodeGroup>
+</Step>
+<Step title="Check Response">
+  ```bash Executing Agents
+  > Entering new AgentExecutor chain...
+
+  Invoking: `github_star_repo` with `{'owner': 'composiohq', 'repo': 'docs'}`
+
+  {'connectedAccountId': 'ade8c167-836b-404b-bb47-fb8550203417', 'input': {'owner': 'composiohq', 'repo': 'docs'}}
+  {'execution_details': {'executed': True}, 'response_data': ''}I have successfully starred the repository composiohq/composio on GitHub.
+
+  ```
+</Step>
+</Steps>
+### Use Specific Actions
+<CodeGroup>
+  ```bash Filter Specific Action
+  # To restrict agents from using all the actions, filter specific actions
+  tools = composio_toolset.get_tools(apps=[App.GITHUB])
+  ```
+</CodeGroup>
+
+### Use Specific Apps
+
+<CodeGroup>
+  ```bash Filter Specific App 
+  # To restrict agents from using all tools, filter specific tools 
+  tools = composio_toolset.get_tools(actions=[Action.GITHUB_CREATE_ISSUE]) 
+  ```
+</CodeGroup>
