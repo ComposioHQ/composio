@@ -36,7 +36,7 @@ def help_msg() -> str:
             + blue("    Talk to us on Intercom: ")
             + "https://composio.dev\n"
             + blue("    Book a call with us: ")
-            + "https://calendly.com/soham-composio/30min\n"
+            + "https://composio.dev/redirect?url=https://calendly.com/composiohq/support?utm_source=py-sdk-logs&utm_campaign=calendly\n"
             + "If you need to debug this error, "
             + green("set `COMPOSIO_LOGGING_LEVEL=debug`")
             + "."
@@ -48,6 +48,6 @@ def help_msg() -> str:
         "    On Discord: https://dub.composio.dev/discord\n"
         "    On Email: tech@composio.dev\n"
         "    Talk to us on Intercom: https://composio.dev\n"
-        "    Book a call with us: https://calendly.com/soham-composio/30min\n"
+        "    Book a call with us: https://composio.dev/redirect?url=https://calendly.com/composiohq/support?utm_source=py-sdk-logs&utm_campaign=calendly\n"
         "If you need to debug this error, set `COMPOSIO_LOGGING_LEVEL=debug`."
     )
