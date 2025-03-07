@@ -52,7 +52,7 @@
 
 <p align="center">
   We're excited to announce the launch of <strong>Composio MCP Servers</strong>!
-  Connect Claude, Cursor and Windsurf to 100+ fully-managed MCP Servers with built-in auth!
+  Connect Claude, Cursor and Windsurf to 100+ fully-managed MCP Servers with built-in auth! Check it out <a href="https://mcp.composio.dev">here</a>
 </p>
 
 <p align="center">
