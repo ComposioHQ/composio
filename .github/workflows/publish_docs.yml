@@ -17,9 +17,7 @@ jobs:
         run: npm install -g fern-api
 
       - name: Pull Latest OpenAPI Specification
-        run: |
-          chmod +x fern/scripts/pull-openapi-spec.sh
-          ./fern/scripts/pull-openapi-spec.sh
+        run: sh fern/scripts/pull-openapi-spec.sh
 
       - name: Publish Docs
         env:
