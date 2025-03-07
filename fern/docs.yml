@@ -176,6 +176,9 @@ navigation:
           - page: LlamaIndex
             path: frameworks/llamaindex.mdx
             slug: llamaindex
+          - page: Together
+            path: frameworks/together.mdx
+            slug: together
 
           - section: JavaScript Frameworks
             slug: javascript
