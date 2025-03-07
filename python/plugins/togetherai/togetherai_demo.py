@@ -3,7 +3,7 @@ from together import Together
 
 
 client = Together(
-    api_key="59114908afa42e6b013964084e5b5fe52d375b8b2418e848d3f16bcee96f905a"
+    api_key="TOGETHER_API_KEY"
 )
 toolset = ComposioToolSet()
 tools = toolset.get_tools(actions=[Action.GMAIL_SEND_EMAIL])

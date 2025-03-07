@@ -15,11 +15,10 @@ Ensure you have the necessary packages installed and connect your GitHub account
 pip install composio-togetherai
 
 # Connect your GitHub account
-composio-cli add github
+composio add github
 
 # View available applications you can connect with
-composio-cli show-apps
-```
+composio apps
 
 ### Usage Steps
 

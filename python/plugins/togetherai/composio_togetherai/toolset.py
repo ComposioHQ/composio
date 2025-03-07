@@ -40,7 +40,7 @@ class ComposioToolSet(
         ):
             raise InvalidEntityIdError(
                 "separate `entity_id` can not be provided during "
-                "initialization and handelling tool calls"
+                "initialization and handling tool calls"
             )
         if self.entity_id != DEFAULT_ENTITY_ID:
             entity_id = self.entity_id
@@ -111,7 +111,7 @@ class ComposioToolSet(
 
     def handle_tool_calls(
         self,
-        response: ChatCompletionResponse | t.Iterator[ChatCompletionChunk],
+        response: t.Union[ChatCompletionResponse, t.Iterator[ChatCompletionChunk]],
         entity_id: t.Optional[str] = None,
         check_requested_actions: bool = True,
     ) -> t.List[t.Dict]:
