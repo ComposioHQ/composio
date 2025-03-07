@@ -6,15 +6,7 @@ on:
   push:
     branches:
       - master
-    paths-ignore:
-      - 'fern/**'
-      - 'docs/**'
-      - '**/*.md'
   pull_request:
-    paths-ignore:
-      - 'fern/**'
-      - 'docs/**'
-      - '**/*.md'
 
 jobs:
   lock_check:
