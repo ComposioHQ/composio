@@ -1,6 +1,4 @@
 # yaml-language-server: $schema=https://schema.buildwithfern.dev/docs-yml.json
-announcement:
-    message: "🚀 New feature: Announcements are available! (<a href=\"https://buildwithfern.com/learn/docs/building-your-docs/announcements\" target=\"_blank\">Learn more</a>) 🚀"
 
 instances:
   - url: https://composio.docs.buildwithfern.com
@@ -10,13 +8,19 @@ instances:
         owner: ComposioHQ
         repo: composio
         branch: main
+
+analytics:
+  posthog:
+    api-key: ${POSTHOG_API_KEY}
+
 title: Composio
 favicon: favicon.png
 logo:
   light: logo/logo.svg
   dark: logo/logo.svg
-
   height: 30
+
+
 colors:
   accent-primary:
     light: "#6366F1"
@@ -42,6 +46,32 @@ navbar-links:
     text: Get your API Key
     href: https://app.composio.dev/settings
 css: styles.css
+
+redirects:
+  - source: "/introduction/intro/overview"
+    destination: "/getting-started/welcome"
+  - source: "/introduction/intro/basic"
+    destination: "/getting-started/quickstart"
+  - source: "/introduction/intro/quickstart-tools"
+    destination: "/getting-started/quickstart"
+  - source: "/introduction/intro/quickstart-triggers"
+    destination: "/getting-started/quickstart"
+  - source: "/patterns/tools/what-are-tools"
+    destination: "/concepts/tool-calling/overview"
+  - source: "/patterns/tools/use-tools/:slug"
+    destination: "/concepts/tool-calling/overview"
+  - source: "/patterns/Auth/:slug"
+    destination: "/concepts/authentication/overview"
+  - source: "/patterns/triggers/:slug"
+    destination: "/concepts/triggers"
+  - source: "/framework/:slug"
+    destination: "/frameworks/"
+  - source: "/cryptokit/:slug"
+    destination: "/"
+  - source: "/swe-kit/:slug"
+    destination: "/"
+  - source: "/sdrkit/:slug"
+    destination: "/"
 tabs:
   docs:
     display-name: Docs
@@ -96,6 +126,11 @@ navigation:
             path: triggers/triggers.mdx
           - page: Workspaces
             path: workspaces/workspaces.mdx
+      
+      - section: MCP
+        contents:
+          - page: Overview
+            path: mcp/overview.mdx
 
       - section: Resources
         contents:
@@ -108,49 +143,65 @@ navigation:
     layout:
       - section: Frameworks
         contents:
+          - page: OpenAI
+            path: frameworks/openai.mdx
+            slug: openai
           - page: Autogen
             path: frameworks/autogen.mdx
+            slug: autogen
           - page: CrewAI
             path: frameworks/crewai.mdx
+            slug: crewai
           - page: LangChain
             path: frameworks/langchain.mdx
+            slug: langchain
           - page: LangFlow
             path: frameworks/langflow.mdx
+            slug: langflow
           - page: LangGraph
             path: frameworks/langgraph.mdx
+            slug: langgraph
           - page: LlamaIndex
             path: frameworks/llamaindex.mdx
+            slug: llamaindex
 
 
           - section: Other Frameworks
+            slug: others
             contents:
               - page: CamelAI
                 path: frameworks/camelai.mdx
+                slug: camelai
               - page: Gemini
                 path: frameworks/gemini.mdx
+                slug: gemini
               - page: Google
                 path: frameworks/google.mdx
+                slug: google
               - page: Griptape
                 path: frameworks/griptape.mdx
+                slug: griptape
               - page: Groq
                 path: frameworks/groq.mdx
               - page: IBM
                 path: frameworks/ibm.mdx
+                slug: ibm
               - page: Julep
                 path: frameworks/julep.mdx
+                slug: julep
               - page: Letta
                 path: frameworks/letta.mdx
               - page: LiteLLM
                 path: frameworks/litellm.mdx
+                slug: litellm
               - page: Lyzr
                 path: frameworks/lyzr.mdx
-              - page: OpenAI
-                path: frameworks/openai.mdx
+                slug: lyzr
               - page: PraisonAI
                 path: frameworks/praisonai.mdx
               - page: SmolAgents
                 path: frameworks/smolagents.mdx
-
+                slug: smolagents
   - tab: examples
     layout:
       - section: Agent Examples
