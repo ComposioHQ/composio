@@ -7,7 +7,7 @@ instances:
       github: 
         owner: ComposioHQ
         repo: composio
-        branch: main
+        branch: master
 
 analytics:
   posthog:

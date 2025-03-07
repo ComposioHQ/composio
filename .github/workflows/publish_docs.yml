@@ -23,6 +23,7 @@ jobs:
 
       - name: Publish Docs
         env:
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: fern generate --docs
