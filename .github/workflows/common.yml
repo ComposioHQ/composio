@@ -182,6 +182,10 @@ jobs:
         working-directory: ./python
     continue-on-error: False
     runs-on: ${{ matrix.os }}
+    if: >
+      github.event_name == 'schedule' ||
+      (github.event_name == 'push' && !contains(join(github.event.commits.*.modified, github.event.commits.*.added, github.event.commits.*.removed), 'fern/') && !contains(join(github.event.commits.*.modified, github.event.commits.*.added, github.event.commits.*.removed), 'docs/') && !endsWith(join(github.event.commits.*.modified, github.event.commits.*.added, github.event.commits.*.removed), '.md')) ||
+      (github.event_name == 'pull_request' && !contains(toJSON(github.event.pull_request.files.*.filename), 'fern/') && !contains(toJSON(github.event.pull_request.files.*.filename), 'docs/') && !contains(toJSON(github.event.pull_request.files.*.filename), '.md'))
     strategy:
       matrix:
         os: [ubuntu-latest]
