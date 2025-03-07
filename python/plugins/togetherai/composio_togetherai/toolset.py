@@ -1,14 +1,11 @@
 import json
 import typing as t
 
-from openai.types.chat.chat_completion_message_tool_call import (
-    ChatCompletionMessageToolCall,
-)
-from openai.types.chat.chat_completion_tool_param import ChatCompletionToolParam
 from together.types.chat_completions import (
     ChatCompletionChunk,
     ChatCompletionResponse,
     ToolCalls,
+    Tools,
 )
 
 from composio import ActionType, AppType, TagType
@@ -68,7 +65,7 @@ class ComposioToolSet(
         if processors is not None:
             self._processor_helpers.merge_processors(processors)
         return [
-            ChatCompletionToolParam(  # type: ignore
+            Tools(  # type: ignore
                 **t.cast(
                     OpenAISchema,
                     self.schema.format(
@@ -89,7 +86,7 @@ class ComposioToolSet(
 
     def execute_tool_call(
         self,
-        tool_call: t.Union[ChatCompletionMessageToolCall, ToolCalls],
+        tool_call: ToolCalls,
         entity_id: t.Optional[str] = None,
         check_requested_actions: bool = True,
     ) -> t.Dict:
