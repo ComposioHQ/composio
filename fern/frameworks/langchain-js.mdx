@@ -1,0 +1,97 @@
+---
+title: "Using Composio JS SDK with Langchain"
+sidebarTitle: "Langchain (JS)"
+description: "Use Composio JS SDK with Langchain"
+---
+
+
+<Steps>
+<Step title="Import Dependencies">
+ <CodeGroup>
+      ```javascript Import Langchain and LangchainToolSet
+import { ChatOpenAI } from "@langchain/openai";
+import { createOpenAIFunctionsAgent, AgentExecutor } from "langchain/agents";
+import { pull } from "langchain/hub";
+import { LangchainToolSet } from "composio-core";
+      ```
+    </CodeGroup>
+</Step>
+<Step title="Define method to let users connect their GitHub account">
+
+ <CodeGroup>
+      ```typescript  Define method to let users connect their GitHub account
+const toolset = new LangchainToolSet({ apiKey: process.env.COMPOSIO_API_KEY, });
+
+async function setupUserConnectionIfNotExists(entityId) {
+        const entity = toolset.client.getEntity(entityId);
+        const connection = await entity.getConnection({ appName: "GITHUB" });
+
+        if (!connection) {
+            // If this entity/user hasn't already connected the account
+            const connection = await entity.initiateConnection({appName: appName});
+            console.log("Log in via: ", connection.redirectUrl);
+           return connection.waitUntilActive(60);
+        }
+
+       return connection;
+}
+      ```
+    </CodeGroup>
+
+Learn more about Entities [here](../../patterns/Auth/connected_account)
+</Step>
+
+<Step title="Setup Agent with Langchain">
+
+<CodeGroup>
+      ```typescript Define your Agent to create issues on Github
+async function executeAgent (entityName){
+        // Create entity and get tools
+        const entity = toolset.client.getEntity(entityName)
+        await setupUserConnectionIfNotExists(entity.id);
+        const tools = await toolset.getTools({ actions: ["github_issues_create"] },entity.id);
+
+        // Create an agent
+        const prompt = await pull("hwchase17/openai-functions-agent");
+        const llm = new ChatOpenAI({
+            model: "gpt-4o",
+            apiKey: process.env.OPEN_AI_API_KEY
+        });
+  
+        const agent = await createOpenAIFunctionsAgent({
+            llm,
+            tools: tools,
+            prompt,
+        });
+        const agentExecutor = new AgentExecutor({agent,tools,verbose: true,});
+
+        // Invoke the agent
+        const body = "TITLE: HELLO WORLD, DESCRIPTION: HELLO WORLD for the repo - himanshu-dixit/custom-repo-breaking"
+        const result = await agentExecutor.invoke({
+            input: "Please create another github issue with the summary and description with the following details of another issue:- , " + JSON.stringify(body)
+        });
+
+        console.log(result.output)
+}
+      ```
+    </CodeGroup>
+
+
+</Step>
+
+<Step title="Invoke your Agent">
+
+<CodeGroup>
+      ```typescript  Invoke the agent
+      executeAgent("himanshu")
+      ```
+    </CodeGroup>
+
+Tada 🎉! It was this simple to create a powerful Agent with Composio and Langchain.
+</Step>
+
+<Step title="Complete code snippet">
+
+View the full code snippet [here](https://github.com/composiohq/composio/tree/master/js/examples/langchain/sample.mjs)
+</Step>
+</Steps>
