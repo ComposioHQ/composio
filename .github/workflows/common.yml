@@ -133,8 +133,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     if: >
       github.event_name == 'schedule' ||
-      (github.event_name == 'push' && (contains(join(github.event.commits.*.modified, github.event.commits.*.added, github.event.commits.*.removed), 'python/swe/') || contains(join(github.event.commits.*.modified, github.event.commits.*.added, github.event.commits.*.removed), 'python/'))) ||
-      (github.event_name == 'pull_request' && (contains(toJSON(github.event.pull_request.files.*.filename), 'python/swe/') || contains(toJSON(github.event.pull_request.files.*.filename), 'python/')))
+      (github.event_name == 'push' && (contains(join(github.event.commits.*.modified, github.event.commits.*.added, github.event.commits.*.removed), 'python/swe/') || startsWith(join(github.event.commits.*.modified, github.event.commits.*.added, github.event.commits.*.removed), 'python/'))) ||
+      (github.event_name == 'pull_request' && (contains(toJSON(github.event.pull_request.files.*.filename), 'python/swe/') || startsWith(toJSON(github.event.pull_request.files.*.filename), 'python/')))
     strategy:
       matrix:
         os: [ubuntu-latest]
