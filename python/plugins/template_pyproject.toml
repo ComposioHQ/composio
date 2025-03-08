@@ -38,7 +38,4 @@ build-backend = "setuptools.build_meta"
 #    - composio_PLUGIN_NAME/ (package directory)
 #      - __init__.py
 #      - toolset.py (implement ComposioToolSet for your framework)
-# 3. Add your plugin to the workspace in the root pyproject.toml:
-#    - Add to [tool.uv.workspace] members list
-#    - Add to [tool.uv.sources] with {workspace = true}
-# 4. Create example files demonstrating plugin usage
+# 3. Create example files demonstrating plugin usage
