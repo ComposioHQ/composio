@@ -31,10 +31,29 @@ If you want to contribute, start working through the codebase, navigate to the G
 
 ## Development setup
 
-- The simplest way to get setup for development on the framework is to install Python `>=3.8` and `pipenv`, then run the following:
+- The simplest way to get setup for development on the framework is to install Python `>=3.8` and `uv`, then run the following:
 
-      make env
-      pipenv shell
+      # Install uv
+      pip install uv
+      
+      # Create and activate virtual environment
+      uv venv
+      source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+      
+      # Install dependencies
+      uv pip install -e .
+      uv pip install -e python/swe
+      
+      # Install plugins as needed
+      uv pip install -e python/plugins/autogen
+      uv pip install -e python/plugins/claude
+      uv pip install -e python/plugins/crew_ai
+      uv pip install -e python/plugins/griptape
+      uv pip install -e python/plugins/julep
+      uv pip install -e python/plugins/langchain
+      uv pip install -e python/plugins/llamaindex
+      uv pip install -e python/plugins/lyzr
+      uv pip install -e python/plugins/openai
 
 ##  For a clean PR run checks in the following order before pushing the code on a PR
 
