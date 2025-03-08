@@ -133,8 +133,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     if: >
       github.event_name == 'schedule' ||
-      (github.event_name == 'push' && (contains(join(github.event.commits.*.modified, ' '), 'python/swe/') || contains(join(github.event.commits.*.added, ' '), 'python/swe/') || contains(join(github.event.commits.*.removed, ' '), 'python/swe/') || contains(join(github.event.commits.*.modified, ' '), 'python/') || contains(join(github.event.commits.*.added, ' '), 'python/') || contains(join(github.event.commits.*.removed, ' '), 'python/'))) ||
-      (github.event_name == 'pull_request' && (contains(toJSON(github.event.pull_request.files), 'python/swe/') || contains(toJSON(github.event.pull_request.files), 'python/')))
+(github.event_name == 'push' && (contains(join(github.event.commits.*.modified, '|'), 'python/swe/') || contains(join(github.event.commits.*.added, '|'), 'python/swe/') || contains(join(github.event.commits.*.removed, '|'), 'python/swe/') || contains(join(github.event.commits.*.modified, '|'), 'python/') || contains(join(github.event.commits.*.added, '|'), 'python/') || contains(join(github.event.commits.*.removed, '|'), 'python/'))) ||
+        (github.event_name == 'pull_request' && (contains(toJSON(github.event.pull_request.files), 'python/swe/') || contains(toJSON(github.event.pull_request.files), 'python/')))
     strategy:
       matrix:
         os: [ubuntu-latest]
