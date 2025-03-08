@@ -16,7 +16,7 @@ classifiers = [
 
 dependencies = [
     "composio_core>=0.7.0,<0.8.0",
-    "phi>=0.1.0",
+    "phidata>=0.1.0",
 ]
 
 [build-system]

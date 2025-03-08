@@ -16,7 +16,8 @@ classifiers = [
 
 dependencies = [
     "composio_core>=0.7.0,<0.8.0",
-    "camel-ai>=0.2.22",
+    "camel-ai>=0.1.5.7,<=0.2.2",
+    "pillow",
 ]
 
 [build-system]
