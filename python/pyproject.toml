@@ -74,4 +74,5 @@ composio_phidata = {workspace = true}
 composio_praisonai = {workspace = true}
 composio_pydanticai = {workspace = true}
 composio_smolagent = {workspace = true}
+composio_togetherai = {workspace = true}
 swekit = {workspace = true}
